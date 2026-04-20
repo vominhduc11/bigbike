@@ -43,12 +43,20 @@ function parseRoute(pathname) {
     return { kind: 'screen', name: 'products-list' }
   }
 
+  if (segments[1] === 'products' && segments[2] === 'new' && segments.length === 3) {
+    return { kind: 'screen', name: 'product-create' }
+  }
+
   if (segments[1] === 'products' && segments.length === 3) {
     return { kind: 'screen', name: 'product-detail', productId: segments[2] }
   }
 
   if (segments[1] === 'categories' && segments.length === 2) {
     return { kind: 'screen', name: 'categories-list' }
+  }
+
+  if (segments[1] === 'categories' && segments[2] === 'new' && segments.length === 3) {
+    return { kind: 'screen', name: 'category-create' }
   }
 
   if (segments[1] === 'categories' && segments.length === 3) {
@@ -59,6 +67,10 @@ function parseRoute(pathname) {
     return { kind: 'screen', name: 'brands-list' }
   }
 
+  if (segments[1] === 'brands' && segments[2] === 'new' && segments.length === 3) {
+    return { kind: 'screen', name: 'brand-create' }
+  }
+
   if (segments[1] === 'brands' && segments.length === 3) {
     return { kind: 'screen', name: 'brand-detail', brandId: segments[2] }
   }
@@ -67,11 +79,40 @@ function parseRoute(pathname) {
     return { kind: 'screen', name: 'content-list' }
   }
 
+  if (
+    segments[1] === 'content' &&
+    segments.length === 4 &&
+    (segments[2] === 'articles' || segments[2] === 'article') &&
+    segments[3] === 'new'
+  ) {
+    return { kind: 'screen', name: 'content-create', contentType: 'ARTICLE' }
+  }
+
+  if (
+    segments[1] === 'content' &&
+    segments.length === 4 &&
+    (segments[2] === 'pages' || segments[2] === 'page') &&
+    segments[3] === 'new'
+  ) {
+    return { kind: 'screen', name: 'content-create', contentType: 'PAGE' }
+  }
+
   if (segments[1] === 'content' && segments.length === 4) {
+    let normalizedType = null
+    if (segments[2] === 'articles' || segments[2] === 'article') {
+      normalizedType = 'ARTICLE'
+    }
+    if (segments[2] === 'pages' || segments[2] === 'page') {
+      normalizedType = 'PAGE'
+    }
+    if (!normalizedType) {
+      return { kind: 'not-found' }
+    }
+
     return {
       kind: 'screen',
       name: 'content-detail',
-      contentType: segments[2],
+      contentType: normalizedType,
       contentId: segments[3],
     }
   }
@@ -84,11 +125,18 @@ function routePermission(routeName) {
     case 'products-list':
     case 'product-detail':
       return 'products.read'
+    case 'product-create':
+      return 'products.update'
+    case 'category-create':
+    case 'brand-create':
+      return 'catalog.update'
     case 'categories-list':
     case 'category-detail':
     case 'brands-list':
     case 'brand-detail':
       return 'catalog.read'
+    case 'content-create':
+      return 'content.update'
     case 'content-list':
     case 'content-detail':
       return 'content.read'
@@ -258,7 +306,23 @@ function App() {
   let screen = null
   switch (route.name) {
     case 'products-list':
-      screen = <ProductListScreen navigate={navigate} />
+      screen = (
+        <ProductListScreen
+          navigate={navigate}
+          canUpdate={hasPermission('products.update')}
+        />
+      )
+      break
+    case 'product-create':
+      screen = (
+        <ProductDetailScreen
+          key="product-create"
+          productId={null}
+          isCreate
+          navigate={navigate}
+          canUpdate={hasPermission('products.update')}
+        />
+      )
       break
     case 'product-detail':
       screen = (
@@ -271,7 +335,23 @@ function App() {
       )
       break
     case 'categories-list':
-      screen = <CategoryListScreen navigate={navigate} />
+      screen = (
+        <CategoryListScreen
+          navigate={navigate}
+          canUpdate={hasPermission('catalog.update')}
+        />
+      )
+      break
+    case 'category-create':
+      screen = (
+        <CategoryDetailScreen
+          key="category-create"
+          categoryId={null}
+          isCreate
+          navigate={navigate}
+          canUpdate={hasPermission('catalog.update')}
+        />
+      )
       break
     case 'category-detail':
       screen = (
@@ -284,7 +364,23 @@ function App() {
       )
       break
     case 'brands-list':
-      screen = <BrandListScreen navigate={navigate} />
+      screen = (
+        <BrandListScreen
+          navigate={navigate}
+          canUpdate={hasPermission('catalog.update')}
+        />
+      )
+      break
+    case 'brand-create':
+      screen = (
+        <BrandDetailScreen
+          key="brand-create"
+          brandId={null}
+          isCreate
+          navigate={navigate}
+          canUpdate={hasPermission('catalog.update')}
+        />
+      )
       break
     case 'brand-detail':
       screen = (
@@ -297,12 +393,29 @@ function App() {
       )
       break
     case 'content-list':
-      screen = <ContentListScreen navigate={navigate} />
+      screen = (
+        <ContentListScreen
+          navigate={navigate}
+          canUpdate={hasPermission('content.update')}
+        />
+      )
+      break
+    case 'content-create':
+      screen = (
+        <ContentDetailScreen
+          key={`content-create:${route.contentType}`}
+          contentType={route.contentType}
+          contentId={null}
+          isCreate
+          navigate={navigate}
+          canUpdate={hasPermission('content.update')}
+        />
+      )
       break
     case 'content-detail':
       screen = (
         <ContentDetailScreen
-          key={`${route.contentType}:${route.contentId}`}
+          key={`content:${route.contentType}:${route.contentId}`}
           contentType={route.contentType}
           contentId={route.contentId}
           navigate={navigate}

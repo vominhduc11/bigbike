@@ -22,12 +22,13 @@ const FORCE_MOCK = import.meta.env.VITE_USE_ADMIN_MOCK === 'true'
 const IS_DEV = Boolean(import.meta.env.DEV)
 const DEFAULT_MOCK_ROLE = import.meta.env.VITE_ADMIN_ROLE || 'ADMIN'
 
-class ApiClientError extends Error {
-  constructor(message, status, code) {
+export class ApiClientError extends Error {
+  constructor(message, status, code, details = []) {
     super(message)
     this.name = 'ApiClientError'
     this.status = status
     this.code = code
+    this.details = Array.isArray(details) ? details : []
   }
 }
 
@@ -46,14 +47,25 @@ function toQueryString(query) {
   return serialized ? `?${serialized}` : ''
 }
 
-async function requestJson(endpoint, query) {
+async function requestJson(endpoint, options = {}) {
+  const { method = 'GET', query, body } = options
   const url = `${API_BASE}${endpoint}${toQueryString(query)}`
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-  })
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  const fetchOptions = {
+    method,
+    headers,
+  }
+
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    fetchOptions.body = JSON.stringify(body)
+  }
+
+  const response = await fetch(url, fetchOptions)
 
   let payload
   try {
@@ -68,6 +80,7 @@ async function requestJson(endpoint, query) {
       error.message || `Request failed with status ${response.status}`,
       response.status,
       error.code || 'REQUEST_FAILED',
+      error.details || [],
     )
   }
 
@@ -102,6 +115,19 @@ function normalizeError(error) {
   }
 
   return new Error('Unexpected admin API error.')
+}
+
+function assertMutationEnabled() {
+  if (!FORCE_MOCK) {
+    return
+  }
+
+  throw new ApiClientError(
+    'Admin mutation API is disabled because VITE_USE_ADMIN_MOCK=true.',
+    501,
+    'MUTATION_NOT_IMPLEMENTED',
+    [],
+  )
 }
 
 function buildProductQuery(query) {
@@ -174,6 +200,47 @@ function parseDetailPayload(payload, normalizeItem) {
   return { item }
 }
 
+function normalizeContentPathType(contentType) {
+  const normalized = String(contentType || '')
+    .trim()
+    .toLowerCase()
+
+  if (normalized === 'articles' || normalized === 'article') {
+    return 'article'
+  }
+  if (normalized === 'pages' || normalized === 'page') {
+    return 'page'
+  }
+  return 'article'
+}
+
+function normalizeContentMutationPath(contentType) {
+  const normalized = normalizeContentPathType(contentType)
+  return normalized === 'page' ? 'pages' : 'articles'
+}
+
+export function mapValidationErrors(error) {
+  if (!(error instanceof ApiClientError) || !Array.isArray(error.details)) {
+    return {}
+  }
+
+  return error.details.reduce((acc, detail) => {
+    if (!detail || typeof detail !== 'object') {
+      return acc
+    }
+    const field = typeof detail.field === 'string' ? detail.field : '_form'
+    const message =
+      typeof detail.message === 'string'
+        ? detail.message
+        : 'Invalid value.'
+
+    if (!acc[field]) {
+      acc[field] = message
+    }
+    return acc
+  }, {})
+}
+
 export async function fetchCurrentAdminUser() {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -218,7 +285,7 @@ export async function fetchProducts(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/products', buildProductQuery(query))
+    const payload = await requestJson('/admin/products', { query: buildProductQuery(query) })
     return withLiveData(parseListPayload(payload, normalizeProduct, Number(query?.pageSize) || 10))
   } catch (error) {
     const normalizedError = normalizeError(error)
@@ -251,6 +318,33 @@ export async function fetchProductDetail(productId) {
   }
 }
 
+export async function createProduct(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/products', {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeProduct)
+}
+
+export async function updateProduct(productId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/products/${productId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeProduct)
+}
+
+export async function publishProduct(productId, publishStatus) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/products/${productId}/publish`, {
+    method: 'PATCH',
+    body: { publishStatus },
+  })
+  return parseDetailPayload(payload, normalizeProduct)
+}
+
 export async function fetchCategories(query) {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -260,7 +354,7 @@ export async function fetchCategories(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/categories', buildCategoryQuery(query))
+    const payload = await requestJson('/admin/categories', { query: buildCategoryQuery(query) })
     return withLiveData(parseListPayload(payload, normalizeCategory, Number(query?.pageSize) || 10))
   } catch (error) {
     const normalizedError = normalizeError(error)
@@ -293,6 +387,24 @@ export async function fetchCategoryDetail(categoryId) {
   }
 }
 
+export async function createCategory(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/categories', {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeCategory)
+}
+
+export async function updateCategory(categoryId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/categories/${categoryId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeCategory)
+}
+
 export async function fetchBrands(query) {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -302,7 +414,7 @@ export async function fetchBrands(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/brands', buildBrandQuery(query))
+    const payload = await requestJson('/admin/brands', { query: buildBrandQuery(query) })
     return withLiveData(parseListPayload(payload, normalizeBrand, Number(query?.pageSize) || 10))
   } catch (error) {
     const normalizedError = normalizeError(error)
@@ -335,6 +447,24 @@ export async function fetchBrandDetail(brandId) {
   }
 }
 
+export async function createBrand(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/brands', {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeBrand)
+}
+
+export async function updateBrand(brandId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/brands/${brandId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeBrand)
+}
+
 export async function fetchContent(query) {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -344,7 +474,7 @@ export async function fetchContent(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/content', buildContentQuery(query))
+    const payload = await requestJson('/admin/content', { query: buildContentQuery(query) })
     return withLiveData(parseListPayload(payload, normalizeContentItem, Number(query?.pageSize) || 10))
   } catch (error) {
     const normalizedError = normalizeError(error)
@@ -364,8 +494,10 @@ export async function fetchContentDetail(contentType, contentId) {
     )
   }
 
+  const pathType = normalizeContentPathType(contentType)
+
   try {
-    const endpoint = `/admin/content/${contentType.toLowerCase()}/${contentId}`
+    const endpoint = `/admin/content/${pathType}/${contentId}`
     const payload = await requestJson(endpoint)
     return withLiveData(parseDetailPayload(payload, normalizeContentItem))
   } catch (error) {
@@ -379,3 +511,24 @@ export async function fetchContentDetail(contentType, contentId) {
     })
   }
 }
+
+export async function createContent(contentType, input) {
+  assertMutationEnabled()
+  const mutationPath = normalizeContentMutationPath(contentType)
+  const payload = await requestJson(`/admin/content/${mutationPath}`, {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeContentItem)
+}
+
+export async function updateContent(contentType, contentId, input) {
+  assertMutationEnabled()
+  const mutationPath = normalizeContentMutationPath(contentType)
+  const payload = await requestJson(`/admin/content/${mutationPath}/${contentId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeContentItem)
+}
+

@@ -14,7 +14,7 @@ const INITIAL_QUERY = {
   pageSize: 8,
 }
 
-export function CategoryListScreen({ navigate }) {
+export function CategoryListScreen({ navigate, canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({
     status: 'loading',
@@ -105,7 +105,7 @@ export function CategoryListScreen({ navigate }) {
             className="btn btn-secondary"
             onClick={() => navigate(`/admin/categories/${category.id}`)}
           >
-            Detail shell
+            Edit
           </button>
         ),
       },
@@ -128,10 +128,15 @@ export function CategoryListScreen({ navigate }) {
         <div>
           <p className="eyebrow">Catalog</p>
           <h1>Categories</h1>
-          <p>Category CRUD foundation list with loading/empty/error/pagination states.</p>
+          <p>Category management list with live mutation endpoints.</p>
         </div>
-        <button type="button" className="btn btn-primary" disabled>
-          Create category (TBD)
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/admin/categories/new')}
+          disabled={!canUpdate}
+        >
+          {canUpdate ? 'Create category' : 'No update permission'}
         </button>
       </header>
 
@@ -205,7 +210,7 @@ export function CategoryListScreen({ navigate }) {
         <StatePanel
           tone="neutral"
           title="No categories found"
-          description="Reset filters or create the first category when mutation API is available."
+          description="Reset filters or create the first category."
           actionLabel="Reset filters"
           onAction={() => setQuery(INITIAL_QUERY)}
         />

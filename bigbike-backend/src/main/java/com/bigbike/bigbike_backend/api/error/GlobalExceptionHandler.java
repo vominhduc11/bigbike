@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,6 +49,19 @@ public class GlobalExceptionHandler {
                 ex.getName(),
                 "INVALID_TYPE",
                 "Invalid value type."
+        );
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", List.of(detail), request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadableMessage(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorDetail detail = new ApiErrorDetail(
+                null,
+                "INVALID_VALUE",
+                "Malformed request body or invalid enum value."
         );
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", List.of(detail), request);
     }

@@ -866,19 +866,40 @@ PATCH /api/v1/admin/products/{productId}
 ### 16.4 Publish / unpublish product
 
 ```http
-POST /api/v1/admin/products/{productId}/publish
-POST /api/v1/admin/products/{productId}/unpublish
+PATCH /api/v1/admin/products/{productId}/publish
 ```
 
-Command endpoint is preferred when transition has validation/history.
+Request body:
 
-### 16.5 Archive/delete product
+```json
+{
+  "publishStatus": "PUBLISHED"
+}
+```
+
+Command endpoint is preferred when transition has validation/history and state-machine checks.
+
+### 16.5 Category mutation endpoints
+
+```http
+POST /api/v1/admin/categories
+PATCH /api/v1/admin/categories/{categoryId}
+```
+
+### 16.6 Brand mutation endpoints
+
+```http
+POST /api/v1/admin/brands
+PATCH /api/v1/admin/brands/{brandId}
+```
+
+### 16.7 Archive/delete product
 
 ```http
 POST /api/v1/admin/products/{productId}/archive
 ```
 
-Hard delete only if business/backend supports it.
+Delete/hard-delete behavior is out of Phase 4G scope.
 
 ---
 
@@ -948,23 +969,32 @@ Backend must validate transition.
 ### 18.1 List content
 
 ```http
-GET /api/v1/admin/articles
-GET /api/v1/admin/pages
+GET /api/v1/admin/content
+GET /api/v1/admin/content/{type}/{id}
 ```
 
-### 18.2 Create/update content
+`type` supports:
+
+```text
+article
+page
+```
+
+### 18.2 Create/update article
 
 ```http
-POST /api/v1/admin/articles
-PATCH /api/v1/admin/articles/{articleId}
+POST /api/v1/admin/content/articles
+PATCH /api/v1/admin/content/articles/{articleId}
 ```
 
-### 18.3 Publish/unpublish content
+### 18.3 Create/update page
 
 ```http
-POST /api/v1/admin/articles/{articleId}/publish
-POST /api/v1/admin/articles/{articleId}/unpublish
+POST /api/v1/admin/content/pages
+PATCH /api/v1/admin/content/pages/{pageId}
 ```
+
+Delete/hard-delete behavior is out of Phase 4G scope.
 
 ---
 

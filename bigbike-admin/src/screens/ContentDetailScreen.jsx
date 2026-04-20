@@ -1,27 +1,196 @@
-import { useEffect, useState } from 'react'
-import { DetailField, DetailSection } from '../components/DetailSection'
-import { PublishStatusBadge } from '../components/StatusBadge'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  createContent,
+  fetchContentDetail,
+  mapValidationErrors,
+  updateContent,
+} from '../lib/adminApi'
+import { formatDateTime } from '../lib/formatters'
 import { StatePanel } from '../components/StatePanel'
-import { fetchContentDetail } from '../lib/adminApi'
-import { formatDateTime, formatText } from '../lib/formatters'
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+function normalizeContentType(value) {
+  return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
+}
+
+function mutationPath(contentType) {
+  return normalizeContentType(contentType) === 'PAGE' ? 'pages' : 'articles'
+}
+
+function buildEmptyForm(contentType) {
+  return {
+    slug: '',
+    title: '',
+    excerpt: '',
+    body: '',
+    publishStatus: 'DRAFT',
+    pageType: 'CUSTOM',
+    coverImageUrl: '',
+    coverImageAlt: '',
+    tags: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoNoIndex: false,
+    type: normalizeContentType(contentType),
+  }
+}
+
+function buildFormFromItem(contentType, item) {
+  const fallback = buildEmptyForm(contentType)
+  if (!item) {
+    return fallback
+  }
+
+  return {
+    ...fallback,
+    slug: item.slug || '',
+    title: item.title || '',
+    excerpt: item.excerpt || '',
+    body: item.body || '',
+    publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
+    coverImageUrl: item.coverImage?.url || '',
+    coverImageAlt: item.coverImage?.alt || '',
+    seoTitle: item.seo?.title || '',
+    seoDescription: item.seo?.description || '',
+    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
+    type: normalizeContentType(item.type || contentType),
+  }
+}
+
+function normalizeTagsInput(rawValue) {
+  return String(rawValue || '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+}
+
+function validateForm(form, isCreate) {
+  const errors = {}
+  if (!form.slug.trim()) {
+    errors.slug = 'Slug is required.'
+  } else if (!SLUG_REGEX.test(form.slug.trim())) {
+    errors.slug = 'Slug can only contain lowercase letters, numbers and hyphens.'
+  }
+  if (!form.title.trim()) {
+    errors.title = 'Title is required.'
+  }
+  if (!form.body.trim()) {
+    errors.body = 'Body is required.'
+  }
+  if (!form.publishStatus) {
+    errors.publishStatus = 'Publish status is required.'
+  }
+  if (form.type === 'PAGE' && isCreate && !form.pageType.trim()) {
+    errors.pageType = 'Page type is required.'
+  }
+  if (
+    form.coverImageUrl.trim() &&
+    !/^https?:\/\//.test(form.coverImageUrl.trim())
+  ) {
+    errors.coverImageUrl = 'Cover image URL must start with http:// or https://.'
+  }
+  if (
+    form.seoCanonicalUrl.trim() &&
+    !/^https?:\/\//.test(form.seoCanonicalUrl.trim())
+  ) {
+    errors.seoCanonicalUrl = 'Canonical URL must start with http:// or https://.'
+  }
+  if (
+    form.seoOgImageUrl.trim() &&
+    !/^https?:\/\//.test(form.seoOgImageUrl.trim())
+  ) {
+    errors.seoOgImageUrl = 'SEO OG image URL must start with http:// or https://.'
+  }
+  return errors
+}
+
+function toPayload(form, isCreate) {
+  const payload = {
+    slug: form.slug.trim(),
+    title: form.title.trim(),
+    body: form.body.trim(),
+    publishStatus: form.publishStatus,
+  }
+
+  if (form.type === 'ARTICLE') {
+    payload.excerpt = form.excerpt.trim() || undefined
+    if (form.coverImageUrl.trim()) {
+      payload.coverImage = {
+        url: form.coverImageUrl.trim(),
+        alt: form.coverImageAlt.trim() || undefined,
+      }
+    }
+    const tags = normalizeTagsInput(form.tags)
+    if (tags.length > 0) {
+      payload.tags = tags
+    }
+  }
+
+  if (form.type === 'PAGE' && isCreate) {
+    payload.pageType = form.pageType.trim()
+  }
+
+  if (
+    form.seoTitle.trim() ||
+    form.seoDescription.trim() ||
+    form.seoCanonicalUrl.trim() ||
+    form.seoOgImageUrl.trim() ||
+    form.seoNoIndex
+  ) {
+    payload.seo = {
+      title: form.seoTitle.trim() || undefined,
+      description: form.seoDescription.trim() || undefined,
+      canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
+      noIndex: Boolean(form.seoNoIndex),
+    }
+
+    if (form.seoOgImageUrl.trim()) {
+      payload.seo.ogImage = {
+        url: form.seoOgImageUrl.trim(),
+      }
+    }
+  }
+
+  return payload
+}
 
 export function ContentDetailScreen({
   contentType,
   contentId,
+  isCreate = false,
   navigate,
   canUpdate,
 }) {
+  const normalizedType = normalizeContentType(contentType)
   const [state, setState] = useState({
-    status: 'loading',
+    status: isCreate ? 'success' : 'loading',
     item: null,
     warning: '',
+    error: '',
+  })
+  const [form, setForm] = useState(() => buildEmptyForm(normalizedType))
+  const [initialSnapshot, setInitialSnapshot] = useState(() =>
+    JSON.stringify(buildEmptyForm(normalizedType)),
+  )
+  const [validationErrors, setValidationErrors] = useState({})
+  const [submitState, setSubmitState] = useState({
+    status: 'idle',
+    message: '',
   })
 
   useEffect(() => {
+    if (isCreate) {
+      return
+    }
+
     let active = true
 
-    fetchContentDetail(contentType.toUpperCase(), contentId)
+    fetchContentDetail(normalizedType, contentId)
       .then((response) => {
         if (!active) {
           return
@@ -31,7 +200,12 @@ export function ContentDetailScreen({
           status: 'success',
           item: response.item || null,
           warning: response.mode === 'mock' ? response.warning : '',
+          error: '',
         })
+
+        const nextForm = buildFormFromItem(normalizedType, response.item)
+        setForm(nextForm)
+        setInitialSnapshot(JSON.stringify(nextForm))
       })
       .catch((error) => {
         if (!active) {
@@ -42,14 +216,85 @@ export function ContentDetailScreen({
           status: 'error',
           item: null,
           warning: '',
-          error: error.message,
+          error: error.message || 'Unknown content detail error.',
         })
       })
 
     return () => {
       active = false
     }
-  }, [contentId, contentType])
+  }, [contentId, isCreate, normalizedType])
+
+  const isSubmitting = submitState.status === 'submitting'
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== initialSnapshot,
+    [form, initialSnapshot],
+  )
+  const isReadOnly = !canUpdate || isSubmitting
+
+  function updateField(field, value) {
+    setForm((previous) => ({ ...previous, [field]: value }))
+    setSubmitState({ status: 'idle', message: '' })
+    setValidationErrors((previous) => {
+      if (!previous[field]) {
+        return previous
+      }
+      const next = { ...previous }
+      delete next[field]
+      return next
+    })
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!canUpdate) {
+      return
+    }
+
+    const clientErrors = validateForm(form, isCreate)
+    if (Object.keys(clientErrors).length > 0) {
+      setValidationErrors(clientErrors)
+      setSubmitState({ status: 'idle', message: '' })
+      return
+    }
+
+    setSubmitState({ status: 'submitting', message: '' })
+    setValidationErrors({})
+
+    try {
+      const payload = toPayload(form, isCreate)
+      const response = isCreate
+        ? await createContent(normalizedType, payload)
+        : await updateContent(normalizedType, contentId, payload)
+
+      const savedItem = response.item || null
+      const nextForm = buildFormFromItem(normalizedType, savedItem)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      setState((previous) => ({
+        ...previous,
+        item: savedItem,
+      }))
+      setSubmitState({
+        status: 'success',
+        message: isCreate
+          ? `${normalizedType === 'ARTICLE' ? 'Article' : 'Page'} created successfully.`
+          : `${normalizedType === 'ARTICLE' ? 'Article' : 'Page'} updated successfully.`,
+      })
+
+      if (isCreate && savedItem?.id) {
+        navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, {
+          replace: true,
+        })
+      }
+    } catch (error) {
+      setValidationErrors(mapValidationErrors(error))
+      setSubmitState({
+        status: 'error',
+        message: error.message || 'Failed to save content.',
+      })
+    }
+  }
 
   if (state.status === 'loading') {
     return (
@@ -66,7 +311,7 @@ export function ContentDetailScreen({
       <StatePanel
         tone="danger"
         title="Failed to load content detail"
-        description={state.error || 'Unknown content detail error.'}
+        description={state.error}
         actionLabel="Back to content list"
         onAction={() => navigate('/admin/content')}
       />
@@ -85,15 +330,23 @@ export function ContentDetailScreen({
     )
   }
 
-  const item = state.item
+  const contentLabel = normalizedType === 'ARTICLE' ? 'article' : 'page'
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
           <p className="eyebrow">Content</p>
-          <h1>Content detail/edit shell</h1>
-          <p>Read-only foundation shell for article/page management.</p>
+          <h1>
+            {isCreate
+              ? `Create ${contentLabel}`
+              : `Edit ${contentLabel}`}
+          </h1>
+          <p>
+            {isCreate
+              ? `Create a new ${contentLabel} record.`
+              : `Update ${contentLabel} metadata, publish status and SEO.`}
+          </p>
         </div>
         <div className="screen-actions">
           <button
@@ -103,48 +356,275 @@ export function ContentDetailScreen({
           >
             Back to list
           </button>
-          <button type="button" className="btn btn-primary" disabled>
-            {canUpdate ? 'Save changes (TBD)' : 'No update permission'}
-          </button>
         </div>
       </header>
 
-      <ReadOnlyBanner warning={state.warning} />
+      {state.warning ? (
+        <StatePanel
+          tone="warning"
+          title="Read data is currently mock"
+          description={state.warning}
+        />
+      ) : null}
 
-      <DetailSection title="Core information">
-        <div className="detail-grid">
-          <DetailField label="ID" value={item.id} />
-          <DetailField label="Type" value={item.type} />
-          <DetailField label="Slug" value={item.slug} />
-          <DetailField label="Title" value={item.title} />
-          <DetailField label="Excerpt" value={formatText(item.excerpt)} />
-          <DetailField label="Publish status" value={<PublishStatusBadge value={item.publishStatus} />} />
-        </div>
-      </DetailSection>
+      {!canUpdate ? (
+        <StatePanel
+          tone="warning"
+          title="Permission denied"
+          description="You can view this content, but content.update is required to save changes."
+        />
+      ) : null}
 
-      <DetailSection title="Body and SEO">
-        <div className="detail-grid">
-          <DetailField label="Body" value={formatText(item.body)} />
-          <DetailField label="SEO title" value={formatText(item.seo?.title)} />
-          <DetailField label="SEO description" value={formatText(item.seo?.description)} />
-          <DetailField label="Published at" value={formatDateTime(item.publishedAt)} />
-          <DetailField label="Created at" value={formatDateTime(item.createdAt)} />
-          <DetailField label="Updated at" value={formatDateTime(item.updatedAt)} />
-        </div>
-      </DetailSection>
+      <form className="entity-form" onSubmit={handleSubmit}>
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>Core information</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <label className="form-field">
+              <span>Slug *</span>
+              <input
+                className="control-input"
+                value={form.slug}
+                onChange={(event) => updateField('slug', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.slug ? (
+                <small className="field-error">{validationErrors.slug}</small>
+              ) : null}
+            </label>
 
-      <DetailSection title="Cover image">
-        <div className="media-grid">
-          <article className="media-card">
-            <h3>Cover image</h3>
-            {item.coverImage?.url ? (
-              <img src={item.coverImage.url} alt={item.coverImage.alt || item.title} />
-            ) : (
-              <p>No cover image</p>
-            )}
-          </article>
+            <label className="form-field">
+              <span>Title *</span>
+              <input
+                className="control-input"
+                value={form.title}
+                onChange={(event) => updateField('title', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.title ? (
+                <small className="field-error">{validationErrors.title}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Publish status *</span>
+              <select
+                className="control-select"
+                value={form.publishStatus}
+                onChange={(event) =>
+                  updateField('publishStatus', event.target.value)
+                }
+                disabled={isReadOnly}
+              >
+                <option value="DRAFT">DRAFT</option>
+                <option value="PUBLISHED">PUBLISHED</option>
+                <option value="HIDDEN">HIDDEN</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+              </select>
+              {validationErrors.publishStatus ? (
+                <small className="field-error">
+                  {validationErrors.publishStatus}
+                </small>
+              ) : null}
+            </label>
+
+            {normalizedType === 'PAGE' ? (
+              <label className="form-field">
+                <span>Page type *</span>
+                <input
+                  className="control-input"
+                  value={form.pageType}
+                  onChange={(event) => updateField('pageType', event.target.value)}
+                  disabled={isReadOnly || !isCreate}
+                />
+                {validationErrors.pageType ? (
+                  <small className="field-error">{validationErrors.pageType}</small>
+                ) : null}
+              </label>
+            ) : null}
+
+            {normalizedType === 'ARTICLE' ? (
+              <label className="form-field form-field-wide">
+                <span>Excerpt</span>
+                <textarea
+                  className="control-input control-textarea"
+                  value={form.excerpt}
+                  onChange={(event) => updateField('excerpt', event.target.value)}
+                  disabled={isReadOnly}
+                />
+              </label>
+            ) : null}
+
+            <label className="form-field form-field-wide">
+              <span>Body *</span>
+              <textarea
+                className="control-input control-textarea control-textarea-lg"
+                value={form.body}
+                onChange={(event) => updateField('body', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.body ? (
+                <small className="field-error">{validationErrors.body}</small>
+              ) : null}
+            </label>
+          </div>
+        </section>
+
+        {normalizedType === 'ARTICLE' ? (
+          <section className="detail-section">
+            <header className="detail-section-header">
+              <h2>Article media and tags</h2>
+            </header>
+            <div className="detail-section-content form-grid">
+              <label className="form-field form-field-wide">
+                <span>Cover image URL</span>
+                <input
+                  className="control-input"
+                  value={form.coverImageUrl}
+                  onChange={(event) =>
+                    updateField('coverImageUrl', event.target.value)
+                  }
+                  disabled={isReadOnly}
+                  placeholder="https://..."
+                />
+                {validationErrors.coverImageUrl ? (
+                  <small className="field-error">{validationErrors.coverImageUrl}</small>
+                ) : null}
+              </label>
+
+              <label className="form-field">
+                <span>Cover image alt</span>
+                <input
+                  className="control-input"
+                  value={form.coverImageAlt}
+                  onChange={(event) =>
+                    updateField('coverImageAlt', event.target.value)
+                  }
+                  disabled={isReadOnly}
+                />
+              </label>
+
+              <label className="form-field form-field-wide">
+                <span>Tags (comma separated)</span>
+                <input
+                  className="control-input"
+                  value={form.tags}
+                  onChange={(event) => updateField('tags', event.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="touring, helmets, safety"
+                />
+              </label>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>SEO</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <label className="form-field form-field-wide">
+              <span>SEO title</span>
+              <input
+                className="control-input"
+                value={form.seoTitle}
+                onChange={(event) => updateField('seoTitle', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO description</span>
+              <textarea
+                className="control-input control-textarea"
+                value={form.seoDescription}
+                onChange={(event) =>
+                  updateField('seoDescription', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO canonical URL</span>
+              <input
+                className="control-input"
+                value={form.seoCanonicalUrl}
+                onChange={(event) =>
+                  updateField('seoCanonicalUrl', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoCanonicalUrl ? (
+                <small className="field-error">
+                  {validationErrors.seoCanonicalUrl}
+                </small>
+              ) : null}
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO OG image URL</span>
+              <input
+                className="control-input"
+                value={form.seoOgImageUrl}
+                onChange={(event) =>
+                  updateField('seoOgImageUrl', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoOgImageUrl ? (
+                <small className="field-error">{validationErrors.seoOgImageUrl}</small>
+              ) : null}
+            </label>
+
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.seoNoIndex}
+                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                disabled={isReadOnly}
+              />
+              <span>SEO noIndex</span>
+            </label>
+          </div>
+        </section>
+
+        <div className="form-footer">
+          <div className="form-status">
+            <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
+              {isDirty ? 'Dirty changes' : 'No unsaved changes'}
+            </span>
+            {!isCreate && state.item?.updatedAt ? (
+              <small>Last updated: {formatDateTime(state.item.updatedAt)}</small>
+            ) : null}
+          </div>
+          <div className="screen-actions">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isReadOnly || !isDirty}
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : isCreate
+                  ? `Create ${contentLabel}`
+                  : 'Save changes'}
+            </button>
+          </div>
         </div>
-      </DetailSection>
+
+        {submitState.status === 'success' ? (
+          <p className="inline-feedback inline-feedback-success">
+            {submitState.message}
+          </p>
+        ) : null}
+        {submitState.status === 'error' ? (
+          <p className="inline-feedback inline-feedback-danger">
+            {submitState.message}
+          </p>
+        ) : null}
+      </form>
     </section>
   )
 }

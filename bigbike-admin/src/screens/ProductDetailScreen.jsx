@@ -1,19 +1,228 @@
-import { useEffect, useState } from 'react'
-import { DetailField, DetailSection } from '../components/DetailSection'
-import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  createProduct,
+  fetchProductDetail,
+  mapValidationErrors,
+  publishProduct,
+  updateProduct,
+} from '../lib/adminApi'
+import { formatDateTime } from '../lib/formatters'
 import { StatePanel } from '../components/StatePanel'
-import { fetchProductDetail } from '../lib/adminApi'
-import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 
-export function ProductDetailScreen({ productId, navigate, canUpdate }) {
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+function buildEmptyForm() {
+  return {
+    sku: '',
+    slug: '',
+    name: '',
+    shortDescription: '',
+    description: '',
+    brandId: '',
+    categoryId: '',
+    retailPrice: '',
+    compareAtPrice: '',
+    salePrice: '',
+    stockState: 'IN_STOCK',
+    publishStatus: 'DRAFT',
+    imageUrl: '',
+    imageAlt: '',
+    isFeatured: false,
+    showOnHomepage: false,
+    seoTitle: '',
+    seoDescription: '',
+    seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoNoIndex: false,
+  }
+}
+
+function buildFormFromItem(item) {
+  if (!item) {
+    return buildEmptyForm()
+  }
+
+  return {
+    sku: item.sku || '',
+    slug: item.slug || '',
+    name: item.name || '',
+    shortDescription: item.shortDescription || '',
+    description: item.description || '',
+    brandId: item.brand?.id || '',
+    categoryId: item.category?.id || '',
+    retailPrice:
+      Number.isInteger(item.price?.retailPrice) && item.price.retailPrice > 0
+        ? String(item.price.retailPrice)
+        : '',
+    compareAtPrice:
+      Number.isInteger(item.price?.compareAtPrice) && item.price.compareAtPrice > 0
+        ? String(item.price.compareAtPrice)
+        : '',
+    salePrice:
+      Number.isInteger(item.price?.salePrice) && item.price.salePrice > 0
+        ? String(item.price.salePrice)
+        : '',
+    stockState: item.stockState === 'UNKNOWN' ? 'IN_STOCK' : item.stockState,
+    publishStatus:
+      item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
+    imageUrl: item.image?.url || '',
+    imageAlt: item.image?.alt || '',
+    isFeatured: Boolean(item.isFeatured),
+    showOnHomepage: Boolean(item.showOnHomepage),
+    seoTitle: item.seo?.title || '',
+    seoDescription: item.seo?.description || '',
+    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
+  }
+}
+
+function toIntegerOrUndefined(value) {
+  const normalized = String(value || '').trim()
+  if (!normalized) {
+    return undefined
+  }
+  const parsed = Number(normalized)
+  if (!Number.isInteger(parsed)) {
+    return Number.NaN
+  }
+  return parsed
+}
+
+function validateForm(form, isCreate) {
+  const errors = {}
+
+  if (!form.slug.trim()) {
+    errors.slug = 'Slug is required.'
+  } else if (!SLUG_REGEX.test(form.slug.trim())) {
+    errors.slug = 'Slug can only contain lowercase letters, numbers and hyphens.'
+  }
+
+  if (!form.name.trim()) {
+    errors.name = 'Product name is required.'
+  }
+
+  if (!form.categoryId.trim()) {
+    errors.categoryId = 'Category ID is required.'
+  }
+
+  const retailPrice = toIntegerOrUndefined(form.retailPrice)
+  const compareAtPrice = toIntegerOrUndefined(form.compareAtPrice)
+  const salePrice = toIntegerOrUndefined(form.salePrice)
+
+  if (isCreate && retailPrice === undefined) {
+    errors.retailPrice = 'Retail price is required.'
+  }
+
+  if (Number.isNaN(retailPrice)) {
+    errors.retailPrice = 'Retail price must be an integer.'
+  }
+  if (Number.isNaN(compareAtPrice)) {
+    errors.compareAtPrice = 'Compare-at price must be an integer.'
+  }
+  if (Number.isNaN(salePrice)) {
+    errors.salePrice = 'Sale price must be an integer.'
+  }
+
+  if (
+    Number.isInteger(salePrice) &&
+    Number.isInteger(retailPrice) &&
+    salePrice >= (Number.isInteger(compareAtPrice) ? compareAtPrice : retailPrice)
+  ) {
+    errors.salePrice = 'Sale price must be lower than retail/compare-at price.'
+  }
+
+  if (!form.stockState) {
+    errors.stockState = 'Stock state is required.'
+  }
+  if (!form.publishStatus) {
+    errors.publishStatus = 'Publish status is required.'
+  }
+
+  if (form.imageUrl.trim() && !/^https?:\/\//.test(form.imageUrl.trim())) {
+    errors.imageUrl = 'Image URL must start with http:// or https://.'
+  }
+
+  return errors
+}
+
+function toPayload(form) {
+  const payload = {
+    sku: form.sku.trim() || undefined,
+    slug: form.slug.trim(),
+    name: form.name.trim(),
+    shortDescription: form.shortDescription.trim() || undefined,
+    description: form.description.trim() || undefined,
+    brandId: form.brandId.trim() || undefined,
+    categoryId: form.categoryId.trim(),
+    retailPrice: toIntegerOrUndefined(form.retailPrice),
+    compareAtPrice: toIntegerOrUndefined(form.compareAtPrice),
+    salePrice: toIntegerOrUndefined(form.salePrice),
+    currency: 'VND',
+    stockState: form.stockState,
+    publishStatus: form.publishStatus,
+    isFeatured: Boolean(form.isFeatured),
+    showOnHomepage: Boolean(form.showOnHomepage),
+  }
+
+  if (form.imageUrl.trim()) {
+    payload.image = {
+      url: form.imageUrl.trim(),
+      alt: form.imageAlt.trim() || undefined,
+    }
+  }
+
+  if (
+    form.seoTitle.trim() ||
+    form.seoDescription.trim() ||
+    form.seoCanonicalUrl.trim() ||
+    form.seoOgImageUrl.trim() ||
+    form.seoNoIndex
+  ) {
+    payload.seo = {
+      title: form.seoTitle.trim() || undefined,
+      description: form.seoDescription.trim() || undefined,
+      canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
+      noIndex: Boolean(form.seoNoIndex),
+    }
+
+    if (form.seoOgImageUrl.trim()) {
+      payload.seo.ogImage = {
+        url: form.seoOgImageUrl.trim(),
+      }
+    }
+  }
+
+  return payload
+}
+
+export function ProductDetailScreen({
+  productId,
+  isCreate = false,
+  navigate,
+  canUpdate,
+}) {
   const [state, setState] = useState({
-    status: 'loading',
+    status: isCreate ? 'success' : 'loading',
     item: null,
     warning: '',
+    error: '',
+  })
+  const [form, setForm] = useState(buildEmptyForm)
+  const [initialSnapshot, setInitialSnapshot] = useState(
+    JSON.stringify(buildEmptyForm()),
+  )
+  const [validationErrors, setValidationErrors] = useState({})
+  const [submitState, setSubmitState] = useState({
+    status: 'idle',
+    message: '',
   })
 
   useEffect(() => {
+    if (isCreate) {
+      return
+    }
+
     let active = true
 
     fetchProductDetail(productId)
@@ -21,37 +230,141 @@ export function ProductDetailScreen({ productId, navigate, canUpdate }) {
         if (!active) {
           return
         }
-
+        const item = response.item || null
+        const nextForm = buildFormFromItem(item)
+        setForm(nextForm)
+        setInitialSnapshot(JSON.stringify(nextForm))
         setState({
           status: 'success',
-          item: response.item || null,
+          item,
           warning: response.mode === 'mock' ? response.warning : '',
+          error: '',
         })
       })
       .catch((error) => {
         if (!active) {
           return
         }
-
         setState({
           status: 'error',
           item: null,
           warning: '',
-          error: error.message,
+          error: error.message || 'Unknown product detail error.',
         })
       })
 
     return () => {
       active = false
     }
-  }, [productId])
+  }, [isCreate, productId])
+
+  const isSubmitting = submitState.status === 'submitting'
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== initialSnapshot,
+    [form, initialSnapshot],
+  )
+  const isReadOnly = !canUpdate || isSubmitting
+
+  function updateField(field, value) {
+    setForm((previous) => ({ ...previous, [field]: value }))
+    setSubmitState({ status: 'idle', message: '' })
+    setValidationErrors((previous) => {
+      if (!previous[field]) {
+        return previous
+      }
+      const next = { ...previous }
+      delete next[field]
+      return next
+    })
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!canUpdate) {
+      return
+    }
+
+    const clientErrors = validateForm(form, isCreate)
+    if (Object.keys(clientErrors).length > 0) {
+      setValidationErrors(clientErrors)
+      setSubmitState({ status: 'idle', message: '' })
+      return
+    }
+
+    setSubmitState({ status: 'submitting', message: '' })
+    setValidationErrors({})
+
+    try {
+      const payload = toPayload(form)
+      const response = isCreate
+        ? await createProduct(payload)
+        : await updateProduct(productId, payload)
+
+      const savedItem = response.item || null
+      const nextForm = buildFormFromItem(savedItem)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      setState((previous) => ({
+        ...previous,
+        status: 'success',
+        item: savedItem,
+      }))
+      setSubmitState({
+        status: 'success',
+        message: isCreate
+          ? 'Product created successfully.'
+          : 'Product updated successfully.',
+      })
+
+      if (isCreate && savedItem?.id) {
+        navigate(`/admin/products/${savedItem.id}`, { replace: true })
+      }
+    } catch (error) {
+      setValidationErrors(mapValidationErrors(error))
+      setSubmitState({
+        status: 'error',
+        message: error.message || 'Failed to save product.',
+      })
+    }
+  }
+
+  async function handlePublishNow() {
+    if (isCreate || !state.item?.id || isSubmitting || !canUpdate) {
+      return
+    }
+
+    setSubmitState({ status: 'submitting', message: '' })
+    setValidationErrors({})
+
+    try {
+      const response = await publishProduct(state.item.id, 'PUBLISHED')
+      const savedItem = response.item || null
+      const nextForm = buildFormFromItem(savedItem)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      setState((previous) => ({
+        ...previous,
+        item: savedItem,
+      }))
+      setSubmitState({
+        status: 'success',
+        message: 'Publish status updated to PUBLISHED.',
+      })
+    } catch (error) {
+      setValidationErrors(mapValidationErrors(error))
+      setSubmitState({
+        status: 'error',
+        message: error.message || 'Failed to publish product.',
+      })
+    }
+  }
 
   if (state.status === 'loading') {
     return (
       <StatePanel
         tone="info"
-        title="Loading product detail"
-        description="Fetching product detail/edit shell data."
+        title="Loading product form"
+        description="Fetching product detail for edit mode."
       />
     )
   }
@@ -60,35 +373,37 @@ export function ProductDetailScreen({ productId, navigate, canUpdate }) {
     return (
       <StatePanel
         tone="danger"
-        title="Failed to load product detail"
-        description={state.error || 'Unknown error while loading product.'}
+        title="Failed to load product"
+        description={state.error}
         actionLabel="Back to products"
         onAction={() => navigate('/admin/products')}
       />
     )
   }
 
-  if (!state.item) {
+  if (!isCreate && !state.item) {
     return (
       <StatePanel
         tone="neutral"
         title="Product not found"
-        description="The selected product does not exist or is unavailable."
+        description="The selected product does not exist."
         actionLabel="Back to products"
         onAction={() => navigate('/admin/products')}
       />
     )
   }
-
-  const product = state.item
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
           <p className="eyebrow">Catalog</p>
-          <h1>Product detail/edit shell</h1>
-          <p>Read-only shell for phase foundation. Mutation flow is intentionally deferred.</p>
+          <h1>{isCreate ? 'Create product' : 'Edit product'}</h1>
+          <p>
+            {isCreate
+              ? 'Create a new product record in catalog.'
+              : 'Update product fields and publish status.'}
+          </p>
         </div>
         <div className="screen-actions">
           <button
@@ -98,94 +413,365 @@ export function ProductDetailScreen({ productId, navigate, canUpdate }) {
           >
             Back to list
           </button>
-          <button type="button" className="btn btn-primary" disabled>
-            {canUpdate ? 'Save changes (TBD)' : 'No update permission'}
-          </button>
+          {!isCreate ? (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handlePublishNow}
+              disabled={isReadOnly || form.publishStatus === 'PUBLISHED'}
+            >
+              Publish now
+            </button>
+          ) : null}
         </div>
       </header>
 
-      <ReadOnlyBanner warning={state.warning} />
-
-      <DetailSection title="Basic information" description="Core product identity fields.">
-        <div className="detail-grid">
-          <DetailField label="ID" value={product.id} />
-          <DetailField label="SKU" value={formatText(product.sku)} />
-          <DetailField label="Slug" value={product.slug} />
-          <DetailField label="Name" value={product.name} />
-          <DetailField label="Short description" value={formatText(product.shortDescription)} />
-          <DetailField label="Description" value={formatText(product.description)} />
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Pricing and stock" description="Money values are integer VND by contract.">
-        <div className="detail-grid">
-          <DetailField label="Retail price" value={formatCurrencyVnd(product.price.retailPrice)} />
-          <DetailField
-            label="Compare-at price"
-            value={formatCurrencyVnd(product.price.compareAtPrice)}
-          />
-          <DetailField label="Sale price" value={formatCurrencyVnd(product.price.salePrice)} />
-          <DetailField label="Currency" value={product.price.currency} />
-          <DetailField label="Publish status" value={<PublishStatusBadge value={product.publishStatus} />} />
-          <DetailField label="Stock state" value={<StockStatusBadge value={product.stockState} />} />
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Media contract" description="Canonical media shape: image.url, gallery[], videos[].">
-        <div className="media-grid">
-          <article className="media-card">
-            <h3>Cover image</h3>
-            {product.image?.url ? (
-              <img src={product.image.url} alt={product.image.alt || product.name} />
-            ) : (
-              <p>No cover image</p>
-            )}
-          </article>
-          <article className="media-card">
-            <h3>Gallery ({product.gallery.length})</h3>
-            {product.gallery.length ? (
-              <ul className="compact-list">
-                {product.gallery.map((item, index) => (
-                  <li key={`${item.url}:${index}`}>{formatText(item.url)}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>Gallery is empty.</p>
-            )}
-          </article>
-          <article className="media-card">
-            <h3>Videos ({product.videos.length})</h3>
-            {product.videos.length ? (
-              <ul className="compact-list">
-                {product.videos.map((item, index) => (
-                  <li key={`${item.url}:${index}`}>{formatText(item.url)}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>Videos are empty.</p>
-            )}
-          </article>
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Catalog relation">
-        <div className="detail-grid">
-          <DetailField label="Brand" value={formatText(product.brand?.name)} />
-          <DetailField label="Category" value={formatText(product.category?.name)} />
-          <DetailField label="Featured" value={product.isFeatured ? 'Yes' : 'No'} />
-          <DetailField label="Homepage slot" value={product.showOnHomepage ? 'Yes' : 'No'} />
-          <DetailField label="Created at" value={formatDateTime(product.createdAt)} />
-          <DetailField label="Updated at" value={formatDateTime(product.updatedAt)} />
-        </div>
-      </DetailSection>
+      {state.warning ? (
+        <StatePanel
+          tone="warning"
+          title="Read data is currently mock"
+          description={state.warning}
+        />
+      ) : null}
 
       {!canUpdate ? (
         <StatePanel
           tone="warning"
-          title="Permission note"
-          description="You can view product detail because products.read is granted, but products.update is required for mutation."
+          title="Permission denied"
+          description="You can view this product, but products.update is required to save changes."
         />
       ) : null}
+
+      <form className="entity-form" onSubmit={handleSubmit}>
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>Basic information</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <label className="form-field">
+              <span>Slug *</span>
+              <input
+                className="control-input"
+                value={form.slug}
+                onChange={(event) => updateField('slug', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.slug ? (
+                <small className="field-error">{validationErrors.slug}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Name *</span>
+              <input
+                className="control-input"
+                value={form.name}
+                onChange={(event) => updateField('name', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.name ? (
+                <small className="field-error">{validationErrors.name}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>SKU</span>
+              <input
+                className="control-input"
+                value={form.sku}
+                onChange={(event) => updateField('sku', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field">
+              <span>Category ID *</span>
+              <input
+                className="control-input"
+                value={form.categoryId}
+                onChange={(event) =>
+                  updateField('categoryId', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+              {validationErrors.categoryId ? (
+                <small className="field-error">{validationErrors.categoryId}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Brand ID</span>
+              <input
+                className="control-input"
+                value={form.brandId}
+                onChange={(event) => updateField('brandId', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>Short description</span>
+              <textarea
+                className="control-input control-textarea"
+                value={form.shortDescription}
+                onChange={(event) =>
+                  updateField('shortDescription', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>Description</span>
+              <textarea
+                className="control-input control-textarea"
+                value={form.description}
+                onChange={(event) =>
+                  updateField('description', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>Pricing and states</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <label className="form-field">
+              <span>Retail price (VND) *</span>
+              <input
+                className="control-input"
+                value={form.retailPrice}
+                onChange={(event) =>
+                  updateField('retailPrice', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+              {validationErrors.retailPrice ? (
+                <small className="field-error">{validationErrors.retailPrice}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Compare-at price (VND)</span>
+              <input
+                className="control-input"
+                value={form.compareAtPrice}
+                onChange={(event) =>
+                  updateField('compareAtPrice', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+              {validationErrors.compareAtPrice ? (
+                <small className="field-error">{validationErrors.compareAtPrice}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Sale price (VND)</span>
+              <input
+                className="control-input"
+                value={form.salePrice}
+                onChange={(event) => updateField('salePrice', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.salePrice ? (
+                <small className="field-error">{validationErrors.salePrice}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Stock state *</span>
+              <select
+                className="control-select"
+                value={form.stockState}
+                onChange={(event) =>
+                  updateField('stockState', event.target.value)
+                }
+                disabled={isReadOnly}
+              >
+                <option value="IN_STOCK">IN_STOCK</option>
+                <option value="LOW_STOCK">LOW_STOCK</option>
+                <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                <option value="PREORDER">PREORDER</option>
+                <option value="CONTACT_FOR_STOCK">CONTACT_FOR_STOCK</option>
+              </select>
+              {validationErrors.stockState ? (
+                <small className="field-error">{validationErrors.stockState}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>Publish status *</span>
+              <select
+                className="control-select"
+                value={form.publishStatus}
+                onChange={(event) =>
+                  updateField('publishStatus', event.target.value)
+                }
+                disabled={isReadOnly}
+              >
+                <option value="DRAFT">DRAFT</option>
+                <option value="PUBLISHED">PUBLISHED</option>
+                <option value="HIDDEN">HIDDEN</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+              </select>
+              {validationErrors.publishStatus ? (
+                <small className="field-error">{validationErrors.publishStatus}</small>
+              ) : null}
+            </label>
+          </div>
+        </section>
+
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>Media and SEO</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <label className="form-field form-field-wide">
+              <span>Image URL</span>
+              <input
+                className="control-input"
+                value={form.imageUrl}
+                onChange={(event) => updateField('imageUrl', event.target.value)}
+                disabled={isReadOnly}
+                placeholder="https://..."
+              />
+              {validationErrors.imageUrl ? (
+                <small className="field-error">{validationErrors.imageUrl}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>Image alt</span>
+              <input
+                className="control-input"
+                value={form.imageAlt}
+                onChange={(event) => updateField('imageAlt', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO title</span>
+              <input
+                className="control-input"
+                value={form.seoTitle}
+                onChange={(event) => updateField('seoTitle', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO description</span>
+              <textarea
+                className="control-input control-textarea"
+                value={form.seoDescription}
+                onChange={(event) =>
+                  updateField('seoDescription', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO canonical URL</span>
+              <input
+                className="control-input"
+                value={form.seoCanonicalUrl}
+                onChange={(event) =>
+                  updateField('seoCanonicalUrl', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>SEO OG image URL</span>
+              <input
+                className="control-input"
+                value={form.seoOgImageUrl}
+                onChange={(event) =>
+                  updateField('seoOgImageUrl', event.target.value)
+                }
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.isFeatured}
+                onChange={(event) =>
+                  updateField('isFeatured', event.target.checked)
+                }
+                disabled={isReadOnly}
+              />
+              <span>Featured product</span>
+            </label>
+
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showOnHomepage}
+                onChange={(event) =>
+                  updateField('showOnHomepage', event.target.checked)
+                }
+                disabled={isReadOnly}
+              />
+              <span>Show on homepage</span>
+            </label>
+
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.seoNoIndex}
+                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                disabled={isReadOnly}
+              />
+              <span>SEO noIndex</span>
+            </label>
+          </div>
+        </section>
+
+        <div className="form-footer">
+          <div className="form-status">
+            <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
+              {isDirty ? 'Dirty changes' : 'No unsaved changes'}
+            </span>
+            {!isCreate && state.item?.updatedAt ? (
+              <small>Last updated: {formatDateTime(state.item.updatedAt)}</small>
+            ) : null}
+          </div>
+          <div className="screen-actions">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isReadOnly || !isDirty}
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : isCreate
+                  ? 'Create product'
+                  : 'Save changes'}
+            </button>
+          </div>
+        </div>
+
+        {submitState.status === 'success' ? (
+          <p className="inline-feedback inline-feedback-success">
+            {submitState.message}
+          </p>
+        ) : null}
+        {submitState.status === 'error' ? (
+          <p className="inline-feedback inline-feedback-danger">
+            {submitState.message}
+          </p>
+        ) : null}
+      </form>
     </section>
   )
 }

@@ -14,7 +14,7 @@ const INITIAL_QUERY = {
   pageSize: 8,
 }
 
-export function BrandListScreen({ navigate }) {
+export function BrandListScreen({ navigate, canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({
     status: 'loading',
@@ -99,7 +99,7 @@ export function BrandListScreen({ navigate }) {
             className="btn btn-secondary"
             onClick={() => navigate(`/admin/brands/${brand.id}`)}
           >
-            Detail shell
+            Edit
           </button>
         ),
       },
@@ -122,10 +122,15 @@ export function BrandListScreen({ navigate }) {
         <div>
           <p className="eyebrow">Catalog</p>
           <h1>Brands</h1>
-          <p>Brand list/detail foundation for admin catalog management.</p>
+          <p>Brand management list with live mutation endpoints.</p>
         </div>
-        <button type="button" className="btn btn-primary" disabled>
-          Create brand (TBD)
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/admin/brands/new')}
+          disabled={!canUpdate}
+        >
+          {canUpdate ? 'Create brand' : 'No update permission'}
         </button>
       </header>
 
@@ -199,7 +204,7 @@ export function BrandListScreen({ navigate }) {
         <StatePanel
           tone="neutral"
           title="No brands found"
-          description="Reset filters or create a new brand when mutation API is available."
+          description="Reset filters or create a new brand."
           actionLabel="Reset filters"
           onAction={() => setQuery(INITIAL_QUERY)}
         />

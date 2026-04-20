@@ -435,8 +435,16 @@ Examples:
 
 ```text
 GET /api/v1/admin/products -> products.read
-POST /api/v1/admin/products -> products.create
+POST /api/v1/admin/products -> products.update
 PATCH /api/v1/admin/products/{id} -> products.update
+POST /api/v1/admin/categories -> catalog.update
+PATCH /api/v1/admin/categories/{id} -> catalog.update
+POST /api/v1/admin/brands -> catalog.update
+PATCH /api/v1/admin/brands/{id} -> catalog.update
+POST /api/v1/admin/content/articles -> content.update
+PATCH /api/v1/admin/content/articles/{id} -> content.update
+POST /api/v1/admin/content/pages -> content.update
+PATCH /api/v1/admin/content/pages/{id} -> content.update
 POST /api/v1/admin/orders/{id}/cancel -> orders.cancel
 ```
 
@@ -485,15 +493,21 @@ Suggested admin routes:
 |---|---|
 | `/admin` | `dashboard.read` |
 | `/admin/products` | `products.read` |
-| `/admin/products/new` | `products.create` |
+| `/admin/products/new` | `products.update` |
 | `/admin/products/:id` | `products.read` |
-| `/admin/products/:id/edit` | `products.update` |
+| `/admin/categories/new` | `catalog.update` |
+| `/admin/categories/:id` | `catalog.read` |
+| `/admin/brands` | `catalog.read` |
+| `/admin/brands/new` | `catalog.update` |
+| `/admin/brands/:id` | `catalog.read` |
 | `/admin/categories` | `catalog.read` |
 | `/admin/orders` | `orders.read` |
 | `/admin/orders/:id` | `orders.read` |
 | `/admin/customers` | `customers.read` |
 | `/admin/content` | `content.read` |
-| `/admin/content/new` | `content.create` |
+| `/admin/content/articles/new` | `content.update` |
+| `/admin/content/pages/new` | `content.update` |
+| `/admin/content/:type/:id` | `content.read` |
 | `/admin/campaigns` | `campaigns.read` |
 | `/admin/media` | `media.read` |
 | `/admin/support` | `support.read` |

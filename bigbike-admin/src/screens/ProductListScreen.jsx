@@ -16,7 +16,7 @@ const INITIAL_QUERY = {
   pageSize: 8,
 }
 
-export function ProductListScreen({ navigate }) {
+export function ProductListScreen({ navigate, canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({
     status: 'loading',
@@ -118,7 +118,7 @@ export function ProductListScreen({ navigate }) {
             className="btn btn-secondary"
             onClick={() => navigate(`/admin/products/${product.id}`)}
           >
-            Detail shell
+            Edit
           </button>
         ),
       },
@@ -141,10 +141,15 @@ export function ProductListScreen({ navigate }) {
         <div>
           <p className="eyebrow">Catalog</p>
           <h1>Products</h1>
-          <p>Foundation list screen for product CRUD in admin catalog.</p>
+          <p>Manage product catalog records with real create/update mutation APIs.</p>
         </div>
-        <button type="button" className="btn btn-primary" disabled>
-          Create product (TBD)
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate('/admin/products/new')}
+          disabled={!canUpdate}
+        >
+          {canUpdate ? 'Create product' : 'No update permission'}
         </button>
       </header>
 

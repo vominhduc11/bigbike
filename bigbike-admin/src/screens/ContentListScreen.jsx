@@ -16,7 +16,7 @@ const INITIAL_QUERY = {
   pageSize: 8,
 }
 
-export function ContentListScreen({ navigate }) {
+export function ContentListScreen({ navigate, canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({
     status: 'loading',
@@ -99,7 +99,7 @@ export function ContentListScreen({ navigate }) {
               navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)
             }
           >
-            Detail shell
+            Edit
           </button>
         ),
       },
@@ -122,11 +122,26 @@ export function ContentListScreen({ navigate }) {
         <div>
           <p className="eyebrow">Content</p>
           <h1>Article/Page list</h1>
-          <p>Content CRUD foundation list for articles and static pages.</p>
+          <p>Content management list with article and page mutation forms.</p>
         </div>
-        <button type="button" className="btn btn-primary" disabled>
-          Create content (TBD)
-        </button>
+        <div className="screen-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate('/admin/content/articles/new')}
+            disabled={!canUpdate}
+          >
+            New article
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate('/admin/content/pages/new')}
+            disabled={!canUpdate}
+          >
+            New page
+          </button>
+        </div>
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
