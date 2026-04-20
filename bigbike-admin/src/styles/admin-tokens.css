@@ -1,0 +1,54 @@
+:root {
+  --admin-color-brand-red: #f90606;
+  --admin-color-brand-red-hover: #d90404;
+  --admin-color-brand-red-active: #b80303;
+
+  --admin-color-background-app: #f5f6f8;
+  --admin-color-background-page: #f8f9fb;
+  --admin-color-background-sidebar: #0a0a0a;
+  --admin-color-background-header: #ffffff;
+  --admin-color-overlay: rgba(10, 10, 10, 0.56);
+
+  --admin-color-surface-base: #ffffff;
+  --admin-color-surface-muted: #f3f4f6;
+  --admin-color-surface-hover: #f9fafb;
+  --admin-color-surface-selected: #fff1f1;
+  --admin-color-border-subtle: #e5e7eb;
+  --admin-color-border-default: #d1d5db;
+  --admin-color-border-strong: #9ca3af;
+
+  --admin-color-text-primary: #151515;
+  --admin-color-text-secondary: #4b5563;
+  --admin-color-text-muted: #6b7280;
+  --admin-color-text-inverse: #ffffff;
+
+  --admin-color-status-success-bg: #ecfdf3;
+  --admin-color-status-success-text: #166534;
+  --admin-color-status-warning-bg: #fffbeb;
+  --admin-color-status-warning-text: #92400e;
+  --admin-color-status-danger-bg: #fef2f2;
+  --admin-color-status-danger-text: #991b1b;
+  --admin-color-status-info-bg: #eff6ff;
+  --admin-color-status-info-text: #1d4ed8;
+  --admin-color-status-neutral-bg: #f3f4f6;
+  --admin-color-status-neutral-text: #374151;
+
+  --admin-font-body: Exo, Inter, Arial, sans-serif;
+  --admin-font-display: Bungee, Exo, Inter, Arial, sans-serif;
+
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-space-5: 20px;
+  --admin-space-6: 24px;
+  --admin-space-8: 32px;
+
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 10px;
+  --admin-radius-lg: 14px;
+
+  --admin-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --admin-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --admin-shadow-md: 0 16px 40px rgba(15, 23, 42, 0.16);
+}

@@ -1,18 +1,45 @@
-# React + Vite
+# BigBike Admin - Phase 4D Foundation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Admin catalog/content CRUD foundation for:
 
-Currently, two official plugins are available:
+- product list + product detail/edit shell
+- category list + category detail/edit shell
+- brand list + brand detail/edit shell
+- article/page list + detail/edit shell
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This phase intentionally does not implement order/checkout/payment flows.
 
-## React Compiler
+## Scripts
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+```bash
+npm run dev
+npm run lint
+npm run build
+```
 
-Note: This will impact Vite dev & build performances.
+`npm run test` is not defined in this package yet.
 
-## Expanding the ESLint configuration
+## Routing
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Foundation routes:
+
+- `/admin/products`
+- `/admin/products/:id`
+- `/admin/categories`
+- `/admin/categories/:id`
+- `/admin/brands`
+- `/admin/brands/:id`
+- `/admin/content`
+- `/admin/content/:type/:id`
+
+## Data Mode
+
+The admin API client is contract-aware and supports typed mock fallback when backend endpoints are unavailable.
+
+Environment flags:
+
+- `VITE_USE_ADMIN_MOCK=true` forces typed mock mode
+- `VITE_ADMIN_ROLE=ADMIN|MANAGER|CONTENT_EDITOR|VIEWER|SUPER_ADMIN` controls mock permission profile
+- `VITE_ADMIN_API_BASE=/api/v1` overrides API base path
+
+When mock fallback is active, screens render an explicit read-only banner.
