@@ -669,7 +669,107 @@ Backend must:
 
 ---
 
-## 18. Review Checklist
+## 18. Phase 2 Legacy-Normalized State Mapping
+
+This section maps known sanitized legacy WordPress/WooCommerce statuses into canonical BigBike states. It is a contract planning layer, not an import implementation.
+
+### 18.1 Product publish mapping
+
+| Legacy status | Canonical status | Rule |
+|---|---|---|
+| `publish` | `PUBLISHED` | Product/content can be public if all validation passes. |
+| `draft` | `DRAFT` | Not public. |
+| `pending` | `DRAFT` | Import as draft requiring admin review unless a review state is later approved. |
+| `private` | `HIDDEN` | Not public unless explicitly republished. |
+| `inherit` | N/A | Attachment/revision status; map through owning entity. |
+
+No new publish enum should be added for legacy `pending` without updating `DATA_CONTRACT.md`.
+
+### 18.2 Legacy order status mapping
+
+Observed legacy order statuses:
+
+| Legacy WooCommerce status | Count observed | Canonical planning status |
+|---|---:|---|
+| `wc-completed` | 597 | `COMPLETED` |
+| `wc-pending` | 433 | `PENDING_CONFIRMATION` |
+| `wc-cancelled` | 26 | `CANCELLED` |
+| `wc-on-hold` | 5 | `PENDING_CONFIRMATION` with manual review note |
+
+Rules:
+
+- This mapping is for migration planning and display normalization.
+- Import implementation must keep a non-public legacy status trace.
+- `wc-on-hold` needs business confirmation before automated handling.
+
+### 18.3 COD/manual confirmation lifecycle
+
+Canonical flow:
+
+```text
+PENDING_CONFIRMATION
+-> CONFIRMED
+-> PROCESSING
+-> SHIPPING
+-> COMPLETED
+```
+
+Cancellation may occur from `PENDING_CONFIRMATION`, `CONFIRMED`, `PROCESSING`, or `SHIPPING` as already defined, but backend must enforce side effects.
+
+Payment for COD/manual confirmation:
+
+```text
+UNPAID -> PENDING -> PAID
+UNPAID -> FAILED
+PAID -> REFUNDED
+```
+
+COD normally starts as `UNPAID`. Bank/manual transfer may start as `PENDING` only if the payment method requires review.
+
+### 18.4 Backorder and preorder
+
+`PREORDER` is the canonical stock state for preorder behavior. Backorder is not a separate canonical state in Phase 2.
+
+Rules:
+
+- Legacy `_backorders` must not automatically enable purchase until sanitized values and business policy are confirmed.
+- Public UI must clearly label preorder/backorder before add-to-cart and checkout.
+
+### 18.5 Warranty and return state correction
+
+If warranty/return module is implemented, the canonical state list must include `CLOSED` because the existing transition concept uses it.
+
+```text
+NEW
+NEEDS_INFORMATION
+UNDER_REVIEW
+APPROVED
+REJECTED
+COMPLETED
+CANCELLED
+CLOSED
+```
+
+Allowed terminal states:
+
+```text
+COMPLETED
+CANCELLED
+CLOSED
+```
+
+Warranty/return implementation remains optional until business rules are confirmed.
+
+### 18.6 Open Questions
+
+- Should legacy `wc-on-hold` map to `CONFIRMED` for some historical orders?
+- Does BigBike need a distinct `AWAITING_PAYMENT` order status, or is payment state enough?
+- Should product `pending` become a new `REVIEW` state?
+- Are preorder and backorder operationally different enough to need separate states?
+
+---
+
+## 19. Review Checklist
 
 - [ ] Every status exists in `DATA_CONTRACT.md`.
 - [ ] Every transition is listed here.

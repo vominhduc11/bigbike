@@ -1157,3 +1157,155 @@ When modifying API:
 - [ ] Response fields align with `DATA_CONTRACT.md`.
 - [ ] No secret/internal fields exposed.
 - [ ] Frontend error handling possible.
+
+---
+
+## 27. Phase 2 Legacy-Normalized API Contract
+
+This section maps sanitized legacy WordPress behavior into new-stack API boundaries. It does not implement endpoints and does not authorize reading raw SQL rows, secrets, user/order PII, password hashes, tokens, or order keys.
+
+### 27.1 Legacy route compatibility
+
+Public web routes should preserve legacy URL behavior during initial rebuild:
+
+| Legacy route pattern | API/data owner |
+|---|---|
+| `/` | Homepage content/products/articles/brands APIs |
+| `/san-pham/` | Product listing API |
+| `/product/{product-slug}/` | Product detail API |
+| `/danh-muc-san-pham/{category-slug}/` | Product listing filtered by category |
+| `/tu-khoa-san-pham/{tag-slug}/` | Product listing filtered by tag |
+| `/brands/{brand-slug}/` | Product listing filtered by brand, pending live verification |
+| `/tin-tuc/{post-slug}.html` | Article detail API/static content source |
+| `/?s={query}` | Product search compatibility |
+| `/gio-hang/` | Cart API |
+| `/thanh-toan/` | Checkout/order API |
+| `/tai-khoan/`, `/dang-nhap/`, `/dang-ky/`, `/quen-mat-khau/` | Auth/account APIs |
+
+Route changes require `docs/legacy/SEO_REDIRECT_MAP.csv` and `docs/legacy/SEO_MIGRATION_PLAN.md` updates.
+
+### 27.2 Product listing and search
+
+Legacy filters observed:
+
+```text
+min_price
+max_price
+pwb-brand
+filter_gender
+filter_color
+paged
+```
+
+Canonical API params:
+
+```http
+GET /api/v1/products?q=&categorySlug=&brandSlug=&tagSlug=&minPrice=&maxPrice=&gender=&color=&page=&pageSize=&sort=
+```
+
+Rules:
+
+- Backend validates supported filters and sort fields.
+- Search should include product fields and taxonomy-backed matches for category/brand compatibility.
+- Public list responses expose only published products.
+
+### 27.3 Product detail
+
+```http
+GET /api/v1/products/{slug}
+```
+
+Response must support:
+
+- Canonical product fields from `DATA_CONTRACT.md`.
+- `image`, `gallery`, `videos`.
+- `attributes`, `variants`, selected option metadata.
+- `technicalInformationHtml` from sanitized legacy `product_more_infomation`.
+- `contentBottomHtml` if migrated.
+- SEO metadata.
+
+### 27.4 Category and brand
+
+```http
+GET /api/v1/categories
+GET /api/v1/categories/{slug}
+GET /api/v1/brands
+GET /api/v1/brands/{slug}
+```
+
+Rules:
+
+- Category source is `product_cat`.
+- Brand source is `pwb-brand`.
+- Public responses include presentation fields only after media/content sanitization.
+- `product_brand` residue is not canonical until verified.
+
+### 27.5 Cart and checkout
+
+Legacy AJAX actions map to canonical APIs:
+
+| Legacy action | New API |
+|---|---|
+| `custom_add_to_cart` | `POST /api/v1/cart/items` |
+| `remove_item_from_cart` | `DELETE /api/v1/cart/items/{itemId}` |
+| `update_cart_item_quantity` | `PATCH /api/v1/cart/items/{itemId}` |
+| `find_variation_product` | `POST /api/v1/products/{productId}/resolve-variant` or integrated add-to-cart validation |
+| `buy_quickly` | `POST /api/v1/orders/quick-buy` |
+
+`POST /api/v1/orders` and `POST /api/v1/orders/quick-buy` should accept `Idempotency-Key`.
+
+Checkout rules:
+
+- Backend verifies product, variant, quantity, price, stock, payment method, and shipping/contact data.
+- Frontend totals are not authoritative.
+- Error shape must make field-level validation possible.
+
+### 27.6 COD and manual confirmation
+
+Canonical payment/order behavior:
+
+- COD/manual confirmation order creation returns `status=PENDING_CONFIRMATION` and `paymentStatus=UNPAID` unless a later confirmed payment rule says otherwise.
+- Response should include a user-safe `nextStep` message, not internal workflow details.
+- Admin confirmation must use admin order command endpoints and permission checks.
+
+### 27.7 Auth and account
+
+Canonical API surface:
+
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+POST /api/v1/auth/password/forgot
+POST /api/v1/auth/password/reset
+GET /api/v1/account/me
+PATCH /api/v1/account/me
+```
+
+Rules:
+
+- Do not expose whether a phone/email exists beyond safe recovery/login messaging.
+- Do not expose password hash or token internals.
+- Social login endpoints are TBD until Nextend/live behavior is verified.
+
+### 27.8 Admin responsibilities and APIs
+
+Admin API groups must cover, at contract level:
+
+- Products, variants, attributes, categories, brands.
+- Orders, order status, payment status, internal notes.
+- Customers, only under permission.
+- Content/pages/news/SEO metadata.
+- Media upload/metadata.
+- Redirect management if implemented.
+- Migration audit/status if import tooling is later added.
+
+All admin APIs require permissions from `PERMISSION_MATRIX.md`.
+
+### 27.9 Open Questions
+
+- Should `resolve-variant` be a separate endpoint or only part of cart add validation?
+- Does public order lookup exist, and if so what non-sensitive identifier is safe?
+- Is quick-buy a guest checkout, customer account creation, or lead capture flow?
+- Which social login provider endpoints are required, if any?
+- Will redirects be managed by backend, edge middleware, hosting config, or static map?

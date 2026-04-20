@@ -600,7 +600,77 @@ Even `ADMIN` should not get this by default unless intended.
 
 ---
 
-## 13. Review Checklist
+## 13. Phase 2 Legacy-Normalized Permissions
+
+This section adds permissions needed by the WordPress-to-new-stack migration contracts. It does not grant access by itself; backend implementation and role seed data must opt in later.
+
+### 13.1 Public user permissions
+
+Public website users do not use admin permissions, but behavior still has access boundaries.
+
+| Actor | Allowed public action |
+|---|---|
+| Anonymous visitor | Read published products/categories/brands/articles/pages. |
+| Anonymous visitor | Search/filter published catalog. |
+| Anonymous visitor | Create/update own anonymous cart. |
+| Anonymous visitor | Submit checkout/quick-buy/contact forms subject to validation and anti-spam. |
+| Authenticated customer | Read/update own account profile if account feature exists. |
+| Authenticated customer | Read own order history only if safe identity verification exists. |
+
+Rules:
+
+- Public users cannot read another customer's account, cart, order, address, or support data.
+- Order lookup by public identifier is `TBD` and must avoid exposing legacy order keys.
+- Account recovery must not reveal sensitive account existence details.
+
+### 13.2 Migration and SEO permissions
+
+Add these permission names if migration/admin tooling is implemented:
+
+| Permission | Meaning |
+|---|---|
+| `migration.read` | View migration status and sanitized reports. |
+| `migration.run` | Run approved migration/import jobs. |
+| `migration.rollback` | Run approved rollback jobs if supported. |
+| `seo.redirects.read` | View redirect map. |
+| `seo.redirects.manage` | Create/update redirect rules. |
+| `seo.metadata.update` | Update SEO metadata for products/categories/brands/pages/articles. |
+
+Rules:
+
+- `migration.run` must not allow raw SQL/source export into the repo.
+- Redirect management must update or generate from `SEO_REDIRECT_MAP.csv` or an approved source of truth.
+- Only `SUPER_ADMIN` should receive migration permissions by default unless explicitly approved.
+
+### 13.3 Legacy admin responsibility mapping
+
+| Responsibility | Required permission group |
+|---|---|
+| Product/variant/stock/price normalization | `products.*`, `catalog.*`, `media.*` |
+| Category/brand/attribute management | `catalog.*` |
+| Order confirmation and cancellation | `orders.read`, `orders.updateStatus`, `orders.cancel`, `orders.addNote` |
+| Payment confirmation/refund | `payments.read`, `payments.updateStatus`, `payments.refund` |
+| Customer support/contact | `support.*`, limited `customers.read` if needed |
+| Warranty/return handling | `warranty.*` |
+| Content/page/news/SEO | `content.*`, `seo.metadata.update` if implemented |
+| Redirect migration | `seo.redirects.*` |
+| Data migration | `migration.*` |
+
+### 13.4 Sensitive data controls
+
+- Customer/order exports require `customers.export` or `orders.export`.
+- Migration output containing any customer/order/user data requires a sanitizer and explicit approval.
+- No role should receive `settings.sensitive.update`, `migration.run`, or `migration.rollback` accidentally through broad admin convenience.
+
+### 13.5 Open Questions
+
+- Should `seo.redirects.manage` belong to content editors, admins, or only super admins?
+- Will migration tooling exist in admin UI or remain CLI-only?
+- Should support staff see customer profiles directly or only through order/support context?
+
+---
+
+## 14. Review Checklist
 
 - [ ] New route has permission.
 - [ ] New endpoint enforces permission.

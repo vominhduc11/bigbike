@@ -767,7 +767,125 @@ Khi AI agent sửa process hoặc code liên quan process:
 
 ---
 
-## 21. Process Review Checklist
+## 21. Phase 2 Legacy-Normalized Processes
+
+This section translates sanitized legacy WordPress discovery into migration-aware process contracts. It does not authorize implementation work or raw data import.
+
+### 21.1 Legacy discovery before implementation
+
+Before product, order, content, auth, route, media, or SEO implementation:
+
+```text
+Read docs/legacy
+-> update affected contract
+-> answer or record Open Questions
+-> only then implement app code in a later phase
+```
+
+If a legacy behavior is not documented in sanitized docs, extend sanitized discovery first.
+
+### 21.2 Product/catalog migration process
+
+```text
+Read legacy product/category/brand model
+-> define canonical Product/Category/Brand/Attribute/Variant fields
+-> map media paths to new storage contract
+-> preserve legacy public slugs
+-> identify unsupported fields as TBD
+-> implement import only in a later phase
+```
+
+Admin responsibilities after implementation:
+
+- Maintain product name, slug, price, stock, media, categories, brands, variants, SEO, and publish status.
+- Avoid hard-delete for products linked to orders.
+- Keep category/brand route changes tied to redirect updates.
+
+### 21.3 Content/page/news migration process
+
+```text
+Read legacy page slugs and template usage
+-> map pages, news posts, homepage blocks, sliders, and videos
+-> preserve `/tin-tuc/{slug}.html` unless SEO plan changes
+-> sanitize HTML and media references
+-> update SEO metadata and internal links
+```
+
+Policy pages for warranty, return, privacy, terms, and buying guides must remain discoverable after rebuild.
+
+### 21.4 Cart, checkout, and order process
+
+Legacy cart AJAX maps to new cart APIs. Legacy quick-buy maps to a dedicated quick-buy order flow if approved.
+
+```text
+Customer selects product/variant
+-> backend validates product, variant, stock, and price
+-> cart stores canonical item state
+-> checkout collects contact/shipping/payment data
+-> backend verifies totals and creates order snapshot
+-> order waits for confirmation for COD/manual flows
+-> admin confirms, processes, ships, completes, or cancels
+```
+
+No order process may depend on live product/customer data alone for history rendering.
+
+### 21.5 COD/manual confirmation process
+
+```text
+Order submitted
+-> payment status remains unpaid/pending according to method
+-> order status is pending confirmation
+-> sales/admin contacts customer if required
+-> admin confirms or cancels
+-> fulfillment continues after confirmation
+```
+
+The observed quick-buy shipping fee behavior is not canonical until business confirms it.
+
+### 21.6 Warranty, return, sale-no-warranty, backorder, preorder
+
+Process stance for Phase 2:
+
+- Warranty and return flows are policy/support processes until implementation is scoped.
+- Sale-no-warranty must be explicit content/data, never inferred from sale price.
+- Backorder/preorder must be explicit stock state, never inferred from missing stock.
+- Customer-facing copy must be shown before checkout if these rules affect the purchase decision.
+
+### 21.7 Auth/account/recovery/social process
+
+Legacy account behavior supports register, login, profile update, password change/recovery, and WooCommerce account pages.
+
+New process requirements:
+
+- Decide whether phone, email, or both are identity fields.
+- Keep password recovery messages safe.
+- Treat social login as TBD until live behavior is verified.
+- Never migrate raw password hashes into repo artifacts.
+
+### 21.8 Data migration process constraints
+
+```text
+Local legacy source/dump
+-> read-only structural inspection
+-> sanitizer
+-> schema-only or PII-free artifact
+-> contract update
+-> later import implementation
+```
+
+Do not commit raw SQL, WordPress source, uploads, customer data, order data, user data, tokens, sessions, or secrets.
+
+### 21.9 Open Questions
+
+- Which team owns final warranty/return policy text?
+- Is quick-buy a real checkout path in the new stack or a lead/contact flow?
+- Does BigBike want guest checkout or account-required checkout?
+- Should Polylang translations be migrated now or deferred?
+- Which system owns redirects: app backend, edge middleware, or hosting/CDN config?
+
+---
+
+## 22. Process Review Checklist
 
 - [ ] Process có actor rõ.
 - [ ] Entry point rõ.

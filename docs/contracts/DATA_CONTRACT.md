@@ -991,3 +991,254 @@ Trạng thái không xác định
 - [ ] Optional/null fields handled.
 - [ ] SEO fields available for public resources.
 - [ ] No secret/internal field exposed.
+
+---
+
+## 23. Phase 2 Legacy-Normalized Contract
+
+This section normalizes the sanitized WordPress discovery into the new-stack data contract. It is based only on `docs/legacy/*`; raw `sqldump.sql`, `wp-config.php`, user rows, order rows, email, phone, address, password hash, session, token, and order key values are out of scope.
+
+### 23.1 Internal legacy trace
+
+Legacy trace fields are allowed only in backend/admin/internal migration contexts.
+
+```ts
+type LegacyTrace = {
+  sourceSystem: "WORDPRESS_WOOCOMMERCE";
+  sourceTable?: string;
+  sourceId?: string;
+  sourcePostType?: string;
+  sourceTaxonomy?: string;
+  sourceMetaKeys?: string[];
+  migratedAt?: string;
+};
+```
+
+Rules:
+
+- Do not expose `LegacyTrace` on public APIs unless explicitly documented as non-sensitive.
+- Do not store raw legacy serialized payloads in public-facing models.
+- Do not commit legacy row samples unless a sanitizer has removed PII and secrets.
+
+### 23.2 Product normalization
+
+Legacy sources from sanitized discovery:
+
+- Product: `kd_posts.post_type=product`
+- Variation: `kd_posts.post_type=product_variation`
+- Category: `product_cat`
+- Brand: `pwb-brand`
+- Product attributes: `pa_size`, `pa_color`, `pa_dungtich`, `pa_bo`, `pa_model`, `pa_gender`
+- Media: attachments plus `_thumbnail_id`, `_product_image_gallery`, `rtwpvg_images`
+- Product custom fields: `rating`, `rating_count`, `product_more_infomation`, `videos`, `content_bottom`, `featured`
+
+Canonical product additions:
+
+```ts
+type ProductLegacyExtension = {
+  legacy?: LegacyTrace;
+  primaryCategory?: CategorySummary;
+  tags?: string[];
+  attributes?: ProductAttribute[];
+  technicalInformationHtml?: string;
+  ratingSummary?: RatingSummary;
+  warrantyPolicy?: ProductWarrantyPolicy;
+  saleNoWarrantyNotice?: string;
+  contentBottomHtml?: string;
+};
+
+type ProductAttribute = {
+  id: string;
+  code: string;
+  name: string;
+  values: ProductAttributeValue[];
+  isVariationAttribute: boolean;
+  isPublic: boolean;
+};
+
+type ProductAttributeValue = {
+  id: string;
+  slug: string;
+  label: string;
+  swatchColor?: string;
+  swatchImage?: ImageAsset;
+};
+
+type RatingSummary = {
+  average?: number;
+  count?: number;
+};
+
+type ProductWarrantyPolicy = {
+  code: "STANDARD" | "SALE_NO_WARRANTY" | "CONTACT_FOR_POLICY" | "TBD";
+  label: string;
+  description?: string;
+};
+```
+
+Rules:
+
+- Money remains integer VND.
+- Public slugs preserve legacy `/product/{product-slug}/` during migration unless `SEO_REDIRECT_MAP.csv` changes.
+- `product_more_infomation` maps to `technicalInformationHtml` after sanitization.
+- `videos` and `video` post type references map to `videos[]` after provider normalization.
+- `rating` and `rating_count` map to `ratingSummary`; do not treat them as verified reviews unless review migration is scoped.
+- `saleNoWarrantyNotice` must not be inferred from sale price. It requires an explicit business/policy source.
+
+### 23.3 Category, brand, and taxonomy normalization
+
+```ts
+type CategoryLegacyExtension = {
+  legacy?: LegacyTrace;
+  heroImage?: ImageAsset;
+  sideImage?: ImageAsset;
+  contentTopHtml?: string;
+  contentBottomHtml?: string;
+  showOnHomepage?: boolean;
+};
+
+type BrandLegacyExtension = {
+  legacy?: LegacyTrace;
+  banner?: ImageAsset;
+  contentBottomHtml?: string;
+};
+```
+
+Rules:
+
+- `product_cat` maps to `Category`.
+- `pwb-brand` maps to `Brand`.
+- `product_brand` was observed as residue and must not be treated as canonical until verified.
+- `top_image`, `image_left`, `content_bottom`, `content_top`, `show_on_homepage`, `ordering`, `pwb_brand_image`, and `pwb_brand_banner` map to typed presentation fields after sanitization.
+
+### 23.4 Content, page, news, slider, and video
+
+Legacy source:
+
+- Static pages: `post_type=page`
+- News/blog: `post_type=post`, route `/tin-tuc/{post-slug}.html`
+- Homepage sliders: ACF `sliders` and/or `post_type=slider`
+- Videos: `post_type=video` plus `youtube_url`
+
+```ts
+type ContentLegacyExtension = {
+  legacy?: LegacyTrace;
+  routePath: string;
+  templateKey?: string;
+  heroImage?: ImageAsset;
+  sideImage?: ImageAsset;
+  contentBottomHtml?: string;
+};
+
+type HomepageBlock = {
+  id: string;
+  type: "SLIDER" | "FEATURED_PRODUCTS" | "CATEGORY_GRID" | "BRAND_CAROUSEL" | "ARTICLE_LIST" | "VIDEO_LIST" | "HTML_CONTENT";
+  title?: string;
+  items?: unknown[];
+  bodyHtml?: string;
+  sortOrder?: number;
+};
+```
+
+Rules:
+
+- Preserve published page slugs listed in `LEGACY_ROUTE_MAP.md`.
+- Preserve blog `.html` route unless `SEO_MIGRATION_PLAN.md` and `SEO_REDIRECT_MAP.csv` are updated.
+- `iframe_maps` and contact form config are content/config, not raw contact submissions.
+- Contact Form 7 submissions are PII-bearing and must not be committed as samples.
+
+### 23.5 Media path normalization
+
+Legacy WordPress media paths under `wp-content/uploads` must map to a new storage URL.
+
+```ts
+type MediaMigrationMap = {
+  legacyRelativePath: string;
+  storageKey: string;
+  publicUrl: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  mimeType?: string;
+};
+```
+
+Rules:
+
+- Public APIs expose `publicUrl` through `ImageAsset.url` or `MediaAsset.url`.
+- Do not expose local filesystem paths.
+- Do not commit raw upload binaries during contract work.
+- Preserve alt text when present and sanitized.
+
+### 23.6 Cart, checkout, quick-buy, and order normalization
+
+Legacy source:
+
+- Cart actions: `custom_add_to_cart`, `remove_item_from_cart`, `update_cart_item_quantity`
+- Variation resolution: `find_variation_product`
+- Quick-buy action: `buy_quickly`
+- Orders: classic WooCommerce `shop_order`, order item tables, lookup tables
+
+Canonical additions:
+
+```ts
+type OrderLegacyExtension = {
+  legacy?: LegacyTrace;
+  source?: OrderSource;
+  confirmationRequired: boolean;
+};
+
+type OrderSource = "WEB_CHECKOUT" | "QUICK_BUY" | "MANUAL" | "LEGACY_IMPORT";
+
+type CheckoutRequest = {
+  cartId?: string;
+  source: "WEB_CHECKOUT" | "QUICK_BUY";
+  customer: CustomerSnapshot;
+  shippingAddress?: AddressSnapshot;
+  paymentMethod: PaymentMethod;
+  note?: string;
+  idempotencyKey?: string;
+};
+```
+
+Rules:
+
+- Order item, customer, address, price, and selected option data must be snapshots.
+- `order-received` URLs must never expose real legacy order keys in docs, logs, fixtures, or samples.
+- Quick-buy may be represented as `OrderSource.QUICK_BUY`, but account creation behavior is TBD.
+- The observed legacy quick-buy shipping fee rule is not canonical until confirmed in `BUSINESS_RULES.md`.
+
+### 23.7 Auth, account, recovery, and social login
+
+Legacy source:
+
+- Registration used phone as username and required email.
+- Login accepted username or email.
+- Password minimum length was 6 in legacy code.
+- Profile update touched display name, gender, date of birth, and password.
+- Nextend source/table exists, but plugin was not active in the dump option.
+
+Canonical constraints:
+
+- Do not migrate password hashes into repo artifacts.
+- Do not commit user/customer samples with phone, email, address, or date of birth.
+- Customer profile fields beyond checkout snapshots require explicit account contract work.
+- Social login remains `TBD` until production behavior is verified.
+
+### 23.8 Data migration constraints
+
+- Raw WordPress source and raw SQL dump are local-only.
+- Migration artifacts committed to repo must be schema-only or sanitized.
+- Order/customer/user/comment/contact submissions are sensitive and require a dedicated sanitizer before any sample output.
+- Redirect extraction from Rank Math and `fg_redirect` requires a dedicated sanitizer that emits route patterns only.
+
+## 24. Open Questions
+
+- Should `product_brand` be ignored permanently or mapped to `Brand` after live verification?
+- Should blog/news keep `/tin-tuc/{slug}.html` permanently?
+- Should quick-buy create customer accounts, guest orders, or leads?
+- What is the approved canonical shipping fee policy?
+- Which warranty/return rules apply to sale products and sale-no-warranty cases?
+- Are preorder and backorder allowed for any product category?
+- Is social login required in the new stack?
+- Should Polylang translations migrate in phase one?

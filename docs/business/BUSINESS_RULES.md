@@ -853,7 +853,83 @@ Khi AI agent làm việc với business logic BigBike:
 
 ---
 
-## 25. Review Checklist
+## 25. Phase 2 Legacy-Normalized Business Rules
+
+These rules are grounded in the sanitized legacy docs. Anything not proven by those docs is marked `TBD` instead of being invented.
+
+### 25.1 Product and catalog
+
+- Legacy `product` posts map to sellable products only after publish status, price, media, category, and stock rules pass backend validation.
+- Legacy `product_variation` posts map to variants/options; required options must be selected before add-to-cart.
+- Legacy `product_cat` maps to product categories and must preserve slug/hierarchy where possible.
+- Legacy `pwb-brand` maps to brands; `product_brand` residue is `TBD` until verified.
+- Legacy attributes `size`, `color`, `dungtich`, `bo`, `model`, and `gender` may be mapped as attributes, but display/filter behavior must follow `DATA_CONTRACT.md`.
+
+### 25.2 Price, sale, warranty, and sale-no-warranty
+
+- Backend is final authority for price and totals.
+- Sale price must not create warranty/return restrictions by implication.
+- Sale-no-warranty requires explicit product/policy data and must be visible before checkout.
+- Warranty and return eligibility are `TBD` until confirmed by policy owner.
+- Product policy copy must not contradict policy pages.
+
+### 25.3 Stock, backorder, and preorder
+
+- Default buyable states are `IN_STOCK` and `LOW_STOCK`.
+- `OUT_OF_STOCK` is not buyable unless a confirmed business override exists.
+- `PREORDER` and backorder behavior are allowed only when explicitly configured and shown to the customer.
+- Legacy `_backorders` and stock meta require sanitized extraction before automated mapping.
+- Public stock copy must use text, not color alone.
+
+### 25.4 Cart and checkout
+
+- Cart item validity requires product, variant, quantity, stock, and price validation.
+- Checkout must preserve form state when possible after validation errors.
+- Backend must protect order creation from duplicate submit through idempotency or equivalent.
+- Legacy checkout was Vietnam-oriented and validated phone as 10 digits; final phone validation must be confirmed before implementation.
+- Checkout must not collect unnecessary PII.
+
+### 25.5 COD and manual confirmation
+
+- COD/manual confirmation orders are not paid at submit time.
+- Public success copy must say the shop will confirm the order.
+- Admin must confirm or cancel before fulfillment proceeds.
+- Payment status and order status remain separate.
+- The legacy quick-buy shipping fee rule is observed, not approved: default 35000 VND and free at product price at least 2000000 VND. Treat as `TBD` until confirmed.
+
+### 25.6 Auth, account, recovery, and social login
+
+- Registration/login behavior must not expose password hashes, token internals, or account existence in unsafe ways.
+- Legacy used phone as username and also required email; final identity policy is `TBD`.
+- Password minimum length from legacy was 6, but final security requirement is `TBD`.
+- Social login is `TBD`; Nextend source/table existed but was not active in the dump option.
+
+### 25.7 SEO and route rules
+
+- Preserve legacy public URL patterns during initial rebuild.
+- Any route, slug, trailing slash, or blog `.html` change requires `SEO_REDIRECT_MAP.csv`.
+- Order received URLs and order keys must not be indexed, logged in docs, or exposed in examples.
+- Redirect rows from legacy Rank Math and `fg_redirect` require a sanitizer before import.
+
+### 25.8 Data migration safety
+
+- Raw `sqldump.sql`, WordPress source, `wp-config.php` values, uploads, customer rows, order rows, user rows, contact submissions, sessions, tokens, API keys, and password hashes must not be committed.
+- Migration samples must be generated only through a sanitizer.
+- Internal `legacyId` fields may exist for traceability but must not become public canonical identifiers.
+
+### 25.9 Open Questions
+
+- Final warranty/return policy by product/category.
+- Whether sale products can have no warranty and how that is represented.
+- Whether preorder/backorder is supported and for which categories.
+- Final shipping fee policy.
+- Final customer identity policy: phone, email, or both.
+- Whether social login is required.
+- Whether guest checkout is allowed.
+
+---
+
+## 26. Review Checklist
 
 Trước khi merge tính năng nghiệp vụ:
 
