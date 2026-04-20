@@ -173,6 +173,29 @@ PERMISSION_MATRIX.md
 BUSINESS_RULES.md
 ```
 
+### 3.6 For legacy migration changes
+
+Before implementing product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior derived from the legacy WordPress site, read:
+
+```text
+docs/legacy/WORDPRESS_SOURCE_AUDIT.md
+docs/legacy/LEGACY_DATABASE_SCHEMA.md
+docs/legacy/LEGACY_ROUTE_MAP.md
+docs/legacy/LEGACY_PRODUCT_MODEL.md
+docs/legacy/LEGACY_ORDER_FLOW.md
+docs/legacy/SEO_REDIRECT_MAP.csv
+docs/legacy/WORDPRESS_TO_NEW_STACK_MAPPING.md
+```
+
+Legacy source and dump are local-only reference material:
+
+```text
+bigbike_vn__2026_04_17/
+bigbike_vn__2026_04_17/sqldump.sql
+```
+
+Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` secret values, user data, order data, customer email, phone, address, password hash, session, token, API key, webhook secret, or order key values.
+
 ---
 
 ## 4. Source of Truth Map
@@ -192,6 +215,7 @@ BUSINESS_RULES.md
 | Data model contract | `docs/contracts/DATA_CONTRACT.md` |
 | State transitions | `docs/contracts/STATE_MACHINES.md` |
 | Roles and permissions | `docs/contracts/PERMISSION_MATRIX.md` |
+| Legacy WordPress discovery and migration mapping | `docs/legacy/` |
 
 Do not move responsibility between files unless explicitly asked.
 
@@ -258,6 +282,18 @@ docs/business/BUSINESS_RULES.md
 docs/business/WORKFLOW.md
 ```
 
+If mapping legacy WordPress data into the new stack, update:
+
+```text
+docs/contracts/DATA_CONTRACT.md
+```
+
+If changing route, slug, permalink, trailing slash, or blog `.html` behavior, update:
+
+```text
+docs/legacy/SEO_REDIRECT_MAP.csv
+```
+
 ### 5.4 No hardcoded design drift
 
 Do not hardcode brand colors, spacing, radius, typography or shadows if token docs already define them.
@@ -317,6 +353,18 @@ Every screen/component must handle:
 - Partial data if relevant.
 - Unknown status fallback.
 - Network failure where relevant.
+
+### 5.8 Legacy migration guardrails
+
+Do not implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior from memory. Read `docs/legacy/` first and extend the sanitized legacy docs if a needed fact is missing.
+
+Never commit raw `bigbike_vn__2026_04_17/` source, `sqldump.sql`, `wp-config.php` values, user/order/customer PII, password hashes, sessions, tokens, API keys, webhook secrets, or raw redirect exports.
+
+Any route behavior change must update `docs/legacy/SEO_REDIRECT_MAP.csv` in the same change.
+
+Any legacy data mapping that becomes canonical implementation behavior must update `docs/contracts/DATA_CONTRACT.md` in the same change.
+
+Do not build new features ahead of legacy discovery for the affected domain.
 
 ---
 

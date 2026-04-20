@@ -237,6 +237,34 @@ Defines:
 - State transition rules.
 - Admin roles and permissions.
 
+### 4.7 Legacy WordPress migration
+
+```text
+docs/legacy/WORDPRESS_SOURCE_AUDIT.md
+docs/legacy/LEGACY_DATABASE_SCHEMA.md
+docs/legacy/LEGACY_ROUTE_MAP.md
+docs/legacy/LEGACY_PRODUCT_MODEL.md
+docs/legacy/LEGACY_ORDER_FLOW.md
+docs/legacy/SEO_REDIRECT_MAP.csv
+docs/legacy/WORDPRESS_TO_NEW_STACK_MAPPING.md
+```
+
+Defines:
+
+- Sanitized WordPress source discovery.
+- Schema-only SQL dump summary.
+- Product/category/order/content/auth migration references.
+- Legacy route and SEO redirect requirements.
+- WordPress-to-new-stack mapping for future agents.
+
+The legacy WordPress export is a local-only reference:
+
+```text
+bigbike_vn__2026_04_17/
+```
+
+Do not commit the raw WordPress source, `sqldump.sql`, `wp-config.php` secret values, user data, order data, customer emails, phone numbers, addresses, password hashes, session values, API keys, tokens, or webhook secrets.
+
 ---
 
 ## 5. Recommended Reading by Task
@@ -727,6 +755,19 @@ Before changing code:
 8. Report what changed and what was not run.
 
 Do not do broad rewrites unless explicitly requested.
+
+### 18.1 Legacy migration workflow
+
+Before implementing product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior derived from the legacy WordPress site:
+
+1. Read all files in `docs/legacy/`.
+2. Treat `bigbike_vn__2026_04_17/` as local-only reference material.
+3. Inspect `sqldump.sql` only in read-only mode and only for schema or sanitized aggregate facts.
+4. Update `docs/contracts/DATA_CONTRACT.md` before codifying legacy data mappings.
+5. Update `docs/legacy/SEO_REDIRECT_MAP.csv` before changing route, slug, permalink, trailing slash, or blog `.html` behavior.
+6. Produce only sanitized artifacts under approved documentation/sample paths.
+
+Do not build new features ahead of legacy discovery for the affected domain. If the legacy docs are incomplete, extend the sanitized docs first.
 
 ---
 
