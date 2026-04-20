@@ -19,6 +19,7 @@ import {
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 const FORCE_MOCK = import.meta.env.VITE_USE_ADMIN_MOCK === 'true'
+const IS_DEV = Boolean(import.meta.env.DEV)
 const DEFAULT_MOCK_ROLE = import.meta.env.VITE_ADMIN_ROLE || 'ADMIN'
 
 class ApiClientError extends Error {
@@ -91,6 +92,60 @@ function withLiveData(data) {
   }
 }
 
+function shouldFallbackToMockOnLiveError() {
+  return IS_DEV
+}
+
+function normalizeError(error) {
+  if (error instanceof Error) {
+    return error
+  }
+
+  return new Error('Unexpected admin API error.')
+}
+
+function buildProductQuery(query) {
+  return {
+    page: query?.page,
+    size: query?.pageSize,
+    sort: query?.sort,
+    q: query?.search,
+    publishStatus: query?.publishStatus,
+    stockState: query?.stockState,
+  }
+}
+
+function buildCategoryQuery(query) {
+  return {
+    page: query?.page,
+    size: query?.pageSize,
+    sort: query?.sort,
+    q: query?.search,
+    visibility: query?.visibility,
+  }
+}
+
+function buildBrandQuery(query) {
+  return {
+    page: query?.page,
+    size: query?.pageSize,
+    sort: query?.sort,
+    q: query?.search,
+    visibility: query?.visibility,
+  }
+}
+
+function buildContentQuery(query) {
+  return {
+    page: query?.page,
+    size: query?.pageSize,
+    sort: query?.sort,
+    q: query?.search,
+    type: query?.type,
+    publishStatus: query?.publishStatus,
+  }
+}
+
 function parseListPayload(payload, normalizeItem, fallbackPageSize = 10) {
   const list = Array.isArray(payload?.data) ? payload.data : []
   const items = list.map(normalizeItem)
@@ -143,7 +198,12 @@ export async function fetchCurrentAdminUser() {
 
     return withLiveData({ user })
   } catch (error) {
-    return withMockFallback(error.message, {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, {
       user: buildMockAdminUser(DEFAULT_MOCK_ROLE),
     })
   }
@@ -158,10 +218,15 @@ export async function fetchProducts(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/products', query)
+    const payload = await requestJson('/admin/products', buildProductQuery(query))
     return withLiveData(parseListPayload(payload, normalizeProduct, Number(query?.pageSize) || 10))
   } catch (error) {
-    return withMockFallback(error.message, queryMockProducts(query))
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, queryMockProducts(query))
   }
 }
 
@@ -177,7 +242,12 @@ export async function fetchProductDetail(productId) {
     const payload = await requestJson(`/admin/products/${productId}`)
     return withLiveData(parseDetailPayload(payload, normalizeProduct))
   } catch (error) {
-    return withMockFallback(error.message, { item: getMockProductById(productId) })
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, { item: getMockProductById(productId) })
   }
 }
 
@@ -190,10 +260,15 @@ export async function fetchCategories(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/categories', query)
+    const payload = await requestJson('/admin/categories', buildCategoryQuery(query))
     return withLiveData(parseListPayload(payload, normalizeCategory, Number(query?.pageSize) || 10))
   } catch (error) {
-    return withMockFallback(error.message, queryMockCategories(query))
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, queryMockCategories(query))
   }
 }
 
@@ -209,7 +284,12 @@ export async function fetchCategoryDetail(categoryId) {
     const payload = await requestJson(`/admin/categories/${categoryId}`)
     return withLiveData(parseDetailPayload(payload, normalizeCategory))
   } catch (error) {
-    return withMockFallback(error.message, { item: getMockCategoryById(categoryId) })
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, { item: getMockCategoryById(categoryId) })
   }
 }
 
@@ -222,10 +302,15 @@ export async function fetchBrands(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/brands', query)
+    const payload = await requestJson('/admin/brands', buildBrandQuery(query))
     return withLiveData(parseListPayload(payload, normalizeBrand, Number(query?.pageSize) || 10))
   } catch (error) {
-    return withMockFallback(error.message, queryMockBrands(query))
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, queryMockBrands(query))
   }
 }
 
@@ -241,7 +326,12 @@ export async function fetchBrandDetail(brandId) {
     const payload = await requestJson(`/admin/brands/${brandId}`)
     return withLiveData(parseDetailPayload(payload, normalizeBrand))
   } catch (error) {
-    return withMockFallback(error.message, { item: getMockBrandById(brandId) })
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, { item: getMockBrandById(brandId) })
   }
 }
 
@@ -254,10 +344,15 @@ export async function fetchContent(query) {
   }
 
   try {
-    const payload = await requestJson('/admin/content', query)
+    const payload = await requestJson('/admin/content', buildContentQuery(query))
     return withLiveData(parseListPayload(payload, normalizeContentItem, Number(query?.pageSize) || 10))
   } catch (error) {
-    return withMockFallback(error.message, queryMockContent(query))
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, queryMockContent(query))
   }
 }
 
@@ -274,7 +369,12 @@ export async function fetchContentDetail(contentType, contentId) {
     const payload = await requestJson(endpoint)
     return withLiveData(parseDetailPayload(payload, normalizeContentItem))
   } catch (error) {
-    return withMockFallback(error.message, {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+
+    return withMockFallback(normalizedError.message, {
       item: getMockContentById(contentType, contentId),
     })
   }

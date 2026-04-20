@@ -12,12 +12,17 @@ public interface CatalogReadRepository {
 
     Optional<Product> findProductBySlug(String slug);
 
+    Optional<Product> findProductById(String id);
+
     List<Category> findAllCategories();
 
     Optional<Category> findCategoryBySlug(String slug);
 
+    Optional<Category> findCategoryById(String id);
+
     List<Brand> findAllBrands();
 
     Optional<Brand> findBrandBySlug(String slug);
-}
 
+    Optional<Brand> findBrandById(String id);
+}

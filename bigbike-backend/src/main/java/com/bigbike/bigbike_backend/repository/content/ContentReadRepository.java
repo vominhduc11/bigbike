@@ -9,8 +9,13 @@ public interface ContentReadRepository {
 
     List<Article> findAllArticles();
 
+    List<Page> findAllPages();
+
     Optional<Article> findArticleBySlug(String slug);
 
-    Optional<Page> findPageBySlug(String slug);
-}
+    Optional<Article> findArticleById(String id);
 
+    Optional<Page> findPageBySlug(String slug);
+
+    Optional<Page> findPageById(String id);
+}

@@ -71,7 +71,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 editor,
                 news,
                 List.of("tin-tuc", "bao-ho"),
-                PublishStatus.PUBLISHED,
+                PublishStatus.DRAFT,
                 new SeoMeta(
                         "Xu Hướng Đồ Bảo Hộ 2026",
                         "Tin tức và phân tích xu hướng đồ bảo hộ biker 2026.",
@@ -133,13 +133,27 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
+    public List<Page> findAllPages() {
+        return pages;
+    }
+
+    @Override
     public Optional<Article> findArticleBySlug(String slug) {
         return articles.stream().filter(article -> article.slug().equals(slug)).findFirst();
+    }
+
+    @Override
+    public Optional<Article> findArticleById(String id) {
+        return articles.stream().filter(article -> article.id().equals(id)).findFirst();
     }
 
     @Override
     public Optional<Page> findPageBySlug(String slug) {
         return pages.stream().filter(page -> page.slug().equals(slug)).findFirst();
     }
-}
 
+    @Override
+    public Optional<Page> findPageById(String id) {
+        return pages.stream().filter(page -> page.id().equals(id)).findFirst();
+    }
+}

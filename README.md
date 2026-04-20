@@ -405,6 +405,12 @@ Test/package:
 
 If the project uses Gradle instead of Maven, use the matching Gradle commands.
 
+Phase 4E auth note:
+
+- `GET /api/v1/auth/me` currently uses a dev/mock placeholder user.
+- Placeholder auth is available only for dev/mock-style runtime profiles.
+- Production auth provider is not implemented yet in this phase.
+
 ---
 
 ## 7. Environment Variables

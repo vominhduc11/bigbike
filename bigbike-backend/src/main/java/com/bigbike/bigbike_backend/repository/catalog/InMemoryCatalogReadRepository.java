@@ -259,7 +259,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số")),
                 ProductStockState.PREORDER,
-                PublishStatus.PUBLISHED,
+                PublishStatus.HIDDEN,
                 false,
                 false,
                 new SeoMeta(
@@ -325,6 +325,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public Optional<Product> findProductById(String id) {
+        return products.stream().filter(product -> product.id().equals(id)).findFirst();
+    }
+
+    @Override
     public List<Category> findAllCategories() {
         return categories;
     }
@@ -332,6 +337,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     @Override
     public Optional<Category> findCategoryBySlug(String slug) {
         return categories.stream().filter(category -> category.slug().equals(slug)).findFirst();
+    }
+
+    @Override
+    public Optional<Category> findCategoryById(String id) {
+        return categories.stream().filter(category -> category.id().equals(id)).findFirst();
     }
 
     @Override
@@ -344,6 +354,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         return brands.stream().filter(brand -> brand.slug().equals(slug)).findFirst();
     }
 
+    @Override
+    public Optional<Brand> findBrandById(String id) {
+        return brands.stream().filter(brand -> brand.id().equals(id)).findFirst();
+    }
+
     private static CategorySummary summaryOf(Category category) {
         return new CategorySummary(category.id(), category.slug(), category.name());
     }
@@ -352,4 +367,3 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         return new BrandSummary(brand.id(), brand.slug(), brand.name());
     }
 }
-
