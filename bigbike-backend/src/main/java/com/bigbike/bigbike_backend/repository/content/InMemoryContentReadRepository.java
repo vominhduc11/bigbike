@@ -11,9 +11,11 @@ import com.bigbike.bigbike_backend.domain.content.PageType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@Profile("mock")
 public class InMemoryContentReadRepository implements ContentReadRepository {
 
     private final List<Article> articles;

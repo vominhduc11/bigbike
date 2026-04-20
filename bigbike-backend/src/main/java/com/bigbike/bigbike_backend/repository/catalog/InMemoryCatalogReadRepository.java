@@ -17,9 +17,11 @@ import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@Profile("mock")
 public class InMemoryCatalogReadRepository implements CatalogReadRepository {
 
     private final List<Category> categories;

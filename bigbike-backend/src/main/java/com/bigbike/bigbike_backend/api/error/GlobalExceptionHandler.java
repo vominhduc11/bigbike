@@ -15,10 +15,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private final ApiMetaFactory apiMetaFactory;
 
     public GlobalExceptionHandler(ApiMetaFactory apiMetaFactory) {
@@ -51,6 +54,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+        LOG.error("Unhandled exception", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "An unexpected error occurred.", List.of(), request);
     }
 
@@ -66,4 +70,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(payload);
     }
 }
-

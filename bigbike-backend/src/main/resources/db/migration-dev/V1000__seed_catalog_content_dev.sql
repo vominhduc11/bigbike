@@ -1,0 +1,503 @@
+insert into brands (
+    id,
+    slug,
+    name,
+    description,
+    logo_id,
+    logo_url,
+    logo_alt,
+    logo_width,
+    logo_height,
+    logo_mime_type,
+    seo_title,
+    seo_description,
+    seo_canonical_url,
+    seo_no_index,
+    is_visible,
+    created_at,
+    updated_at
+) values
+(
+    'brand_ls2',
+    'ls2',
+    'LS2',
+    'Helmet and protective gear brand.',
+    'img_brand_ls2',
+    'https://cdn.bigbike.local/brands/ls2.png',
+    'LS2',
+    500,
+    260,
+    'image/png',
+    'Thuong hieu LS2',
+    'San pham LS2 tai BigBike.',
+    'https://bigbike.vn/brands/ls2/',
+    false,
+    true,
+    '2026-04-02T03:00:00Z',
+    '2026-04-18T03:00:00Z'
+),
+(
+    'brand_kyt',
+    'kyt',
+    'KYT',
+    'KYT helmet brand.',
+    'img_brand_kyt',
+    'https://cdn.bigbike.local/brands/kyt.png',
+    'KYT',
+    500,
+    260,
+    'image/png',
+    'Thuong hieu KYT',
+    'San pham KYT tai BigBike.',
+    'https://bigbike.vn/brands/kyt/',
+    false,
+    true,
+    '2026-04-02T03:00:00Z',
+    '2026-04-18T03:00:00Z'
+);
+
+insert into categories (
+    id,
+    slug,
+    name,
+    description,
+    image_id,
+    image_url,
+    image_alt,
+    image_width,
+    image_height,
+    image_mime_type,
+    seo_title,
+    seo_description,
+    seo_canonical_url,
+    seo_no_index,
+    is_visible,
+    sort_order,
+    created_at,
+    updated_at
+) values
+(
+    'cat_helmet',
+    'mu-bao-hiem',
+    'Mu bao hiem',
+    'Mu bao hiem cho duong pho va touring.',
+    'img_cat_helmet',
+    'https://cdn.bigbike.local/categories/mu-bao-hiem.jpg',
+    'Mu bao hiem',
+    1200,
+    800,
+    'image/jpeg',
+    'Mu bao hiem BigBike',
+    'Danh muc mu bao hiem cho biker.',
+    'https://bigbike.vn/danh-muc-san-pham/mu-bao-hiem/',
+    false,
+    true,
+    1,
+    '2026-04-01T03:00:00Z',
+    '2026-04-18T04:00:00Z'
+),
+(
+    'cat_jacket',
+    'ao-giap-bao-ho',
+    'Ao giap bao ho',
+    'Ao giap di phuot va di pho.',
+    'img_cat_jacket',
+    'https://cdn.bigbike.local/categories/ao-giap-bao-ho.jpg',
+    'Ao giap bao ho',
+    1200,
+    800,
+    'image/jpeg',
+    'Ao giap bao ho BigBike',
+    'Danh muc ao giap bao ho cho rider.',
+    'https://bigbike.vn/danh-muc-san-pham/ao-giap-bao-ho/',
+    false,
+    true,
+    2,
+    '2026-04-01T03:00:00Z',
+    '2026-04-18T04:00:00Z'
+);
+
+insert into content_categories (id, slug, name) values
+('content_cat_guide', 'huong-dan', 'Huong dan'),
+('content_cat_news', 'tin-tuc', 'Tin tuc');
+
+insert into content_authors (id, name) values
+('author_bigbike_editor', 'BigBike Team');
+
+insert into products (
+    id,
+    sku,
+    slug,
+    name,
+    short_description,
+    description,
+    brand_id,
+    category_id,
+    image_id,
+    image_url,
+    image_alt,
+    image_width,
+    image_height,
+    image_mime_type,
+    retail_price,
+    compare_at_price,
+    sale_price,
+    currency,
+    stock_state,
+    publish_status,
+    is_featured,
+    show_on_homepage,
+    seo_title,
+    seo_description,
+    seo_canonical_url,
+    seo_no_index,
+    created_at,
+    updated_at
+) values
+(
+    'prod_ls2_ff800',
+    'LS2-FF800-RED-M',
+    'mu-bao-hiem-ls2-ff800',
+    'Mu bao hiem LS2 FF800',
+    'Mu fullface LS2 FF800 cho duong truong.',
+    'Mu fullface khi dong hoc, lot thao roi, chuan an toan ECE.',
+    'brand_ls2',
+    'cat_helmet',
+    'img_prod_ls2_ff800_main',
+    'https://cdn.bigbike.local/products/ls2-ff800/main.jpg',
+    'Mu bao hiem LS2 FF800',
+    1200,
+    1200,
+    'image/jpeg',
+    3250000,
+    3690000,
+    3250000,
+    'VND',
+    'IN_STOCK',
+    'PUBLISHED',
+    true,
+    true,
+    'Mu bao hiem LS2 FF800',
+    'Mu fullface LS2 FF800 chinh hang tai BigBike.',
+    'https://bigbike.vn/product/mu-bao-hiem-ls2-ff800/',
+    false,
+    '2026-04-01T05:00:00Z',
+    '2026-04-18T06:30:00Z'
+),
+(
+    'prod_kyt_nxrace',
+    'KYT-NXRACE-WHT-M',
+    'mu-bao-hiem-kyt-nx-race',
+    'Mu bao hiem KYT NX Race',
+    'Mu fullface KYT cho rider hieu nang cao.',
+    'Thiet ke the thao, kinh quang hoc ro net, noi that em.',
+    'brand_kyt',
+    'cat_helmet',
+    'img_prod_kyt_nxrace_main',
+    'https://cdn.bigbike.local/products/kyt-nx-race/main.jpg',
+    'Mu bao hiem KYT NX Race',
+    1200,
+    1200,
+    'image/jpeg',
+    2890000,
+    null,
+    null,
+    'VND',
+    'PREORDER',
+    'HIDDEN',
+    false,
+    false,
+    'Mu bao hiem KYT NX Race',
+    'KYT NX Race hang chinh hang.',
+    'https://bigbike.vn/product/mu-bao-hiem-kyt-nx-race/',
+    false,
+    '2026-04-02T05:00:00Z',
+    '2026-04-19T07:30:00Z'
+),
+(
+    'prod_ls2_jacket_city',
+    'LS2-JACKET-CITY-BLK-L',
+    'ao-giap-ls2-city-rider',
+    'Ao giap LS2 City Rider',
+    'Ao giap touring thoang khi.',
+    'Ao giap LS2 City Rider co bao ve vai, cui cho, lung.',
+    'brand_ls2',
+    'cat_jacket',
+    'img_prod_ls2_jacket_city_main',
+    'https://cdn.bigbike.local/products/ls2-city-rider/main.jpg',
+    'Ao giap LS2 City Rider',
+    1200,
+    1200,
+    'image/jpeg',
+    2450000,
+    2790000,
+    2450000,
+    'VND',
+    'LOW_STOCK',
+    'PUBLISHED',
+    true,
+    false,
+    'Ao giap LS2 City Rider',
+    'Ao giap LS2 cho touring va daily ride.',
+    'https://bigbike.vn/product/ao-giap-ls2-city-rider/',
+    false,
+    '2026-04-05T05:00:00Z',
+    '2026-04-18T09:10:00Z'
+);
+
+insert into product_category_map (product_id, category_id) values
+('prod_ls2_ff800', 'cat_helmet'),
+('prod_kyt_nxrace', 'cat_helmet'),
+('prod_ls2_jacket_city', 'cat_jacket');
+
+insert into product_gallery_images (
+    product_id,
+    sort_order,
+    image_id,
+    image_url,
+    image_alt,
+    image_width,
+    image_height,
+    image_mime_type
+) values
+(
+    'prod_ls2_ff800',
+    0,
+    'img_prod_ls2_ff800_1',
+    'https://cdn.bigbike.local/products/ls2-ff800/1.jpg',
+    'LS2 FF800 goc nghieng',
+    1200,
+    1200,
+    'image/jpeg'
+),
+(
+    'prod_ls2_ff800',
+    1,
+    'img_prod_ls2_ff800_2',
+    'https://cdn.bigbike.local/products/ls2-ff800/2.jpg',
+    'LS2 FF800 chi tiet khoa',
+    1200,
+    1200,
+    'image/jpeg'
+);
+
+insert into product_videos (
+    product_id,
+    sort_order,
+    video_id,
+    video_url,
+    title,
+    provider
+) values
+(
+    'prod_ls2_ff800',
+    0,
+    'vid_ls2_ff800_review',
+    'https://www.youtube.com/watch?v=ls2ff800-demo',
+    'Review LS2 FF800',
+    'YOUTUBE'
+);
+
+insert into product_specifications (
+    product_id,
+    sort_order,
+    name,
+    spec_value,
+    group_name
+) values
+(
+    'prod_ls2_ff800',
+    0,
+    'Chuan an toan',
+    'ECE 22.06',
+    'An toan'
+),
+(
+    'prod_ls2_ff800',
+    1,
+    'Trong luong',
+    '1500g +/- 50g',
+    'Thong so'
+),
+(
+    'prod_kyt_nxrace',
+    0,
+    'Vo mu',
+    'Composite',
+    'Thong so'
+),
+(
+    'prod_ls2_jacket_city',
+    0,
+    'Chat lieu',
+    'Luoi + chong mai mon',
+    'Thong so'
+);
+
+insert into product_variants (
+    id,
+    product_id,
+    sku,
+    name,
+    retail_price,
+    compare_at_price,
+    sale_price,
+    currency,
+    stock_state,
+    is_available,
+    sort_order
+) values
+(
+    'var_ls2_ff800_red_m',
+    'prod_ls2_ff800',
+    'LS2-FF800-RED-M',
+    'Do / M',
+    3250000,
+    3690000,
+    3250000,
+    'VND',
+    'IN_STOCK',
+    true,
+    0
+),
+(
+    'var_ls2_ff800_black_l',
+    'prod_ls2_ff800',
+    'LS2-FF800-BLACK-L',
+    'Den / L',
+    3250000,
+    3690000,
+    3250000,
+    'VND',
+    'LOW_STOCK',
+    true,
+    1
+);
+
+insert into product_variant_options (variant_id, sort_order, option_name, option_value) values
+('var_ls2_ff800_red_m', 0, 'Color', 'Do'),
+('var_ls2_ff800_red_m', 1, 'Size', 'M'),
+('var_ls2_ff800_black_l', 0, 'Color', 'Den'),
+('var_ls2_ff800_black_l', 1, 'Size', 'L');
+
+insert into articles (
+    id,
+    slug,
+    title,
+    excerpt,
+    body,
+    cover_image_id,
+    cover_image_url,
+    cover_image_alt,
+    cover_image_width,
+    cover_image_height,
+    cover_image_mime_type,
+    author_id,
+    category_id,
+    publish_status,
+    seo_title,
+    seo_description,
+    seo_canonical_url,
+    seo_no_index,
+    published_at,
+    created_at,
+    updated_at
+) values
+(
+    'article_chon_mu_fullface',
+    'chon-mu-fullface-phu-hop',
+    'Cach Chon Mu Fullface Phu Hop',
+    'Huong dan chon mu fullface theo nhu cau su dung.',
+    '<p>Chon mu theo nhu cau di pho, touring, track day va form dau.</p>',
+    'img_article_fullface',
+    'https://cdn.bigbike.local/articles/chon-mu-fullface.jpg',
+    'Cach chon mu fullface',
+    1600,
+    900,
+    'image/jpeg',
+    'author_bigbike_editor',
+    'content_cat_guide',
+    'PUBLISHED',
+    'Cach Chon Mu Fullface Phu Hop',
+    'Huong dan chon mu fullface cho biker.',
+    'https://bigbike.vn/tin-tuc/chon-mu-fullface-phu-hop.html',
+    false,
+    '2026-04-10T03:00:00Z',
+    '2026-04-09T02:00:00Z',
+    '2026-04-10T03:00:00Z'
+),
+(
+    'article_xu_huong_gear_2026',
+    'xu-huong-do-bao-ho-2026',
+    'Xu Huong Do Bao Ho 2026',
+    'Nhung xu huong bao ho noi bat cho biker nam 2026.',
+    '<p>Tong hop xu huong ve vat lieu, cong nghe va tieu chuan an toan.</p>',
+    'img_article_gear_2026',
+    'https://cdn.bigbike.local/articles/xu-huong-gear-2026.jpg',
+    'Xu huong do bao ho 2026',
+    1600,
+    900,
+    'image/jpeg',
+    'author_bigbike_editor',
+    'content_cat_news',
+    'DRAFT',
+    'Xu Huong Do Bao Ho 2026',
+    'Tin tuc va phan tich xu huong do bao ho biker 2026.',
+    'https://bigbike.vn/tin-tuc/xu-huong-do-bao-ho-2026.html',
+    false,
+    '2026-04-15T03:00:00Z',
+    '2026-04-14T03:00:00Z',
+    '2026-04-15T03:00:00Z'
+);
+
+insert into article_tags (article_id, sort_order, tag) values
+('article_chon_mu_fullface', 0, 'mu-bao-hiem'),
+('article_chon_mu_fullface', 1, 'huong-dan'),
+('article_xu_huong_gear_2026', 0, 'tin-tuc'),
+('article_xu_huong_gear_2026', 1, 'bao-ho');
+
+insert into pages (
+    id,
+    slug,
+    title,
+    body,
+    page_type,
+    publish_status,
+    seo_title,
+    seo_description,
+    seo_canonical_url,
+    seo_no_index,
+    published_at,
+    created_at,
+    updated_at
+) values
+(
+    'page_gioi_thieu',
+    'gioi-thieu',
+    'Gioi Thieu BigBike',
+    '<p>BigBike la cua hang do bao ho va phu kien biker.</p>',
+    'ABOUT',
+    'PUBLISHED',
+    'Gioi Thieu BigBike',
+    'Thong tin ve BigBike.',
+    'https://bigbike.vn/gioi-thieu/',
+    false,
+    '2026-04-01T01:00:00Z',
+    '2026-04-01T01:00:00Z',
+    '2026-04-18T05:00:00Z'
+),
+(
+    'page_chinh_sach_bao_hanh',
+    'chinh-sach-bao-hanh',
+    'Chinh Sach Bao Hanh',
+    '<p>Chinh sach bao hanh ap dung theo tung nhom san pham.</p>',
+    'POLICY',
+    'PUBLISHED',
+    'Chinh Sach Bao Hanh',
+    'Chinh sach bao hanh tai BigBike.',
+    'https://bigbike.vn/chinh-sach-bao-hanh/',
+    false,
+    '2026-04-01T01:00:00Z',
+    '2026-04-01T01:00:00Z',
+    '2026-04-18T05:00:00Z'
+);

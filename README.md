@@ -432,6 +432,19 @@ Recommended examples:
 .env.local.example
 ```
 
+Backend (`bigbike-backend`) database variables:
+
+```text
+BIGBIKE_DB_URL=jdbc:postgresql://localhost:5432/bigbike
+BIGBIKE_DB_USERNAME=bigbike
+BIGBIKE_DB_PASSWORD=bigbike
+```
+
+Optional backend profiles:
+
+- `dev`: enables Flyway dev seed data.
+- `mock`: disables datasource/JPA/Flyway and uses in-memory read repositories.
+
 Never commit:
 
 - Database passwords.
