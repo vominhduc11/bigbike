@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.auth;
 
 import com.bigbike.bigbike_backend.api.error.AuthNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -12,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,13 +64,44 @@ public class DevAdminAuthService {
         );
     }
 
+    /**
+     * Checks that the caller has the required permission.
+     *
+     * When a real JWT principal is present in the SecurityContext (production path), the check
+     * is based on the role's default permission set — headers are ignored.
+     * When no JWT auth exists (dev/test bypass path), the legacy header-based logic is used.
+     */
     public AdminUserProfile requirePermission(HttpServletRequest request, String requiredPermission) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            // JWT auth is present — use role-based permissions
+            List<String> permissions = ROLE_PERMISSION_MAP.getOrDefault(
+                    principal.role().toUpperCase(Locale.ROOT),
+                    ROLE_PERMISSION_MAP.getOrDefault("ADMIN", List.of())
+            );
+            boolean granted = permissions.contains("*") || permissions.contains(requiredPermission);
+            if (!granted) {
+                throw new ForbiddenException("Permission denied.");
+            }
+            Instant now = Instant.now();
+            return new AdminUserProfile(
+                    principal.id(), "Admin", principal.email(),
+                    List.of(principal.role()), permissions, "ACTIVE", now, now);
+        }
+
+        // Dev/test bypass path — reads X-Admin-Role and X-Admin-Permissions headers
         AdminUserProfile user = currentAdminUser(request);
         boolean granted = user.permissions().contains("*") || user.permissions().contains(requiredPermission);
         if (!granted) {
             throw new ForbiddenException("Permission denied.");
         }
         return user;
+    }
+
+    /** Returns default permissions for a given role string — used by other services. */
+    public static List<String> defaultPermissionsForRole(String role) {
+        if (role == null) return List.of();
+        return ROLE_PERMISSION_MAP.getOrDefault(role.toUpperCase(Locale.ROOT), List.of());
     }
 
     private void ensureDevMockProfile() {

@@ -12,7 +12,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@SpringBootTest(properties = "spring.profiles.active=prod")
+@SpringBootTest(properties = {
+        "spring.profiles.active=prod",
+        "bigbike.jwt.secret=prod-guard-test-secret-strong-enough-abc123"
+})
 class AuthProfileGuardTest {
 
     private MockMvc mockMvc;
