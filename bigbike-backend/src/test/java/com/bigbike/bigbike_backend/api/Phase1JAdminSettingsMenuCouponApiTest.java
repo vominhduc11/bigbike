@@ -462,10 +462,254 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // REGRESSION TESTS (29–38)
+    // HARDENING TESTS — Coupon status (29–32)
     // ══════════════════════════════════════════════════════════════════════════
 
-    // 29. Admin orders still work
+    // 29. Create coupon with ARCHIVED status succeeds
+    @Test
+    void createCoupon_archivedStatus_succeeds() throws Exception {
+        String code = "ARCH-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        mockMvc.perform(post("/api/v1/admin/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"%s","name":"Archived Coupon","discountType":"FIXED","amount":500,"status":"ARCHIVED"}
+                                """.formatted(code))
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
+    }
+
+    // 30. Update coupon status to ARCHIVED succeeds
+    @Test
+    void updateCouponStatus_archived_succeeds() throws Exception {
+        CouponEntity coupon = createTestCoupon("TARCH-" + UUID.randomUUID().toString().substring(0, 6));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"ARCHIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
+    }
+
+    // 31. Create coupon with invalid status → 400
+    @Test
+    void createCoupon_invalidStatus_returns400() throws Exception {
+        String code = "BADSTS-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        mockMvc.perform(post("/api/v1/admin/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"%s","name":"Bad Status","discountType":"FIXED","amount":500,"status":"DELETED"}
+                                """.formatted(code))
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 32. Update coupon with invalid status → 400
+    @Test
+    void updateCoupon_invalidStatus_returns400() throws Exception {
+        CouponEntity coupon = createTestCoupon("UPDSTS-" + UUID.randomUUID().toString().substring(0, 6));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"TRASH\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // HARDENING TESTS — Menu status (33–37)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 33. Create menu with invalid status → 400
+    @Test
+    void createMenu_invalidStatus_returns400() throws Exception {
+        String location = "sts-invalid-" + UUID.randomUUID().toString().substring(0, 8);
+
+        mockMvc.perform(post("/api/v1/admin/menus")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"location\":\"" + location + "\",\"name\":\"Bad Status\",\"status\":\"DELETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 34. Update menu with invalid status → 400
+    @Test
+    void updateMenu_invalidStatus_returns400() throws Exception {
+        String location = "sts-upd-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Status Update Menu");
+
+        mockMvc.perform(patch("/api/v1/admin/menus/" + menu.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"ARCHIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 35. Create menu item with invalid status → 400
+    @Test
+    void createMenuItem_invalidStatus_returns400() throws Exception {
+        String location = "item-sts-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Item Status Menu");
+
+        mockMvc.perform(post("/api/v1/admin/menus/" + menu.getId() + "/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"label\":\"Bad Item\",\"url\":\"/bad\",\"status\":\"DELETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 36. Update menu item with invalid status → 400
+    @Test
+    void updateMenuItem_invalidStatus_returns400() throws Exception {
+        String location = "item-sts-upd-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Item Status Update Menu");
+        MenuItemEntity item = createTestMenuItem(menu, "Item", "/item", null, 0);
+
+        mockMvc.perform(patch("/api/v1/admin/menus/" + menu.getId() + "/items/" + item.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"EXPIRED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 37. Public menu for INACTIVE menu → 404
+    @Test
+    void publicMenu_inactiveMenu_returns404() throws Exception {
+        String location = "inactive-pub-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Inactive Menu");
+        menu.setStatus("INACTIVE");
+        menuRepo.save(menu);
+
+        mockMvc.perform(get("/api/v1/menus/" + location))
+                .andExpect(status().isNotFound());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // HARDENING TESTS — Menu deep cycle (38–41)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 38. Update menu item: deep cycle A→B→A → 400
+    @Test
+    void updateMenuItem_deepCycle_returns400() throws Exception {
+        String location = "cycle-deep-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Cycle Menu");
+        MenuItemEntity itemA = createTestMenuItem(menu, "Item A", "/a", null, 0);
+        MenuItemEntity itemB = createTestMenuItem(menu, "Item B", "/b", itemA.getId(), 1);
+        // Now try to set A's parent to B — would create A→B→A cycle
+
+        mockMvc.perform(patch("/api/v1/admin/menus/" + menu.getId() + "/items/" + itemA.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"parentId\":\"" + itemB.getId() + "\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 39. Reorder: parentId from another menu → 400
+    @Test
+    void reorderMenuItems_parentFromOtherMenu_returns400() throws Exception {
+        String locA = "reord-menu-a-" + UUID.randomUUID().toString().substring(0, 6);
+        String locB = "reord-menu-b-" + UUID.randomUUID().toString().substring(0, 6);
+        MenuEntity menuA = createTestMenu(locA, "Menu A");
+        MenuEntity menuB = createTestMenu(locB, "Menu B");
+        MenuItemEntity itemA = createTestMenuItem(menuA, "A Item", "/a", null, 0);
+        MenuItemEntity itemB = createTestMenuItem(menuB, "B Item", "/b", null, 0);
+
+        String body = """
+                {"items":[{"id":"%s","parentId":"%s","sortOrder":0}]}
+                """.formatted(itemA.getId(), itemB.getId());
+
+        mockMvc.perform(post("/api/v1/admin/menus/" + menuA.getId() + "/items/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 40. Reorder: three-item cycle A→B, B→C, C→A → 400
+    @Test
+    void reorderMenuItems_deepCycle_returns400() throws Exception {
+        String location = "reord-cycle-" + UUID.randomUUID().toString().substring(0, 6);
+        MenuEntity menu = createTestMenu(location, "Reorder Cycle Menu");
+        MenuItemEntity itemA = createTestMenuItem(menu, "A", "/a", null, 0);
+        MenuItemEntity itemB = createTestMenuItem(menu, "B", "/b", null, 1);
+        MenuItemEntity itemC = createTestMenuItem(menu, "C", "/c", null, 2);
+
+        // Propose: A→parent=B, B→parent=C, C→parent=A (cycle)
+        String body = """
+                {"items":[
+                  {"id":"%s","parentId":"%s","sortOrder":0},
+                  {"id":"%s","parentId":"%s","sortOrder":1},
+                  {"id":"%s","parentId":"%s","sortOrder":2}
+                ]}
+                """.formatted(
+                itemA.getId(), itemB.getId(),
+                itemB.getId(), itemC.getId(),
+                itemC.getId(), itemA.getId()
+        );
+
+        mockMvc.perform(post("/api/v1/admin/menus/" + menu.getId() + "/items/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 41. Reorder: self-parent → 400
+    @Test
+    void reorderMenuItems_selfParent_returns400() throws Exception {
+        String location = "self-par-" + UUID.randomUUID().toString().substring(0, 6);
+        MenuEntity menu = createTestMenu(location, "Self Parent Menu");
+        MenuItemEntity item = createTestMenuItem(menu, "Self", "/self", null, 0);
+
+        String body = """
+                {"items":[{"id":"%s","parentId":"%s","sortOrder":0}]}
+                """.formatted(item.getId(), item.getId());
+
+        mockMvc.perform(post("/api/v1/admin/menus/" + menu.getId() + "/items/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // HARDENING TESTS — Settings sensitive keys (42–43)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 42. api_key cannot be made public
+    @Test
+    void updateSetting_apiKeyCannotBePublic() throws Exception {
+        String key = "stripe.api_key." + UUID.randomUUID().toString().substring(0, 6);
+        createTestSetting(key, "sk_test_xxx", "payment", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/" + key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isPublic\":true}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // 43. client_secret cannot be made public
+    @Test
+    void updateSetting_clientSecretCannotBePublic() throws Exception {
+        String key = "oauth.client_secret." + UUID.randomUUID().toString().substring(0, 6);
+        createTestSetting(key, "cs_super_secret", "auth", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/" + key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isPublic\":true}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // REGRESSION TESTS (44–53)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 44. Admin orders still work (regression)
     @Test
     void adminOrders_stillWork() throws Exception {
         mockMvc.perform(get("/api/v1/admin/orders")

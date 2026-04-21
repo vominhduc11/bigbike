@@ -31,7 +31,7 @@ public class AdminCouponService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_DISCOUNT_TYPES = Set.of("FIXED", "PERCENT");
-    private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "EXPIRED");
+    private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED");
 
     private final CouponJpaRepository couponRepo;
     private final AuditLogJpaRepository auditLogRepo;
@@ -155,7 +155,12 @@ public class AdminCouponService {
         entity.setUsageCount(0);
         entity.setStartsAt(req.startsAt());
         entity.setExpiresAt(req.expiresAt());
-        entity.setStatus(req.status() != null ? req.status().toUpperCase(Locale.ROOT) : "ACTIVE");
+        String statusStr = req.status() != null ? req.status().trim().toUpperCase(Locale.ROOT) : "ACTIVE";
+        if (!ALLOWED_STATUSES.contains(statusStr)) {
+            throw ValidationException.fromField("status", "INVALID",
+                    "status must be ACTIVE, INACTIVE, EXPIRED, or ARCHIVED.");
+        }
+        entity.setStatus(statusStr);
         entity.setMetadata(req.metadata());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
@@ -250,7 +255,12 @@ public class AdminCouponService {
         }
 
         if (req.status() != null && !req.status().isBlank()) {
-            entity.setStatus(req.status().toUpperCase(Locale.ROOT));
+            String updStatus = req.status().trim().toUpperCase(Locale.ROOT);
+            if (!ALLOWED_STATUSES.contains(updStatus)) {
+                throw ValidationException.fromField("status", "INVALID",
+                        "status must be ACTIVE, INACTIVE, EXPIRED, or ARCHIVED.");
+            }
+            entity.setStatus(updStatus);
         }
         if (req.metadata() != null) {
             entity.setMetadata(req.metadata());
@@ -273,7 +283,7 @@ public class AdminCouponService {
         String newStatus = req.status().trim().toUpperCase(Locale.ROOT);
         if (!ALLOWED_STATUSES.contains(newStatus)) {
             throw ValidationException.fromField("status", "INVALID",
-                    "status must be ACTIVE, INACTIVE, or EXPIRED.");
+                    "status must be ACTIVE, INACTIVE, EXPIRED, or ARCHIVED.");
         }
 
         String before = "{\"status\":\"" + entity.getStatus() + "\"}";

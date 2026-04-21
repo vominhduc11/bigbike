@@ -23,9 +23,14 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +40,8 @@ public class AdminMenuService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final Set<String> ALLOWED_MENU_STATUSES = Set.of("ACTIVE", "INACTIVE");
+    private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
     private final MenuJpaRepository menuRepo;
     private final MenuItemJpaRepository menuItemRepo;
@@ -102,11 +109,17 @@ public class AdminMenuService {
             throw new ConflictException("A menu at location '" + req.location() + "' already exists.");
         });
 
+        String statusStr = req.status() != null ? req.status().trim().toUpperCase(Locale.ROOT) : "ACTIVE";
+        if (!ALLOWED_MENU_STATUSES.contains(statusStr)) {
+            throw ValidationException.fromField("status", "INVALID",
+                    "Menu status must be ACTIVE or INACTIVE.");
+        }
+
         Instant now = Instant.now();
         MenuEntity entity = new MenuEntity();
         entity.setLocation(req.location().trim());
         entity.setName(req.name().trim());
-        entity.setStatus(req.status() != null ? req.status().toUpperCase(Locale.ROOT) : "ACTIVE");
+        entity.setStatus(statusStr);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         entity = menuRepo.save(entity);
@@ -130,7 +143,12 @@ public class AdminMenuService {
             entity.setName(req.name().trim());
         }
         if (req.status() != null && !req.status().isBlank()) {
-            entity.setStatus(req.status().toUpperCase(Locale.ROOT));
+            String statusStr = req.status().trim().toUpperCase(Locale.ROOT);
+            if (!ALLOWED_MENU_STATUSES.contains(statusStr)) {
+                throw ValidationException.fromField("status", "INVALID",
+                        "Menu status must be ACTIVE or INACTIVE.");
+            }
+            entity.setStatus(statusStr);
         }
         entity.setUpdatedAt(Instant.now());
         menuRepo.save(entity);
@@ -148,7 +166,6 @@ public class AdminMenuService {
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
 
         String before = menuSnapshot(entity);
-        // Physical delete of items then menu
         List<MenuItemEntity> items = menuItemRepo.findByMenuId(menuId);
         menuItemRepo.deleteAll(items);
         menuRepo.delete(entity);
@@ -163,9 +180,17 @@ public class AdminMenuService {
         MenuEntity menu = menuRepo.findById(menuId)
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
 
-        // Parent cycle prevention: parent must belong to same menu and must not be a cycle
+        String statusStr = req.status() != null ? req.status().trim().toUpperCase(Locale.ROOT) : "ACTIVE";
+        if (!ALLOWED_ITEM_STATUSES.contains(statusStr)) {
+            throw ValidationException.fromField("status", "INVALID",
+                    "Menu item status must be ACTIVE or INACTIVE.");
+        }
+
+        // Parent validation: must exist in same menu; new items can't create cycles
         if (req.parentId() != null) {
-            validateParent(menuId, req.parentId(), null);
+            List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
+            validateParentBelongsToMenu(allItems, req.parentId(), menuId);
+            // No cycle possible for a new item (it has no ID yet)
         }
 
         Instant now = Instant.now();
@@ -179,7 +204,7 @@ public class AdminMenuService {
         item.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
         item.setOpenInNewTab(req.openInNewTab() != null && req.openInNewTab());
         item.setCssClass(req.cssClass());
-        item.setStatus(req.status() != null ? req.status().toUpperCase(Locale.ROOT) : "ACTIVE");
+        item.setStatus(statusStr);
         item.setCreatedAt(now);
         item.setUpdatedAt(now);
         item = menuItemRepo.save(item);
@@ -206,7 +231,9 @@ public class AdminMenuService {
         String before = itemSnapshot(item);
 
         if (req.parentId() != null) {
-            validateParent(menuId, req.parentId(), itemId);
+            List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
+            validateParentBelongsToMenu(allItems, req.parentId(), menuId);
+            validateNoDeepCycle(allItems, itemId, req.parentId());
             item.setParentId(req.parentId());
         }
         if (req.label() != null && !req.label().isBlank()) {
@@ -231,7 +258,12 @@ public class AdminMenuService {
             item.setCssClass(req.cssClass());
         }
         if (req.status() != null && !req.status().isBlank()) {
-            item.setStatus(req.status().toUpperCase(Locale.ROOT));
+            String statusStr = req.status().trim().toUpperCase(Locale.ROOT);
+            if (!ALLOWED_ITEM_STATUSES.contains(statusStr)) {
+                throw ValidationException.fromField("status", "INVALID",
+                        "Menu item status must be ACTIVE or INACTIVE.");
+            }
+            item.setStatus(statusStr);
         }
         item.setUpdatedAt(Instant.now());
         menuItemRepo.save(item);
@@ -268,12 +300,47 @@ public class AdminMenuService {
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
 
         List<MenuItemEntity> existingItems = menuItemRepo.findByMenuId(menuId);
+        Set<UUID> menuItemIds = existingItems.stream()
+                .map(MenuItemEntity::getId)
+                .collect(Collectors.toSet());
 
+        // Build the proposed parent map: start from existing, then apply request overrides
+        Map<UUID, UUID> proposedParentMap = new HashMap<>();
+        for (MenuItemEntity item : existingItems) {
+            proposedParentMap.put(item.getId(), item.getParentId());
+        }
+
+        // Validate each reorder entry and build proposed map
+        for (ReorderMenuItemRequest r : req.items()) {
+            if (!menuItemIds.contains(r.id())) {
+                throw new NotFoundException("Menu item not found in this menu: " + r.id());
+            }
+            if (r.parentId() != null) {
+                if (!menuItemIds.contains(r.parentId())) {
+                    throw ValidationException.fromField("parentId", "WRONG_MENU",
+                            "Parent item " + r.parentId() + " does not belong to this menu.");
+                }
+                if (r.parentId().equals(r.id())) {
+                    throw ValidationException.fromField("parentId", "CYCLE",
+                            "An item cannot be its own parent.");
+                }
+            }
+            proposedParentMap.put(r.id(), r.parentId());
+        }
+
+        // Deep cycle detection across all reordered items
+        for (ReorderMenuItemRequest r : req.items()) {
+            if (r.parentId() != null) {
+                detectCycleInMap(proposedParentMap, r.id());
+            }
+        }
+
+        // Apply changes
         for (ReorderMenuItemRequest r : req.items()) {
             MenuItemEntity found = existingItems.stream()
                     .filter(i -> i.getId().equals(r.id()))
                     .findFirst()
-                    .orElseThrow(() -> new NotFoundException("Menu item not found: " + r.id()));
+                    .orElseThrow();
             found.setParentId(r.parentId());
             found.setSortOrder(r.sortOrder());
             found.setUpdatedAt(Instant.now());
@@ -292,6 +359,11 @@ public class AdminMenuService {
         MenuEntity menu = menuRepo.findByLocation(location)
                 .orElseThrow(() -> new NotFoundException("Menu not found for location: " + location));
 
+        // INACTIVE menus are not publicly visible
+        if (!"ACTIVE".equalsIgnoreCase(menu.getStatus())) {
+            throw new NotFoundException("Menu not found for location: " + location);
+        }
+
         List<PublicMenuItemResponse> items = menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId()).stream()
                 .filter(i -> "ACTIVE".equalsIgnoreCase(i.getStatus()))
                 .map(i -> new PublicMenuItemResponse(
@@ -304,18 +376,61 @@ public class AdminMenuService {
 
     // ── Validation ────────────────────────────────────────────────────────────
 
-    private void validateParent(UUID menuId, UUID parentId, UUID excludeItemId) {
-        MenuItemEntity parent = menuItemRepo.findById(parentId)
-                .orElseThrow(() -> ValidationException.fromField("parentId", "NOT_FOUND",
-                        "Parent menu item not found."));
-        if (!parent.getMenu().getId().equals(menuId)) {
-            throw ValidationException.fromField("parentId", "WRONG_MENU",
-                    "Parent menu item does not belong to this menu.");
+    private void validateParentBelongsToMenu(List<MenuItemEntity> allItems, UUID parentId, UUID menuId) {
+        boolean exists = allItems.stream().anyMatch(i -> i.getId().equals(parentId));
+        if (!exists) {
+            throw ValidationException.fromField("parentId", "NOT_FOUND",
+                    "Parent menu item not found.");
         }
-        // Cycle check: parent must not be excludeItemId itself
-        if (excludeItemId != null && parentId.equals(excludeItemId)) {
+    }
+
+    /**
+     * Detects if setting itemId's parent to parentId would create a deep cycle.
+     * Walks upward from parentId using existing parent assignments; if itemId is
+     * encountered, the new relationship would form a cycle.
+     */
+    private void validateNoDeepCycle(List<MenuItemEntity> allItems, UUID itemId, UUID parentId) {
+        // Self-parent check
+        if (parentId.equals(itemId)) {
             throw ValidationException.fromField("parentId", "CYCLE",
                     "An item cannot be its own parent.");
+        }
+
+        // Build map of current parents (excluding the item being moved, so we use the proposed edge)
+        Map<UUID, UUID> parentMap = allItems.stream()
+                .filter(i -> i.getParentId() != null && !i.getId().equals(itemId))
+                .collect(Collectors.toMap(MenuItemEntity::getId, MenuItemEntity::getParentId, (a, b) -> a));
+        // Add the proposed edge
+        parentMap.put(itemId, parentId);
+
+        // Walk from parentId upward; if we reach itemId, it's a cycle
+        Set<UUID> visited = new HashSet<>();
+        UUID current = parentId;
+        while (current != null && !visited.contains(current)) {
+            if (current.equals(itemId)) {
+                throw ValidationException.fromField("parentId", "CYCLE",
+                        "Setting this parent would create a cycle in the menu hierarchy.");
+            }
+            visited.add(current);
+            current = parentMap.get(current);
+        }
+    }
+
+    /**
+     * Given a proposed parent map (itemId → parentId), checks that following
+     * the chain from `startItemId` does not loop back to itself.
+     */
+    private void detectCycleInMap(Map<UUID, UUID> parentMap, UUID startItemId) {
+        Set<UUID> visited = new HashSet<>();
+        UUID current = parentMap.get(startItemId); // start from proposed parent
+        while (current != null) {
+            if (current.equals(startItemId)) {
+                throw ValidationException.fromField("parentId", "CYCLE",
+                        "Reorder would create a cycle in the menu hierarchy.");
+            }
+            if (visited.contains(current)) break; // pre-existing cycle guard
+            visited.add(current);
+            current = parentMap.get(current);
         }
     }
 

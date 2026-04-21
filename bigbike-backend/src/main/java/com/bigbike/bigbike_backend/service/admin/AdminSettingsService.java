@@ -26,7 +26,8 @@ public class AdminSettingsService {
     private static final int DEFAULT_SIZE = 50;
     private static final int MAX_SIZE = 200;
     private static final Set<String> SENSITIVE_KEY_FRAGMENTS =
-            Set.of("secret", "password", "token", "privatekey");
+            Set.of("secret", "password", "token", "privatekey",
+                   "api_key", "apikey", "accesskey", "access_key", "client_secret");
 
     private final SiteSettingJpaRepository settingRepo;
     private final AuditLogJpaRepository auditLogRepo;
