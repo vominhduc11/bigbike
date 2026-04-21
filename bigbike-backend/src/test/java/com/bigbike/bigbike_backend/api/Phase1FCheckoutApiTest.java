@@ -243,6 +243,7 @@ class Phase1FCheckoutApiTest {
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
                 .andExpect(jsonPath("$.data.orderNumber").isString())
                 .andExpect(jsonPath("$.data.orderKey").isString());
     }
@@ -255,7 +256,8 @@ class Phase1FCheckoutApiTest {
                         .content("{\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ON_HOLD"));
+                .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("BACS"));
     }
 
     @Test
@@ -366,6 +368,7 @@ class Phase1FCheckoutApiTest {
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("COD"))
                 .andExpect(jsonPath("$.data.subtotalAmount").value(6000000.00))
                 .andExpect(jsonPath("$.data.orderNumber").isString());
     }
@@ -382,6 +385,7 @@ class Phase1FCheckoutApiTest {
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("BACS"))
                 .andExpect(jsonPath("$.data.subtotalAmount").value(7000000.00));
     }
 

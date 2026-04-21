@@ -171,7 +171,7 @@ public class CheckoutService {
         cart.setUpdatedAt(now);
         cartRepo.save(cart);
 
-        return toSummary(savedOrder);
+        return toSummary(savedOrder, req.paymentMethod());
     }
 
     // ── Quick-buy ─────────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ public class CheckoutService {
                 "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
                 ". Sản phẩm: " + product.getName() + " x" + qty + ".", now));
 
-        return toSummary(savedOrder);
+        return toSummary(savedOrder, req.paymentMethod());
     }
 
     // ── Checkout options ──────────────────────────────────────────────────────
@@ -508,14 +508,14 @@ public class CheckoutService {
         return note;
     }
 
-    private OrderSummaryResponse toSummary(OrderEntity order) {
+    private OrderSummaryResponse toSummary(OrderEntity order, String paymentMethod) {
         return new OrderSummaryResponse(
                 order.getId(),
                 order.getOrderNumber(),
                 order.getOrderKey(),
                 order.getStatus(),
                 order.getPaymentStatus(),
-                null, // paymentMethod not on order entity — payment entity holds it
+                paymentMethod,
                 order.getSubtotalAmount(),
                 order.getShippingAmount(),
                 order.getDiscountAmount(),
