@@ -32,7 +32,9 @@ public class DevAdminAuthService {
                     "catalog.read",
                     "catalog.update",
                     "content.read",
-                    "content.update"
+                    "content.update",
+                    "orders.read",
+                    "orders.write"
             ),
             "MANAGER", List.of("products.read", "catalog.read", "content.read"),
             "CONTENT_EDITOR", List.of("content.read", "content.update"),
