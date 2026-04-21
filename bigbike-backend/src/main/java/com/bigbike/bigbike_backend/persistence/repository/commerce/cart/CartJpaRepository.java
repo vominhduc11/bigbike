@@ -11,6 +11,8 @@ public interface CartJpaRepository extends JpaRepository<CartEntity, UUID> {
 
     List<CartEntity> findByCustomerId(UUID customerId);
 
+    Optional<CartEntity> findByCustomerIdAndStatus(UUID customerId, String status);
+
     Optional<CartEntity> findBySessionId(String sessionId);
 
     List<CartEntity> findByStatus(String status);

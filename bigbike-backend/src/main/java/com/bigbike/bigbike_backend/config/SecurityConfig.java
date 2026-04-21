@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
+                        // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
+                        .requestMatchers("/api/v1/cart/**").permitAll()
+                        .requestMatchers("/api/v1/cart").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // Customer profile requires ROLE_CUSTOMER
