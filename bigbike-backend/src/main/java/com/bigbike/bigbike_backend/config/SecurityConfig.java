@@ -65,6 +65,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
+                        // Public settings and menus
+                        .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // Customer order read requires ROLE_CUSTOMER
