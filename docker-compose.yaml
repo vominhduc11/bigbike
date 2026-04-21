@@ -1,0 +1,68 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bigbike-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bigbike}
+      POSTGRES_USER: ${POSTGRES_USER:-bigbike}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bigbike_dev_only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bigbike} -d ${POSTGRES_DB:-bigbike}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    container_name: bigbike-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  minio:
+    image: minio/minio:latest
+    container_name: bigbike-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_dev_only}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # bigbike-backend, bigbike-web, bigbike-admin:
+  # Disabled — no Dockerfiles yet. Add after Dockerfiles are written (Phase 1).
+  # See docs/PHASE_0_BASELINE_REPORT.md §5 for details.
+
+networks:
+  default:
+    name: bigbike-dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
