@@ -816,7 +816,7 @@
         "summary": "Update setting value",
         "operationId": "adminUpdateSetting",
         "security": [{ "AdminBearerAuth": [] }],
-        "description": "Sensitive keys (containing secret/password/token/privatekey/api_key/client_secret) cannot be set isPublic=true.",
+        "description": "Sensitive keys (containing secret/password/token/privatekey/private_key/api_key/apikey/accesskey/access_key/client_secret/clientsecret) cannot be set isPublic=true. Updating the value of a sensitive key is allowed as long as isPublic is not set to true.",
         "parameters": [
           { "name": "settingKey", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
