@@ -34,7 +34,13 @@ public class DevAdminAuthService {
                     "content.read",
                     "content.update",
                     "orders.read",
-                    "orders.write"
+                    "orders.write",
+                    "customers.read",
+                    "customers.write",
+                    "media.read",
+                    "media.write",
+                    "redirects.read",
+                    "redirects.write"
             ),
             "MANAGER", List.of("products.read", "catalog.read", "content.read"),
             "CONTENT_EDITOR", List.of("content.read", "content.update"),
