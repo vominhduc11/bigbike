@@ -10,4 +10,6 @@ public interface ShippingMethodJpaRepository extends JpaRepository<ShippingMetho
     List<ShippingMethodEntity> findByZoneId(UUID zoneId);
 
     List<ShippingMethodEntity> findByZoneIdAndEnabledOrderBySortOrderAsc(UUID zoneId, boolean enabled);
+
+    List<ShippingMethodEntity> findByEnabledOrderBySortOrderAsc(boolean enabled);
 }
