@@ -11,4 +11,6 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
     List<OrderLineItemEntity> findByOrderId(UUID orderId);
 
     Optional<OrderLineItemEntity> findByLegacyItemId(Long legacyItemId);
+
+    long countByOrderId(UUID orderId);
 }
