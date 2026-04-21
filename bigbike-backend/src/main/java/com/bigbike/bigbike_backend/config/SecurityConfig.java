@@ -15,15 +15,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomerSessionFilter customerSessionFilter;
+    private final CustomerCsrfFilter customerCsrfFilter;
     private final RestAuthenticationEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
+            CustomerSessionFilter customerSessionFilter,
+            CustomerCsrfFilter customerCsrfFilter,
             RestAuthenticationEntryPoint authEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler
     ) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.customerSessionFilter = customerSessionFilter;
+        this.customerCsrfFilter = customerCsrfFilter;
         this.authEntryPoint = authEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
     }
@@ -31,25 +37,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF is disabled because this API uses stateless Bearer JWT authentication only.
-                // Cookie-based CSRF protection will be added when customer session auth is implemented (Phase 2).
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Auth: login and refresh are public; logout and me handled below
+                        // Admin auth endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").permitAll()
+                        // Customer auth endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/logout").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
-                        // Admin endpoints require a valid JWT with ROLE_ADMIN
+                        // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // /auth/me requires any authenticated user
+                        // Customer profile requires ROLE_CUSTOMER
+                        .requestMatchers("/api/v1/customer/me").hasRole("CUSTOMER")
+                        // Admin /auth/me requires any authenticated user
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         // Everything else requires authentication
                         .anyRequest().authenticated()
@@ -58,7 +69,12 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // Register JWT filter first so it can serve as anchor for customer filters
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                // Customer session resolves cookie auth before JWT Bearer auth
+                .addFilterBefore(customerSessionFilter, JwtAuthFilter.class)
+                // CSRF validation runs after session is resolved
+                .addFilterAfter(customerCsrfFilter, CustomerSessionFilter.class);
 
         return http.build();
     }
