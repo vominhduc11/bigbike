@@ -65,6 +65,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
+                        // OpenAPI docs
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
                         // Public settings and menus
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()

@@ -1,0 +1,1571 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BigBike Backend API",
+    "version": "1.0.0",
+    "description": "REST API for BigBike — Vietnam's premium motorcycle marketplace. Rewrite of WordPress backend. All endpoints return ApiDataResponse<T> or ApiListResponse<T> envelopes."
+  },
+  "servers": [
+    { "url": "http://localhost:8080", "description": "Local development" },
+    { "url": "https://api.bigbike.vn", "description": "Production" }
+  ],
+  "tags": [
+    { "name": "Public Catalog", "description": "Public product, category, brand reads — no auth required" },
+    { "name": "Public Content", "description": "Public article and page reads — no auth required" },
+    { "name": "Public Settings", "description": "Public site settings subset — no auth required" },
+    { "name": "Public Menus", "description": "Public navigation menus (ACTIVE only) — no auth required" },
+    { "name": "Order Lookup", "description": "Guest order status lookup by order number + key" },
+    { "name": "Customer Auth", "description": "Customer registration, login, session refresh and logout" },
+    { "name": "Customer Profile", "description": "Authenticated customer profile — requires customer session cookie" },
+    { "name": "Cart", "description": "Guest and authenticated cart management — CSRF required on mutations" },
+    { "name": "Checkout", "description": "Cart checkout and quick-buy — CSRF required" },
+    { "name": "Customer Orders", "description": "Customer's own order history — requires customer session cookie" },
+    { "name": "Admin Auth", "description": "Admin JWT login, refresh, logout and profile" },
+    { "name": "Admin Catalog", "description": "Admin product, category, brand CRUD — requires Admin JWT" },
+    { "name": "Admin Content", "description": "Admin article and page CRUD — requires Admin JWT" },
+    { "name": "Admin Orders", "description": "Admin order list, detail, status update and notes — requires Admin JWT" },
+    { "name": "Admin Customers", "description": "Admin customer list, detail, update and status — requires Admin JWT" },
+    { "name": "Admin Media", "description": "Admin media list, detail, metadata update and logical delete — requires Admin JWT" },
+    { "name": "Admin Redirects", "description": "Admin URL redirect CRUD — requires Admin JWT" },
+    { "name": "Admin Settings", "description": "Admin site settings read/update — requires Admin JWT" },
+    { "name": "Admin Menus", "description": "Admin menu and menu item CRUD + reorder — requires Admin JWT" },
+    { "name": "Admin Coupons", "description": "Admin coupon CRUD and status management — requires Admin JWT" }
+  ],
+  "paths": {
+    "/api/v1/products": {
+      "get": {
+        "tags": ["Public Catalog"],
+        "summary": "List products",
+        "operationId": "listProducts",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string" } },
+          { "name": "brandId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Product list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductListResponse" } } } }
+        }
+      }
+    },
+    "/api/v1/products/{productId}": {
+      "get": {
+        "tags": ["Public Catalog"],
+        "summary": "Get product by ID or slug",
+        "operationId": "getProduct",
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Product detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "tags": ["Public Catalog"],
+        "summary": "List categories",
+        "operationId": "listCategories",
+        "responses": {
+          "200": { "description": "Category list" }
+        }
+      }
+    },
+    "/api/v1/brands": {
+      "get": {
+        "tags": ["Public Catalog"],
+        "summary": "List brands",
+        "operationId": "listBrands",
+        "responses": {
+          "200": { "description": "Brand list" }
+        }
+      }
+    },
+    "/api/v1/articles": {
+      "get": {
+        "tags": ["Public Content"],
+        "summary": "List articles",
+        "operationId": "listArticles",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Article list" }
+        }
+      }
+    },
+    "/api/v1/articles/{slug}": {
+      "get": {
+        "tags": ["Public Content"],
+        "summary": "Get article by slug",
+        "operationId": "getArticle",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Article detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/pages/{slug}": {
+      "get": {
+        "tags": ["Public Content"],
+        "summary": "Get page by slug",
+        "operationId": "getPage",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Page detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/settings/public": {
+      "get": {
+        "tags": ["Public Settings"],
+        "summary": "Get public site settings",
+        "operationId": "getPublicSettings",
+        "description": "Returns all SiteSettings where isPublic=true. No authentication required.",
+        "responses": {
+          "200": {
+            "description": "Public settings list",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicSettingsResponse" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/menus/{location}": {
+      "get": {
+        "tags": ["Public Menus"],
+        "summary": "Get public menu by location",
+        "operationId": "getPublicMenu",
+        "description": "Returns the menu at the given location with ACTIVE items only. Returns 404 if menu is INACTIVE.",
+        "parameters": [
+          { "name": "location", "in": "path", "required": true, "schema": { "type": "string" }, "example": "header" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Menu with active items",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicMenuDataResponse" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/orders/lookup": {
+      "get": {
+        "tags": ["Order Lookup"],
+        "summary": "Guest order lookup by number and key",
+        "operationId": "lookupOrder",
+        "parameters": [
+          { "name": "orderNumber", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "orderKey", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Order detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/customer/auth/register": {
+      "post": {
+        "tags": ["Customer Auth"],
+        "summary": "Register new customer account",
+        "operationId": "customerRegister",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerRegisterRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Registration successful", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerAuthDataResponse" } } } },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/customer/auth/login": {
+      "post": {
+        "tags": ["Customer Auth"],
+        "summary": "Customer login — sets session cookies",
+        "operationId": "customerLogin",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerLoginRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful. Sets bb_session, bb_refresh, and bb_csrf cookies.",
+            "headers": {
+              "Set-Cookie": { "schema": { "type": "string" }, "description": "Sets bb_session, bb_refresh, bb_csrf cookies" }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerAuthDataResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/customer/auth/refresh": {
+      "post": {
+        "tags": ["Customer Auth"],
+        "summary": "Refresh customer session using refresh cookie",
+        "operationId": "customerRefresh",
+        "responses": {
+          "200": { "description": "Session refreshed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/customer/auth/logout": {
+      "post": {
+        "tags": ["Customer Auth"],
+        "summary": "Logout current customer session",
+        "operationId": "customerLogout",
+        "security": [{ "CustomerSession": [] }],
+        "responses": {
+          "200": { "description": "Logged out" }
+        }
+      }
+    },
+    "/api/v1/customer/me": {
+      "get": {
+        "tags": ["Customer Profile"],
+        "summary": "Get authenticated customer profile",
+        "operationId": "getCustomerProfile",
+        "security": [{ "CustomerSession": [] }],
+        "responses": {
+          "200": { "description": "Customer profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerSummaryDataResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/cart": {
+      "get": {
+        "tags": ["Cart"],
+        "summary": "Get current cart",
+        "operationId": "getCart",
+        "description": "Returns the current guest or authenticated cart. Creates a new guest cart if none exists. Sets bb_guest_id and bb_csrf cookies.",
+        "responses": {
+          "200": { "description": "Current cart", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CartDataResponse" } } } }
+        }
+      }
+    },
+    "/api/v1/cart/items": {
+      "post": {
+        "tags": ["Cart"],
+        "summary": "Add item to cart",
+        "operationId": "addCartItem",
+        "security": [{ "CsrfHeader": [] }],
+        "description": "Requires X-CSRF-Token header matching bb_csrf cookie value.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddCartItemRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Item added" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/cart/items/{itemId}": {
+      "patch": {
+        "tags": ["Cart"],
+        "summary": "Update cart item quantity",
+        "operationId": "updateCartItem",
+        "security": [{ "CsrfHeader": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCartItemRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Item updated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Cart"],
+        "summary": "Remove cart item",
+        "operationId": "removeCartItem",
+        "security": [{ "CsrfHeader": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Item removed" }
+        }
+      }
+    },
+    "/api/v1/cart/clear": {
+      "delete": {
+        "tags": ["Cart"],
+        "summary": "Clear all cart items",
+        "operationId": "clearCart",
+        "security": [{ "CsrfHeader": [] }],
+        "responses": {
+          "200": { "description": "Cart cleared" }
+        }
+      }
+    },
+    "/api/v1/cart/totals": {
+      "get": {
+        "tags": ["Cart"],
+        "summary": "Get cart totals",
+        "operationId": "getCartTotals",
+        "responses": {
+          "200": { "description": "Cart totals" }
+        }
+      }
+    },
+    "/api/v1/checkout/options": {
+      "get": {
+        "tags": ["Checkout"],
+        "summary": "Get available shipping and payment options",
+        "operationId": "getCheckoutOptions",
+        "responses": {
+          "200": { "description": "Checkout options", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CheckoutOptionsDataResponse" } } } }
+        }
+      }
+    },
+    "/api/v1/checkout": {
+      "post": {
+        "tags": ["Checkout"],
+        "summary": "Submit checkout from current cart",
+        "operationId": "checkout",
+        "security": [{ "CsrfHeader": [] }],
+        "description": "Creates an order from the current cart. Requires X-CSRF-Token header.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CheckoutRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummaryDataResponse" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/orders/quick-buy": {
+      "post": {
+        "tags": ["Checkout"],
+        "summary": "Quick buy — single item direct purchase",
+        "operationId": "quickBuy",
+        "security": [{ "CsrfHeader": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/QuickBuyRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Order created" },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/customer/orders": {
+      "get": {
+        "tags": ["Customer Orders"],
+        "summary": "List customer's own orders",
+        "operationId": "listCustomerOrders",
+        "security": [{ "CustomerSession": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Order list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/customer/orders/{orderId}": {
+      "get": {
+        "tags": ["Customer Orders"],
+        "summary": "Get customer order detail",
+        "operationId": "getCustomerOrder",
+        "security": [{ "CustomerSession": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Order detail" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Admin Auth"],
+        "summary": "Admin login — returns JWT access and refresh tokens",
+        "operationId": "adminLogin",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "JWT tokens", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenDataResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["Admin Auth"],
+        "summary": "Refresh admin JWT access token",
+        "operationId": "adminRefresh",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "New access token" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Admin Auth"],
+        "summary": "Admin logout — revokes refresh token",
+        "operationId": "adminLogout",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LogoutRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Logged out" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Admin Auth"],
+        "summary": "Get current admin profile",
+        "operationId": "adminMe",
+        "security": [{ "AdminBearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Admin profile" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/orders": {
+      "get": {
+        "tags": ["Admin Orders"],
+        "summary": "List all orders (admin)",
+        "operationId": "adminListOrders",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "paymentStatus", "in": "query", "schema": { "type": "string" } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Admin order list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{orderId}": {
+      "get": {
+        "tags": ["Admin Orders"],
+        "summary": "Get admin order detail",
+        "operationId": "adminGetOrder",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Order detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{orderId}/status": {
+      "patch": {
+        "tags": ["Admin Orders"],
+        "summary": "Update order status",
+        "operationId": "adminUpdateOrderStatus",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateOrderStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Order status updated" }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{orderId}/payment-status": {
+      "patch": {
+        "tags": ["Admin Orders"],
+        "summary": "Update order payment status",
+        "operationId": "adminUpdatePaymentStatus",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePaymentStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Payment status updated" }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{orderId}/notes": {
+      "post": {
+        "tags": ["Admin Orders"],
+        "summary": "Add order note",
+        "operationId": "adminAddOrderNote",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderNoteRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Note added" }
+        }
+      },
+      "get": {
+        "tags": ["Admin Orders"],
+        "summary": "List order notes",
+        "operationId": "adminListOrderNotes",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Notes list" }
+        }
+      }
+    },
+    "/api/v1/admin/customers": {
+      "get": {
+        "tags": ["Admin Customers"],
+        "summary": "List customers (admin)",
+        "operationId": "adminListCustomers",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "synthetic", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Customer list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/customers/{customerId}": {
+      "get": {
+        "tags": ["Admin Customers"],
+        "summary": "Get customer detail (admin)",
+        "operationId": "adminGetCustomer",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "customerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Customer detail (sensitive fields omitted)" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Customers"],
+        "summary": "Update customer profile",
+        "operationId": "adminUpdateCustomer",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "customerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCustomerRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Customer updated" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/customers/{customerId}/status": {
+      "patch": {
+        "tags": ["Admin Customers"],
+        "summary": "Update customer status (enable/disable/block)",
+        "operationId": "adminUpdateCustomerStatus",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "customerId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCustomerStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    },
+    "/api/v1/admin/media": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "List media assets (admin)",
+        "operationId": "adminListMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "mimeType", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Media list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/media/{mediaId}": {
+      "get": {
+        "tags": ["Admin Media"],
+        "summary": "Get media detail",
+        "operationId": "adminGetMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Media detail — includes storageProvider but not storage bucket" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Media"],
+        "summary": "Update media metadata",
+        "operationId": "adminUpdateMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMediaRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Media updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Media"],
+        "summary": "Logical delete media (sets status=DELETED)",
+        "operationId": "adminDeleteMedia",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "mediaId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Media deleted (logical, no physical file removed)" }
+        }
+      }
+    },
+    "/api/v1/admin/redirects": {
+      "get": {
+        "tags": ["Admin Redirects"],
+        "summary": "List URL redirects (admin)",
+        "operationId": "adminListRedirects",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "enabled", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "statusCode", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Redirect list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Redirects"],
+        "summary": "Create URL redirect",
+        "operationId": "adminCreateRedirect",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRedirectRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Redirect created" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/redirects/{redirectId}": {
+      "get": {
+        "tags": ["Admin Redirects"],
+        "summary": "Get redirect detail",
+        "operationId": "adminGetRedirect",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Redirect detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Redirects"],
+        "summary": "Update redirect",
+        "operationId": "adminUpdateRedirect",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Redirect updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Redirects"],
+        "summary": "Delete redirect (logical: sets enabled=false)",
+        "operationId": "adminDeleteRedirect",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Redirect disabled" }
+        }
+      }
+    },
+    "/api/v1/admin/redirects/{redirectId}/enabled": {
+      "patch": {
+        "tags": ["Admin Redirects"],
+        "summary": "Toggle redirect enabled state",
+        "operationId": "adminToggleRedirectEnabled",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectEnabledRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Enabled state updated" }
+        }
+      }
+    },
+    "/api/v1/admin/settings": {
+      "get": {
+        "tags": ["Admin Settings"],
+        "summary": "List all site settings",
+        "operationId": "adminListSettings",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "group", "in": "query", "schema": { "type": "string" } },
+          { "name": "isPublic", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Settings list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/admin/settings/{settingKey}": {
+      "get": {
+        "tags": ["Admin Settings"],
+        "summary": "Get setting by key",
+        "operationId": "adminGetSetting",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "settingKey", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Setting detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Settings"],
+        "summary": "Update setting value",
+        "operationId": "adminUpdateSetting",
+        "security": [{ "AdminBearerAuth": [] }],
+        "description": "Sensitive keys (containing secret/password/token/privatekey/api_key/client_secret) cannot be set isPublic=true.",
+        "parameters": [
+          { "name": "settingKey", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSiteSettingRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Setting updated" },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/admin/menus": {
+      "get": {
+        "tags": ["Admin Menus"],
+        "summary": "List menus (admin)",
+        "operationId": "adminListMenus",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] } }
+        ],
+        "responses": {
+          "200": { "description": "Menu list" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Menus"],
+        "summary": "Create menu",
+        "operationId": "adminCreateMenu",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateMenuRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Menu created" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/menus/{menuId}": {
+      "get": {
+        "tags": ["Admin Menus"],
+        "summary": "Get menu by ID (with items)",
+        "operationId": "adminGetMenu",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Menu with items" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Menus"],
+        "summary": "Update menu",
+        "operationId": "adminUpdateMenu",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMenuRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Menu updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Menus"],
+        "summary": "Delete menu and all its items (physical)",
+        "operationId": "adminDeleteMenu",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Menu deleted" }
+        }
+      }
+    },
+    "/api/v1/admin/menus/{menuId}/items": {
+      "post": {
+        "tags": ["Admin Menus"],
+        "summary": "Add menu item",
+        "operationId": "adminCreateMenuItem",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateMenuItemRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Item created" }
+        }
+      }
+    },
+    "/api/v1/admin/menus/{menuId}/items/{itemId}": {
+      "patch": {
+        "tags": ["Admin Menus"],
+        "summary": "Update menu item",
+        "operationId": "adminUpdateMenuItem",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMenuItemRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Item updated" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Menus"],
+        "summary": "Delete menu item (physical)",
+        "operationId": "adminDeleteMenuItem",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Item deleted" }
+        }
+      }
+    },
+    "/api/v1/admin/menus/{menuId}/items/reorder": {
+      "post": {
+        "tags": ["Admin Menus"],
+        "summary": "Reorder menu items (batch set parentId + sortOrder)",
+        "operationId": "adminReorderMenuItems",
+        "security": [{ "AdminBearerAuth": [] }],
+        "description": "Validates that no cycles are created and all parentIds belong to the same menu.",
+        "parameters": [
+          { "name": "menuId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReorderMenuItemsRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Items reordered" },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/admin/coupons": {
+      "get": {
+        "tags": ["Admin Coupons"],
+        "summary": "List coupons (admin)",
+        "operationId": "adminListCoupons",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "code", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED"] } },
+          { "name": "discountType", "in": "query", "schema": { "type": "string", "enum": ["FIXED", "PERCENT"] } },
+          { "name": "expired", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Coupon list" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Coupons"],
+        "summary": "Create coupon",
+        "operationId": "adminCreateCoupon",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateCouponRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Coupon created" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/coupons/{couponId}": {
+      "get": {
+        "tags": ["Admin Coupons"],
+        "summary": "Get coupon detail",
+        "operationId": "adminGetCoupon",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "couponId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Coupon detail" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Coupons"],
+        "summary": "Update coupon",
+        "operationId": "adminUpdateCoupon",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "couponId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCouponRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Coupon updated" }
+        }
+      }
+    },
+    "/api/v1/admin/coupons/{couponId}/status": {
+      "patch": {
+        "tags": ["Admin Coupons"],
+        "summary": "Update coupon status only",
+        "operationId": "adminUpdateCouponStatus",
+        "security": [{ "AdminBearerAuth": [] }],
+        "description": "Allowed statuses: ACTIVE, INACTIVE, EXPIRED, ARCHIVED.",
+        "parameters": [
+          { "name": "couponId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCouponStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AdminBearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Admin JWT access token. Obtain via POST /api/v1/auth/login. Header: Authorization: Bearer <accessToken>"
+      },
+      "CustomerSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "bb_session",
+        "description": "Customer session cookie. Set automatically after POST /api/v1/customer/auth/login."
+      },
+      "CsrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "CSRF token required for all cart/checkout mutations. Value must match the bb_csrf cookie set by the server."
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Resource not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorResponse" } } }
+      },
+      "Unauthorized": {
+        "description": "Authentication required or token expired",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorResponse" } } }
+      },
+      "Forbidden": {
+        "description": "Insufficient permissions",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorResponse" } } }
+      },
+      "Conflict": {
+        "description": "Resource conflict (e.g. duplicate email or code)",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorResponse" } } }
+      },
+      "ValidationError": {
+        "description": "Validation failed — see details array",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiErrorResponse" } } }
+      }
+    },
+    "schemas": {
+      "ApiMeta": {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string", "format": "uuid" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiErrorDetail": {
+        "type": "object",
+        "properties": {
+          "field": { "type": "string" },
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "example": "VALIDATION_ERROR" },
+          "message": { "type": "string", "example": "Validation failed." },
+          "details": { "type": "array", "items": { "$ref": "#/components/schemas/ApiErrorDetail" } }
+        }
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "description": "Standard error envelope used by all error responses",
+        "properties": {
+          "error": { "$ref": "#/components/schemas/ApiError" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "pageSize": { "type": "integer" },
+          "totalItems": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer" },
+          "hasNext": { "type": "boolean" },
+          "hasPrevious": { "type": "boolean" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": { "type": "string" }
+        }
+      },
+      "LogoutRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": { "type": "string" }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "tokenType": { "type": "string", "example": "Bearer" },
+          "expiresIn": { "type": "integer" }
+        }
+      },
+      "TokenDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/TokenResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CustomerRegisterRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" }
+        }
+      },
+      "CustomerLoginRequest": {
+        "type": "object",
+        "required": ["login", "password"],
+        "properties": {
+          "login": { "type": "string", "description": "Email or phone" },
+          "password": { "type": "string" }
+        }
+      },
+      "CustomerSummary": {
+        "type": "object",
+        "description": "Customer profile (sensitive fields omitted)",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "displayName": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "CustomerSummaryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CustomerSummary" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CustomerAuthDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CustomerSummary" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CartItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "productId": { "type": "string" },
+          "productName": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "unitPrice": { "type": "number" },
+          "lineTotal": { "type": "number" }
+        }
+      },
+      "CartResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "example": "ACTIVE" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/CartItemResponse" } },
+          "subtotal": { "type": "number" },
+          "itemCount": { "type": "integer" }
+        }
+      },
+      "CartDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CartResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "AddCartItemRequest": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "string" },
+          "quantity": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "UpdateCartItemRequest": {
+        "type": "object",
+        "required": ["quantity"],
+        "properties": {
+          "quantity": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "CheckoutOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "paymentMethods": { "type": "array", "items": { "type": "object" } },
+          "shippingMethods": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "CheckoutOptionsDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/CheckoutOptionsResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CheckoutRequest": {
+        "type": "object",
+        "required": ["billingAddress"],
+        "properties": {
+          "billingAddress": { "type": "object" },
+          "shippingAddress": { "type": "object" },
+          "paymentMethod": { "type": "string" },
+          "shippingMethod": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      },
+      "QuickBuyRequest": {
+        "type": "object",
+        "required": ["productId", "quantity", "billingAddress"],
+        "properties": {
+          "productId": { "type": "string" },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "billingAddress": { "type": "object" },
+          "paymentMethod": { "type": "string" }
+        }
+      },
+      "OrderSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "orderNumber": { "type": "string" },
+          "status": { "type": "string" },
+          "totalAmount": { "type": "number" }
+        }
+      },
+      "OrderSummaryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/OrderSummaryResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "UpdateOrderStatusRequest": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      },
+      "UpdatePaymentStatusRequest": {
+        "type": "object",
+        "required": ["paymentStatus"],
+        "properties": {
+          "paymentStatus": { "type": "string" }
+        }
+      },
+      "CreateOrderNoteRequest": {
+        "type": "object",
+        "required": ["note"],
+        "properties": {
+          "note": { "type": "string" },
+          "isCustomerVisible": { "type": "boolean" }
+        }
+      },
+      "UpdateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "displayName": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" }
+        }
+      },
+      "UpdateCustomerStatusRequest": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ACTIVE", "DISABLED", "BLOCKED", "PENDING"] },
+          "reason": { "type": "string" }
+        }
+      },
+      "UpdateMediaRequest": {
+        "type": "object",
+        "properties": {
+          "altText": { "type": "string" },
+          "title": { "type": "string" },
+          "caption": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "CreateRedirectRequest": {
+        "type": "object",
+        "required": ["sourcePattern", "targetUrl"],
+        "properties": {
+          "sourcePattern": { "type": "string" },
+          "targetUrl": { "type": "string" },
+          "redirectType": { "type": "string", "enum": ["EXACT", "PREFIX", "REGEX"] },
+          "statusCode": { "type": "integer", "enum": [301, 302, 307, 308], "default": 301 },
+          "enabled": { "type": "boolean", "default": true },
+          "notes": { "type": "string" }
+        }
+      },
+      "UpdateRedirectRequest": {
+        "type": "object",
+        "properties": {
+          "sourcePattern": { "type": "string" },
+          "targetUrl": { "type": "string" },
+          "redirectType": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "enabled": { "type": "boolean" },
+          "notes": { "type": "string" }
+        }
+      },
+      "UpdateRedirectEnabledRequest": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": { "type": "boolean" }
+        }
+      },
+      "UpdateSiteSettingRequest": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "string" },
+          "group": { "type": "string" },
+          "isPublic": { "type": "boolean" },
+          "description": { "type": "string" }
+        }
+      },
+      "PublicSiteSettingResponse": {
+        "type": "object",
+        "properties": {
+          "settingKey": { "type": "string" },
+          "settingValue": { "type": "string" },
+          "settingGroup": { "type": "string" }
+        }
+      },
+      "PublicSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/PublicSiteSettingResponse" } },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "PublicMenuItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "parentId": { "type": "string", "format": "uuid", "nullable": true },
+          "label": { "type": "string" },
+          "url": { "type": "string" },
+          "sortOrder": { "type": "integer" },
+          "openInNewTab": { "type": "boolean" },
+          "cssClass": { "type": "string" }
+        }
+      },
+      "PublicMenuResponse": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string" },
+          "name": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PublicMenuItemResponse" } }
+        }
+      },
+      "PublicMenuDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/PublicMenuResponse" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CreateMenuRequest": {
+        "type": "object",
+        "required": ["location", "name"],
+        "properties": {
+          "location": { "type": "string", "example": "header" },
+          "name": { "type": "string", "example": "Main Navigation" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"], "default": "ACTIVE" }
+        }
+      },
+      "UpdateMenuRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
+        }
+      },
+      "CreateMenuItemRequest": {
+        "type": "object",
+        "required": ["label"],
+        "properties": {
+          "parentId": { "type": "string", "format": "uuid", "nullable": true },
+          "label": { "type": "string" },
+          "url": { "type": "string" },
+          "targetType": { "type": "string" },
+          "targetId": { "type": "string", "format": "uuid", "nullable": true },
+          "sortOrder": { "type": "integer", "default": 0 },
+          "openInNewTab": { "type": "boolean", "default": false },
+          "cssClass": { "type": "string" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"], "default": "ACTIVE" }
+        }
+      },
+      "UpdateMenuItemRequest": {
+        "type": "object",
+        "properties": {
+          "parentId": { "type": "string", "format": "uuid", "nullable": true },
+          "label": { "type": "string" },
+          "url": { "type": "string" },
+          "targetType": { "type": "string" },
+          "targetId": { "type": "string", "format": "uuid" },
+          "sortOrder": { "type": "integer" },
+          "openInNewTab": { "type": "boolean" },
+          "cssClass": { "type": "string" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
+        }
+      },
+      "ReorderMenuItemsRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "sortOrder"],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "parentId": { "type": "string", "format": "uuid", "nullable": true },
+                "sortOrder": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "CreateCouponRequest": {
+        "type": "object",
+        "required": ["code", "name", "discountType", "amount"],
+        "properties": {
+          "code": { "type": "string", "example": "SUMMER20" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "discountType": { "type": "string", "enum": ["FIXED", "PERCENT"] },
+          "amount": { "type": "number", "minimum": 0.01 },
+          "minimumAmount": { "type": "number", "minimum": 0 },
+          "maximumAmount": { "type": "number", "minimum": 0 },
+          "usageLimit": { "type": "integer" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED"], "default": "ACTIVE" },
+          "metadata": { "type": "string" }
+        }
+      },
+      "UpdateCouponRequest": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "discountType": { "type": "string", "enum": ["FIXED", "PERCENT"] },
+          "amount": { "type": "number" },
+          "minimumAmount": { "type": "number" },
+          "maximumAmount": { "type": "number" },
+          "usageLimit": { "type": "integer" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED"] },
+          "metadata": { "type": "string" }
+        }
+      },
+      "UpdateCouponStatusRequest": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED"] }
+        }
+      },
+      "ProductListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "type": "object" } },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      }
+    }
+  }
+}
