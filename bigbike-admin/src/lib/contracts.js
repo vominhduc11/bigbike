@@ -260,6 +260,198 @@ export function normalizeContentItem(input) {
   }
 }
 
+// ── Orders ──────────────────────────────────────────────────────────────────
+
+export const ORDER_STATUS_VALUES = [
+  'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED',
+]
+export const PAYMENT_STATUS_VALUES = [
+  'PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED',
+]
+
+function toTrimmedStringLocal(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function toIntegerLocal(value, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback
+}
+
+export function normalizeOrderStatus(value) {
+  return ORDER_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'
+}
+export function normalizePaymentStatus(value) {
+  return PAYMENT_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'
+}
+
+function normalizeOrderItem(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown',
+    productId: toTrimmedStringLocal(s.productId) || undefined,
+    productName: toTrimmedStringLocal(s.productName) || 'Unknown product',
+    sku: toTrimmedStringLocal(s.sku) || undefined,
+    quantity: toIntegerLocal(s.quantity, 1),
+    unitPrice: toIntegerLocal(s.unitPrice, 0),
+    subtotal: toIntegerLocal(s.subtotal, 0),
+  }
+}
+
+function normalizeAddress(input) {
+  if (!input || typeof input !== 'object') return undefined
+  return {
+    fullName: toTrimmedStringLocal(input.fullName) || undefined,
+    phone: toTrimmedStringLocal(input.phone) || undefined,
+    addressLine1: toTrimmedStringLocal(input.addressLine1) || undefined,
+    city: toTrimmedStringLocal(input.city) || undefined,
+    province: toTrimmedStringLocal(input.province) || undefined,
+    country: toTrimmedStringLocal(input.country) || 'VN',
+  }
+}
+
+export function normalizeOrder(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-order',
+    orderNumber: toTrimmedStringLocal(s.orderNumber) || s.id,
+    customerId: toTrimmedStringLocal(s.customerId) || undefined,
+    customerEmail: toTrimmedStringLocal(s.customerEmail) || undefined,
+    customerName: toTrimmedStringLocal(s.customerName) || undefined,
+    orderStatus: normalizeOrderStatus(s.orderStatus || s.status),
+    paymentStatus: normalizePaymentStatus(s.paymentStatus),
+    paymentMethod: toTrimmedStringLocal(s.paymentMethod) || undefined,
+    items: Array.isArray(s.items) ? s.items.map(normalizeOrderItem) : [],
+    shippingAddress: normalizeAddress(s.shippingAddress),
+    subtotal: toIntegerLocal(s.subtotal, 0),
+    shippingFee: toIntegerLocal(s.shippingFee, 0),
+    discount: toIntegerLocal(s.discount, 0),
+    total: toIntegerLocal(s.total, 0),
+    notes: toTrimmedStringLocal(s.notes) || undefined,
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Customers ────────────────────────────────────────────────────────────────
+
+export const CUSTOMER_STATUS_VALUES = ['ACTIVE', 'INACTIVE', 'BANNED']
+
+export function normalizeCustomerStatus(value) {
+  return CUSTOMER_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'
+}
+
+export function normalizeCustomer(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-customer',
+    email: toTrimmedStringLocal(s.email) || undefined,
+    fullName: toTrimmedStringLocal(s.fullName) || toTrimmedStringLocal(s.name) || 'Unknown',
+    phone: toTrimmedStringLocal(s.phone) || undefined,
+    status: normalizeCustomerStatus(s.status),
+    orderCount: toIntegerLocal(s.orderCount, 0),
+    totalSpent: toIntegerLocal(s.totalSpent, 0),
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Media ────────────────────────────────────────────────────────────────────
+
+export function normalizeMediaItem(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-media',
+    filename: toTrimmedStringLocal(s.filename) || toTrimmedStringLocal(s.filePath) || 'unknown',
+    publicUrl: toTrimmedStringLocal(s.publicUrl) || toTrimmedStringLocal(s.url) || undefined,
+    mimeType: toTrimmedStringLocal(s.mimeType) || 'application/octet-stream',
+    fileSize: toIntegerLocal(s.fileSize, 0),
+    width: s.width ? toIntegerLocal(s.width) : undefined,
+    height: s.height ? toIntegerLocal(s.height) : undefined,
+    altText: toTrimmedStringLocal(s.altText) || undefined,
+    title: toTrimmedStringLocal(s.title) || undefined,
+    storageProvider: toTrimmedStringLocal(s.storageProvider) || 'UNKNOWN',
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+export function normalizeSetting(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    key: toTrimmedStringLocal(s.key) || toTrimmedStringLocal(s.settingKey) || 'unknown',
+    value: toTrimmedStringLocal(s.value) || undefined,
+    description: toTrimmedStringLocal(s.description) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Coupons ──────────────────────────────────────────────────────────────────
+
+export const COUPON_STATUS_VALUES = ['ACTIVE', 'INACTIVE', 'EXPIRED']
+export const DISCOUNT_TYPE_VALUES = ['PERCENT', 'FIXED_AMOUNT']
+
+export function normalizeCoupon(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-coupon',
+    code: toTrimmedStringLocal(s.code) || 'UNKNOWN',
+    discountType: DISCOUNT_TYPE_VALUES.includes(s.discountType) ? s.discountType : 'FIXED_AMOUNT',
+    discountValue: toIntegerLocal(s.discountValue, 0),
+    minimumOrderAmount: toIntegerLocal(s.minimumOrderAmount, 0),
+    maxUsage: s.maxUsage ? toIntegerLocal(s.maxUsage) : undefined,
+    usageCount: toIntegerLocal(s.usageCount, 0),
+    status: COUPON_STATUS_VALUES.includes(s.status) ? s.status : 'INACTIVE',
+    expiresAt: toTrimmedStringLocal(s.expiresAt) || undefined,
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Redirects ────────────────────────────────────────────────────────────────
+
+export function normalizeRedirect(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-redirect',
+    sourcePattern: toTrimmedStringLocal(s.sourcePattern) || '/',
+    targetUrl: toTrimmedStringLocal(s.targetUrl) || '/',
+    redirectType: toIntegerLocal(s.redirectType, 301),
+    isEnabled: s.isEnabled !== false,
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Menus ─────────────────────────────────────────────────────────────────────
+
+function normalizeMenuItem(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown',
+    label: toTrimmedStringLocal(s.label) || 'Untitled',
+    url: toTrimmedStringLocal(s.url) || '#',
+    sortOrder: toIntegerLocal(s.sortOrder, 0),
+    parentId: toTrimmedStringLocal(s.parentId) || undefined,
+    target: toTrimmedStringLocal(s.target) || '_self',
+  }
+}
+
+export function normalizeMenu(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-menu',
+    name: toTrimmedStringLocal(s.name) || 'Untitled menu',
+    location: toTrimmedStringLocal(s.location) || undefined,
+    items: Array.isArray(s.items) ? s.items.map(normalizeMenuItem) : [],
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+
 export function normalizePagination(input, defaultPageSize = 10) {
   const source = input && typeof input === 'object' ? input : {}
 

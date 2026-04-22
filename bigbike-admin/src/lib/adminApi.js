@@ -2,8 +2,15 @@ import {
   normalizeBrand,
   normalizeCategory,
   normalizeContentItem,
+  normalizeCoupon,
+  normalizeCustomer,
+  normalizeMediaItem,
+  normalizeMenu,
+  normalizeOrder,
   normalizePagination,
   normalizeProduct,
+  normalizeRedirect,
+  normalizeSetting,
 } from './contracts'
 import {
   buildMockAdminUser,
@@ -14,6 +21,9 @@ import {
   queryMockBrands,
   queryMockCategories,
   queryMockContent,
+  queryMockCustomers,
+  queryMockMedia,
+  queryMockOrders,
   queryMockProducts,
 } from './mockData'
 
@@ -530,5 +540,258 @@ export async function updateContent(contentType, contentId, input) {
     body: input,
   })
   return parseDetailPayload(payload, normalizeContentItem)
+}
+
+// ── Orders ───────────────────────────────────────────────────────────────────
+
+export async function fetchOrders(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Order list served from mock.', queryMockOrders(query))
+  }
+  try {
+    const payload = await requestJson('/admin/orders', {
+      query: { page: query?.page, size: query?.pageSize, sort: query?.sort, q: query?.search, orderStatus: query?.orderStatus },
+    })
+    return withLiveData(parseListPayload(payload, normalizeOrder, Number(query?.pageSize) || 10))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, queryMockOrders(query))
+  }
+}
+
+export async function fetchOrderDetail(orderId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Order detail served from mock.', { item: queryMockOrders({}).items[0] || null })
+  }
+  try {
+    const payload = await requestJson(`/admin/orders/${orderId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeOrder))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { item: null })
+  }
+}
+
+export async function updateOrderStatus(orderId, orderStatus) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: { orderStatus },
+  })
+  return parseDetailPayload(payload, normalizeOrder)
+}
+
+export async function updateOrderPaymentStatus(orderId, paymentStatus) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/orders/${orderId}/payment-status`, {
+    method: 'PATCH',
+    body: { paymentStatus },
+  })
+  return parseDetailPayload(payload, normalizeOrder)
+}
+
+// ── Customers ────────────────────────────────────────────────────────────────
+
+export async function fetchCustomers(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Customer list served from mock.', queryMockCustomers(query))
+  }
+  try {
+    const payload = await requestJson('/admin/customers', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status },
+    })
+    return withLiveData(parseListPayload(payload, normalizeCustomer, Number(query?.pageSize) || 10))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, queryMockCustomers(query))
+  }
+}
+
+export async function fetchCustomerDetail(customerId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Customer detail served from mock.', { item: null })
+  }
+  try {
+    const payload = await requestJson(`/admin/customers/${customerId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeCustomer))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { item: null })
+  }
+}
+
+export async function updateCustomerStatus(customerId, status) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/customers/${customerId}/status`, {
+    method: 'PATCH',
+    body: { status },
+  })
+  return parseDetailPayload(payload, normalizeCustomer)
+}
+
+// ── Media ────────────────────────────────────────────────────────────────────
+
+export async function fetchMedia(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Media list served from mock.', queryMockMedia(query))
+  }
+  try {
+    const payload = await requestJson('/admin/media', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, mimeType: query?.mimeType },
+    })
+    return withLiveData(parseListPayload(payload, normalizeMediaItem, Number(query?.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, queryMockMedia(query))
+  }
+}
+
+export async function deleteMedia(mediaId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/media/${mediaId}`, { method: 'DELETE' })
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+export async function fetchSettings() {
+  if (FORCE_MOCK) {
+    return withMockFallback('Settings served from mock.', { items: [] })
+  }
+  try {
+    const payload = await requestJson('/admin/settings')
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [] })
+  }
+}
+
+export async function updateSetting(key, value) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/settings/${key}`, {
+    method: 'PATCH',
+    body: { value },
+  })
+  return { item: normalizeSetting(payload?.data || {}) }
+}
+
+// ── Coupons ───────────────────────────────────────────────────────────────────
+
+export async function fetchCoupons(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Coupon list served from mock.', { items: [], pagination: normalizePagination({}) })
+  }
+  try {
+    const payload = await requestJson('/admin/coupons', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status },
+    })
+    return withLiveData(parseListPayload(payload, normalizeCoupon, Number(query?.pageSize) || 10))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+  }
+}
+
+export async function createCoupon(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/coupons', { method: 'POST', body: input })
+  return parseDetailPayload(payload, normalizeCoupon)
+}
+
+export async function updateCouponStatus(couponId, status) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/coupons/${couponId}/status`, {
+    method: 'PATCH',
+    body: { status },
+  })
+  return parseDetailPayload(payload, normalizeCoupon)
+}
+
+// ── Redirects ─────────────────────────────────────────────────────────────────
+
+export async function fetchRedirects(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Redirect list served from mock.', { items: [], pagination: normalizePagination({}) })
+  }
+  try {
+    const payload = await requestJson('/admin/redirects', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search },
+    })
+    return withLiveData(parseListPayload(payload, normalizeRedirect, Number(query?.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+  }
+}
+
+export async function createRedirect(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/redirects', { method: 'POST', body: input })
+  return parseDetailPayload(payload, normalizeRedirect)
+}
+
+export async function toggleRedirect(redirectId, isEnabled) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/redirects/${redirectId}/enabled`, {
+    method: 'PATCH',
+    body: { isEnabled },
+  })
+  return parseDetailPayload(payload, normalizeRedirect)
+}
+
+export async function deleteRedirect(redirectId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/redirects/${redirectId}`, { method: 'DELETE' })
+}
+
+// ── Menus ──────────────────────────────────────────────────────────────────────
+
+export async function fetchMenus() {
+  if (FORCE_MOCK) {
+    return withMockFallback('Menu list served from mock.', { items: [] })
+  }
+  try {
+    const payload = await requestJson('/admin/menus')
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeMenu) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [] })
+  }
+}
+
+export async function fetchMenuDetail(menuId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Menu detail served from mock.', { item: null })
+  }
+  try {
+    const payload = await requestJson(`/admin/menus/${menuId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeMenu))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { item: null })
+  }
+}
+
+export async function createMenuItem(menuId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/menus/${menuId}/items`, { method: 'POST', body: input })
+  return { item: payload?.data }
+}
+
+export async function deleteMenuItem(menuId, itemId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/menus/${menuId}/items/${itemId}`, { method: 'DELETE' })
 }
 

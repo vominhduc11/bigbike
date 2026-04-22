@@ -54,9 +54,85 @@ services:
       retries: 5
       start_period: 20s
 
-  # bigbike-backend, bigbike-web, bigbike-admin:
-  # Disabled — no Dockerfiles yet. Add after Dockerfiles are written (Phase 1).
-  # See docs/PHASE_0_BASELINE_REPORT.md §5 for details.
+  bigbike-backend:
+    build:
+      context: ./bigbike-backend
+      dockerfile: Dockerfile
+    container_name: bigbike-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      BIGBIKE_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bigbike}
+      BIGBIKE_DB_USERNAME: ${POSTGRES_USER:-bigbike}
+      BIGBIKE_DB_PASSWORD: ${POSTGRES_PASSWORD:-bigbike_dev_only}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BIGBIKE_JWT_SECRET: ${BIGBIKE_JWT_SECRET:-dev-change-me-in-production-needs-32chars!!}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_dev_only}
+      MINIO_BUCKET: ${MINIO_BUCKET:-bigbike-media}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:4000}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  bigbike-web:
+    build:
+      context: ./bigbike-web
+      dockerfile: Dockerfile
+    container_name: bigbike-web
+    restart: unless-stopped
+    depends_on:
+      bigbike-backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      BIGBIKE_API_BASE_URL: http://bigbike-backend:8080
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+      BIGBIKE_SITE_URL: ${BIGBIKE_SITE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      BIGBIKE_DISABLE_DEV_FALLBACK: "true"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  bigbike-admin:
+    build:
+      context: ./bigbike-admin
+      dockerfile: Dockerfile
+    container_name: bigbike-admin
+    restart: unless-stopped
+    depends_on:
+      bigbike-backend:
+        condition: service_healthy
+    ports:
+      - "4000:80"
+    environment:
+      VITE_ADMIN_API_BASE: ${VITE_ADMIN_API_BASE:-http://localhost:8080/api/v1}
+      VITE_USE_ADMIN_MOCK: "false"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 networks:
   default:

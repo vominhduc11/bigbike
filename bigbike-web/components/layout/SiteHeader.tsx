@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CartIcon } from "@/components/cart/CartIcon";
+import { toAccountPath } from "@/lib/utils/routes";
 
 const links = [
   { href: "/", label: "Trang chu" },
@@ -30,8 +32,14 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
+
+        <div className="bb-header-actions">
+          <Link href={toAccountPath()} className="bb-nav-link">
+            Tai khoan
+          </Link>
+          <CartIcon />
+        </div>
       </div>
     </header>
   );
 }
-

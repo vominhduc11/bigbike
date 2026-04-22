@@ -2,6 +2,9 @@ import {
   normalizeBrand,
   normalizeCategory,
   normalizeContentItem,
+  normalizeCustomer,
+  normalizeMediaItem,
+  normalizeOrder,
   normalizePagination,
   normalizeProduct,
 } from './contracts'
@@ -414,21 +417,101 @@ export function getMockContentById(contentType, contentId) {
 export const ROLE_PERMISSION_MAP = {
   SUPER_ADMIN: ['*'],
   ADMIN: [
-    'products.read',
-    'products.update',
-    'catalog.read',
-    'catalog.update',
-    'content.read',
-    'content.update',
+    'products.read', 'products.update',
+    'catalog.read', 'catalog.update',
+    'content.read', 'content.update',
+    'orders.read', 'orders.update',
+    'customers.read', 'customers.update',
+    'media.read', 'media.update',
+    'settings.read', 'settings.update',
+    'coupons.read', 'coupons.update',
+    'redirects.read', 'redirects.update',
+    'menus.read', 'menus.update',
   ],
   MANAGER: [
-    'products.read',
-    'catalog.read',
-    'content.read',
+    'products.read', 'catalog.read', 'content.read',
+    'orders.read', 'customers.read', 'media.read',
   ],
-  CONTENT_EDITOR: ['content.read', 'content.update'],
+  CONTENT_EDITOR: ['content.read', 'content.update', 'media.read'],
   VIEWER: ['products.read', 'catalog.read', 'content.read'],
 }
+
+// ── Mock Orders ──────────────────────────────────────────────────────────────
+
+const ORDER_DATA = [
+  { id: 'ord-001', orderNumber: 'BB-2026-001', customerEmail: 'khach@example.com', customerName: 'Nguyễn Văn A', orderStatus: 'PENDING', paymentStatus: 'PENDING', paymentMethod: 'COD', subtotal: 2500000, shippingFee: 50000, discount: 0, total: 2550000, createdAt: '2026-04-20T10:00:00Z', updatedAt: ISO_NOW, items: [{ id: 'oi-1', productName: 'Mũ AGV K1', quantity: 1, unitPrice: 2500000, subtotal: 2500000 }] },
+  { id: 'ord-002', orderNumber: 'BB-2026-002', customerEmail: 'tran@example.com', customerName: 'Trần Thị B', orderStatus: 'CONFIRMED', paymentStatus: 'PAID', paymentMethod: 'BANK_TRANSFER', subtotal: 4800000, shippingFee: 0, discount: 200000, total: 4600000, createdAt: '2026-04-21T08:30:00Z', updatedAt: ISO_NOW, items: [{ id: 'oi-2', productName: 'Áo giáp Alpinestars', quantity: 1, unitPrice: 4800000, subtotal: 4800000 }] },
+  { id: 'ord-003', orderNumber: 'BB-2026-003', customerEmail: 'le@example.com', customerName: 'Lê Văn C', orderStatus: 'DELIVERED', paymentStatus: 'PAID', paymentMethod: 'COD', subtotal: 1200000, shippingFee: 30000, discount: 0, total: 1230000, createdAt: '2026-04-18T14:15:00Z', updatedAt: ISO_NOW, items: [] },
+]
+
+export function queryMockOrders(query) {
+  let items = ORDER_DATA.map(normalizeOrder)
+  if (query?.orderStatus && query.orderStatus !== 'ALL') {
+    items = items.filter((o) => o.orderStatus === query.orderStatus)
+  }
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((o) => o.orderNumber?.toLowerCase().includes(q) || o.customerEmail?.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 10
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Customers ───────────────────────────────────────────────────────────
+
+const CUSTOMER_DATA = [
+  { id: 'cust-001', email: 'khach@example.com', fullName: 'Nguyễn Văn A', phone: '0901234567', status: 'ACTIVE', orderCount: 5, totalSpent: 12500000, createdAt: '2025-06-15T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'cust-002', email: 'tran@example.com', fullName: 'Trần Thị B', phone: '0912345678', status: 'ACTIVE', orderCount: 2, totalSpent: 4600000, createdAt: '2026-01-10T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'cust-003', email: 'inactive@example.com', fullName: 'Phạm Văn D', phone: '0923456789', status: 'INACTIVE', orderCount: 0, totalSpent: 0, createdAt: '2026-02-20T00:00:00Z', updatedAt: ISO_NOW },
+]
+
+export function queryMockCustomers(query) {
+  let items = CUSTOMER_DATA.map(normalizeCustomer)
+  if (query?.status && query.status !== 'ALL') {
+    items = items.filter((c) => c.status === query.status)
+  }
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((c) => c.email?.toLowerCase().includes(q) || c.fullName?.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 10
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Media ───────────────────────────────────────────────────────────────
+
+const MEDIA_DATA = [
+  { id: 'med-001', filename: '2024/05/mu-bao-hiem.jpg', publicUrl: 'https://images.unsplash.com/photo-1610642372651-3e0e4af7fcd2?w=400', mimeType: 'image/jpeg', fileSize: 245000, width: 800, height: 600, altText: 'Mũ bảo hiểm', storageProvider: 'MINIO', createdAt: '2024-05-10T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'med-002', filename: '2024/06/ao-giap.jpg', publicUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', mimeType: 'image/jpeg', fileSize: 189000, width: 800, height: 600, altText: 'Áo giáp biker', storageProvider: 'MINIO', createdAt: '2024-06-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'med-003', filename: '2024/07/gang-tay.jpg', publicUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400', mimeType: 'image/jpeg', fileSize: 123000, width: 600, height: 400, altText: 'Găng tay', storageProvider: 'LEGACY_WP', createdAt: '2024-07-15T00:00:00Z', updatedAt: ISO_NOW },
+]
+
+export function queryMockMedia(query) {
+  let items = MEDIA_DATA.map(normalizeMediaItem)
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((m) => m.filename?.toLowerCase().includes(q) || m.altText?.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 20
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── RBAC ─────────────────────────────────────────────────────────────────────
 
 export function buildMockAdminUser(role = 'ADMIN') {
   const normalizedRole = ROLE_PERMISSION_MAP[role] ? role : 'ADMIN'

@@ -8,21 +8,34 @@ import { CategoryDetailScreen } from './screens/CategoryDetailScreen'
 import { CategoryListScreen } from './screens/CategoryListScreen'
 import { ContentDetailScreen } from './screens/ContentDetailScreen'
 import { ContentListScreen } from './screens/ContentListScreen'
+import { CouponListScreen } from './screens/CouponListScreen'
+import { CustomerDetailScreen } from './screens/CustomerDetailScreen'
+import { CustomerListScreen } from './screens/CustomerListScreen'
+import { MediaLibraryScreen } from './screens/MediaLibraryScreen'
+import { MenuScreen } from './screens/MenuScreen'
+import { OrderDetailScreen } from './screens/OrderDetailScreen'
+import { OrderListScreen } from './screens/OrderListScreen'
 import { ProductDetailScreen } from './screens/ProductDetailScreen'
 import { ProductListScreen } from './screens/ProductListScreen'
+import { RedirectListScreen } from './screens/RedirectListScreen'
+import { SettingsScreen } from './screens/SettingsScreen'
 
 const NAV_ITEMS = [
   { path: '/admin/products', label: 'Products', permission: 'products.read' },
   { path: '/admin/categories', label: 'Categories', permission: 'catalog.read' },
   { path: '/admin/brands', label: 'Brands', permission: 'catalog.read' },
   { path: '/admin/content', label: 'Content', permission: 'content.read' },
+  { path: '/admin/orders', label: 'Orders', permission: 'orders.read' },
+  { path: '/admin/customers', label: 'Customers', permission: 'customers.read' },
+  { path: '/admin/media', label: 'Media', permission: 'media.read' },
+  { path: '/admin/coupons', label: 'Coupons', permission: 'coupons.read' },
+  { path: '/admin/redirects', label: 'Redirects', permission: 'redirects.read' },
+  { path: '/admin/menus', label: 'Menus', permission: 'menus.read' },
+  { path: '/admin/settings', label: 'Settings', permission: 'settings.read' },
 ]
 
 function normalizePath(pathname) {
-  if (!pathname || pathname === '/') {
-    return '/'
-  }
-
+  if (!pathname || pathname === '/') return '/'
   const cleaned = pathname.replace(/\/+$/, '')
   return cleaned || '/'
 }
@@ -30,118 +43,63 @@ function normalizePath(pathname) {
 function parseRoute(pathname) {
   const normalized = normalizePath(pathname)
   const effectivePath =
-    normalized === '/' || normalized === '/admin'
-      ? '/admin/products'
-      : normalized
+    normalized === '/' || normalized === '/admin' ? '/admin/products' : normalized
   const segments = effectivePath.split('/').filter(Boolean)
 
-  if (segments[0] !== 'admin') {
-    return { kind: 'not-found' }
-  }
+  if (segments[0] !== 'admin') return { kind: 'not-found' }
 
-  if (segments[1] === 'products' && segments.length === 2) {
-    return { kind: 'screen', name: 'products-list' }
-  }
+  const [, module, id, sub] = segments
 
-  if (segments[1] === 'products' && segments[2] === 'new' && segments.length === 3) {
-    return { kind: 'screen', name: 'product-create' }
-  }
+  // ── Catalog ──
+  if (module === 'products' && !id) return { kind: 'screen', name: 'products-list' }
+  if (module === 'products' && id === 'new') return { kind: 'screen', name: 'product-create' }
+  if (module === 'products' && id) return { kind: 'screen', name: 'product-detail', productId: id }
+  if (module === 'categories' && !id) return { kind: 'screen', name: 'categories-list' }
+  if (module === 'categories' && id === 'new') return { kind: 'screen', name: 'category-create' }
+  if (module === 'categories' && id) return { kind: 'screen', name: 'category-detail', categoryId: id }
+  if (module === 'brands' && !id) return { kind: 'screen', name: 'brands-list' }
+  if (module === 'brands' && id === 'new') return { kind: 'screen', name: 'brand-create' }
+  if (module === 'brands' && id) return { kind: 'screen', name: 'brand-detail', brandId: id }
 
-  if (segments[1] === 'products' && segments.length === 3) {
-    return { kind: 'screen', name: 'product-detail', productId: segments[2] }
-  }
+  // ── Content ──
+  if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
+  if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
+  if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE', contentId: sub }
 
-  if (segments[1] === 'categories' && segments.length === 2) {
-    return { kind: 'screen', name: 'categories-list' }
-  }
+  // ── Orders ──
+  if (module === 'orders' && !id) return { kind: 'screen', name: 'orders-list' }
+  if (module === 'orders' && id) return { kind: 'screen', name: 'order-detail', orderId: id }
 
-  if (segments[1] === 'categories' && segments[2] === 'new' && segments.length === 3) {
-    return { kind: 'screen', name: 'category-create' }
-  }
+  // ── Customers ──
+  if (module === 'customers' && !id) return { kind: 'screen', name: 'customers-list' }
+  if (module === 'customers' && id) return { kind: 'screen', name: 'customer-detail', customerId: id }
 
-  if (segments[1] === 'categories' && segments.length === 3) {
-    return { kind: 'screen', name: 'category-detail', categoryId: segments[2] }
-  }
-
-  if (segments[1] === 'brands' && segments.length === 2) {
-    return { kind: 'screen', name: 'brands-list' }
-  }
-
-  if (segments[1] === 'brands' && segments[2] === 'new' && segments.length === 3) {
-    return { kind: 'screen', name: 'brand-create' }
-  }
-
-  if (segments[1] === 'brands' && segments.length === 3) {
-    return { kind: 'screen', name: 'brand-detail', brandId: segments[2] }
-  }
-
-  if (segments[1] === 'content' && segments.length === 2) {
-    return { kind: 'screen', name: 'content-list' }
-  }
-
-  if (
-    segments[1] === 'content' &&
-    segments.length === 4 &&
-    (segments[2] === 'articles' || segments[2] === 'article') &&
-    segments[3] === 'new'
-  ) {
-    return { kind: 'screen', name: 'content-create', contentType: 'ARTICLE' }
-  }
-
-  if (
-    segments[1] === 'content' &&
-    segments.length === 4 &&
-    (segments[2] === 'pages' || segments[2] === 'page') &&
-    segments[3] === 'new'
-  ) {
-    return { kind: 'screen', name: 'content-create', contentType: 'PAGE' }
-  }
-
-  if (segments[1] === 'content' && segments.length === 4) {
-    let normalizedType = null
-    if (segments[2] === 'articles' || segments[2] === 'article') {
-      normalizedType = 'ARTICLE'
-    }
-    if (segments[2] === 'pages' || segments[2] === 'page') {
-      normalizedType = 'PAGE'
-    }
-    if (!normalizedType) {
-      return { kind: 'not-found' }
-    }
-
-    return {
-      kind: 'screen',
-      name: 'content-detail',
-      contentType: normalizedType,
-      contentId: segments[3],
-    }
-  }
+  // ── Other modules ──
+  if (module === 'media') return { kind: 'screen', name: 'media-library' }
+  if (module === 'coupons') return { kind: 'screen', name: 'coupons-list' }
+  if (module === 'redirects') return { kind: 'screen', name: 'redirects-list' }
+  if (module === 'menus') return { kind: 'screen', name: 'menus' }
+  if (module === 'settings') return { kind: 'screen', name: 'settings' }
 
   return { kind: 'not-found' }
 }
 
 function routePermission(routeName) {
   switch (routeName) {
-    case 'products-list':
-    case 'product-detail':
-      return 'products.read'
-    case 'product-create':
-      return 'products.update'
-    case 'category-create':
-    case 'brand-create':
-      return 'catalog.update'
-    case 'categories-list':
-    case 'category-detail':
-    case 'brands-list':
-    case 'brand-detail':
-      return 'catalog.read'
-    case 'content-create':
-      return 'content.update'
-    case 'content-list':
-    case 'content-detail':
-      return 'content.read'
-    default:
-      return ''
+    case 'products-list': case 'product-detail': return 'products.read'
+    case 'product-create': return 'products.update'
+    case 'category-create': case 'brand-create': return 'catalog.update'
+    case 'categories-list': case 'category-detail': case 'brands-list': case 'brand-detail': return 'catalog.read'
+    case 'content-create': return 'content.update'
+    case 'content-list': case 'content-detail': return 'content.read'
+    case 'orders-list': case 'order-detail': return 'orders.read'
+    case 'customers-list': case 'customer-detail': return 'customers.read'
+    case 'media-library': return 'media.read'
+    case 'coupons-list': return 'coupons.read'
+    case 'redirects-list': return 'redirects.read'
+    case 'menus': return 'menus.read'
+    case 'settings': return 'settings.read'
+    default: return ''
   }
 }
 
@@ -151,89 +109,47 @@ function firstAllowedPath(hasPermission) {
 }
 
 function App() {
-  const [pathname, setPathname] = useState(() =>
-    normalizePath(window.location.pathname),
-  )
-  const [authState, setAuthState] = useState({
-    status: 'loading',
-    user: null,
-    mode: 'mock',
-    error: '',
-  })
+  const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname))
+  const [authState, setAuthState] = useState({ status: 'loading', user: null, mode: 'mock', error: '' })
 
   const navigate = useCallback((nextPath, options = {}) => {
     const normalized = normalizePath(nextPath)
-
-    if (normalized === pathname) {
-      return
-    }
-
+    if (normalized === pathname) return
     if (options.replace) {
       window.history.replaceState({}, '', normalized)
     } else {
       window.history.pushState({}, '', normalized)
     }
-
     setPathname(normalized)
   }, [pathname])
 
   useEffect(() => {
-    const handlePopState = () => {
-      setPathname(normalizePath(window.location.pathname))
-    }
-
+    const handlePopState = () => setPathname(normalizePath(window.location.pathname))
     window.addEventListener('popstate', handlePopState)
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
   useEffect(() => {
     let active = true
-
     fetchCurrentAdminUser()
       .then((response) => {
-        if (!active) {
-          return
-        }
-
-        setAuthState({
-          status: 'success',
-          user: response.user,
-          mode: response.mode,
-          error: '',
-        })
+        if (!active) return
+        setAuthState({ status: 'success', user: response.user, mode: response.mode, error: '' })
       })
       .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setAuthState({
-          status: 'error',
-          user: null,
-          mode: 'mock',
-          error: error.message,
-        })
+        if (!active) return
+        setAuthState({ status: 'error', user: null, mode: 'mock', error: error.message })
       })
-
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   const route = parseRoute(pathname)
-  const activePath =
-    pathname === '/' || pathname === '/admin' ? '/admin/products' : pathname
+  const activePath = pathname === '/' || pathname === '/admin' ? '/admin/products' : pathname
 
   if (authState.status === 'loading') {
     return (
       <div className="full-page-state">
-        <StatePanel
-          tone="info"
-          title="Loading admin session"
-          description="Resolving current admin user and permissions."
-        />
+        <StatePanel tone="info" title="Loading admin session" description="Resolving current admin user and permissions." />
       </div>
     )
   }
@@ -241,64 +157,33 @@ function App() {
   if (authState.status === 'error') {
     return (
       <div className="full-page-state">
-        <StatePanel
-          tone="danger"
-          title="Failed to initialize admin"
-          description={authState.error || 'Unknown authentication error.'}
-        />
+        <StatePanel tone="danger" title="Failed to initialize admin" description={authState.error || 'Unknown authentication error.'} />
       </div>
     )
   }
 
   const permissions = new Set(authState.user.permissions || [])
-  const hasPermission = (permission) =>
-    permissions.has('*') || permissions.has(permission)
-
+  const hasPermission = (permission) => permissions.has('*') || permissions.has(permission)
   const visibleNav = NAV_ITEMS.filter((item) => hasPermission(item.permission))
-
   const fallbackPath = firstAllowedPath(hasPermission)
 
   if (route.kind === 'not-found') {
     return (
-      <AdminShell
-        navItems={visibleNav}
-        activePath={activePath}
-        navigate={navigate}
-        user={authState.user}
-        authMode={authState.mode}
-      >
-        <StatePanel
-          tone="neutral"
-          title="Route not found"
-          description="Requested admin route is not available in Phase 4D foundation."
-          actionLabel="Go to available module"
-          onAction={() => navigate(fallbackPath)}
-        />
+      <AdminShell navItems={visibleNav} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode}>
+        <StatePanel tone="neutral" title="Route not found" description="Requested admin route is not available."
+          actionLabel="Go to available module" onAction={() => navigate(fallbackPath)} />
       </AdminShell>
     )
   }
 
-  if (route.kind !== 'screen') {
-    return null
-  }
+  if (route.kind !== 'screen') return null
 
   const requiredPermission = routePermission(route.name)
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
-      <AdminShell
-        navItems={visibleNav}
-        activePath={activePath}
-        navigate={navigate}
-        user={authState.user}
-        authMode={authState.mode}
-      >
-        <StatePanel
-          tone="warning"
-          title="Permission denied"
-          description={`Missing permission: ${requiredPermission}`}
-          actionLabel="Go to allowed module"
-          onAction={() => navigate(fallbackPath)}
-        />
+      <AdminShell navItems={visibleNav} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode}>
+        <StatePanel tone="warning" title="Permission denied" description={`Missing permission: ${requiredPermission}`}
+          actionLabel="Go to allowed module" onAction={() => navigate(fallbackPath)} />
       </AdminShell>
     )
   }
@@ -306,141 +191,54 @@ function App() {
   let screen = null
   switch (route.name) {
     case 'products-list':
-      screen = (
-        <ProductListScreen
-          navigate={navigate}
-          canUpdate={hasPermission('products.update')}
-        />
-      )
-      break
+      screen = <ProductListScreen navigate={navigate} canUpdate={hasPermission('products.update')} />; break
     case 'product-create':
-      screen = (
-        <ProductDetailScreen
-          key="product-create"
-          productId={null}
-          isCreate
-          navigate={navigate}
-          canUpdate={hasPermission('products.update')}
-        />
-      )
-      break
+      screen = <ProductDetailScreen key="product-create" productId={null} isCreate navigate={navigate} canUpdate={hasPermission('products.update')} />; break
     case 'product-detail':
-      screen = (
-        <ProductDetailScreen
-          key={route.productId}
-          productId={route.productId}
-          navigate={navigate}
-          canUpdate={hasPermission('products.update')}
-        />
-      )
-      break
+      screen = <ProductDetailScreen key={route.productId} productId={route.productId} navigate={navigate} canUpdate={hasPermission('products.update')} />; break
     case 'categories-list':
-      screen = (
-        <CategoryListScreen
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <CategoryListScreen navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'category-create':
-      screen = (
-        <CategoryDetailScreen
-          key="category-create"
-          categoryId={null}
-          isCreate
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <CategoryDetailScreen key="category-create" categoryId={null} isCreate navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'category-detail':
-      screen = (
-        <CategoryDetailScreen
-          key={route.categoryId}
-          categoryId={route.categoryId}
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <CategoryDetailScreen key={route.categoryId} categoryId={route.categoryId} navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'brands-list':
-      screen = (
-        <BrandListScreen
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <BrandListScreen navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'brand-create':
-      screen = (
-        <BrandDetailScreen
-          key="brand-create"
-          brandId={null}
-          isCreate
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <BrandDetailScreen key="brand-create" brandId={null} isCreate navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'brand-detail':
-      screen = (
-        <BrandDetailScreen
-          key={route.brandId}
-          brandId={route.brandId}
-          navigate={navigate}
-          canUpdate={hasPermission('catalog.update')}
-        />
-      )
-      break
+      screen = <BrandDetailScreen key={route.brandId} brandId={route.brandId} navigate={navigate} canUpdate={hasPermission('catalog.update')} />; break
     case 'content-list':
-      screen = (
-        <ContentListScreen
-          navigate={navigate}
-          canUpdate={hasPermission('content.update')}
-        />
-      )
-      break
+      screen = <ContentListScreen navigate={navigate} canUpdate={hasPermission('content.update')} />; break
     case 'content-create':
-      screen = (
-        <ContentDetailScreen
-          key={`content-create:${route.contentType}`}
-          contentType={route.contentType}
-          contentId={null}
-          isCreate
-          navigate={navigate}
-          canUpdate={hasPermission('content.update')}
-        />
-      )
-      break
+      screen = <ContentDetailScreen key={`content-create:${route.contentType}`} contentType={route.contentType} contentId={null} isCreate navigate={navigate} canUpdate={hasPermission('content.update')} />; break
     case 'content-detail':
-      screen = (
-        <ContentDetailScreen
-          key={`content:${route.contentType}:${route.contentId}`}
-          contentType={route.contentType}
-          contentId={route.contentId}
-          navigate={navigate}
-          canUpdate={hasPermission('content.update')}
-        />
-      )
-      break
+      screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={hasPermission('content.update')} />; break
+
+    case 'orders-list':
+      screen = <OrderListScreen navigate={navigate} canUpdate={hasPermission('orders.update')} />; break
+    case 'order-detail':
+      screen = <OrderDetailScreen key={route.orderId} orderId={route.orderId} navigate={navigate} canUpdate={hasPermission('orders.update')} />; break
+    case 'customers-list':
+      screen = <CustomerListScreen navigate={navigate} canUpdate={hasPermission('customers.update')} />; break
+    case 'customer-detail':
+      screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.update')} />; break
+    case 'media-library':
+      screen = <MediaLibraryScreen canUpdate={hasPermission('media.update')} />; break
+    case 'coupons-list':
+      screen = <CouponListScreen canUpdate={hasPermission('coupons.update')} />; break
+    case 'redirects-list':
+      screen = <RedirectListScreen canUpdate={hasPermission('redirects.update')} />; break
+    case 'menus':
+      screen = <MenuScreen canUpdate={hasPermission('menus.update')} />; break
+    case 'settings':
+      screen = <SettingsScreen canUpdate={hasPermission('settings.update')} />; break
     default:
-      screen = (
-        <StatePanel
-          tone="neutral"
-          title="Module not available"
-          description="The requested module is outside Phase 4D scope."
-        />
-      )
+      screen = <StatePanel tone="neutral" title="Module not available" description="The requested module is not in this version." />
   }
 
   return (
-    <AdminShell
-      navItems={visibleNav}
-      activePath={activePath}
-      navigate={navigate}
-      user={authState.user}
-      authMode={authState.mode}
-    >
+    <AdminShell navItems={visibleNav} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode}>
       {screen}
     </AdminShell>
   )

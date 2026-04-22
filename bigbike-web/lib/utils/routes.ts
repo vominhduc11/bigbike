@@ -43,6 +43,35 @@ export function toHomePath(): string {
   return "/";
 }
 
+export function toCartPath(): string {
+  return "/gio-hang";
+}
+
+export function toCheckoutPath(): string {
+  return "/thanh-toan";
+}
+
+export function toOrderConfirmPath(orderNumber: string): string {
+  return `/don-hang/xac-nhan?so=${encodeURIComponent(orderNumber)}`;
+}
+
+export function toLoginPath(returnTo?: string): string {
+  if (returnTo) return `/dang-nhap?tiep=${encodeURIComponent(returnTo)}`;
+  return "/dang-nhap";
+}
+
+export function toRegisterPath(): string {
+  return "/dang-ky";
+}
+
+export function toAccountPath(): string {
+  return "/tai-khoan";
+}
+
+export function toOrderHistoryPath(): string {
+  return "/tai-khoan/don-hang";
+}
+
 export function toCanonicalUrl(path: string): string {
   return new URL(path, SITE_ORIGIN).toString();
 }

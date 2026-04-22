@@ -100,6 +100,7 @@ const csvRedirectRules = buildRedirectRules(redirectRows);
 const csvNoIndexHeaders = buildNoIndexHeaders(redirectRows);
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   trailingSlash: true,
   async redirects() {
     return csvRedirectRules;
