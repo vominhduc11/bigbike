@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapper;
+import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductNormalizationService;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCouponMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCustomerMapper;
@@ -103,6 +104,7 @@ public class WordPressMigrationImportService {
     private final ArticleImporter articleImporter;
     private final RedirectImporter redirectImporter;
     private final MenuImporter menuImporter;
+    private final ProductNormalizationService productNormalizationService;
     private final ProductImporter productImporter;
     private final ProductVariationImporter productVariationImporter;
     private final CustomerImporter customerImporter;
@@ -130,6 +132,7 @@ public class WordPressMigrationImportService {
             ArticleImporter articleImporter,
             RedirectImporter redirectImporter,
             MenuImporter menuImporter,
+            ProductNormalizationService productNormalizationService,
             ProductImporter productImporter,
             ProductVariationImporter productVariationImporter,
             CustomerImporter customerImporter,
@@ -155,6 +158,7 @@ public class WordPressMigrationImportService {
         this.articleImporter = articleImporter;
         this.redirectImporter = redirectImporter;
         this.menuImporter = menuImporter;
+        this.productNormalizationService = productNormalizationService;
         this.productImporter = productImporter;
         this.productVariationImporter = productVariationImporter;
         this.customerImporter = customerImporter;
@@ -403,7 +407,11 @@ public class WordPressMigrationImportService {
                             productToCategorySlug.get(post.id()),
                             productToBrandSlug.get(post.id())));
                 }
-                results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(products, options));
+                ProductNormalizationService.NormalizationResult norm =
+                        productNormalizationService.normalize(products);
+                log.info("ProductNormalization: recoveredSlug={} recoveredCategory={}",
+                        norm.recoveredSlugCount(), norm.recoveredCategoryCount());
+                results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(norm.products(), options));
             }
 
             // ── 11b. Product Variations ───────────────────────────────────────
