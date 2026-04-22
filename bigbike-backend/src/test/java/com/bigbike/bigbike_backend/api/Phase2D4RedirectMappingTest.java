@@ -9,17 +9,21 @@ import com.bigbike.bigbike_backend.migration.wordpress.importer.MigrationExecuti
 import com.bigbike.bigbike_backend.migration.wordpress.importer.RedirectImporter;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper.MappedRedirect;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpFgRedirect;
+import com.bigbike.bigbike_backend.migration.wordpress.model.WpRedirectRow;
+import com.bigbike.bigbike_backend.migration.wordpress.redirect.FgRedirectAnalyzer;
 import com.bigbike.bigbike_backend.migration.wordpress.redirect.FgRedirectResolver;
 import com.bigbike.bigbike_backend.migration.wordpress.redirect.FgRedirectResolver.ResolutionResult;
+import com.bigbike.bigbike_backend.migration.wordpress.redirect.LegacyUrlMapper;
+import com.bigbike.bigbike_backend.migration.wordpress.redirect.RankMathRedirectImporter;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,30 +32,41 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Phase 2D.4 — Redirect Mapping tests.
+ * Phase 2D.4 — Redirect Completion Strategy tests.
  *
- * Covers FG redirect resolution: product lookup, target URL derivation,
- * deferred handling, self-loop detection, idempotency, and dry-run.
+ * Covers:
+ *   - FgRedirectResolver: source pattern normalization, resolution, deferred, self-loop
+ *   - RedirectImporter: insert, update (idempotent), dry-run, self-loop skip, 301 default
+ *   - RankMathRedirectImporter: happy path, self-loop skip
+ *   - LegacyUrlMapper: product/brand/category fallback generation
+ *   - No duplicate enabled redirects
+ *   - Cross-run idempotency (FG + RankMath)
  */
 @SpringBootTest
 @Transactional
 class Phase2D4RedirectMappingTest {
 
     @Autowired FgRedirectResolver fgRedirectResolver;
+    @Autowired FgRedirectAnalyzer fgRedirectAnalyzer;
+    @Autowired RankMathRedirectImporter rankMathImporter;
+    @Autowired LegacyUrlMapper legacyMapper;
     @Autowired RedirectImporter redirectImporter;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
+    @Autowired BrandJpaRepository brandRepo;
     @Autowired RedirectJpaRepository redirectRepo;
 
     private static final long LEGACY_ID = 12001L;
     private static final String PRODUCT_SLUG = "xe-may-abc-123";
+    private static final String BRAND_SLUG = "honda-test";
+    private static final String CATEGORY_SLUG = "test-redir-cat";
 
     @BeforeEach
     void setup() {
-        CategoryEntity cat = categoryRepo.findBySlug("test-redir-cat").orElseGet(() -> {
+        CategoryEntity cat = categoryRepo.findBySlug(CATEGORY_SLUG).orElseGet(() -> {
             CategoryEntity c = new CategoryEntity();
             c.setId("test-redir-cat");
-            c.setSlug("test-redir-cat");
+            c.setSlug(CATEGORY_SLUG);
             c.setName("Test Redir Cat");
             c.setVisible(true);
             c.setCreatedAt(Instant.now());
@@ -65,14 +80,25 @@ class Phase2D4RedirectMappingTest {
             p.setSlug(PRODUCT_SLUG);
             p.setName("Xe May ABC 123");
             p.setSku("SKU-12001");
-            p.setPrice(BigDecimal.valueOf(10000));
-            p.setRegularPrice(BigDecimal.valueOf(10000));
+            p.setRetailPrice(10000);
+            p.setCurrency("VND");
             p.setStockState(ProductStockState.IN_STOCK);
-            p.setStatus(PublishStatus.PUBLISHED);
+            p.setPublishStatus(PublishStatus.PUBLISHED);
             p.setCategory(cat);
             p.setCreatedAt(Instant.now());
             p.setUpdatedAt(Instant.now());
             return productRepo.save(p);
+        });
+
+        brandRepo.findBySlug(BRAND_SLUG).orElseGet(() -> {
+            BrandEntity b = new BrandEntity();
+            b.setId("brand-redir-test");
+            b.setSlug(BRAND_SLUG);
+            b.setName("Honda Test");
+            b.setVisible(true);
+            b.setCreatedAt(Instant.now());
+            b.setUpdatedAt(Instant.now());
+            return brandRepo.save(b);
         });
     }
 
@@ -112,7 +138,7 @@ class Phase2D4RedirectMappingTest {
     }
 
     @Test
-    void resolve_productNotFound_deferred() {
+    void fg_redirects_deferred_if_unresolved() {
         WpFgRedirect row = new WpFgRedirect("ghost-product.html", 99999L, "product", true);
         ResolutionResult result = fgRedirectResolver.resolve(List.of(row));
 
@@ -130,14 +156,24 @@ class Phase2D4RedirectMappingTest {
     }
 
     @Test
-    void resolve_selfLoop_excluded() {
-        // Source pattern equals target URL — should be counted as selfLoop, not resolved
+    void no_self_loop_redirect() {
+        // source == target after normalization
         String sourceWithoutSlash = "product/" + PRODUCT_SLUG;
-        WpFgRedirect row = new WpFgRedirect(sourceWithoutSlash, LEGACY_ID, "product", true);
-        ResolutionResult result = fgRedirectResolver.resolve(List.of(row));
+        WpFgRedirect fgSelfLoop = new WpFgRedirect(sourceWithoutSlash, LEGACY_ID, "product", true);
+        ResolutionResult result = fgRedirectResolver.resolve(List.of(fgSelfLoop));
 
         assertThat(result.resolved()).isEmpty();
         assertThat(result.selfLoopCount()).isEqualTo(1);
+
+        // Also verify RedirectImporter rejects self-loop MappedRedirects
+        MappedRedirect selfLoop = new MappedRedirect(1L, "/loop-me", "/loop-me", 301, true, List.of());
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+        MigrationExecutionReport.DomainResult importResult =
+                redirectImporter.importBatch(List.of(selfLoop), opts);
+
+        assertThat(importResult.skipped()).isEqualTo(1);
+        assertThat(importResult.inserted()).isZero();
+        assertThat(redirectRepo.findBySourcePattern("/loop-me")).isEmpty();
     }
 
     @Test
@@ -153,7 +189,137 @@ class Phase2D4RedirectMappingTest {
         assertThat(result.deferredCount()).isEqualTo(2);
     }
 
-    // ── RedirectImporter.importBatch ──────────────────────────────────────────
+    // ── RankMathRedirectImporter ──────────────────────────────────────────────
+
+    @Test
+    void rankmath_redirects_imported() {
+        WpRedirectRow row = new WpRedirectRow(
+                5001L,
+                "{\"pattern\":\"\\/old-rankmath-url\",\"comparison\":\"exact\"}",
+                "/new-rankmath-target",
+                301,
+                "active",
+                "/old-rankmath-url");
+
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+        RankMathRedirectImporter.ImportResult result = rankMathImporter.importAll(List.of(row), opts);
+
+        assertThat(result.imported()).isEqualTo(1);
+        assertThat(result.blankSkipped()).isZero();
+        assertThat(result.selfLoopSkipped()).isZero();
+
+        var saved = redirectRepo.findBySourcePattern("/old-rankmath-url");
+        assertThat(saved).isPresent();
+        assertThat(saved.get().getTargetUrl()).isEqualTo("/new-rankmath-target");
+        assertThat(saved.get().getStatusCode()).isEqualTo(301);
+        assertThat(saved.get().isEnabled()).isTrue();
+    }
+
+    @Test
+    void rankmath_self_loop_skipped() {
+        WpRedirectRow selfLoop = new WpRedirectRow(
+                5002L, null, "/same-url", 301, "active", "/same-url");
+
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+        RankMathRedirectImporter.ImportResult result = rankMathImporter.importAll(List.of(selfLoop), opts);
+
+        assertThat(result.selfLoopSkipped()).isEqualTo(1);
+        assertThat(result.imported()).isZero();
+        assertThat(redirectRepo.findBySourcePattern("/same-url")).isEmpty();
+    }
+
+    // ── LegacyUrlMapper ───────────────────────────────────────────────────────
+
+    @Test
+    void fallback_redirect_generated_for_products() {
+        LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
+
+        // Product from @BeforeEach: slug = PRODUCT_SLUG
+        boolean productRedirectPresent = result.redirects().stream()
+                .anyMatch(r -> r.sourcePattern().equals("/" + PRODUCT_SLUG + ".html")
+                        && r.targetPattern().equals("/product/" + PRODUCT_SLUG + "/"));
+        assertThat(productRedirectPresent).isTrue();
+        assertThat(result.productCount()).isGreaterThan(0);
+    }
+
+    @Test
+    void fallback_redirect_generated_for_brands() {
+        LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
+
+        boolean brandRedirectPresent = result.redirects().stream()
+                .anyMatch(r -> r.sourcePattern().equals("/brand/" + BRAND_SLUG)
+                        && r.targetPattern().equals("/brands/" + BRAND_SLUG));
+        assertThat(brandRedirectPresent).isTrue();
+        assertThat(result.brandCount()).isGreaterThan(0);
+    }
+
+    @Test
+    void fallback_redirects_have_301_status() {
+        LegacyUrlMapper.MappingResult result = legacyMapper.generateFallbacks();
+        assertThat(result.redirects()).isNotEmpty();
+        assertThat(result.redirects()).allSatisfy(r -> assertThat(r.redirectCode()).isEqualTo(301));
+    }
+
+    // ── RedirectImporter — 301 default, idempotency, dry-run ─────────────────
+
+    @Test
+    void status_code_301_default_enforced() {
+        // redirectCode=0 must be stored as 301
+        MappedRedirect mr = new MappedRedirect(1L, "/zero-code-test.html", "/new-target", 0, true, List.of());
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+
+        redirectImporter.importBatch(List.of(mr), opts);
+
+        var saved = redirectRepo.findBySourcePattern("/zero-code-test.html");
+        assertThat(saved).isPresent();
+        assertThat(saved.get().getStatusCode()).isEqualTo(301);
+    }
+
+    @Test
+    void no_duplicate_enabled_redirects() {
+        MappedRedirect mr = new MappedRedirect(1L, "/dup-check.html", "/product/dup-target", 301, true, List.of());
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+
+        redirectImporter.importBatch(List.of(mr), opts);
+        redirectImporter.importBatch(List.of(mr), opts);
+
+        long count = redirectRepo.findAll().stream()
+                .filter(r -> "/dup-check.html".equals(r.getSourcePattern()))
+                .count();
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void idempotency_preserved() {
+        WpFgRedirect fgRow = new WpFgRedirect("idp-fg.html", LEGACY_ID, "product", true);
+        WpRedirectRow rkRow = new WpRedirectRow(
+                6001L,
+                "{\"pattern\":\"\\/idp-rm\"}",
+                "/idp-rm-target",
+                301,
+                "active",
+                "/idp-rm");
+
+        MigrationExecutionOptions opts = new MigrationExecutionOptions(null, Set.of(), 50, false, false);
+
+        // Run 1
+        List<MappedRedirect> fg1 = fgRedirectResolver.resolve(List.of(fgRow)).resolved();
+        redirectImporter.importBatch(fg1, opts);
+        rankMathImporter.importAll(List.of(rkRow), opts);
+        long countRun1 = redirectRepo.count();
+
+        // Run 2
+        List<MappedRedirect> fg2 = fgRedirectResolver.resolve(List.of(fgRow)).resolved();
+        MigrationExecutionReport.DomainResult fgRun2 = redirectImporter.importBatch(fg2, opts);
+        RankMathRedirectImporter.ImportResult rkRun2 = rankMathImporter.importAll(List.of(rkRow), opts);
+        long countRun2 = redirectRepo.count();
+
+        assertThat(fgRun2.inserted()).isZero();
+        assertThat(fgRun2.updated()).isEqualTo(1);
+        assertThat(rkRun2.domainResult().inserted()).isZero();
+        assertThat(rkRun2.domainResult().updated()).isEqualTo(1);
+        assertThat(countRun2).isEqualTo(countRun1);
+    }
 
     @Test
     void importBatch_insertsResolvedRedirect() {
@@ -166,7 +332,7 @@ class Phase2D4RedirectMappingTest {
         assertThat(result.inserted()).isEqualTo(1);
         assertThat(result.failed()).isZero();
 
-        Optional<var> saved = redirectRepo.findBySourcePattern("/import-test.html");
+        var saved = redirectRepo.findBySourcePattern("/import-test.html");
         assertThat(saved).isPresent();
         assertThat(saved.get().getTargetUrl()).isEqualTo("/product/" + PRODUCT_SLUG);
         assertThat(saved.get().getStatusCode()).isEqualTo(301);
@@ -198,5 +364,23 @@ class Phase2D4RedirectMappingTest {
 
         assertThat(result.inserted()).isEqualTo(1);
         assertThat(redirectRepo.findBySourcePattern("/dryrun-redir.html")).isEmpty();
+    }
+
+    // ── FgRedirectAnalyzer ────────────────────────────────────────────────────
+
+    @Test
+    void analyzer_reports_correct_counts() {
+        List<WpFgRedirect> rows = List.of(
+                new WpFgRedirect("ana-a.html", LEGACY_ID, "product", true),    // resolved
+                new WpFgRedirect("ana-b.html", 88888L, "product", true),        // deferred
+                new WpFgRedirect("ana-c.html", LEGACY_ID, "product", false)     // deferred (inactive)
+        );
+
+        FgRedirectAnalyzer.AnalysisResult result = fgRedirectAnalyzer.analyze(rows);
+
+        assertThat(result.total()).isEqualTo(3);
+        assertThat(result.resolved()).isEqualTo(1);
+        assertThat(result.deferred()).isEqualTo(2);
+        assertThat(result.resolvedRedirects()).hasSize(1);
     }
 }

@@ -98,7 +98,7 @@ public class FgRedirectResolver {
      * old_url is stored without leading slash (e.g. "some-product.html").
      * Source pattern becomes "/some-product.html".
      */
-    static String toSourcePattern(String oldUrl) {
+    public static String toSourcePattern(String oldUrl) {
         if (oldUrl == null || oldUrl.isBlank()) return null;
         String trimmed = oldUrl.trim();
         return trimmed.startsWith("/") ? trimmed : "/" + trimmed;
