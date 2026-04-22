@@ -80,7 +80,8 @@ public class CustomerAuthService {
             throw new UnauthorizedException("Invalid credentials.");
         }
         if (!STATUS_ACTIVE.equals(customer.getStatus())) {
-            throw new UnauthorizedException("Account is not active.");
+            // Use same message as wrong-password to prevent leaking account status (anti-enumeration)
+            throw new UnauthorizedException("Invalid credentials.");
         }
 
         Instant now = Instant.now();

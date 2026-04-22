@@ -56,8 +56,26 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
+                        // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
+                        .requestMatchers("/api/v1/cart/**").permitAll()
+                        .requestMatchers("/api/v1/cart").permitAll()
+                        // Checkout + quick-buy: guest + customer, CSRF enforced on mutations by filter
+                        .requestMatchers(HttpMethod.POST, "/api/v1/checkout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/quick-buy").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
+                        // Order lookup: public GET, no CSRF needed (safe method)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
+                        // OpenAPI docs
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        // Public settings and menus
+                        .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // Customer order read requires ROLE_CUSTOMER
+                        .requestMatchers("/api/v1/customer/orders/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/customer/orders").hasRole("CUSTOMER")
                         // Customer profile requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/me").hasRole("CUSTOMER")
                         // Admin /auth/me requires any authenticated user

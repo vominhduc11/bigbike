@@ -10,4 +10,6 @@ public interface OrderNoteJpaRepository extends JpaRepository<OrderNoteEntity, U
     List<OrderNoteEntity> findByOrderId(UUID orderId);
 
     List<OrderNoteEntity> findByOrderIdOrderByCreatedAtAsc(UUID orderId);
+
+    List<OrderNoteEntity> findByOrderIdAndCustomerVisibleOrderByCreatedAtAsc(UUID orderId, boolean customerVisible);
 }
