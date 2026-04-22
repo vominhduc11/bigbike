@@ -290,7 +290,7 @@ class Phase2AWordPressMigrationFoundationTest {
                 new WpPostMeta(5003L, 501L, "minimum_amount", "500000"),
                 new WpPostMeta(5005L, 501L, "usage_limit", "100"),
                 new WpPostMeta(5006L, 501L, "usage_count", "23"),
-                new WpPostMeta(5007L, 501L, "date_expires", "1735689600")
+                new WpPostMeta(5007L, 501L, "date_expires", "9999999999")
         );
 
         WordPressCouponMapper.MappedCoupon result = couponMapper.map(post, metas);
