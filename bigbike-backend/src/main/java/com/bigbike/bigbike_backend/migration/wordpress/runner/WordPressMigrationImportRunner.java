@@ -28,10 +28,12 @@ import org.springframework.stereotype.Component;
  *   2. bigbike.migration.wordpress.dry-run=false
  *   3. bigbike.migration.wordpress.mode=import
  *   4. bigbike.migration.wordpress.confirm-execute=true
+ *   5. bigbike.migration.wordpress.environment=local OR staging
  *
  * Additional safety checks:
  *   - dump-path must exist and be readable
  *   - target Spring profile must NOT be "test"
+ *   - target DB URL must NOT match production-like patterns
  *
  * If ANY guard fails: runner is a complete no-op. No DB writes occur.
  *
@@ -43,17 +45,26 @@ public class WordPressMigrationImportRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(WordPressMigrationImportRunner.class);
 
+    /** DB URL substrings (case-insensitive) that indicate a production target. */
+    public static final java.util.List<String> PRODUCTION_URL_PATTERNS = java.util.List.of(
+            "bigbike.vn", "prod", "production", "rds.amazonaws", "cloudsql",
+            "db.render.com", "railway.app"
+    );
+
     private final WordPressMigrationProperties props;
     private final WordPressMigrationImportService importService;
     private final Environment environment;
+    private final String datasourceUrl;
 
     public WordPressMigrationImportRunner(
             WordPressMigrationProperties props,
             WordPressMigrationImportService importService,
-            Environment environment) {
+            Environment environment,
+            @org.springframework.beans.factory.annotation.Value("${spring.datasource.url:}") String datasourceUrl) {
         this.props = props;
         this.importService = importService;
         this.environment = environment;
+        this.datasourceUrl = datasourceUrl;
     }
 
     @Override
@@ -77,11 +88,37 @@ public class WordPressMigrationImportRunner implements ApplicationRunner {
             return;
         }
 
+        // Guard 5: environment must be "local" or "staging"
+        String env = props.getEnvironment() == null ? "" : props.getEnvironment().trim().toLowerCase();
+        if (!env.equals("local") && !env.equals("staging")) {
+            log.error("=================================================");
+            log.error("IMPORT ABORTED: environment guard not satisfied.");
+            log.error("Set: --bigbike.migration.wordpress.environment=local OR staging");
+            log.error("Current value: '{}'", props.getEnvironment());
+            log.error("=================================================");
+            return;
+        }
+
         // Safety: refuse to run in test profile
         boolean isTestProfile = Arrays.asList(environment.getActiveProfiles()).contains("test");
         if (isTestProfile) {
             log.error("IMPORT ABORTED: active Spring profile is 'test'. Real import must not run in test profile.");
             return;
+        }
+
+        // Safety: refuse if DB URL looks like production
+        if (datasourceUrl != null && !datasourceUrl.isBlank()) {
+            String urlLower = datasourceUrl.toLowerCase();
+            for (String pattern : PRODUCTION_URL_PATTERNS) {
+                if (urlLower.contains(pattern)) {
+                    log.error("=================================================");
+                    log.error("IMPORT ABORTED: DB URL matches production-like pattern '{}'.", pattern);
+                    log.error("Refusing to write to a potentially production database.");
+                    log.error("DB URL: {}", datasourceUrl);
+                    log.error("=================================================");
+                    return;
+                }
+            }
         }
 
         // Safety: dump path must exist

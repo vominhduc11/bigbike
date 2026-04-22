@@ -59,6 +59,13 @@ public class WordPressMigrationProperties {
      */
     private String domains = "";
 
+    /**
+     * Deployment environment. Must be "local" or "staging" to allow real import.
+     * Any other value (including blank) blocks real import execution.
+     * Default: "" (blocked).
+     */
+    private String environment = "";
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
@@ -88,6 +95,9 @@ public class WordPressMigrationProperties {
 
     public String getDomains() { return domains; }
     public void setDomains(String domains) { this.domains = domains; }
+
+    public String getEnvironment() { return environment; }
+    public void setEnvironment(String environment) { this.environment = environment; }
 
     /** Returns the resolved dump file path: dumpPath takes precedence over sqlDumpPath. */
     public String resolvedDumpPath() {
