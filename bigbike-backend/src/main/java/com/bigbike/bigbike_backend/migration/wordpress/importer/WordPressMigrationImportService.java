@@ -104,6 +104,7 @@ public class WordPressMigrationImportService {
     private final RedirectImporter redirectImporter;
     private final MenuImporter menuImporter;
     private final ProductImporter productImporter;
+    private final ProductVariationImporter productVariationImporter;
     private final CustomerImporter customerImporter;
     private final CouponImporter couponImporter;
     private final OrderImporter orderImporter;
@@ -130,6 +131,7 @@ public class WordPressMigrationImportService {
             RedirectImporter redirectImporter,
             MenuImporter menuImporter,
             ProductImporter productImporter,
+            ProductVariationImporter productVariationImporter,
             CustomerImporter customerImporter,
             CouponImporter couponImporter,
             OrderImporter orderImporter) {
@@ -154,6 +156,7 @@ public class WordPressMigrationImportService {
         this.redirectImporter = redirectImporter;
         this.menuImporter = menuImporter;
         this.productImporter = productImporter;
+        this.productVariationImporter = productVariationImporter;
         this.customerImporter = customerImporter;
         this.couponImporter = couponImporter;
         this.orderImporter = orderImporter;
@@ -401,6 +404,16 @@ public class WordPressMigrationImportService {
                             productToBrandSlug.get(post.id())));
                 }
                 results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(products, options));
+            }
+
+            // ── 11b. Product Variations ───────────────────────────────────────
+            if (options.includesDomain(MigrationDomain.PRODUCT_VARIATIONS)) {
+                List<WordPressVariationMapper.MappedVariation> variations = new ArrayList<>();
+                for (WpPost post : variationPosts) {
+                    variations.add(variationMapper.map(post, metaByPost.getOrDefault(post.id(), List.of())));
+                }
+                results.put(MigrationDomain.PRODUCT_VARIATIONS,
+                        productVariationImporter.importBatch(variations, options));
             }
 
             // ── 12. Customers ─────────────────────────────────────────────────
