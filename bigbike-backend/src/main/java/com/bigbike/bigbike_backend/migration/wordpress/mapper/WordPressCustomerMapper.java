@@ -35,7 +35,7 @@ public class WordPressCustomerMapper {
         List<String> warnings = new ArrayList<>();
         Map<String, String> meta = userMetas.stream()
                 .filter(m -> m.userId() == user.id())
-                .collect(Collectors.toMap(WpUserMeta::metaKey, WpUserMeta::metaValue, (a, b) -> a));
+                .filter(m -> m.metaKey() != null).collect(Collectors.toMap(WpUserMeta::metaKey, m -> m.metaValue() != null ? m.metaValue() : "", (a, b) -> a));
 
         if (user.userEmail() == null || user.userEmail().isBlank()) {
             warnings.add("Missing email for user id=" + user.id());

@@ -32,7 +32,7 @@ public class WordPressCouponMapper {
         List<String> warnings = new ArrayList<>();
         Map<String, String> metaMap = metas.stream()
                 .filter(m -> m.postId() == post.id())
-                .collect(Collectors.toMap(WpPostMeta::metaKey, WpPostMeta::metaValue, (a, b) -> a));
+                .filter(m -> m.metaKey() != null).collect(Collectors.toMap(WpPostMeta::metaKey, m -> m.metaValue() != null ? m.metaValue() : "", (a, b) -> a));
 
         String code = post.postTitle().trim().toUpperCase();
         String discountType = mapDiscountType(metaMap.get("discount_type"), warnings);

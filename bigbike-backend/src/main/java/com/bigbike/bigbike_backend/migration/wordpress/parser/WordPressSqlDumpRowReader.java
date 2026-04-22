@@ -1,0 +1,207 @@
+package com.bigbike.bigbike_backend.migration.wordpress.parser;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.springframework.stereotype.Component;
+
+/**
+ * Streams a MySQL dump file and dispatches rows from selected tables to a handler.
+ *
+ * Reads line by line — never loads the full dump into memory.
+ * Captures column names from CREATE TABLE statements, then uses them when parsing
+ * INSERT statements for the requested tables.
+ *
+ * Supports both mysqldump formats:
+ *   - Single-line: INSERT INTO `table` VALUES (...),(...),...;
+ *   - Multi-line:  INSERT INTO `table` VALUES\n(row1);\nINSERT INTO ... (common with --skip-extended-insert)
+ *
+ * Uses ISO-8859-1 charset to handle mixed-encoding MySQL dumps without
+ * MalformedInputException. ASCII content (SQL structure, numbers) is unaffected.
+ */
+@Component
+public class WordPressSqlDumpRowReader {
+
+    private static final Pattern CREATE_TABLE_PATTERN =
+            Pattern.compile("^CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?[`'\"]?(\\w+)[`'\"]?\\s*\\(",
+                    Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern COLUMN_PATTERN =
+            Pattern.compile("^\\s+[`'\"]([^`'\"]+)[`'\"]\\s+\\w");
+
+    private static final Pattern INSERT_TABLE_PATTERN =
+            Pattern.compile("^INSERT\\s+INTO\\s+[`'\"]?(\\w+)[`'\"]?",
+                    Pattern.CASE_INSENSITIVE);
+
+    private final WordPressInsertParser insertParser = new WordPressInsertParser();
+
+    /**
+     * Stream through the dump, dispatching rows for tables in {@code targetTables}.
+     *
+     * @param dumpPath     path to the .sql dump file
+     * @param targetTables full table names to capture (e.g. "kd_posts", "kd_postmeta")
+     * @param handler      callback invoked for each parsed row: (tableName, row)
+     * @return list of warnings accumulated during streaming
+     */
+    public List<String> stream(Path dumpPath, Set<String> targetTables,
+            BiConsumer<String, WordPressTableRow> handler) throws IOException {
+
+        List<String> warnings = new ArrayList<>();
+        Map<String, List<String>> columnsByTable = new HashMap<>();
+
+        boolean inCreateTable = false;
+        String currentTable = null;
+        List<String> currentColumns = new ArrayList<>();
+
+        // Pending INSERT state — for multi-line INSERT format
+        // (INSERT INTO table VALUES on one line, rows on next line(s))
+        String pendingInsertTable = null;
+        StringBuilder pendingInsert = null;
+
+        // ISO_8859_1 accepts any byte sequence without MalformedInputException.
+        // MySQL dump data values may contain non-UTF-8 sequences; ASCII SQL structure is unaffected.
+        try (BufferedReader reader = Files.newBufferedReader(dumpPath, StandardCharsets.ISO_8859_1)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+
+                // ── Flush pending multi-line INSERT ──────────────────────────────
+                if (pendingInsert != null) {
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+                        // Blank/comment — continue accumulating
+                        continue;
+                    }
+                    if (trimmed.startsWith("(")) {
+                        // This is the values line(s): combine with previous INSERT header
+                        String fullLine = pendingInsert.toString() + trimmed;
+                        dispatchInsert(fullLine, pendingInsertTable,
+                                columnsByTable.getOrDefault(pendingInsertTable, List.of()),
+                                handler, warnings);
+                        pendingInsert = null;
+                        pendingInsertTable = null;
+                        continue;
+                    } else {
+                        // Something else — abandon pending INSERT
+                        warnings.add("Abandoned multi-line INSERT for " + pendingInsertTable
+                                + " — unexpected continuation line");
+                        pendingInsert = null;
+                        pendingInsertTable = null;
+                        // Fall through to process this line normally
+                    }
+                }
+
+                // ── CREATE TABLE detection ───────────────────────────────────────
+                Matcher createMatcher = CREATE_TABLE_PATTERN.matcher(line);
+                if (createMatcher.find()) {
+                    inCreateTable = true;
+                    currentTable = createMatcher.group(1);
+                    currentColumns = new ArrayList<>();
+                    continue;
+                }
+
+                if (inCreateTable) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith(")")) {
+                        columnsByTable.put(currentTable, new ArrayList<>(currentColumns));
+                        inCreateTable = false;
+                        currentTable = null;
+                        currentColumns = new ArrayList<>();
+                        continue;
+                    }
+                    if (isIndexOrConstraintLine(trimmed)) continue;
+                    Matcher colMatcher = COLUMN_PATTERN.matcher(line);
+                    if (colMatcher.find()) {
+                        currentColumns.add(colMatcher.group(1));
+                    }
+                    continue;
+                }
+
+                // ── INSERT detection ─────────────────────────────────────────────
+                if (!line.startsWith("INSERT")) continue;
+
+                Matcher insertMatcher = INSERT_TABLE_PATTERN.matcher(line);
+                if (!insertMatcher.find()) continue;
+
+                String tableName = insertMatcher.group(1);
+                if (!targetTables.contains(tableName)) continue;
+
+                // Check if the INSERT line is complete (has VALUES content after VALUES keyword)
+                String stripped = line.trim();
+                if (isIncompleteInsert(stripped)) {
+                    // Multi-line format: VALUES is on this line but actual rows are on next line
+                    pendingInsertTable = tableName;
+                    pendingInsert = new StringBuilder(stripped);
+                    // Remove trailing whitespace/semicolons from the header line
+                    while (pendingInsert.length() > 0) {
+                        char last = pendingInsert.charAt(pendingInsert.length() - 1);
+                        if (last == ';' || last == ' ' || last == '\t') {
+                            pendingInsert.deleteCharAt(pendingInsert.length() - 1);
+                        } else break;
+                    }
+                    pendingInsert.append(" ");
+                    continue;
+                }
+
+                dispatchInsert(line, tableName,
+                        columnsByTable.getOrDefault(tableName, List.of()),
+                        handler, warnings);
+            }
+        }
+
+        return warnings;
+    }
+
+    /**
+     * True when an INSERT line ends with "VALUES" (or "VALUES ") with no actual row data.
+     * e.g.: INSERT INTO `kd_posts` VALUES
+     */
+    private boolean isIncompleteInsert(String line) {
+        String upper = line.toUpperCase();
+        // Find last occurrence of VALUES
+        int idx = upper.lastIndexOf("VALUES");
+        if (idx < 0) return false;
+        // Check if there is anything meaningful after VALUES
+        String after = line.substring(idx + 6).trim();
+        return after.isEmpty() || after.equals(";");
+    }
+
+    private void dispatchInsert(String line, String tableName, List<String> cols,
+            BiConsumer<String, WordPressTableRow> handler, List<String> warnings) {
+        List<WordPressTableRow> rows;
+        try {
+            rows = insertParser.parse(line, cols);
+        } catch (Exception e) {
+            warnings.add("Failed to parse INSERT for " + tableName + ": " + e.getMessage());
+            return;
+        }
+        if (rows.isEmpty()) {
+            warnings.add("Empty result parsing INSERT for " + tableName + " (format unsupported?)");
+            return;
+        }
+        for (WordPressTableRow row : rows) {
+            handler.accept(tableName, row);
+        }
+    }
+
+    private boolean isIndexOrConstraintLine(String trimmed) {
+        String upper = trimmed.toUpperCase();
+        return upper.startsWith("PRIMARY KEY")
+                || upper.startsWith("KEY ")
+                || upper.startsWith("UNIQUE KEY")
+                || upper.startsWith("UNIQUE ")
+                || upper.startsWith("INDEX ")
+                || upper.startsWith("FULLTEXT")
+                || upper.startsWith("CONSTRAINT")
+                || upper.startsWith("FOREIGN KEY");
+    }
+}

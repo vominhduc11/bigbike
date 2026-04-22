@@ -32,9 +32,10 @@ public class WordPressProductMapper {
     public MappedProduct map(WpPost post, List<WpPostMeta> metas) {
         Map<String, String> metaMap = metas.stream()
                 .filter(m -> m.postId() == post.id())
+                .filter(m -> m.metaKey() != null)
                 .collect(Collectors.toMap(
                         WpPostMeta::metaKey,
-                        WpPostMeta::metaValue,
+                        m -> m.metaValue() != null ? m.metaValue() : "",
                         (a, b) -> a
                 ));
 

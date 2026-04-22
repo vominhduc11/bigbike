@@ -205,7 +205,7 @@ class Phase2AWordPressMigrationFoundationTest {
                 "image/jpeg",
                 "Honda ABC 125 màu đỏ",
                 "honda-abc-125-main",
-                "a:5:{s:5:\"width\";i:800;}"
+                "a:1:{s:5:\"width\";i:800;}"
         );
 
         WordPressMediaMapper.MappedMedia result = mediaMapper.map(att);
