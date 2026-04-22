@@ -46,6 +46,19 @@ public class WordPressMigrationProperties {
     /** Number of rows to process per batch during import. Default: 500. */
     private int batchSize = 500;
 
+    /**
+     * Explicit confirmation required for real import execute mode.
+     * Must be true for mode=import with dry-run=false to proceed.
+     * Default: false.
+     */
+    private boolean confirmExecute = false;
+
+    /**
+     * Comma-separated list of domains to import. Empty = all domains.
+     * Example: categories,brands,media,products
+     */
+    private String domains = "";
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
@@ -69,6 +82,12 @@ public class WordPressMigrationProperties {
 
     public String getDumpPath() { return dumpPath; }
     public void setDumpPath(String dumpPath) { this.dumpPath = dumpPath; }
+
+    public boolean isConfirmExecute() { return confirmExecute; }
+    public void setConfirmExecute(boolean confirmExecute) { this.confirmExecute = confirmExecute; }
+
+    public String getDomains() { return domains; }
+    public void setDomains(String domains) { this.domains = domains; }
 
     /** Returns the resolved dump file path: dumpPath takes precedence over sqlDumpPath. */
     public String resolvedDumpPath() {
