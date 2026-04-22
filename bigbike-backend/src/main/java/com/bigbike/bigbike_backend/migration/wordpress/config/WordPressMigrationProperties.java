@@ -66,6 +66,20 @@ public class WordPressMigrationProperties {
      */
     private String environment = "";
 
+    // ---- Phase 2E: media copy to MinIO ----
+
+    /** MinIO API endpoint. Example: http://localhost:9000 */
+    private String minioEndpoint = "";
+
+    /** MinIO access key (MINIO_ROOT_USER). */
+    private String minioAccessKey = "";
+
+    /** MinIO secret key (MINIO_ROOT_PASSWORD). */
+    private String minioSecretKey = "";
+
+    /** MinIO bucket for uploaded media. Example: bigbike-media */
+    private String minioBucket = "";
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
@@ -98,6 +112,18 @@ public class WordPressMigrationProperties {
 
     public String getEnvironment() { return environment; }
     public void setEnvironment(String environment) { this.environment = environment; }
+
+    public String getMinioEndpoint() { return minioEndpoint; }
+    public void setMinioEndpoint(String minioEndpoint) { this.minioEndpoint = minioEndpoint; }
+
+    public String getMinioAccessKey() { return minioAccessKey; }
+    public void setMinioAccessKey(String minioAccessKey) { this.minioAccessKey = minioAccessKey; }
+
+    public String getMinioSecretKey() { return minioSecretKey; }
+    public void setMinioSecretKey(String minioSecretKey) { this.minioSecretKey = minioSecretKey; }
+
+    public String getMinioBucket() { return minioBucket; }
+    public void setMinioBucket(String minioBucket) { this.minioBucket = minioBucket; }
 
     /** Returns the resolved dump file path: dumpPath takes precedence over sqlDumpPath. */
     public String resolvedDumpPath() {
