@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.model.WpOrderItemMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpPost;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpPostMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpRedirectRow;
+import com.bigbike.bigbike_backend.migration.wordpress.redirect.FgRedirectResolver;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTerm;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTermRelationship;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTermTaxonomy;
@@ -104,6 +105,7 @@ public class WordPressMigrationImportService {
     private final ArticleImporter articleImporter;
     private final RedirectImporter redirectImporter;
     private final MenuImporter menuImporter;
+    private final FgRedirectResolver fgRedirectResolver;
     private final ProductNormalizationService productNormalizationService;
     private final ProductImporter productImporter;
     private final ProductVariationImporter productVariationImporter;
@@ -132,6 +134,7 @@ public class WordPressMigrationImportService {
             ArticleImporter articleImporter,
             RedirectImporter redirectImporter,
             MenuImporter menuImporter,
+            FgRedirectResolver fgRedirectResolver,
             ProductNormalizationService productNormalizationService,
             ProductImporter productImporter,
             ProductVariationImporter productVariationImporter,
@@ -158,6 +161,7 @@ public class WordPressMigrationImportService {
         this.articleImporter = articleImporter;
         this.redirectImporter = redirectImporter;
         this.menuImporter = menuImporter;
+        this.fgRedirectResolver = fgRedirectResolver;
         this.productNormalizationService = productNormalizationService;
         this.productImporter = productImporter;
         this.productVariationImporter = productVariationImporter;
@@ -187,6 +191,7 @@ public class WordPressMigrationImportService {
             Map<Long, WpTermTaxonomy> termTaxById = new LinkedHashMap<>();
             List<WpTermRelationship> termRels = new ArrayList<>();
             List<WpRedirectRow> rankMathRedirects = new ArrayList<>();
+            List<WpFgRedirect> fgRedirects = new ArrayList<>();
 
             List<WpUser> allUsers = new ArrayList<>();
             Map<Long, List<WpUserMeta>> metaByUser = new HashMap<>();
@@ -224,6 +229,10 @@ public class WordPressMigrationImportService {
                     case "kd_rank_math_redirections" -> {
                         WpRedirectRow r = toRankMathRedirect(row);
                         if (r != null) rankMathRedirects.add(r);
+                    }
+                    case "kd_fg_redirect" -> {
+                        WpFgRedirect fg = toFgRedirect(row);
+                        if (fg != null) fgRedirects.add(fg);
                     }
                     case "kd_users" -> {
                         WpUser u = toWpUser(row);
@@ -339,17 +348,19 @@ public class WordPressMigrationImportService {
                 results.put(MigrationDomain.ARTICLES, articleImporter.importBatch(articles, options));
             }
 
-            // ── 9. Redirects (RankMath only) ──────────────────────────────────
+            // ── 9. Redirects (RankMath + FG) ─────────────────────────────────
+            // FG redirect resolution MUST run after products are imported (step 11)
+            // so it is deferred — we collect FG rows here but resolve them after step 11b.
+            // RankMath redirects (40 rows, self-contained target URL) are imported now.
+            List<WordPressRedirectMapper.MappedRedirect> rankMathMapped = new ArrayList<>();
             if (options.includesDomain(MigrationDomain.REDIRECTS)) {
-                List<WordPressRedirectMapper.MappedRedirect> redirects = new ArrayList<>();
                 for (WpRedirectRow row : rankMathRedirects) {
                     WordPressRedirectMapper.MappedRedirect mr = redirectMapper.map(row);
                     if (mr.sourcePattern() != null && mr.targetPattern() != null
                             && !mr.sourcePattern().equals(mr.targetPattern())) {
-                        redirects.add(mr);
+                        rankMathMapped.add(mr);
                     }
                 }
-                results.put(MigrationDomain.REDIRECTS, redirectImporter.importBatch(redirects, options));
             }
 
             // ── 10. Menus ─────────────────────────────────────────────────────
@@ -422,6 +433,16 @@ public class WordPressMigrationImportService {
                 }
                 results.put(MigrationDomain.PRODUCT_VARIATIONS,
                         productVariationImporter.importBatch(variations, options));
+            }
+
+            // ── 11c. Redirects — FG resolution (requires products in DB) ─────
+            if (options.includesDomain(MigrationDomain.REDIRECTS)) {
+                FgRedirectResolver.ResolutionResult fg = fgRedirectResolver.resolve(fgRedirects);
+                log.info("FgRedirect: resolved={} deferred={} selfLoops={}",
+                        fg.resolved().size(), fg.deferredCount(), fg.selfLoopCount());
+                List<WordPressRedirectMapper.MappedRedirect> allRedirects = new ArrayList<>(rankMathMapped);
+                allRedirects.addAll(fg.resolved());
+                results.put(MigrationDomain.REDIRECTS, redirectImporter.importBatch(allRedirects, options));
             }
 
             // ── 12. Customers ─────────────────────────────────────────────────
@@ -522,6 +543,12 @@ public class WordPressMigrationImportService {
                     row.getInt("header_code", 301), nvl(row.get("status")),
                     WordPressRedirectMapper.parseFirstSourcePattern(sources));
         } catch (Exception e) { return null; }
+    }
+
+    private WpFgRedirect toFgRedirect(WordPressTableRow row) {
+        try { return new WpFgRedirect(nvl(row.get("old_url")), row.getLong("id", 0),
+                nvl(row.get("type")), row.getInt("activated", 0) == 1); }
+        catch (Exception e) { return null; }
     }
 
     private WpUser toWpUser(WordPressTableRow row) {

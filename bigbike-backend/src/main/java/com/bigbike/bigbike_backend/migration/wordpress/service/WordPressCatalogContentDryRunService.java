@@ -398,14 +398,12 @@ public class WordPressCatalogContentDryRunService {
         List<String> fgWarnings = new ArrayList<>();
         int fgMapped = 0, fgSkipped = 0;
         for (WpFgRedirect fg : fgRedirects) {
-            if (fg.oldUrl() == null || fg.oldUrl().isBlank()
-                    || fg.newUrl() == null || fg.newUrl().isBlank()) {
-                fgWarnings.add("Missing source or target for fg_redirect id=" + fg.id());
+            if (fg.oldUrl() == null || fg.oldUrl().isBlank()) {
+                fgWarnings.add("Missing source for fg_redirect targetPostId=" + fg.targetPostId());
                 fgSkipped++;
                 continue;
             }
-            if (fg.oldUrl().equals(fg.newUrl())) {
-                fgWarnings.add("Self-loop fg_redirect id=" + fg.id() + " url=" + fg.oldUrl());
+            if (!fg.activated()) {
                 fgSkipped++;
                 continue;
             }
