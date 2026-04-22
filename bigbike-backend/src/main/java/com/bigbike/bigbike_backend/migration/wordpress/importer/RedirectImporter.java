@@ -59,7 +59,6 @@ public class RedirectImporter implements DomainImporter {
                     isNew = false;
                 } else {
                     entity = new RedirectEntity();
-                    entity.setId(UUID.randomUUID());
                     entity.setCreatedAt(Instant.now());
                     isNew = true;
                 }

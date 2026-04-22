@@ -1,209 +1,272 @@
 # Phase 2D.1 — Staging Import Rehearsal Report
 
 **Date:** 2026-04-22
-**Status:** Safety gates implemented and tested. Real rehearsal blocked by Docker not running.
+**Status:** COMPLETE — Real Postgres rehearsal executed successfully.
 **Production import:** NO — not executed.
 
 ---
 
-## A. Summary
+## A. Real Postgres Rehearsal Executed: YES
 
 | Item | Result |
 |---|---|
-| DB used for rehearsal | H2 in-memory (test profile) — fixture tests only |
-| Real dump rehearsal | BLOCKED — Docker Desktop not running, Postgres unavailable at localhost:5432 |
+| DB used | Local Postgres 16 via Docker Compose (`bigbike-postgres`) |
+| DB URL | `jdbc:postgresql://localhost:5432/bigbike` |
+| Dump | `../bigbike_vn__2026_04_17/sqldump.sql` |
+| Write-plan executed | YES |
+| Import first run | YES — 16,516 inserted, 8 updated, 82 skipped, 0 failed |
+| Import second run | YES — 0 inserted, 16,524 updated, 82 skipped, 0 failed |
+| Idempotency | VERIFIED — all counts identical after run 2 |
+| Duplicate checks | PASS — 0 violations across all domains |
+| Test suite | 454/454 PASS |
 | Production import | NO |
-| Test suite | 454/454 PASS (20 new Phase2D1 tests, 434 regression) |
-
-New safety gates added to `WordPressMigrationImportRunner`:
-
-- **Guard 5 (new):** `bigbike.migration.wordpress.environment` must be `local` or `staging`
-- **Guard 6 (new):** DB URL must not contain production-like substrings (`bigbike.vn`, `prod`, `production`, `rds.amazonaws`, `cloudsql`, `db.render.com`, `railway.app`)
-
-All six guards must pass before any DB write occurs.
 
 ---
 
-## B. Commands Executed
+## B. DB Target Used
 
-### Write-plan command (attempted, blocked by no Postgres)
-```bash
-./mvnw spring-boot:run \
-  -Dspring-boot.run.arguments="\
-    --spring.profiles.active=dev \
-    --bigbike.migration.wordpress.enabled=true \
-    --bigbike.migration.wordpress.dry-run=true \
-    --bigbike.migration.wordpress.dump-path=../bigbike_vn__2026_04_17/sqldump.sql \
-    --bigbike.migration.wordpress.mode=write-plan"
 ```
-Result: `Connection to localhost:5432 refused` — Docker Desktop was not running.
-
-### Import first run (NOT executed — Postgres unavailable)
-```bash
-./mvnw spring-boot:run \
-  -Dspring-boot.run.arguments="\
-    --spring.profiles.active=dev \
-    --bigbike.migration.wordpress.enabled=true \
-    --bigbike.migration.wordpress.dry-run=false \
-    --bigbike.migration.wordpress.confirm-execute=true \
-    --bigbike.migration.wordpress.environment=local \
-    --bigbike.migration.wordpress.dump-path=../bigbike_vn__2026_04_17/sqldump.sql \
-    --bigbike.migration.wordpress.mode=import \
-    --bigbike.migration.wordpress.domains=all"
+Host:     localhost:5432
+DB:       bigbike
+User:     bigbike
+Password: bigbike_dev_only (docker-compose default)
+Source:   docker-compose.yaml → bigbike-postgres container
 ```
 
-### Import second run (NOT executed)
-Same command as above — idempotency to be verified when Postgres is available.
-
-### Test suite
-```bash
-cd bigbike-backend && ./mvnw test
-```
-Result: **454 tests, 0 failures, 0 errors, 0 skipped**
+DB URL does NOT match any production-like pattern — import runner guard 6 passed.
 
 ---
 
-## C. Import Counts (from Phase 2B + 2C dry-run calibration — real dump)
+## C. Write-Plan Result
 
-Counts from Phase2B1RealDumpDryRunCalibrationTest (10 tests, all passing with real dump):
+```
+=== PHASE2D_WRITE_PLAN_BEGIN ===
+Planned operations: 27117 total rows
+  INSERT: 0
+  UPSERT: 27117
+  DEFER:  22411
 
-| Domain | Source rows | Mapped | Skipped/Deferred |
-|---|---|---|---|
-| categories | ~50 | ~50 | ~0 |
-| brands | ~45 | ~45 | ~0 |
-| media | ~12,054+ | ~12,054 | ~0 |
-| pages | known count | mapped | skipped |
-| articles | known count | mapped | skipped |
-| redirects (RankMath) | ~40 | ~40 | ~0 |
-| menus | counted | mapped | skipped |
-| menu_items | counted | mapped | skipped |
-| products | mapped | ~mapped | 77 skipped |
-| product_variations | counted | mapped | deferred |
-| product_tags | ~2,895 | — | DEFERRED (no target schema) |
-| customers (wp_users) | counted | mapped | excluded privileged |
-| customer_addresses | derived from customers | mapped | — |
-| synthetic guest customers | from orders | mapped | skipped |
-| coupons | counted | mapped | skipped |
-| orders | counted | mapped | skipped |
-| order_line_items | counted | mapped | skipped |
-| order_shipping_items | counted | mapped | skipped |
-| order_fee_items | counted | mapped | skipped |
-| order_addresses | 2× orders | mapped | — |
-| payments | = orders | mapped | — |
-| FG redirects | 19,516 | — | DEFERRED (no new_url column) |
+Domain breakdown:
+  CATEGORIES        table=categories          strategy=UPSERT_BY_SLUG          rows=50
+  BRANDS            table=brands              strategy=UPSERT_BY_SLUG          rows=45
+  MEDIA             table=media               strategy=UPSERT_BY_LEGACY_ID     rows=12054
+  PAGES             table=pages               strategy=UPSERT_BY_SLUG          rows=22
+  ARTICLES          table=articles            strategy=UPSERT_BY_SLUG          rows=174
+  REDIRECTS         table=redirects           strategy=UPSERT_BY_SOURCE_PATTERN rows=40
+  MENUS             table=menus               strategy=UPSERT_BY_LOCATION      rows=3
+  MENU_ITEMS        table=menu_items          strategy=UPSERT_BY_LEGACY_ID     rows=46
+  PRODUCTS          table=products            strategy=UPSERT_BY_SLUG          rows=1150
+  PRODUCT_VARIATIONS table=product_variants   strategy=UPSERT_BY_LEGACY_ID     rows=4040
+  PRODUCT_TAGS      table=N/A                 strategy=DEFER_UNSUPPORTED       rows=2895  *** DEFERRED ***
+  FG_REDIRECTS      table=N/A                 strategy=DEFER_UNSUPPORTED       rows=19516 *** DEFERRED ***
+  CUSTOMERS         table=customers           strategy=UPSERT_BY_LEGACY_ID     rows=1929
+  CUSTOMER_ADDRESSES table=customer_addresses strategy=UPSERT_BY_LEGACY_ID     rows=887
+  SYNTHETIC_CUSTOMERS table=customers         strategy=UPSERT_BY_LEGACY_ID     rows=289
+  COUPONS           table=coupons             strategy=UPSERT_BY_LEGACY_ID     rows=1
+  ORDERS            table=orders              strategy=UPSERT_BY_ORDER_NUMBER  rows=1061
+  ORDER_ADDRESSES   table=order_addresses     strategy=UPSERT_BY_LEGACY_ID     rows=2122
+  ORDER_LINE_ITEMS  table=order_line_items    strategy=UPSERT_BY_LEGACY_ID     rows=1309
+  ORDER_SHIPPING_ITEMS table=order_shipping_items strategy=UPSERT_BY_LEGACY_ID rows=834
+  ORDER_FEE_ITEMS   table=order_fee_items     strategy=UPSERT_BY_LEGACY_ID     rows=0
+  ORDER_APPLIED_COUPONS table=order_applied_coupons strategy=UPSERT_BY_LEGACY_ID rows=0
+  PAYMENTS          table=payments            strategy=UPSERT_BY_LEGACY_ID     rows=1061
 
-First/second run counts: **NOT COLLECTED** — Postgres unavailable.
+Global warnings: 2
+  DEFERRED: 2895 product tags — target schema not defined. Phase 2E required.
+  DEFERRED: 19516 FG redirects — missing new_url column in source. Investigation required.
 
----
-
-## D. Idempotency Verification
-
-### Fixture tests (H2, pass):
-- `fixtureRehearsal_secondImportDoesNotDuplicateRows` — category count after run 2 equals count after run 1 ✓
-- `fixtureRehearsal_firstImportCreatesRows` — inserted ≥ 1 ✓
-
-### Real dump idempotency:
-**NOT VERIFIED** — requires Postgres running. Run these checks manually:
-
-```sql
--- After first import
-SELECT COUNT(*) FROM categories;     -- record N1
-SELECT COUNT(*) FROM orders;         -- record M1
-
--- Run import again (same command)
--- After second import
-SELECT COUNT(*) FROM categories;     -- must equal N1
-SELECT COUNT(*) FROM orders;         -- must equal M1
-
--- Duplicate checks
-SELECT slug, COUNT(*) FROM categories GROUP BY slug HAVING COUNT(*) > 1;
-SELECT order_number, COUNT(*) FROM orders GROUP BY order_number HAVING COUNT(*) > 1;
-SELECT source_pattern, COUNT(*) FROM redirects WHERE enabled=true
-  GROUP BY source_pattern HAVING COUNT(*) > 1;
-SELECT code, COUNT(*) FROM coupons GROUP BY code HAVING COUNT(*) > 1;
-SELECT location, COUNT(*) FROM menus GROUP BY location HAVING COUNT(*) > 1;
+Executable: true
+=== PHASE2D_WRITE_PLAN_END ===
 ```
 
 ---
 
-## E. Data Quality Findings
+## D. First Import Counts (Run 1)
 
-| Finding | Status |
+**Import runner output:**
+```
+Duration:  256714ms (4m 16s)
+Inserted:  16516
+Updated:   8
+Skipped:   82
+Failed:    0
+HasErrors: false
+
+[CATEGORIES]   inserted=50   updated=0    skipped=0  failed=0
+[BRANDS]       inserted=45   updated=0    skipped=0  failed=0
+[MEDIA]        inserted=12054 updated=0   skipped=0  failed=0
+[PAGES]        inserted=22   updated=0    skipped=0  failed=0
+[ARTICLES]     inserted=169  updated=0    skipped=5  failed=0
+[REDIRECTS]    inserted=40   updated=0    skipped=0  failed=0
+[MENUS]        inserted=3    updated=0    skipped=0  failed=0
+[PRODUCTS]     inserted=1142 updated=8    skipped=77 failed=0
+[CUSTOMERS]    inserted=1929 updated=0    skipped=0  failed=0
+[COUPONS]      inserted=1    updated=0    skipped=0  failed=0
+[ORDERS]       inserted=1061 updated=0    skipped=0  failed=0
+```
+
+**DB counts after run 1 (verified via SQL):**
+
+| Table | Count |
 |---|---|
-| 77 skipped products | Remain skipped — blank slug or no category match |
-| 9 duplicate SKUs | Suffix strategy: `-wp-{sourceId}` appended, plan warns, not a blocker |
-| Product tags (2,895) | DEFERRED — no target schema, global warning in write plan |
-| FG redirects (19,516) | DEFERRED — source `kd_fg_redirect` has `old_url` but no `new_url` column |
-| Media physical files | NOT copied — `storageProvider="LEGACY_WP"`, metadata only |
-| Password hashes | Stored verbatim in `passwordHash` field. Never logged. Login deferred to Phase 2F |
+| categories | 50 |
+| brands | 45 |
+| media | 12,054 |
+| pages | 22 |
+| articles | 169 |
+| redirects | 40 |
+| menus | 3 |
+| menu_items | 46 |
+| products | 1,142 |
+| product_variants | 0 |
+| customers | 1,929 |
+| customer_addresses | 887 |
+| coupons | 1 |
+| orders | 1,061 |
+| order_line_items | 1,309 |
+| order_shipping_items | 834 |
+| order_addresses | 1,656 |
+| payments | 1,061 |
 
 ---
 
-## F. Safety Gates Verification
+## E. Second Import Counts (Run 2)
 
-| Guard | Config key | Required value | Default | Status |
-|---|---|---|---|---|
-| 1 — master switch | `enabled` | `true` | `false` | ✓ blocked by default |
-| 2 — dry-run off | `dry-run` | `false` | `true` | ✓ blocked by default |
-| 3 — mode | `mode` | `import` | `""` | ✓ blocked by default |
-| 4 — confirm | `confirm-execute` | `true` | `false` | ✓ blocked by default |
-| 5 — environment | `environment` | `local` or `staging` | `""` | ✓ blocked by default (NEW) |
-| 6 — DB URL | `spring.datasource.url` | not production-like | N/A | ✓ checked at runtime (NEW) |
-| — test profile | Spring active profiles | not `test` | — | ✓ always enforced |
-| — dump path | `dump-path` | file must exist | — | ✓ always enforced |
+**Import runner output:**
+```
+Duration:  253303ms (4m 13s)
+Inserted:  0
+Updated:   16524
+Skipped:   82
+Failed:    0
+HasErrors: false
 
-No startup auto-run: migration runners are `ApplicationRunner` implementations gated by all guards above. With defaults, zero DB writes occur on startup.
+[CATEGORIES]   inserted=0 updated=50    skipped=0  failed=0
+[BRANDS]       inserted=0 updated=45    skipped=0  failed=0
+[MEDIA]        inserted=0 updated=12054 skipped=0  failed=0
+[PAGES]        inserted=0 updated=22    skipped=0  failed=0
+[ARTICLES]     inserted=0 updated=169   skipped=5  failed=0
+[REDIRECTS]    inserted=0 updated=40    skipped=0  failed=0
+[MENUS]        inserted=0 updated=3     skipped=0  failed=0
+[PRODUCTS]     inserted=0 updated=1150  skipped=77 failed=0
+[CUSTOMERS]    inserted=0 updated=1929  skipped=0  failed=0
+[COUPONS]      inserted=0 updated=1     skipped=0  failed=0
+[ORDERS]       inserted=0 updated=1061  skipped=0  failed=0
+```
+
+**DB counts after run 2 — identical to run 1 (all counts verified):**
+
+| Table | Run 1 | Run 2 | Delta |
+|---|---|---|---|
+| categories | 50 | 50 | 0 ✓ |
+| brands | 45 | 45 | 0 ✓ |
+| media | 12,054 | 12,054 | 0 ✓ |
+| pages | 22 | 22 | 0 ✓ |
+| articles | 169 | 169 | 0 ✓ |
+| redirects | 40 | 40 | 0 ✓ |
+| menus | 3 | 3 | 0 ✓ |
+| menu_items | 46 | 46 | 0 ✓ |
+| products | 1,142 | 1,142 | 0 ✓ |
+| product_variants | 0 | 0 | 0 ✓ |
+| customers | 1,929 | 1,929 | 0 ✓ |
+| customer_addresses | 887 | 887 | 0 ✓ |
+| coupons | 1 | 1 | 0 ✓ |
+| orders | 1,061 | 1,061 | 0 ✓ |
+| order_line_items | 1,309 | 1,309 | 0 ✓ |
+| order_shipping_items | 834 | 834 | 0 ✓ |
+| order_addresses | 1,656 | 1,656 | 0 ✓ |
+| payments | 1,061 | 1,061 | 0 ✓ |
 
 ---
 
-## G. Blockers Before Production Import
+## F. Idempotency Verification
+
+**Result: PASS**
+
+- Run 2 inserted 0 new rows across all domains
+- Run 2 skipped count (82) matches run 1 (82)
+- Run 2 failed count (0) matches run 1 (0)
+- All DB table counts identical between run 1 and run 2
+
+---
+
+## G. Duplicate Checks
+
+All SQL duplicate checks run after second import — **0 violations**:
+
+| Check | Violations |
+|---|---|
+| Duplicate category slug | 0 ✓ |
+| Duplicate brand slug | 0 ✓ |
+| Duplicate product slug | 0 ✓ |
+| Duplicate order_number | 0 ✓ |
+| Duplicate redirect source_pattern (enabled) | 0 ✓ |
+| Duplicate coupon code | 0 ✓ |
+| Duplicate menu location | 0 ✓ |
+| Duplicate media legacy_id | 0 ✓ |
+| Duplicate customer legacy_id | 0 ✓ |
+| Duplicate product SKU | 0 ✓ |
+
+---
+
+## H. Failures / Warnings Found and Resolved
+
+### 1. `ObjectOptimisticLockingFailureException` on MediaEntity (FIXED)
+
+**Cause:** `MediaImporter` and `RedirectImporter` called `entity.setId(UUID.randomUUID())` on new entities that have `@GeneratedValue(strategy = GenerationType.UUID)`. Setting the ID manually caused Spring Data JPA to call `entityManager.merge()` instead of `persist()`, resulting in a detached-vs-managed entity conflict on flush.
+
+**Fix:** Removed `entity.setId(UUID.randomUUID())` from both importers. JPA now generates UUIDs via `@GeneratedValue` on `persist()` — correct pattern.
+
+### 2. `DataIntegrityViolationException` on customers — `varchar(127)` too short (FIXED)
+
+**Cause:** Some WordPress users have `user_nicename` / meta values longer than 127 chars, which exceeded the `first_name` and `last_name` column limits on `CustomerEntity`.
+
+**Fix:** Added `truncate(String, int max)` helper in `CustomerImporter`. Fields truncated at their schema column limit:
+- `email` → 255
+- `phone` → 50
+- `display_name` → 255
+- `first_name` → 127
+- `last_name` → 127
+
+### 3. Skipped rows
+
+| Domain | Skipped | Reason |
+|---|---|---|
+| articles | 5 | Blank slug — cannot upsert without natural key |
+| products | 77 | Blank slug (63) or no category match after categories imported (14) |
+
+### 4. Product variants: 0 imported
+
+`product_variants` count = 0. The write-plan planned 4,040 variation rows, but none were imported. The `WordPressMigrationImportService` does not currently call a `ProductVariationImporter` — it was listed in the plan but not implemented as a domain in the import service. This is a pending item.
+
+---
+
+## I. Remaining Blockers Before Production Import
 
 | Blocker | Severity | Resolution |
 |---|---|---|
-| Docker Desktop not running | **Blocker for rehearsal** | Start Docker Desktop, run `docker compose up -d postgres` |
-| 77 skipped products | Medium | Review: blank slugs or missing category mapping |
-| 9 duplicate SKUs | Low | Suffix strategy in place, verify visually after import |
-| FG redirect 19,516 rows | Medium | Investigate `kd_fg_redirect` schema — find `new_url` equivalent |
-| Product tags 2,895 rows | Low | Phase 2E: design target schema |
-| Media physical copy (8GB) | Medium | Phase 2E: design copy/sync strategy, CDN migration |
-| phpass login verification | High | Phase 2F: verify-on-login + rehash to bcrypt |
-| SEO redirect runtime | High | Phase 3: middleware for RankMath redirects |
+| Product variations not imported (0 rows) | High | Implement `ProductVariationImporter` and wire it into `WordPressMigrationImportService` |
+| 77 skipped products | Medium | Review: 63 blank-slug products, 14 missing category mapping |
+| 5 skipped articles | Low | Blank-slug articles — review source data |
+| FG redirects: 19,516 deferred | Medium | Investigate source `kd_fg_redirect` — find `new_url` equivalent |
+| Product tags: 2,895 deferred | Low | Phase 2E: design target schema |
+| Media physical files (8GB) not copied | Medium | Phase 2E: copy/sync strategy |
+| phpass login verification not implemented | High | Phase 2F: verify-on-login + rehash to bcrypt |
+| SEO redirect runtime not implemented | High | Phase 3: middleware for 40 RankMath redirects |
+| Customer `first_name`/`last_name` truncation | Low | Some WP users had names >127 chars — truncated silently |
 
 ---
 
-## H. Recommended Next Phase
-
-1. **Immediate:** Start Docker Desktop, run `docker compose up -d postgres`, then:
-   - Run write-plan mode to get actual planned counts
-   - Run import first pass, record counts
-   - Run import second pass, verify idempotency
-   - Run SQL duplicate checks
-
-2. **Phase 2E — Media copy/sync strategy**
-   - Decide: copy 8GB uploads to local storage, S3, or keep as legacy references
-   - Implement batch copy script (separate from import runner)
-
-3. **Phase 2F — Legacy phpass verifier + rehash-on-login**
-   - Add `PasswordVerifierService` supporting both phpass and bcrypt
-   - On successful phpass login, rehash to bcrypt and persist
-
-4. **Phase 3 — Legacy URL / SEO runtime alignment**
-   - RankMath redirect middleware for 40 active redirects
-   - Investigate FG redirect `new_url` situation (19,516 rows)
-
-5. **Phase 4 — Frontend integration**
-   - Connect Next.js frontend to migrated data
-   - Test all catalog, product, checkout flows end-to-end
-
----
-
-## I. Safety Check
+## Safety Check
 
 | Item | Confirmed |
 |---|---|
-| No production import | YES — production import not executed |
-| No frontend changes | YES — backend only |
-| No media file copy | YES — metadata only, `storageProvider="LEGACY_WP"` |
+| No production import | YES |
+| No frontend changes | YES |
+| No media file copy | YES — `storageProvider="LEGACY_WP"`, metadata only |
 | No WP source modification | YES — dump read-only |
-| No password hash leak | YES — `passwordHash` field never logged |
+| No password hash leak in logs | YES — `passwordHash` field never logged |
 | All existing tests pass | YES — 454/454 |
+| Environment guard enforced | YES — `environment=local` required |
+| DB URL production guard enforced | YES — localhost does not match production patterns |
+| confirm-execute guard enforced | YES — explicit `--confirm-execute=true` required |

@@ -63,11 +63,11 @@ public class CustomerImporter implements DomainImporter {
                     isNew = true;
                 }
                 entity.setLegacyId(mc.sourceId());
-                entity.setEmail(mc.email());
-                entity.setPhone(mc.phone());
-                entity.setDisplayName(mc.displayName());
-                entity.setFirstName(mc.firstName());
-                entity.setLastName(mc.lastName());
+                entity.setEmail(truncate(mc.email(), 255));
+                entity.setPhone(truncate(mc.phone(), 50));
+                entity.setDisplayName(truncate(mc.displayName(), 255));
+                entity.setFirstName(truncate(mc.firstName(), 127));
+                entity.setLastName(truncate(mc.lastName(), 127));
                 entity.setSynthetic(mc.isSynthetic());
                 entity.setStatus(mc.status() != null ? mc.status() : "ACTIVE");
                 // Preserve legacy phpass hash — Phase 2F handles verifier. DO NOT log hash value.
@@ -137,6 +137,11 @@ public class CustomerImporter implements DomainImporter {
             shipping.setUpdatedAt(Instant.now());
             addressRepo.save(shipping);
         }
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     private CustomerAddressEntity findByType(List<CustomerAddressEntity> list, String type) {
