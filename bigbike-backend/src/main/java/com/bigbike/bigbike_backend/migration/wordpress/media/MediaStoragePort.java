@@ -22,6 +22,9 @@ public interface MediaStoragePort {
     /** Streams {@code stream} (of known {@code size} bytes) to the object at {@code key}. */
     void put(String bucket, String key, InputStream stream, long size, String contentType) throws Exception;
 
+    /** Returns the stored size in bytes of an existing object, or empty if unavailable. */
+    Optional<Long> objectSize(String bucket, String key) throws Exception;
+
     /** Creates the bucket if it does not already exist. */
     void ensureBucket(String bucket) throws Exception;
 }

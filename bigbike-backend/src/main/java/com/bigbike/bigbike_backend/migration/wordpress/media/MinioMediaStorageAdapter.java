@@ -64,6 +64,18 @@ public class MinioMediaStorageAdapter implements MediaStoragePort {
     }
 
     @Override
+    public Optional<Long> objectSize(String bucket, String key) throws Exception {
+        try {
+            StatObjectResponse stat = client.statObject(
+                    StatObjectArgs.builder().bucket(bucket).object(key).build());
+            return Optional.of(stat.size());
+        } catch (Exception e) {
+            log.debug("Could not retrieve size for {}/{}: {}", bucket, key, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public void ensureBucket(String bucket) throws Exception {
         boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
         if (!exists) {

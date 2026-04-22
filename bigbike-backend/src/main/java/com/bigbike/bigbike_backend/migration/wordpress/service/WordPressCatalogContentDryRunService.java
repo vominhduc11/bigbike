@@ -523,14 +523,11 @@ public class WordPressCatalogContentDryRunService {
 
     private WpFgRedirect toFgRedirect(WordPressTableRow row) {
         try {
-            // fg_redirect column names vary — try common names
-            String oldUrl = firstNonNull(row.get("old_url"), row.get("redirect_url"),
-                    row.get("source"), row.get("from_url"));
-            String newUrl = firstNonNull(row.get("new_url"), row.get("redirect_to"),
-                    row.get("target"), row.get("to_url"), row.get("url"));
-            int code = row.getInt("redirect_type", 301);
-            if (code != 301 && code != 302) code = 301;
-            return new WpFgRedirect(row.getLong("ID", row.getLong("id", 0)), oldUrl, newUrl, code);
+            String oldUrl = row.get("old_url");
+            long targetPostId = row.getLong("ID", row.getLong("id", 0));
+            String type = row.get("type");
+            boolean activated = row.getInt("activated", 1) != 0;
+            return new WpFgRedirect(oldUrl, targetPostId, type, activated);
         } catch (Exception e) { return null; }
     }
 

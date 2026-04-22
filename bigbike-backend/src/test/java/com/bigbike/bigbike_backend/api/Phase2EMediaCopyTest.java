@@ -299,6 +299,57 @@ class Phase2EMediaCopyTest {
     }
 
     // -------------------------------------------------------------------------
+    // multipart_etag_sizeMatch_skips / sizeMismatch_recopies
+    // -------------------------------------------------------------------------
+
+    @Test
+    void multipartEtag_sizeMatch_skips() throws Exception {
+        Path file = tempDir.resolve("multipart.bin");
+        Files.writeString(file, "multipart-content");
+        long fileSize = Files.size(file);
+
+        MediaEntity entity = entity(701L, "multipart.bin");
+        when(mediaRepo.findByStorageProvider("LEGACY_WP")).thenReturn(List.of(entity));
+        when(storage.exists(BUCKET, "wp-uploads/multipart.bin")).thenReturn(true);
+        when(storage.etag(BUCKET, "wp-uploads/multipart.bin"))
+                .thenReturn(Optional.of("abc123-3"));
+        when(storage.objectSize(BUCKET, "wp-uploads/multipart.bin"))
+                .thenReturn(Optional.of(fileSize));
+
+        MediaCopyOptions opts = new MediaCopyOptions(tempDir, ENDPOINT, BUCKET, 0, false);
+        MediaCopyReport report = copyService.run(opts, storage);
+
+        assertThat(report.skipped()).isEqualTo(1);
+        assertThat(report.checksumMismatch()).isEqualTo(0);
+        assertThat(report.copied()).isEqualTo(0);
+        verify(storage, never()).put(anyString(), anyString(), any(), anyLong(), anyString());
+    }
+
+    @Test
+    void multipartEtag_sizeMismatch_recopies() throws Exception {
+        Path file = tempDir.resolve("multipart-bad.bin");
+        Files.writeString(file, "multipart-content");
+        long fileSize = Files.size(file);
+
+        MediaEntity entity = entity(801L, "multipart-bad.bin");
+        when(mediaRepo.findByStorageProvider("LEGACY_WP")).thenReturn(List.of(entity));
+        when(storage.exists(BUCKET, "wp-uploads/multipart-bad.bin")).thenReturn(true);
+        when(storage.etag(BUCKET, "wp-uploads/multipart-bad.bin"))
+                .thenReturn(Optional.of("abc123-3"));
+        when(storage.objectSize(BUCKET, "wp-uploads/multipart-bad.bin"))
+                .thenReturn(Optional.of(fileSize - 1));
+
+        MediaCopyOptions opts = new MediaCopyOptions(tempDir, ENDPOINT, BUCKET, 0, false);
+        MediaCopyReport report = copyService.run(opts, storage);
+
+        assertThat(report.checksumMismatch()).isEqualTo(1);
+        assertThat(report.copied()).isEqualTo(1);
+        assertThat(report.skipped()).isEqualTo(0);
+        verify(storage, times(1)).put(eq(BUCKET), eq("wp-uploads/multipart-bad.bin"),
+                any(), anyLong(), anyString());
+    }
+
+    // -------------------------------------------------------------------------
     // helpers
     // -------------------------------------------------------------------------
 

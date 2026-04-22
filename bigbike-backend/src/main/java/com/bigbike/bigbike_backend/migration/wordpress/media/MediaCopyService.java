@@ -110,10 +110,16 @@ public class MediaCopyService {
                     if (remoteEtag.isPresent()) {
                         String etagClean = remoteEtag.get().replace("\"", "");
                         if (etagClean.contains("-")) {
-                            // Multipart ETag — cannot compare with local MD5; trust size match
-                            needsCopy = false;
-                            skipped++;
-                            log.debug("Multipart ETag for {} — size-based skip", key);
+                            Optional<Long> remoteSize = storage.objectSize(options.bucket(), key);
+                            if (remoteSize.isPresent() && remoteSize.get().equals(fileSize)) {
+                                needsCopy = false;
+                                skipped++;
+                                log.debug("Multipart ETag, size match ({} bytes) — skip {}", fileSize, key);
+                            } else {
+                                checksumMismatch++;
+                                log.warn("Multipart ETag, size MISMATCH (local={} remote={}) — re-copying {}",
+                                        fileSize, remoteSize.orElse(-1L), key);
+                            }
                         } else {
                             String sourceMd5 = checksumService.md5Hex(source);
                             if (etagClean.equalsIgnoreCase(sourceMd5)) {
