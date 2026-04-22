@@ -30,6 +30,19 @@ public class WordPressMigrationProperties {
      */
     private boolean dryRun = true;
 
+    /**
+     * Operation mode for explicit runner activation.
+     * Set to "catalog-dry-run" to trigger Phase 2B.1 dry-run via the runner.
+     * Default: "" (no runner activated).
+     */
+    private String mode = "";
+
+    /**
+     * Path to the WordPress SQL dump file (alias for sqlDumpPath).
+     * Bound from --bigbike.migration.wordpress.dump-path.
+     */
+    private String dumpPath = "";
+
     /** Number of rows to process per batch during import. Default: 500. */
     private int batchSize = 500;
 
@@ -50,4 +63,16 @@ public class WordPressMigrationProperties {
 
     public int getBatchSize() { return batchSize; }
     public void setBatchSize(int batchSize) { this.batchSize = batchSize; }
+
+    public String getMode() { return mode; }
+    public void setMode(String mode) { this.mode = mode; }
+
+    public String getDumpPath() { return dumpPath; }
+    public void setDumpPath(String dumpPath) { this.dumpPath = dumpPath; }
+
+    /** Returns the resolved dump file path: dumpPath takes precedence over sqlDumpPath. */
+    public String resolvedDumpPath() {
+        if (dumpPath != null && !dumpPath.isBlank()) return dumpPath;
+        return sqlDumpPath;
+    }
 }

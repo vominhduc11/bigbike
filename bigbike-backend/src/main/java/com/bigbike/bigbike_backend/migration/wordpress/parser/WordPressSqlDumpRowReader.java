@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
  *
  * Supports both mysqldump formats:
  *   - Single-line: INSERT INTO `table` VALUES (...),(...),...;
- *   - Multi-line:  INSERT INTO `table` VALUES\n(row1);\nINSERT INTO ... (common with --skip-extended-insert)
+ *   - Multi-line:  INSERT INTO `table` VALUES\n(row1)\n(row2)\n...(rowN); (one row per line)
  *
  * Uses ISO-8859-1 charset to handle mixed-encoding MySQL dumps without
  * MalformedInputException. ASCII content (SQL structure, numbers) is unaffected.
@@ -63,10 +63,10 @@ public class WordPressSqlDumpRowReader {
         String currentTable = null;
         List<String> currentColumns = new ArrayList<>();
 
-        // Pending INSERT state — for multi-line INSERT format
-        // (INSERT INTO table VALUES on one line, rows on next line(s))
-        String pendingInsertTable = null;
-        StringBuilder pendingInsert = null;
+        // Multi-row INSERT state — active while consuming continuation rows
+        // (INSERT INTO table VALUES on one line, each data row on its own subsequent line)
+        String multiRowTable = null;
+        String multiRowHeader = null;
 
         // ISO_8859_1 accepts any byte sequence without MalformedInputException.
         // MySQL dump data values may contain non-UTF-8 sequences; ASCII SQL structure is unaffected.
@@ -74,28 +74,21 @@ public class WordPressSqlDumpRowReader {
             String line;
             while ((line = reader.readLine()) != null) {
 
-                // ── Flush pending multi-line INSERT ──────────────────────────────
-                if (pendingInsert != null) {
+                // ── Multi-row INSERT continuation ─────────────────────────────────
+                // Real mysqldump format: INSERT INTO table VALUES\n(row1)\n(row2)\n...;
+                // Stay in this mode until a non-data line is encountered.
+                if (multiRowTable != null) {
                     String trimmed = line.trim();
-                    if (trimmed.isEmpty() || trimmed.startsWith("--")) {
-                        // Blank/comment — continue accumulating
-                        continue;
-                    }
+                    if (trimmed.isEmpty() || trimmed.startsWith("--")) continue;
                     if (trimmed.startsWith("(")) {
-                        // This is the values line(s): combine with previous INSERT header
-                        String fullLine = pendingInsert.toString() + trimmed;
-                        dispatchInsert(fullLine, pendingInsertTable,
-                                columnsByTable.getOrDefault(pendingInsertTable, List.of()),
+                        dispatchInsert(multiRowHeader + trimmed, multiRowTable,
+                                columnsByTable.getOrDefault(multiRowTable, List.of()),
                                 handler, warnings);
-                        pendingInsert = null;
-                        pendingInsertTable = null;
-                        continue;
+                        continue; // stay in multi-row mode for the next row
                     } else {
-                        // Something else — abandon pending INSERT
-                        warnings.add("Abandoned multi-line INSERT for " + pendingInsertTable
-                                + " — unexpected continuation line");
-                        pendingInsert = null;
-                        pendingInsertTable = null;
+                        // Non-data line ends this INSERT block
+                        multiRowTable = null;
+                        multiRowHeader = null;
                         // Fall through to process this line normally
                     }
                 }
@@ -135,20 +128,20 @@ public class WordPressSqlDumpRowReader {
                 String tableName = insertMatcher.group(1);
                 if (!targetTables.contains(tableName)) continue;
 
-                // Check if the INSERT line is complete (has VALUES content after VALUES keyword)
                 String stripped = line.trim();
                 if (isIncompleteInsert(stripped)) {
-                    // Multi-line format: VALUES is on this line but actual rows are on next line
-                    pendingInsertTable = tableName;
-                    pendingInsert = new StringBuilder(stripped);
-                    // Remove trailing whitespace/semicolons from the header line
-                    while (pendingInsert.length() > 0) {
-                        char last = pendingInsert.charAt(pendingInsert.length() - 1);
+                    // Multi-line format: VALUES keyword on this line, rows on subsequent lines.
+                    // Build the INSERT header and activate multi-row mode.
+                    StringBuilder hdr = new StringBuilder(stripped);
+                    while (hdr.length() > 0) {
+                        char last = hdr.charAt(hdr.length() - 1);
                         if (last == ';' || last == ' ' || last == '\t') {
-                            pendingInsert.deleteCharAt(pendingInsert.length() - 1);
+                            hdr.deleteCharAt(hdr.length() - 1);
                         } else break;
                     }
-                    pendingInsert.append(" ");
+                    hdr.append(" ");
+                    multiRowTable = tableName;
+                    multiRowHeader = hdr.toString();
                     continue;
                 }
 
