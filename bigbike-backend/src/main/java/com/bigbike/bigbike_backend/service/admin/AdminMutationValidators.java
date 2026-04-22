@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -53,6 +54,12 @@ final class AdminMutationValidators {
         }
     }
 
+    static void validateNonNegativeDecimal(BigDecimal value, String field, String label, List<ApiErrorDetail> errors) {
+        if (value != null && value.signum() < 0) {
+            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", label + " must be greater than or equal to 0."));
+        }
+    }
+
     static void validateCurrency(String currency, String field, List<ApiErrorDetail> errors) {
         String normalized = trimToNull(currency);
         if (normalized == null) {
@@ -64,9 +71,9 @@ final class AdminMutationValidators {
     }
 
     static void validateSalePriceRule(
-            Integer retailPrice,
-            Integer compareAtPrice,
-            Integer salePrice,
+            BigDecimal retailPrice,
+            BigDecimal compareAtPrice,
+            BigDecimal salePrice,
             String field,
             List<ApiErrorDetail> errors
     ) {
@@ -74,8 +81,8 @@ final class AdminMutationValidators {
             return;
         }
 
-        int reference = compareAtPrice != null ? compareAtPrice : retailPrice;
-        if (salePrice >= reference) {
+        BigDecimal reference = compareAtPrice != null ? compareAtPrice : retailPrice;
+        if (salePrice.compareTo(reference) >= 0) {
             errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "salePrice must be lower than compareAtPrice or retailPrice."));
         }
     }
@@ -132,11 +139,29 @@ final class AdminMutationValidators {
             return;
         }
 
+        // Soft-delete (→ TRASH) is allowed from any active state. Restoring out
+        // of TRASH lands in DRAFT (parity with WordPress trash semantics).
+        // PENDING/PRIVATE are WP-imported review states with limited transitions.
         boolean allowed = switch (from) {
-            case DRAFT -> to == PublishStatus.PUBLISHED || to == PublishStatus.ARCHIVED;
-            case PUBLISHED -> to == PublishStatus.HIDDEN || to == PublishStatus.ARCHIVED;
-            case HIDDEN -> to == PublishStatus.PUBLISHED || to == PublishStatus.ARCHIVED;
-            case ARCHIVED -> to == PublishStatus.DRAFT;
+            case DRAFT -> to == PublishStatus.PUBLISHED
+                    || to == PublishStatus.ARCHIVED
+                    || to == PublishStatus.TRASH;
+            case PUBLISHED -> to == PublishStatus.HIDDEN
+                    || to == PublishStatus.ARCHIVED
+                    || to == PublishStatus.TRASH;
+            case HIDDEN -> to == PublishStatus.PUBLISHED
+                    || to == PublishStatus.ARCHIVED
+                    || to == PublishStatus.TRASH;
+            case ARCHIVED -> to == PublishStatus.DRAFT
+                    || to == PublishStatus.TRASH;
+            case PENDING -> to == PublishStatus.PUBLISHED
+                    || to == PublishStatus.DRAFT
+                    || to == PublishStatus.TRASH;
+            case PRIVATE -> to == PublishStatus.PUBLISHED
+                    || to == PublishStatus.DRAFT
+                    || to == PublishStatus.HIDDEN
+                    || to == PublishStatus.TRASH;
+            case TRASH -> to == PublishStatus.DRAFT;
         };
 
         if (!allowed) {

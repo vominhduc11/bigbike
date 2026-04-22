@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -121,6 +122,57 @@ public class AdminCatalogMutationService {
 
         return catalogReadRepository.findProductById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
+     * Soft-delete a product by transitioning publishStatus → TRASH.
+     * Goes through the validator so we don't bypass invariants (PUBLISHED→TRASH,
+     * DRAFT→TRASH etc. are explicitly allowed in validatePublishTransition).
+     * Idempotent: re-deleting a TRASH product is a no-op.
+     */
+    @Transactional
+    public Product softDeleteProduct(String productId) {
+        requireJpaPersistenceEnabled();
+
+        ProductEntity entity = productJpaRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+
+        if (entity.getPublishStatus() == PublishStatus.TRASH) {
+            return catalogReadRepository.findProductById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Product not found."));
+        }
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        AdminMutationValidators.validatePublishTransition(
+                entity.getPublishStatus(), PublishStatus.TRASH, "publishStatus", errors);
+        AdminMutationValidators.throwIfErrors(errors);
+
+        entity.setPublishStatus(PublishStatus.TRASH);
+        entity.setUpdatedAt(Instant.now());
+        productJpaRepository.save(entity);
+
+        return catalogReadRepository.findProductById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
+     * Soft-delete a category. Categories have no publishStatus column; the
+     * closest equivalent to TRASH is is_visible=false. Restoration is just a
+     * normal PATCH that flips visible back to true.
+     */
+    @Transactional
+    public Category softDeleteCategory(String categoryId) {
+        requireJpaPersistenceEnabled();
+
+        CategoryEntity entity = categoryJpaRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        entity.setVisible(false);
+        entity.setUpdatedAt(Instant.now());
+        categoryJpaRepository.save(entity);
+
+        return catalogReadRepository.findCategoryById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Category not found."));
     }
 
     @Transactional
@@ -237,16 +289,16 @@ public class AdminCatalogMutationService {
             }
         }
 
-        AdminMutationValidators.validateNonNegativeInteger(request.getRetailPrice(), "retailPrice", "retailPrice", errors);
-        AdminMutationValidators.validateNonNegativeInteger(request.getCompareAtPrice(), "compareAtPrice", "compareAtPrice", errors);
-        AdminMutationValidators.validateNonNegativeInteger(request.getSalePrice(), "salePrice", "salePrice", errors);
+        AdminMutationValidators.validateNonNegativeDecimal(request.getRetailPrice(), "retailPrice", "retailPrice", errors);
+        AdminMutationValidators.validateNonNegativeDecimal(request.getCompareAtPrice(), "compareAtPrice", "compareAtPrice", errors);
+        AdminMutationValidators.validateNonNegativeDecimal(request.getSalePrice(), "salePrice", "salePrice", errors);
         AdminMutationValidators.validateCurrency(request.getCurrency(), "currency", errors);
         AdminMutationValidators.validateImageAsset(request.getImage(), "image", errors);
         AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
 
-        Integer mergedRetail = request.getRetailPrice() != null ? request.getRetailPrice() : (current == null ? null : current.getRetailPrice());
-        Integer mergedCompareAt = request.getCompareAtPrice() != null ? request.getCompareAtPrice() : (current == null ? null : current.getCompareAtPrice());
-        Integer mergedSale = request.getSalePrice() != null ? request.getSalePrice() : (current == null ? null : current.getSalePrice());
+        BigDecimal mergedRetail = request.getRetailPrice() != null ? request.getRetailPrice() : (current == null ? null : current.getRetailPrice());
+        BigDecimal mergedCompareAt = request.getCompareAtPrice() != null ? request.getCompareAtPrice() : (current == null ? null : current.getCompareAtPrice());
+        BigDecimal mergedSale = request.getSalePrice() != null ? request.getSalePrice() : (current == null ? null : current.getSalePrice());
         AdminMutationValidators.validateSalePriceRule(mergedRetail, mergedCompareAt, mergedSale, "salePrice", errors);
 
         if (create) {
@@ -415,7 +467,7 @@ public class AdminCatalogMutationService {
             }
         }
         if (create || request.getRetailPrice() != null) {
-            entity.setRetailPrice(request.getRetailPrice() == null ? 0 : request.getRetailPrice());
+            entity.setRetailPrice(request.getRetailPrice() == null ? BigDecimal.ZERO : request.getRetailPrice());
         }
         if (create || request.getCompareAtPrice() != null) {
             entity.setCompareAtPrice(request.getCompareAtPrice());

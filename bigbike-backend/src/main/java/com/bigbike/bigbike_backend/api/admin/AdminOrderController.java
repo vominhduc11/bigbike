@@ -78,6 +78,15 @@ public class AdminOrderController {
         return apiResponseFactory.data(adminOrderService.getOrderDetail(orderId), request);
     }
 
+    @GetMapping("/{orderId}/allowed-transitions")
+    public ApiDataResponse<List<String>> listAllowedTransitions(
+            @PathVariable UUID orderId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.read");
+        return apiResponseFactory.data(adminOrderService.listAllowedTransitions(orderId), request);
+    }
+
     @PatchMapping("/{orderId}/status")
     public ApiDataResponse<AdminOrderDetailResponse> updateOrderStatus(
             @PathVariable UUID orderId,

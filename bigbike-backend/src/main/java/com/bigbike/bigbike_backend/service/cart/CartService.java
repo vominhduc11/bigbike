@@ -124,9 +124,8 @@ public class CartService {
             item.setVariantName(variant != null ? variant.getName() : null);
             item.setQuantity(req.quantity());
             item.setUnitPrice(unitPrice);
-            item.setRegularPrice(BigDecimal.valueOf(product.getRetailPrice()));
-            item.setSalePrice(product.getSalePrice() != null
-                    ? BigDecimal.valueOf(product.getSalePrice()) : null);
+            item.setRegularPrice(product.getRetailPrice());
+            item.setSalePrice(product.getSalePrice());
             item.setCreatedAt(Instant.now());
         }
         item.setUpdatedAt(Instant.now());
@@ -184,15 +183,15 @@ public class CartService {
 
     private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
         if (variant != null) {
-            Integer variantPrice = variant.getSalePrice() != null
+            BigDecimal variantPrice = variant.getSalePrice() != null
                     ? variant.getSalePrice() : variant.getRetailPrice();
             if (variantPrice != null) {
-                return BigDecimal.valueOf(variantPrice).setScale(2, RoundingMode.HALF_UP);
+                return variantPrice.setScale(2, RoundingMode.HALF_UP);
             }
         }
-        Integer price = product.getSalePrice() != null
+        BigDecimal price = product.getSalePrice() != null
                 ? product.getSalePrice() : product.getRetailPrice();
-        return BigDecimal.valueOf(price).setScale(2, RoundingMode.HALF_UP);
+        return price.setScale(2, RoundingMode.HALF_UP);
     }
 
     private boolean matchesProductVariant(CartItemEntity item, UUID productUuid, UUID variantUuid) {

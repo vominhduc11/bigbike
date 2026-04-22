@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,9 +79,15 @@ public class ProductImporter implements DomainImporter {
                     entity.setCreatedAt(Instant.now());
                     isNew = true;
                 }
+                entity.setLegacyId(String.valueOf(mp.sourceId()));
                 entity.setSlug(mp.slug());
                 entity.setName(mp.name());
                 entity.setDescription(mp.description());
+                entity.setSeoTitle(mp.seoTitle());
+                entity.setSeoDescription(mp.seoDescription());
+                entity.setStockQuantity(mp.stockQuantity());
+                entity.setManageStock(mp.manageStock());
+                entity.setBackorders(mp.backorders());
 
                 // Duplicate SKU handling: append suffix to avoid constraint violation
                 String sku = mp.sku();
@@ -94,15 +101,15 @@ public class ProductImporter implements DomainImporter {
                 }
                 entity.setSku(sku);
 
-                // Price: MappedProduct.price() is BigDecimal; entity.retailPrice is int VND
-                int retailPrice = mp.price() != null
-                        ? mp.price().intValue()
-                        : (mp.regularPrice() != null ? mp.regularPrice().intValue() : 0);
-                int compareAtPrice = mp.regularPrice() != null ? mp.regularPrice().intValue() : 0;
-                int salePrice = mp.salePrice() != null ? mp.salePrice().intValue() : 0;
+                // Price: MappedProduct.price() is BigDecimal; entity fields are BigDecimal(19,2)
+                BigDecimal retailPrice = mp.price() != null
+                        ? mp.price()
+                        : (mp.regularPrice() != null ? mp.regularPrice() : BigDecimal.ZERO);
+                BigDecimal compareAtPrice = mp.regularPrice();
+                BigDecimal salePrice = mp.salePrice();
                 entity.setRetailPrice(retailPrice);
-                entity.setCompareAtPrice(compareAtPrice > 0 ? compareAtPrice : null);
-                entity.setSalePrice(salePrice > 0 ? salePrice : null);
+                entity.setCompareAtPrice(compareAtPrice != null && compareAtPrice.signum() > 0 ? compareAtPrice : null);
+                entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
                 entity.setStockState(resolveStockState(mp.stockStatus()));

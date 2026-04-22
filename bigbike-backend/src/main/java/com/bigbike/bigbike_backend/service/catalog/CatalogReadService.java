@@ -127,7 +127,7 @@ public class CatalogReadService {
     private static Comparator<Product> productComparator(SortSpec sortSpec) {
         Comparator<Product> comparator = switch (sortSpec.field()) {
             case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
-            case "price" -> Comparator.comparingInt(product -> product.price().retailPrice());
+            case "price" -> Comparator.comparing(product -> product.price().retailPrice());
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             default -> throw new IllegalStateException("Unsupported sort field.");
         };

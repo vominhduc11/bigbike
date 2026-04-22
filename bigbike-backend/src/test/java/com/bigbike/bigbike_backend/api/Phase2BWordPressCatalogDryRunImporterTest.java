@@ -227,7 +227,7 @@ class Phase2BWordPressCatalogDryRunImporterTest {
         assertThat(result.stockStatus()).isEqualTo("instock");
         assertThat(result.thumbnailId()).isEqualTo(301L);
         assertThat(result.galleryIds()).containsExactly(302L, 303L);
-        assertThat(result.status()).isEqualTo("ACTIVE");
+        assertThat(result.status()).isEqualTo("PUBLISHED");
         assertThat(result.warnings()).isEmpty();
     }
 

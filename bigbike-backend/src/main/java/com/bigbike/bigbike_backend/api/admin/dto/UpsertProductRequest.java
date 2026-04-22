@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 
 public class UpsertProductRequest {
 
@@ -34,9 +35,9 @@ public class UpsertProductRequest {
     @Valid
     private ImageAssetRequest image;
 
-    private Integer retailPrice;
-    private Integer compareAtPrice;
-    private Integer salePrice;
+    private BigDecimal retailPrice;
+    private BigDecimal compareAtPrice;
+    private BigDecimal salePrice;
 
     @Pattern(regexp = "^(VND)$", message = "Currency must be VND.")
     private String currency;
@@ -114,27 +115,27 @@ public class UpsertProductRequest {
         this.image = image;
     }
 
-    public Integer getRetailPrice() {
+    public BigDecimal getRetailPrice() {
         return retailPrice;
     }
 
-    public void setRetailPrice(Integer retailPrice) {
+    public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
     }
 
-    public Integer getCompareAtPrice() {
+    public BigDecimal getCompareAtPrice() {
         return compareAtPrice;
     }
 
-    public void setCompareAtPrice(Integer compareAtPrice) {
+    public void setCompareAtPrice(BigDecimal compareAtPrice) {
         this.compareAtPrice = compareAtPrice;
     }
 
-    public Integer getSalePrice() {
+    public BigDecimal getSalePrice() {
         return salePrice;
     }
 
-    public void setSalePrice(Integer salePrice) {
+    public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
     }
 

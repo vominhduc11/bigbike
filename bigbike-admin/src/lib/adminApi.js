@@ -26,6 +26,7 @@ import {
   queryMockOrders,
   queryMockProducts,
 } from './mockData'
+import { clearTokens, readTokens, writeTokens } from './authStorage'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 const FORCE_MOCK = import.meta.env.VITE_USE_ADMIN_MOCK === 'true'
@@ -40,6 +41,49 @@ export class ApiClientError extends Error {
     this.code = code
     this.details = Array.isArray(details) ? details : []
   }
+}
+
+// ── Auth interceptor state ───────────────────────────────────────────────────
+// We don't pull in axios just for an auth header. The same interceptor pattern
+// is implemented around fetch: every request reads the latest accessToken from
+// localStorage and, on 401, the request is retried once after a refresh.
+//
+// onAuthError is set by the AuthProvider so the UI can react (e.g. show login
+// screen) when refresh ultimately fails.
+let authErrorListener = null
+
+export function setAuthErrorListener(listener) {
+  authErrorListener = typeof listener === 'function' ? listener : null
+}
+
+let refreshInFlight = null
+
+async function performTokenRefresh() {
+  if (refreshInFlight) return refreshInFlight
+  const { refreshToken } = readTokens()
+  if (!refreshToken) {
+    return null
+  }
+  refreshInFlight = (async () => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (!response.ok) return null
+      const payload = await response.json().catch(() => null)
+      const data = payload?.data
+      if (!data?.accessToken) return null
+      writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+      return data.accessToken
+    } catch {
+      return null
+    } finally {
+      refreshInFlight = null
+    }
+  })()
+  return refreshInFlight
 }
 
 function toQueryString(query) {
@@ -57,35 +101,48 @@ function toQueryString(query) {
   return serialized ? `?${serialized}` : ''
 }
 
-async function requestJson(endpoint, options = {}) {
-  const { method = 'GET', query, body } = options
-  const url = `${API_BASE}${endpoint}${toQueryString(query)}`
-
-  const headers = {
-    Accept: 'application/json',
-  }
-
-  const fetchOptions = {
-    method,
-    headers,
-  }
-
+async function dispatch(method, url, body, accessToken) {
+  const headers = { Accept: 'application/json' }
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  const init = { method, headers }
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
-    fetchOptions.body = JSON.stringify(body)
+    init.body = JSON.stringify(body)
   }
-
-  const response = await fetch(url, fetchOptions)
-
-  let payload
+  const response = await fetch(url, init)
+  let payload = null
   try {
     payload = await response.json()
   } catch {
     payload = null
   }
+  return { response, payload }
+}
+
+async function requestJson(endpoint, options = {}) {
+  const { method = 'GET', query, body, skipAuth = false } = options
+  const url = `${API_BASE}${endpoint}${toQueryString(query)}`
+
+  const { accessToken } = skipAuth ? { accessToken: null } : readTokens()
+  let { response, payload } = await dispatch(method, url, body, accessToken)
+
+  // 401 → refresh once, retry once. The refresh endpoint itself is called with
+  // skipAuth so we never recurse here.
+  if (response.status === 401 && !skipAuth && accessToken) {
+    const newAccess = await performTokenRefresh()
+    if (newAccess) {
+      ({ response, payload } = await dispatch(method, url, body, newAccess))
+    }
+    if (response.status === 401) {
+      // Refresh failed or replay still 401 — surface to AuthProvider so it can
+      // clear state and show the login screen.
+      clearTokens()
+      if (authErrorListener) authErrorListener()
+    }
+  }
 
   if (!response.ok) {
-    const error = payload && payload.error ? payload.error : {}
+    const error = payload?.error || {}
     throw new ApiClientError(
       error.message || `Request failed with status ${response.status}`,
       response.status,
@@ -95,6 +152,38 @@ async function requestJson(endpoint, options = {}) {
   }
 
   return payload
+}
+
+// ── Admin auth API ───────────────────────────────────────────────────────────
+
+export async function loginAdmin({ email, password }) {
+  const payload = await requestJson('/auth/login', {
+    method: 'POST',
+    body: { email, password },
+    skipAuth: true,
+  })
+  const data = payload?.data
+  if (!data?.accessToken) {
+    throw new ApiClientError('Login response missing tokens.', 500, 'INVALID_LOGIN_RESPONSE')
+  }
+  writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+  return { user: data.user }
+}
+
+export async function logoutAdmin() {
+  const { refreshToken } = readTokens()
+  try {
+    if (refreshToken) {
+      await requestJson('/auth/logout', { method: 'POST', body: { refreshToken } })
+    }
+  } catch {
+    // Ignore network errors on logout — we still clear local state below.
+  }
+  clearTokens()
+}
+
+export function hasStoredAccessToken() {
+  return Boolean(readTokens().accessToken)
 }
 
 function withMockFallback(reason, data) {
@@ -355,6 +444,16 @@ export async function publishProduct(productId, publishStatus) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
+export async function softDeleteProduct(productId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/products/${productId}`, { method: 'DELETE' })
+}
+
+export async function softDeleteCategory(categoryId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/categories/${categoryId}`, { method: 'DELETE' })
+}
+
 export async function fetchCategories(query) {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -581,6 +680,21 @@ export async function updateOrderStatus(orderId, orderStatus) {
     body: { orderStatus },
   })
   return parseDetailPayload(payload, normalizeOrder)
+}
+
+export async function fetchOrderAllowedTransitions(orderId) {
+  if (FORCE_MOCK) {
+    return { transitions: [] }
+  }
+  try {
+    const payload = await requestJson(`/admin/orders/${orderId}/allowed-transitions`)
+    const list = Array.isArray(payload?.data) ? payload.data : []
+    return { transitions: list }
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return { transitions: [] }
+  }
 }
 
 export async function updateOrderPaymentStatus(orderId, paymentStatus) {

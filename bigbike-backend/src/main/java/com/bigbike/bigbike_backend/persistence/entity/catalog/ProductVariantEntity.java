@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -30,9 +31,15 @@ public class ProductVariantEntity {
     @Column(nullable = false)
     private String name;
 
-    private Integer retailPrice;
-    private Integer compareAtPrice;
-    private Integer salePrice;
+    @Column(name = "retail_price", precision = 19, scale = 2)
+    private BigDecimal retailPrice;
+
+    @Column(name = "compare_at_price", precision = 19, scale = 2)
+    private BigDecimal compareAtPrice;
+
+    @Column(name = "sale_price", precision = 19, scale = 2)
+    private BigDecimal salePrice;
+
     private String currency;
 
     @Enumerated(EnumType.STRING)
@@ -90,27 +97,27 @@ public class ProductVariantEntity {
         this.name = name;
     }
 
-    public Integer getRetailPrice() {
+    public BigDecimal getRetailPrice() {
         return retailPrice;
     }
 
-    public void setRetailPrice(Integer retailPrice) {
+    public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
     }
 
-    public Integer getCompareAtPrice() {
+    public BigDecimal getCompareAtPrice() {
         return compareAtPrice;
     }
 
-    public void setCompareAtPrice(Integer compareAtPrice) {
+    public void setCompareAtPrice(BigDecimal compareAtPrice) {
         this.compareAtPrice = compareAtPrice;
     }
 
-    public Integer getSalePrice() {
+    public BigDecimal getSalePrice() {
         return salePrice;
     }
 
-    public void setSalePrice(Integer salePrice) {
+    public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
     }
 

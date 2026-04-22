@@ -152,6 +152,19 @@ public class AdminOrderService {
         return toDetail(order);
     }
 
+    /**
+     * Returns the list of order statuses that the given order can legally
+     * transition into, in a stable order. Used by the admin UI to hide
+     * transition buttons that would fail the ConflictException check in
+     * {@link #updateOrderStatus}.
+     */
+    public List<String> listAllowedTransitions(UUID orderId) {
+        OrderEntity order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+        Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
+        return allowed.stream().sorted().toList();
+    }
+
     // ── Update order status ───────────────────────────────────────────────────
 
     @Transactional

@@ -346,7 +346,11 @@ class Phase2D3ProductNormalizationTest {
         MappedProduct mp = new MappedProduct(
                 sourceId, slug, name, "", null,
                 new BigDecimal("1000000"), new BigDecimal("1000000"), null,
-                10, "instock", null, List.of(), "ACTIVE", List.of(), List.of());
+                10, "instock", null, null,
+                null, null, null, null, null, null,
+                null, List.of(), "PUBLISHED",
+                null, null,
+                List.of(), List.of());
         return new ResolvedProduct(mp, categorySlug, null);
     }
 
@@ -365,7 +369,7 @@ class Phase2D3ProductNormalizationTest {
         p.setId(id);
         p.setSlug(slug);
         p.setName("Existing Product");
-        p.setRetailPrice(500000);
+        p.setRetailPrice(java.math.BigDecimal.valueOf(500000));
         p.setCurrency("VND");
         p.setStockState(ProductStockState.IN_STOCK);
         p.setPublishStatus(PublishStatus.PUBLISHED);

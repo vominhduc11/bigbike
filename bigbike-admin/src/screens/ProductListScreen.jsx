@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchProducts } from '../lib/adminApi'
+import { ApiClientError, fetchProducts, softDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 
 const INITIAL_QUERY = {
@@ -24,6 +24,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
     pagination: null,
     warning: '',
   })
+  const [deleteState, setDeleteState] = useState({ id: null, error: '' })
 
   useEffect(() => {
     let active = true
@@ -59,6 +60,31 @@ export function ProductListScreen({ navigate, canUpdate }) {
       active = false
     }
   }, [query])
+
+  const refreshList = useCallback(() => {
+    setState((previous) => ({ ...previous, status: 'loading' }))
+    setQuery((previous) => ({ ...previous }))
+  }, [])
+
+  const handleDelete = useCallback(async (product) => {
+    const confirmed = window.confirm(
+      `Chuyển sản phẩm "${product.name}" vào thùng rác?\n` +
+      `Trạng thái xuất bản sẽ chuyển sang TRASH và sản phẩm sẽ ẩn khỏi website.`,
+    )
+    if (!confirmed) return
+
+    setDeleteState({ id: product.id, error: '' })
+    try {
+      await softDeleteProduct(product.id)
+      setDeleteState({ id: null, error: '' })
+      refreshList()
+    } catch (error) {
+      const message = error instanceof ApiClientError
+        ? error.message
+        : (error?.message || 'Không thể xóa sản phẩm.')
+      setDeleteState({ id: null, error: message })
+    }
+  }, [refreshList])
 
   const columns = useMemo(
     () => [
@@ -112,18 +138,33 @@ export function ProductListScreen({ navigate, canUpdate }) {
         key: 'actions',
         label: 'Actions',
         align: 'right',
-        render: (product) => (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate(`/admin/products/${product.id}`)}
-          >
-            Edit
-          </button>
-        ),
+        render: (product) => {
+          const isDeleting = deleteState.id === product.id
+          const isTrashed = product.publishStatus === 'TRASH'
+          return (
+            <div className="row-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate(`/admin/products/${product.id}`)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => handleDelete(product)}
+                disabled={!canUpdate || isDeleting || isTrashed}
+                title={isTrashed ? 'Sản phẩm đã ở thùng rác.' : 'Chuyển vào thùng rác'}
+              >
+                {isDeleting ? 'Đang xóa…' : 'Xóa'}
+              </button>
+            </div>
+          )
+        },
       },
     ],
-    [navigate],
+    [navigate, handleDelete, deleteState.id, canUpdate],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
@@ -154,6 +195,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+
+      {deleteState.error ? (
+        <StatePanel tone="danger" title="Không thể xóa sản phẩm" description={deleteState.error} />
+      ) : null}
 
       <section className="filter-bar">
         <label>

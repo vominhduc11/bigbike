@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchOrderDetail, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { fetchOrderAllowedTransitions, fetchOrderDetail, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 
-const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
 const PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED']
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [state, setState] = useState({ status: 'loading', order: null, warning: '' })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [allowedTransitions, setAllowedTransitions] = useState([])
 
   useEffect(() => {
     let active = true
@@ -26,6 +26,23 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       })
     return () => { active = false }
   }, [orderId])
+
+  // Load allowed transitions whenever the current order status changes so the
+  // UI only surfaces buttons the backend will actually accept.
+  useEffect(() => {
+    if (state.status !== 'success' || !state.order?.orderStatus) return undefined
+    let active = true
+    fetchOrderAllowedTransitions(orderId)
+      .then((response) => {
+        if (!active) return
+        setAllowedTransitions(response.transitions || [])
+      })
+      .catch(() => {
+        if (!active) return
+        setAllowedTransitions([])
+      })
+    return () => { active = false }
+  }, [orderId, state.status, state.order?.orderStatus])
 
   async function handleStatusChange(e) {
     const newStatus = e.target.value
@@ -100,9 +117,24 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         <DetailSection title="Trạng thái đơn hàng">
           <label style={{ display: 'block', marginBottom: '0.75rem' }}>
             Trạng thái giao hàng
-            <select className="control-select" value={order.orderStatus} onChange={handleStatusChange} disabled={!canUpdate || saving}>
-              {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            <select
+              className="control-select"
+              value={order.orderStatus}
+              onChange={handleStatusChange}
+              disabled={!canUpdate || saving || allowedTransitions.length === 0}
+            >
+              {/* Current status is always shown as the selected value (even when
+                  it is terminal and no transitions are allowed). */}
+              <option value={order.orderStatus}>{order.orderStatus}</option>
+              {allowedTransitions
+                .filter((s) => s !== order.orderStatus)
+                .map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {allowedTransitions.length === 0 && (
+              <small style={{ color: 'var(--c-text-muted)' }}>
+                Trạng thái hiện tại không thể chuyển tiếp.
+              </small>
+            )}
           </label>
           <label style={{ display: 'block' }}>
             Trạng thái thanh toán

@@ -337,3 +337,38 @@ export function getPageBySlug(slug: string): Promise<DataResult<Page>> {
   return loadData(`/api/v1/pages/${slug}`, () => getPageBySlugFallback(slug));
 }
 
+// ── Cross-domain search ──────────────────────────────────────────────────────
+
+export type SearchResults = {
+  query: string;
+  products: Product[];
+  articles: Article[];
+};
+
+export type SearchTypeFilter = "product" | "article";
+
+export type SearchQuery = {
+  q: string;
+  types?: SearchTypeFilter[];
+  limit?: number;
+};
+
+export async function search(query: SearchQuery): Promise<DataResult<SearchResults>> {
+  const params: RequestQuery = {
+    q: query.q,
+    limit: query.limit,
+  };
+  if (query.types && query.types.length > 0) {
+    params.type = query.types.join(",");
+  }
+  try {
+    const response = await requestJson<ApiDataResponse<SearchResults>>(
+      "/api/v1/search",
+      params,
+    );
+    return { data: response.data, error: null, fromFallback: false };
+  } catch (error) {
+    return { data: null, error: toClientError(error), fromFallback: false };
+  }
+}
+

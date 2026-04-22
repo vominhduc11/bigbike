@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEnti
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,14 +84,14 @@ public class ProductVariationImporter implements DomainImporter {
                 entity.setSku(mv.sku());
                 entity.setName(buildName(mv));
 
-                int retailPrice = mv.price() != null
-                        ? mv.price().intValue()
-                        : (mv.regularPrice() != null ? mv.regularPrice().intValue() : 0);
-                int compareAtPrice = mv.regularPrice() != null ? mv.regularPrice().intValue() : 0;
-                int salePrice = mv.salePrice() != null ? mv.salePrice().intValue() : 0;
-                entity.setRetailPrice(retailPrice > 0 ? retailPrice : null);
-                entity.setCompareAtPrice(compareAtPrice > 0 ? compareAtPrice : null);
-                entity.setSalePrice(salePrice > 0 ? salePrice : null);
+                BigDecimal retailPrice = mv.price() != null
+                        ? mv.price()
+                        : mv.regularPrice();
+                BigDecimal compareAtPrice = mv.regularPrice();
+                BigDecimal salePrice = mv.salePrice();
+                entity.setRetailPrice(retailPrice != null && retailPrice.signum() > 0 ? retailPrice : null);
+                entity.setCompareAtPrice(compareAtPrice != null && compareAtPrice.signum() > 0 ? compareAtPrice : null);
+                entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
                 ProductStockState stockState = resolveStockState(mv.stockStatus());

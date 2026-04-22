@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminShell } from './components/AdminShell'
 import { StatePanel } from './components/StatePanel'
-import { fetchCurrentAdminUser } from './lib/adminApi'
+import { AuthProvider, useAuth } from './lib/auth'
+import { LoginScreen } from './screens/LoginScreen'
+// fetchCurrentAdminUser is now owned by AuthProvider — no direct import here.
 import { BrandDetailScreen } from './screens/BrandDetailScreen'
 import { BrandListScreen } from './screens/BrandListScreen'
 import { CategoryDetailScreen } from './screens/CategoryDetailScreen'
@@ -108,9 +110,9 @@ function firstAllowedPath(hasPermission) {
   return first ? first.path : '/admin/products'
 }
 
-function App() {
+function AdminApp() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname))
-  const [authState, setAuthState] = useState({ status: 'loading', user: null, mode: 'mock', error: '' })
+  const authState = useAuth()
 
   const navigate = useCallback((nextPath, options = {}) => {
     const normalized = normalizePath(nextPath)
@@ -129,29 +131,19 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  useEffect(() => {
-    let active = true
-    fetchCurrentAdminUser()
-      .then((response) => {
-        if (!active) return
-        setAuthState({ status: 'success', user: response.user, mode: response.mode, error: '' })
-      })
-      .catch((error) => {
-        if (!active) return
-        setAuthState({ status: 'error', user: null, mode: 'mock', error: error.message })
-      })
-    return () => { active = false }
-  }, [])
-
   const route = parseRoute(pathname)
   const activePath = pathname === '/' || pathname === '/admin' ? '/admin/products' : pathname
 
-  if (authState.status === 'loading') {
+  if (authState.status === 'initializing') {
     return (
       <div className="full-page-state">
         <StatePanel tone="info" title="Loading admin session" description="Resolving current admin user and permissions." />
       </div>
     )
+  }
+
+  if (authState.status === 'unauthenticated') {
+    return <LoginScreen />
   }
 
   if (authState.status === 'error') {
@@ -244,4 +236,10 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AdminApp />
+    </AuthProvider>
+  )
+}

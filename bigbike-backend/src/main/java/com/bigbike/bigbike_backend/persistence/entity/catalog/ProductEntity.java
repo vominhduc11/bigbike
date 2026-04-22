@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -26,6 +27,9 @@ public class ProductEntity {
 
     @Id
     private String id;
+
+    @Column(name = "legacy_id", unique = true)
+    private String legacyId;
 
     private String sku;
 
@@ -67,11 +71,14 @@ public class ProductEntity {
     private Integer imageHeight;
     private String imageMimeType;
 
-    @Column(nullable = false)
-    private int retailPrice;
+    @Column(name = "retail_price", nullable = false, precision = 19, scale = 2)
+    private BigDecimal retailPrice;
 
-    private Integer compareAtPrice;
-    private Integer salePrice;
+    @Column(name = "compare_at_price", precision = 19, scale = 2)
+    private BigDecimal compareAtPrice;
+
+    @Column(name = "sale_price", precision = 19, scale = 2)
+    private BigDecimal salePrice;
 
     @Column(nullable = false)
     private String currency;
@@ -79,6 +86,33 @@ public class ProductEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProductStockState stockState;
+
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity;
+
+    @Column(name = "manage_stock")
+    private Boolean manageStock;
+
+    @Column(name = "backorders", length = 16)
+    private String backorders;
+
+    @Column(name = "weight_kg", precision = 10, scale = 4)
+    private java.math.BigDecimal weightKg;
+
+    @Column(name = "length_cm", precision = 10, scale = 4)
+    private java.math.BigDecimal lengthCm;
+
+    @Column(name = "width_cm", precision = 10, scale = 4)
+    private java.math.BigDecimal widthCm;
+
+    @Column(name = "height_cm", precision = 10, scale = 4)
+    private java.math.BigDecimal heightCm;
+
+    @Column(name = "force_out_of_stock")
+    private Boolean forceOutOfStock;
+
+    @Column(name = "discount_percent_override", precision = 5, scale = 2)
+    private java.math.BigDecimal discountPercentOverride;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -130,6 +164,14 @@ public class ProductEntity {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getLegacyId() {
+        return legacyId;
+    }
+
+    public void setLegacyId(String legacyId) {
+        this.legacyId = legacyId;
     }
 
     public String getSku() {
@@ -244,27 +286,27 @@ public class ProductEntity {
         this.imageMimeType = imageMimeType;
     }
 
-    public int getRetailPrice() {
+    public BigDecimal getRetailPrice() {
         return retailPrice;
     }
 
-    public void setRetailPrice(int retailPrice) {
+    public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
     }
 
-    public Integer getCompareAtPrice() {
+    public BigDecimal getCompareAtPrice() {
         return compareAtPrice;
     }
 
-    public void setCompareAtPrice(Integer compareAtPrice) {
+    public void setCompareAtPrice(BigDecimal compareAtPrice) {
         this.compareAtPrice = compareAtPrice;
     }
 
-    public Integer getSalePrice() {
+    public BigDecimal getSalePrice() {
         return salePrice;
     }
 
-    public void setSalePrice(Integer salePrice) {
+    public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
     }
 
@@ -282,6 +324,78 @@ public class ProductEntity {
 
     public void setStockState(ProductStockState stockState) {
         this.stockState = stockState;
+    }
+
+    public Integer getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(Integer stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public Boolean getManageStock() {
+        return manageStock;
+    }
+
+    public void setManageStock(Boolean manageStock) {
+        this.manageStock = manageStock;
+    }
+
+    public String getBackorders() {
+        return backorders;
+    }
+
+    public void setBackorders(String backorders) {
+        this.backorders = backorders;
+    }
+
+    public java.math.BigDecimal getWeightKg() {
+        return weightKg;
+    }
+
+    public void setWeightKg(java.math.BigDecimal weightKg) {
+        this.weightKg = weightKg;
+    }
+
+    public java.math.BigDecimal getLengthCm() {
+        return lengthCm;
+    }
+
+    public void setLengthCm(java.math.BigDecimal lengthCm) {
+        this.lengthCm = lengthCm;
+    }
+
+    public java.math.BigDecimal getWidthCm() {
+        return widthCm;
+    }
+
+    public void setWidthCm(java.math.BigDecimal widthCm) {
+        this.widthCm = widthCm;
+    }
+
+    public java.math.BigDecimal getHeightCm() {
+        return heightCm;
+    }
+
+    public void setHeightCm(java.math.BigDecimal heightCm) {
+        this.heightCm = heightCm;
+    }
+
+    public Boolean getForceOutOfStock() {
+        return forceOutOfStock;
+    }
+
+    public void setForceOutOfStock(Boolean forceOutOfStock) {
+        this.forceOutOfStock = forceOutOfStock;
+    }
+
+    public java.math.BigDecimal getDiscountPercentOverride() {
+        return discountPercentOverride;
+    }
+
+    public void setDiscountPercentOverride(java.math.BigDecimal discountPercentOverride) {
+        this.discountPercentOverride = discountPercentOverride;
     }
 
     public PublishStatus getPublishStatus() {

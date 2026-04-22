@@ -99,11 +99,41 @@ const redirectRows = parseCsvRows();
 const csvRedirectRules = buildRedirectRules(redirectRows);
 const csvNoIndexHeaders = buildNoIndexHeaders(redirectRows);
 
+const LEGACY_UPLOADS_BASE =
+  process.env.BIGBIKE_LEGACY_UPLOADS_BASE?.replace(/\/$/, "") ??
+  "https://cdn.bigbike.vn/uploads";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
   async redirects() {
-    return csvRedirectRules;
+    return [
+      ...csvRedirectRules,
+      // Legacy WP sitemap index → consolidated Next.js sitemap.
+      // Anchored exact match on the sitemap_index path so we don't accidentally
+      // intercept any other /sitemap*.xml routes Next emits.
+      {
+        source: "/sitemap_index.xml",
+        destination: "/sitemap.xml",
+        permanent: true,
+      },
+    ];
+  },
+  async rewrites() {
+    return {
+      // beforeFiles ensures legacy upload URLs are served from the CDN/MinIO
+      // before Next's filesystem routing tries to match a page. The path
+      // segment is intentionally narrow (`/wp-content/uploads/...`) so this
+      // rule cannot capture other routes.
+      beforeFiles: [
+        {
+          source: "/wp-content/uploads/:path*",
+          destination: `${LEGACY_UPLOADS_BASE}/:path*`,
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
   async headers() {
     return csvNoIndexHeaders;

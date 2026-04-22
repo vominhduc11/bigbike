@@ -1,1 +1,4 @@
 sourcePattern,targetPattern,redirectType,status,notes
+/sp/{slug}.html,/product/{slug}/,301,active,Legacy product page → new product route
+/brand/{slug}.html,/brands/{slug}/,301,active,Legacy brand page → new brands route
+/{cat}.html,/danh-muc-san-pham/{cat}/,301,active,Legacy category page → new category route (match-all: place last)

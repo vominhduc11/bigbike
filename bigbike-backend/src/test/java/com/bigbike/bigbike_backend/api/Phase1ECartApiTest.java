@@ -401,7 +401,7 @@ class Phase1ECartApiTest {
 
         // Mutate product in DB
         product.setName("Changed Name");
-        product.setRetailPrice(9000000);
+        product.setRetailPrice(java.math.BigDecimal.valueOf(9000000));
         productRepo.save(product);
 
         // Get cart again — snapshot values must remain unchanged
@@ -509,8 +509,8 @@ class Phase1ECartApiTest {
         product.setId(UUID.randomUUID().toString());
         product.setSlug("test-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         product.setName(name);
-        product.setRetailPrice(retailPrice);
-        product.setSalePrice(salePrice);
+        product.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
+        product.setSalePrice(salePrice == null ? null : java.math.BigDecimal.valueOf(salePrice));
         product.setCurrency("VND");
         product.setPublishStatus(status);
         product.setStockState(ProductStockState.IN_STOCK);

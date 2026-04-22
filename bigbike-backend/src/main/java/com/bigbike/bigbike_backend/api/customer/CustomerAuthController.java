@@ -11,16 +11,21 @@ import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthResult;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
+import com.bigbike.bigbike_backend.service.customer.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,14 +39,29 @@ public class CustomerAuthController {
     private final CustomerAuthService authService;
     private final CustomerSessionService sessionService;
     private final ApiResponseFactory apiResponseFactory;
+    private final EmailVerificationService emailVerificationService;
 
     public CustomerAuthController(
             CustomerAuthService authService,
             CustomerSessionService sessionService,
-            ApiResponseFactory apiResponseFactory) {
+            ApiResponseFactory apiResponseFactory,
+            EmailVerificationService emailVerificationService) {
         this.authService = authService;
         this.sessionService = sessionService;
         this.apiResponseFactory = apiResponseFactory;
+        this.emailVerificationService = emailVerificationService;
+    }
+
+    @GetMapping("/verify-email")
+    public ApiDataResponse<Map<String, Object>> verifyEmail(
+            @RequestParam("token") String token,
+            HttpServletRequest request
+    ) {
+        UUID customerId = emailVerificationService.verify(token);
+        return apiResponseFactory.data(
+                Map.of("customerId", customerId, "verified", Boolean.TRUE),
+                request
+        );
     }
 
     @PostMapping("/register")

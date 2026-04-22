@@ -80,7 +80,7 @@ class Phase2D4RedirectMappingTest {
             p.setSlug(PRODUCT_SLUG);
             p.setName("Xe May ABC 123");
             p.setSku("SKU-12001");
-            p.setRetailPrice(10000);
+            p.setRetailPrice(java.math.BigDecimal.valueOf(10000));
             p.setCurrency("VND");
             p.setStockState(ProductStockState.IN_STOCK);
             p.setPublishStatus(PublishStatus.PUBLISHED);

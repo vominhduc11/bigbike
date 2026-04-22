@@ -20,6 +20,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminCatalogController {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
-    private static final String PUBLISH_STATUS_REGEX = "^(DRAFT|PUBLISHED|HIDDEN|ARCHIVED)$";
+    private static final String PUBLISH_STATUS_REGEX =
+            "^(DRAFT|PUBLISHED|HIDDEN|ARCHIVED|PENDING|PRIVATE|TRASH)$";
     private static final String STOCK_STATE_REGEX = "^(IN_STOCK|LOW_STOCK|OUT_OF_STOCK|PREORDER|CONTACT_FOR_STOCK)$";
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
 
@@ -125,6 +127,20 @@ public class AdminCatalogController {
         );
     }
 
+    /**
+     * Soft-delete: marks the product as TRASH instead of physical removal so it
+     * can be restored from the admin trash view. Idempotent: deleting a product
+     * that's already TRASH returns 204 without touching the row.
+     */
+    @DeleteMapping("/products/{id}")
+    public ApiDataResponse<Product> softDeleteProduct(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(adminCatalogMutationService.softDeleteProduct(id), request);
+    }
+
     @GetMapping("/categories")
     public ApiListResponse<Category> listCategories(
             @RequestParam(defaultValue = "1") @Min(1) int page,
@@ -177,6 +193,20 @@ public class AdminCatalogController {
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
         return apiResponseFactory.data(adminCatalogMutationService.updateCategory(id, payload), request);
+    }
+
+    /**
+     * Soft-delete: there is no publish_status column on categories, so the
+     * closest equivalent is flipping is_visible=false. The category row is
+     * preserved (restoration = re-enable visibility via PATCH).
+     */
+    @DeleteMapping("/categories/{id}")
+    public ApiDataResponse<Category> softDeleteCategory(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id), request);
     }
 
     @GetMapping("/brands")

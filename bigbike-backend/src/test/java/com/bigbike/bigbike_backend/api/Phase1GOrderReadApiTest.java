@@ -468,8 +468,8 @@ class Phase1GOrderReadApiTest {
         p.setId(UUID.randomUUID().toString());
         p.setSlug("1g-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         p.setName(name);
-        p.setRetailPrice(price);
-        p.setSalePrice(salePrice);
+        p.setRetailPrice(java.math.BigDecimal.valueOf(price));
+        p.setSalePrice(salePrice == null ? null : java.math.BigDecimal.valueOf(salePrice));
         p.setCurrency("VND");
         p.setPublishStatus(status);
         p.setStockState(ProductStockState.IN_STOCK);

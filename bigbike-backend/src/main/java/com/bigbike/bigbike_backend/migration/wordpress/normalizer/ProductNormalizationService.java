@@ -117,8 +117,13 @@ public class ProductNormalizationService {
             MappedProduct normalized = new MappedProduct(
                     mp.sourceId(), slug, mp.name(), mp.description(), mp.sku(),
                     mp.price(), mp.regularPrice(), mp.salePrice(),
-                    mp.stockQuantity(), mp.stockStatus(), mp.thumbnailId(),
-                    mp.galleryIds(), mp.status(), mp.unmappedFields(), warnings);
+                    mp.stockQuantity(), mp.stockStatus(),
+                    mp.manageStock(), mp.backorders(),
+                    mp.weightKg(), mp.lengthCm(), mp.widthCm(), mp.heightCm(),
+                    mp.forceOutOfStock(), mp.discountPercentOverride(),
+                    mp.thumbnailId(), mp.galleryIds(), mp.status(),
+                    mp.seoTitle(), mp.seoDescription(),
+                    mp.unmappedFields(), warnings);
 
             result.add(new ResolvedProduct(normalized, categorySlug, rp.brandSlug()));
         }

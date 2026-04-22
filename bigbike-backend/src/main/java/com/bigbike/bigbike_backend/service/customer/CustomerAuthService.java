@@ -24,14 +24,17 @@ public class CustomerAuthService {
     private final CustomerJpaRepository customerRepo;
     private final CustomerSessionService sessionService;
     private final PasswordService passwordService;
+    private final EmailVerificationService emailVerificationService;
 
     public CustomerAuthService(
             CustomerJpaRepository customerRepo,
             CustomerSessionService sessionService,
-            PasswordService passwordService) {
+            PasswordService passwordService,
+            EmailVerificationService emailVerificationService) {
         this.customerRepo = customerRepo;
         this.sessionService = sessionService;
         this.passwordService = passwordService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -60,6 +63,11 @@ public class CustomerAuthService {
         customer.setCreatedAt(now);
         customer.setUpdatedAt(now);
         CustomerEntity saved = customerRepo.save(customer);
+
+        // Fire-and-forget-on-failure email send. Mail outages must not break signup.
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            emailVerificationService.issueAndSend(saved);
+        }
 
         CustomerSessionResult tokens = sessionService.createSession(saved.getId(), ipAddress, userAgent);
         return new CustomerAuthResult(

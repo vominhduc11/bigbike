@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -37,6 +38,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -50,12 +52,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/cart").permitAll()
@@ -71,6 +75,9 @@ public class SecurityConfig {
                         // Public settings and menus
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
+                        // Internal redirect lookup consumed by bigbike-web proxy/middleware.
+                        // No PII; lock down at infra layer (private network / IP allowlist) for prod.
+                        .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // Customer order read requires ROLE_CUSTOMER

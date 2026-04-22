@@ -487,8 +487,8 @@ class Phase1FCheckoutApiTest {
         product.setId(UUID.randomUUID().toString());
         product.setSlug("chk-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         product.setName(name);
-        product.setRetailPrice(retailPrice);
-        product.setSalePrice(salePrice);
+        product.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
+        product.setSalePrice(salePrice == null ? null : java.math.BigDecimal.valueOf(salePrice));
         product.setCurrency("VND");
         product.setPublishStatus(status);
         product.setStockState(ProductStockState.IN_STOCK);

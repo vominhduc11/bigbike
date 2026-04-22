@@ -573,7 +573,7 @@ class Phase1HAdminOrderApiTest {
         p.setId(UUID.randomUUID().toString());
         p.setSlug("1h-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         p.setName(name);
-        p.setRetailPrice(price);
+        p.setRetailPrice(java.math.BigDecimal.valueOf(price));
         p.setCurrency("VND");
         p.setPublishStatus(PublishStatus.PUBLISHED);
         p.setStockState(ProductStockState.IN_STOCK);

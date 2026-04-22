@@ -436,9 +436,8 @@ public class CheckoutService {
         item.setVariantName(variant != null ? variant.getName() : null);
         item.setQuantity(qty);
         item.setUnitPrice(unitPrice);
-        item.setRegularPrice(BigDecimal.valueOf(product.getRetailPrice()));
-        item.setSalePrice(product.getSalePrice() != null
-                ? BigDecimal.valueOf(product.getSalePrice()) : null);
+        item.setRegularPrice(product.getRetailPrice());
+        item.setSalePrice(product.getSalePrice());
         item.setLineSubtotal(lineSubtotal);
         item.setLineDiscount(lineDiscount);
         item.setLineTax(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
@@ -526,11 +525,11 @@ public class CheckoutService {
 
     private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
         if (variant != null) {
-            Integer vp = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getRetailPrice();
-            if (vp != null) return BigDecimal.valueOf(vp).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal vp = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getRetailPrice();
+            if (vp != null) return vp.setScale(2, RoundingMode.HALF_UP);
         }
-        Integer p = product.getSalePrice() != null ? product.getSalePrice() : product.getRetailPrice();
-        return BigDecimal.valueOf(p).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal p = product.getSalePrice() != null ? product.getSalePrice() : product.getRetailPrice();
+        return p.setScale(2, RoundingMode.HALF_UP);
     }
 
     private UUID tryParseUUID(String id) {

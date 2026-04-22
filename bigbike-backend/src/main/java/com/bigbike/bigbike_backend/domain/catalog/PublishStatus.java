@@ -4,6 +4,9 @@ public enum PublishStatus {
     DRAFT,
     PUBLISHED,
     HIDDEN,
-    ARCHIVED
+    ARCHIVED,
+    PENDING,
+    PRIVATE,
+    TRASH
 }
 

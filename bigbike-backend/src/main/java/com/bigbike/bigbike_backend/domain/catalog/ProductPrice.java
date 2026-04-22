@@ -1,10 +1,11 @@
 package com.bigbike.bigbike_backend.domain.catalog;
 
+import java.math.BigDecimal;
+
 public record ProductPrice(
-        int retailPrice,
-        Integer compareAtPrice,
-        Integer salePrice,
+        BigDecimal retailPrice,
+        BigDecimal compareAtPrice,
+        BigDecimal salePrice,
         String currency
 ) {
 }
-

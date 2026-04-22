@@ -630,7 +630,7 @@ class Phase1IAdminManagementApiTest {
         p.setId(UUID.randomUUID().toString());
         p.setSlug("1i-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
         p.setName(name);
-        p.setRetailPrice(price);
+        p.setRetailPrice(java.math.BigDecimal.valueOf(price));
         p.setCurrency("VND");
         p.setPublishStatus(PublishStatus.PUBLISHED);
         p.setStockState(ProductStockState.IN_STOCK);

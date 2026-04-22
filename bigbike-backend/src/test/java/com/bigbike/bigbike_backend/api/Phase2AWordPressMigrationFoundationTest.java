@@ -191,7 +191,7 @@ class Phase2AWordPressMigrationFoundationTest {
         assertThat(result.stockQuantity()).isEqualTo(15);
         assertThat(result.thumbnailId()).isEqualTo(201L);
         assertThat(result.galleryIds()).containsExactly(202L, 203L);
-        assertThat(result.status()).isEqualTo("ACTIVE");
+        assertThat(result.status()).isEqualTo("PUBLISHED");
         assertThat(result.warnings()).isEmpty();
     }
 

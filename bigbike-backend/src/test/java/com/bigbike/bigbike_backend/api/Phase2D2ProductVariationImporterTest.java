@@ -65,7 +65,7 @@ class Phase2D2ProductVariationImporterTest {
             p.setId("wp-prod-99001");
             p.setSlug("test-product-for-variations");
             p.setName("Test Product For Variations");
-            p.setRetailPrice(1000000);
+            p.setRetailPrice(new BigDecimal("1000000"));
             p.setCurrency("VND");
             p.setStockState(ProductStockState.IN_STOCK);
             p.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
@@ -95,8 +95,8 @@ class Phase2D2ProductVariationImporterTest {
         Optional<ProductVariantEntity> saved = variantRepo.findById("wp-var-99101");
         assertThat(saved).isPresent();
         assertThat(saved.get().getSku()).isEqualTo("SKU-VAR-001");
-        assertThat(saved.get().getRetailPrice()).isEqualTo(500000);
-        assertThat(saved.get().getCompareAtPrice()).isEqualTo(600000);
+        assertThat(saved.get().getRetailPrice()).isEqualByComparingTo(new BigDecimal("500000"));
+        assertThat(saved.get().getCompareAtPrice()).isEqualByComparingTo(new BigDecimal("600000"));
         assertThat(saved.get().getCurrency()).isEqualTo("VND");
     }
 

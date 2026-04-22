@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -189,7 +190,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 "YOUTUBE"
                         )
                 ),
-                new ProductPrice(3250000, 3690000, 3250000, "VND"),
+                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                 List.of(
                         new ProductVariant(
                                 "var_ls2_ff800_red_m",
@@ -199,7 +200,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                         new ProductVariantOption("Color", "Đỏ"),
                                         new ProductVariantOption("Size", "M")
                                 ),
-                                new ProductPrice(3250000, 3690000, 3250000, "VND"),
+                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.IN_STOCK,
                                 null,
                                 true
@@ -212,7 +213,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                         new ProductVariantOption("Color", "Đen"),
                                         new ProductVariantOption("Size", "L")
                                 ),
-                                new ProductPrice(3250000, 3690000, 3250000, "VND"),
+                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.LOW_STOCK,
                                 null,
                                 true
@@ -257,7 +258,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ),
                 List.of(),
                 List.of(),
-                new ProductPrice(2890000, null, null, "VND"),
+                new ProductPrice(BigDecimal.valueOf(2890000), null, null, "VND"),
                 List.of(),
                 List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số")),
                 ProductStockState.PREORDER,
@@ -295,7 +296,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ),
                 List.of(),
                 List.of(),
-                new ProductPrice(2450000, 2790000, 2450000, "VND"),
+                new ProductPrice(BigDecimal.valueOf(2450000), BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND"),
                 List.of(),
                 List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số")),
                 ProductStockState.LOW_STOCK,
