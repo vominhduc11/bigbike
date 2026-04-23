@@ -31,6 +31,22 @@ bigbike/
 └── docs/              # Project documentation and contracts
 ```
 
+### Technology Stack
+
+| App | Runtime | Framework | Language | Notes |
+|-----|---------|-----------|----------|-------|
+| `bigbike-web` | Node.js | Next.js 16.2.4 + App Router | TypeScript | React 19.2.4, Tailwind CSS 4 |
+| `bigbike-admin` | Node.js | Vite 8.0.4 | JavaScript | React 19.2.4, babel-plugin-react-compiler |
+| `bigbike-backend` | Java 17 | Spring Boot 4.0.5 | Java | Maven, JPA, Flyway, Spring Security |
+
+Infrastructure (via `docker-compose.yaml`):
+
+| Service | Image | Port |
+|---------|-------|------|
+| PostgreSQL | postgres:16-alpine | 5432 |
+| Redis | redis:7-alpine | 6379 |
+| MinIO | minio/minio:latest | 9000 (API), 9001 (console) |
+
 ---
 
 ## 2. Applications
@@ -366,6 +382,8 @@ npm run test
 
 ### 6.2 Admin dashboard
 
+`bigbike-admin` is a **Vite 8 + React SPA** (not Next.js). Dev server runs on port **5173** by default.
+
 Typical flow:
 
 ```bash
@@ -380,11 +398,16 @@ Build:
 npm run build
 ```
 
-Lint/test if available:
+Preview production build locally (port 4173):
+
+```bash
+npm run preview
+```
+
+Lint:
 
 ```bash
 npm run lint
-npm run test
 ```
 
 ### 6.3 Backend
@@ -403,13 +426,45 @@ Test/package:
 ./mvnw package
 ```
 
-If the project uses Gradle instead of Maven, use the matching Gradle commands.
-
 Phase 4E auth note:
 
 - `GET /api/v1/auth/me` currently uses a dev/mock placeholder user.
 - Placeholder auth is available only for dev/mock-style runtime profiles.
 - Production auth provider is not implemented yet in this phase.
+
+### 6.4 Infrastructure (Docker Compose)
+
+The repo includes a `docker-compose.yaml` at the root that starts PostgreSQL, Redis, MinIO, and all three apps together.
+
+Start all infrastructure services only (recommended for local dev):
+
+```bash
+docker compose up postgres redis minio -d
+```
+
+Start the full stack (all services including apps):
+
+```bash
+docker compose up -d
+```
+
+Stop all:
+
+```bash
+docker compose down
+```
+
+Port summary when using Docker:
+
+| Service | Local port |
+|---------|-----------|
+| `bigbike-backend` | 8080 |
+| `bigbike-web` | 3000 |
+| `bigbike-admin` | 4000 |
+| PostgreSQL | 5432 |
+| Redis | 6379 |
+| MinIO API | 9000 |
+| MinIO console | 9001 |
 
 ---
 
@@ -417,27 +472,61 @@ Phase 4E auth note:
 
 Do not commit secrets.
 
-Each app should use its own environment file pattern, for example:
+Each app uses its own environment file (gitignored). Copy the example file to get started:
 
-```text
-bigbike-web/.env.local
-bigbike-admin/.env.local
-bigbike-backend/.env
+```bash
+cp bigbike-web/.env.example    bigbike-web/.env.local
+cp bigbike-admin/.env.example  bigbike-admin/.env.local
+cp bigbike-backend/.env.example bigbike-backend/.env   # if present
 ```
 
-Recommended examples:
+### 7.1 `bigbike-web` (`.env.local`)
 
 ```text
-.env.example
-.env.local.example
+BIGBIKE_API_BASE_URL=http://localhost:8080          # server-side API base
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080      # client-side API base
+BIGBIKE_SITE_URL=http://localhost:3000              # canonical site URL (server)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000          # canonical site URL (client)
+BIGBIKE_DISABLE_DEV_FALLBACK=false                  # "true" forces real API in dev
+BIGBIKE_REDIS_URL=                                  # optional: redis://localhost:6379/0
+BIGBIKE_REDIRECT_CACHE_TTL_SECONDS=300
+# NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX                   # Google Tag Manager (staging/prod)
 ```
 
-Backend (`bigbike-backend`) database variables:
+### 7.2 `bigbike-admin` (`.env.local`)
 
 ```text
+VITE_ADMIN_API_BASE=http://localhost:8080/api/v1    # backend API base
+VITE_USE_ADMIN_MOCK=true                            # "false" to hit real API
+VITE_ADMIN_ROLE=ADMIN                               # default role in mock/dev
+```
+
+### 7.3 `bigbike-backend` (`application.properties` / env)
+
+```text
+# Database (PostgreSQL)
 BIGBIKE_DB_URL=jdbc:postgresql://localhost:5432/bigbike
 BIGBIKE_DB_USERNAME=bigbike
 BIGBIKE_DB_PASSWORD=bigbike
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+BIGBIKE_JWT_SECRET=dev-change-me-in-production-needs-32chars!!
+
+# MinIO (S3-compatible media storage)
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ROOT_USER=minio_admin
+MINIO_ROOT_PASSWORD=minio_dev_only
+MINIO_BUCKET=bigbike-media
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4000
+
+# Spring profiles
+SPRING_PROFILES_ACTIVE=dev
 ```
 
 Optional backend profiles:

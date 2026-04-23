@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class RequestIdFilter extends OncePerRequestFilter {
 
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
+    private static final String MDC_REQUEST_ID = "requestId";
 
     @Override
     protected void doFilterInternal(
@@ -27,7 +29,11 @@ public class RequestIdFilter extends OncePerRequestFilter {
         }
         request.setAttribute(ApiMetaFactory.REQUEST_ID_ATTRIBUTE, requestId);
         response.setHeader(REQUEST_ID_HEADER, requestId);
-        filterChain.doFilter(request, response);
+        MDC.put(MDC_REQUEST_ID, requestId);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            MDC.remove(MDC_REQUEST_ID);
+        }
     }
 }
-

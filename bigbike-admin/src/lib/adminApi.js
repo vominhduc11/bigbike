@@ -26,7 +26,7 @@ import {
   queryMockOrders,
   queryMockProducts,
 } from './mockData'
-import { clearTokens, readTokens, writeTokens } from './authStorage'
+import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 const FORCE_MOCK = import.meta.env.VITE_USE_ADMIN_MOCK === 'true'
@@ -60,22 +60,19 @@ let refreshInFlight = null
 
 async function performTokenRefresh() {
   if (refreshInFlight) return refreshInFlight
-  const { refreshToken } = readTokens()
-  if (!refreshToken) {
-    return null
-  }
   refreshInFlight = (async () => {
     try {
+      // Refresh token is in httpOnly cookie — send credentials, no body needed.
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
       })
       if (!response.ok) return null
       const payload = await response.json().catch(() => null)
       const data = payload?.data
       if (!data?.accessToken) return null
-      writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+      writeTokens({ accessToken: data.accessToken })
       return data.accessToken
     } catch {
       return null
@@ -84,6 +81,17 @@ async function performTokenRefresh() {
     }
   })()
   return refreshInFlight
+}
+
+// Attempt a silent refresh using the httpOnly cookie. Called on page load so
+// the user does not need to re-login after a hard refresh.
+export async function refreshAccessToken() {
+  const newAccess = await performTokenRefresh()
+  if (!newAccess) {
+    clearTokens()
+    if (authErrorListener) authErrorListener()
+  }
+  return newAccess
 }
 
 function toQueryString(query) {
@@ -157,33 +165,48 @@ async function requestJson(endpoint, options = {}) {
 // ── Admin auth API ───────────────────────────────────────────────────────────
 
 export async function loginAdmin({ email, password }) {
-  const payload = await requestJson('/auth/login', {
+  // credentials: 'include' so the server can set the httpOnly refresh cookie
+  const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
-    body: { email, password },
-    skipAuth: true,
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email, password }),
   })
+  let payload = null
+  try { payload = await response.json() } catch { /* ignore */ }
+  if (!response.ok) {
+    const error = payload?.error || {}
+    throw new ApiClientError(
+      error.message || `Login failed with status ${response.status}`,
+      response.status,
+      error.code || 'LOGIN_FAILED',
+    )
+  }
   const data = payload?.data
   if (!data?.accessToken) {
-    throw new ApiClientError('Login response missing tokens.', 500, 'INVALID_LOGIN_RESPONSE')
+    throw new ApiClientError('Login response missing access token.', 500, 'INVALID_LOGIN_RESPONSE')
   }
-  writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+  // Store only the access token in memory; refresh token is in the httpOnly cookie.
+  writeTokens({ accessToken: data.accessToken })
   return { user: data.user }
 }
 
 export async function logoutAdmin() {
-  const { refreshToken } = readTokens()
   try {
-    if (refreshToken) {
-      await requestJson('/auth/logout', { method: 'POST', body: { refreshToken } })
-    }
+    // Server clears the httpOnly refresh cookie via Set-Cookie on this call.
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+    })
   } catch {
-    // Ignore network errors on logout — we still clear local state below.
+    // Ignore network errors — still clear local access token below.
   }
   clearTokens()
 }
 
 export function hasStoredAccessToken() {
-  return Boolean(readTokens().accessToken)
+  return hasAccessToken()
 }
 
 function withMockFallback(reason, data) {
@@ -768,6 +791,35 @@ export async function fetchMedia(query) {
 export async function deleteMedia(mediaId) {
   assertMutationEnabled()
   await requestJson(`/admin/media/${mediaId}`, { method: 'DELETE' })
+}
+
+export async function uploadMedia(file, altText = '') {
+  assertMutationEnabled()
+  const { accessToken } = readTokens()
+  const formData = new FormData()
+  formData.append('file', file)
+  if (altText) formData.append('altText', altText)
+
+  const headers = { Accept: 'application/json' }
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+
+  const response = await fetch(`${API_BASE}/admin/media`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+  let payload = null
+  try { payload = await response.json() } catch { /* ignore */ }
+  if (!response.ok) {
+    const error = payload?.error || {}
+    throw new ApiClientError(
+      error.message || `Upload failed with status ${response.status}`,
+      response.status,
+      error.code || 'UPLOAD_FAILED',
+      error.details || [],
+    )
+  }
+  return { item: normalizeMediaItem(payload?.data || {}) }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

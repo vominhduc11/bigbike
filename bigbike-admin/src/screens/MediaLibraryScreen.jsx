@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { deleteMedia, fetchMedia } from '../lib/adminApi'
+import { deleteMedia, fetchMedia, uploadMedia } from '../lib/adminApi'
 import { formatText } from '../lib/formatters'
+
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'video/mp4']
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
 function formatBytes(bytes) {
   if (!bytes) return '—'
@@ -18,6 +21,9 @@ export function MediaLibraryScreen({ canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   const [deleting, setDeleting] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -40,6 +46,35 @@ export function MediaLibraryScreen({ canUpdate }) {
     }
   }
 
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!ALLOWED_MIME.includes(file.type)) {
+      setUploadError(`Loại file không hỗ trợ: ${file.type}. Chấp nhận: JPEG, PNG, WebP, GIF, SVG, MP4.`)
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError(`File quá lớn: ${formatBytes(file.size)}. Giới hạn: ${formatBytes(MAX_FILE_SIZE)}.`)
+      e.target.value = ''
+      return
+    }
+
+    setUploadError('')
+    setUploading(true)
+    try {
+      await uploadMedia(file)
+      // Refresh the list
+      setQuery((p) => ({ ...p }))
+    } catch (err) {
+      setUploadError(err.message || 'Lỗi upload file.')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   function updateQuery(partial, options = { resetPage: false }) {
     setState((p) => ({ ...p, status: 'loading' }))
     setQuery((p) => ({ ...p, ...partial, page: options.resetPage ? 1 : p.page }))
@@ -55,7 +90,34 @@ export function MediaLibraryScreen({ canUpdate }) {
           <h1>Thư viện ảnh</h1>
           <p>Quản lý file media đã upload lên MinIO.</p>
         </div>
+        {canUpdate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_MIME.join(',')}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? 'Đang upload...' : 'Upload file'}
+            </button>
+          </div>
+        )}
       </header>
+
+      {uploadError && (
+        <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
+          {uploadError}
+          <button type="button" style={{ marginLeft: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setUploadError('')}>✕</button>
+        </div>
+      )}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 

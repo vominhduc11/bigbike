@@ -1,40 +1,25 @@
-// Thin localStorage wrapper. Centralised so the fetch interceptor and the
-// AuthProvider read/write tokens through one place — easier to swap to
-// session/cookie storage later without grepping the codebase.
+// In-memory token store — access token lives only in JS memory (cleared on page reload).
+// Refresh token is stored exclusively as a server-side httpOnly cookie so XSS cannot read it.
+// On page reload the AuthProvider calls performTokenRefresh() which uses the httpOnly cookie
+// to silently obtain a new access token without requiring the user to log in again.
 
-const ACCESS_KEY = 'bigbike.admin.accessToken'
-const REFRESH_KEY = 'bigbike.admin.refreshToken'
-
-function safeStorage() {
-  try {
-    if (typeof window === 'undefined') return null
-    return window.localStorage
-  } catch {
-    return null
-  }
-}
+let _accessToken = null
 
 export function readTokens() {
-  const storage = safeStorage()
-  if (!storage) return { accessToken: null, refreshToken: null }
-  return {
-    accessToken: storage.getItem(ACCESS_KEY),
-    refreshToken: storage.getItem(REFRESH_KEY),
-  }
+  return { accessToken: _accessToken, refreshToken: null }
 }
 
-export function writeTokens({ accessToken, refreshToken }) {
-  const storage = safeStorage()
-  if (!storage) return
-  if (accessToken) storage.setItem(ACCESS_KEY, accessToken)
-  else storage.removeItem(ACCESS_KEY)
-  if (refreshToken) storage.setItem(REFRESH_KEY, refreshToken)
-  else storage.removeItem(REFRESH_KEY)
+export function writeTokens({ accessToken }) {
+  if (accessToken !== undefined) {
+    _accessToken = accessToken || null
+  }
+  // refreshToken is intentionally ignored — it lives in the httpOnly cookie managed by the server.
 }
 
 export function clearTokens() {
-  const storage = safeStorage()
-  if (!storage) return
-  storage.removeItem(ACCESS_KEY)
-  storage.removeItem(REFRESH_KEY)
+  _accessToken = null
+}
+
+export function hasAccessToken() {
+  return _accessToken !== null
 }

@@ -4,6 +4,7 @@ import {
   hasStoredAccessToken,
   loginAdmin,
   logoutAdmin,
+  refreshAccessToken,
   setAuthErrorListener,
 } from './adminApi'
 
@@ -42,14 +43,21 @@ export function AuthProvider({ children }) {
     return () => { aliveRef.current = false }
   }, [])
 
-  // Bootstrap: if we have a token, validate it via /auth/me. If not, go
-  // straight to the login screen — no point firing a guaranteed 401.
+  // Bootstrap: on page load the in-memory access token is gone, so try a
+  // silent refresh via the httpOnly cookie first. If that also fails, show login.
   const bootstrap = useCallback(async () => {
-    if (!hasStoredAccessToken()) {
-      setUnauthenticated()
-      return
-    }
     setState((prev) => ({ ...prev, status: 'initializing' }))
+
+    if (!hasStoredAccessToken()) {
+      // Attempt silent refresh using the httpOnly refresh cookie.
+      const newToken = await refreshAccessToken()
+      if (!aliveRef.current) return
+      if (!newToken) {
+        setUnauthenticated()
+        return
+      }
+    }
+
     try {
       const response = await fetchCurrentAdminUser()
       if (!aliveRef.current) return
@@ -59,10 +67,8 @@ export function AuthProvider({ children }) {
         mode: response.mode || 'live',
         error: '',
       })
-    } catch (error) {
+    } catch {
       if (!aliveRef.current) return
-      // /auth/me failed and refresh-retry inside the interceptor couldn't
-      // recover. Treat as unauthenticated (not 'error' — show login form).
       setUnauthenticated()
     }
   }, [setUnauthenticated])

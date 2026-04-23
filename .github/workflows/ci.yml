@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Backend ──────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Java 17 / Maven)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bigbike-backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: bigbike_test
+          POSTGRES_USER: bigbike
+          POSTGRES_PASSWORD: bigbike_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+
+      - name: Build and test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          BIGBIKE_DB_URL: jdbc:postgresql://localhost:5432/bigbike_test
+          BIGBIKE_DB_USERNAME: bigbike
+          BIGBIKE_DB_PASSWORD: bigbike_test
+          BIGBIKE_JWT_SECRET: ci-test-secret-value-that-is-at-least-32-chars
+        run: ./mvnw -B clean verify
+
+      - name: Build Docker image
+        run: docker build -t bigbike-backend:${{ github.sha }} .
+
+  # ── Web (Next.js) ─────────────────────────────────────────────────────────────
+  web:
+    name: Web (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bigbike-web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: bigbike-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          BIGBIKE_DISABLE_DEV_FALLBACK: 'true'
+          BIGBIKE_API_BASE_URL: http://localhost:8080
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t bigbike-web:${{ github.sha }} .
+
+  # ── Admin (Vite + React) ──────────────────────────────────────────────────────
+  admin:
+    name: Admin (Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bigbike-admin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: bigbike-admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          VITE_USE_ADMIN_MOCK: 'false'
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t bigbike-admin:${{ github.sha }} .

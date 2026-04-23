@@ -122,6 +122,20 @@
 			<version>8.5.17</version>
 		</dependency>
 
+		<!-- Bucket4j: in-process rate limiting per IP -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>8.14.0</version>
+		</dependency>
+
+		<!-- Logstash Logback Encoder: structured JSON logging for prod profile -->
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>8.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

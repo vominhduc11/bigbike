@@ -107,14 +107,16 @@ function parseError(status: number, payload: unknown): ClientError {
   };
 }
 
-async function requestJson<T>(path: string, query?: RequestQuery): Promise<T> {
-  const response = await fetch(toUrl(path, query), {
+// revalidate=0 → cache: "no-store" (search, user-specific). Otherwise ISR.
+async function requestJson<T>(path: string, query?: RequestQuery, revalidate = 60): Promise<T> {
+  const init: RequestInit = {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
+    headers: { Accept: "application/json" },
+    ...(revalidate === 0
+      ? { cache: "no-store" }
+      : { next: { revalidate } }),
+  };
+  const response = await fetch(toUrl(path, query), init);
 
   const payload = await decodeJson(response);
   if (!response.ok) {
@@ -141,9 +143,10 @@ async function loadList<T>(
   endpoint: string,
   query: RequestQuery,
   fallbackFactory: () => ApiListResponse<T>,
+  revalidate = 60,
 ): Promise<ListResult<T>> {
   try {
-    const response = await requestJson<ApiListResponse<T>>(endpoint, query);
+    const response = await requestJson<ApiListResponse<T>>(endpoint, query, revalidate);
     return {
       data: response.data,
       pagination: response.pagination,
@@ -173,9 +176,10 @@ async function loadList<T>(
 async function loadData<T>(
   endpoint: string,
   fallbackFactory: () => ApiDataResponse<T> | null,
+  revalidate = 300,
 ): Promise<DataResult<T>> {
   try {
-    const response = await requestJson<ApiDataResponse<T>>(endpoint);
+    const response = await requestJson<ApiDataResponse<T>>(endpoint, undefined, revalidate);
     return {
       data: response.data,
       error: null,
@@ -365,6 +369,7 @@ export async function search(query: SearchQuery): Promise<DataResult<SearchResul
     const response = await requestJson<ApiDataResponse<SearchResults>>(
       "/api/v1/search",
       params,
+      0, // search is user-specific — no-store
     );
     return { data: response.data, error: null, fromFallback: false };
   } catch (error) {

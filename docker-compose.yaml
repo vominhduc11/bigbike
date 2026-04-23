@@ -70,7 +70,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       BIGBIKE_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bigbike}
       BIGBIKE_DB_USERNAME: ${POSTGRES_USER:-bigbike}
       BIGBIKE_DB_PASSWORD: ${POSTGRES_PASSWORD:-bigbike_dev_only}

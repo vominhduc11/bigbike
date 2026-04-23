@@ -58,7 +58,7 @@ export default async function HomePage() {
           </div>
         </header>
 
-        {hasFallback ? (
+        {hasFallback && process.env.NODE_ENV === "development" ? (
           <p className="bb-status-banner">
             Dang hien thi du lieu fallback dev vi API backend chua san sang hoac tam thoi loi.
           </p>

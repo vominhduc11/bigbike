@@ -82,7 +82,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </p>
         </header>
 
-        {result.fromFallback ? (
+        {result.fromFallback && process.env.NODE_ENV === "development" ? (
           <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho trang chi tiet.</p>
         ) : null}
 

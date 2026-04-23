@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminShell } from './components/AdminShell'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
 import { LoginScreen } from './screens/LoginScreen'
@@ -238,8 +239,10 @@ function AdminApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AdminApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AdminApp />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

@@ -18,6 +18,8 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomerSessionFilter customerSessionFilter;
     private final CustomerCsrfFilter customerCsrfFilter;
+    private final RateLimitingFilter rateLimitingFilter;
+    private final SecurityHeadersFilter securityHeadersFilter;
     private final RestAuthenticationEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -25,12 +27,16 @@ public class SecurityConfig {
             JwtAuthFilter jwtAuthFilter,
             CustomerSessionFilter customerSessionFilter,
             CustomerCsrfFilter customerCsrfFilter,
+            RateLimitingFilter rateLimitingFilter,
+            SecurityHeadersFilter securityHeadersFilter,
             RestAuthenticationEntryPoint authEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler
     ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.customerSessionFilter = customerSessionFilter;
         this.customerCsrfFilter = customerCsrfFilter;
+        this.rateLimitingFilter = rateLimitingFilter;
+        this.securityHeadersFilter = securityHeadersFilter;
         this.authEntryPoint = authEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
     }
@@ -94,6 +100,10 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
+                // Rate limiting runs first — rejects abusive requests before any auth work
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                // Security response headers applied to every request
+                .addFilterBefore(securityHeadersFilter, RateLimitingFilter.class)
                 // Register JWT filter first so it can serve as anchor for customer filters
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 // Customer session resolves cookie auth before JWT Bearer auth
