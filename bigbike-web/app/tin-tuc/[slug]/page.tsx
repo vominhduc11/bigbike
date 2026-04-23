@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { getArticleBySlug } from "@/lib/api/public-api";
@@ -9,12 +11,12 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toArticlePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-type ArticleDetailPageProps = {
+type ArticleDetailPageProps = Readonly<{
   params: Promise<{ slug: string }>;
-};
+}>;
 
 export async function generateMetadata({ params }: ArticleDetailPageProps): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug = "" } = await params;
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
       title: "Bai viet khong hop le",
@@ -44,7 +46,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 }
 
 export default async function ArticleDetailPage({ params }: ArticleDetailPageProps) {
-  const { slug } = await params;
+  const { slug = "" } = await params;
   if (!isValidSlug(slug)) {
     notFound();
   }

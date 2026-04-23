@@ -46,14 +46,14 @@ export default function AccountPage() {
     <section className="bb-page">
       <div className="bb-container">
         <header style={{ marginBottom: "var(--bb-space-6)" }}>
-          <p className="bb-kicker">Tai khoan</p>
+          <p className="bb-kicker">Tài khoản</p>
           <h1>Xin chao, {profile.displayName ?? profile.email}</h1>
         </header>
 
         <div style={{ display: "grid", gap: "var(--bb-space-4)", maxWidth: "600px" }}>
           <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
             <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-              Thong tin tai khoan
+              Thông tin tài khoản
             </h2>
             <div style={{ display: "grid", gap: "var(--bb-space-3)" }}>
               <div className="bb-profile-row">
@@ -62,12 +62,12 @@ export default function AccountPage() {
               </div>
               {profile.phone && (
                 <div className="bb-profile-row">
-                  <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Dien thoai</span>
+                  <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Điện thoại</span>
                   <span>{profile.phone}</span>
                 </div>
               )}
               <div className="bb-profile-row">
-                <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Trang thai</span>
+                <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Trạng thái</span>
                 <span style={{ color: profile.status === "ACTIVE" ? "var(--bb-state-success)" : "var(--bb-text-muted)" }}>
                   {profile.status}
                 </span>
@@ -77,10 +77,10 @@ export default function AccountPage() {
 
           <div style={{ display: "flex", gap: "var(--bb-space-3)", flexWrap: "wrap" }}>
             <Link href={toOrderHistoryPath()} className="bb-button bb-button-secondary">
-              Don hang cua toi
+              Đơn hàng của tôi
             </Link>
             <Link href={toProductListPath()} className="bb-button bb-button-secondary">
-              Tiep tuc mua hang
+              Tiếp tục mua hàng
             </Link>
           </div>
 
@@ -91,7 +91,7 @@ export default function AccountPage() {
             onClick={handleLogout}
             disabled={loggingOut}
           >
-            {loggingOut ? "Dang dang xuat..." : "Dang xuat"}
+            {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
           </button>
         </div>
       </div>

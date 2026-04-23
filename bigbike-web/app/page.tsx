@@ -10,8 +10,8 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toArticleListPath, toCategoryListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Trang chu",
-  description: "BigBike homepage cho danh muc san pham, bai viet va dieu huong public catalog.",
+  title: "Trang chủ",
+  description: "BigBike homepage cho danh mục sản phẩm, bài viết và điều hướng public catalog.",
   canonicalPath: toHomePath(),
 });
 
@@ -44,41 +44,41 @@ export default async function HomePage() {
           <p className="bb-kicker">BigBike Public Catalog</p>
           <h1 className="bb-heading-xl">Do bao ho biker - catalog va content route legacy</h1>
           <p className="bb-page-subtitle">
-            Giai doan Phase 4B tap trung vao UI read-only cho public catalog/content voi URL giu
+            Giai đoạn Phase 4B tập trung vao UI read-only cho public catalog/content voi URL giu
             theo route legacy: /san-pham, /product/{'{slug}'}, /danh-muc-san-pham/{'{slug}'},
             /brands/{'{slug}'}, /tin-tuc/{'{slug}'}.html.
           </p>
           <div className="bb-section-row" style={{ marginTop: "var(--bb-space-5)" }}>
             <Link href={toProductListPath()} className="bb-button bb-button-primary">
-              Xem san pham
+              Xem sản phẩm
             </Link>
             <Link href={toArticleListPath()} className="bb-button bb-button-secondary">
-              Doc tin tuc
+              Đọc tin tức
             </Link>
           </div>
         </header>
 
         {hasFallback && process.env.NODE_ENV === "development" ? (
           <p className="bb-status-banner">
-            Dang hien thi du lieu fallback dev vi API backend chua san sang hoac tam thoi loi.
+            Đang hiển thị dữ liệu fallback dev vi API backend chưa sẵn sàng hoặc tạm thời lỗi.
           </p>
         ) : null}
 
         <section className="bb-section" aria-labelledby="home-products-heading">
           <div className="bb-section-row">
             <h2 id="home-products-heading" className="bb-section-title">
-              San pham noi bat
+              Sản phẩm nổi bật
             </h2>
             <Link href={toProductListPath()} className="bb-link">
-              Xem tat ca
+              Xem tất cả
             </Link>
           </div>
           {productsResult.error && productsResult.data.length === 0 ? (
             <ErrorState message={productsResult.error.message} retryHref="/" />
           ) : productsResult.data.length === 0 ? (
             <EmptyState
-              title="Chua co san pham"
-              description="Danh sach san pham hien dang rong. Vui long quay lai sau."
+              title="Chưa có sản phẩm"
+              description="Danh sách sản phẩm hiện đang rỗng. Vui long quay lai sau."
             />
           ) : (
             <div className="bb-grid-products">
@@ -92,18 +92,18 @@ export default async function HomePage() {
         <section className="bb-section" aria-labelledby="home-categories-heading">
           <div className="bb-section-row">
             <h2 id="home-categories-heading" className="bb-section-title">
-              Danh muc san pham
+              Danh mục sản phẩm
             </h2>
             <Link href={toCategoryListPath()} className="bb-link">
-              Xem danh muc
+              Xem danh mục
             </Link>
           </div>
           {categoriesResult.error && categoriesResult.data.length === 0 ? (
             <ErrorState message={categoriesResult.error.message} retryHref="/" />
           ) : categoriesResult.data.length === 0 ? (
             <EmptyState
-              title="Chua co danh muc"
-              description="Danh muc san pham dang duoc cap nhat."
+              title="Chưa có danh mục"
+              description="Danh mục sản phẩm đang được cập nhật."
             />
           ) : (
             <div className="bb-grid-categories">
@@ -117,18 +117,18 @@ export default async function HomePage() {
         <section className="bb-section" aria-labelledby="home-articles-heading">
           <div className="bb-section-row">
             <h2 id="home-articles-heading" className="bb-section-title">
-              Tin tuc va huong dan
+              Tin tức và hướng dẫn
             </h2>
             <Link href={toArticleListPath()} className="bb-link">
-              Xem tat ca bai viet
+              Xem tất cả bài viết
             </Link>
           </div>
           {articlesResult.error && articlesResult.data.length === 0 ? (
             <ErrorState message={articlesResult.error.message} retryHref="/" />
           ) : articlesResult.data.length === 0 ? (
             <EmptyState
-              title="Chua co bai viet"
-              description="Noi dung huong dan va tin tuc dang duoc cap nhat."
+              title="Chưa có bài viết"
+              description="Nội dung hướng dẫn và tin tức đang được cập nhật."
             />
           ) : (
             <div className="bb-grid-articles">

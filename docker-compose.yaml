@@ -117,6 +117,12 @@ services:
     build:
       context: ./bigbike-admin
       dockerfile: Dockerfile
+      args:
+        # Vite bakes these at build time — pass as build args, not runtime env.
+        # API calls use a relative path so nginx can proxy them inside the container.
+        VITE_ADMIN_API_BASE: /api/v1
+        VITE_USE_ADMIN_MOCK: "false"
+        VITE_ADMIN_ROLE: ADMIN
     container_name: bigbike-admin
     restart: unless-stopped
     depends_on:
@@ -124,9 +130,6 @@ services:
         condition: service_healthy
     ports:
       - "4000:80"
-    environment:
-      VITE_ADMIN_API_BASE: ${VITE_ADMIN_API_BASE:-http://localhost:8080/api/v1}
-      VITE_USE_ADMIN_MOCK: "false"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
       interval: 30s

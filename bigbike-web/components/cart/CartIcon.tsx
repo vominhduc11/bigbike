@@ -18,7 +18,7 @@ export function CartIcon() {
   }, []);
 
   return (
-    <Link href={toCartPath()} className="bb-cart-icon-link" aria-label="Gio hang">
+    <Link href={toCartPath()} className="bb-cart-icon-link" aria-label="Giỏ hàng">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="22"

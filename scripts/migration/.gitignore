@@ -1,0 +1,11 @@
+# Migration output — never commit real data
+logs/
+SEO_REDIRECT_MAP.csv
+nginx_redirect.csv
+*.dump
+*.sql
+
+# Python cache
+__pycache__/
+*.pyc
+.env

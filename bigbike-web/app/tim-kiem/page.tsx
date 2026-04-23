@@ -18,8 +18,8 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   const params = await searchParams;
   const q = readSingleSearchParam(params.q);
   return buildPublicMetadata({
-    title: q ? `Tim kiem: ${q}` : "Tim kiem",
-    description: "Tim kiem san pham va bai viet trong he thong BigBike.",
+    title: q ? `Tìm kiếm: ${q}` : "Tìm kiếm",
+    description: "Tìm kiếm sản phẩm và bài viết trong hệ thống BigBike.",
     canonicalPath: SEARCH_PATH,
     // Search result pages should not be indexed (per Google guidelines).
     noIndex: true,
@@ -43,21 +43,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Search</p>
-          <h1>Tim kiem</h1>
+          <h1>Tìm kiếm</h1>
           <p className="bb-page-subtitle">
-            Nhap tu khoa de tim san pham va bai viet trong toan bo he thong.
+            Nhập từ khoá để tìm sản phẩm và bài viết trong toàn bộ hệ thống.
           </p>
         </header>
 
         <form method="GET" className="bb-query-form">
           <div className="bb-query-row">
             <label className="bb-query-label">
-              Tu khoa
+              Từ khoá
               <input
                 name="q"
                 defaultValue={query}
                 className="bb-query-input"
-                placeholder="VD: mu bao hiem AGV"
+                placeholder="VD: mũ bảo hiểm AGV"
                 required
                 minLength={1}
                 maxLength={200}
@@ -66,7 +66,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
           <div className="bb-section-row">
             <button className="bb-button bb-button-primary" type="submit">
-              Tim kiem
+              Tìm kiếm
             </button>
             <Link href={SEARCH_PATH} className="bb-button bb-button-secondary">
               Xoa
@@ -76,8 +76,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         {query.length === 0 ? (
           <EmptyState
-            title="Nhap tu khoa de bat dau"
-            description="Tu khoa co the la ten san pham, ma SKU, hoac chu de bai viet."
+            title="Nhập từ khoá để bắt đầu"
+            description="Từ khoá có thể là tên sản phẩm, mã SKU, hoặc chủ đề bài viết."
           />
         ) : (
           <SearchResults query={query} limit={limitParsed.value} />
@@ -101,8 +101,8 @@ async function SearchResults({ query, limit }: { query: string; limit: number })
   if (totalHits === 0) {
     return (
       <EmptyState
-        title={`Khong co ket qua cho "${query}"`}
-        description="Thu rut gon tu khoa hoac kiem tra chinh ta."
+        title={`Không có kết quả cho "${query}"`}
+        description="Thử rút gọn từ khoá hoặc kiểm tra chính tả."
       />
     );
   }
@@ -110,12 +110,12 @@ async function SearchResults({ query, limit }: { query: string; limit: number })
   return (
     <>
       <p className="bb-result-summary">
-        Tim thay <strong>{products.length}</strong> san pham va <strong>{articles.length}</strong> bai viet cho tu khoa <em>&ldquo;{query}&rdquo;</em>.
+        Tìm thấy <strong>{products.length}</strong> sản phẩm và <strong>{articles.length}</strong> bài viết cho từ khoá <em>&ldquo;{query}&rdquo;</em>.
       </p>
 
       {products.length > 0 ? (
         <section className="bb-search-section">
-          <h2>San pham</h2>
+          <h2>Sản phẩm</h2>
           <div className="bb-grid-products">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -126,7 +126,7 @@ async function SearchResults({ query, limit }: { query: string; limit: number })
 
       {articles.length > 0 ? (
         <section className="bb-search-section">
-          <h2>Bai viet</h2>
+          <h2>Bài viết</h2>
           <div className="bb-grid-articles">
             {articles.map((article) => (
               <ArticleCard key={article.id} article={article} />

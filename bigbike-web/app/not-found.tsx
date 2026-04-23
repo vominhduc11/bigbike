@@ -5,10 +5,10 @@ export default function NotFoundPage() {
     <section className="bb-page">
       <div className="bb-container">
         <section className="bb-empty-state">
-          <h1>Khong tim thay trang</h1>
-          <p>URL co the da thay doi hoac noi dung chua duoc publish.</p>
+          <h1>Không tìm thấy trang</h1>
+          <p>URL có thể đã thay đổi hoặc nội dung chưa được publish.</p>
           <Link href="/" className="bb-button bb-button-primary">
-            Ve trang chu
+            Về trang chủ
           </Link>
         </section>
       </div>

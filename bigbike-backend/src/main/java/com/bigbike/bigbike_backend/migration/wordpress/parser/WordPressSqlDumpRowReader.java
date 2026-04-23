@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.migration.wordpress.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,9 +70,12 @@ public class WordPressSqlDumpRowReader {
         String multiRowTable = null;
         String multiRowHeader = null;
 
-        // ISO_8859_1 accepts any byte sequence without MalformedInputException.
-        // MySQL dump data values may contain non-UTF-8 sequences; ASCII SQL structure is unaffected.
-        try (BufferedReader reader = Files.newBufferedReader(dumpPath, StandardCharsets.ISO_8859_1)) {
+        // UTF-8 with REPLACE on malformed bytes — preserves correct Vietnamese text from
+        // standard MySQL dumps while surviving any stray non-UTF-8 byte sequences.
+        var decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(dumpPath), decoder))) {
             String line;
             while ((line = reader.readLine()) != null) {
 

@@ -26,8 +26,8 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
     page > 1;
 
   return buildPublicMetadata({
-    title: "San pham",
-    description: "Danh sach san pham BigBike theo route legacy /san-pham/.",
+    title: "Sản phẩm",
+    description: "Danh sách sản phẩm BigBike theo route legacy /san-pham/.",
     canonicalPath: toProductListPath(),
     noIndex: hasFilters,
   });
@@ -67,7 +67,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       <section className="bb-page">
         <div className="bb-container">
           <ErrorState
-            title="Query chua hop le"
+            title="Query chưa hợp lệ"
             message={validationErrors.join(" ")}
             retryHref={toProductListPath()}
           />
@@ -92,16 +92,16 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Catalog</p>
-          <h1>San pham</h1>
+          <h1>Sản phẩm</h1>
           <p className="bb-page-subtitle">
-            Loc theo category, brand, sort va keyword voi API read-only /api/v1/products.
+            Lọc theo category, brand, sort và keyword voi API read-only /api/v1/products.
           </p>
         </header>
 
         <form method="GET" className="bb-query-form">
           <div className="bb-query-row">
             <label className="bb-query-label">
-              Tim kiem
+              Tìm kiếm
               <input name="q" defaultValue={qParsed.value} className="bb-query-input" />
             </label>
             <label className="bb-query-label">
@@ -153,8 +153,8 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
           <ErrorState message={result.error.message} retryHref={toProductListPath()} />
         ) : result.data.length === 0 ? (
           <EmptyState
-            title="Khong tim thay san pham"
-            description="Thu doi bo loc hoac bo tu khoa tim kiem."
+            title="Không tìm thấy sản phẩm"
+            description="Thử đổi bộ lọc hoặc bỏ từ khoá tìm kiếm."
           />
         ) : (
           <>

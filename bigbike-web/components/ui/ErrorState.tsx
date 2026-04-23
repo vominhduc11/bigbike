@@ -7,7 +7,7 @@ type ErrorStateProps = {
 };
 
 export function ErrorState({
-  title = "Khong tai duoc du lieu",
+  title = "Không tải được dữ liệu",
   message,
   retryHref,
 }: ErrorStateProps) {
@@ -17,7 +17,7 @@ export function ErrorState({
       <p>{message}</p>
       {retryHref ? (
         <Link href={retryHref} className="bb-button bb-button-primary">
-          Thu lai
+          Thử lại
         </Link>
       ) : null}
     </section>

@@ -1,8 +1,8 @@
 package com.bigbike.bigbike_backend.config;
 
-import com.bucket4j.Bandwidth;
-import com.bucket4j.Bucket;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,27 +19,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * Per-IP rate limiting for sensitive endpoints using Bucket4j.
  *
- * Limits (per IP, sliding window per minute):
- *   - /api/v1/auth/login, /api/v1/customer/auth/login  → 5 req/min
- *   - /api/v1/customer/auth/register                   → 3 req/min
- *   - /api/v1/orders/lookup                            → 20 req/min
- *   - /api/v1/search                                   → 60 req/min
+ * Limits (per IP, refill per minute):
+ *   login endpoints         → 5 req/min
+ *   register endpoint       → 3 req/min
+ *   order lookup (GET)      → 20 req/min
+ *   search (GET)            → 60 req/min
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    // Per-endpoint bucket maps keyed by IP — uses ConcurrentHashMap for thread safety.
-    // Buckets are small (max 60 tokens) so memory footprint per IP is negligible.
-    private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerBuckets = new ConcurrentHashMap<>();
+    private enum LimitTier { LOGIN, REGISTER, ORDER_LOOKUP, SEARCH }
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private final Map<String, Bucket> loginBuckets       = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> registerBuckets    = new ConcurrentHashMap<>();
     private final Map<String, Bucket> orderLookupBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> searchBuckets = new ConcurrentHashMap<>();
-
-    private final ObjectMapper objectMapper;
-
-    public RateLimitingFilter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+    private final Map<String, Bucket> searchBuckets      = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(
@@ -47,32 +43,15 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain
     ) throws ServletException, IOException {
-        String path = request.getServletPath();
-        String method = request.getMethod();
 
-        Map<String, Bucket> targetBuckets = null;
-
-        if ("POST".equalsIgnoreCase(method)) {
-            if (path.equals("/api/v1/auth/login") || path.equals("/api/v1/customer/auth/login")) {
-                targetBuckets = loginBuckets;
-            } else if (path.equals("/api/v1/customer/auth/register")) {
-                targetBuckets = registerBuckets;
-            }
-        } else if ("GET".equalsIgnoreCase(method)) {
-            if (path.equals("/api/v1/orders/lookup")) {
-                targetBuckets = orderLookupBuckets;
-            } else if (path.equals("/api/v1/search")) {
-                targetBuckets = searchBuckets;
-            }
-        }
-
-        if (targetBuckets == null) {
+        LimitTier tier = resolveTier(request);
+        if (tier == null) {
             chain.doFilter(request, response);
             return;
         }
 
         String clientIp = resolveClientIp(request);
-        Bucket bucket = targetBuckets.computeIfAbsent(clientIp, ip -> buildBucket(targetBuckets));
+        Bucket bucket = bucketFor(tier, clientIp);
 
         if (bucket.tryConsume(1)) {
             chain.doFilter(request, response);
@@ -81,25 +60,53 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
     }
 
-    private Bucket buildBucket(Map<String, Bucket> buckets) {
-        Bandwidth limit;
-        if (buckets == loginBuckets) {
-            limit = Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(1)).build();
-        } else if (buckets == registerBuckets) {
-            limit = Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofMinutes(1)).build();
-        } else if (buckets == orderLookupBuckets) {
-            limit = Bandwidth.builder().capacity(20).refillIntervally(20, Duration.ofMinutes(1)).build();
-        } else {
-            // search
-            limit = Bandwidth.builder().capacity(60).refillIntervally(60, Duration.ofMinutes(1)).build();
+    private LimitTier resolveTier(HttpServletRequest request) {
+        String path   = request.getServletPath();
+        String method = request.getMethod();
+
+        if ("POST".equalsIgnoreCase(method)) {
+            if ("/api/v1/auth/login".equals(path) || "/api/v1/customer/auth/login".equals(path)) {
+                return LimitTier.LOGIN;
+            }
+            if ("/api/v1/customer/auth/register".equals(path)) {
+                return LimitTier.REGISTER;
+            }
+        } else if ("GET".equalsIgnoreCase(method)) {
+            if ("/api/v1/orders/lookup".equals(path)) {
+                return LimitTier.ORDER_LOOKUP;
+            }
+            if ("/api/v1/search".equals(path)) {
+                return LimitTier.SEARCH;
+            }
         }
-        return Bucket.builder().addLimit(limit).build();
+        return null;
+    }
+
+    private Bucket bucketFor(LimitTier tier, String clientIp) {
+        return switch (tier) {
+            case LOGIN        -> loginBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(5, Duration.ofMinutes(1)));
+            case REGISTER     -> registerBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(3, Duration.ofMinutes(1)));
+            case ORDER_LOOKUP -> orderLookupBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(20, Duration.ofMinutes(1)));
+            case SEARCH       -> searchBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(60, Duration.ofMinutes(1)));
+        };
+    }
+
+    private static Bucket newBucket(long capacity, Duration period) {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(capacity)
+                        .refillIntervally(capacity, period)
+                        .build())
+                .build();
     }
 
     private String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            // Take first IP in the chain (original client)
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
@@ -115,6 +122,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                         "details", new Object[0]
                 )
         );
-        objectMapper.writeValue(response.getOutputStream(), body);
+        MAPPER.writeValue(response.getOutputStream(), body);
     }
 }

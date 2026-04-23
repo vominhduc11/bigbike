@@ -74,7 +74,7 @@ export default function CartPage() {
       <div className="bb-container">
         <header style={{ marginBottom: "var(--bb-space-6)" }}>
           <p className="bb-kicker">Commerce</p>
-          <h1>Gio hang</h1>
+          <h1>Giỏ hàng</h1>
         </header>
 
         {error && (
@@ -85,10 +85,10 @@ export default function CartPage() {
 
         {!cart || cart.items.length === 0 ? (
           <div className="bb-empty-state">
-            <h3>Gio hang trong</h3>
-            <p>Ban chua them san pham nao vao gio hang.</p>
+            <h3>Giỏ hàng trống</h3>
+            <p>Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
             <Link href={toProductListPath()} className="bb-button bb-button-primary" style={{ width: "fit-content" }}>
-              Xem san pham
+              Xem sản phẩm
             </Link>
           </div>
         ) : (
@@ -97,10 +97,10 @@ export default function CartPage() {
               <table className="bb-cart-table">
                 <thead>
                   <tr>
-                    <th>San pham</th>
-                    <th style={{ textAlign: "center" }}>So luong</th>
-                    <th style={{ textAlign: "right" }}>Don gia</th>
-                    <th style={{ textAlign: "right" }}>Thanh tien</th>
+                    <th>Sản phẩm</th>
+                    <th style={{ textAlign: "center" }}>Số lượng</th>
+                    <th style={{ textAlign: "right" }}>Đơn giá</th>
+                    <th style={{ textAlign: "right" }}>Thành tiền</th>
                     <th />
                   </tr>
                 </thead>
@@ -127,7 +127,7 @@ export default function CartPage() {
                             className="bb-qty-btn"
                             onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                             disabled={mutating[item.id] || item.quantity <= 1}
-                            aria-label="Giam so luong"
+                            aria-label="Giảm số lượng"
                           >
                             −
                           </button>
@@ -147,7 +147,7 @@ export default function CartPage() {
                             className="bb-qty-btn"
                             onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                             disabled={mutating[item.id]}
-                            aria-label="Tang so luong"
+                            aria-label="Tăng số lượng"
                           >
                             +
                           </button>
@@ -167,7 +167,7 @@ export default function CartPage() {
                           onClick={() => handleRemove(item.id)}
                           disabled={mutating[item.id]}
                         >
-                          Xoa
+                          Xoá
                         </button>
                       </td>
                     </tr>
@@ -177,7 +177,7 @@ export default function CartPage() {
 
               <div style={{ marginTop: "var(--bb-space-4)", display: "flex", justifyContent: "flex-end" }}>
                 <button type="button" className="bb-button bb-button-secondary" onClick={handleClear}>
-                  Xoa toan bo
+                  Xoá toàn bộ
                 </button>
               </div>
             </div>
@@ -185,16 +185,16 @@ export default function CartPage() {
             <aside className="bb-cart-summary">
               <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
                 <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-                  Tong don hang
+                  Tổng đơn hàng
                 </h2>
                 <div className="bb-summary-rows">
                   <div className="bb-summary-row">
-                    <span>Tam tinh</span>
+                    <span>Tạm tính</span>
                     <span>{formatVnd(cart.totals.subtotalAmount)}</span>
                   </div>
                   {cart.totals.discountAmount > 0 && (
                     <div className="bb-summary-row">
-                      <span>Giam gia</span>
+                      <span>Giảm giá</span>
                       <span style={{ color: "var(--bb-state-success)" }}>
                         −{formatVnd(cart.totals.discountAmount)}
                       </span>
@@ -202,12 +202,12 @@ export default function CartPage() {
                   )}
                   {cart.totals.shippingAmount > 0 && (
                     <div className="bb-summary-row">
-                      <span>Phi ship</span>
+                      <span>Phí ship</span>
                       <span>{formatVnd(cart.totals.shippingAmount)}</span>
                     </div>
                   )}
                   <div className="bb-summary-row bb-summary-total">
-                    <span>Tong cong</span>
+                    <span>Tổng cộng</span>
                     <span>{formatVnd(cart.totals.totalAmount)}</span>
                   </div>
                 </div>
@@ -216,14 +216,14 @@ export default function CartPage() {
                   className="bb-button bb-button-primary"
                   style={{ width: "100%", marginTop: "var(--bb-space-4)", justifyContent: "center" }}
                 >
-                  Tien hanh thanh toan
+                  Tiến hành thanh toán
                 </Link>
                 <Link
                   href={toProductListPath()}
                   className="bb-button bb-button-secondary"
                   style={{ width: "100%", marginTop: "var(--bb-space-2)", justifyContent: "center" }}
                 >
-                  Tiep tuc mua hang
+                  Tiếp tục mua hàng
                 </Link>
               </div>
             </aside>

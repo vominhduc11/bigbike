@@ -34,8 +34,8 @@ function LoginForm() {
     <div className="bb-auth-wrap">
       <div className="bb-card" style={{ padding: "var(--bb-space-8)" }}>
         <header style={{ marginBottom: "var(--bb-space-6)", textAlign: "center" }}>
-          <p className="bb-kicker">Tai khoan</p>
-          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Dang nhap</h1>
+          <p className="bb-kicker">Tài khoản</p>
+          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Đăng nhập</h1>
         </header>
 
         {error && (
@@ -46,7 +46,7 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
           <label className="bb-form-label">
-            Email hoac so dien thoai
+            Email hoặc số điện thoại
             <input
               className="bb-input"
               required
@@ -57,7 +57,7 @@ function LoginForm() {
             />
           </label>
           <label className="bb-form-label">
-            Mat khau
+            Mật khẩu
             <input
               className="bb-input"
               required
@@ -74,14 +74,14 @@ function LoginForm() {
             style={{ width: "100%", justifyContent: "center" }}
             disabled={submitting}
           >
-            {submitting ? "Dang dang nhap..." : "Dang nhap"}
+            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
 
         <p style={{ textAlign: "center", marginTop: "var(--bb-space-4)", color: "var(--bb-text-secondary)", fontSize: "var(--bb-text-sm)" }}>
-          Chua co tai khoan?{" "}
+          Chưa có tài khoản?{" "}
           <Link href={toRegisterPath()} className="bb-link">
-            Dang ky ngay
+            Đăng ký ngay
           </Link>
         </p>
       </div>

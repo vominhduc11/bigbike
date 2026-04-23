@@ -30,8 +30,8 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
     Boolean(readSingleSearchParam(params.sort));
 
   return buildPublicMetadata({
-    title: "Tin tuc",
-    description: "Danh sach bai viet theo route legacy /tin-tuc/ va detail /tin-tuc/{slug}.html.",
+    title: "Tin tức",
+    description: "Danh sách bài viết theo route legacy /tin-tuc/ va detail /tin-tuc/{slug}.html.",
     canonicalPath: toArticleListPath(),
     noIndex: hasFilters,
   });
@@ -68,7 +68,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState title="Query chua hop le" message={validationErrors.join(" ")} retryHref={toArticleListPath()} />
+          <ErrorState title="Query chưa hợp lệ" message={validationErrors.join(" ")} retryHref={toArticleListPath()} />
         </div>
       </section>
     );
@@ -87,14 +87,14 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Content</p>
-          <h1>Tin tuc va huong dan</h1>
+          <h1>Tin tức và hướng dẫn</h1>
           <p className="bb-page-subtitle">Detail route giu theo legacy: /tin-tuc/{'{slug}'}.html.</p>
         </header>
 
         <form method="GET" className="bb-query-form">
           <div className="bb-query-row">
             <label className="bb-query-label">
-              Tim kiem
+              Tìm kiếm
               <input name="q" defaultValue={qParsed.value} className="bb-query-input" />
             </label>
             <label className="bb-query-label">
@@ -123,15 +123,15 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
         </form>
 
         {result.fromFallback ? (
-          <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho bai viet.</p>
+          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho bài viết.</p>
         ) : null}
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toArticleListPath()} />
         ) : result.data.length === 0 ? (
           <EmptyState
-            title="Khong co bai viet"
-            description="Danh sach bai viet hien tai dang rong."
+            title="Không có bài viết"
+            description="Danh sách bài viết hiện tại đang rỗng."
           />
         ) : (
           <>

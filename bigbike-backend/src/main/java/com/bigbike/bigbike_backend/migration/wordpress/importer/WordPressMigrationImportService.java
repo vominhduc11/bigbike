@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
+import com.bigbike.bigbike_backend.migration.wordpress.config.WordPressMigrationProperties;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductNormalizationService;
@@ -13,7 +14,11 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMappe
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper;
+import com.bigbike.bigbike_backend.migration.wordpress.importer.ProductTagImporter.MappedProductTag;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressReviewMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpAttachmentMeta;
+import com.bigbike.bigbike_backend.migration.wordpress.model.WpComment;
+import com.bigbike.bigbike_backend.migration.wordpress.model.WpCommentMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpFgRedirect;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpOrderItem;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpOrderItemMeta;
@@ -30,7 +35,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.parser.WordPressSqlDumpRo
 import com.bigbike.bigbike_backend.migration.wordpress.parser.WordPressTableRow;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -44,7 +48,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -66,7 +69,8 @@ public class WordPressMigrationImportService {
     private static final Set<String> CATALOG_TABLES = Set.of(
             "kd_posts", "kd_postmeta",
             "kd_terms", "kd_term_taxonomy", "kd_term_relationships",
-            "kd_rank_math_redirections", "kd_fg_redirect"
+            "kd_rank_math_redirections", "kd_fg_redirect",
+            "kd_comments", "kd_commentmeta"
     );
     private static final Set<String> COMMERCE_TABLES = Set.of(
             "kd_users", "kd_usermeta",
@@ -84,6 +88,7 @@ public class WordPressMigrationImportService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String TABLE_PREFIX = "kd_";
 
+    private final WordPressMigrationProperties migrationProperties;
     private final WordPressSqlDumpRowReader rowReader;
     private final WordPressProductMapper productMapper;
     private final WordPressVariationMapper variationMapper;
@@ -97,6 +102,7 @@ public class WordPressMigrationImportService {
     private final WordPressCustomerMapper customerMapper;
     private final WordPressOrderMapper orderMapper;
     private final WordPressCouponMapper couponMapper;
+    private final WordPressReviewMapper reviewMapper;
 
     private final CategoryImporter categoryImporter;
     private final BrandImporter brandImporter;
@@ -112,8 +118,11 @@ public class WordPressMigrationImportService {
     private final CustomerImporter customerImporter;
     private final CouponImporter couponImporter;
     private final OrderImporter orderImporter;
+    private final ProductTagImporter productTagImporter;
+    private final ReviewImporter reviewImporter;
 
     public WordPressMigrationImportService(
+            WordPressMigrationProperties migrationProperties,
             WordPressSqlDumpRowReader rowReader,
             WordPressProductMapper productMapper,
             WordPressVariationMapper variationMapper,
@@ -140,7 +149,11 @@ public class WordPressMigrationImportService {
             ProductVariationImporter productVariationImporter,
             CustomerImporter customerImporter,
             CouponImporter couponImporter,
-            OrderImporter orderImporter) {
+            OrderImporter orderImporter,
+            WordPressReviewMapper reviewMapper,
+            ProductTagImporter productTagImporter,
+            ReviewImporter reviewImporter) {
+        this.migrationProperties = migrationProperties;
         this.rowReader = rowReader;
         this.productMapper = productMapper;
         this.variationMapper = variationMapper;
@@ -154,6 +167,7 @@ public class WordPressMigrationImportService {
         this.customerMapper = customerMapper;
         this.orderMapper = orderMapper;
         this.couponMapper = couponMapper;
+        this.reviewMapper = reviewMapper;
         this.categoryImporter = categoryImporter;
         this.brandImporter = brandImporter;
         this.mediaImporter = mediaImporter;
@@ -168,6 +182,8 @@ public class WordPressMigrationImportService {
         this.customerImporter = customerImporter;
         this.couponImporter = couponImporter;
         this.orderImporter = orderImporter;
+        this.productTagImporter = productTagImporter;
+        this.reviewImporter = reviewImporter;
     }
 
     /**
@@ -192,6 +208,8 @@ public class WordPressMigrationImportService {
             List<WpTermRelationship> termRels = new ArrayList<>();
             List<WpRedirectRow> rankMathRedirects = new ArrayList<>();
             List<WpFgRedirect> fgRedirects = new ArrayList<>();
+            List<WpComment> reviewComments = new ArrayList<>();
+            Map<Long, List<WpCommentMeta>> metaByComment = new HashMap<>();
 
             List<WpUser> allUsers = new ArrayList<>();
             Map<Long, List<WpUserMeta>> metaByUser = new HashMap<>();
@@ -250,6 +268,14 @@ public class WordPressMigrationImportService {
                         WpOrderItemMeta m = toWpOrderItemMeta(row);
                         if (m != null) metaByItem.computeIfAbsent(m.orderItemId(), k -> new ArrayList<>()).add(m);
                     }
+                    case "kd_comments" -> {
+                        WpComment c = toWpComment(row);
+                        if (c != null && "review".equals(c.commentType())) reviewComments.add(c);
+                    }
+                    case "kd_commentmeta" -> {
+                        WpCommentMeta m = toWpCommentMeta(row);
+                        if (m != null) metaByComment.computeIfAbsent(m.commentId(), k -> new ArrayList<>()).add(m);
+                    }
                 }
             });
 
@@ -261,11 +287,13 @@ public class WordPressMigrationImportService {
             Map<Long, WpTermTaxonomy> productCatByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> brandByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> navMenuByTermId = new HashMap<>();
+            Map<Long, WpTermTaxonomy> productTagByTermId = new HashMap<>();
             for (WpTermTaxonomy tt : termTaxById.values()) {
                 switch (tt.taxonomy()) {
-                    case "product_cat" -> productCatByTermId.put(tt.termId(), tt);
-                    case "pwb-brand"   -> brandByTermId.put(tt.termId(), tt);
-                    case "nav_menu"    -> navMenuByTermId.put(tt.termId(), tt);
+                    case "product_cat"  -> productCatByTermId.put(tt.termId(), tt);
+                    case "pwb-brand"    -> brandByTermId.put(tt.termId(), tt);
+                    case "nav_menu"     -> navMenuByTermId.put(tt.termId(), tt);
+                    case "product_tag"  -> productTagByTermId.put(tt.termId(), tt);
                 }
             }
             // Build termTaxonomyId → termId map for reverse lookup
@@ -308,8 +336,8 @@ public class WordPressMigrationImportService {
             }
 
             // ── 6. Media (metadata only) ──────────────────────────────────────
+            List<WordPressMediaMapper.MappedMedia> media = new ArrayList<>();
             if (options.includesDomain(MigrationDomain.MEDIA)) {
-                List<WordPressMediaMapper.MappedMedia> media = new ArrayList<>();
                 for (WpPost post : attachmentPosts) {
                     List<WpPostMeta> metas = metaByPost.getOrDefault(post.id(), List.of());
                     String attachedFile = null, serializedMeta = null, altText = null;
@@ -328,6 +356,13 @@ public class WordPressMigrationImportService {
                     }
                 }
                 results.put(MigrationDomain.MEDIA, mediaImporter.importBatch(media, options));
+            }
+            // Build attachment-id → MappedMedia lookup for thumbnail resolution during product import
+            Map<Long, WordPressMediaMapper.MappedMedia> mediaByLegacyId = new HashMap<>();
+            for (WordPressMediaMapper.MappedMedia mm : media) {
+                if (mm.storagePath() != null && !mm.storagePath().isBlank()) {
+                    mediaByLegacyId.put(mm.sourceId(), mm);
+                }
             }
 
             // ── 7. Pages ──────────────────────────────────────────────────────
@@ -422,7 +457,9 @@ public class WordPressMigrationImportService {
                         productNormalizationService.normalize(products);
                 log.info("ProductNormalization: recoveredSlug={} recoveredCategory={}",
                         norm.recoveredSlugCount(), norm.recoveredCategoryCount());
-                results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(norm.products(), options));
+                results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(
+                        norm.products(), options, mediaByLegacyId,
+                        migrationProperties.getLegacyUploadsBaseUrl()));
             }
 
             // ── 11b. Product Variations ───────────────────────────────────────
@@ -448,8 +485,6 @@ public class WordPressMigrationImportService {
             // ── 12. Customers ─────────────────────────────────────────────────
             if (options.includesDomain(MigrationDomain.CUSTOMERS)) {
                 List<WordPressCustomerMapper.MappedCustomer> customers = new ArrayList<>();
-                List<WordPressCustomerMapper.MappedCustomer> synthetics = new ArrayList<>();
-
                 for (WpUser user : allUsers) {
                     WordPressCustomerMapper.MappedCustomer mc =
                             customerMapper.map(user, metaByUser.getOrDefault(user.id(), List.of()),
@@ -480,6 +515,37 @@ public class WordPressMigrationImportService {
                             metaByItem));
                 }
                 results.put(MigrationDomain.ORDERS, orderImporter.importBatch(orders, options));
+            }
+
+            // ── 15. Product Tags ──────────────────────────────────────────────
+            if (options.includesDomain(MigrationDomain.PRODUCT_TAGS)) {
+                List<MappedProductTag> tags = new ArrayList<>();
+                for (WpPost product : productPosts) {
+                    String dbProductId = "wp-prod-" + product.id();
+                    for (long ttId : relsByObject.getOrDefault(product.id(), Set.of())) {
+                        Long termId = ttIdToTermId.get(ttId);
+                        if (termId == null) continue;
+                        if (productTagByTermId.containsKey(termId)) {
+                            WpTerm term = termsById.get(termId);
+                            if (term != null && !term.name().isBlank()) {
+                                tags.add(new MappedProductTag(dbProductId, term.name()));
+                            }
+                        }
+                    }
+                }
+                log.info("Product tags collected: {}", tags.size());
+                results.put(MigrationDomain.PRODUCT_TAGS, productTagImporter.importBatch(tags, options));
+            }
+
+            // ── 16. Product Reviews ───────────────────────────────────────────
+            if (options.includesDomain(MigrationDomain.PRODUCT_REVIEWS)) {
+                List<WordPressReviewMapper.MappedReview> reviews = new ArrayList<>();
+                for (WpComment comment : reviewComments) {
+                    reviews.add(reviewMapper.map(comment,
+                            metaByComment.getOrDefault(comment.commentId(), List.of())));
+                }
+                log.info("Product reviews collected: {}", reviews.size());
+                results.put(MigrationDomain.PRODUCT_REVIEWS, reviewImporter.importBatch(reviews, options));
             }
 
         } catch (Exception e) {
@@ -576,6 +642,22 @@ public class WordPressMigrationImportService {
     private WpOrderItemMeta toWpOrderItemMeta(WordPressTableRow row) {
         try { return new WpOrderItemMeta(row.getLong("meta_id", 0),
                 row.getLong("order_item_id", 0), row.get("meta_key"), row.get("meta_value")); }
+        catch (Exception e) { return null; }
+    }
+
+    private WpComment toWpComment(WordPressTableRow row) {
+        try { return new WpComment(
+                row.getLong("comment_ID", 0), row.getLong("comment_post_ID", 0),
+                nvl(row.get("comment_author")), nvl(row.get("comment_author_email")),
+                nvl(row.get("comment_content")), parseDateTime(row.get("comment_date_gmt")),
+                nvl(row.get("comment_approved")), nvl(row.get("comment_type")),
+                row.getLong("user_id", 0)); }
+        catch (Exception e) { return null; }
+    }
+
+    private WpCommentMeta toWpCommentMeta(WordPressTableRow row) {
+        try { return new WpCommentMeta(row.getLong("meta_id", 0),
+                row.getLong("comment_id", 0), row.get("meta_key"), row.get("meta_value")); }
         catch (Exception e) { return null; }
     }
 

@@ -4,8 +4,8 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Dat hang thanh cong",
-  description: "Xac nhan don hang BigBike.",
+  title: "Đặt hàng thành công",
+  description: "Xác nhận đơn hàng BigBike.",
   canonicalPath: "/don-hang/xac-nhan",
   noIndex: true,
 });
@@ -20,15 +20,15 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
       <div className="bb-container">
         <div className="bb-confirm-wrap">
           <div className="bb-confirm-icon">✓</div>
-          <h1>Dat hang thanh cong!</h1>
+          <h1>Đặt hàng thành công!</h1>
           <p className="bb-page-subtitle">
-            Cam on ban da mua hang tai BigBike. Chung toi se lien he xac nhan don hang trong thoi gian som nhat.
+            Cảm ơn bạn đã mua hàng tại BigBike. Chúng tôi sẽ liên hệ xác nhận đơn hàng trong thời gian sớm nhất.
           </p>
 
           {orderNumber && (
             <div className="bb-card" style={{ padding: "var(--bb-space-5)", marginTop: "var(--bb-space-6)", textAlign: "left" }}>
               <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)", marginBottom: "var(--bb-space-1)" }}>
-                Ma don hang
+                Mã đơn hàng
               </p>
               <p style={{ fontFamily: "monospace", fontSize: "var(--bb-text-lg)", fontWeight: 700, color: "var(--bb-text-brand)" }}>
                 #{orderNumber}
@@ -38,10 +38,10 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
 
           <div style={{ display: "flex", gap: "var(--bb-space-3)", marginTop: "var(--bb-space-6)", flexWrap: "wrap" }}>
             <Link href={toOrderHistoryPath()} className="bb-button bb-button-secondary">
-              Xem don hang cua toi
+              Xem đơn hàng của tôi
             </Link>
             <Link href={toProductListPath()} className="bb-button bb-button-primary">
-              Tiep tuc mua hang
+              Tiếp tục mua hàng
             </Link>
           </div>
         </div>

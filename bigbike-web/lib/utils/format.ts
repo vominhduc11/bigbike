@@ -1,4 +1,4 @@
-export function safeText(value: string | null | undefined, fallback = "Dang cap nhat"): string {
+export function safeText(value: string | null | undefined, fallback = "Đang cập nhật"): string {
   if (!value) {
     return fallback;
   }
@@ -13,7 +13,7 @@ export function safeArray<T>(value: T[] | null | undefined): T[] {
 export function formatVnd(value: number | null | undefined): string {
   const safeValue = typeof value === "number" && Number.isFinite(value) ? value : null;
   if (safeValue === null) {
-    return "Lien he";
+    return "Liên hệ";
   }
 
   return new Intl.NumberFormat("vi-VN", {
@@ -23,12 +23,12 @@ export function formatVnd(value: number | null | undefined): string {
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) {
-    return "Dang cap nhat";
+    return "Đang cập nhật";
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) {
-    return "Dang cap nhat";
+    return "Đang cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {

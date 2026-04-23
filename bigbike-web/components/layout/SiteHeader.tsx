@@ -4,11 +4,11 @@ import { CartIcon } from "@/components/cart/CartIcon";
 import { toAccountPath } from "@/lib/utils/routes";
 
 const links = [
-  { href: "/", label: "Trang chu" },
-  { href: "/san-pham", label: "San pham" },
-  { href: "/danh-muc-san-pham", label: "Danh muc" },
-  { href: "/brands", label: "Thuong hieu" },
-  { href: "/tin-tuc", label: "Tin tuc" },
+  { href: "/", label: "Trang chủ" },
+  { href: "/san-pham", label: "Sản phẩm" },
+  { href: "/danh-muc-san-pham", label: "Danh mục" },
+  { href: "/brands", label: "Thương hiệu" },
+  { href: "/tin-tuc", label: "Tin tức" },
 ];
 
 export function SiteHeader() {
@@ -25,7 +25,7 @@ export function SiteHeader() {
           />
         </Link>
 
-        <nav className="bb-nav" aria-label="Dieu huong chinh">
+        <nav className="bb-nav" aria-label="Điều hướng chính">
           {links.map((link) => (
             <Link key={link.href} href={link.href} className="bb-nav-link">
               {link.label}
@@ -35,7 +35,7 @@ export function SiteHeader() {
 
         <div className="bb-header-actions">
           <Link href={toAccountPath()} className="bb-nav-link">
-            Tai khoan
+            Tài khoản
           </Link>
           <CartIcon />
         </div>

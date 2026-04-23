@@ -10,8 +10,8 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
-  const name = safeText(product.name, "San pham dang cap nhat");
-  const categoryName = safeText(product.category?.name, "Danh muc");
+  const name = safeText(product.name, "Sản phẩm đang cập nhật");
+  const categoryName = safeText(product.category?.name, "Danh mục");
   const brandName = safeText(product.brand?.name, "BigBike");
   const stockLabel = mapStockState(product.stockState);
 
@@ -44,17 +44,17 @@ export function ProductCard({ product }: ProductCardProps) {
 function mapStockState(state: Product["stockState"]) {
   switch (state) {
     case "IN_STOCK":
-      return { label: "Con hang", className: "bb-stock-in" };
+      return { label: "Còn hàng", className: "bb-stock-in" };
     case "LOW_STOCK":
-      return { label: "Sap het hang", className: "bb-stock-low" };
+      return { label: "Sắp hết hàng", className: "bb-stock-low" };
     case "OUT_OF_STOCK":
-      return { label: "Het hang", className: "bb-stock-out" };
+      return { label: "Hết hàng", className: "bb-stock-out" };
     case "PREORDER":
-      return { label: "Dat truoc", className: "bb-stock-preorder" };
+      return { label: "Đặt trước", className: "bb-stock-preorder" };
     case "CONTACT_FOR_STOCK":
-      return { label: "Lien he ton kho", className: "bb-stock-contact" };
+      return { label: "Liên hệ tồn kho", className: "bb-stock-contact" };
     default:
-      return { label: "Dang cap nhat", className: "bb-stock-out" };
+      return { label: "Đang cập nhật", className: "bb-stock-out" };
   }
 }
 

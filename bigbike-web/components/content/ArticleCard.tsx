@@ -9,8 +9,8 @@ type ArticleCardProps = {
 };
 
 export function ArticleCard({ article }: ArticleCardProps) {
-  const title = safeText(article.title, "Bai viet dang cap nhat");
-  const excerpt = safeText(article.excerpt, "Noi dung dang duoc cap nhat.");
+  const title = safeText(article.title, "Bài viết đang cập nhật");
+  const excerpt = safeText(article.excerpt, "Nội dung đang được cập nhật.");
 
   return (
     <article className="bb-article-card bb-card bb-card-hover">

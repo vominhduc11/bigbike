@@ -9,8 +9,8 @@ type CategoryCardProps = {
 };
 
 export function CategoryCard({ category }: CategoryCardProps) {
-  const title = safeText(category.name, "Danh muc");
-  const description = safeText(category.description, "Danh muc dang cap nhat noi dung.");
+  const title = safeText(category.name, "Danh mục");
+  const description = safeText(category.description, "Danh mục đang cập nhật nội dung.");
 
   return (
     <article className="bb-category-card bb-card bb-card-hover">

@@ -36,7 +36,7 @@ const CAN_USE_DEV_FALLBACK =
 const DEFAULT_META_ERROR = {
   status: 500,
   code: "WEB_API_ERROR",
-  message: "Khong the tai du lieu tu backend.",
+  message: "Không thể tải dữ liệu từ backend.",
   details: [] as ApiErrorDetail[],
 } satisfies ClientError;
 
@@ -100,9 +100,9 @@ function parseError(status: number, payload: unknown): ClientError {
     status,
     message:
       status === 404
-        ? "Khong tim thay du lieu yeu cau."
+        ? "Không tìm thấy dữ liệu yêu cầu."
         : status >= 500
-          ? "He thong dang ban, vui long thu lai."
+          ? "Hệ thống đang bận, vui lòng thử lại."
           : DEFAULT_META_ERROR.message,
   };
 }

@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper.MappedProduct;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -49,10 +51,14 @@ public class ProductImporter implements DomainImporter {
      * Idempotent product import.
      * Upserts by slug. Duplicate SKUs get a "-wp-{id}" suffix to avoid unique constraint violations.
      * Category and brand are resolved from DB by slug after their respective imports complete.
+     * mediaByLegacyId maps WP attachment ID → MappedMedia for thumbnail resolution.
      */
     @Transactional
     public MigrationExecutionReport.DomainResult importBatch(
-            List<ResolvedProduct> items, MigrationExecutionOptions options) {
+            List<ResolvedProduct> items,
+            MigrationExecutionOptions options,
+            Map<Long, MappedMedia> mediaByLegacyId,
+            String legacyUploadsBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
@@ -135,6 +141,22 @@ public class ProductImporter implements DomainImporter {
                 // Brand link (optional)
                 if (rp.brandSlug() != null) {
                     brandRepo.findBySlug(rp.brandSlug()).ifPresent(entity::setBrand);
+                }
+
+                // Thumbnail image — resolved from WP _thumbnail_id via mediaByLegacyId map
+                if (mp.thumbnailId() != null) {
+                    MappedMedia thumb = mediaByLegacyId.get(mp.thumbnailId());
+                    if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
+                        String base = legacyUploadsBaseUrl.endsWith("/")
+                                ? legacyUploadsBaseUrl.substring(0, legacyUploadsBaseUrl.length() - 1)
+                                : legacyUploadsBaseUrl;
+                        entity.setImageId(String.valueOf(mp.thumbnailId()));
+                        entity.setImageUrl(base + "/" + thumb.storagePath());
+                        entity.setImageAlt(thumb.altText());
+                        entity.setImageWidth(thumb.width());
+                        entity.setImageHeight(thumb.height());
+                        entity.setImageMimeType(thumb.mimeType());
+                    }
                 }
 
                 entity.setUpdatedAt(Instant.now());

@@ -22,7 +22,7 @@ const categories: Category[] = [
     description: "Danh muc mu bao hiem cho rider duong dai.",
     isVisible: true,
     image: {
-      url: "https://cdn.bigbike.local/categories/mu-bao-hiem.jpg",
+      url: "https://placehold.co/1200x800",
       alt: "Danh muc mu bao hiem",
       width: 1200,
       height: 800,
@@ -38,7 +38,7 @@ const categories: Category[] = [
     description: "Danh muc ao giap touring va di pho.",
     isVisible: true,
     image: {
-      url: "https://cdn.bigbike.local/categories/ao-giap-bao-ho.jpg",
+      url: "https://placehold.co/1200x800",
       alt: "Danh muc ao giap bao ho",
       width: 1200,
       height: 800,
@@ -57,7 +57,7 @@ const brands: Brand[] = [
     description: "Thuong hieu mu bao hiem va do bao ho.",
     isVisible: true,
     logo: {
-      url: "https://cdn.bigbike.local/brands/ls2.png",
+      url: "https://placehold.co/500x260",
       alt: "Thuong hieu LS2",
       width: 500,
       height: 260,
@@ -94,7 +94,7 @@ const products: Product[] = [
     ],
     image: {
       id: "img_prod_ls2_ff800_main",
-      url: "https://cdn.bigbike.local/products/ls2-ff800/main.jpg",
+      url: "https://placehold.co/1200x1200",
       alt: "Mu bao hiem LS2 FF800",
       width: 1200,
       height: 1200,
@@ -103,7 +103,7 @@ const products: Product[] = [
     gallery: [
       {
         id: "img_prod_ls2_ff800_1",
-        url: "https://cdn.bigbike.local/products/ls2-ff800/1.jpg",
+        url: "https://placehold.co/1200x1200",
         alt: "LS2 FF800 goc nghieng",
         width: 1200,
         height: 1200,
@@ -165,7 +165,7 @@ const products: Product[] = [
     ],
     image: {
       id: "img_prod_ls2_jacket_city_main",
-      url: "https://cdn.bigbike.local/products/ls2-city-rider/main.jpg",
+      url: "https://placehold.co/1200x1200",
       alt: "Ao giap LS2 City Rider",
       width: 1200,
       height: 1200,
@@ -205,7 +205,7 @@ const articles: Article[] = [
     body: "<p>Chon mu theo nhu cau di pho, touring, va form dau.</p>",
     coverImage: {
       id: "img_article_fullface",
-      url: "https://cdn.bigbike.local/articles/chon-mu-fullface.jpg",
+      url: "https://placehold.co/1600x900",
       alt: "Huong dan chon mu fullface",
       width: 1600,
       height: 900,

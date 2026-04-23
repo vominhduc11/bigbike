@@ -17,11 +17,11 @@ const exo = Exo_2({
 export const metadata: Metadata = {
   metadataBase: new URL("https://bigbike.vn"),
   title: {
-    default: "BigBike - Do Bao Ho Biker",
+    default: "BigBike - Đồ Bảo Hộ Biker",
     template: "%s | BigBike",
   },
   description:
-    "BigBike public catalog va content page cho helmet, jacket, phu kien rider theo route legacy da chuan hoa.",
+    "BigBike public catalog và content page cho helmet, jacket, phụ kiện rider theo route legacy đã chuẩn hoá.",
   alternates: {
     canonical: "https://bigbike.vn/",
   },

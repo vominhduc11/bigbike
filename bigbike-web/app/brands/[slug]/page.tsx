@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
   const { slug } = await params;
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Thuong hieu khong hop le",
-      description: "Slug thuong hieu khong hop le.",
+      title: "Thương hiệu không hợp lệ",
+      description: "Slug thương hiệu không hợp lệ.",
       canonicalPath: toBrandPath("invalid"),
       noIndex: true,
     });
@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
   const brand = brandResult.data;
   if (!brand) {
     return buildPublicMetadata({
-      title: "Khong tim thay thuong hieu",
-      description: "Khong tim thay thong tin thuong hieu yeu cau.",
+      title: "Không tìm thấy thương hiệu",
+      description: "Không tìm thấy thông tin thương hiệu yêu cầu.",
       canonicalPath: toBrandPath(slug),
       noIndex: true,
     });
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
 
   return buildPublicMetadata({
     title: brand.seo?.title ?? brand.name,
-    description: brand.seo?.description ?? brand.description ?? "Chi tiet thuong hieu BigBike.",
+    description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
     canonicalPath: brand.seo?.canonicalUrl ?? toBrandPath(brand.slug),
     noIndex: brand.seo?.noIndex ?? false,
   });
@@ -96,7 +96,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={brandResult.error?.message ?? "Khong tai duoc thuong hieu."} />
+          <ErrorState message={brandResult.error?.message ?? "Không tải được thương hiệu."} />
         </div>
       </section>
     );
@@ -109,9 +109,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Brand Detail</p>
-          <h1>{safeText(brand.name, "Thuong hieu")}</h1>
+          <h1>{safeText(brand.name, "Thương hiệu")}</h1>
           <p className="bb-page-subtitle">
-            {safeText(brand.description, "Thong tin thuong hieu dang cap nhat.")}
+            {safeText(brand.description, "Thông tin thương hiệu đang cập nhật.")}
           </p>
         </header>
 
@@ -119,7 +119,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
           <div className="bb-card" style={{ padding: "var(--bb-space-4)" }}>
             <MediaImage
               image={brand.logo}
-              altFallback={safeText(brand.name, "Thuong hieu")}
+              altFallback={safeText(brand.name, "Thương hiệu")}
               className="bb-category-image"
               width={1200}
               height={675}
@@ -128,17 +128,17 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         </section>
 
         {brandResult.fromFallback || productsResult.fromFallback ? (
-          <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho brand/product list.</p>
+          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho brand/product list.</p>
         ) : null}
 
         <section className="bb-section">
-          <h2 className="bb-section-title">San pham theo thuong hieu</h2>
+          <h2 className="bb-section-title">Sản phẩm theo thương hiệu</h2>
           {productsResult.error && productsResult.data.length === 0 ? (
             <ErrorState message={productsResult.error.message} />
           ) : productsResult.data.length === 0 ? (
             <EmptyState
-              title="Thuong hieu chua co san pham"
-              description="San pham cho thuong hieu nay dang duoc cap nhat."
+              title="Thương hiệu chưa có sản phẩm"
+              description="Sản phẩm cho thương hiệu này đang được cập nhật."
             />
           ) : (
             <>

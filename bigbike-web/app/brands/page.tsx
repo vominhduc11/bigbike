@@ -20,8 +20,8 @@ export async function generateMetadata({ searchParams }: BrandListPageProps): Pr
   const hasQueryVariant = page > 1 || Boolean(readSingleSearchParam(params.sort));
 
   return buildPublicMetadata({
-    title: "Thuong hieu",
-    description: "Danh sach thuong hieu theo route /brands/.",
+    title: "Thương hiệu",
+    description: "Danh sách thương hiệu theo route /brands/.",
     canonicalPath: toBrandListPath(),
     noIndex: hasQueryVariant,
   });
@@ -48,7 +48,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState title="Query chua hop le" message={validationErrors.join(" ")} retryHref={toBrandListPath()} />
+          <ErrorState title="Query chưa hợp lệ" message={validationErrors.join(" ")} retryHref={toBrandListPath()} />
         </div>
       </section>
     );
@@ -65,20 +65,20 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Brand</p>
-          <h1>Thuong hieu</h1>
+          <h1>Thương hiệu</h1>
           <p className="bb-page-subtitle">Route legacy dang duoc preserve la /brands/{'{slug}'}.</p>
         </header>
 
         {result.fromFallback ? (
-          <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho thuong hieu.</p>
+          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho thương hiệu.</p>
         ) : null}
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toBrandListPath()} />
         ) : result.data.length === 0 ? (
           <EmptyState
-            title="Khong co thuong hieu"
-            description="Danh sach thuong hieu hien dang rong."
+            title="Không có thương hiệu"
+            description="Danh sách thương hiệu hiện đang rỗng."
           />
         ) : (
           <>
@@ -88,14 +88,14 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
                   <Link href={toBrandPath(brand.slug)} className="bb-category-card-link">
                     <MediaImage
                       image={brand.logo}
-                      altFallback={safeText(brand.name, "Thuong hieu")}
+                      altFallback={safeText(brand.name, "Thương hiệu")}
                       className="bb-category-image"
                       width={1200}
                       height={675}
                     />
                     <div className="bb-category-body">
-                      <h3>{safeText(brand.name, "Thuong hieu")}</h3>
-                      <p>{safeText(brand.description, "Thong tin thuong hieu dang cap nhat.")}</p>
+                      <h3>{safeText(brand.name, "Thương hiệu")}</h3>
+                      <p>{safeText(brand.description, "Thông tin thương hiệu đang cập nhật.")}</p>
                     </div>
                   </Link>
                 </article>

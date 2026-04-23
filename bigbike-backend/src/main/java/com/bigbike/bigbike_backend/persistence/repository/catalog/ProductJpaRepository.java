@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, String> {
     Optional<ProductEntity> findBySlug(String slug);
+    Optional<ProductEntity> findByLegacyId(String legacyId);
 }

@@ -20,11 +20,11 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password !== confirm) {
-      setError("Mat khau xac nhan khong khop.");
+      setError("Mật khẩu xác nhận không khớp.");
       return;
     }
     if (password.length < 6) {
-      setError("Mat khau phai co it nhat 6 ky tu.");
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
     }
     setError("");
@@ -45,8 +45,8 @@ export default function RegisterPage() {
         <div className="bb-auth-wrap">
           <div className="bb-card" style={{ padding: "var(--bb-space-8)" }}>
             <header style={{ marginBottom: "var(--bb-space-6)", textAlign: "center" }}>
-              <p className="bb-kicker">Tai khoan</p>
-              <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Dang ky</h1>
+              <p className="bb-kicker">Tài khoản</p>
+              <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Đăng ký</h1>
             </header>
 
             {error && (
@@ -57,7 +57,7 @@ export default function RegisterPage() {
 
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
               <label className="bb-form-label">
-                Ho ten
+                Họ tên
                 <input
                   className="bb-input"
                   required
@@ -80,7 +80,7 @@ export default function RegisterPage() {
                 />
               </label>
               <label className="bb-form-label">
-                So dien thoai
+                Số điện thoại
                 <input
                   className="bb-input"
                   type="tel"
@@ -91,25 +91,25 @@ export default function RegisterPage() {
                 />
               </label>
               <label className="bb-form-label">
-                Mat khau
+                Mật khẩu
                 <input
                   className="bb-input"
                   required
                   type="password"
                   autoComplete="new-password"
-                  placeholder="It nhat 6 ky tu"
+                  placeholder="Ít nhất 6 ký tự"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
               <label className="bb-form-label">
-                Xac nhan mat khau
+                Xác nhận mật khẩu
                 <input
                   className="bb-input"
                   required
                   type="password"
                   autoComplete="new-password"
-                  placeholder="Nhap lai mat khau"
+                  placeholder="Nhập lại mật khẩu"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                 />
@@ -120,14 +120,14 @@ export default function RegisterPage() {
                 style={{ width: "100%", justifyContent: "center" }}
                 disabled={submitting}
               >
-                {submitting ? "Dang tao tai khoan..." : "Tao tai khoan"}
+                {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
               </button>
             </form>
 
             <p style={{ textAlign: "center", marginTop: "var(--bb-space-4)", color: "var(--bb-text-secondary)", fontSize: "var(--bb-text-sm)" }}>
-              Da co tai khoan?{" "}
+              Đã có tài khoản?{" "}
               <Link href={toLoginPath()} className="bb-link">
-                Dang nhap
+                Đăng nhập
               </Link>
             </p>
           </div>

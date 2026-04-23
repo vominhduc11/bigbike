@@ -221,7 +221,7 @@ class Phase2D3ProductNormalizationTest {
 
         MigrationExecutionOptions opts = importOpts();
         MigrationExecutionReport.DomainResult result =
-                productImporter.importBatch(norm.products(), opts);
+                productImporter.importBatch(norm.products(), opts, Map.of(), "");
 
         assertThat(result.inserted()).isEqualTo(1);
         assertThat(result.skipped()).isEqualTo(0);
@@ -241,12 +241,12 @@ class Phase2D3ProductNormalizationTest {
         ResolvedProduct rp = resolvedProduct(80701L, "", "Piaggio Liberty", null);
 
         NormalizationResult norm1 = normalizationService.normalize(List.of(rp));
-        productImporter.importBatch(norm1.products(), importOpts());
+        productImporter.importBatch(norm1.products(), importOpts(), Map.of(), "");
         long countAfterFirst = productRepo.count();
 
         NormalizationResult norm2 = normalizationService.normalize(List.of(rp));
         MigrationExecutionReport.DomainResult run2 =
-                productImporter.importBatch(norm2.products(), importOpts());
+                productImporter.importBatch(norm2.products(), importOpts(), Map.of(), "");
         long countAfterSecond = productRepo.count();
 
         assertThat(run2.inserted()).isEqualTo(0);
@@ -267,7 +267,7 @@ class Phase2D3ProductNormalizationTest {
         // Import a recovered product (blank slug → gets generated slug)
         ResolvedProduct rp = resolvedProduct(80801L, "", "Kymco Agility", null);
         NormalizationResult norm = normalizationService.normalize(List.of(rp));
-        productImporter.importBatch(norm.products(), importOpts());
+        productImporter.importBatch(norm.products(), importOpts(), Map.of(), "");
 
         // Verify parent exists in DB
         assertThat(productRepo.findById("wp-prod-80801")).isPresent();

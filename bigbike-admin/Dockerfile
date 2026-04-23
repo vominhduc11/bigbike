@@ -4,6 +4,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --prefer-offline
 COPY . .
+
+# Vite bakes env vars into the bundle at build time, not runtime.
+# Pass them as build args so the bundle always targets the real API.
+ARG VITE_ADMIN_API_BASE=/api/v1
+ARG VITE_USE_ADMIN_MOCK=false
+ARG VITE_ADMIN_ROLE=ADMIN
+ENV VITE_ADMIN_API_BASE=${VITE_ADMIN_API_BASE}
+ENV VITE_USE_ADMIN_MOCK=${VITE_USE_ADMIN_MOCK}
+ENV VITE_ADMIN_ROLE=${VITE_ADMIN_ROLE}
+
 RUN npm run build
 
 # ---- Serve stage ----

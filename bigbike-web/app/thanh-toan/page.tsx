@@ -41,7 +41,7 @@ export default function CheckoutPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!cart?.items.length) {
-      setError("Gio hang trong. Vui long them san pham truoc khi dat hang.");
+      setError("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
       return;
     }
     setError("");
@@ -65,7 +65,7 @@ export default function CheckoutPage() {
       <div className="bb-container">
         <header style={{ marginBottom: "var(--bb-space-6)" }}>
           <p className="bb-kicker">Commerce</p>
-          <h1>Dat hang</h1>
+          <h1>Đặt hàng</h1>
         </header>
 
         <div className="bb-checkout-layout">
@@ -78,11 +78,11 @@ export default function CheckoutPage() {
 
             <div className="bb-card" style={{ padding: "var(--bb-space-5)", marginBottom: "var(--bb-space-4)" }}>
               <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-                Thong tin nhan hang
+                Thông tin nhận hàng
               </h2>
               <div className="bb-form-grid">
                 <label className="bb-form-label">
-                  Ho ten
+                  Họ tên
                   <input
                     className="bb-input"
                     required
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label">
-                  So dien thoai
+                  Số điện thoại
                   <input
                     className="bb-input"
                     required
@@ -113,7 +113,7 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label">
-                  Tinh / Thanh pho
+                  Tỉnh / Thành phố
                   <input
                     className="bb-input"
                     required
@@ -123,7 +123,7 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label">
-                  Quan / Huyen
+                  Quận / Huyện
                   <input
                     className="bb-input"
                     placeholder="Quan 1"
@@ -132,7 +132,7 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label">
-                  Phuong / Xa
+                  Phường / Xã
                   <input
                     className="bb-input"
                     placeholder="Phuong Ben Nghe"
@@ -141,7 +141,7 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label" style={{ gridColumn: "1 / -1" }}>
-                  Dia chi cu the
+                  Địa chỉ cụ thể
                   <input
                     className="bb-input"
                     required
@@ -151,11 +151,11 @@ export default function CheckoutPage() {
                   />
                 </label>
                 <label className="bb-form-label" style={{ gridColumn: "1 / -1" }}>
-                  Ghi chu don hang
+                  Ghi chú đơn hàng
                   <textarea
                     className="bb-input"
                     style={{ minHeight: "80px", padding: "var(--bb-space-3) var(--bb-space-4)", resize: "vertical" }}
-                    placeholder="Yeu cau rieng cho don hang..."
+                    placeholder="Yêu cầu riêng cho đơn hàng..."
                     value={customerNote}
                     onChange={(e) => setCustomerNote(e.target.value)}
                   />
@@ -165,7 +165,7 @@ export default function CheckoutPage() {
 
             <div className="bb-card" style={{ padding: "var(--bb-space-5)", marginBottom: "var(--bb-space-4)" }}>
               <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-                Phuong thuc thanh toan
+                Phương thức thanh toán
               </h2>
               <label className="bb-payment-option">
                 <input
@@ -176,9 +176,9 @@ export default function CheckoutPage() {
                   onChange={() => setPaymentMethod("COD")}
                 />
                 <span>
-                  <strong>Thu tien khi giao hang (COD)</strong>
+                  <strong>Thu tiền khi giao hàng (COD)</strong>
                   <span style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)", display: "block" }}>
-                    Thanh toan bang tien mat khi nhan hang
+                    Thanh toán bằng tiền mặt khi nhận hàng
                   </span>
                 </span>
               </label>
@@ -190,24 +190,24 @@ export default function CheckoutPage() {
               style={{ width: "100%", justifyContent: "center" }}
               disabled={submitting || cartLoading}
             >
-              {submitting ? "Dang dat hang..." : "Xac nhan dat hang"}
+              {submitting ? "Đang đặt hàng..." : "Xác nhận đặt hàng"}
             </button>
           </form>
 
           <aside>
             <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
               <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-                Don hang cua ban
+                Đơn hàng của bạn
               </h2>
               {cartLoading ? (
-                <p style={{ color: "var(--bb-text-muted)" }}>Dang tai...</p>
+                <p style={{ color: "var(--bb-text-muted)" }}>Đang tải...</p>
               ) : !cart || cart.items.length === 0 ? (
                 <div>
                   <p style={{ color: "var(--bb-text-muted)", marginBottom: "var(--bb-space-3)" }}>
-                    Gio hang trong.
+                    Giỏ hàng trống.
                   </p>
                   <a href={toCartPath()} className="bb-link">
-                    Quay lai gio hang
+                    Quay lại giỏ hàng
                   </a>
                 </div>
               ) : (
@@ -237,19 +237,19 @@ export default function CheckoutPage() {
                   </div>
                   <div className="bb-summary-rows">
                     <div className="bb-summary-row">
-                      <span>Tam tinh</span>
+                      <span>Tạm tính</span>
                       <span>{formatVnd(cart.totals.subtotalAmount)}</span>
                     </div>
                     {cart.totals.discountAmount > 0 && (
                       <div className="bb-summary-row">
-                        <span>Giam gia</span>
+                        <span>Giảm giá</span>
                         <span style={{ color: "var(--bb-state-success)" }}>
                           −{formatVnd(cart.totals.discountAmount)}
                         </span>
                       </div>
                     )}
                     <div className="bb-summary-row bb-summary-total">
-                      <span>Tong cong</span>
+                      <span>Tổng cộng</span>
                       <span>{formatVnd(cart.totals.totalAmount)}</span>
                     </div>
                   </div>

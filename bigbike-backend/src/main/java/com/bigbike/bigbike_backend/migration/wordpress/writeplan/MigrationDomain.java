@@ -23,7 +23,7 @@ public enum MigrationDomain {
     ORDER_APPLIED_COUPONS,
     ORDER_ADDRESSES,
     PAYMENTS,
-    // Deferred — no target schema in Phase 2D
     PRODUCT_TAGS,
+    PRODUCT_REVIEWS,
     FG_REDIRECTS
 }

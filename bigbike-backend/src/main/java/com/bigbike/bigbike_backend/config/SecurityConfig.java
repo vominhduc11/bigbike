@@ -91,6 +91,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/customer/orders").hasRole("CUSTOMER")
                         // Customer profile requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/me").hasRole("CUSTOMER")
+                        // Actuator health: public for Docker/k8s health checks
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Admin /auth/me requires any authenticated user
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         // Everything else requires authentication

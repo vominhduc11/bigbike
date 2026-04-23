@@ -8,20 +8,20 @@ import { formatDate, formatVnd } from "@/lib/utils/format";
 import { toAccountPath, toLoginPath } from "@/lib/utils/routes";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Cho xac nhan",
-  CONFIRMED: "Da xac nhan",
-  PROCESSING: "Dang xu ly",
-  SHIPPED: "Dang giao",
-  DELIVERED: "Da giao",
-  CANCELLED: "Da huy",
-  REFUNDED: "Hoan tien",
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  PROCESSING: "Đang xử lý",
+  SHIPPED: "Đang giao",
+  DELIVERED: "Đã giao",
+  CANCELLED: "Đã hủy",
+  REFUNDED: "Hoàn tiền",
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Chua thanh toan",
-  PAID: "Da thanh toan",
-  FAILED: "That bai",
-  REFUNDED: "Da hoan",
+  PENDING: "Chưa thanh toán",
+  PAID: "Đã thanh toán",
+  FAILED: "Thất bại",
+  REFUNDED: "Đã hoàn",
 };
 
 export default function OrderHistoryPage() {
@@ -58,11 +58,11 @@ export default function OrderHistoryPage() {
       <div className="bb-container">
         <header style={{ marginBottom: "var(--bb-space-6)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--bb-space-4)" }}>
           <div>
-            <p className="bb-kicker">Tai khoan</p>
-            <h1>Don hang cua toi</h1>
+            <p className="bb-kicker">Tài khoản</p>
+            <h1>Đơn hàng của tôi</h1>
           </div>
           <a href={toAccountPath()} className="bb-link">
-            Quay lai tai khoan
+            Quay lại tài khoản
           </a>
         </header>
 
@@ -74,8 +74,8 @@ export default function OrderHistoryPage() {
           </div>
         ) : orders.length === 0 ? (
           <div className="bb-empty-state">
-            <h3>Chua co don hang</h3>
-            <p>Ban chua dat don hang nao.</p>
+            <h3>Chưa có đơn hàng</h3>
+            <p>Bạn chưa đặt đơn hàng nào.</p>
           </div>
         ) : (
           <>
@@ -88,7 +88,7 @@ export default function OrderHistoryPage() {
                         #{order.orderNumber}
                       </p>
                       <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)" }}>
-                        {formatDate(order.placedAt)} · {order.itemCount} san pham
+                        {formatDate(order.placedAt)} · {order.itemCount} sản phẩm
                       </p>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -117,7 +117,7 @@ export default function OrderHistoryPage() {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                 >
-                  Trang truoc
+                  Trang trước
                 </button>
                 <span className="bb-pagination-status">{page} / {totalPages}</span>
                 <button

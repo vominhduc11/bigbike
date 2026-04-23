@@ -18,8 +18,8 @@ export async function generateMetadata({ searchParams }: CategoryListPageProps):
   const hasQueryVariant = page > 1 || Boolean(readSingleSearchParam(params.sort));
 
   return buildPublicMetadata({
-    title: "Danh muc san pham",
-    description: "Danh sach category theo route /danh-muc-san-pham/.",
+    title: "Danh mục sản phẩm",
+    description: "Danh sách category theo route /danh-muc-san-pham/.",
     canonicalPath: toCategoryListPath(),
     noIndex: hasQueryVariant,
   });
@@ -47,7 +47,7 @@ export default async function CategoryListPage({ searchParams }: CategoryListPag
       <section className="bb-page">
         <div className="bb-container">
           <ErrorState
-            title="Query chua hop le"
+            title="Query chưa hợp lệ"
             message={validationErrors.join(" ")}
             retryHref={toCategoryListPath()}
           />
@@ -67,22 +67,22 @@ export default async function CategoryListPage({ searchParams }: CategoryListPag
       <div className="bb-container">
         <header>
           <p className="bb-kicker">Category</p>
-          <h1>Danh muc san pham</h1>
+          <h1>Danh mục sản phẩm</h1>
           <p className="bb-page-subtitle">
             Route legacy duoc giu la /danh-muc-san-pham/{'{slug}'}.
           </p>
         </header>
 
         {result.fromFallback ? (
-          <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho danh muc.</p>
+          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho danh mục.</p>
         ) : null}
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toCategoryListPath()} />
         ) : result.data.length === 0 ? (
           <EmptyState
-            title="Khong co danh muc"
-            description="Danh muc san pham dang duoc cap nhat."
+            title="Không có danh mục"
+            description="Danh mục sản phẩm đang được cập nhật."
           />
         ) : (
           <>

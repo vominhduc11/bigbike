@@ -103,6 +103,13 @@ const LEGACY_UPLOADS_BASE =
   process.env.BIGBIKE_LEGACY_UPLOADS_BASE?.replace(/\/$/, "") ??
   "https://cdn.bigbike.vn/uploads";
 
+// Extract API origin so CSP allows backend calls in any environment
+// (http://localhost:8080 in dev, https://api.bigbike.vn in prod)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const API_ORIGIN = (() => {
+  try { return new URL(API_BASE).origin; } catch { return "http://localhost:8080"; }
+})();
+
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
@@ -131,7 +138,14 @@ const nextConfig: NextConfig = {
           destination: `${LEGACY_UPLOADS_BASE}/:path*`,
         },
       ],
-      afterFiles: [],
+      afterFiles: [
+        // Article URLs use .html suffix in links/SEO but the route segment is [slug].
+        // Rewrite strips .html before Next.js resolves the dynamic segment.
+        {
+          source: "/tin-tuc/:slug.html",
+          destination: "/tin-tuc/:slug/",
+        },
+      ],
       fallback: [],
     };
   },
@@ -154,7 +168,7 @@ const nextConfig: NextConfig = {
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob: https:",
           "font-src 'self' data:",
-          "connect-src 'self' https:",
+          `connect-src 'self' https: ${API_ORIGIN}`,
           "frame-ancestors 'none'",
           "base-uri 'self'",
           "form-action 'self'",

@@ -17,10 +17,10 @@ export default function GlobalRouteError({
     <section className="bb-page">
       <div className="bb-container">
         <section className="bb-error-state" role="alert" aria-live="assertive">
-          <h1>Loi he thong</h1>
-          <p>Da xay ra loi ngoai du kien. Vui long thu lai.</p>
+          <h1>Lỗi hệ thống</h1>
+          <p>Đã xảy ra lỗi ngoài dự kiến. Vui lòng thử lại.</p>
           <button type="button" className="bb-button bb-button-primary" onClick={unstable_retry}>
-            Thu lai
+            Thử lại
           </button>
         </section>
       </div>
