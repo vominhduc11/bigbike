@@ -3,7 +3,9 @@ package com.bigbike.bigbike_backend.api.customer;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerAuthResponse;
+import com.bigbike.bigbike_backend.api.customer.dto.CustomerForgotPasswordRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerLoginRequest;
+import com.bigbike.bigbike_backend.api.customer.dto.CustomerResetPasswordRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerRegisterRequest;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
@@ -11,6 +13,7 @@ import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthResult;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
+import com.bigbike.bigbike_backend.service.customer.CustomerPasswordResetService;
 import com.bigbike.bigbike_backend.service.customer.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,16 +41,19 @@ public class CustomerAuthController {
 
     private final CustomerAuthService authService;
     private final CustomerSessionService sessionService;
+    private final CustomerPasswordResetService passwordResetService;
     private final ApiResponseFactory apiResponseFactory;
     private final EmailVerificationService emailVerificationService;
 
     public CustomerAuthController(
             CustomerAuthService authService,
             CustomerSessionService sessionService,
+            CustomerPasswordResetService passwordResetService,
             ApiResponseFactory apiResponseFactory,
             EmailVerificationService emailVerificationService) {
         this.authService = authService;
         this.sessionService = sessionService;
+        this.passwordResetService = passwordResetService;
         this.apiResponseFactory = apiResponseFactory;
         this.emailVerificationService = emailVerificationService;
     }
@@ -84,6 +90,24 @@ public class CustomerAuthController {
         CustomerAuthResult result = authService.login(req, getClientIp(request), request.getHeader(HEADER_USER_AGENT));
         applySessionCookies(response, result);
         return apiResponseFactory.data(result.response(), request);
+    }
+
+    @PostMapping("/password/forgot")
+    public ApiDataResponse<Void> forgotPassword(
+            @Valid @RequestBody CustomerForgotPasswordRequest req,
+            HttpServletRequest request
+    ) {
+        passwordResetService.requestPasswordReset(req.login(), getClientIp(request), request.getHeader(HEADER_USER_AGENT));
+        return apiResponseFactory.data(null, request);
+    }
+
+    @PostMapping("/password/reset")
+    public ApiDataResponse<Void> resetPassword(
+            @Valid @RequestBody CustomerResetPasswordRequest req,
+            HttpServletRequest request
+    ) {
+        passwordResetService.resetPassword(req.token(), req.password(), getClientIp(request), request.getHeader(HEADER_USER_AGENT));
+        return apiResponseFactory.data(null, request);
     }
 
     @PostMapping("/refresh")

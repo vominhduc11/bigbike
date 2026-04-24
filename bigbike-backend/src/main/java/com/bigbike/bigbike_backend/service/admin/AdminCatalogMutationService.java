@@ -181,7 +181,7 @@ public class AdminCatalogMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateCategoryRequest(request, null, true, errors);
-        String parentId = validateAndResolveParentCategory(request.getParentId(), null, true, errors);
+        CategoryEntity parent = validateAndResolveParentCategory(request.getParentId(), null, true, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -189,7 +189,7 @@ public class AdminCatalogMutationService {
         entity.setId(generateId("cat"));
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        applyCategoryPatch(entity, request, slug, parentId, true);
+        applyCategoryPatch(entity, request, slug, parent, true);
         categoryJpaRepository.save(entity);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -205,11 +205,11 @@ public class AdminCatalogMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateCategoryRequest(request, entity, false, errors);
-        String parentId = validateAndResolveParentCategory(request.getParentId(), categoryId, false, errors);
+        CategoryEntity parent = validateAndResolveParentCategory(request.getParentId(), categoryId, false, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyCategoryPatch(entity, request, slug, parentId, false);
+        applyCategoryPatch(entity, request, slug, parent, false);
         categoryJpaRepository.save(entity);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -379,7 +379,7 @@ public class AdminCatalogMutationService {
         return slug;
     }
 
-    private String validateAndResolveParentCategory(
+    private CategoryEntity validateAndResolveParentCategory(
             String parentIdRaw,
             String currentCategoryId,
             boolean create,
@@ -396,11 +396,12 @@ public class AdminCatalogMutationService {
             errors.add(new ApiErrorDetail("parentId", "INVALID_VALUE", "Category cannot be its own parent."));
             return null;
         }
-        if (categoryJpaRepository.findById(parentId).isEmpty()) {
+        CategoryEntity category = categoryJpaRepository.findById(parentId).orElse(null);
+        if (category == null) {
             errors.add(new ApiErrorDetail("parentId", "NOT_FOUND", "Parent category does not exist."));
             return null;
         }
-        return parentId;
+        return category;
     }
 
     private String validateBrandRequest(
@@ -510,7 +511,7 @@ public class AdminCatalogMutationService {
             CategoryEntity entity,
             UpsertCategoryRequest request,
             String normalizedSlug,
-            String normalizedParentId,
+            CategoryEntity normalizedParent,
             boolean create
     ) {
         if (create || normalizedSlug != null) {
@@ -523,7 +524,7 @@ public class AdminCatalogMutationService {
             entity.setDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         }
         if (create || request.getParentId() != null) {
-            entity.setParentId(normalizedParentId);
+            entity.setParent(normalizedParent);
         }
         if (create || request.getVisible() != null) {
             entity.setVisible(request.getVisible() == null || request.getVisible());

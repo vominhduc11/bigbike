@@ -28,12 +28,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, ORDER_LOOKUP, SEARCH }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, ORDER_LOOKUP, SEARCH }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Map<String, Bucket> loginBuckets       = new ConcurrentHashMap<>();
     private final Map<String, Bucket> registerBuckets    = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> passwordResetBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> orderLookupBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> searchBuckets      = new ConcurrentHashMap<>();
 
@@ -71,6 +72,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/customer/auth/register".equals(path)) {
                 return LimitTier.REGISTER;
             }
+            if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)) {
+                return LimitTier.PASSWORD_RESET;
+            }
         } else if ("GET".equalsIgnoreCase(method)) {
             if ("/api/v1/orders/lookup".equals(path)) {
                 return LimitTier.ORDER_LOOKUP;
@@ -88,6 +92,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     ip -> newBucket(5, Duration.ofMinutes(1)));
             case REGISTER     -> registerBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(3, Duration.ofMinutes(1)));
+            case PASSWORD_RESET -> passwordResetBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(5, Duration.ofMinutes(1)));
             case ORDER_LOOKUP -> orderLookupBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(20, Duration.ofMinutes(1)));
             case SEARCH       -> searchBuckets.computeIfAbsent(clientIp,

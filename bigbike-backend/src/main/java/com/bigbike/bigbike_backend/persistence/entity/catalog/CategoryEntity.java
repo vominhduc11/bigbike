@@ -3,8 +3,14 @@ package com.bigbike.bigbike_backend.persistence.entity.catalog;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "categories")
@@ -22,7 +28,9 @@ public class CategoryEntity {
     @Column(columnDefinition = "text")
     private String description;
 
-    private String parentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private CategoryEntity parent;
 
     private String imageId;
 
@@ -74,6 +82,9 @@ public class CategoryEntity {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
+    private List<CategoryEntity> children = new ArrayList<>();
+
     public String getId() {
         return id;
     }
@@ -107,11 +118,15 @@ public class CategoryEntity {
     }
 
     public String getParentId() {
-        return parentId;
+        return parent == null ? null : parent.getId();
     }
 
-    public void setParentId(String parentId) {
-        this.parentId = parentId;
+    public CategoryEntity getParent() {
+        return parent;
+    }
+
+    public void setParent(CategoryEntity parent) {
+        this.parent = parent;
     }
 
     public String getImageId() {
@@ -320,5 +335,13 @@ public class CategoryEntity {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<CategoryEntity> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<CategoryEntity> children) {
+        this.children = children;
     }
 }

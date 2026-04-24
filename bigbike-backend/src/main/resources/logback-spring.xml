@@ -30,11 +30,6 @@
           <thread>thread</thread>
           <level>level</level>
         </fieldNames>
-        <providers>
-          <mdc />
-          <arguments />
-          <stackTrace />
-        </providers>
       </encoder>
     </appender>
 

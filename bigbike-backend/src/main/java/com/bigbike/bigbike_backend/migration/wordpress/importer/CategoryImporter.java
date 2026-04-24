@@ -45,7 +45,8 @@ public class CategoryImporter implements DomainImporter {
                 continue;
             }
             try {
-                Optional<CategoryEntity> existing = repo.findBySlug(mc.slug());
+                String entityId = "wp-cat-" + mc.sourceId();
+                Optional<CategoryEntity> existing = repo.findById(entityId);
                 CategoryEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {
@@ -53,7 +54,7 @@ public class CategoryImporter implements DomainImporter {
                     isNew = false;
                 } else {
                     entity = new CategoryEntity();
-                    entity.setId("wp-cat-" + mc.sourceId());
+                    entity.setId(entityId);
                     entity.setCreatedAt(Instant.now());
                     isNew = true;
                 }
@@ -72,6 +73,22 @@ public class CategoryImporter implements DomainImporter {
                 failed++;
                 errors.add("Category slug=" + mc.slug() + ": " + e.getMessage());
                 if (options.failFast()) throw new RuntimeException(errors.get(errors.size() - 1), e);
+            }
+        }
+
+        if (!options.dryRun()) {
+            for (MappedCategory mc : items) {
+                if (mc.slug() == null || mc.slug().isBlank() || mc.parentTermId() == null || mc.parentTermId() <= 0) {
+                    continue;
+                }
+                repo.findBySlug(mc.slug()).ifPresent(entity -> {
+                    CategoryEntity parent = repo.findById("wp-cat-" + mc.parentTermId()).orElse(null);
+                    if (parent != null) {
+                        entity.setParent(parent);
+                        entity.setUpdatedAt(Instant.now());
+                        repo.save(entity);
+                    }
+                });
             }
         }
         return new MigrationExecutionReport.DomainResult(

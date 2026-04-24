@@ -1,33 +1,33 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTagEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductTagJpaRepository;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class ProductTagImporter implements DomainImporter {
 
-    private static final Logger log = LoggerFactory.getLogger(ProductTagImporter.class);
+    public record MappedProductTag(
+            long sourceId,
+            String slug,
+            String name,
+            String productId
+    ) {}
 
-    /**
-     * productId is the resolved DB id (e.g. "wp-prod-479").
-     * Resolved in the service before calling importBatch.
-     */
-    public record MappedProductTag(String productId, String tag) {}
+    private final ProductJpaRepository productRepo;
+    private final ProductTagJpaRepository tagRepo;
 
-    private static final String UPSERT_SQL =
-            "INSERT INTO product_tags (product_id, tag) VALUES (?, ?) " +
-            "ON CONFLICT (product_id, tag) DO NOTHING";
-
-    private final JdbcTemplate jdbc;
-
-    public ProductTagImporter(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public ProductTagImporter(ProductJpaRepository productRepo, ProductTagJpaRepository tagRepo) {
+        this.productRepo = productRepo;
+        this.tagRepo = tagRepo;
     }
 
     @Override
@@ -40,41 +40,62 @@ public class ProductTagImporter implements DomainImporter {
         throw new UnsupportedOperationException("Use importBatch()");
     }
 
+    @Transactional
     public MigrationExecutionReport.DomainResult importBatch(
             List<MappedProductTag> items, MigrationExecutionOptions options) {
 
-        int inserted = 0, skipped = 0, failed = 0;
+        int inserted = 0, updated = 0, skipped = 0, failed = 0;
+        List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
         for (MappedProductTag item : items) {
-            if (item.tag() == null || item.tag().isBlank()) { skipped++; continue; }
-            if (item.tag().length() > 120) {
-                log.warn("Skipping over-length tag ({}chars) productId={}: {}",
-                        item.tag().length(), item.productId(), item.tag().substring(0, 50) + "...");
+            if (item.productId() == null || item.productId().isBlank()
+                    || item.slug() == null || item.slug().isBlank()) {
                 skipped++;
                 continue;
             }
-
             try {
-                if (options.dryRun()) { inserted++; continue; }
+                ProductTagEntity tag = resolveTag(item, options.dryRun());
+                Optional<ProductEntity> productOpt = productRepo.findById(item.productId());
+                if (productOpt.isEmpty()) {
+                    skipped++;
+                    continue;
+                }
+                ProductEntity product = productOpt.get();
+                if (product.getTags() == null) {
+                    product.setTags(new LinkedHashSet<>());
+                }
+                product.getTags().add(tag);
+                tag.getProducts().add(product);
 
-                int rows = jdbc.update(UPSERT_SQL, item.productId(), item.tag());
-                if (rows > 0) inserted++; else skipped++;
-
-            } catch (DataIntegrityViolationException e) {
-                // FK violation — product was not imported (draft/trash)
-                skipped++;
+                warnings.add("Product tag linked: " + item.slug() + " -> " + item.productId());
+                if (!options.dryRun()) {
+                    productRepo.save(product);
+                    tagRepo.save(tag);
+                }
+                inserted++;
             } catch (Exception e) {
                 failed++;
-                String msg = "ProductTag " + item.productId() + "/" + item.tag() + ": " + e.getMessage();
+                String msg = "ProductTag " + item.productId() + "/" + item.slug() + ": " + e.getMessage();
                 errors.add(msg);
-                if (options.failFast()) throw new RuntimeException(msg, e);
+                if (options.failFast()) {
+                    throw new RuntimeException(msg, e);
+                }
             }
         }
 
-        log.info("ProductTagImporter: inserted={} skipped={} failed={}", inserted, skipped, failed);
         return new MigrationExecutionReport.DomainResult(
-                MigrationDomain.PRODUCT_TAGS, inserted, 0, skipped, failed,
-                List.of(), errors);
+                MigrationDomain.PRODUCT_TAGS, inserted, updated, skipped, failed, warnings, errors);
+    }
+
+    private ProductTagEntity resolveTag(MappedProductTag item, boolean dryRun) {
+        String tagId = "wp-product-tag-" + item.sourceId();
+        return tagRepo.findBySlug(item.slug()).orElseGet(() -> tagRepo.findById(tagId).orElseGet(() -> {
+            ProductTagEntity entity = new ProductTagEntity();
+            entity.setId(tagId);
+            entity.setSlug(item.slug());
+            entity.setName(item.name() == null || item.name().isBlank() ? item.slug() : item.name());
+            return dryRun ? entity : tagRepo.save(entity);
+        }));
     }
 }

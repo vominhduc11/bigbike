@@ -40,6 +40,8 @@ Conventions
 | Availability rule | `variation_check()` marks variation inactive when `!is_in_stock() && !backorders_allowed()` ([woo-functions.php:356-362](files/wp-content/themes/bigbike/inc/woo-functions.php#L356-L362)). Stock `availability_html` is stripped by `sww_wc_remove_variation_stock_display` ([woo-functions.php:393-397](files/wp-content/themes/bigbike/inc/woo-functions.php#L393-L397)). |
 | Status | Implemented |
 
+Note: backend import now materializes WordPress `attribute_pa_*` data into `Attribute` / `AttributeValue` relations and keeps variant options linked to those entities, while still preserving the flat option fields for compatibility.
+
 ---
 
 ## E-03 — Product category (`product_cat`)
@@ -52,6 +54,8 @@ Conventions
 | Permalink | `/danh-muc-san-pham/{slug}/` (from `kd_options.woocommerce_permalinks.category_base`) |
 | Consumers | home (category cards + featured categories), shop sidebar, breadcrumbs, SEO title/desc override, related-products (`getMainProductCategory`) |
 | Status | Implemented |
+
+Note: `product_cat` hierarchy must be preserved via `parent_id` self-reference during import and admin updates.
 
 ---
 
@@ -161,6 +165,8 @@ Conventions
 | Home-page constants | Post category id `365` used as "Trải nghiệm cùng Bigbike" in `page-home.php:189`; category id `361` used as "Tin tức mới nhất" in `page-home.php:232` — Polylang-translated via `pll_get_term($id, pll_current_language())` |
 | Consumer | category.php, single.php, page-home.php latest reviews/blogs blocks |
 | Status | Implemented |
+
+Note: blog posts preserve `post_author`, category, and `post_tag` relations; blog tags are canonical M:N entities and are not flattened into raw strings.
 
 ---
 

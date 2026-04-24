@@ -59,6 +59,8 @@ export MINIO_BUCKET=bigbike-media
 export DUMP_PATH=../bigbike_vn__2026_04_17/sqldump.sql
 ```
 
+> Note: the dump is UTF-8. If you rerun import against an already-seeded local DB, disable Flyway with `--spring.flyway.enabled=false` so the dev seed migration does not abort startup.
+
 ---
 
 ## Phase 1 — Dry-run kiểm tra dump (an toàn, không ghi DB)
@@ -209,6 +211,8 @@ Skipped (exists):  0 (lần đầu)
 Missing source:    <N> (files không có trên disk — log cảnh báo)
 Failed:            0
 ```
+
+> For the full `wp-content` tree, including theme and plugin images/videos plus WordPress-generated variants, use `scripts/migration/phase5_media_tree_to_minio.py`. It preserves uploads under `wp-uploads/` and writes the rest under `wp-content/...`, then syncs `media` rows to `MINIO`.
 
 ---
 

@@ -61,6 +61,14 @@ public class ProductEntity {
     )
     private Set<CategoryEntity> categories = new LinkedHashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_tag_map",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<ProductTagEntity> tags = new LinkedHashSet<>();
+
     private String imageId;
 
     @Column(columnDefinition = "text")
@@ -236,6 +244,14 @@ public class ProductEntity {
 
     public void setCategories(Set<CategoryEntity> categories) {
         this.categories = categories;
+    }
+
+    public Set<ProductTagEntity> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<ProductTagEntity> tags) {
+        this.tags = tags;
     }
 
     public String getImageId() {

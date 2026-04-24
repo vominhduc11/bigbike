@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,13 +68,14 @@ public class ProductImporter implements DomainImporter {
 
         for (ResolvedProduct rp : items) {
             MappedProduct mp = rp.product();
-            if (mp.slug() == null || mp.slug().isBlank()
-                    || mp.name() == null || mp.name().isBlank()) {
-                skipped++;
-                continue;
-            }
             try {
-                Optional<ProductEntity> existing = productRepo.findBySlug(mp.slug());
+                String entityId = "wp-prod-" + mp.sourceId();
+                Optional<ProductEntity> existing = productRepo.findById(entityId);
+                String slug = existing.map(ProductEntity::getSlug).orElseGet(() -> resolveSlug(mp));
+                if (existing.isEmpty()) {
+                    slug = ensureUniqueSlug(slug, entityId);
+                }
+                String name = resolveName(mp, slug);
                 ProductEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {
@@ -81,13 +83,13 @@ public class ProductImporter implements DomainImporter {
                     isNew = false;
                 } else {
                     entity = new ProductEntity();
-                    entity.setId("wp-prod-" + mp.sourceId());
+                    entity.setId(entityId);
                     entity.setCreatedAt(Instant.now());
                     isNew = true;
                 }
                 entity.setLegacyId(String.valueOf(mp.sourceId()));
-                entity.setSlug(mp.slug());
-                entity.setName(mp.name());
+                entity.setSlug(slug);
+                entity.setName(name);
                 entity.setDescription(mp.description());
                 entity.setSeoTitle(mp.seoTitle());
                 entity.setSeoDescription(mp.seoDescription());
@@ -131,12 +133,13 @@ public class ProductImporter implements DomainImporter {
                     category = categoryRepo.findBySlug("uncategorized").orElse(null);
                 }
                 if (category == null && isNew) {
-                    warnings.add("No category found for product slug=" + mp.slug()
+                    warnings.add("No category found for product slug=" + slug
                             + "; skipping (category FK is required)");
                     skipped++;
                     continue;
                 }
                 if (category != null) entity.setCategory(category);
+                entity.setCategories(resolveCategories(category, rp.categorySlugs()));
 
                 // Brand link (optional)
                 if (rp.brandSlug() != null) {
@@ -176,6 +179,35 @@ public class ProductImporter implements DomainImporter {
                 MigrationDomain.PRODUCTS, inserted, updated, skipped, failed, warnings, errors);
     }
 
+    private String ensureUniqueSlug(String slug, String entityId) {
+        String normalized = slug == null ? "" : slug.trim();
+        if (normalized.isBlank()) {
+            normalized = entityId;
+        }
+        Optional<ProductEntity> slugOwner = productRepo.findBySlug(normalized);
+        if (slugOwner.isEmpty() || entityId.equals(slugOwner.get().getId())) {
+            return normalized;
+        }
+        return normalized + "-wp-" + entityId.substring("wp-prod-".length());
+    }
+
+    private String resolveSlug(MappedProduct product) {
+        if (product.slug() != null && !product.slug().isBlank()) {
+            return product.slug();
+        }
+        return "product-" + product.sourceId();
+    }
+
+    private String resolveName(MappedProduct product, String fallbackSlug) {
+        if (product.name() != null && !product.name().isBlank()) {
+            return product.name();
+        }
+        if (product.sku() != null && !product.sku().isBlank()) {
+            return product.sku();
+        }
+        return fallbackSlug;
+    }
+
     private ProductStockState resolveStockState(String status) {
         if (status == null) return ProductStockState.IN_STOCK;
         return switch (status.toLowerCase()) {
@@ -198,5 +230,32 @@ public class ProductImporter implements DomainImporter {
     public record ResolvedProduct(
             MappedProduct product,
             String categorySlug,
-            String brandSlug) {}
+            List<String> categorySlugs,
+            String brandSlug) {
+
+        public ResolvedProduct(MappedProduct product, String categorySlug, String brandSlug) {
+            this(product, categorySlug, categorySlug == null ? List.of() : List.of(categorySlug), brandSlug);
+        }
+
+        public ResolvedProduct {
+            categorySlugs = categorySlugs == null ? List.of() : List.copyOf(categorySlugs);
+        }
+    }
+
+    private Set<CategoryEntity> resolveCategories(CategoryEntity primaryCategory, List<String> categorySlugs) {
+        Set<CategoryEntity> categories = new LinkedHashSet<>();
+        if (primaryCategory != null) {
+            categories.add(primaryCategory);
+        }
+        if (categorySlugs != null) {
+            for (String slug : categorySlugs) {
+                String normalized = slug == null ? null : slug.trim();
+                if (normalized == null || normalized.isBlank()) {
+                    continue;
+                }
+                categoryRepo.findBySlug(normalized).ifPresent(categories::add);
+            }
+        }
+        return categories;
+    }
 }

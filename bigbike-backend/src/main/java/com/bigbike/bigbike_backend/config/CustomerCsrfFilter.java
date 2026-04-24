@@ -26,7 +26,9 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
             "/api/v1/admin/",
             "/api/v1/customer/auth/register",
             "/api/v1/customer/auth/login",
-            "/api/v1/customer/auth/refresh"
+            "/api/v1/customer/auth/refresh",
+            "/api/v1/customer/auth/password/forgot",
+            "/api/v1/customer/auth/password/reset"
     );
 
     private final ObjectMapper objectMapper;

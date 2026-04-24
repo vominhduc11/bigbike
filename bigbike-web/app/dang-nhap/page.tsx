@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { loginCustomer } from "@/lib/api/client-api";
-import { toAccountPath, toRegisterPath } from "@/lib/utils/routes";
+import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
 
 function LoginForm() {
   const router = useRouter();
@@ -23,8 +23,8 @@ function LoginForm() {
     try {
       await loginCustomer(login, password);
       router.push(returnTo);
-    } catch (e: unknown) {
-      setError((e as Error).message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -34,19 +34,19 @@ function LoginForm() {
     <div className="bb-auth-wrap">
       <div className="bb-card" style={{ padding: "var(--bb-space-8)" }}>
         <header style={{ marginBottom: "var(--bb-space-6)", textAlign: "center" }}>
-          <p className="bb-kicker">Tài khoản</p>
-          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Đăng nhập</h1>
+          <p className="bb-kicker">Tai khoan</p>
+          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Dang nhap</h1>
         </header>
 
-        {error && (
+        {error ? (
           <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
             {error}
           </p>
-        )}
+        ) : null}
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
           <label className="bb-form-label">
-            Email hoặc số điện thoại
+            Email hoac so dien thoai
             <input
               className="bb-input"
               required
@@ -57,7 +57,7 @@ function LoginForm() {
             />
           </label>
           <label className="bb-form-label">
-            Mật khẩu
+            Mat khau
             <input
               className="bb-input"
               required
@@ -74,14 +74,25 @@ function LoginForm() {
             style={{ width: "100%", justifyContent: "center" }}
             disabled={submitting}
           >
-            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+            {submitting ? "Dang dang nhap..." : "Dang nhap"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "var(--bb-space-4)", color: "var(--bb-text-secondary)", fontSize: "var(--bb-text-sm)" }}>
-          Chưa có tài khoản?{" "}
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "var(--bb-space-4)",
+            color: "var(--bb-text-secondary)",
+            fontSize: "var(--bb-text-sm)",
+          }}
+        >
+          <Link href={toForgotPasswordPath()} className="bb-link" style={{ display: "inline-block", marginBottom: "var(--bb-space-2)" }}>
+            Quen mat khau?
+          </Link>
+          <br />
+          Chua co tai khoan?{" "}
           <Link href={toRegisterPath()} className="bb-link">
-            Đăng ký ngay
+            Dang ky ngay
           </Link>
         </p>
       </div>
@@ -93,7 +104,9 @@ export default function LoginPage() {
   return (
     <section className="bb-page">
       <div className="bb-container">
-        <Suspense fallback={<div className="bb-skeleton-item" style={{ maxWidth: "480px", margin: "0 auto", minHeight: "400px" }} />}>
+        <Suspense
+          fallback={<div className="bb-skeleton-item" style={{ maxWidth: "480px", margin: "0 auto", minHeight: "400px" }} />}
+        >
           <LoginForm />
         </Suspense>
       </div>

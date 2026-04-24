@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/forgot").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()

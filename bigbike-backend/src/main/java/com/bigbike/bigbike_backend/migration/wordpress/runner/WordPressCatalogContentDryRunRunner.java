@@ -160,7 +160,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         sb.append("| Full dry-run executed | Yes |\n");
         sb.append("| Dump path | `").append(dumpPath.toAbsolutePath()).append("` |\n");
         sb.append("| Dump size | ~").append(fileSizeMb).append(" MB |\n");
-        sb.append("| Encoding | ISO-8859-1 (MySQL mixed-encoding) |\n");
+        sb.append("| Encoding | UTF-8 with REPLACE on malformed bytes |\n");
         sb.append("| DB writes | **None** |\n");
         sb.append("| Duration | ").append(elapsedMs).append(" ms (~").append(elapsedMs / 1000).append(" s) |\n\n");
 
@@ -215,7 +215,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         sb.append("## D. Parser Issues Found / Fixed\n\n");
         sb.append("No new parser issues found in Phase 2B.1. All Phase 2B fixes are active:\n\n");
         sb.append("| Fix | Phase | Description |\n|-----|-------|-------------|\n");
-        sb.append("| ISO-8859-1 charset | 2B | Handles mixed MySQL encoding without MalformedInputException |\n");
+        sb.append("| UTF-8 + REPLACE charset | 2B | Preserves Vietnamese text while tolerating stray invalid bytes |\n");
         sb.append("| pendingInsert buffering | 2B | Handles multi-line INSERT VALUE format |\n");
         sb.append("| PHP truncated array early-exit | 2B | Handles WooCommerce attachment metadata truncation |\n");
         sb.append("| Null-safe Collectors.toMap() | 2B | Prevents NPE on null meta values |\n");
@@ -226,7 +226,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         sb.append("| Metric | Value |\n|--------|-------|\n");
         sb.append("| Dump size | ~").append(fileSizeMb).append(" MB |\n");
         sb.append("| Parse duration | ").append(elapsedMs).append(" ms (~").append(elapsedMs / 1000).append(" s) |\n");
-        sb.append("| Streaming | Yes — line-by-line, ISO-8859-1, single pass |\n");
+        sb.append("| Streaming | Yes — line-by-line, UTF-8 with REPLACE, single pass |\n");
         sb.append("| Memory model | Accumulates 8 target tables only; no full-dump load |\n");
         sb.append("| DB writes | None |\n\n");
 

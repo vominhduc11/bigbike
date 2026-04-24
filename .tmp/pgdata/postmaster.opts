@@ -1,0 +1,1 @@
+C:/Users/vomin/.ai-navigator/micromamba/envs/cuda/Library/bin/postgres.exe "-D" "S:/project/bigbike/.tmp/pgdata" "-p" "5432" "-h" "127.0.0.1"

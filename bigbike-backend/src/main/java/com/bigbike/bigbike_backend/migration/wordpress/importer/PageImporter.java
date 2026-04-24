@@ -41,12 +41,10 @@ public class PageImporter implements DomainImporter {
         List<String> errors = new ArrayList<>();
 
         for (MappedPage mp : items) {
-            if (mp.slug() == null || mp.slug().isBlank()) {
-                skipped++;
-                continue;
-            }
             try {
-                Optional<PageEntity> existing = repo.findBySlug(mp.slug());
+                String slug = resolveSlug(mp);
+                String entityId = "wp-page-" + mp.sourceId();
+                Optional<PageEntity> existing = repo.findById(entityId);
                 PageEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {
@@ -54,14 +52,14 @@ public class PageImporter implements DomainImporter {
                     isNew = false;
                 } else {
                     entity = new PageEntity();
-                    entity.setId("wp-page-" + mp.sourceId());
+                    entity.setId(entityId);
                     entity.setCreatedAt(Instant.now());
                     isNew = true;
                 }
-                entity.setSlug(mp.slug());
-                entity.setTitle(mp.title() != null && !mp.title().isBlank() ? mp.title() : mp.slug());
+                entity.setSlug(slug);
+                entity.setTitle(resolveTitle(mp, slug));
                 entity.setBody(mp.content() != null ? mp.content() : "");
-                entity.setPageType(resolvePageType(mp.slug()));
+                entity.setPageType(resolvePageType(slug));
                 entity.setPublishStatus(resolveStatus(mp.status()));
                 entity.setSeoTitle(mp.seoTitle());
                 entity.setSeoDescription(mp.seoDescription());
@@ -78,8 +76,38 @@ public class PageImporter implements DomainImporter {
                 if (options.failFast()) throw new RuntimeException(errors.get(errors.size() - 1), e);
             }
         }
+
+        if (!options.dryRun()) {
+            for (MappedPage mp : items) {
+                if (mp.parentSourceId() == null || mp.parentSourceId() <= 0) {
+                    continue;
+                }
+                repo.findBySlug(mp.slug()).ifPresent(entity -> {
+                    PageEntity parent = repo.findById("wp-page-" + mp.parentSourceId()).orElse(null);
+                    if (parent != null) {
+                        entity.setParent(parent);
+                        entity.setUpdatedAt(Instant.now());
+                        repo.save(entity);
+                    }
+                });
+            }
+        }
         return new MigrationExecutionReport.DomainResult(
                 MigrationDomain.PAGES, inserted, updated, skipped, failed, warnings, errors);
+    }
+
+    private String resolveSlug(MappedPage page) {
+        if (page.slug() != null && !page.slug().isBlank()) {
+            return page.slug();
+        }
+        return "page-" + page.sourceId();
+    }
+
+    private String resolveTitle(MappedPage page, String fallbackSlug) {
+        if (page.title() != null && !page.title().isBlank()) {
+            return page.title();
+        }
+        return fallbackSlug;
     }
 
     private PageType resolvePageType(String slug) {

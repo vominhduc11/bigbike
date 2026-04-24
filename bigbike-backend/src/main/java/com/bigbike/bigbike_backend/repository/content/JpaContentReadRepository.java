@@ -7,12 +7,14 @@ import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
+import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
@@ -79,8 +81,11 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getCoverImageMimeType()
                 ),
                 toAuthorSummary(entity.getAuthor()),
-                toCategorySummary(entity.getCategory()),
-                entity.getTags() == null ? List.of() : List.copyOf(entity.getTags()),
+                toCategorySummary(entity),
+                entity.getTags() == null ? List.of() : entity.getTags().stream()
+                        .map(BlogTagEntity::getName)
+                        .filter(Objects::nonNull)
+                        .toList(),
                 entity.getPublishStatus(),
                 toSeoMeta(
                         entity.getSeoTitle(),
@@ -138,6 +143,16 @@ public class JpaContentReadRepository implements ContentReadRepository {
             return null;
         }
         return new ContentCategorySummary(entity.getId(), entity.getSlug(), entity.getName());
+    }
+
+    private ContentCategorySummary toCategorySummary(ArticleEntity entity) {
+        if (entity.getCategory() != null) {
+            return toCategorySummary(entity.getCategory());
+        }
+        if (entity.getCategories() != null && !entity.getCategories().isEmpty()) {
+            return toCategorySummary(entity.getCategories().get(0));
+        }
+        return null;
     }
 
     private static ImageAsset toImageAsset(

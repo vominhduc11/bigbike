@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
+import com.bigbike.bigbike_backend.migration.wordpress.importer.TaxonomyRef;
 
 /**
  * Maps WordPress blog posts (post_type=post) to MappedArticle records.
@@ -19,6 +20,8 @@ public class WordPressArticleMapper {
 
     public record MappedArticle(
             long sourceId,
+            long authorSourceId,
+            String authorName,
             String slug,
             String title,
             String excerpt,
@@ -27,6 +30,8 @@ public class WordPressArticleMapper {
             String status,
             String seoTitle,
             String seoDescription,
+            List<TaxonomyRef> categories,
+            List<TaxonomyRef> tags,
             String expectedUrl,
             List<String> warnings
     ) {}
@@ -59,6 +64,8 @@ public class WordPressArticleMapper {
 
         return new MappedArticle(
                 post.id(),
+                post.authorId(),
+                null,
                 post.postName(),
                 post.postTitle(),
                 post.postExcerpt(),
@@ -67,6 +74,8 @@ public class WordPressArticleMapper {
                 status,
                 seoTitle,
                 seoDescription,
+                List.of(),
+                List.of(),
                 expectedUrl,
                 warnings
         );

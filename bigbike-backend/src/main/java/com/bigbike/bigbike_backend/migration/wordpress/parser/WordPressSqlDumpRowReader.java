@@ -28,8 +28,9 @@ import org.springframework.stereotype.Component;
  *   - Single-line: INSERT INTO `table` VALUES (...),(...),...;
  *   - Multi-line:  INSERT INTO `table` VALUES\n(row1)\n(row2)\n...(rowN); (one row per line)
  *
- * Uses ISO-8859-1 charset to handle mixed-encoding MySQL dumps without
- * MalformedInputException. ASCII content (SQL structure, numbers) is unaffected.
+ * Uses UTF-8 with REPLACE on malformed bytes so the parser preserves correct
+ * Vietnamese text from the dump while surviving any stray invalid sequences.
+ * ASCII content (SQL structure, numbers) is unaffected.
  */
 @Component
 public class WordPressSqlDumpRowReader {

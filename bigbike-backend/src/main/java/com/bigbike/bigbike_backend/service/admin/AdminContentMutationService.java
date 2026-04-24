@@ -12,13 +12,21 @@ import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
+import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
+import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
+import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.content.BlogTagJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.content.ContentAuthorJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,15 +36,24 @@ public class AdminContentMutationService {
 
     private final ArticleJpaRepository articleJpaRepository;
     private final PageJpaRepository pageJpaRepository;
+    private final ContentAuthorJpaRepository contentAuthorJpaRepository;
+    private final ContentCategoryJpaRepository contentCategoryJpaRepository;
+    private final BlogTagJpaRepository blogTagJpaRepository;
     private final ContentReadRepository contentReadRepository;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
             ObjectProvider<PageJpaRepository> pageJpaRepositoryProvider,
+            ObjectProvider<ContentAuthorJpaRepository> contentAuthorJpaRepositoryProvider,
+            ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
+            ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
             ContentReadRepository contentReadRepository
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
+        this.contentAuthorJpaRepository = contentAuthorJpaRepositoryProvider.getIfAvailable();
+        this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
+        this.blogTagJpaRepository = blogTagJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
     }
 
@@ -46,6 +63,8 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateArticleRequest(request, null, true, errors);
+        ContentAuthorEntity author = resolveAuthor(request.getAuthorId(), errors);
+        ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -54,7 +73,7 @@ public class AdminContentMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        applyArticlePatch(entity, request, slug, true);
+        applyArticlePatch(entity, request, slug, author, category, true);
         articleJpaRepository.save(entity);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -71,12 +90,14 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateArticleRequest(request, entity, false, errors);
+        ContentAuthorEntity author = resolveAuthor(request.getAuthorId(), errors);
+        ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyArticlePatch(entity, request, slug, false);
+        applyArticlePatch(entity, request, slug, author, category, false);
         articleJpaRepository.save(entity);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -98,7 +119,9 @@ public class AdminContentMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        applyPagePatch(entity, request, slug, true);
+        PageEntity parent = resolveParentPage(request.getParentId(), null, errors);
+        AdminMutationValidators.throwIfErrors(errors);
+        applyPagePatch(entity, request, slug, parent, true);
         pageJpaRepository.save(entity);
 
         Page page = contentReadRepository.findPageById(entity.getId())
@@ -115,12 +138,13 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validatePageRequest(request, entity, false, errors);
+        PageEntity parent = resolveParentPage(request.getParentId(), entity.getId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyPagePatch(entity, request, slug, false);
+        applyPagePatch(entity, request, slug, parent, false);
         pageJpaRepository.save(entity);
 
         Page page = contentReadRepository.findPageById(entity.getId())
@@ -129,7 +153,11 @@ public class AdminContentMutationService {
     }
 
     private void requireJpaPersistenceEnabled() {
-        if (articleJpaRepository == null || pageJpaRepository == null) {
+        if (articleJpaRepository == null
+                || pageJpaRepository == null
+                || contentAuthorJpaRepository == null
+                || contentCategoryJpaRepository == null
+                || blogTagJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
@@ -201,7 +229,6 @@ public class AdminContentMutationService {
         }
 
         AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
-
         if (slug != null) {
             PageEntity existingBySlug = pageJpaRepository.findBySlug(slug).orElse(null);
             if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
@@ -216,6 +243,8 @@ public class AdminContentMutationService {
             ArticleEntity entity,
             UpsertArticleRequest request,
             String normalizedSlug,
+            ContentAuthorEntity author,
+            ContentCategoryEntity category,
             boolean create
     ) {
         if (create || normalizedSlug != null) {
@@ -248,13 +277,18 @@ public class AdminContentMutationService {
         }
 
         if (create || request.getAuthorId() != null) {
-            entity.setAuthor(null);
+            entity.setAuthor(author);
         }
         if (create || request.getCategoryId() != null) {
-            entity.setCategory(null);
+            entity.setCategory(category);
+            List<ContentCategoryEntity> categories = new ArrayList<>();
+            if (category != null) {
+                categories.add(category);
+            }
+            entity.setCategories(categories);
         }
         if (create || request.getTags() != null) {
-            entity.setTags(normalizeTags(request.getTags()));
+            entity.setTags(resolveTags(request.getTags()));
         }
 
         if (request.getSeo() != null) {
@@ -268,6 +302,7 @@ public class AdminContentMutationService {
             PageEntity entity,
             UpsertPageRequest request,
             String normalizedSlug,
+            PageEntity parent,
             boolean create
     ) {
         if (create || normalizedSlug != null) {
@@ -278,6 +313,9 @@ public class AdminContentMutationService {
         }
         if (create || request.getBody() != null) {
             entity.setBody(AdminMutationValidators.trimToNull(request.getBody()));
+        }
+        if (create || request.getParentId() != null) {
+            entity.setParent(parent);
         }
         if (create || request.getPageType() != null) {
             entity.setPageType(request.getPageType());
@@ -300,15 +338,87 @@ public class AdminContentMutationService {
         }
     }
 
-    private static List<String> normalizeTags(List<String> tags) {
-        if (tags == null) {
-            return List.of();
+    private ContentAuthorEntity resolveAuthor(String authorIdRaw, List<ApiErrorDetail> errors) {
+        String authorId = AdminMutationValidators.trimToNull(authorIdRaw);
+        if (authorId == null) {
+            return null;
         }
-        return tags.stream()
-                .map(AdminMutationValidators::trimToNull)
-                .filter(tag -> tag != null)
-                .distinct()
-                .toList();
+        ContentAuthorEntity author = contentAuthorJpaRepository.findById(authorId).orElse(null);
+        if (author == null) {
+            errors.add(new ApiErrorDetail("authorId", "NOT_FOUND", "Author does not exist."));
+        }
+        return author;
+    }
+
+    private ContentCategoryEntity resolveCategory(String categoryIdRaw, List<ApiErrorDetail> errors) {
+        String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
+        if (categoryId == null) {
+            return null;
+        }
+        ContentCategoryEntity category = contentCategoryJpaRepository.findById(categoryId).orElse(null);
+        if (category == null) {
+            errors.add(new ApiErrorDetail("categoryId", "NOT_FOUND", "Category does not exist."));
+        }
+        return category;
+    }
+
+    private PageEntity resolveParentPage(String parentIdRaw, String currentPageId, List<ApiErrorDetail> errors) {
+        String parentId = AdminMutationValidators.trimToNull(parentIdRaw);
+        if (parentId == null) {
+            return null;
+        }
+        if (currentPageId != null && currentPageId.equals(parentId)) {
+            errors.add(new ApiErrorDetail("parentId", "INVALID_VALUE", "Page cannot be its own parent."));
+            return null;
+        }
+        PageEntity parent = pageJpaRepository.findById(parentId).orElse(null);
+        if (parent == null) {
+            errors.add(new ApiErrorDetail("parentId", "NOT_FOUND", "Parent page does not exist."));
+        }
+        return parent;
+    }
+
+    private List<BlogTagEntity> resolveTags(List<String> tags) {
+        if (tags == null) {
+            return new ArrayList<>();
+        }
+        List<BlogTagEntity> resolved = new ArrayList<>();
+        LinkedHashSet<String> seenSlugs = new LinkedHashSet<>();
+        for (String raw : tags) {
+            String tagValue = AdminMutationValidators.trimToNull(raw);
+            if (tagValue == null) {
+                continue;
+            }
+            String slug = toSlug(tagValue);
+            if (slug == null || !seenSlugs.add(slug)) {
+                continue;
+            }
+            BlogTagEntity tag = resolveTag(tagValue, slug);
+            if (tag != null) {
+                resolved.add(tag);
+            }
+        }
+        return resolved;
+    }
+
+    private BlogTagEntity resolveTag(String tagValue, String slug) {
+        BlogTagEntity tag = blogTagJpaRepository.findBySlug(slug).orElse(null);
+        if (tag != null) {
+            return tag;
+        }
+        BlogTagEntity created = new BlogTagEntity();
+        created.setId(generateId("blog-tag"));
+        created.setSlug(slug);
+        created.setName(tagValue);
+        return blogTagJpaRepository.save(created);
+    }
+
+    private String toSlug(String value) {
+        String normalized = AdminMutationValidators.trimToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }
 
     private static void applyCoverImage(ArticleEntity entity, ImageAssetRequest request) {
@@ -441,4 +551,3 @@ public class AdminContentMutationService {
         return prefix + "_" + Instant.now().toEpochMilli() + "_" + Math.abs((int) (Math.random() * 100000));
     }
 }
-

@@ -17,6 +17,7 @@ public class WordPressPageMapper {
 
     public record MappedPage(
             long sourceId,
+            Long parentSourceId,
             String slug,
             String title,
             String content,
@@ -61,6 +62,7 @@ public class WordPressPageMapper {
 
         return new MappedPage(
                 post.id(),
+                post.postParent() > 0 ? post.postParent() : null,
                 post.postName(),
                 post.postTitle(),
                 post.postContent(),

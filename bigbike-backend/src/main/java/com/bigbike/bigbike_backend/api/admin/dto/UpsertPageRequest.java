@@ -17,6 +17,8 @@ public class UpsertPageRequest {
     private String title;
 
     private String body;
+    @Size(max = 64, message = "Parent ID is too long.")
+    private String parentId;
     private PageType pageType;
     private PublishStatus publishStatus;
 
@@ -47,6 +49,14 @@ public class UpsertPageRequest {
         this.body = body;
     }
 
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
+    }
+
     public PageType getPageType() {
         return pageType;
     }
@@ -71,4 +81,3 @@ public class UpsertPageRequest {
         this.seo = seo;
     }
 }
-

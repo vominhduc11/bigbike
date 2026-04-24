@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Phase 2D.2 — Product Variation Importer tests.
  *
  * Uses H2 in-memory DB (Spring test profile). Each test creates its own fixture data.
- * Tests cover: mapping, idempotency, missing parent skip, service wiring, write-plan alignment.
+ * Tests cover: mapping, idempotency, missing parent fallback, service wiring, write-plan alignment.
  */
 @SpringBootTest
 @Transactional
@@ -217,22 +217,23 @@ class Phase2D2ProductVariationImporterTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 3. Missing parent product: skip with warning, no crash
+    // 3. Missing parent product: create placeholder parent, no crash
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void variation_missingParent_isSkippedWithWarning() {
+    void variation_missingParent_createsPlaceholderParentAndImportsVariation() {
         MappedVariation mv = variation(99301L, 99999L, "ORPHAN-001",
                 new BigDecimal("200000"), null, null,
                 1, "instock", Map.of(), "ACTIVE");
 
         MigrationExecutionReport.DomainResult result = variationImporter.importBatch(List.of(mv), opts(false));
 
-        assertThat(result.skipped()).isEqualTo(1);
-        assertThat(result.inserted()).isEqualTo(0);
+        assertThat(result.skipped()).isEqualTo(0);
+        assertThat(result.inserted()).isEqualTo(1);
         assertThat(result.failed()).isEqualTo(0);
-        assertThat(result.warnings()).anyMatch(w -> w.contains("parent product not found"));
-        assertThat(variantRepo.findById("wp-var-99301")).isEmpty();
+        assertThat(result.warnings()).anyMatch(w -> w.contains("Created placeholder parent product"));
+        assertThat(variantRepo.findById("wp-var-99301")).isPresent();
+        assertThat(productRepo.findById("wp-prod-99999")).isPresent();
     }
 
     @Test
@@ -245,8 +246,10 @@ class Phase2D2ProductVariationImporterTest {
         MigrationExecutionReport.DomainResult result =
                 variationImporter.importBatch(List.of(orphan, valid), opts(false));
 
-        assertThat(result.skipped()).isEqualTo(1);
-        assertThat(result.inserted()).isEqualTo(1);
+        assertThat(result.skipped()).isEqualTo(0);
+        assertThat(result.inserted()).isEqualTo(2);
+        assertThat(productRepo.findById("wp-prod-99999")).isPresent();
+        assertThat(variantRepo.findById("wp-var-99302")).isPresent();
         assertThat(variantRepo.findById("wp-var-99303")).isPresent();
     }
 

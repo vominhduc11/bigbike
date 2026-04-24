@@ -21,6 +21,14 @@ public class ProductVariantOptionEntity {
     @JoinColumn(name = "variant_id", nullable = false)
     private ProductVariantEntity variant;
 
+    @ManyToOne
+    @JoinColumn(name = "attribute_id")
+    private AttributeEntity attribute;
+
+    @ManyToOne
+    @JoinColumn(name = "attribute_value_id")
+    private AttributeValueEntity attributeValue;
+
     @Column(nullable = false)
     private int sortOrder;
 
@@ -44,6 +52,22 @@ public class ProductVariantOptionEntity {
 
     public void setVariant(ProductVariantEntity variant) {
         this.variant = variant;
+    }
+
+    public AttributeEntity getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(AttributeEntity attribute) {
+        this.attribute = attribute;
+    }
+
+    public AttributeValueEntity getAttributeValue() {
+        return attributeValue;
+    }
+
+    public void setAttributeValue(AttributeValueEntity attributeValue) {
+        this.attributeValue = attributeValue;
     }
 
     public int getSortOrder() {

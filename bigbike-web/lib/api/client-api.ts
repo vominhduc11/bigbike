@@ -89,6 +89,14 @@ export function logoutCustomer(): Promise<void> {
   return clientRequest("POST", "/api/v1/customer/auth/logout");
 }
 
+export function requestPasswordReset(login: string): Promise<void> {
+  return clientRequest("POST", "/api/v1/customer/auth/password/forgot", { login }).then(() => undefined);
+}
+
+export function resetCustomerPassword(token: string, password: string): Promise<void> {
+  return clientRequest("POST", "/api/v1/customer/auth/password/reset", { token, password }).then(() => undefined);
+}
+
 // ── Customer ──────────────────────────────────────────────────────────────────
 
 export function fetchMe(): Promise<CustomerProfile> {

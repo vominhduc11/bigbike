@@ -109,9 +109,33 @@ public class ProductNormalizationService {
 
             // ── Category normalization ──────────────────────────────────────
             if (categorySlug == null || categorySlug.isBlank()) {
-                categorySlug = fallbackCategory;
+                if (rp.categorySlugs() != null) {
+                    for (String candidate : rp.categorySlugs()) {
+                        if (candidate != null && !candidate.isBlank()) {
+                            categorySlug = candidate;
+                            break;
+                        }
+                    }
+                }
+                if (categorySlug == null || categorySlug.isBlank()) {
+                    categorySlug = fallbackCategory;
+                }
                 recoveredCategory++;
                 warnings.add("Category assigned to '" + fallbackCategory + "' for sourceId=" + mp.sourceId());
+            }
+
+            List<String> categorySlugs = new ArrayList<>();
+            if (rp.categorySlugs() != null) {
+                for (String slugCandidate : rp.categorySlugs()) {
+                    if (slugCandidate != null && !slugCandidate.isBlank()) {
+                        categorySlugs.add(slugCandidate);
+                    }
+                }
+            }
+            if (categorySlugs.isEmpty()) {
+                categorySlugs.add(categorySlug);
+            } else if (!categorySlugs.contains(categorySlug)) {
+                categorySlugs.add(0, categorySlug);
             }
 
             MappedProduct normalized = new MappedProduct(
@@ -125,7 +149,7 @@ public class ProductNormalizationService {
                     mp.seoTitle(), mp.seoDescription(),
                     mp.unmappedFields(), warnings);
 
-            result.add(new ResolvedProduct(normalized, categorySlug, rp.brandSlug()));
+            result.add(new ResolvedProduct(normalized, categorySlug, categorySlugs, rp.brandSlug()));
         }
 
         if (recoveredSlug > 0 || recoveredCategory > 0) {

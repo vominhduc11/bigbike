@@ -16,6 +16,8 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectM
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.importer.ProductTagImporter.MappedProductTag;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressReviewMapper;
+import com.bigbike.bigbike_backend.migration.wordpress.importer.AttributeImporter.MappedAttribute;
+import com.bigbike.bigbike_backend.migration.wordpress.importer.AttributeImporter.MappedAttributeValue;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpAttachmentMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpComment;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpCommentMeta;
@@ -29,6 +31,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.redirect.FgRedirectResolv
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTerm;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTermRelationship;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpTermTaxonomy;
+import com.bigbike.bigbike_backend.migration.wordpress.model.WpTermMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpUser;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpUserMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.parser.WordPressSqlDumpRowReader;
@@ -68,7 +71,7 @@ public class WordPressMigrationImportService {
 
     private static final Set<String> CATALOG_TABLES = Set.of(
             "kd_posts", "kd_postmeta",
-            "kd_terms", "kd_term_taxonomy", "kd_term_relationships",
+            "kd_terms", "kd_term_taxonomy", "kd_term_relationships", "kd_termmeta",
             "kd_rank_math_redirections", "kd_fg_redirect",
             "kd_comments", "kd_commentmeta"
     );
@@ -120,6 +123,7 @@ public class WordPressMigrationImportService {
     private final OrderImporter orderImporter;
     private final ProductTagImporter productTagImporter;
     private final ReviewImporter reviewImporter;
+    private final AttributeImporter attributeImporter;
 
     public WordPressMigrationImportService(
             WordPressMigrationProperties migrationProperties,
@@ -152,7 +156,8 @@ public class WordPressMigrationImportService {
             OrderImporter orderImporter,
             WordPressReviewMapper reviewMapper,
             ProductTagImporter productTagImporter,
-            ReviewImporter reviewImporter) {
+            ReviewImporter reviewImporter,
+            AttributeImporter attributeImporter) {
         this.migrationProperties = migrationProperties;
         this.rowReader = rowReader;
         this.productMapper = productMapper;
@@ -184,6 +189,7 @@ public class WordPressMigrationImportService {
         this.orderImporter = orderImporter;
         this.productTagImporter = productTagImporter;
         this.reviewImporter = reviewImporter;
+        this.attributeImporter = attributeImporter;
     }
 
     /**
@@ -205,6 +211,7 @@ public class WordPressMigrationImportService {
             Map<Long, List<WpPostMeta>> metaByPost = new HashMap<>();
             Map<Long, WpTerm> termsById = new LinkedHashMap<>();
             Map<Long, WpTermTaxonomy> termTaxById = new LinkedHashMap<>();
+            Map<Long, List<WpTermMeta>> metaByTerm = new HashMap<>();
             List<WpTermRelationship> termRels = new ArrayList<>();
             List<WpRedirectRow> rankMathRedirects = new ArrayList<>();
             List<WpFgRedirect> fgRedirects = new ArrayList<>();
@@ -212,6 +219,7 @@ public class WordPressMigrationImportService {
             Map<Long, List<WpCommentMeta>> metaByComment = new HashMap<>();
 
             List<WpUser> allUsers = new ArrayList<>();
+            Map<Long, WpUser> usersById = new HashMap<>();
             Map<Long, List<WpUserMeta>> metaByUser = new HashMap<>();
             List<WpPost> orderPosts = new ArrayList<>();
             List<WpPost> couponPosts = new ArrayList<>();
@@ -240,6 +248,10 @@ public class WordPressMigrationImportService {
                         WpTermTaxonomy tt = toWpTermTaxonomy(row);
                         if (tt != null) termTaxById.put(tt.termTaxonomyId(), tt);
                     }
+                    case "kd_termmeta" -> {
+                        WpTermMeta m = toWpTermMeta(row);
+                        if (m != null) metaByTerm.computeIfAbsent(m.termId(), k -> new ArrayList<>()).add(m);
+                    }
                     case "kd_term_relationships" -> {
                         WpTermRelationship rel = toWpTermRelationship(row);
                         if (rel != null) termRels.add(rel);
@@ -254,7 +266,10 @@ public class WordPressMigrationImportService {
                     }
                     case "kd_users" -> {
                         WpUser u = toWpUser(row);
-                        if (u != null) allUsers.add(u);
+                        if (u != null) {
+                            allUsers.add(u);
+                            usersById.put(u.id(), u);
+                        }
                     }
                     case "kd_usermeta" -> {
                         WpUserMeta m = toWpUserMeta(row);
@@ -282,18 +297,28 @@ public class WordPressMigrationImportService {
             // ── 2. Build taxonomy maps ────────────────────────────────────────
             Map<Long, Set<Long>> relsByObject = new HashMap<>();
             for (WpTermRelationship rel : termRels) {
-                relsByObject.computeIfAbsent(rel.objectId(), k -> new HashSet<>()).add(rel.termTaxonomyId());
+                relsByObject.computeIfAbsent(rel.objectId(), k -> new LinkedHashSet<>()).add(rel.termTaxonomyId());
             }
             Map<Long, WpTermTaxonomy> productCatByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> brandByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> navMenuByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> productTagByTermId = new HashMap<>();
+            Map<Long, WpTermTaxonomy> blogCategoryByTermId = new HashMap<>();
+            Map<Long, WpTermTaxonomy> blogTagByTermId = new HashMap<>();
+            Map<Long, WpTermTaxonomy> attributeTaxonomyByTermId = new HashMap<>();
             for (WpTermTaxonomy tt : termTaxById.values()) {
                 switch (tt.taxonomy()) {
                     case "product_cat"  -> productCatByTermId.put(tt.termId(), tt);
                     case "pwb-brand"    -> brandByTermId.put(tt.termId(), tt);
                     case "nav_menu"     -> navMenuByTermId.put(tt.termId(), tt);
                     case "product_tag"  -> productTagByTermId.put(tt.termId(), tt);
+                    case "category"     -> blogCategoryByTermId.put(tt.termId(), tt);
+                    case "post_tag"     -> blogTagByTermId.put(tt.termId(), tt);
+                    default -> {
+                        if (tt.taxonomy() != null && tt.taxonomy().startsWith("pa_")) {
+                            attributeTaxonomyByTermId.put(tt.termId(), tt);
+                        }
+                    }
                 }
             }
             // Build termTaxonomyId → termId map for reverse lookup
@@ -378,7 +403,24 @@ public class WordPressMigrationImportService {
             if (options.includesDomain(MigrationDomain.ARTICLES)) {
                 List<WordPressArticleMapper.MappedArticle> articles = new ArrayList<>();
                 for (WpPost post : articlePosts) {
-                    articles.add(articleMapper.map(post, metaByPost.getOrDefault(post.id(), List.of())));
+                    WordPressArticleMapper.MappedArticle mapped =
+                            articleMapper.map(post, metaByPost.getOrDefault(post.id(), List.of()));
+                    articles.add(new WordPressArticleMapper.MappedArticle(
+                            mapped.sourceId(),
+                            mapped.authorSourceId(),
+                            resolveUserDisplayName(usersById.get(mapped.authorSourceId())),
+                            mapped.slug(),
+                            mapped.title(),
+                            mapped.excerpt(),
+                            mapped.content(),
+                            mapped.publishedAt(),
+                            mapped.status(),
+                            mapped.seoTitle(),
+                            mapped.seoDescription(),
+                            articleCategoryRefs(post, relsByObject, ttIdToTermId, termsById, blogCategoryByTermId),
+                            articleTagRefs(post, relsByObject, ttIdToTermId, termsById, blogTagByTermId),
+                            mapped.expectedUrl(),
+                            mapped.warnings()));
                 }
                 results.put(MigrationDomain.ARTICLES, articleImporter.importBatch(articles, options));
             }
@@ -424,9 +466,16 @@ public class WordPressMigrationImportService {
             }
 
             // ── 11. Products (with category/brand resolution) ─────────────────
+            if (options.includesDomain(MigrationDomain.PRODUCTS) || options.includesDomain(MigrationDomain.PRODUCT_VARIATIONS)) {
+                // Import attribute taxonomies and values before variations run.
+                List<MappedAttribute> attributes = buildAttributeMappings(attributeTaxonomyByTermId, termsById, metaByTerm);
+                attributeImporter.importBatch(attributes, options);
+            }
+
             if (options.includesDomain(MigrationDomain.PRODUCTS)) {
-                // Build productId → primary category slug mapping
+                // Build productId → category slug mapping
                 Map<Long, String> productToCategorySlug = new HashMap<>();
+                Map<Long, List<String>> productToCategorySlugs = new HashMap<>();
                 Map<Long, String> productToBrandSlug = new HashMap<>();
                 for (WpPost product : productPosts) {
                     for (long ttId : relsByObject.getOrDefault(product.id(), Set.of())) {
@@ -434,8 +483,11 @@ public class WordPressMigrationImportService {
                         if (termId == null) continue;
                         if (productCatByTermId.containsKey(termId)) {
                             WpTerm term = termsById.get(termId);
-                            if (term != null && !productToCategorySlug.containsKey(product.id())) {
-                                productToCategorySlug.put(product.id(), term.slug());
+                            if (term != null) {
+                                productToCategorySlugs.computeIfAbsent(product.id(), k -> new ArrayList<>()).add(term.slug());
+                                if (!productToCategorySlug.containsKey(product.id())) {
+                                    productToCategorySlug.put(product.id(), term.slug());
+                                }
                             }
                         }
                         if (brandByTermId.containsKey(termId)) {
@@ -451,6 +503,7 @@ public class WordPressMigrationImportService {
                     products.add(new ProductImporter.ResolvedProduct(
                             mp,
                             productToCategorySlug.get(post.id()),
+                            productToCategorySlugs.getOrDefault(post.id(), List.of()),
                             productToBrandSlug.get(post.id())));
                 }
                 ProductNormalizationService.NormalizationResult norm =
@@ -528,7 +581,11 @@ public class WordPressMigrationImportService {
                         if (productTagByTermId.containsKey(termId)) {
                             WpTerm term = termsById.get(termId);
                             if (term != null && !term.name().isBlank()) {
-                                tags.add(new MappedProductTag(dbProductId, term.name()));
+                                tags.add(new MappedProductTag(
+                                        term.termId(),
+                                        term.slug(),
+                                        term.name(),
+                                        dbProductId));
                             }
                         }
                     }
@@ -560,6 +617,147 @@ public class WordPressMigrationImportService {
         Duration duration = Duration.between(start, Instant.now());
         log.info("Phase2D import completed in {}ms: dryRun={}", duration.toMillis(), options.dryRun());
         return new MigrationExecutionReport(options.dryRun(), results, globalErrors, duration);
+    }
+
+    private String resolveUserDisplayName(WpUser user) {
+        if (user == null) {
+            return null;
+        }
+        if (user.displayName() != null && !user.displayName().isBlank()) {
+            return user.displayName();
+        }
+        if (user.userNicename() != null && !user.userNicename().isBlank()) {
+            return user.userNicename();
+        }
+        return user.userLogin();
+    }
+
+    private List<TaxonomyRef> articleCategoryRefs(
+            WpPost post,
+            Map<Long, Set<Long>> relsByObject,
+            Map<Long, Long> ttIdToTermId,
+            Map<Long, WpTerm> termsById,
+            Map<Long, WpTermTaxonomy> taxonomyByTermId) {
+        return collectTaxonomyRefs(post, relsByObject, ttIdToTermId, termsById, taxonomyByTermId);
+    }
+
+    private List<TaxonomyRef> articleTagRefs(
+            WpPost post,
+            Map<Long, Set<Long>> relsByObject,
+            Map<Long, Long> ttIdToTermId,
+            Map<Long, WpTerm> termsById,
+            Map<Long, WpTermTaxonomy> taxonomyByTermId) {
+        return collectTaxonomyRefs(post, relsByObject, ttIdToTermId, termsById, taxonomyByTermId);
+    }
+
+    private List<TaxonomyRef> toTaxonomyRefs(List<TaxonomyRef> refs) {
+        return refs == null ? List.of() : refs;
+    }
+
+    private List<TaxonomyRef> collectTaxonomyRefs(
+            WpPost post,
+            Map<Long, Set<Long>> relsByObject,
+            Map<Long, Long> ttIdToTermId,
+            Map<Long, WpTerm> termsById,
+            Map<Long, WpTermTaxonomy> taxonomyByTermId) {
+        List<TaxonomyRef> refs = new ArrayList<>();
+        for (long ttId : relsByObject.getOrDefault(post.id(), Set.of())) {
+            Long termId = ttIdToTermId.get(ttId);
+            if (termId == null || !taxonomyByTermId.containsKey(termId)) {
+                continue;
+            }
+            WpTerm term = termsById.get(termId);
+            if (term == null) {
+                continue;
+            }
+            refs.add(new TaxonomyRef(term.termId(), term.slug(), term.name()));
+        }
+        return refs;
+    }
+
+    private List<MappedAttribute> buildAttributeMappings(
+            Map<Long, WpTermTaxonomy> attributeTaxonomyByTermId,
+            Map<Long, WpTerm> termsById,
+            Map<Long, List<WpTermMeta>> metaByTerm) {
+        Map<String, List<MappedAttributeValue>> valuesByCode = new LinkedHashMap<>();
+        Map<String, Long> taxonomyIdByCode = new LinkedHashMap<>();
+        Map<String, String> nameByCode = new LinkedHashMap<>();
+
+        for (Map.Entry<Long, WpTermTaxonomy> entry : attributeTaxonomyByTermId.entrySet()) {
+            WpTermTaxonomy taxonomy = entry.getValue();
+            WpTerm term = termsById.get(entry.getKey());
+            if (taxonomy == null || term == null || taxonomy.taxonomy() == null) {
+                continue;
+            }
+            String code = taxonomy.taxonomy().startsWith("pa_")
+                    ? taxonomy.taxonomy().substring(3)
+                    : taxonomy.taxonomy();
+            taxonomyIdByCode.putIfAbsent(code, taxonomy.termTaxonomyId());
+            nameByCode.putIfAbsent(code, humanize(code));
+
+            String colorHex = readFirstTermMeta(metaByTerm.get(entry.getKey()), "color", "_color", "swatch_color", "swatch_hex");
+            String swatchImageId = readFirstTermMeta(metaByTerm.get(entry.getKey()), "image", "_image", "swatch_image");
+            if (swatchImageId != null && swatchImageId.isBlank()) {
+                swatchImageId = null;
+            }
+
+            valuesByCode.computeIfAbsent(code, k -> new ArrayList<>())
+                    .add(new MappedAttributeValue(
+                            term.termId(),
+                            term.slug(),
+                            term.name(),
+                            colorHex,
+                            swatchImageId,
+                            valuesByCode.getOrDefault(code, List.of()).size()));
+        }
+
+        List<MappedAttribute> attributes = new ArrayList<>();
+        for (Map.Entry<String, List<MappedAttributeValue>> entry : valuesByCode.entrySet()) {
+            String code = entry.getKey();
+            attributes.add(new MappedAttribute(
+                    taxonomyIdByCode.getOrDefault(code, 0L),
+                    taxonomyIdByCode.getOrDefault(code, 0L),
+                    code,
+                    nameByCode.getOrDefault(code, humanize(code)),
+                    "select",
+                    true,
+                    entry.getValue(),
+                    List.of()));
+        }
+        return attributes;
+    }
+
+    private String readTermMeta(List<WpTermMeta> metas, String key) {
+        if (metas == null || key == null) {
+            return null;
+        }
+        for (WpTermMeta meta : metas) {
+            if (meta.metaKey() != null && meta.metaKey().equals(key)) {
+                return meta.metaValue();
+            }
+        }
+        return null;
+    }
+
+    private String readFirstTermMeta(List<WpTermMeta> metas, String... keys) {
+        if (keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            String value = readTermMeta(metas, key);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String humanize(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        String normalized = value.replace('-', ' ').replace('_', ' ');
+        return Character.toUpperCase(normalized.charAt(0)) + normalized.substring(1);
     }
 
     // ── Row converters (same as dry-run services) ─────────────────────────────
@@ -594,6 +792,18 @@ public class WordPressMigrationImportService {
                 row.getLong("term_id", 0), nvl(row.get("taxonomy")),
                 nvl(row.get("description")), row.getLong("parent", 0), row.getLong("count", 0)); }
         catch (Exception e) { return null; }
+    }
+
+    private WpTermMeta toWpTermMeta(WordPressTableRow row) {
+        try {
+            return new WpTermMeta(
+                    row.getLong("meta_id", 0),
+                    row.getLong("term_id", 0),
+                    row.get("meta_key"),
+                    row.get("meta_value"));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private WpTermRelationship toWpTermRelationship(WordPressTableRow row) {

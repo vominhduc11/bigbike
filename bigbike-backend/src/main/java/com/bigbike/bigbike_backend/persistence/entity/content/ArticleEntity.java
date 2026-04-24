@@ -3,17 +3,19 @@ package com.bigbike.bigbike_backend.persistence.entity.content;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -53,11 +55,23 @@ public class ArticleEntity {
     @JoinColumn(name = "category_id")
     private ContentCategoryEntity category;
 
-    @ElementCollection
-    @CollectionTable(name = "article_tags", joinColumns = @JoinColumn(name = "article_id"))
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "article_category_map",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
     @OrderColumn(name = "sort_order")
-    @Column(name = "tag", nullable = false)
-    private List<String> tags;
+    private List<ContentCategoryEntity> categories = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "article_tag_map",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @OrderColumn(name = "sort_order")
+    private List<BlogTagEntity> tags = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -194,11 +208,19 @@ public class ArticleEntity {
         this.category = category;
     }
 
-    public List<String> getTags() {
+    public List<ContentCategoryEntity> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<ContentCategoryEntity> categories) {
+        this.categories = categories;
+    }
+
+    public List<BlogTagEntity> getTags() {
         return tags;
     }
 
-    public void setTags(List<String> tags) {
+    public void setTags(List<BlogTagEntity> tags) {
         this.tags = tags;
     }
 

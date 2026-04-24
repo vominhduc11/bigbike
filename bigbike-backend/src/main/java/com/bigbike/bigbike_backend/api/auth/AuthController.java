@@ -53,10 +53,7 @@ public class AuthController {
     ) {
         TokenResponse tokens = adminAuthService.login(payload.getEmail(), payload.getPassword(), request);
         setRefreshCookie(response, tokens.refreshToken());
-        // Return access token in body; refresh token is now in httpOnly cookie only.
-        TokenResponse sanitized = new TokenResponse(
-                tokens.accessToken(), null, tokens.expiresIn(), tokens.tokenType(), tokens.user());
-        return apiResponseFactory.data(sanitized, request);
+        return apiResponseFactory.data(tokens, request);
     }
 
     @PostMapping("/refresh")
@@ -72,9 +69,7 @@ public class AuthController {
         }
         TokenResponse tokens = adminAuthService.refresh(rawRefreshToken, request);
         setRefreshCookie(response, tokens.refreshToken());
-        TokenResponse sanitized = new TokenResponse(
-                tokens.accessToken(), null, tokens.expiresIn(), tokens.tokenType(), tokens.user());
-        return apiResponseFactory.data(sanitized, request);
+        return apiResponseFactory.data(tokens, request);
     }
 
     @PostMapping("/logout")

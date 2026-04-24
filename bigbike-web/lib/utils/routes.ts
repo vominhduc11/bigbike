@@ -60,6 +60,11 @@ export function toLoginPath(returnTo?: string): string {
   return "/dang-nhap";
 }
 
+export function toForgotPasswordPath(token?: string): string {
+  if (token) return `/quen-mat-khau?token=${encodeURIComponent(token)}`;
+  return "/quen-mat-khau";
+}
+
 export function toRegisterPath(): string {
   return "/dang-ky";
 }
