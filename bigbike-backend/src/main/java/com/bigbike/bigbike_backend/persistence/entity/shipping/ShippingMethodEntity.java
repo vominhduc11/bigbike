@@ -43,6 +43,9 @@ public class ShippingMethodEntity {
     @Column(name = "min_order_amount", precision = 19, scale = 2)
     private BigDecimal minOrderAmount;
 
+    @Column(name = "free_shipping_threshold", precision = 19, scale = 2)
+    private BigDecimal freeShippingThreshold;
+
     @Column(nullable = false)
     private boolean enabled = true;
 
@@ -81,6 +84,9 @@ public class ShippingMethodEntity {
 
     public BigDecimal getMinOrderAmount() { return minOrderAmount; }
     public void setMinOrderAmount(BigDecimal minOrderAmount) { this.minOrderAmount = minOrderAmount; }
+
+    public BigDecimal getFreeShippingThreshold() { return freeShippingThreshold; }
+    public void setFreeShippingThreshold(BigDecimal freeShippingThreshold) { this.freeShippingThreshold = freeShippingThreshold; }
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }

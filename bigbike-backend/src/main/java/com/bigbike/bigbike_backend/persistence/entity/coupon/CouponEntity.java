@@ -33,7 +33,7 @@ public class CouponEntity {
     @Column(name = "discount_type", nullable = false, length = 50)
     private String discountType;
 
-    @Column(precision = 19, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "minimum_amount", precision = 19, scale = 2)

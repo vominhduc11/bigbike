@@ -28,6 +28,8 @@ import org.springframework.web.context.WebApplicationContext;
 @SpringBootTest
 class AdminMutationApiTest {
 
+    private static final String MEDIA_PUBLIC_BASE_URL = "http://localhost:9000/bigbike-media";
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -71,11 +73,11 @@ class AdminMutationApiTest {
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
                   "image": {
-                    "url": "https://cdn.bigbike.local/products/%s.jpg",
+                    "url": "%s/wp-uploads/products/%s.jpg",
                     "alt": "Phase 4G Product"
                   }
                 }
-                """.formatted(slug, suffix, slug);
+                """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -313,4 +315,3 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
     }
 }
-

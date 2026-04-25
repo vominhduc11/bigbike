@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   createBrand,
+  deleteBrand,
   fetchBrandDetail,
   mapValidationErrors,
   updateBrand,
@@ -299,6 +300,25 @@ export function BrandDetailScreen({
           >
             Back to list
           </button>
+          {!isCreate && canUpdate && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={isSubmitting}
+              onClick={async () => {
+                if (!window.confirm('Ẩn brand này? Brand sẽ bị tắt hiển thị.')) return
+                setSubmitState({ status: 'submitting', message: '' })
+                try {
+                  await deleteBrand(brandId)
+                  navigate('/admin/brands')
+                } catch (error) {
+                  setSubmitState({ status: 'error', message: error.message || 'Failed to delete brand.' })
+                }
+              }}
+            >
+              Delete brand
+            </button>
+          )}
         </div>
       </header>
 

@@ -12,9 +12,9 @@ public record Category(
         ImageAsset icon,
         SeoMeta seo,
         boolean isVisible,
+        Boolean showOnHomepage,
         Integer sortOrder,
         Instant createdAt,
         Instant updatedAt
 ) {
 }
-

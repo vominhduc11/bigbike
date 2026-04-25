@@ -74,6 +74,7 @@ public class CategoryEntity {
     @Column(nullable = false)
     private boolean isVisible;
 
+    private Boolean showOnHomepage;
     private Integer sortOrder;
 
     @Column(nullable = false)
@@ -311,6 +312,14 @@ public class CategoryEntity {
 
     public void setVisible(boolean visible) {
         isVisible = visible;
+    }
+
+    public Boolean getShowOnHomepage() {
+        return showOnHomepage;
+    }
+
+    public void setShowOnHomepage(Boolean showOnHomepage) {
+        this.showOnHomepage = showOnHomepage;
     }
 
     public Integer getSortOrder() {

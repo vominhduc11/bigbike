@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   createContent,
+  deleteContent,
   fetchContentDetail,
   mapValidationErrors,
   updateContent,
@@ -356,6 +357,25 @@ export function ContentDetailScreen({
           >
             Back to list
           </button>
+          {!isCreate && canUpdate && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={isSubmitting}
+              onClick={async () => {
+                if (!window.confirm(`Archive this ${contentLabel}? It will be set to ARCHIVED status.`)) return
+                setSubmitState({ status: 'submitting', message: '' })
+                try {
+                  await deleteContent(normalizedType, contentId)
+                  navigate('/admin/content')
+                } catch (error) {
+                  setSubmitState({ status: 'error', message: error.message || 'Failed to archive content.' })
+                }
+              }}
+            >
+              Archive
+            </button>
+          )}
         </div>
       </header>
 

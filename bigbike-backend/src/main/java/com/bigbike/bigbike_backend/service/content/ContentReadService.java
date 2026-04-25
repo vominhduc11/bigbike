@@ -64,7 +64,11 @@ public class ContentReadService {
         if (categorySlug == null || categorySlug.isBlank()) {
             return true;
         }
-        return article.category() != null && article.category().slug().equals(categorySlug);
+        if (article.category() != null && article.category().slug().equals(categorySlug)) {
+            return true;
+        }
+        return article.categories() != null && article.categories().stream()
+                .anyMatch(category -> category != null && category.slug().equals(categorySlug));
     }
 
     private static boolean matchesQuery(Article article, String q) {
@@ -86,4 +90,3 @@ public class ContentReadService {
         return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
     }
 }
-

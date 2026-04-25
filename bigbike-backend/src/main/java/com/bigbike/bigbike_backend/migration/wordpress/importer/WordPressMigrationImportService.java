@@ -1,6 +1,6 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
-import com.bigbike.bigbike_backend.migration.wordpress.config.WordPressMigrationProperties;
+import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductNormalizationService;
@@ -91,7 +91,7 @@ public class WordPressMigrationImportService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String TABLE_PREFIX = "kd_";
 
-    private final WordPressMigrationProperties migrationProperties;
+    private final MediaUrlProperties mediaUrlProperties;
     private final WordPressSqlDumpRowReader rowReader;
     private final WordPressProductMapper productMapper;
     private final WordPressVariationMapper variationMapper;
@@ -126,7 +126,7 @@ public class WordPressMigrationImportService {
     private final AttributeImporter attributeImporter;
 
     public WordPressMigrationImportService(
-            WordPressMigrationProperties migrationProperties,
+            MediaUrlProperties mediaUrlProperties,
             WordPressSqlDumpRowReader rowReader,
             WordPressProductMapper productMapper,
             WordPressVariationMapper variationMapper,
@@ -158,7 +158,7 @@ public class WordPressMigrationImportService {
             ProductTagImporter productTagImporter,
             ReviewImporter reviewImporter,
             AttributeImporter attributeImporter) {
-        this.migrationProperties = migrationProperties;
+        this.mediaUrlProperties = mediaUrlProperties;
         this.rowReader = rowReader;
         this.productMapper = productMapper;
         this.variationMapper = variationMapper;
@@ -303,6 +303,7 @@ public class WordPressMigrationImportService {
             Map<Long, WpTermTaxonomy> brandByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> navMenuByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> productTagByTermId = new HashMap<>();
+            Map<Long, WpTermTaxonomy> productVisibilityByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> blogCategoryByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> blogTagByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> attributeTaxonomyByTermId = new HashMap<>();
@@ -312,6 +313,7 @@ public class WordPressMigrationImportService {
                     case "pwb-brand"    -> brandByTermId.put(tt.termId(), tt);
                     case "nav_menu"     -> navMenuByTermId.put(tt.termId(), tt);
                     case "product_tag"  -> productTagByTermId.put(tt.termId(), tt);
+                    case "product_visibility" -> productVisibilityByTermId.put(tt.termId(), tt);
                     case "category"     -> blogCategoryByTermId.put(tt.termId(), tt);
                     case "post_tag"     -> blogTagByTermId.put(tt.termId(), tt);
                     default -> {
@@ -345,7 +347,9 @@ public class WordPressMigrationImportService {
                 List<WordPressCategoryMapper.MappedCategory> cats = new ArrayList<>();
                 for (Map.Entry<Long, WpTermTaxonomy> e : productCatByTermId.entrySet()) {
                     WpTerm term = termsById.get(e.getKey());
-                    if (term != null) cats.add(categoryMapper.map(term, e.getValue()));
+                    if (term != null) {
+                        cats.add(categoryMapper.map(term, e.getValue(), metaByTerm.getOrDefault(e.getKey(), List.of())));
+                    }
                 }
                 results.put(MigrationDomain.CATEGORIES, categoryImporter.importBatch(cats, options));
             }
@@ -417,12 +421,14 @@ public class WordPressMigrationImportService {
                             mapped.status(),
                             mapped.seoTitle(),
                             mapped.seoDescription(),
+                            mapped.thumbnailId(),
                             articleCategoryRefs(post, relsByObject, ttIdToTermId, termsById, blogCategoryByTermId),
                             articleTagRefs(post, relsByObject, ttIdToTermId, termsById, blogTagByTermId),
                             mapped.expectedUrl(),
                             mapped.warnings()));
                 }
-                results.put(MigrationDomain.ARTICLES, articleImporter.importBatch(articles, options));
+                results.put(MigrationDomain.ARTICLES, articleImporter.importBatch(
+                        articles, options, mediaByLegacyId, mediaUrlProperties.getPublicBaseUrl()));
             }
 
             // ── 9. Redirects (RankMath + FG) ─────────────────────────────────
@@ -477,6 +483,7 @@ public class WordPressMigrationImportService {
                 Map<Long, String> productToCategorySlug = new HashMap<>();
                 Map<Long, List<String>> productToCategorySlugs = new HashMap<>();
                 Map<Long, String> productToBrandSlug = new HashMap<>();
+                Map<Long, Boolean> productToFeatured = new HashMap<>();
                 for (WpPost product : productPosts) {
                     for (long ttId : relsByObject.getOrDefault(product.id(), Set.of())) {
                         Long termId = ttIdToTermId.get(ttId);
@@ -494,12 +501,21 @@ public class WordPressMigrationImportService {
                             WpTerm term = termsById.get(termId);
                             if (term != null) productToBrandSlug.put(product.id(), term.slug());
                         }
+                        if (productVisibilityByTermId.containsKey(termId)) {
+                            WpTerm term = termsById.get(termId);
+                            if (term != null && "featured".equals(term.slug())) {
+                                productToFeatured.put(product.id(), true);
+                            }
+                        }
                     }
                 }
                 List<ProductImporter.ResolvedProduct> products = new ArrayList<>();
                 for (WpPost post : productPosts) {
                     WordPressProductMapper.MappedProduct mp =
                             productMapper.map(post, metaByPost.getOrDefault(post.id(), List.of()));
+                    if (Boolean.TRUE.equals(productToFeatured.get(post.id()))) {
+                        mp = withFeatured(mp);
+                    }
                     products.add(new ProductImporter.ResolvedProduct(
                             mp,
                             productToCategorySlug.get(post.id()),
@@ -512,7 +528,7 @@ public class WordPressMigrationImportService {
                         norm.recoveredSlugCount(), norm.recoveredCategoryCount());
                 results.put(MigrationDomain.PRODUCTS, productImporter.importBatch(
                         norm.products(), options, mediaByLegacyId,
-                        migrationProperties.getLegacyUploadsBaseUrl()));
+                        mediaUrlProperties.getPublicBaseUrl()));
             }
 
             // ── 11b. Product Variations ───────────────────────────────────────
@@ -632,6 +648,38 @@ public class WordPressMigrationImportService {
         return user.userLogin();
     }
 
+    private WordPressProductMapper.MappedProduct withFeatured(WordPressProductMapper.MappedProduct product) {
+        return new WordPressProductMapper.MappedProduct(
+                product.sourceId(),
+                product.slug(),
+                product.name(),
+                product.description(),
+                product.sku(),
+                product.price(),
+                product.regularPrice(),
+                product.salePrice(),
+                product.stockQuantity(),
+                product.stockStatus(),
+                product.manageStock(),
+                product.backorders(),
+                product.weightKg(),
+                product.lengthCm(),
+                product.widthCm(),
+                product.heightCm(),
+                product.forceOutOfStock(),
+                product.discountPercentOverride(),
+                true,
+                product.showOnHomepage(),
+                product.rating(),
+                product.thumbnailId(),
+                product.galleryIds(),
+                product.status(),
+                product.seoTitle(),
+                product.seoDescription(),
+                product.unmappedFields(),
+                product.warnings());
+    }
+
     private List<TaxonomyRef> articleCategoryRefs(
             WpPost post,
             Map<Long, Set<Long>> relsByObject,
@@ -670,9 +718,39 @@ public class WordPressMigrationImportService {
             if (term == null) {
                 continue;
             }
-            refs.add(new TaxonomyRef(term.termId(), term.slug(), term.name()));
+            String slug = normalizeKebab(firstNonBlank(term.slug(), term.name()));
+            if (slug == null || slug.isBlank()) {
+                continue;
+            }
+            refs.add(new TaxonomyRef(term.termId(), slug, term.name()));
         }
         return refs;
+    }
+
+    private String normalizeKebab(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replace("\u0110", "D")
+                .replace("\u0111", "d")
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private List<MappedAttribute> buildAttributeMappings(

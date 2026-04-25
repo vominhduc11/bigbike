@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { fetchMe, fetchMyOrders } from "@/lib/api/client-api";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { fetchMyOrders } from "@/lib/api/client-api";
 import type { OrderListItem } from "@/lib/contracts/commerce";
+import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
-import { toAccountPath, toLoginPath } from "@/lib/utils/routes";
+import { toOrderDetailPath } from "@/lib/utils/routes";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ xác nhận",
@@ -17,122 +18,168 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Hoàn tiền",
 };
 
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Chưa thanh toán",
-  PAID: "Đã thanh toán",
-  FAILED: "Thất bại",
-  REFUNDED: "Đã hoàn",
-};
+function orderStatusClass(status: string): string {
+  const map: Record<string, string> = {
+    DELIVERED: "delivered",
+    SHIPPED: "shipping",
+    PROCESSING: "processing",
+    CANCELLED: "cancelled",
+    REFUNDED: "cancelled",
+  };
+  return map[status] ?? "";
+}
 
-export default function OrderHistoryPage() {
-  const router = useRouter();
+const TABS = [
+  { key: "ALL", label: "Tất cả" },
+  { key: "PROCESSING", label: "Đang xử lý" },
+  { key: "SHIPPED", label: "Đang giao" },
+  { key: "DELIVERED", label: "Đã giao" },
+  { key: "CANCELLED", label: "Đã hủy" },
+];
+
+function OrderHistoryContent() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("ALL");
 
-  const loadOrders = useCallback(
-    (pg: number) => {
-      setLoading(true);
-      fetchMe()
-        .catch(() => { router.replace(toLoginPath("/tai-khoan/don-hang")); return Promise.reject(); })
-        .then(() => fetchMyOrders(pg))
-        .then((res) => {
-          setOrders(res.data);
-          setTotalPages(res.pagination?.totalPages ?? 1);
-          setLoading(false);
-        })
-        .catch((e: Error | undefined) => {
-          if (e) setError(e.message);
-          setLoading(false);
-        });
-    },
-    [router],
-  );
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    fetchMyOrders(page)
+      .then((res) => {
+        setOrders(res.data);
+        setTotalPages(res.pagination?.totalPages ?? 1);
+        setError("");
+      })
+      .catch((e: Error | undefined) => {
+        if (e) setError(e.message ?? "Không tải được đơn hàng.");
+      })
+      .finally(() => setLoading(false));
+  }, [page]);
 
-  useEffect(() => { loadOrders(page); }, [loadOrders, page]);
+  const filtered = activeTab === "ALL" ? orders : orders.filter((o) => o.status === activeTab);
 
   return (
-    <section className="bb-page">
-      <div className="bb-container">
-        <header style={{ marginBottom: "var(--bb-space-6)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--bb-space-4)" }}>
-          <div>
-            <p className="bb-kicker">Tài khoản</p>
-            <h1>Đơn hàng của tôi</h1>
-          </div>
-          <a href={toAccountPath()} className="bb-link">
-            Quay lại tài khoản
-          </a>
-        </header>
+    <>
+      <div className="wp-account-header">
+        <div>
+          <h2>Đơn hàng</h2>
+          <p className="sub">{orders.length > 0 ? `${orders.length} đơn hàng` : "Lịch sử mua hàng"}</p>
+        </div>
+      </div>
 
-        {error && <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>{error}</p>}
+      <div className="wp-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`wp-tab${activeTab === tab.key ? " active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+            {tab.key !== "ALL" && (
+              <span className="count-pill">
+                {orders.filter((o) => o.status === tab.key).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-        {loading ? (
-          <div className="bb-skeleton-grid">
-            {[1, 2, 3].map((i) => <div key={i} className="bb-skeleton-item" style={{ minHeight: "80px" }} />)}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="bb-empty-state">
-            <h3>Chưa có đơn hàng</h3>
-            <p>Bạn chưa đặt đơn hàng nào.</p>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: "grid", gap: "var(--bb-space-3)" }}>
-              {orders.map((order) => (
-                <div key={order.id} className="bb-card" style={{ padding: "var(--bb-space-4)" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--bb-space-3)", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <p style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--bb-text-brand)", marginBottom: "var(--bb-space-1)" }}>
-                        #{order.orderNumber}
-                      </p>
-                      <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)" }}>
-                        {formatDate(order.placedAt)} · {order.itemCount} sản phẩm
-                      </p>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontWeight: 700, marginBottom: "var(--bb-space-1)" }}>
-                        {formatVnd(order.totalAmount)}
-                      </p>
-                      <div style={{ display: "flex", gap: "var(--bb-space-2)", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                        <span className="bb-order-badge">
-                          {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                        </span>
-                        <span className="bb-order-badge bb-order-badge-payment">
-                          {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
-                        </span>
-                      </div>
-                    </div>
+      {error && (
+        <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 16 }}>{error}</p>
+      )}
+
+      {loading ? (
+        <div style={{ display: "grid", gap: 14 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, height: 120 }} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--bb-text-muted)" }}>
+          <p style={{ fontSize: 14 }}>Không có đơn hàng nào.</p>
+        </div>
+      ) : (
+        <>
+          {filtered.map((order) => (
+            <div key={order.id} className="wp-order-card">
+              <div className="wp-order-head">
+                <div className="meta">
+                  <div>
+                    Mã đơn
+                    <b>#{order.orderNumber}</b>
+                  </div>
+                  <div>
+                    Ngày đặt
+                    <b>{formatDate(order.placedAt)}</b>
+                  </div>
+                  <div>
+                    Sản phẩm
+                    <b>{order.itemCount} món</b>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="bb-pagination" style={{ marginTop: "var(--bb-space-6)" }}>
-                <button
-                  type="button"
-                  className="bb-button bb-button-secondary"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  Trang trước
-                </button>
-                <span className="bb-pagination-status">{page} / {totalPages}</span>
-                <button
-                  type="button"
-                  className="bb-button bb-button-secondary"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                >
-                  Trang sau
-                </button>
+                <span className={`wp-order-status ${orderStatusClass(order.status)}`}>
+                  {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                </span>
               </div>
-            )}
-          </>
-        )}
-      </div>
-    </section>
+              <div className="wp-order-body">
+                <div className="wp-order-thumbs">
+                  <div className="wp-order-thumb">BB</div>
+                </div>
+                <div className="wp-order-summary-text">
+                  <b>{order.itemCount} sản phẩm</b>
+                  <span>{formatDate(order.placedAt)}</span>
+                </div>
+                <div className="wp-order-total">
+                  <b>{formatVnd(order.totalAmount)}</b>
+                  <span>{order.currency}</span>
+                </div>
+              </div>
+              <div className="wp-order-actions">
+                <Link href={toOrderDetailPath(order.id)} className="wp-btn-secondary" style={{ fontSize: 11, padding: "8px 14px", textDecoration: "none", display: "inline-block" }}>
+                  Xem chi tiết
+                </Link>
+              </div>
+            </div>
+          ))}
+
+          {totalPages > 1 && (
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 20 }}>
+              <button
+                type="button"
+                className="wp-btn-secondary"
+                style={{ fontSize: 12, padding: "9px 16px" }}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                Trang trước
+              </button>
+              <span style={{ fontSize: 12, color: "var(--bb-text-muted)" }}>{page} / {totalPages}</span>
+              <button
+                type="button"
+                className="wp-btn-secondary"
+                style={{ fontSize: 12, padding: "9px 16px" }}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Trang sau
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+export default function OrderHistoryPage() {
+  return (
+    <AccountShell loginRedirect="/tai-khoan/don-hang/">
+      <OrderHistoryContent />
+    </AccountShell>
   );
 }

@@ -10,6 +10,19 @@ export function readSingleSearchParam(value: SearchParamValue): string | undefin
   return value;
 }
 
+export function readSearchParamAlias(
+  params: RouteSearchParams,
+  ...keys: string[]
+): string | undefined {
+  for (const key of keys) {
+    const value = readSingleSearchParam(params[key]);
+    if (value) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
 export function parsePositiveIntParam(
   value: SearchParamValue,
   options: {
@@ -28,6 +41,30 @@ export function parsePositiveIntParam(
   if (!Number.isInteger(parsed) || parsed < options.min || parsed > options.max) {
     return {
       value: options.defaultValue,
+      error: `Tham so "${options.field}" phai la so nguyen trong khoang ${options.min}-${options.max}.`,
+    };
+  }
+
+  return { value: parsed, error: null as string | null };
+}
+
+export function parseOptionalPositiveIntParam(
+  value: SearchParamValue,
+  options: {
+    min: number;
+    max: number;
+    field: string;
+  },
+) {
+  const raw = readSingleSearchParam(value);
+  if (!raw) {
+    return { value: undefined as number | undefined, error: null as string | null };
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < options.min || parsed > options.max) {
+    return {
+      value: undefined as number | undefined,
       error: `Tham so "${options.field}" phai la so nguyen trong khoang ${options.min}-${options.max}.`,
     };
   }
@@ -106,4 +143,3 @@ export function buildQueryString(
   const encoded = query.toString();
   return encoded ? `?${encoded}` : "";
 }
-

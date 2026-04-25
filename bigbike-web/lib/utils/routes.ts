@@ -4,15 +4,19 @@ const SITE_ORIGIN =
   "https://bigbike.vn";
 
 export function toProductPath(slug: string): string {
-  return `/product/${slug}/`;
+  return `/sp/${slug}.html`;
 }
 
 export function toProductListPath(): string {
-  return "/san-pham/";
+  return "/danh-muc-san-pham.html";
 }
 
 export function toCategoryPath(slug: string): string {
-  return `/danh-muc-san-pham/${slug}/`;
+  return `/${slug}.html`;
+}
+
+export function toCategoryHierPath(parentSlug: string, childSlug: string): string {
+  return `/${parentSlug}/${childSlug}.html`;
 }
 
 export function toCategoryListPath(): string {
@@ -20,7 +24,7 @@ export function toCategoryListPath(): string {
 }
 
 export function toBrandPath(slug: string): string {
-  return `/brands/${slug}/`;
+  return `/brand/${slug}.html`;
 }
 
 export function toBrandListPath(): string {
@@ -36,7 +40,7 @@ export function toArticleListPath(): string {
 }
 
 export function toPagePath(slug: string): string {
-  return `/${slug}/`;
+  return `/${slug}.html`;
 }
 
 export function toHomePath(): string {
@@ -44,37 +48,45 @@ export function toHomePath(): string {
 }
 
 export function toCartPath(): string {
-  return "/gio-hang";
+  return "/gio-hang.html";
 }
 
 export function toCheckoutPath(): string {
-  return "/thanh-toan";
+  return "/thanh-toan.html";
 }
 
-export function toOrderConfirmPath(orderNumber: string): string {
-  return `/don-hang/xac-nhan?so=${encodeURIComponent(orderNumber)}`;
+export function toOrderConfirmPath(orderNumber: string, orderKey?: string): string {
+  const params = new URLSearchParams({ so: orderNumber });
+  if (orderKey) {
+    params.set("key", orderKey);
+  }
+  return `/don-hang/xac-nhan?${params.toString()}`;
+}
+
+export function toOrderDetailPath(orderId: string): string {
+  return `/tai-khoan/don-hang/${encodeURIComponent(orderId)}`;
 }
 
 export function toLoginPath(returnTo?: string): string {
-  if (returnTo) return `/dang-nhap?tiep=${encodeURIComponent(returnTo)}`;
-  return "/dang-nhap";
+  if (returnTo) return `/dang-nhap.html?tiep=${encodeURIComponent(returnTo)}`;
+  return "/dang-nhap.html";
 }
 
 export function toForgotPasswordPath(token?: string): string {
-  if (token) return `/quen-mat-khau?token=${encodeURIComponent(token)}`;
-  return "/quen-mat-khau";
+  if (token) return `/quen-mat-khau.html?token=${encodeURIComponent(token)}`;
+  return "/quen-mat-khau.html";
 }
 
 export function toRegisterPath(): string {
-  return "/dang-ky";
+  return "/dang-ky.html";
 }
 
 export function toAccountPath(): string {
-  return "/tai-khoan";
+  return "/tai-khoan.html";
 }
 
 export function toOrderHistoryPath(): string {
-  return "/tai-khoan/don-hang";
+  return "/tai-khoan/don-hang/";
 }
 
 export function toCanonicalUrl(path: string): string {

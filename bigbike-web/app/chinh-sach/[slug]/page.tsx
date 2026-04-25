@@ -1,0 +1,89 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { getPageBySlug } from "@/lib/api/public-api";
+import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { formatDate, safeText } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
+
+// Map URL slug → backend page slug
+const POLICY_SLUG_MAP: Record<string, string> = {
+  "bao-mat": "chinh-sach-bao-ve-thong-tin-ca-nhan",
+  "bao-hanh": "chinh-sach-bao-hanh",
+  "doi-tra": "chinh-sach-doi-tra-hang",
+  "dieu-khoan": "cac-dieu-kien-va-dieu-khoan",
+};
+
+const POLICY_META: Record<string, { title: string; description: string }> = {
+  "bao-mat": {
+    title: "Chính sách bảo mật thông tin",
+    description: "Chính sách bảo vệ thông tin cá nhân khách hàng tại BigBike.",
+  },
+  "bao-hanh": {
+    title: "Chính sách bảo hành",
+    description: "Chính sách bảo hành sản phẩm tại BigBike — cam kết bảo hành chính hãng.",
+  },
+  "doi-tra": {
+    title: "Chính sách đổi trả hàng",
+    description: "Chính sách đổi trả sản phẩm tại BigBike trong vòng 7 ngày.",
+  },
+  "dieu-khoan": {
+    title: "Điều khoản sử dụng",
+    description: "Điều khoản và điều kiện sử dụng dịch vụ BigBike.vn.",
+  },
+};
+
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const meta = POLICY_META[slug];
+  if (!meta) return {};
+  return buildPublicMetadata({
+    title: meta.title,
+    description: meta.description,
+    canonicalPath: `/chinh-sach/${slug}/`,
+  });
+}
+
+export default async function PolicyPage({ params }: Props) {
+  const { slug } = await params;
+  const backendSlug = POLICY_SLUG_MAP[slug];
+  if (!backendSlug) notFound();
+
+  const result = await getPageBySlug(backendSlug);
+  if (!result.data && result.error?.status === 404) {
+    notFound();
+  }
+  if (!result.data) {
+    return (
+      <section className="bb-page">
+        <div className="bb-container">
+          <ErrorState message={result.error?.message ?? "Không tải được nội dung trang."} />
+        </div>
+      </section>
+    );
+  }
+
+  const page = result.data;
+  const meta = POLICY_META[slug] ?? {};
+
+  return (
+    <section className="bb-page">
+      <div className="bb-container">
+        <header>
+          <h1>{safeText(page.title, meta.title ?? "Chính sách")}</h1>
+        </header>
+        <article
+          className="bb-richtext bb-section"
+          dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+        />
+        <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
+          Cập nhật {formatDate(page.updatedAt)}
+        </p>
+      </div>
+    </section>
+  );
+}

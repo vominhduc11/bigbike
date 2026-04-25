@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,12 +32,43 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await registerCustomer(email, phone, password, displayName);
-      router.push(toAccountPath());
+      setRegistered(true);
     } catch (e: unknown) {
       setError((e as Error).message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (registered) {
+    return (
+      <section className="bb-page">
+        <div className="bb-container">
+          <div className="bb-auth-wrap">
+            <div className="bb-card" style={{ padding: "var(--bb-space-8)", textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: "var(--bb-space-4)" }}>✓</div>
+              <h1 style={{ fontSize: "clamp(1.25rem, 3vw, 1.75rem)", marginBottom: "var(--bb-space-3)" }}>
+                Tài khoản đã được tạo!
+              </h1>
+              {email && (
+                <p style={{ color: "var(--bb-text-secondary)", fontSize: "var(--bb-text-sm)", marginBottom: "var(--bb-space-5)" }}>
+                  Chúng tôi đã gửi email xác nhận đến <strong style={{ color: "var(--bb-text-primary)" }}>{email}</strong>.
+                  Vui lòng kiểm tra hộp thư (kể cả thư mục spam) để xác nhận tài khoản.
+                </p>
+              )}
+              <button
+                type="button"
+                className="bb-button bb-button-primary"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => router.push(toAccountPath())}
+              >
+                Vào tài khoản
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

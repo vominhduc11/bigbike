@@ -41,7 +41,7 @@ const INITIAL_QUERY = {
   pageSize: 10,
 }
 
-export function OrderListScreen({ navigate, canUpdate }) {
+export function OrderListScreen({ navigate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
 

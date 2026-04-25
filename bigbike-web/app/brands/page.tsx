@@ -69,10 +69,6 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
           <p className="bb-page-subtitle">Route legacy dang duoc preserve la /brands/{'{slug}'}.</p>
         </header>
 
-        {result.fromFallback ? (
-          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho thương hiệu.</p>
-        ) : null}
-
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toBrandListPath()} />
         ) : result.data.length === 0 ? (

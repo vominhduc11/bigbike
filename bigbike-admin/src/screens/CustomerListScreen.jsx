@@ -16,7 +16,7 @@ function CustomerStatusBadge({ value }) {
 
 const INITIAL_QUERY = { search: '', status: 'ALL', sort: 'createdAt:desc', page: 1, pageSize: 10 }
 
-export function CustomerListScreen({ navigate, canUpdate }) {
+export function CustomerListScreen({ navigate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
 

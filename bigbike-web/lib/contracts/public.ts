@@ -49,6 +49,26 @@ export type ImageAsset = {
   mimeType?: string | null;
 };
 
+export type SliderImage = {
+  url?: string | null;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+};
+
+export type HomeSlider = {
+  id: string;
+  sortOrder?: number;
+  location?: string;
+  desktopImage?: SliderImage | null;
+  mobileImage?: SliderImage | null;
+  productId?: string | null;
+  externalLink?: string | null;
+  productLink?: string | null;
+  link?: string | null;
+  product?: unknown | null;
+};
+
 export type VideoAsset = {
   id?: string;
   url?: string;
@@ -135,6 +155,7 @@ export type Product = {
   publishStatus: PublishStatus;
   isFeatured?: boolean;
   showOnHomepage?: boolean;
+  rating?: number | null;
   seo?: SeoMeta;
   createdAt: string;
   updatedAt: string;
@@ -150,6 +171,7 @@ export type Category = {
   icon?: ImageAsset;
   seo?: SeoMeta;
   isVisible: boolean;
+  showOnHomepage?: boolean | null;
   sortOrder?: number | null;
   createdAt: string;
   updatedAt: string;
@@ -187,6 +209,7 @@ export type Article = {
   coverImage?: ImageAsset;
   author?: AuthorSummary;
   category?: ContentCategorySummary;
+  categories?: ContentCategorySummary[];
   tags?: string[];
   publishStatus: PublishStatus;
   seo?: SeoMeta;
@@ -210,6 +233,28 @@ export type Page = {
   updatedAt: string;
 };
 
+export type PublicMenuItem = {
+  id: string;
+  parentId: string | null;
+  label: string;
+  url: string;
+  sortOrder: number;
+  openInNewTab: boolean;
+  cssClass: string | null;
+};
+
+export type PublicMenu = {
+  location: string;
+  name: string;
+  items: PublicMenuItem[];
+};
+
+export type PublicSiteSetting = {
+  settingKey: string;
+  settingValue: string;
+  settingGroup: string | null;
+};
+
 export type ClientError = {
   status: number;
   code: string;
@@ -220,13 +265,10 @@ export type ClientError = {
 export type DataResult<T> = {
   data: T | null;
   error: ClientError | null;
-  fromFallback: boolean;
 };
 
 export type ListResult<T> = {
   data: T[];
   pagination: PaginationMeta | null;
   error: ClientError | null;
-  fromFallback: boolean;
 };
-

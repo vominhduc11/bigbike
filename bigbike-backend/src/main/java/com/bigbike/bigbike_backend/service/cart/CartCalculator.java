@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.cart;
 
+import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import java.math.BigDecimal;
@@ -22,22 +23,28 @@ public class CartCalculator {
         item.setLineTotal(subtotal.subtract(item.getLineDiscount()).setScale(SCALE, ROUNDING));
     }
 
-    public void recalculateCart(CartEntity cart, List<CartItemEntity> items) {
+    public void recalculateCart(CartEntity cart, List<CartItemEntity> items, List<CartCouponEntity> coupons) {
         BigDecimal subtotal = items.stream()
                 .map(CartItemEntity::getLineSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(SCALE, ROUNDING);
-        BigDecimal discount = items.stream()
+        BigDecimal itemDiscount = items.stream()
                 .map(CartItemEntity::getLineDiscount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(SCALE, ROUNDING);
+        BigDecimal couponDiscount = coupons.stream()
+                .map(CartCouponEntity::getDiscountAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(SCALE, ROUNDING);
+        BigDecimal totalDiscount = itemDiscount.add(couponDiscount).setScale(SCALE, ROUNDING);
 
         cart.setSubtotalAmount(subtotal);
-        cart.setDiscountAmount(discount);
+        cart.setDiscountAmount(totalDiscount);
         cart.setShippingAmount(BigDecimal.ZERO.setScale(SCALE, ROUNDING));
         cart.setFeeAmount(BigDecimal.ZERO.setScale(SCALE, ROUNDING));
         cart.setTotalAmount(
-                subtotal.subtract(discount)
+                subtotal.subtract(totalDiscount)
+                        .max(BigDecimal.ZERO)
                         .add(cart.getShippingAmount())
                         .add(cart.getFeeAmount())
                         .setScale(SCALE, ROUNDING)

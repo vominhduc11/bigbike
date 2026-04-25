@@ -3,7 +3,7 @@ type LoadingGridProps = {
   count?: number;
 };
 
-export function LoadingGrid({ title = "Dang tai du lieu", count = 8 }: LoadingGridProps) {
+export function LoadingGrid({ title = "Đang tải dữ liệu", count = 8 }: LoadingGridProps) {
   return (
     <section className="bb-page">
       <div className="bb-container">

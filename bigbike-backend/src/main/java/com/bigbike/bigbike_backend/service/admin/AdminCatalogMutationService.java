@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -37,17 +38,20 @@ public class AdminCatalogMutationService {
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final CatalogReadRepository catalogReadRepository;
+    private final MediaUrlProperties mediaUrlProperties;
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
-            CatalogReadRepository catalogReadRepository
+            CatalogReadRepository catalogReadRepository,
+            MediaUrlProperties mediaUrlProperties
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.catalogReadRepository = catalogReadRepository;
+        this.mediaUrlProperties = mediaUrlProperties;
     }
 
     @Transactional
@@ -255,6 +259,18 @@ public class AdminCatalogMutationService {
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
     }
 
+    @Transactional
+    public Brand deleteBrand(String brandId) {
+        requireJpaPersistenceEnabled();
+        BrandEntity entity = brandJpaRepository.findById(brandId)
+                .orElseThrow(() -> new NotFoundException("Brand not found."));
+        entity.setVisible(false);
+        entity.setUpdatedAt(Instant.now());
+        brandJpaRepository.save(entity);
+        return catalogReadRepository.findBrandById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Brand not found."));
+    }
+
     private void requireJpaPersistenceEnabled() {
         if (productJpaRepository == null || categoryJpaRepository == null || brandJpaRepository == null) {
             throw new MutationNotImplementedException(
@@ -292,9 +308,20 @@ public class AdminCatalogMutationService {
         AdminMutationValidators.validateNonNegativeDecimal(request.getRetailPrice(), "retailPrice", "retailPrice", errors);
         AdminMutationValidators.validateNonNegativeDecimal(request.getCompareAtPrice(), "compareAtPrice", "compareAtPrice", errors);
         AdminMutationValidators.validateNonNegativeDecimal(request.getSalePrice(), "salePrice", "salePrice", errors);
+        AdminMutationValidators.validateRating(request.getRating(), "rating", errors);
         AdminMutationValidators.validateCurrency(request.getCurrency(), "currency", errors);
-        AdminMutationValidators.validateImageAsset(request.getImage(), "image", errors);
-        AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
+        AdminMutationValidators.validateImageAsset(
+                request.getImage(),
+                "image",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateSeoMeta(
+                request.getSeo(),
+                "seo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
 
         BigDecimal mergedRetail = request.getRetailPrice() != null ? request.getRetailPrice() : (current == null ? null : current.getRetailPrice());
         BigDecimal mergedCompareAt = request.getCompareAtPrice() != null ? request.getCompareAtPrice() : (current == null ? null : current.getCompareAtPrice());
@@ -364,9 +391,24 @@ public class AdminCatalogMutationService {
             }
         }
 
-        AdminMutationValidators.validateImageAsset(request.getImage(), "image", errors);
-        AdminMutationValidators.validateImageAsset(request.getIcon(), "icon", errors);
-        AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
+        AdminMutationValidators.validateImageAsset(
+                request.getImage(),
+                "image",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateImageAsset(
+                request.getIcon(),
+                "icon",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateSeoMeta(
+                request.getSeo(),
+                "seo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
 
         if (slug != null) {
             Optional<CategoryEntity> existingBySlug = categoryJpaRepository.findBySlug(slug);
@@ -421,8 +463,18 @@ public class AdminCatalogMutationService {
             }
         }
 
-        AdminMutationValidators.validateImageAsset(request.getLogo(), "logo", errors);
-        AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
+        AdminMutationValidators.validateImageAsset(
+                request.getLogo(),
+                "logo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateSeoMeta(
+                request.getSeo(),
+                "seo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
 
         if (slug != null) {
             Optional<BrandEntity> existingBySlug = brandJpaRepository.findBySlug(slug);
@@ -493,6 +545,9 @@ public class AdminCatalogMutationService {
         if (create || request.getShowOnHomepage() != null) {
             entity.setShowOnHomepage(Boolean.TRUE.equals(request.getShowOnHomepage()));
         }
+        if (create || request.getRating() != null) {
+            entity.setRating(request.getRating());
+        }
 
         if (request.getImage() != null) {
             applyImage(entity, request.getImage());
@@ -528,6 +583,9 @@ public class AdminCatalogMutationService {
         }
         if (create || request.getVisible() != null) {
             entity.setVisible(request.getVisible() == null || request.getVisible());
+        }
+        if (create || request.getShowOnHomepage() != null) {
+            entity.setShowOnHomepage(Boolean.TRUE.equals(request.getShowOnHomepage()));
         }
         if (create || request.getSortOrder() != null) {
             entity.setSortOrder(request.getSortOrder());

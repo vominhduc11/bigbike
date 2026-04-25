@@ -30,6 +30,7 @@ public class WordPressArticleMapper {
             String status,
             String seoTitle,
             String seoDescription,
+            Long thumbnailId,
             List<TaxonomyRef> categories,
             List<TaxonomyRef> tags,
             String expectedUrl,
@@ -62,6 +63,12 @@ public class WordPressArticleMapper {
         String status = mapStatus(post.postStatus());
         String expectedUrl = "/tin-tuc/" + post.postName() + ".html";
 
+        Long thumbnailId = null;
+        String thumbnailIdStr = meta.get("_thumbnail_id");
+        if (thumbnailIdStr != null && !thumbnailIdStr.isBlank()) {
+            try { thumbnailId = Long.parseLong(thumbnailIdStr.trim()); } catch (NumberFormatException ignored) {}
+        }
+
         return new MappedArticle(
                 post.id(),
                 post.authorId(),
@@ -74,6 +81,7 @@ public class WordPressArticleMapper {
                 status,
                 seoTitle,
                 seoDescription,
+                thumbnailId,
                 List.of(),
                 List.of(),
                 expectedUrl,

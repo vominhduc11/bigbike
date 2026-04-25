@@ -121,9 +121,7 @@ public class CheckoutService {
                 .map(CartItemEntity::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal shippingCost = shippingMethod.getCost() != null
-                ? shippingMethod.getCost().setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal shippingCost = resolveShippingCost(shippingMethod, subtotal);
         BigDecimal total = subtotal.add(shippingCost).setScale(2, RoundingMode.HALF_UP);
 
         // Build order
@@ -208,9 +206,7 @@ public class CheckoutService {
         BigDecimal lineTotal = lineSubtotal.subtract(lineDiscount).setScale(2, RoundingMode.HALF_UP);
 
         ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
-        BigDecimal shippingCost = shippingMethod.getCost() != null
-                ? shippingMethod.getCost().setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal shippingCost = resolveShippingCost(shippingMethod, lineTotal);
         BigDecimal total = lineTotal.add(shippingCost).setScale(2, RoundingMode.HALF_UP);
 
         Instant now = Instant.now();
@@ -271,6 +267,18 @@ public class CheckoutService {
                 ))
                 .toList();
         return new CheckoutOptionsResponse(paymentMethods, shippingMethods);
+    }
+
+    // ── Shipping cost helpers ─────────────────────────────────────────────────
+
+    private BigDecimal resolveShippingCost(ShippingMethodEntity method, BigDecimal orderSubtotal) {
+        BigDecimal threshold = method.getFreeShippingThreshold();
+        if (threshold != null && orderSubtotal.compareTo(threshold) >= 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return method.getCost() != null
+                ? method.getCost().setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
     // ── Validation helpers ────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -126,6 +127,19 @@ public class AdminContentController {
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
         return apiResponseFactory.data(adminContentMutationService.updatePage(id, payload), request);
+    }
+
+    @DeleteMapping("/{type}/{id}")
+    public ApiDataResponse<AdminContentItem> deleteContent(
+            @PathVariable @Pattern(regexp = CONTENT_PATH_TYPE_REGEX, message = "Invalid content type.") String type,
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        if ("page".equalsIgnoreCase(type)) {
+            return apiResponseFactory.data(adminContentMutationService.deletePage(id), request);
+        }
+        return apiResponseFactory.data(adminContentMutationService.deleteArticle(id), request);
     }
 
     private static int resolveSize(Integer size, Integer pageSize) {

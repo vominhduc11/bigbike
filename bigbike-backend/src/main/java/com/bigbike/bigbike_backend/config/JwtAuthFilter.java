@@ -43,9 +43,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (userId != null && role != null
                         && SecurityContextHolder.getContext().getAuthentication() == null) {
                     AdminPrincipal principal = new AdminPrincipal(userId, email, role);
+                    List<SimpleGrantedAuthority> authorities = "SUPER_ADMIN".equals(role)
+                            ? List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"), new SimpleGrantedAuthority("ROLE_ADMIN"))
+                            : List.of(new SimpleGrantedAuthority("ROLE_" + role));
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            principal, null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                            principal, null, authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }

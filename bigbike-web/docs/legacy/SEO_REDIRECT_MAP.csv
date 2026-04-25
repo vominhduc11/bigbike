@@ -1,0 +1,32 @@
+sourcePattern,targetPattern,redirectType,status,notes
+/sp/{slug}.html,/product/{slug}/,301,active,Old product shortlink (/sp/ prefix from WP)
+/brand/{slug}.html,/brands/{slug}/,301,active,Old brand page
+/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Blog article legacy .html
+/vi/{slug}.html,/{slug}/,301,active,Polylang Vietnamese locale prefix
+/en/{slug}.html,/{slug}/,301,active,Polylang English locale - redirect to Vietnamese
+/vi/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang vi blog
+/en/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang en blog
+/{slug}.html,/{slug}/,301,active,Generic legacy WP .html permalink
+/san-pham/,/danh-muc-san-pham/,301,active,Old product listing URL
+/danh-muc-san-pham/{slug}.html,/danh-muc-san-pham/{slug}/,301,active,Old category .html
+/non-bao-hiem-moto/,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,Old root category
+/gang-tay/,/danh-muc-san-pham/gang-tay/,301,active,Old root category
+/giay-bao-ho/,/danh-muc-san-pham/giay-bao-ho/,301,active,Old root category
+/quan-ao-bao-ho-moto/,/danh-muc-san-pham/quan-ao-bao-ho-moto/,301,active,Old root category
+/balo-deo-lung-tui-deo-tui-treo-xe/,/danh-muc-san-pham/balo-deo-lung-tui-deo-tui-treo-xe/,301,active,Old root category
+/tai-nghe-bluetooth-gan-mu-bao-hiem/,/danh-muc-san-pham/tai-nghe-bluetooth-gan-mu-bao-hiem/,301,active,Old root category
+/phu-kien-di-mua/,/danh-muc-san-pham/phu-kien-di-mua/,301,active,Old root category
+/giap-bao-ho-tay-chan-dai-lung-phu-kien-giap/,/danh-muc-san-pham/giap-bao-ho-tay-chan-dai-lung-phu-kien-giap/,301,active,Old root category
+/shop/,/danh-muc-san-pham/,301,active,WooCommerce /shop/ archive
+/gio-hang-2/,/gio-hang/,301,active,Old cart URL alias
+/thanh-toan-2/,/thanh-toan/,301,active,Old checkout URL alias
+/my-account/,/tai-khoan/,301,active,WooCommerce my-account
+/my-account/{path},/tai-khoan/{path},301,active,WooCommerce my-account sub-pages
+/sitemap_index.xml,/sitemap.xml,301,active,Old Yoast sitemap index
+/home.html,/,301,active,Old home page alias
+/gioi-thieu.html,/gioi-thieu/,301,active,About page legacy
+/lien-he.html,/lien-he/,301,active,Contact page legacy
+/huong-dan-mua-hang.html,/huong-dan/mua-hang/,301,active,Purchase guide legacy
+/cach-do-size-gang-tay.html,/huong-dan/size-gang-tay/,301,active,Glove size guide legacy
+/cach-do-size-dau.html,/huong-dan/size-mu/,301,active,Helmet size guide legacy
+/giam-10-khi-mua-hang-online-html/,/,301,active,Old promo page - redirect to home

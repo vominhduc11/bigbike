@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.customer.dto.CustomerAuthResponse;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerLoginRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerRegisterRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerSummary;
+import com.bigbike.bigbike_backend.api.customer.dto.UpdateCustomerProfileRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -12,6 +13,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEn
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,6 +135,44 @@ public class CustomerAuthService {
         return toSummary(customer);
     }
 
+    @Transactional
+    public CustomerSummary updateProfile(UUID customerId, UpdateCustomerProfileRequest req) {
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found."));
+
+        if (req.email() != null && !req.email().isBlank() && !req.email().equals(customer.getEmail())) {
+            customerRepo.findByEmail(req.email()).ifPresent(c -> {
+                throw new ConflictException("Email đã được đăng ký.");
+            });
+            customer.setEmail(req.email());
+        }
+        if (req.phone() != null && !req.phone().isBlank() && !req.phone().equals(customer.getPhone())) {
+            customerRepo.findByPhone(req.phone()).ifPresent(c -> {
+                throw new ConflictException("Số điện thoại đã được đăng ký.");
+            });
+            customer.setPhone(req.phone());
+        }
+        if (req.displayName() != null && !req.displayName().isBlank()) {
+            customer.setDisplayName(req.displayName());
+        }
+        if (req.newPassword() != null && !req.newPassword().isBlank()) {
+            if (req.newPassword().length() < 6) {
+                throw ValidationException.fromField("newPassword", "TOO_SHORT", "Mật khẩu phải có ít nhất 6 ký tự.");
+            }
+            customer.setPasswordHash(passwordService.hash(req.newPassword()));
+        }
+        if (req.gender() != null) {
+            customer.setGender(req.gender().isBlank() ? null : req.gender().trim());
+        }
+        if (req.dob() != null && !req.dob().isBlank()) {
+            try {
+                customer.setDob(LocalDate.parse(req.dob()));
+            } catch (Exception ignored) {}
+        }
+        customer.setUpdatedAt(Instant.now());
+        return toSummary(customerRepo.save(customer));
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private CustomerEntity findByEmailOrPhone(String login) {
@@ -149,7 +189,8 @@ public class CustomerAuthService {
     }
 
     private CustomerSummary toSummary(CustomerEntity c) {
-        return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus());
+        return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
+                c.getGender(), c.getDob());
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {

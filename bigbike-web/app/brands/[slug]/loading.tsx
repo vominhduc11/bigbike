@@ -1,6 +1,6 @@
 import { LoadingGrid } from "@/components/ui/LoadingGrid";
 
 export default function BrandDetailLoading() {
-  return <LoadingGrid title="Dang tai trang thuong hieu" count={8} />;
+  return <LoadingGrid title="Đang tải trang thương hiệu" count={8} />;
 }
 

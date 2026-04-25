@@ -147,6 +147,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getPublishStatus(),
                 entity.getFeatured(),
                 entity.getShowOnHomepage(),
+                entity.getRating(),
                 toSeoMeta(
                         entity.getSeoTitle(),
                         entity.getSeoDescription(),
@@ -200,6 +201,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoNoIndex()
                 ),
                 entity.isVisible(),
+                entity.getShowOnHomepage(),
                 entity.getSortOrder(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

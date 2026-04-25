@@ -53,6 +53,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                true,
                 1,
                 Instant.parse("2026-04-01T03:00:00Z"),
                 Instant.parse("2026-04-18T04:00:00Z")
@@ -80,6 +81,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         null,
                         false
                 ),
+                true,
                 true,
                 2,
                 Instant.parse("2026-04-01T03:00:00Z"),
@@ -227,6 +229,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.PUBLISHED,
                 true,
                 true,
+                new BigDecimal("4.50"),
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -265,6 +268,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.HIDDEN,
                 false,
                 false,
+                new BigDecimal("4.50"),
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -303,6 +307,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.PUBLISHED,
                 true,
                 false,
+                new BigDecimal("4.50"),
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",

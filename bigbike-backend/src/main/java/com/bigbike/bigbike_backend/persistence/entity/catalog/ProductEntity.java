@@ -129,6 +129,9 @@ public class ProductEntity {
     private Boolean isFeatured;
     private Boolean showOnHomepage;
 
+    @Column(name = "rating", precision = 3, scale = 2)
+    private BigDecimal rating;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -436,6 +439,14 @@ public class ProductEntity {
 
     public void setShowOnHomepage(Boolean showOnHomepage) {
         this.showOnHomepage = showOnHomepage;
+    }
+
+    public BigDecimal getRating() {
+        return rating;
+    }
+
+    public void setRating(BigDecimal rating) {
+        this.rating = rating;
     }
 
     public String getSeoTitle() {

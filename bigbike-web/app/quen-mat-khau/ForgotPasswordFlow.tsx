@@ -24,7 +24,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
   async function handleRequestSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!login.trim()) {
-      setError("Vui long nhap email hoac so dien thoai.");
+      setError("Vui lòng nhập email hoặc số điện thoại.");
       return;
     }
 
@@ -33,7 +33,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
     setLoading(true);
     try {
       await requestPasswordReset(login.trim());
-      setSuccess("Neu tai khoan ton tai, chung toi da gui lien ket dat lai mat khau.");
+      setSuccess("Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.");
       setLogin("");
     } catch (err: unknown) {
       setError((err as Error).message);
@@ -45,15 +45,15 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
   async function handleResetSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token) {
-      setError("Lien ket dat lai mat khau khong hop le.");
+      setError("Liên kết đặt lại mật khẩu không hợp lệ.");
       return;
     }
     if (password.length < 6) {
-      setError("Mat khau phai co it nhat 6 ky tu.");
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Mat khau xac nhan khong khop.");
+      setError("Mật khẩu xác nhận không khớp.");
       return;
     }
 
@@ -62,7 +62,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
     setLoading(true);
     try {
       await resetCustomerPassword(token, password);
-      setSuccess("Mat khau da duoc thay doi. Dang chuyen sang trang dang nhap...");
+      setSuccess("Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...");
       setPassword("");
       setConfirmPassword("");
       window.setTimeout(() => router.replace(toLoginPath()), 1500);
@@ -77,14 +77,14 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
     <div className="bb-auth-wrap">
       <div className="bb-card" style={{ padding: "var(--bb-space-8)" }}>
         <header style={{ marginBottom: "var(--bb-space-6)", textAlign: "center" }}>
-          <p className="bb-kicker">Tai khoan</p>
+          <p className="bb-kicker">Tài khoản</p>
           <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>
-            {hasToken ? "Dat lai mat khau" : "Quen mat khau"}
+            {hasToken ? "Đặt lại mật khẩu" : "Quên mật khẩu"}
           </h1>
           <p className="bb-page-subtitle" style={{ marginInline: "auto" }}>
             {hasToken
-              ? "Nhap mat khau moi de hoan tat quy trinh."
-              : "Nhap email hoac so dien thoai de nhan lien ket dat lai mat khau."}
+              ? "Nhập mật khẩu mới để hoàn tất."
+              : "Nhập email hoặc số điện thoại để nhận liên kết đặt lại mật khẩu."}
           </p>
         </header>
 
@@ -99,7 +99,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
             <p>{success}</p>
             {hasToken ? (
               <Link href={toLoginPath()} className="bb-link" style={{ display: "inline-block", marginTop: "var(--bb-space-3)" }}>
-                Di den trang dang nhap
+                Đi đến trang đăng nhập
               </Link>
             ) : null}
           </div>
@@ -108,25 +108,25 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
         {hasToken ? (
           <form onSubmit={handleResetSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
             <label className="bb-form-label">
-              Mat khau moi
+              Mật khẩu mới
               <input
                 className="bb-input"
                 required
                 type="password"
                 autoComplete="new-password"
-                placeholder="Nhap mat khau moi"
+                placeholder="Nhập mật khẩu mới"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </label>
             <label className="bb-form-label">
-              Xac nhan mat khau
+              Xác nhận mật khẩu
               <input
                 className="bb-input"
                 required
                 type="password"
                 autoComplete="new-password"
-                placeholder="Nhap lai mat khau moi"
+                placeholder="Nhập lại mật khẩu mới"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
@@ -137,13 +137,13 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
               style={{ width: "100%", justifyContent: "center" }}
               disabled={loading}
             >
-              {loading ? "Dang cap nhat..." : "Dat lai mat khau"}
+              {loading ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
             </button>
           </form>
         ) : (
           <form onSubmit={handleRequestSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
             <label className="bb-form-label">
-              Email hoac so dien thoai
+              Email hoặc số điện thoại
               <input
                 className="bb-input"
                 required
@@ -159,20 +159,20 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
               style={{ width: "100%", justifyContent: "center" }}
               disabled={loading}
             >
-              {loading ? "Dang gui..." : "Gui lien ket dat lai"}
+              {loading ? "Đang gửi..." : "Gửi liên kết đặt lại"}
             </button>
           </form>
         )}
 
         <div style={{ textAlign: "center", marginTop: "var(--bb-space-5)", color: "var(--bb-text-secondary)" }}>
           <Link href={toLoginPath()} className="bb-link">
-            Quay lai dang nhap
+            Quay lại đăng nhập
           </Link>
           {" "}
           <span aria-hidden="true">·</span>
           {" "}
           <Link href={toRegisterPath()} className="bb-link">
-            Tao tai khoan moi
+            Tạo tài khoản mới
           </Link>
         </div>
       </div>

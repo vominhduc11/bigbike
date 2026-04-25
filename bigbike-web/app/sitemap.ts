@@ -11,6 +11,7 @@ import {
   toCanonicalUrl,
   toCategoryPath,
   toHomePath,
+  toPagePath,
   toProductPath,
 } from "@/lib/utils/routes";
 
@@ -57,6 +58,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: toCanonicalUrl(toPagePath("gioi-thieu")),
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: toCanonicalUrl(toPagePath("huong-dan")),
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: toCanonicalUrl(toPagePath("huong-dan-mua-hang")),
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    },
+    {
+      url: toCanonicalUrl(toPagePath("lien-he")),
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.5,
     },
   ];
 

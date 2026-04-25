@@ -263,6 +263,15 @@ public class AdminCatalogController {
         return apiResponseFactory.data(adminCatalogMutationService.updateBrand(id, payload), request);
     }
 
+    @DeleteMapping("/brands/{id}")
+    public ApiDataResponse<Brand> deleteBrand(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "catalog.update");
+        return apiResponseFactory.data(adminCatalogMutationService.deleteBrand(id), request);
+    }
+
     private static int resolveSize(Integer size, Integer pageSize) {
         if (size != null) {
             return size;

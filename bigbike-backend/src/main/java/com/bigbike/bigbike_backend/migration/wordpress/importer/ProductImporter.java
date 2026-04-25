@@ -59,7 +59,7 @@ public class ProductImporter implements DomainImporter {
             List<ResolvedProduct> items,
             MigrationExecutionOptions options,
             Map<Long, MappedMedia> mediaByLegacyId,
-            String legacyUploadsBaseUrl) {
+            String mediaPublicBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
@@ -96,6 +96,9 @@ public class ProductImporter implements DomainImporter {
                 entity.setStockQuantity(mp.stockQuantity());
                 entity.setManageStock(mp.manageStock());
                 entity.setBackorders(mp.backorders());
+                entity.setFeatured(Boolean.TRUE.equals(mp.isFeatured()));
+                entity.setShowOnHomepage(mp.showOnHomepage());
+                entity.setRating(mp.rating());
 
                 // Duplicate SKU handling: append suffix to avoid constraint violation
                 String sku = mp.sku();
@@ -150,11 +153,14 @@ public class ProductImporter implements DomainImporter {
                 if (mp.thumbnailId() != null) {
                     MappedMedia thumb = mediaByLegacyId.get(mp.thumbnailId());
                     if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
-                        String base = legacyUploadsBaseUrl.endsWith("/")
-                                ? legacyUploadsBaseUrl.substring(0, legacyUploadsBaseUrl.length() - 1)
-                                : legacyUploadsBaseUrl;
+                        String base = mediaPublicBaseUrl.endsWith("/")
+                                ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                                : mediaPublicBaseUrl;
+                        String storagePath = thumb.storagePath().startsWith("/")
+                                ? thumb.storagePath().substring(1)
+                                : thumb.storagePath();
                         entity.setImageId(String.valueOf(mp.thumbnailId()));
-                        entity.setImageUrl(base + "/" + thumb.storagePath());
+                        entity.setImageUrl(base + "/wp-uploads/" + storagePath);
                         entity.setImageAlt(thumb.altText());
                         entity.setImageWidth(thumb.width());
                         entity.setImageHeight(thumb.height());

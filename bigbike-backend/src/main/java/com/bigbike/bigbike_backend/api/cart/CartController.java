@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.cart;
 
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
+import com.bigbike.bigbike_backend.api.cart.dto.ApplyCouponRequest;
 import com.bigbike.bigbike_backend.api.cart.dto.CartItemResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.CartResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.CartTotalsResponse;
@@ -9,6 +10,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.service.cart.CartService;
@@ -50,7 +52,8 @@ public class CartController {
     public ApiDataResponse<CartResponse> getCart(HttpServletRequest request, HttpServletResponse response) {
         CartEntity cart = resolveCart(request, response);
         List<CartItemEntity> items = cartService.getItems(cart);
-        return apiResponseFactory.data(toResponse(cart, items), request);
+        List<CartCouponEntity> coupons = cartService.getCoupons(cart);
+        return apiResponseFactory.data(toResponse(cart, items, coupons), request);
     }
 
     @PostMapping("/items")
@@ -62,7 +65,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
     }
 
     @PatchMapping("/items/{itemId}")
@@ -75,7 +79,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.updateItemQuantity(cart, itemId, req.quantity());
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
     }
 
     @DeleteMapping("/items/{itemId}")
@@ -87,7 +92,8 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.removeItem(cart, itemId);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
     }
 
     @DeleteMapping
@@ -95,7 +101,34 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.clearCart(cart);
         List<CartItemEntity> items = cartService.getItems(updated);
-        return apiResponseFactory.data(toResponse(updated, items), request);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+    }
+
+    @PostMapping("/coupons")
+    public ApiDataResponse<CartResponse> applyCoupon(
+            @Valid @RequestBody ApplyCouponRequest req,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        CartEntity cart = resolveCart(request, response);
+        CartEntity updated = cartService.applyCoupon(cart, req.code());
+        List<CartItemEntity> items = cartService.getItems(updated);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+    }
+
+    @DeleteMapping("/coupons/{code}")
+    public ApiDataResponse<CartResponse> removeCoupon(
+            @PathVariable String code,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        CartEntity cart = resolveCart(request, response);
+        CartEntity updated = cartService.removeCoupon(cart, code);
+        List<CartItemEntity> items = cartService.getItems(updated);
+        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
+        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
     }
 
     // ── cart resolution ───────────────────────────────────────────────────────
@@ -145,7 +178,7 @@ public class CartController {
 
     // ── mapping helpers ───────────────────────────────────────────────────────
 
-    private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items) {
+    private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items, List<CartCouponEntity> coupons) {
         List<CartItemResponse> itemResponses = items.stream()
                 .map(this::toItemResponse)
                 .toList();
@@ -156,7 +189,10 @@ public class CartController {
                 cart.getFeeAmount(),
                 cart.getTotalAmount()
         );
-        return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals);
+        List<String> couponCodes = coupons.stream()
+                .map(CartCouponEntity::getCouponCode)
+                .toList();
+        return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals, couponCodes);
     }
 
     private CartItemResponse toItemResponse(CartItemEntity item) {

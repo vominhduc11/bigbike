@@ -1,10 +1,17 @@
 import type {
   Cart,
+  CheckoutOptions,
   CheckoutPayload,
+  ContactPayload,
+  CustomerAddress,
   CustomerAuthData,
   CustomerProfile,
+  OrderDetail,
   OrderListItem,
   OrderSummary,
+  QuickBuyPayload,
+  SaveAddressPayload,
+  UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
@@ -64,10 +71,26 @@ export function clearCart(): Promise<Cart> {
   return clientRequest("DELETE", "/api/v1/cart");
 }
 
+export function applyCoupon(code: string): Promise<Cart> {
+  return clientRequest("POST", "/api/v1/cart/coupons", { code });
+}
+
+export function removeCoupon(code: string): Promise<Cart> {
+  return clientRequest("DELETE", `/api/v1/cart/coupons/${encodeURIComponent(code)}`);
+}
+
 // ── Checkout ──────────────────────────────────────────────────────────────────
 
 export function submitCheckout(payload: CheckoutPayload): Promise<OrderSummary> {
   return clientRequest("POST", "/api/v1/checkout", payload);
+}
+
+export function fetchCheckoutOptions(): Promise<CheckoutOptions> {
+  return clientRequest("GET", "/api/v1/checkout/options");
+}
+
+export function submitQuickBuy(payload: QuickBuyPayload): Promise<OrderSummary> {
+  return clientRequest("POST", "/api/v1/orders/quick-buy", payload);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -103,6 +126,30 @@ export function fetchMe(): Promise<CustomerProfile> {
   return clientRequest("GET", "/api/v1/customer/me");
 }
 
+export function updateCustomerProfile(payload: UpdateCustomerProfilePayload): Promise<CustomerProfile> {
+  return clientRequest("PATCH", "/api/v1/customer/me", payload);
+}
+
+export function fetchMyAddresses(): Promise<CustomerAddress[]> {
+  return clientRequest("GET", "/api/v1/customer/addresses");
+}
+
+export function createAddress(payload: SaveAddressPayload): Promise<CustomerAddress> {
+  return clientRequest("POST", "/api/v1/customer/addresses", payload);
+}
+
+export function updateAddress(id: string, payload: SaveAddressPayload): Promise<CustomerAddress> {
+  return clientRequest("PATCH", `/api/v1/customer/addresses/${encodeURIComponent(id)}`, payload);
+}
+
+export function deleteAddress(id: string): Promise<void> {
+  return clientRequest("DELETE", `/api/v1/customer/addresses/${encodeURIComponent(id)}`);
+}
+
+export function submitContactForm(payload: ContactPayload): Promise<void> {
+  return clientRequest<void>("POST", "/api/v1/contact", payload);
+}
+
 // ── Orders ────────────────────────────────────────────────────────────────────
 
 export async function fetchMyOrders(page = 1): Promise<{ data: OrderListItem[]; pagination: { totalPages: number } }> {
@@ -119,4 +166,17 @@ export async function fetchMyOrders(page = 1): Promise<{ data: OrderListItem[]; 
     data: (payload as { data: OrderListItem[] }).data ?? [],
     pagination: (payload as { pagination: { totalPages: number } }).pagination ?? { totalPages: 1 },
   };
+}
+
+export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/customer/orders/${encodeURIComponent(orderId)}`, {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return (payload as { data: OrderDetail }).data;
 }

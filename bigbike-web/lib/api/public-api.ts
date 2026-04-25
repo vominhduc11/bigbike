@@ -8,30 +8,19 @@ import type {
   Category,
   ClientError,
   DataResult,
+  HomeSlider,
   ListResult,
   Page,
+  PublicMenu,
+  PublicSiteSetting,
   Product,
 } from "@/lib/contracts/public";
-import {
-  getArticleBySlugFallback,
-  getBrandBySlugFallback,
-  getCategoryBySlugFallback,
-  getPageBySlugFallback,
-  getProductBySlugFallback,
-  listArticlesFallback,
-  listBrandsFallback,
-  listCategoriesFallback,
-  listProductsFallback,
-} from "@/lib/mock/public-fallback";
+import type { OrderDetail } from "@/lib/contracts/commerce";
 
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8080";
-
-const CAN_USE_DEV_FALLBACK =
-  process.env.NODE_ENV !== "production" &&
-  process.env.BIGBIKE_DISABLE_DEV_FALLBACK !== "true";
 
 const DEFAULT_META_ERROR = {
   status: 500,
@@ -142,7 +131,6 @@ function toClientError(error: unknown): ClientError {
 async function loadList<T>(
   endpoint: string,
   query: RequestQuery,
-  fallbackFactory: () => ApiListResponse<T>,
   revalidate = 60,
 ): Promise<ListResult<T>> {
   try {
@@ -151,31 +139,18 @@ async function loadList<T>(
       data: response.data,
       pagination: response.pagination,
       error: null,
-      fromFallback: false,
     };
   } catch (error) {
-    if (CAN_USE_DEV_FALLBACK) {
-      const fallback = fallbackFactory();
-      return {
-        data: fallback.data,
-        pagination: fallback.pagination,
-        error: toClientError(error),
-        fromFallback: true,
-      };
-    }
-
     return {
       data: [],
       pagination: null,
       error: toClientError(error),
-      fromFallback: false,
     };
   }
 }
 
 async function loadData<T>(
   endpoint: string,
-  fallbackFactory: () => ApiDataResponse<T> | null,
   revalidate = 300,
 ): Promise<DataResult<T>> {
   try {
@@ -183,24 +158,30 @@ async function loadData<T>(
     return {
       data: response.data,
       error: null,
-      fromFallback: false,
     };
   } catch (error) {
-    if (CAN_USE_DEV_FALLBACK) {
-      const fallback = fallbackFactory();
-      if (fallback) {
-        return {
-          data: fallback.data,
-          error: toClientError(error),
-          fromFallback: true,
-        };
-      }
-    }
-
     return {
       data: null,
       error: toClientError(error),
-      fromFallback: false,
+    };
+  }
+}
+
+async function loadDataWithQuery<T>(
+  endpoint: string,
+  query: RequestQuery,
+  revalidate = 300,
+): Promise<DataResult<T>> {
+  try {
+    const response = await requestJson<ApiDataResponse<T>>(endpoint, query, revalidate);
+    return {
+      data: response.data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: toClientError(error),
     };
   }
 }
@@ -240,12 +221,18 @@ export const ARTICLE_SORT_VALUES = [
 ] as const;
 
 export type ProductListQuery = {
-  page: number;
-  size: number;
-  sort: string;
+  page?: number;
+  size?: number;
+  sort?: string;
   category?: string;
   brand?: string;
   q?: string;
+  filterColor?: string;
+  filterGender?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  filterFeatured?: boolean;
+  showOnHomepage?: boolean;
 };
 
 export function listProducts(query: ProductListQuery): Promise<ListResult<Product>> {
@@ -254,23 +241,30 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
     {
       page: query.page,
       size: query.size,
-      sort: query.sort,
+      sort: query.sort ?? "createdAt:desc",
       category: query.category,
-      brand: query.brand,
+      "pwb-brand": query.brand,
       q: query.q,
+      filter_color: query.filterColor,
+      filter_gender: query.filterGender,
+      min_price: query.minPrice,
+      max_price: query.maxPrice,
+      featured: query.filterFeatured ? "true" : undefined,
+      showOnHomepage: query.showOnHomepage ? "true" : undefined,
     },
-    () => listProductsFallback(query),
   );
 }
 
 export function getProductBySlug(slug: string): Promise<DataResult<Product>> {
-  return loadData(`/api/v1/products/${slug}`, () => getProductBySlugFallback(slug));
+  return loadData(`/api/v1/products/${slug}`);
 }
 
 export type CategoryListQuery = {
-  page: number;
-  size: number;
-  sort: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+  filterHome?: boolean;
+  showOnHomepage?: boolean;
 };
 
 export function listCategories(query: CategoryListQuery): Promise<ListResult<Category>> {
@@ -279,20 +273,21 @@ export function listCategories(query: CategoryListQuery): Promise<ListResult<Cat
     {
       page: query.page,
       size: query.size,
-      sort: query.sort,
+      sort: query.sort ?? "sortOrder:asc",
+      filterHome: query.filterHome ? "true" : undefined,
+      showOnHomepage: query.showOnHomepage ? "true" : undefined,
     },
-    () => listCategoriesFallback(query),
   );
 }
 
 export function getCategoryBySlug(slug: string): Promise<DataResult<Category>> {
-  return loadData(`/api/v1/categories/${slug}`, () => getCategoryBySlugFallback(slug));
+  return loadData(`/api/v1/categories/${slug}`);
 }
 
 export type BrandListQuery = {
-  page: number;
-  size: number;
-  sort: string;
+  page?: number;
+  size?: number;
+  sort?: string;
 };
 
 export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
@@ -301,20 +296,19 @@ export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
     {
       page: query.page,
       size: query.size,
-      sort: query.sort,
+      sort: query.sort ?? "name:asc",
     },
-    () => listBrandsFallback(query),
   );
 }
 
 export function getBrandBySlug(slug: string): Promise<DataResult<Brand>> {
-  return loadData(`/api/v1/brands/${slug}`, () => getBrandBySlugFallback(slug));
+  return loadData(`/api/v1/brands/${slug}`);
 }
 
 export type ArticleListQuery = {
-  page: number;
-  size: number;
-  sort: string;
+  page?: number;
+  size?: number;
+  sort?: string;
   category?: string;
   q?: string;
 };
@@ -325,20 +319,54 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
     {
       page: query.page,
       size: query.size,
-      sort: query.sort,
+      sort: query.sort ?? "publishedAt:desc",
       category: query.category,
       q: query.q,
     },
-    () => listArticlesFallback(query),
   );
 }
 
 export function getArticleBySlug(slug: string): Promise<DataResult<Article>> {
-  return loadData(`/api/v1/articles/${slug}`, () => getArticleBySlugFallback(slug));
+  return loadData(`/api/v1/articles/${slug}`);
 }
 
 export function getPageBySlug(slug: string): Promise<DataResult<Page>> {
-  return loadData(`/api/v1/pages/${slug}`, () => getPageBySlugFallback(slug));
+  return loadData(`/api/v1/pages/${slug}`);
+}
+
+export function getPublicMenu(location: string): Promise<DataResult<PublicMenu>> {
+  return loadData(`/api/v1/menus/${location}`);
+}
+
+export function listPublicSettings(): Promise<DataResult<PublicSiteSetting[]>> {
+  return loadData("/api/v1/settings/public");
+}
+
+export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
+  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location: "home" });
+}
+
+export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {
+  if (!orderNumber || !orderKey) {
+    return Promise.resolve({
+      data: null,
+      error: {
+        status: 400,
+        code: "VALIDATION_ERROR",
+        message: "Tham so don hang khong hop le.",
+        details: [],
+      },
+    });
+  }
+
+  return loadDataWithQuery<OrderDetail>(
+    "/api/v1/orders/lookup",
+    {
+      orderNumber,
+      orderKey,
+    },
+    0,
+  );
 }
 
 // ── Cross-domain search ──────────────────────────────────────────────────────
@@ -371,9 +399,9 @@ export async function search(query: SearchQuery): Promise<DataResult<SearchResul
       params,
       0, // search is user-specific — no-store
     );
-    return { data: response.data, error: null, fromFallback: false };
+    return { data: response.data, error: null };
   } catch (error) {
-    return { data: null, error: toClientError(error), fromFallback: false };
+    return { data: null, error: toClientError(error) };
   }
 }
 

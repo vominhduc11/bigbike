@@ -21,7 +21,6 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
     title: q ? `Tìm kiếm: ${q}` : "Tìm kiếm",
     description: "Tìm kiếm sản phẩm và bài viết trong hệ thống BigBike.",
     canonicalPath: SEARCH_PATH,
-    // Search result pages should not be indexed (per Google guidelines).
     noIndex: true,
   });
 }
@@ -29,6 +28,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const qParsed = parseTextParam(params.q, 200);
+  const postType = readSingleSearchParam(params.post_type)?.trim().toLowerCase() ?? "";
   const limitParsed = parsePositiveIntParam(params.limit, {
     defaultValue: 20,
     min: 1,
@@ -37,16 +37,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   });
 
   const query = qParsed.value?.trim() ?? "";
+  const types: Array<"product" | "article"> | undefined =
+    postType === "product" ? ["product"] : postType === "article" ? ["article"] : undefined;
 
   return (
     <section className="bb-page">
       <div className="bb-container">
         <header>
-          <p className="bb-kicker">Search</p>
           <h1>Tìm kiếm</h1>
-          <p className="bb-page-subtitle">
-            Nhập từ khoá để tìm sản phẩm và bài viết trong toàn bộ hệ thống.
-          </p>
         </header>
 
         <form method="GET" className="bb-query-form">
@@ -63,13 +61,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 maxLength={200}
               />
             </label>
+            <label className="bb-query-label">
+              Phạm vi
+              <select name="post_type" defaultValue={postType || ""} className="bb-query-select">
+                <option value="">Tất cả nội dung</option>
+                <option value="product">Sản phẩm</option>
+                <option value="article">Bài viết</option>
+              </select>
+            </label>
           </div>
           <div className="bb-section-row">
             <button className="bb-button bb-button-primary" type="submit">
               Tìm kiếm
             </button>
             <Link href={SEARCH_PATH} className="bb-button bb-button-secondary">
-              Xoa
+              Xoá
             </Link>
           </div>
         </form>
@@ -77,18 +83,26 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {query.length === 0 ? (
           <EmptyState
             title="Nhập từ khoá để bắt đầu"
-            description="Từ khoá có thể là tên sản phẩm, mã SKU, hoặc chủ đề bài viết."
+            description="Từ khoá có thể là tên sản phẩm, mã SKU hoặc chủ đề bài viết."
           />
         ) : (
-          <SearchResults query={query} limit={limitParsed.value} />
+          <SearchResults query={query} limit={limitParsed.value} types={types} />
         )}
       </div>
     </section>
   );
 }
 
-async function SearchResults({ query, limit }: { query: string; limit: number }) {
-  const result = await search({ q: query, limit });
+async function SearchResults({
+  query,
+  limit,
+  types,
+}: {
+  query: string;
+  limit: number;
+  types?: Array<"product" | "article">;
+}) {
+  const result = await search({ q: query, limit, types });
 
   if (result.error) {
     return <ErrorState message={result.error.message} retryHref={`${SEARCH_PATH}?q=${encodeURIComponent(query)}`} />;
@@ -110,7 +124,8 @@ async function SearchResults({ query, limit }: { query: string; limit: number })
   return (
     <>
       <p className="bb-result-summary">
-        Tìm thấy <strong>{products.length}</strong> sản phẩm và <strong>{articles.length}</strong> bài viết cho từ khoá <em>&ldquo;{query}&rdquo;</em>.
+        Tìm thấy <strong>{products.length}</strong> sản phẩm và <strong>{articles.length}</strong> bài viết cho từ khoá{" "}
+        <em>&ldquo;{query}&rdquo;</em>.
       </p>
 
       {products.length > 0 ? (

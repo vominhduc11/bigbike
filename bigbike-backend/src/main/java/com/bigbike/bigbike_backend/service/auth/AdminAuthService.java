@@ -26,9 +26,21 @@ public class AdminAuthService {
             "ADMIN", List.of(
                     "products.read", "products.update",
                     "catalog.read", "catalog.update",
-                    "content.read", "content.update"),
-            "SHOP_MANAGER", List.of("products.read", "catalog.read", "content.read"),
-            "EDITOR", List.of("content.read", "content.update"),
+                    "content.read", "content.update",
+                    "orders.read", "orders.update",
+                    "customers.read", "customers.update",
+                    "media.read", "media.update",
+                    "coupons.read", "coupons.update",
+                    "redirects.read", "redirects.update",
+                    "menus.read", "menus.update",
+                    "sliders.read", "sliders.write",
+                    "shipping.read", "shipping.write",
+                    "reviews.read", "reviews.write",
+                    "admin-users.read", "admin-users.write",
+                    "settings.read", "settings.update"),
+            "SHOP_MANAGER", List.of("products.read", "catalog.read", "content.read",
+                    "orders.read", "customers.read", "coupons.read"),
+            "EDITOR", List.of("content.read", "content.update", "media.read"),
             "VIEWER", List.of("products.read", "catalog.read", "content.read")
     );
 

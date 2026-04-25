@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -31,7 +32,7 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
 
   return buildPublicMetadata({
     title: "Tin tức",
-    description: "Danh sách bài viết theo route legacy /tin-tuc/ va detail /tin-tuc/{slug}.html.",
+    description: "Tin tức, đánh giá sản phẩm và hướng dẫn biker từ BigBike.",
     canonicalPath: toArticleListPath(),
     noIndex: hasFilters,
   });
@@ -83,48 +84,46 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
   });
 
   return (
-    <section className="bb-page">
-      <div className="bb-container">
-        <header>
-          <p className="bb-kicker">Content</p>
-          <h1>Tin tức và hướng dẫn</h1>
-          <p className="bb-page-subtitle">Detail route giu theo legacy: /tin-tuc/{'{slug}'}.html.</p>
-        </header>
+    <>
+      <div className="wp-breadcrumb">
+        <Link href="/">Trang chủ</Link>
+        <span className="sep">/</span>
+        <span>Tin tức</span>
+      </div>
 
-        <form method="GET" className="bb-query-form">
-          <div className="bb-query-row">
-            <label className="bb-query-label">
-              Tìm kiếm
-              <input name="q" defaultValue={qParsed.value} className="bb-query-input" />
-            </label>
-            <label className="bb-query-label">
-              Category slug
-              <input
-                name="category"
-                defaultValue={categoryParsed.value}
-                placeholder="huong-dan"
-                className="bb-query-input"
-              />
-            </label>
-            <label className="bb-query-label">
-              Sort
-              <select name="sort" defaultValue={sortParsed.value} className="bb-query-select">
-                {ARTICLE_SORT_VALUES.map((value) => (
-                  <option value={value} key={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
+      <div className="wp-page-head">
+        <span className="kicker">BigBike Blog</span>
+        <h1>Tin tức và hướng dẫn</h1>
+      </div>
+
+      <div style={{ maxWidth: 1440, margin: "0 auto 40px", padding: "0 24px" }}>
+        {/* Search/filter bar */}
+        <form
+          method="GET"
+          style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28, alignItems: "flex-end" }}
+        >
+          <div className="wp-field" style={{ flex: "1 1 200px" }}>
+            <label>Tìm kiếm</label>
+            <input name="q" defaultValue={qParsed.value} className="wp-input" placeholder="Tìm bài viết..." />
           </div>
-          <button type="submit" className="bb-button bb-button-primary">
-            Ap dung
+          <div className="wp-field" style={{ flex: "0 1 160px" }}>
+            <label>Danh mục</label>
+            <input name="category" defaultValue={categoryParsed.value} className="wp-input" placeholder="huong-dan" />
+          </div>
+          <div className="wp-field" style={{ flex: "0 1 160px" }}>
+            <label>Sắp xếp</label>
+            <select name="sort" defaultValue={sortParsed.value} className="wp-input">
+              {ARTICLE_SORT_VALUES.map((value) => (
+                <option value={value} key={value}>
+                  {value === "publishedAt:desc" ? "Mới nhất" : value === "publishedAt:asc" ? "Cũ nhất" : value}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="wp-btn-primary" style={{ flexShrink: 0 }}>
+            Áp dụng
           </button>
         </form>
-
-        {result.fromFallback ? (
-          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho bài viết.</p>
-        ) : null}
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toArticleListPath()} />
@@ -135,7 +134,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           />
         ) : (
           <>
-            <div className="bb-grid-articles bb-section">
+            <div className="wp-news-grid">
               {result.data.map((article) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
@@ -158,6 +157,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           </>
         )}
       </div>
-    </section>
+    </>
   );
 }

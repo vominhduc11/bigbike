@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { ImageAsset } from "@/lib/contracts/public";
-import { safeText } from "@/lib/utils/format";
+import { safeText, resolveMediaUrl } from "@/lib/utils/format";
 
 type MediaImageProps = {
   image?: ImageAsset | null;
@@ -19,7 +19,7 @@ export function MediaImage({
   height = 1200,
   priority = false,
 }: MediaImageProps) {
-  const src = image?.url?.trim();
+  const src = resolveMediaUrl(image?.url?.trim());
   const alt = safeText(image?.alt, altFallback);
 
   if (!src) {

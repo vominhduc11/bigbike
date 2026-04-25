@@ -6,16 +6,21 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -29,21 +34,27 @@ public class CartService {
 
     private final CartJpaRepository cartRepo;
     private final CartItemJpaRepository cartItemRepo;
+    private final CartCouponJpaRepository cartCouponRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
+    private final CouponJpaRepository couponRepo;
     private final CartCalculator calculator;
 
     public CartService(
             CartJpaRepository cartRepo,
             CartItemJpaRepository cartItemRepo,
+            CartCouponJpaRepository cartCouponRepo,
             ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
+            CouponJpaRepository couponRepo,
             CartCalculator calculator
     ) {
         this.cartRepo = cartRepo;
         this.cartItemRepo = cartItemRepo;
+        this.cartCouponRepo = cartCouponRepo;
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
+        this.couponRepo = couponRepo;
         this.calculator = calculator;
     }
 
@@ -154,13 +165,81 @@ public class CartService {
 
     @Transactional
     public CartEntity clearCart(CartEntity cart) {
-        List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
-        cartItemRepo.deleteAll(items);
+        cartItemRepo.deleteAll(cartItemRepo.findByCartId(cart.getId()));
+        cartCouponRepo.deleteAllByCartId(cart.getId());
         return refreshCartTotals(cart);
     }
 
     public List<CartItemEntity> getItems(CartEntity cart) {
         return cartItemRepo.findByCartId(cart.getId());
+    }
+
+    public List<CartCouponEntity> getCoupons(CartEntity cart) {
+        return cartCouponRepo.findByCartId(cart.getId());
+    }
+
+    @Transactional
+    public CartEntity applyCoupon(CartEntity cart, String code) {
+        String normalized = code.trim().toUpperCase(Locale.ROOT);
+
+        if (cartCouponRepo.findByCartIdAndCouponCode(cart.getId(), normalized).isPresent()) {
+            throw new ConflictException("Mã giảm giá đã được áp dụng.");
+        }
+
+        CouponEntity coupon = couponRepo.findByCode(normalized)
+                .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
+
+        Instant now = Instant.now();
+        if (!"ACTIVE".equals(coupon.getStatus())) {
+            throw new ConflictException("Mã giảm giá không còn hiệu lực.");
+        }
+        if (coupon.getStartsAt() != null && now.isBefore(coupon.getStartsAt())) {
+            throw new ConflictException("Mã giảm giá chưa có hiệu lực.");
+        }
+        if (coupon.getExpiresAt() != null && now.isAfter(coupon.getExpiresAt())) {
+            throw new ConflictException("Mã giảm giá đã hết hạn.");
+        }
+        if (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit()) {
+            throw new ConflictException("Mã giảm giá đã đạt giới hạn sử dụng.");
+        }
+
+        BigDecimal subtotal = cart.getSubtotalAmount();
+        if (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0) {
+            throw new ConflictException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá.");
+        }
+
+        BigDecimal discountAmount;
+        if ("PERCENT".equals(coupon.getDiscountType())) {
+            discountAmount = subtotal.multiply(coupon.getAmount())
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        } else {
+            discountAmount = coupon.getAmount().setScale(2, RoundingMode.HALF_UP);
+        }
+        if (coupon.getMaxAmount() != null && discountAmount.compareTo(coupon.getMaxAmount()) > 0) {
+            discountAmount = coupon.getMaxAmount().setScale(2, RoundingMode.HALF_UP);
+        }
+        if (discountAmount.compareTo(subtotal) > 0) {
+            discountAmount = subtotal;
+        }
+
+        CartCouponEntity cartCoupon = new CartCouponEntity();
+        cartCoupon.setCart(cart);
+        cartCoupon.setCouponCode(normalized);
+        cartCoupon.setDiscountType(coupon.getDiscountType());
+        cartCoupon.setDiscountAmount(discountAmount);
+        cartCoupon.setCreatedAt(now);
+        cartCouponRepo.save(cartCoupon);
+
+        return refreshCartTotals(cart);
+    }
+
+    @Transactional
+    public CartEntity removeCoupon(CartEntity cart, String code) {
+        String normalized = code.trim().toUpperCase(Locale.ROOT);
+        CartCouponEntity cartCoupon = cartCouponRepo.findByCartIdAndCouponCode(cart.getId(), normalized)
+                .orElseThrow(() -> new NotFoundException("Mã giảm giá không được áp dụng."));
+        cartCouponRepo.delete(cartCoupon);
+        return refreshCartTotals(cart);
     }
 
     // ── private helpers ───────────────────────────────────────────────────────
@@ -176,7 +255,8 @@ public class CartService {
 
     private CartEntity refreshCartTotals(CartEntity cart) {
         List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
-        calculator.recalculateCart(cart, items);
+        List<CartCouponEntity> coupons = cartCouponRepo.findByCartId(cart.getId());
+        calculator.recalculateCart(cart, items, coupons);
         cart.setUpdatedAt(Instant.now());
         return cartRepo.save(cart);
     }

@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: bigbike-etl-db
+    environment:
+      MYSQL_ROOT_PASSWORD: bigbike_etl_root
+      MYSQL_DATABASE: bigbike_wp
+      MYSQL_USER: etl_user
+      MYSQL_PASSWORD: etl_pass
+    volumes:
+      - ../../bigbike_vn__2026_04_17/sqldump.sql:/docker-entrypoint-initdb.d/01-dump.sql:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      start_period: 120s
+      interval: 10s
+      timeout: 10s
+      retries: 10

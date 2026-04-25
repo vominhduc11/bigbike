@@ -21,14 +21,22 @@ Main business domain:
 - Helmet intercom / Bluetooth accessories.
 - Other biker accessories.
 
-The system is designed around three major surfaces:
+Repository structure:
 
 ```text
 bigbike/
-├── bigbike-web/       # Public SEO + sales website
-├── bigbike-admin/     # Internal admin dashboard
-├── bigbike-backend/   # Spring Boot backend
-└── docs/              # Project documentation and contracts
+├── AGENTS.md                       # AI agent operating instructions
+├── BIGBIKE_BRANDGUIDELINE.pdf      # Brand identity guide (PDF, 23 pages)
+├── README.md                       # This file
+├── .env.example                    # Root environment template (Docker Compose)
+├── docker-compose.yaml             # Full stack infrastructure
+├── bigbike-web/                    # Public SEO + sales website (Next.js)
+│   └── docs/                       # SEO redirect map data
+├── bigbike-admin/                  # Internal admin dashboard (Vite + React)
+├── bigbike-backend/                # Spring Boot backend
+│   └── docs/                       # Phase implementation reports
+├── Bigbike Design System/          # Complete design system (brand, tokens, fonts, assets, UI kit)
+└── bigbike_vn__2026_04_17/         # Local-only legacy WordPress export (do not commit)
 ```
 
 ### Technology Stack
@@ -53,77 +61,140 @@ Infrastructure (via `docker-compose.yaml`):
 
 ### 2.1 `bigbike-web`
 
-Public-facing website for customers.
+Public-facing website for customers. Next.js 16.2.4 + App Router, TypeScript, Tailwind CSS 4.
 
 Primary goals:
 
 - SEO.
 - Product discovery.
 - Category browsing.
-- Product detail pages.
+- Product detail pages (PDP).
 - Cart and checkout.
 - Customer trust.
-- Content/blog/policy pages.
+- Content / blog / policy pages.
 - Mobile-first commerce UX.
 
-Main references:
+Key directories:
 
 ```text
-docs/design/WEB_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/brand/BRAND_GUIDELINES.md
-docs/business/BUSINESS_RULES.md
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
+app/          # Next.js App Router routes (Vietnamese slugs: gio-hang, thanh-toan, san-pham, ...)
+components/   # React components (analytics, cart, catalog, content, home, layout, ui)
+lib/          # API clients, contracts, SEO utilities, route helpers
+public/       # Static assets
+docs/         # SEO redirect map data (consumed by next.config.ts)
 ```
 
 ### 2.2 `bigbike-admin`
 
-Internal admin dashboard for operations.
+Internal admin dashboard for operations. Vite 8.0.4 + React SPA. Runs on port **4000** (Docker) / **5173** (local dev), served behind an **nginx** reverse proxy.
 
 Primary goals:
 
 - Product management.
-- Category/brand management.
+- Category / brand management.
 - Order handling.
-- Customer/contact/support management.
+- Customer / contact / support management.
 - Content and campaign management.
 - Settings and operational workflows.
 - Permission-based access control.
 
-Main references:
+Key directories:
 
 ```text
-docs/design/ADMIN_DESIGN.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-docs/contracts/PERMISSION_MATRIX.md
-docs/contracts/STATE_MACHINES.md
-docs/business/WORKFLOW.md
+src/
+  assets/      # Images, icons
+  components/  # Reusable UI components
+  hooks/       # React custom hooks
+  lib/         # Utilities, API clients
+  screens/     # Page-level components
+  styles/      # CSS / styling
 ```
 
 ### 2.3 `bigbike-backend`
 
-Backend service.
+Backend service. Spring Boot 4.0.5, Java 17, Maven.
 
 Primary goals:
 
-- API.
+- REST API.
 - Business validation.
-- Data persistence.
-- Authentication and authorization.
-- Product/order/content state management.
+- Data persistence (PostgreSQL via JPA + Flyway migrations V1–V16).
+- Authentication and authorization (JWT + Argon2id password hashing via BouncyCastle).
+- Product / order / content state management.
 - Admin permissions.
-- Consistent API and data contracts.
+- Media storage (MinIO, S3-compatible).
+- Per-IP rate limiting (bucket4j).
+- Structured JSON logging for production (logstash-logback).
 
-Main references:
+Key directories:
 
 ```text
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
-docs/business/BUSINESS_RULES.md
+src/main/java/com/bigbike/bigbike_backend/
+  api/            # REST controllers — admin/ and public endpoints
+  config/         # Spring configuration beans
+  domain/         # Entity / domain models
+  migration/      # WordPress migration logic
+  persistence/    # Data access layer
+  repository/     # Spring Data JPA repositories
+  service/        # Business logic services
+src/main/resources/
+  db/migration/                       # Flyway migrations V1–V16
+  db/migration-dev/                   # Dev seed data V1000–V1001
+  openapi/bigbike-openapi.json        # OpenAPI specification
+  application.properties              # Base config
+  application-dev.properties          # Dev profile (Flyway seeds enabled)
+  application-mock.properties         # Mock profile (in-memory, no DB)
+  application-prod.properties         # Production profile
+docs/
+  PHASE_1D_CUSTOMER_AUTH_REPORT.md
+  PHASE_1F_CHECKOUT_API_REPORT.md
+  PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
+
+Spring profiles (`SPRING_PROFILES_ACTIVE`):
+
+- `dev` — Flyway dev seed data enabled.
+- `mock` — Datasource / JPA / Flyway disabled, uses in-memory read repositories.
+- `prod` — Production settings.
+
+Auth note:
+
+- `GET /api/v1/auth/me` uses a dev/mock placeholder user.
+- Placeholder auth is available only for `dev` / `mock` profiles.
+- Production auth provider is not fully implemented in this phase.
+
+### 2.4 `Bigbike Design System/`
+
+The complete BigBike design system — brand assets, fonts, CSS tokens, design previews, and UI kit. Built as a Claude Design skill. Source of truth for all visual implementation decisions.
+
+| Path | What it contains |
+|------|-----------------|
+| `README.md` | Brand context, copy rules, visual foundations, iconography — **read this first** |
+| `SKILL.md` | Claude Code skill front matter |
+| `colors_and_type.css` | All CSS variables + base type/color classes (drop-in stylesheet) |
+| `fonts/` | Bungee (display) + Exo (body, 9 weights). SIL OFL. |
+| `assets/logo/` | Primary mascot logo, wordmarks, slogan lockups (PNG) |
+| `assets/favicon/` | 8 SVG favicon variants |
+| `assets/icons/` | 48-icon proprietary set (SVG) — categories + utility icons |
+| `assets/signage/` | Physical signage templates — use as hero texture reference |
+| `assets/social/` | Social media composition samples — reference for visual tone |
+| `preview/` | Design system preview cards (HTML — open in browser) |
+| `ui_kits/website/` | Bigbike.vn click-through prototype (3 screens + shared components) |
+| `uploads/` | Raw brand uploads (logos, icons, fonts, social media, brand guideline PDF) |
+
+`ui_kits/website/` screens:
+
+| File | Screen |
+|------|--------|
+| `HomePage.jsx` | Homepage — hero slider, category grid, featured products, brand strip |
+| `CatalogPage.jsx` | Product listing — filter sidebar, sort, breadcrumb |
+| `ProductDetailPage.jsx` | Product detail — gallery, variant chips, add-to-cart |
+| `CartPage.jsx` | Shopping cart |
+| `CheckoutPage.jsx` | Checkout |
+| `AccountPage.jsx` | Customer account |
+| `SharedComponents.jsx` | SiteHeader, SiteFooter, ProductCard, Toast, FloatingChat |
+
+Not production code — API calls are mocked, cart is in-memory. When building or modifying `bigbike-web` UI, reference this kit to maintain fidelity with the original design.
 
 ---
 
@@ -136,150 +207,78 @@ BigBike brand identity:
 - Sporty.
 - Mechanical.
 - Biker-focused.
-- Red / black visual system.
+- Red / black visual system (`#F90606` is the single brand accent).
 - Product-first.
 - Commercially clear.
 
-Core brand files:
+Brand references:
 
 ```text
-docs/brand/BRAND_GUIDELINES.md
+BIGBIKE_BRANDGUIDELINE.pdf              # 23-page brand identity guide (PDF — not readable by code tools)
+Bigbike Design System/README.md         # Machine-readable brand context, copy rules, visual foundations
+Bigbike Design System/colors_and_type.css  # CSS variables — use this as the implementation source of truth
+Bigbike Design System/assets/           # Logos, icons, favicons, signage, social
 ```
 
-Do not randomly change brand colors, typography, logo usage or visual language.
-
-Approved brand direction should be implemented through design docs and tokens:
-
-```text
-docs/design/DESIGN_SYSTEM.md
-docs/design/WEB_DESIGN.md
-docs/design/ADMIN_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-```
+Do not randomly change brand colors, typography, logo usage, or visual language.
 
 ---
 
-## 4. Documentation Map
+## 4. Documentation
 
-### 4.1 Agent / repo-level instruction
+### 4.1 Agent / repo-level instructions
 
 ```text
 AGENTS.md
 ```
 
-Read this before using AI agents or making broad code changes.
+Read before using AI agents or making broad code changes.
 
-### 4.2 Brand
-
-```text
-docs/brand/BRAND_GUIDELINES.md
-```
-
-Defines:
-
-- Brand identity.
-- Logo rules.
-- Color direction.
-- Typography direction.
-- Asset usage.
-- Visual mood.
-
-### 4.3 Design
+### 4.2 Design system
 
 ```text
-docs/design/DESIGN_SYSTEM.md
-docs/design/WEB_DESIGN.md
-docs/design/ADMIN_DESIGN.md
+Bigbike Design System/README.md          # Brand context, visual foundations, copy rules, iconography
+Bigbike Design System/colors_and_type.css  # CSS token source of truth
+Bigbike Design System/preview/           # Visual preview cards (open in browser)
+Bigbike Design System/ui_kits/website/   # Click-through prototype
+BIGBIKE_BRANDGUIDELINE.pdf               # Original brand guideline PDF (23 pages)
 ```
 
-Defines:
-
-- Shared UI rules.
-- Public website UX.
-- Admin dashboard UX.
-- Component behavior.
-- Accessibility.
-- Responsive rules.
-- State design.
-
-### 4.4 Tokens
+### 4.3 Backend — Phase implementation reports
 
 ```text
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
+bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
 
-Defines:
+Describes implemented API behavior, auth flows, checkout logic, and admin settings per phase.
 
-- Semantic colors.
-- Typography tokens.
-- Spacing.
-- Radius.
-- Shadows.
-- Motion.
-- Component token mapping.
-- Web/admin-specific implementation guidance.
-
-### 4.5 Business
+### 4.4 OpenAPI specification
 
 ```text
-docs/business/BUSINESS_RULES.md
-docs/business/BUSINESS_PROCESS.md
-docs/business/WORKFLOW.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```
 
-Defines:
+Machine-readable API contract for the backend REST API.
 
-- Business rules.
-- End-to-end processes.
-- Customer/admin workflows.
-- Operational behavior.
-- Checkout/order/support concepts.
-
-### 4.6 Contracts
+### 4.5 SEO redirect data
 
 ```text
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
+bigbike-web/docs/
 ```
 
-Defines:
+SEO redirect map data consumed by `bigbike-web/next.config.ts` for legacy URL handling.
 
-- API request/response contract.
-- Data model contract.
-- State transition rules.
-- Admin roles and permissions.
-
-### 4.7 Legacy WordPress migration
+### 4.6 Legacy WordPress migration reference
 
 ```text
-docs/legacy/WORDPRESS_SOURCE_AUDIT.md
-docs/legacy/LEGACY_DATABASE_SCHEMA.md
-docs/legacy/LEGACY_ROUTE_MAP.md
-docs/legacy/LEGACY_PRODUCT_MODEL.md
-docs/legacy/LEGACY_ORDER_FLOW.md
-docs/legacy/SEO_REDIRECT_MAP.csv
-docs/legacy/WORDPRESS_TO_NEW_STACK_MAPPING.md
+bigbike_vn__2026_04_17/             # Local-only — do not commit
+bigbike_vn__2026_04_17/sqldump.sql  # 133 MB SQL dump — schema reference only
+bigbike_vn__2026_04_17/meta.json    # Dump metadata
 ```
 
-Defines:
-
-- Sanitized WordPress source discovery.
-- Schema-only SQL dump summary.
-- Product/category/order/content/auth migration references.
-- Legacy route and SEO redirect requirements.
-- WordPress-to-new-stack mapping for future agents.
-
-The legacy WordPress export is a local-only reference:
-
-```text
-bigbike_vn__2026_04_17/
-```
-
-Do not commit the raw WordPress source, `sqldump.sql`, `wp-config.php` secret values, user data, order data, customer emails, phone numbers, addresses, password hashes, session values, API keys, tokens, or webhook secrets.
+Raw WordPress export used for migration reference. See section 18.1 for handling rules.
 
 ---
 
@@ -287,79 +286,52 @@ Do not commit the raw WordPress source, `sqldump.sql`, `wp-config.php` secret va
 
 ### Working on `bigbike-web`
 
-Read:
-
 ```text
 AGENTS.md
-docs/brand/BRAND_GUIDELINES.md
-docs/design/DESIGN_SYSTEM.md
-docs/design/WEB_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/business/BUSINESS_RULES.md
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
+Bigbike Design System/README.md
+Bigbike Design System/colors_and_type.css
+Bigbike Design System/ui_kits/website/
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
 ```
 
 ### Working on `bigbike-admin`
 
-Read:
-
 ```text
 AGENTS.md
-docs/brand/BRAND_GUIDELINES.md
-docs/design/DESIGN_SYSTEM.md
-docs/design/ADMIN_DESIGN.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-docs/contracts/PERMISSION_MATRIX.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
+Bigbike Design System/README.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
 
 ### Working on `bigbike-backend`
 
-Read:
-
 ```text
 AGENTS.md
-docs/business/BUSINESS_RULES.md
-docs/business/BUSINESS_PROCESS.md
-docs/business/WORKFLOW.md
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
+bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+```
+
+### Working on legacy migration
+
+```text
+bigbike_vn__2026_04_17/
+bigbike_vn__2026_04_17/sqldump.sql  # schema reference only — read-only
 ```
 
 ### Working on documentation
 
-Read neighboring docs first. Do not create contradictions.
-
-Example:
-
-If changing API behavior, update both:
-
-```text
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-```
-
-If changing state transitions, update:
-
-```text
-docs/contracts/STATE_MACHINES.md
-docs/business/WORKFLOW.md
-```
+Read the relevant phase reports and OpenAPI spec first. Do not create contradictions between documents.
 
 ---
 
 ## 6. Development Setup
 
-> Exact commands depend on the actual package manager and backend build files in each sub-project. Check each app folder before running commands. Revolutionary, yes: read the files before summoning the terminal.
+> Check each app folder before running commands.
 
 ### 6.1 Public website
-
-Typical flow:
 
 ```bash
 cd bigbike-web
@@ -373,18 +345,15 @@ Build:
 npm run build
 ```
 
-Lint/test if available:
+Lint:
 
 ```bash
 npm run lint
-npm run test
 ```
 
 ### 6.2 Admin dashboard
 
 `bigbike-admin` is a **Vite 8 + React SPA** (not Next.js). Dev server runs on port **5173** by default.
-
-Typical flow:
 
 ```bash
 cd bigbike-admin
@@ -398,7 +367,7 @@ Build:
 npm run build
 ```
 
-Preview production build locally (port 4173):
+Preview production build (port 4173):
 
 ```bash
 npm run preview
@@ -412,37 +381,27 @@ npm run lint
 
 ### 6.3 Backend
 
-Typical Spring Boot flow:
-
 ```bash
 cd bigbike-backend
 ./mvnw spring-boot:run
 ```
 
-Test/package:
+Test / package:
 
 ```bash
 ./mvnw test
 ./mvnw package
 ```
 
-Phase 4E auth note:
-
-- `GET /api/v1/auth/me` currently uses a dev/mock placeholder user.
-- Placeholder auth is available only for dev/mock-style runtime profiles.
-- Production auth provider is not implemented yet in this phase.
-
 ### 6.4 Infrastructure (Docker Compose)
 
-The repo includes a `docker-compose.yaml` at the root that starts PostgreSQL, Redis, MinIO, and all three apps together.
-
-Start all infrastructure services only (recommended for local dev):
+Start infrastructure services only (recommended for local dev):
 
 ```bash
 docker compose up postgres redis minio -d
 ```
 
-Start the full stack (all services including apps):
+Start full stack (all services including apps):
 
 ```bash
 docker compose up -d
@@ -472,101 +431,82 @@ Port summary when using Docker:
 
 Do not commit secrets.
 
-Each app uses its own environment file (gitignored). Copy the example file to get started:
+Copy example files to get started:
 
 ```bash
+cp .env.example .env                              # root (Docker Compose)
 cp bigbike-web/.env.example    bigbike-web/.env.local
 cp bigbike-admin/.env.example  bigbike-admin/.env.local
-cp bigbike-backend/.env.example bigbike-backend/.env   # if present
+cp bigbike-backend/.env.example bigbike-backend/.env
 ```
 
-### 7.1 `bigbike-web` (`.env.local`)
+### 7.1 Root `.env` (Docker Compose)
 
 ```text
-BIGBIKE_API_BASE_URL=http://localhost:8080          # server-side API base
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080      # client-side API base
-BIGBIKE_SITE_URL=http://localhost:3000              # canonical site URL (server)
-NEXT_PUBLIC_SITE_URL=http://localhost:3000          # canonical site URL (client)
-BIGBIKE_DISABLE_DEV_FALLBACK=false                  # "true" forces real API in dev
-BIGBIKE_REDIS_URL=                                  # optional: redis://localhost:6379/0
+POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD
+REDIS_HOST / REDIS_PORT
+MINIO_ROOT_USER / MINIO_ROOT_PASSWORD / MINIO_BUCKET / MINIO_ENDPOINT
+BIGBIKE_DB_URL / BIGBIKE_DB_USERNAME / BIGBIKE_DB_PASSWORD
+BIGBIKE_JWT_SECRET          # must be >= 32 chars in production
+CORS_ALLOWED_ORIGINS
+NEXT_PUBLIC_API_BASE_URL / NEXT_PUBLIC_SITE_URL
+SPRING_PROFILES_ACTIVE
+```
+
+### 7.2 `bigbike-web` (`.env.local`)
+
+```text
+BIGBIKE_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+BIGBIKE_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+BIGBIKE_REDIS_URL=                              # optional: redis://localhost:6379/0
 BIGBIKE_REDIRECT_CACHE_TTL_SECONDS=300
-# NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX                   # Google Tag Manager (staging/prod)
+BIGBIKE_LEGACY_UPLOADS_BASE=                    # MinIO proxy for /wp-content/uploads/*
+NEXT_PUBLIC_GTM_ID=GTM-5BKZL3K
 ```
 
-### 7.2 `bigbike-admin` (`.env.local`)
+### 7.3 `bigbike-admin` (`.env.local`)
 
 ```text
-VITE_ADMIN_API_BASE=http://localhost:8080/api/v1    # backend API base
-VITE_USE_ADMIN_MOCK=true                            # "false" to hit real API
-VITE_ADMIN_ROLE=ADMIN                               # default role in mock/dev
+VITE_ADMIN_API_BASE=http://localhost:8080/api/v1
+VITE_USE_ADMIN_MOCK=true                        # false to hit real API
+VITE_ADMIN_ROLE=ADMIN                           # default role in mock/dev
 ```
 
-### 7.3 `bigbike-backend` (`application.properties` / env)
+### 7.4 `bigbike-backend` (`.env`)
 
 ```text
-# Database (PostgreSQL)
+SPRING_PROFILES_ACTIVE=dev
 BIGBIKE_DB_URL=jdbc:postgresql://localhost:5432/bigbike
 BIGBIKE_DB_USERNAME=bigbike
 BIGBIKE_DB_PASSWORD=bigbike
-
-# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# JWT
 BIGBIKE_JWT_SECRET=dev-change-me-in-production-needs-32chars!!
-
-# MinIO (S3-compatible media storage)
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ROOT_USER=minio_admin
 MINIO_ROOT_PASSWORD=minio_dev_only
 MINIO_BUCKET=bigbike-media
-
-# CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4000
-
-# Spring profiles
-SPRING_PROFILES_ACTIVE=dev
 ```
 
-Optional backend profiles:
-
-- `dev`: enables Flyway dev seed data.
-- `mock`: disables datasource/JPA/Flyway and uses in-memory read repositories.
-
-Never commit:
-
-- Database passwords.
-- JWT secrets.
-- Payment secrets.
-- SMTP credentials.
-- Cloud storage credentials.
-- Admin passwords.
-- Private API keys.
-
-If a required variable is missing, document it in the app-specific README or `.env.example`.
+Never commit: database passwords, JWT secrets, payment secrets, SMTP credentials, cloud storage credentials, admin passwords, or private API keys.
 
 ---
 
 ## 8. Data and API Contract Rules
 
-All API and data shape changes must follow:
-
-```text
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-```
-
 Rules:
 
 - API JSON uses `camelCase`.
 - Money uses integer VND amount, not float.
-- Backend validates final price and total.
-- Orders preserve product/customer/address snapshots.
+- Backend validates final price and total — never trust frontend totals.
+- Orders preserve product / customer / address snapshots.
 - Public API must not expose internal fields.
-- Admin API must enforce permissions.
+- Admin API must enforce permissions server-side.
 - Error responses must use standard error shape.
-- Status values must match `STATE_MACHINES.md`.
+- Status values must match defined state machine transitions.
 
 Canonical product media fields:
 
@@ -584,15 +524,11 @@ images
 videoUrl
 ```
 
+Full API contract: `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json`
+
 ---
 
 ## 9. Business Rules
-
-Business behavior must follow:
-
-```text
-docs/business/BUSINESS_RULES.md
-```
 
 Agents and developers must not invent:
 
@@ -605,19 +541,15 @@ Agents and developers must not invent:
 - Promotion logic.
 - Permission rules.
 
-If a rule is missing, mark it as `TBD` and update the relevant docs before implementing.
+If a rule is missing, mark it as `TBD` and clarify before implementing.
 
 ---
 
 ## 10. State Machines
 
-State transitions must follow:
+Backend must reject invalid state transitions. Frontend may hide / disable invalid actions, but backend enforcement is mandatory.
 
-```text
-docs/contracts/STATE_MACHINES.md
-```
-
-Examples of state-machine domains:
+State-machine domains:
 
 - Product publish status.
 - Product stock state.
@@ -626,30 +558,37 @@ Examples of state-machine domains:
 - Fulfillment status.
 - Content publish status.
 - Campaign status.
-- Contact/support status.
+- Contact / support status.
 
-Backend must reject invalid transitions.
+Examples of invalid transitions:
 
-Frontend may hide/disable invalid actions, but backend enforcement is mandatory.
+```text
+COMPLETED → PENDING_CONFIRMATION
+CANCELLED → SHIPPING
+PENDING_CONFIRMATION → COMPLETED
+```
 
 ---
 
 ## 11. Permissions
 
-Admin permissions must follow:
-
-```text
-docs/contracts/PERMISSION_MATRIX.md
-```
-
 Rules:
 
 - Admin routes need permission mapping.
 - Admin API endpoints need backend permission checks.
-- Frontend hiding is not security.
+- Frontend hiding is not security — backend enforcement is mandatory.
 - Dangerous actions require confirmation.
 - Sensitive data export requires export permission.
-- User/role/settings changes require restricted permissions.
+- User / role / settings changes require restricted permissions.
+
+Examples:
+
+```text
+/admin/products       → products.read
+/admin/products/new   → products.create
+/admin/orders         → orders.read
+/admin/settings       → settings.read
+```
 
 ---
 
@@ -657,29 +596,25 @@ Rules:
 
 ### 12.1 Shared UI
 
-Follow:
-
-```text
-docs/design/DESIGN_SYSTEM.md
-```
-
-All UI should include:
+All UI must include:
 
 - Clear hierarchy.
 - Clear action priority.
 - Consistent states.
-- Loading/empty/error/success states.
+- Loading / empty / error / success states.
 - Accessible focus.
 - Responsive behavior.
 - No raw `null` / `undefined` rendering.
 
 ### 12.2 Web UI
 
-Follow:
+Reference:
 
 ```text
-docs/design/WEB_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
+Bigbike Design System/README.md          # Brand rules, copy, visual foundations
+Bigbike Design System/colors_and_type.css  # CSS tokens — use these, do not hardcode values
+Bigbike Design System/ui_kits/website/   # Click-through prototype
+Bigbike Design System/preview/           # Visual reference cards (open in browser)
 ```
 
 Priorities:
@@ -690,15 +625,17 @@ Priorities:
 - Conversion.
 - Product image clarity.
 - Price and stock clarity.
-- Cart/checkout trust.
+- Cart / checkout trust.
 
 ### 12.3 Admin UI
 
-Follow:
+Use admin token system — not web campaign styling.
+
+Reference:
 
 ```text
-docs/design/ADMIN_DESIGN.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
+Bigbike Design System/README.md          # Brand context and token guidance
+Bigbike Design System/colors_and_type.css
 ```
 
 Priorities:
@@ -715,41 +652,32 @@ Priorities:
 
 ## 13. SEO Rules for `bigbike-web`
 
-Public pages should preserve SEO quality:
+Public pages must preserve SEO quality:
 
 - One clear H1.
 - Semantic heading hierarchy.
 - Crawlable content.
 - Metadata.
 - Canonical URL if needed.
-- Stable product/category/article URLs.
+- Stable product / category / article URLs.
 - Internal links.
-- Optimized images.
-- Image alt text.
+- Optimized images with alt text.
 - Fast loading.
 - Mobile-first layout.
 
-If changing slugs or URL structure, handle redirects and internal links.
-
-Do not hide critical SEO content inside images or client-only components without a clear reason.
+If changing slugs or URL structure: update `bigbike-web/docs/` redirect map and `next.config.ts`. Do not break indexed URLs.
 
 ---
 
 ## 14. Cart and Checkout Rules
 
-Cart and checkout must be reliable.
-
-Rules:
-
-- Backend verifies price.
-- Backend verifies stock.
-- Backend verifies quantity.
-- Backend validates checkout data.
+- Backend verifies price, stock, and quantity.
+- Backend validates the full checkout payload.
 - Submit button blocks double-submit.
 - Errors preserve form data when possible.
-- Price/stock changes are communicated.
-- Order success explains next step.
-- COD/manual confirmation copy must be clear if used.
+- Price / stock changes are communicated to the user.
+- Order success page explains next step.
+- COD / manual confirmation copy must be clear if used.
 
 ---
 
@@ -761,15 +689,15 @@ Admin screens must handle:
 - Empty state.
 - Error state.
 - Permission denied state.
-- Search/filter/sort.
+- Search / filter / sort.
 - Pagination where relevant.
 - Row actions.
 - Bulk actions where relevant.
 - Confirmation for dangerous actions.
 - Field validation.
-- Submit/update loading.
+- Submit / update loading.
 
-Do not build admin screens that only work on happy-path demo data. That is not a workflow, that is theater with buttons.
+Do not build admin screens that only work on happy-path demo data.
 
 ---
 
@@ -777,7 +705,7 @@ Do not build admin screens that only work on happy-path demo data. That is not a
 
 Run available checks before committing.
 
-Common frontend checks:
+Frontend:
 
 ```bash
 npm run lint
@@ -785,20 +713,11 @@ npm run test
 npm run build
 ```
 
-Common backend checks:
+Backend:
 
 ```bash
 ./mvnw test
 ./mvnw package
-```
-
-If commands differ, inspect:
-
-```text
-package.json
-pom.xml
-build.gradle
-CI config
 ```
 
 Do not claim tests passed if they were not run.
@@ -809,39 +728,33 @@ Do not claim tests passed if they were not run.
 
 ### 17.1 `bigbike-web`
 
-Check:
-
 - Homepage loads.
-- Category/listing page loads.
+- Category / listing page loads.
 - Product detail page loads.
 - Search works if implemented.
-- Cart can add/update/remove item.
+- Cart can add / update / remove item.
 - Checkout validates required fields.
-- Order success page renders after successful order if backend flow exists.
+- Order success page renders.
 - Mobile layout is usable.
-- SEO H1/title exists.
+- SEO H1 / title exists.
 
 ### 17.2 `bigbike-admin`
 
-Check:
-
-- Login/session behavior.
+- Login / session behavior.
 - Dashboard loads.
 - Product list loads.
-- Product create/edit validation.
-- Order list/detail loads.
-- Status update handles success/error.
+- Product create / edit validation.
+- Order list / detail loads.
+- Status update handles success / error.
 - Permission denied state works.
 - Dangerous actions require confirmation.
-- Table loading/empty/error states exist.
+- Table loading / empty / error states exist.
 
 ### 17.3 `bigbike-backend`
 
-Check:
-
 - App starts.
-- API endpoints match contract.
-- Error shape matches contract.
+- API endpoints match OpenAPI spec.
+- Error shape is consistent.
 - Permissions are enforced.
 - Invalid state transitions are rejected.
 - No secrets are exposed.
@@ -855,10 +768,10 @@ Before changing code:
 
 1. Read `AGENTS.md`.
 2. Identify affected app.
-3. Read relevant docs.
-4. Inspect current implementation.
-5. Make focused changes.
-6. Update docs if contract/business/design changes.
+3. For UI work: read `Bigbike Design System/README.md` and `colors_and_type.css`.
+4. For API work: read relevant phase reports in `bigbike-backend/docs/` and the OpenAPI spec.
+5. Inspect current implementation.
+6. Make focused changes.
 7. Run available checks.
 8. Report what changed and what was not run.
 
@@ -868,14 +781,14 @@ Do not do broad rewrites unless explicitly requested.
 
 Before implementing product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior derived from the legacy WordPress site:
 
-1. Read all files in `docs/legacy/`.
-2. Treat `bigbike_vn__2026_04_17/` as local-only reference material.
-3. Inspect `sqldump.sql` only in read-only mode and only for schema or sanitized aggregate facts.
-4. Update `docs/contracts/DATA_CONTRACT.md` before codifying legacy data mappings.
-5. Update `docs/legacy/SEO_REDIRECT_MAP.csv` before changing route, slug, permalink, trailing slash, or blog `.html` behavior.
-6. Produce only sanitized artifacts under approved documentation/sample paths.
+1. Inspect `bigbike_vn__2026_04_17/` as local-only reference.
+2. Read `sqldump.sql` in read-only mode — for schema and sanitized aggregate facts only.
+3. Update `bigbike-web/docs/` before changing route, slug, permalink, trailing slash, or blog `.html` redirect behavior.
+4. Produce only sanitized artifacts — do not commit raw source data.
 
-Do not build new features ahead of legacy discovery for the affected domain. If the legacy docs are incomplete, extend the sanitized docs first.
+Do not build new features ahead of legacy discovery for the affected domain.
+
+Do not commit: raw WordPress source, `sqldump.sql`, `wp-config.php` secret values, user data, order data, customer emails, phone numbers, addresses, password hashes, session values, API keys, tokens, or webhook secrets.
 
 ---
 
@@ -901,8 +814,6 @@ Do not do these without explicit approval:
 
 ## 20. Pull Request / Change Summary Format
 
-Recommended PR summary:
-
 ```text
 Summary:
 - ...
@@ -924,47 +835,15 @@ Checks:
 - Not run: reason
 ```
 
-No imaginary test results. CI already has enough trust issues.
-
 ---
 
-## 21. Current Documentation Status
-
-The repo is expected to include these core docs:
-
-```text
-AGENTS.md
-
-docs/brand/BRAND_GUIDELINES.md
-
-docs/design/DESIGN_SYSTEM.md
-docs/design/WEB_DESIGN.md
-docs/design/ADMIN_DESIGN.md
-
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-
-docs/business/BUSINESS_RULES.md
-docs/business/BUSINESS_PROCESS.md
-docs/business/WORKFLOW.md
-
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
-```
-
-If a file is missing or empty, create/update it before asking an agent to rely on it.
-
----
-
-## 22. Final Rule
+## 21. Final Rule
 
 BigBike changes must keep these four layers aligned:
 
 ```text
 Business rules
-API/data contracts
+API / data contracts
 Design system
 Implementation
 ```

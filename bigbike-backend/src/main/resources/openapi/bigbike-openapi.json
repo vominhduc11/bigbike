@@ -40,9 +40,16 @@
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
           { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "example": "createdAt:desc" } },
           { "name": "q", "in": "query", "schema": { "type": "string" } },
-          { "name": "categoryId", "in": "query", "schema": { "type": "string" } },
-          { "name": "brandId", "in": "query", "schema": { "type": "string" } }
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Product category slug." },
+          { "name": "pwb-brand", "in": "query", "schema": { "type": "string" }, "description": "Brand slug." },
+          { "name": "filter_color", "in": "query", "schema": { "type": "string" } },
+          { "name": "filter_gender", "in": "query", "schema": { "type": "string" } },
+          { "name": "min_price", "in": "query", "schema": { "type": "integer", "minimum": 0 } },
+          { "name": "max_price", "in": "query", "schema": { "type": "integer", "minimum": 0 } },
+          { "name": "featured", "in": "query", "schema": { "type": "boolean" }, "description": "When true, returns products tagged product_visibility=featured in WordPress." },
+          { "name": "showOnHomepage", "in": "query", "schema": { "type": "boolean" } }
         ],
         "responses": {
           "200": { "description": "Product list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductListResponse" } } } }
@@ -68,8 +75,15 @@
         "tags": ["Public Catalog"],
         "summary": "List categories",
         "operationId": "listCategories",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "example": "sortOrder:desc" } },
+          { "name": "showOnHomepage", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "filterHome", "in": "query", "schema": { "type": "boolean" }, "description": "Alias for showOnHomepage." }
+        ],
         "responses": {
-          "200": { "description": "Category list" }
+          "200": { "description": "Category list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryListResponse" } } } }
         }
       }
     },
@@ -90,10 +104,13 @@
         "operationId": "listArticles",
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } }
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "example": "publishedAt:desc" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Content category slug." },
+          { "name": "q", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "Article list" }
+          "200": { "description": "Article list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArticleListResponse" } } } }
         }
       }
     },
@@ -130,12 +147,25 @@
         "tags": ["Public Settings"],
         "summary": "Get public site settings",
         "operationId": "getPublicSettings",
-        "description": "Returns all SiteSettings where isPublic=true. No authentication required.",
+        "description": "Returns all SiteSettings where isPublic=true. Includes homepage keys zalo_url, hotline, promo_title, promo_off, promo_href, promo_image_url, seo_home_title, seo_home_description, og_image_url. No authentication required.",
         "responses": {
           "200": {
             "description": "Public settings list",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicSettingsResponse" } } }
           }
+        }
+      }
+    },
+    "/api/v1/sliders": {
+      "get": {
+        "tags": ["Public Content"],
+        "summary": "List homepage sliders",
+        "operationId": "listSliders",
+        "parameters": [
+          { "name": "location", "in": "query", "schema": { "type": "string", "default": "home" }, "example": "home" }
+        ],
+        "responses": {
+          "200": { "description": "Slider list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SliderListDataResponse" } } } }
         }
       }
     },
@@ -154,6 +184,36 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicMenuDataResponse" } } }
           },
           "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/admin/sliders": {
+      "get": {
+        "tags": ["Admin Content"],
+        "summary": "List sliders (admin)",
+        "operationId": "adminListSliders",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "location", "in": "query", "schema": { "type": "string", "default": "home" } }
+        ],
+        "responses": {
+          "200": { "description": "Slider list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Content"],
+        "summary": "Upsert slider by location and sortOrder",
+        "operationId": "adminUpsertSlider",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpsertSliderRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Slider upserted" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
@@ -1426,6 +1486,49 @@
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
       },
+      "SliderImage": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "nullable": true },
+          "alt": { "type": "string", "nullable": true },
+          "width": { "type": "integer", "nullable": true },
+          "height": { "type": "integer", "nullable": true }
+        }
+      },
+      "SliderResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "sortOrder": { "type": "integer" },
+          "location": { "type": "string" },
+          "desktopImage": { "$ref": "#/components/schemas/SliderImage" },
+          "mobileImage": { "$ref": "#/components/schemas/SliderImage", "nullable": true },
+          "productId": { "type": "string", "nullable": true },
+          "externalLink": { "type": "string", "nullable": true },
+          "productLink": { "type": "string", "nullable": true },
+          "link": { "type": "string" },
+          "product": { "type": "object", "nullable": true }
+        }
+      },
+      "SliderListDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/SliderResponse" } },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "UpsertSliderRequest": {
+        "type": "object",
+        "required": ["location", "sortOrder"],
+        "properties": {
+          "location": { "type": "string", "example": "home" },
+          "sortOrder": { "type": "integer", "minimum": 0 },
+          "desktopImage": { "$ref": "#/components/schemas/SliderImage" },
+          "mobileImage": { "$ref": "#/components/schemas/SliderImage", "nullable": true },
+          "productId": { "type": "string", "nullable": true },
+          "externalLink": { "type": "string", "nullable": true }
+        }
+      },
       "PublicMenuItemResponse": {
         "type": "object",
         "properties": {
@@ -1558,10 +1661,103 @@
           "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED"] }
         }
       },
+      "ImageAsset": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "nullable": true },
+          "url": { "type": "string", "nullable": true },
+          "alt": { "type": "string", "nullable": true },
+          "width": { "type": "integer", "nullable": true },
+          "height": { "type": "integer", "nullable": true },
+          "mimeType": { "type": "string", "nullable": true }
+        }
+      },
+      "CategorySummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "ProductResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "sku": { "type": "string", "nullable": true },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "$ref": "#/components/schemas/CategorySummary" },
+          "categories": { "type": "array", "items": { "$ref": "#/components/schemas/CategorySummary" } },
+          "image": { "$ref": "#/components/schemas/ImageAsset" },
+          "isFeatured": { "type": "boolean", "nullable": true },
+          "showOnHomepage": { "type": "boolean", "nullable": true },
+          "rating": { "type": "number", "format": "double", "minimum": 0, "maximum": 5, "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "parentId": { "type": "string", "nullable": true },
+          "image": { "$ref": "#/components/schemas/ImageAsset" },
+          "isVisible": { "type": "boolean" },
+          "showOnHomepage": { "type": "boolean", "nullable": true },
+          "sortOrder": { "type": "integer", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ContentCategorySummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "ArticleResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "slug": { "type": "string" },
+          "title": { "type": "string" },
+          "excerpt": { "type": "string", "nullable": true },
+          "body": { "type": "string" },
+          "coverImage": { "$ref": "#/components/schemas/ImageAsset" },
+          "category": { "$ref": "#/components/schemas/ContentCategorySummary" },
+          "categories": { "type": "array", "items": { "$ref": "#/components/schemas/ContentCategorySummary" } },
+          "publishStatus": { "type": "string" },
+          "publishedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
       "ProductListResponse": {
         "type": "object",
         "properties": {
-          "data": { "type": "array", "items": { "type": "object" } },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ProductResponse" } },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "CategoryListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryResponse" } },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "ArticleListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ArticleResponse" } },
           "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }

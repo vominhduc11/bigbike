@@ -46,6 +46,31 @@ class PublicReadApiTest {
     }
 
     @Test
+    void shouldFilterProductsByLegacyQueryParams() throws Exception {
+        mockMvc.perform(get("/api/v1/products")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .param("pwb-brand", "ls2")
+                        .param("filter_color", "do")
+                        .param("min_price", "3000000")
+                        .param("max_price", "3400000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].slug").value("mu-bao-hiem-ls2-ff800"));
+    }
+
+    @Test
+    void shouldValidateInvalidLegacyPriceRange() throws Exception {
+        mockMvc.perform(get("/api/v1/products")
+                        .param("min_price", "5000000")
+                        .param("max_price", "1000000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("min_price"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_RANGE"));
+    }
+
+    @Test
     void shouldValidateUnsupportedSort() throws Exception {
         mockMvc.perform(get("/api/v1/products")
                         .param("sort", "unknown:desc"))

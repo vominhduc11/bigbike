@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMapper.MappedArticle;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +52,10 @@ public class ArticleImporter implements DomainImporter {
 
     @Transactional
     public MigrationExecutionReport.DomainResult importBatch(
-            List<MappedArticle> items, MigrationExecutionOptions options) {
+            List<MappedArticle> items,
+            MigrationExecutionOptions options,
+            Map<Long, MappedMedia> mediaByLegacyId,
+            String mediaPublicBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
@@ -90,6 +95,24 @@ public class ArticleImporter implements DomainImporter {
                 entity.setSeoDescription(ma.seoDescription());
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(ma.warnings());
+
+                if (ma.thumbnailId() != null) {
+                    MappedMedia thumb = mediaByLegacyId.get(ma.thumbnailId());
+                    if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
+                        String base = mediaPublicBaseUrl.endsWith("/")
+                                ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                                : mediaPublicBaseUrl;
+                        String storagePath = thumb.storagePath().startsWith("/")
+                                ? thumb.storagePath().substring(1)
+                                : thumb.storagePath();
+                        entity.setCoverImageId(String.valueOf(ma.thumbnailId()));
+                        entity.setCoverImageUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setCoverImageAlt(thumb.altText());
+                        entity.setCoverImageWidth(thumb.width());
+                        entity.setCoverImageHeight(thumb.height());
+                        entity.setCoverImageMimeType(thumb.mimeType());
+                    }
+                }
 
                 if (!options.dryRun()) {
                     repo.save(entity);

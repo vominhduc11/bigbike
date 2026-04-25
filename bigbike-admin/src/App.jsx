@@ -21,7 +21,11 @@ import { OrderListScreen } from './screens/OrderListScreen'
 import { ProductDetailScreen } from './screens/ProductDetailScreen'
 import { ProductListScreen } from './screens/ProductListScreen'
 import { RedirectListScreen } from './screens/RedirectListScreen'
+import { ReviewListScreen } from './screens/ReviewListScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { ShippingScreen } from './screens/ShippingScreen'
+import { SliderListScreen } from './screens/SliderListScreen'
+import { AdminUsersScreen } from './screens/AdminUsersScreen'
 
 const NAV_ITEMS = [
   { path: '/admin/products', label: 'Products', permission: 'products.read' },
@@ -34,6 +38,10 @@ const NAV_ITEMS = [
   { path: '/admin/coupons', label: 'Coupons', permission: 'coupons.read' },
   { path: '/admin/redirects', label: 'Redirects', permission: 'redirects.read' },
   { path: '/admin/menus', label: 'Menus', permission: 'menus.read' },
+  { path: '/admin/sliders', label: 'Sliders', permission: 'sliders.read' },
+  { path: '/admin/shipping', label: 'Shipping', permission: 'shipping.read' },
+  { path: '/admin/reviews', label: 'Reviews', permission: 'reviews.read' },
+  { path: '/admin/admin-users', label: 'Admin Users', permission: 'admin-users.read' },
   { path: '/admin/settings', label: 'Settings', permission: 'settings.read' },
 ]
 
@@ -82,6 +90,10 @@ function parseRoute(pathname) {
   if (module === 'coupons') return { kind: 'screen', name: 'coupons-list' }
   if (module === 'redirects') return { kind: 'screen', name: 'redirects-list' }
   if (module === 'menus') return { kind: 'screen', name: 'menus' }
+  if (module === 'sliders') return { kind: 'screen', name: 'sliders' }
+  if (module === 'shipping') return { kind: 'screen', name: 'shipping' }
+  if (module === 'reviews') return { kind: 'screen', name: 'reviews' }
+  if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings') return { kind: 'screen', name: 'settings' }
 
   return { kind: 'not-found' }
@@ -101,6 +113,10 @@ function routePermission(routeName) {
     case 'coupons-list': return 'coupons.read'
     case 'redirects-list': return 'redirects.read'
     case 'menus': return 'menus.read'
+    case 'sliders': return 'sliders.read'
+    case 'shipping': return 'shipping.read'
+    case 'reviews': return 'reviews.read'
+    case 'admin-users': return 'admin-users.read'
     case 'settings': return 'settings.read'
     default: return ''
   }
@@ -224,6 +240,14 @@ function AdminApp() {
       screen = <RedirectListScreen canUpdate={hasPermission('redirects.update')} />; break
     case 'menus':
       screen = <MenuScreen canUpdate={hasPermission('menus.update')} />; break
+    case 'sliders':
+      screen = <SliderListScreen canUpdate={hasPermission('sliders.write')} />; break
+    case 'shipping':
+      screen = <ShippingScreen canUpdate={hasPermission('shipping.write')} />; break
+    case 'reviews':
+      screen = <ReviewListScreen canUpdate={hasPermission('reviews.write')} />; break
+    case 'admin-users':
+      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} />; break
     case 'settings':
       screen = <SettingsScreen canUpdate={hasPermission('settings.update')} />; break
     default:

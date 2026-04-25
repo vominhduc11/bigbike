@@ -1,5 +1,5 @@
 import { LoadingGrid } from "@/components/ui/LoadingGrid";
 
 export default function ArticleDetailLoading() {
-  return <LoadingGrid title="Dang tai chi tiet bai viet" count={3} />;
+  return <LoadingGrid title="Đang tải chi tiết bài viết" count={3} />;
 }

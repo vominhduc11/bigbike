@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
@@ -40,6 +41,7 @@ public class AdminContentMutationService {
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final BlogTagJpaRepository blogTagJpaRepository;
     private final ContentReadRepository contentReadRepository;
+    private final MediaUrlProperties mediaUrlProperties;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -47,7 +49,8 @@ public class AdminContentMutationService {
             ObjectProvider<ContentAuthorJpaRepository> contentAuthorJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
-            ContentReadRepository contentReadRepository
+            ContentReadRepository contentReadRepository,
+            MediaUrlProperties mediaUrlProperties
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
@@ -55,6 +58,7 @@ public class AdminContentMutationService {
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.blogTagJpaRepository = blogTagJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
+        this.mediaUrlProperties = mediaUrlProperties;
     }
 
     @Transactional
@@ -152,6 +156,32 @@ public class AdminContentMutationService {
         return toAdminContentItem(page);
     }
 
+    @Transactional
+    public AdminContentItem deleteArticle(String articleId) {
+        requireJpaPersistenceEnabled();
+        ArticleEntity entity = articleJpaRepository.findById(articleId)
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        entity.setPublishStatus(PublishStatus.ARCHIVED);
+        entity.setUpdatedAt(Instant.now());
+        articleJpaRepository.save(entity);
+        Article article = contentReadRepository.findArticleById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        return toAdminContentItem(article);
+    }
+
+    @Transactional
+    public AdminContentItem deletePage(String pageId) {
+        requireJpaPersistenceEnabled();
+        PageEntity entity = pageJpaRepository.findById(pageId)
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        entity.setPublishStatus(PublishStatus.ARCHIVED);
+        entity.setUpdatedAt(Instant.now());
+        pageJpaRepository.save(entity);
+        Page page = contentReadRepository.findPageById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Content not found."));
+        return toAdminContentItem(page);
+    }
+
     private void requireJpaPersistenceEnabled() {
         if (articleJpaRepository == null
                 || pageJpaRepository == null
@@ -188,8 +218,18 @@ public class AdminContentMutationService {
             }
         }
 
-        AdminMutationValidators.validateImageAsset(request.getCoverImage(), "coverImage", errors);
-        AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
+        AdminMutationValidators.validateImageAsset(
+                request.getCoverImage(),
+                "coverImage",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateSeoMeta(
+                request.getSeo(),
+                "seo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
 
         if (slug != null) {
             ArticleEntity existingBySlug = articleJpaRepository.findBySlug(slug).orElse(null);
@@ -228,7 +268,12 @@ public class AdminContentMutationService {
             }
         }
 
-        AdminMutationValidators.validateSeoMeta(request.getSeo(), "seo", errors);
+        AdminMutationValidators.validateSeoMeta(
+                request.getSeo(),
+                "seo",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
         if (slug != null) {
             PageEntity existingBySlug = pageJpaRepository.findBySlug(slug).orElse(null);
             if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {

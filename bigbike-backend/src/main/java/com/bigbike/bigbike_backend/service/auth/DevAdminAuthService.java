@@ -45,6 +45,8 @@ public class DevAdminAuthService {
                     "settings.write",
                     "menus.read",
                     "menus.write",
+                    "sliders.read",
+                    "sliders.write",
                     "coupons.read",
                     "coupons.write"
             ),

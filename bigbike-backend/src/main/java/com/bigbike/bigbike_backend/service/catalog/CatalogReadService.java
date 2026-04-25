@@ -4,6 +4,8 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
+import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -11,9 +13,12 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
@@ -44,7 +49,13 @@ public class CatalogReadService {
             String sort,
             String category,
             String brand,
-            String q
+            String q,
+            String filterColor,
+            String filterGender,
+            Long minPrice,
+            Long maxPrice,
+            Boolean featured,
+            Boolean showOnHomepage
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
 
@@ -53,6 +64,10 @@ public class CatalogReadService {
                 .filter(product -> matchesCategory(product, category))
                 .filter(product -> matchesBrand(product, brand))
                 .filter(product -> matchesQuery(product, q))
+                .filter(product -> matchesColor(product, filterColor))
+                .filter(product -> matchesPrice(product, minPrice, maxPrice))
+                .filter(product -> matchesFlag(product.isFeatured(), featured))
+                .filter(product -> matchesFlag(product.showOnHomepage(), showOnHomepage))
                 .sorted(productComparator(sortSpec))
                 .toList();
 
@@ -66,11 +81,12 @@ public class CatalogReadService {
         return product;
     }
 
-    public PageResult<Category> listCategories(int page, int size, String sort) {
+    public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage) {
         SortSpec sortSpec = sortParser.parse(sort, "sortOrder", SortDirection.ASC, CATEGORY_SORT_FIELDS);
 
         List<Category> result = catalogReadRepository.findAllCategories().stream()
                 .filter(Category::isVisible)
+                .filter(category -> matchesFlag(category.showOnHomepage(), showOnHomepage))
                 .sorted(categoryComparator(sortSpec))
                 .toList();
 
@@ -124,10 +140,102 @@ public class CatalogReadService {
                 || (product.shortDescription() != null && product.shortDescription().toLowerCase(Locale.ROOT).contains(term));
     }
 
+    private static boolean matchesColor(Product product, String filterColor) {
+        if (filterColor == null || filterColor.isBlank()) {
+            return true;
+        }
+
+        String expectedColor = normalize(filterColor);
+        if (expectedColor.isBlank()) {
+            return true;
+        }
+
+        if (product.variants() == null || product.variants().isEmpty()) {
+            return false;
+        }
+
+        return product.variants().stream()
+                .filter(Objects::nonNull)
+                .filter(variant -> variant.options() != null && !variant.options().isEmpty())
+                .anyMatch(variant -> variant.options().stream()
+                        .filter(Objects::nonNull)
+                        .anyMatch(option -> isColorOption(option.name())
+                                && normalize(option.value()).equals(expectedColor)));
+    }
+
+    private static boolean matchesPrice(Product product, Long minPrice, Long maxPrice) {
+        if (minPrice == null && maxPrice == null) {
+            return true;
+        }
+
+        BigDecimal price = effectivePrice(product);
+        if (price == null) {
+            return false;
+        }
+
+        if (minPrice != null && price.compareTo(BigDecimal.valueOf(minPrice)) < 0) {
+            return false;
+        }
+        if (maxPrice != null && price.compareTo(BigDecimal.valueOf(maxPrice)) > 0) {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean matchesFlag(Boolean actual, Boolean expected) {
+        return expected == null || Boolean.TRUE.equals(actual) == expected;
+    }
+
+    private static BigDecimal effectivePrice(Product product) {
+        if (product.variants() != null && !product.variants().isEmpty()) {
+            BigDecimal variantPrice = product.variants().stream()
+                    .filter(Objects::nonNull)
+                    .map(ProductVariant::price)
+                    .filter(Objects::nonNull)
+                    .map(ProductPrice::retailPrice)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo)
+                    .orElse(null);
+            if (variantPrice != null) {
+                return variantPrice;
+            }
+        }
+
+        if (product.price() == null) {
+            return null;
+        }
+        return product.price().retailPrice();
+    }
+
+    private static boolean isColorOption(String name) {
+        String normalizedName = normalize(name);
+        return normalizedName.contains("color")
+                || normalizedName.contains("colour")
+                || normalizedName.contains("mau");
+    }
+
+    private static String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replace("\u0110", "D")
+                .replace("\u0111", "d")
+                .replaceAll("\\p{M}+", "");
+
+        return normalized.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
+    }
+
     private static Comparator<Product> productComparator(SortSpec sortSpec) {
         Comparator<Product> comparator = switch (sortSpec.field()) {
             case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
-            case "price" -> Comparator.comparing(product -> product.price().retailPrice());
+            case "price" -> Comparator.comparing(
+                    CatalogReadService::effectivePrice,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             default -> throw new IllegalStateException("Unsupported sort field.");
         };

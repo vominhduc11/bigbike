@@ -47,6 +47,7 @@ public class UpsertProductRequest {
 
     private Boolean isFeatured;
     private Boolean showOnHomepage;
+    private BigDecimal rating;
 
     @Valid
     private SeoMetaRequest seo;
@@ -177,6 +178,14 @@ public class UpsertProductRequest {
 
     public void setShowOnHomepage(Boolean showOnHomepage) {
         this.showOnHomepage = showOnHomepage;
+    }
+
+    public BigDecimal getRating() {
+        return rating;
+    }
+
+    public void setRating(BigDecimal rating) {
+        this.rating = rating;
     }
 
     public SeoMetaRequest getSeo() {

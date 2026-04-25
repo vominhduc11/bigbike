@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.media;
 
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
+import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,14 +40,17 @@ public class MediaCopyService {
     private final MediaJpaRepository mediaRepo;
     private final MediaPathResolver pathResolver;
     private final MediaChecksumService checksumService;
+    private final MediaUrlProperties mediaUrlProperties;
 
     public MediaCopyService(
             MediaJpaRepository mediaRepo,
             MediaPathResolver pathResolver,
-            MediaChecksumService checksumService) {
+            MediaChecksumService checksumService,
+            MediaUrlProperties mediaUrlProperties) {
         this.mediaRepo = mediaRepo;
         this.pathResolver = pathResolver;
         this.checksumService = checksumService;
+        this.mediaUrlProperties = mediaUrlProperties;
     }
 
     public MediaCopyReport run(MediaCopyOptions options, MediaStoragePort storage) {
@@ -201,7 +205,7 @@ public class MediaCopyService {
         entity.setStorageProvider(MINIO_PROVIDER);
         entity.setBucket(options.bucket());
         entity.setFileSize(fileSize);
-        entity.setPublicUrl(pathResolver.publicUrl(options.endpoint(), options.bucket(), key));
+        entity.setPublicUrl(publicUrlFor(key));
         entity.setUpdatedAt(Instant.now());
         mediaRepo.save(entity);
     }
@@ -212,9 +216,14 @@ public class MediaCopyService {
             entity.setStorageProvider(MINIO_PROVIDER);
             entity.setBucket(options.bucket());
             entity.setFileSize(fileSize);
-            entity.setPublicUrl(pathResolver.publicUrl(options.endpoint(), options.bucket(), key));
+            entity.setPublicUrl(publicUrlFor(key));
             entity.setUpdatedAt(Instant.now());
             mediaRepo.save(entity);
         }
+    }
+
+    private String publicUrlFor(String key) {
+        String base = mediaUrlProperties.getPublicBaseUrl();
+        return base.endsWith("/") ? base + key : base + "/" + key;
     }
 }

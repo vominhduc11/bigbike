@@ -1,100 +1,75 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { fetchMe, logoutCustomer } from "@/lib/api/client-api";
-import type { CustomerProfile } from "@/lib/contracts/commerce";
-import { toLoginPath, toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
+import { AccountShell, useAccount } from "@/components/layout/AccountShell";
+import { customerStatusLabel } from "@/lib/utils/format";
 
-export default function AccountPage() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  useEffect(() => {
-    fetchMe()
-      .then(setProfile)
-      .catch(() => router.replace(toLoginPath("/tai-khoan")))
-      .finally(() => setLoading(false));
-  }, [router]);
-
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      await logoutCustomer();
-      router.push("/");
-    } catch {
-      router.push("/");
-    }
-  }
-
-  if (loading) {
-    return (
-      <section className="bb-page">
-        <div className="bb-container">
-          <div className="bb-skeleton-item" style={{ maxWidth: "600px", minHeight: "300px" }} />
-        </div>
-      </section>
-    );
-  }
-
-  if (!profile) return null;
+function AccountOverview() {
+  const profile = useAccount()!;
 
   return (
-    <section className="bb-page">
-      <div className="bb-container">
-        <header style={{ marginBottom: "var(--bb-space-6)" }}>
-          <p className="bb-kicker">Tài khoản</p>
-          <h1>Xin chao, {profile.displayName ?? profile.email}</h1>
-        </header>
-
-        <div style={{ display: "grid", gap: "var(--bb-space-4)", maxWidth: "600px" }}>
-          <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-            <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-              Thông tin tài khoản
-            </h2>
-            <div style={{ display: "grid", gap: "var(--bb-space-3)" }}>
-              <div className="bb-profile-row">
-                <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Email</span>
-                <span>{profile.email}</span>
-              </div>
-              {profile.phone && (
-                <div className="bb-profile-row">
-                  <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Điện thoại</span>
-                  <span>{profile.phone}</span>
-                </div>
-              )}
-              <div className="bb-profile-row">
-                <span style={{ color: "var(--bb-text-muted)", minWidth: "100px" }}>Trạng thái</span>
-                <span style={{ color: profile.status === "ACTIVE" ? "var(--bb-state-success)" : "var(--bb-text-muted)" }}>
-                  {profile.status}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "var(--bb-space-3)", flexWrap: "wrap" }}>
-            <Link href={toOrderHistoryPath()} className="bb-button bb-button-secondary">
-              Đơn hàng của tôi
-            </Link>
-            <Link href={toProductListPath()} className="bb-button bb-button-secondary">
-              Tiếp tục mua hàng
-            </Link>
-          </div>
-
-          <button
-            type="button"
-            className="bb-button bb-button-secondary"
-            style={{ width: "fit-content", borderColor: "var(--bb-state-danger-border)", color: "var(--bb-state-danger)" }}
-            onClick={handleLogout}
-            disabled={loggingOut}
-          >
-            {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-          </button>
+    <>
+      <div className="wp-account-header">
+        <div>
+          <h2>Tổng quan</h2>
+          <p className="sub">Xin chào, {profile.displayName ?? profile.email}</p>
         </div>
       </div>
-    </section>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, marginBottom: 28 }}>
+        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
+            Email
+          </p>
+          <p style={{ fontSize: 14, color: "#fff", margin: 0 }}>{profile.email}</p>
+        </div>
+        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
+            Số điện thoại
+          </p>
+          <p style={{ fontSize: 14, color: "#fff", margin: 0 }}>{profile.phone ?? "Chưa cập nhật"}</p>
+        </div>
+        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
+            Trạng thái
+          </p>
+          <p style={{ fontSize: 14, color: profile.status === "ACTIVE" ? "#62bb46" : "var(--bb-text-muted)", margin: 0, fontWeight: 700 }}>
+            {customerStatusLabel(profile.status)}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <Link
+          href="/tai-khoan/don-hang/"
+          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
+        >
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Đơn hàng</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Xem lịch sử đặt hàng →</p>
+        </Link>
+        <Link
+          href="/tai-khoan/edit-account"
+          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
+        >
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Tài khoản</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Chỉnh sửa thông tin →</p>
+        </Link>
+        <Link
+          href="/tai-khoan/edit-address/billing"
+          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
+        >
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Địa chỉ</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Quản lý địa chỉ →</p>
+        </Link>
+      </div>
+    </>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <AccountShell loginRedirect="/tai-khoan">
+      <AccountOverview />
+    </AccountShell>
   );
 }

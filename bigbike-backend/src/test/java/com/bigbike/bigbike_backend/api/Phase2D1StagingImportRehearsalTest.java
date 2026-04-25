@@ -328,7 +328,8 @@ class Phase2D1StagingImportRehearsalTest {
             String[] info = terms.get(termId);
             if (info == null) continue;
             cats.add(new MappedCategory(
-                    termId, termId, info[0], info[1], "", 0L, 0, "/" + info[0] + "/", List.of()));
+                    termId, termId, info[0], info[1], "", 0L, 0,
+                    null, null, "/" + info[0] + "/", List.of()));
         }
         return cats;
     }

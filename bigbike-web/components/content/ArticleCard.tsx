@@ -13,22 +13,20 @@ export function ArticleCard({ article }: ArticleCardProps) {
   const excerpt = safeText(article.excerpt, "Nội dung đang được cập nhật.");
 
   return (
-    <article className="bb-article-card bb-card bb-card-hover">
-      <Link href={toArticlePath(article.slug)} className="bb-article-card-link">
+    <Link href={toArticlePath(article.slug)} className="wp-news-card">
+      <div className="wp-news-img">
         <MediaImage
           image={article.coverImage}
           altFallback={title}
-          className="bb-article-image"
           width={1200}
           height={675}
         />
-        <div className="bb-article-body">
-          <p className="bb-article-meta">{formatDate(article.publishedAt ?? article.createdAt)}</p>
-          <h3>{title}</h3>
-          <p>{excerpt}</p>
-        </div>
-      </Link>
-    </article>
+      </div>
+      <div className="wp-news-body">
+        <p className="wp-news-meta">{formatDate(article.publishedAt ?? article.createdAt)}</p>
+        <h3 className="wp-news-title">{title}</h3>
+        <p className="wp-news-excerpt">{excerpt}</p>
+      </div>
+    </Link>
   );
 }
-

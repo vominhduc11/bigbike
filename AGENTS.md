@@ -2,14 +2,12 @@
 
 > Operating instructions for AI coding agents working on the BigBike monorepo.
 >
-> This file is the first document an AI agent should read before modifying code, docs, configs, or tests.
+> This file is the first document an AI agent should read before modifying code, configs, or tests.
 >
 > Repository scope:
 > - `bigbike-web`: public website / SEO commerce website for end customers
 > - `bigbike-admin`: internal admin dashboard
 > - `bigbike-backend`: Spring Boot backend
->
-> If this file conflicts with a more specific document inside `docs/`, follow the more specific document and update this file if the rule should be global.
 
 ---
 
@@ -17,11 +15,11 @@
 
 `AGENTS.md` defines how AI agents must work in this repository.
 
-It exists to prevent the usual charming disaster where an agent fixes a button, invents three order statuses, hardcodes brand colors, rewrites API payloads, and calls it “minor refactor”. No. Behave.
+It exists to prevent the usual charming disaster where an agent fixes a button, invents three order statuses, hardcodes brand colors, rewrites API payloads, and calls it "minor refactor". No. Behave.
 
 This file tells agents:
 
-- Which docs to read before making changes.
+- Which resources to read before making changes.
 - How to respect project boundaries.
 - How to handle business rules, API contracts, data contracts, design rules and tokens.
 - How to avoid breaking SEO, admin workflows and backend contracts.
@@ -38,10 +36,15 @@ The project includes:
 
 ```text
 bigbike/
-├── bigbike-web/       # Public SEO + sales website
-├── bigbike-admin/     # Internal admin dashboard
-├── bigbike-backend/   # Spring Boot backend
-└── docs/              # Source of truth documentation
+├── AGENTS.md                  # This file — AI agent operating instructions
+├── BIGBIKE_BRANDGUIDELINE.pdf # Brand identity reference (PDF)
+├── README.md                  # Project overview
+├── docker-compose.yaml        # Full stack infrastructure
+├── bigbike-web/               # Public SEO + sales website (Next.js)
+├── bigbike-admin/             # Internal admin dashboard (Vite + React)
+├── bigbike-backend/           # Spring Boot backend
+├── ui_kits/website/           # Click-through prototype — design reference cho bigbike-web
+└── preview/                   # Design system visual previews (brand, tokens, components)
 ```
 
 Primary product domain:
@@ -72,29 +75,24 @@ Brand direction:
 
 ## 3. Required Reading Order
 
-Before modifying anything, read the relevant docs.
+Before modifying anything, read the relevant resources.
 
 ### 3.1 Always read first
 
 ```text
 AGENTS.md
-docs/brand/BRAND_GUIDELINES.md
-docs/business/BUSINESS_RULES.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/API_CONTRACT.md
+Bigbike Design System/README.md          # Brand context, copy rules, visual foundations — đọc được bằng tool
+Bigbike Design System/colors_and_type.css  # CSS token source of truth
+BIGBIKE_BRANDGUIDELINE.pdf               # PDF gốc 23 trang — không đọc trực tiếp bằng tool
 ```
 
 ### 3.2 For `bigbike-web` changes
 
-Read:
-
 ```text
-docs/design/DESIGN_SYSTEM.md
-docs/design/WEB_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
-docs/business/BUSINESS_PROCESS.md
-docs/business/WORKFLOW.md
-docs/contracts/STATE_MACHINES.md
+Bigbike Design System/README.md          # Brand rules, copy, visual foundations
+Bigbike Design System/colors_and_type.css
+Bigbike Design System/ui_kits/website/   # Click-through prototype — design reference cho public website
+Bigbike Design System/preview/           # Visual brand tokens và component style
 ```
 
 Use these for:
@@ -111,15 +109,11 @@ Use these for:
 
 ### 3.3 For `bigbike-admin` changes
 
-Read:
-
 ```text
-docs/design/DESIGN_SYSTEM.md
-docs/design/ADMIN_DESIGN.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-docs/business/WORKFLOW.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
+Bigbike Design System/README.md                                                       # Brand context và token guidance
+Bigbike Design System/colors_and_type.css
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json                      # API contract
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
 
 Use these for:
@@ -136,16 +130,11 @@ Use these for:
 
 ### 3.4 For backend changes
 
-Read:
-
 ```text
-docs/business/BUSINESS_RULES.md
-docs/business/BUSINESS_PROCESS.md
-docs/business/WORKFLOW.md
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-docs/contracts/STATE_MACHINES.md
-docs/contracts/PERMISSION_MATRIX.md
+bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```
 
 Use these for:
@@ -158,40 +147,13 @@ Use these for:
 - Business enforcement.
 - Data model alignment.
 
-### 3.5 For docs-only changes
+### 3.5 For legacy migration changes
 
-Read the related neighboring docs before editing. Do not create contradictions.
-
-Example:
-
-If editing `API_CONTRACT.md`, also check:
+Before implementing product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior derived from the legacy WordPress site, inspect:
 
 ```text
-DATA_CONTRACT.md
-STATE_MACHINES.md
-PERMISSION_MATRIX.md
-BUSINESS_RULES.md
-```
-
-### 3.6 For legacy migration changes
-
-Before implementing product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior derived from the legacy WordPress site, read:
-
-```text
-docs/legacy/WORDPRESS_SOURCE_AUDIT.md
-docs/legacy/LEGACY_DATABASE_SCHEMA.md
-docs/legacy/LEGACY_ROUTE_MAP.md
-docs/legacy/LEGACY_PRODUCT_MODEL.md
-docs/legacy/LEGACY_ORDER_FLOW.md
-docs/legacy/SEO_REDIRECT_MAP.csv
-docs/legacy/WORDPRESS_TO_NEW_STACK_MAPPING.md
-```
-
-Legacy source and dump are local-only reference material:
-
-```text
-bigbike_vn__2026_04_17/
-bigbike_vn__2026_04_17/sqldump.sql
+bigbike_vn__2026_04_17/             # Local-only legacy WordPress export
+bigbike_vn__2026_04_17/sqldump.sql  # Schema-only reference
 ```
 
 Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` secret values, user data, order data, customer email, phone, address, password hash, session, token, API key, webhook secret, or order key values.
@@ -202,20 +164,14 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 
 | Concern | Source of truth |
 |---|---|
-| Brand identity, logo, colors, typography meaning | `docs/brand/BRAND_GUIDELINES.md` |
-| Shared UI rules | `docs/design/DESIGN_SYSTEM.md` |
-| Public website UX | `docs/design/WEB_DESIGN.md` |
-| Admin dashboard UX | `docs/design/ADMIN_DESIGN.md` |
-| Web tokens | `docs/tokens/WEB_DESIGN_TOKENS.md` |
-| Admin tokens | `docs/tokens/ADMIN_DESIGN_TOKENS.md` |
-| Business rules | `docs/business/BUSINESS_RULES.md` |
-| Business processes | `docs/business/BUSINESS_PROCESS.md` |
-| User/admin workflows | `docs/business/WORKFLOW.md` |
-| API contract | `docs/contracts/API_CONTRACT.md` |
-| Data model contract | `docs/contracts/DATA_CONTRACT.md` |
-| State transitions | `docs/contracts/STATE_MACHINES.md` |
-| Roles and permissions | `docs/contracts/PERMISSION_MATRIX.md` |
-| Legacy WordPress discovery and migration mapping | `docs/legacy/` |
+| Brand identity, logo, colors, typography, copy | `Bigbike Design System/README.md` + `Bigbike Design System/colors_and_type.css` |
+| Brand assets (logos, icons, fonts, favicons) | `Bigbike Design System/assets/` + `Bigbike Design System/fonts/` |
+| Web UI design reference | `Bigbike Design System/ui_kits/website/` |
+| Visual design previews | `Bigbike Design System/preview/` |
+| Backend API contract | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
+| Backend phase implementation reports | `bigbike-backend/docs/` |
+| SEO redirect map | `bigbike-web/docs/` |
+| Legacy WordPress data and migration reference | `bigbike_vn__2026_04_17/` (local-only) |
 
 Do not move responsibility between files unless explicitly asked.
 
@@ -256,43 +212,15 @@ Frontend may validate for UX, but backend must enforce:
 
 ### 5.3 Respect contracts
 
-If changing API response, update:
+If changing API response or data model, document the change clearly in the PR summary.
 
-```text
-docs/contracts/API_CONTRACT.md
-docs/contracts/DATA_CONTRACT.md
-```
+If changing status transitions, ensure backend rejects invalid transitions.
 
-If changing status transition, update:
+If changing admin permission behavior, ensure backend enforces it server-side.
 
-```text
-docs/contracts/STATE_MACHINES.md
-```
+If changing behavior or business rule, mark any unclear gaps as `TBD`.
 
-If changing admin permission behavior, update:
-
-```text
-docs/contracts/PERMISSION_MATRIX.md
-```
-
-If changing behavior/business rule, update:
-
-```text
-docs/business/BUSINESS_RULES.md
-docs/business/WORKFLOW.md
-```
-
-If mapping legacy WordPress data into the new stack, update:
-
-```text
-docs/contracts/DATA_CONTRACT.md
-```
-
-If changing route, slug, permalink, trailing slash, or blog `.html` behavior, update:
-
-```text
-docs/legacy/SEO_REDIRECT_MAP.csv
-```
+If changing route, slug, permalink, trailing slash, or blog `.html` behavior, ensure internal links are updated and redirects are handled.
 
 ### 5.4 No hardcoded design drift
 
@@ -304,10 +232,10 @@ Bad:
 className="bg-[#F90606] px-[17px] rounded-[11px]"
 ```
 
-Better:
+Better — use CSS variables from `Bigbike Design System/colors_and_type.css`:
 
 ```tsx
-className="bg-web-action-primary px-web-button-md rounded-web-button"
+className="bg-[var(--bb-brand-primary)] px-[var(--bb-space-4)] rounded-[var(--bb-radius-sm)]"
 ```
 
 Exact syntax depends on the project stack, but the principle is not optional.
@@ -356,13 +284,9 @@ Every screen/component must handle:
 
 ### 5.8 Legacy migration guardrails
 
-Do not implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior from memory. Read `docs/legacy/` first and extend the sanitized legacy docs if a needed fact is missing.
+Do not implement product, order, content, auth, customer, media, category, brand, search, cart, checkout, or public route behavior from memory. Inspect `bigbike_vn__2026_04_17/` first.
 
 Never commit raw `bigbike_vn__2026_04_17/` source, `sqldump.sql`, `wp-config.php` values, user/order/customer PII, password hashes, sessions, tokens, API keys, webhook secrets, or raw redirect exports.
-
-Any route behavior change must update `docs/legacy/SEO_REDIRECT_MAP.csv` in the same change.
-
-Any legacy data mapping that becomes canonical implementation behavior must update `docs/contracts/DATA_CONTRACT.md` in the same change.
 
 Do not build new features ahead of legacy discovery for the affected domain.
 
@@ -395,7 +319,7 @@ Rules:
 - Optimized images.
 - No admin UX patterns unless truly appropriate.
 
-Do not turn public web into a dashboard. Customers do not want to “manage entity rows”, they want to buy gear and leave with dignity.
+Do not turn public web into a dashboard. Customers do not want to "manage entity rows", they want to buy gear and leave with dignity.
 
 ### 6.2 `bigbike-admin`
 
@@ -517,8 +441,6 @@ If receiving unknown enum:
 
 ### 8.1 Standard shape
 
-Use standard response shape from `API_CONTRACT.md`.
-
 Single resource:
 
 ```json
@@ -572,17 +494,13 @@ POST /api/v1/admin/orders/{orderId}/cancel
 POST /api/v1/admin/products/{productId}/publish
 ```
 
-Backend must validate transition against `STATE_MACHINES.md`.
+Backend must validate transition against defined state machine rules.
 
 ---
 
 ## 9. State Machine Rules
 
-State transitions must align with:
-
-```text
-docs/contracts/STATE_MACHINES.md
-```
+State transitions must be enforced by the backend.
 
 Do not allow impossible transitions just because the UI button exists.
 
@@ -600,11 +518,7 @@ Frontend should hide/disable invalid actions, but backend still must reject inva
 
 ## 10. Permission Rules
 
-Admin route/action must map to permission from:
-
-```text
-docs/contracts/PERMISSION_MATRIX.md
-```
+Admin route/action must map to a defined permission.
 
 Examples:
 
@@ -636,12 +550,6 @@ Dangerous actions require:
 
 ### 11.1 Shared UI
 
-Follow:
-
-```text
-docs/design/DESIGN_SYSTEM.md
-```
-
 All UI must have:
 
 - Clear hierarchy.
@@ -653,11 +561,13 @@ All UI must have:
 
 ### 11.2 Web design
 
-For `bigbike-web`, follow:
+For `bigbike-web`, reference:
 
 ```text
-docs/design/WEB_DESIGN.md
-docs/tokens/WEB_DESIGN_TOKENS.md
+Bigbike Design System/README.md          # Brand rules, visual foundations
+Bigbike Design System/colors_and_type.css  # CSS tokens
+Bigbike Design System/ui_kits/website/   # Click-through prototype
+Bigbike Design System/preview/           # Visual reference cards
 ```
 
 Priorities:
@@ -672,12 +582,7 @@ Priorities:
 
 ### 11.3 Admin design
 
-For `bigbike-admin`, follow:
-
-```text
-docs/design/ADMIN_DESIGN.md
-docs/tokens/ADMIN_DESIGN_TOKENS.md
-```
+For `bigbike-admin`, use the admin token system (not web campaign styling).
 
 Priorities:
 
@@ -758,16 +663,16 @@ Tables should not render raw null/undefined.
 
 ### 15.1 Brand assets
 
-Brand assets should live in `public/brand` or shared asset package depending project structure.
+Brand assets should live in `public/brand` or shared asset package depending on project structure.
 
 Do not rename assets randomly without updating references.
 
 ### 15.2 Fonts
 
-Use BigBike-approved fonts:
+Use BigBike-approved fonts from `Bigbike Design System/fonts/`:
 
-- `Bungee` for display/campaign/headline sparingly.
-- `Exo` for body/UI/admin/product/content.
+- `Bungee` — display / campaign / headline (sparingly, uppercase only).
+- `Exo` — body / UI / admin / product / content (9 weights available).
 
 Do not introduce unrelated fonts.
 
@@ -824,7 +729,7 @@ Media upload must validate:
 
 Run available checks before finalizing.
 
-Depending on project stack:
+Frontend:
 
 ```bash
 npm run lint
@@ -832,7 +737,7 @@ npm run test
 npm run build
 ```
 
-For backend:
+Backend:
 
 ```bash
 ./mvnw test
@@ -882,21 +787,9 @@ For `bigbike-backend`, verify:
 
 ---
 
-## 18. Documentation Update Rules
+## 18. Change Summary Rules
 
-Update docs when code changes affect:
-
-- Business behavior.
-- API contract.
-- Data model.
-- State transitions.
-- Permissions.
-- UI design rules.
-- Token usage.
-- SEO behavior.
-- Workflow.
-
-Do not leave docs stale. Stale docs are worse than no docs because they lie with confidence.
+When code changes affect business behavior, API shape, data model, state transitions, permissions, or SEO behavior — document it clearly in the PR summary. Do not leave reviewers guessing.
 
 ---
 
@@ -906,7 +799,7 @@ When creating a commit or PR, summarize:
 
 - What changed.
 - Why it changed.
-- Which app/docs affected.
+- Which app affected.
 - Tests/checks run.
 - Risks or follow-up work.
 
@@ -916,7 +809,6 @@ Example:
 Summary:
 - Added product publish validation in backend.
 - Updated admin publish button disabled state.
-- Documented transition in STATE_MACHINES.md.
 
 Checks:
 - npm run lint
@@ -996,50 +888,45 @@ Do not claim imaginary test results. The CI gods are petty and they keep receipt
 
 ### Web change
 
-Read:
-
 ```text
-BRAND_GUIDELINES.md
-DESIGN_SYSTEM.md
-WEB_DESIGN.md
-WEB_DESIGN_TOKENS.md
-BUSINESS_RULES.md
-API_CONTRACT.md
-DATA_CONTRACT.md
+AGENTS.md
+Bigbike Design System/README.md
+Bigbike Design System/colors_and_type.css
+Bigbike Design System/ui_kits/website/
+Bigbike Design System/preview/
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
 ```
 
 ### Admin change
 
-Read:
-
 ```text
-BRAND_GUIDELINES.md
-DESIGN_SYSTEM.md
-ADMIN_DESIGN.md
-ADMIN_DESIGN_TOKENS.md
-BUSINESS_RULES.md
-API_CONTRACT.md
-DATA_CONTRACT.md
-PERMISSION_MATRIX.md
+AGENTS.md
+Bigbike Design System/README.md
+Bigbike Design System/colors_and_type.css
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
 
 ### Backend change
 
-Read:
+```text
+AGENTS.md
+bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+```
+
+### Legacy migration change
 
 ```text
-BUSINESS_RULES.md
-BUSINESS_PROCESS.md
-WORKFLOW.md
-API_CONTRACT.md
-DATA_CONTRACT.md
-STATE_MACHINES.md
-PERMISSION_MATRIX.md
+bigbike_vn__2026_04_17/
 ```
 
 ### Contract change
 
-Update linked docs. No orphan contracts.
+Document the change in PR summary. Update all affected layers (frontend + backend).
 
 ---
 
@@ -1047,4 +934,4 @@ Update linked docs. No orphan contracts.
 
 An AI agent must leave the repository more consistent than it found it.
 
-If the change makes one frontend, backend, docs, and contracts disagree with each other, the change is not done. It is merely a bug wearing a pull request costume.
+If the change makes frontend, backend, and contracts disagree with each other, the change is not done. It is merely a bug wearing a pull request costume.

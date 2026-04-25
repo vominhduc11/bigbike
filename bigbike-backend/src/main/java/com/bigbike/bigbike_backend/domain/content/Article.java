@@ -15,6 +15,7 @@ public record Article(
         ImageAsset coverImage,
         AuthorSummary author,
         ContentCategorySummary category,
+        List<ContentCategorySummary> categories,
         List<String> tags,
         PublishStatus publishStatus,
         SeoMeta seo,
@@ -23,4 +24,3 @@ public record Article(
         Instant updatedAt
 ) {
 }
-

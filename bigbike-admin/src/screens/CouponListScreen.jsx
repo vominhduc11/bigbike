@@ -3,8 +3,8 @@ import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { createCoupon, fetchCoupons, updateCouponStatus } from '../lib/adminApi'
-import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { createCoupon, fetchCoupons, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 
 const STATUS_TONES = { ACTIVE: 'success', INACTIVE: 'warning', EXPIRED: 'neutral' }
 function CouponStatusBadge({ value }) {
@@ -12,7 +12,7 @@ function CouponStatusBadge({ value }) {
 }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
-const EMPTY_FORM = { code: '', discountType: 'FIXED_AMOUNT', discountValue: '', minimumOrderAmount: '' }
+const EMPTY_FORM = { code: '', discountType: 'FIXED_AMOUNT', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '' }
 
 export function CouponListScreen({ canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
@@ -21,6 +21,10 @@ export function CouponListScreen({ canUpdate }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [formSaving, setFormSaving] = useState(false)
+  const [editCoupon, setEditCoupon] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [editError, setEditError] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -46,7 +50,10 @@ export function CouponListScreen({ canUpdate }) {
     setFormSaving(true)
     setFormError('')
     try {
-      await createCoupon({ ...form, discountValue: Number(form.discountValue), minimumOrderAmount: Number(form.minimumOrderAmount) })
+      const payload = { code: form.code, discountType: form.discountType, discountValue: Number(form.discountValue), minimumOrderAmount: Number(form.minimumOrderAmount) }
+      if (form.maxUsage) payload.maxUsage = Number(form.maxUsage)
+      if (form.expiresAt) payload.expiresAt = form.expiresAt
+      await createCoupon(payload)
       setShowForm(false)
       setForm(EMPTY_FORM)
       setQuery((p) => ({ ...p }))
@@ -54,6 +61,40 @@ export function CouponListScreen({ canUpdate }) {
       setFormError(e.message || 'Lỗi tạo coupon')
     } finally {
       setFormSaving(false)
+    }
+  }
+
+  function openEdit(coupon) {
+    setEditCoupon(coupon)
+    setEditForm({
+      discountType: coupon.discountType || 'FIXED_AMOUNT',
+      discountValue: String(coupon.discountValue ?? ''),
+      minimumOrderAmount: String(coupon.minimumOrderAmount ?? ''),
+      maxUsage: String(coupon.maxUsage ?? ''),
+      expiresAt: coupon.expiresAt ? coupon.expiresAt.split('T')[0] : '',
+    })
+    setEditError('')
+  }
+
+  async function handleEdit(e) {
+    e.preventDefault()
+    setEditSaving(true)
+    setEditError('')
+    try {
+      const payload = {
+        discountType: editForm.discountType,
+        discountValue: Number(editForm.discountValue),
+        minimumOrderAmount: Number(editForm.minimumOrderAmount),
+      }
+      if (editForm.maxUsage) payload.maxUsage = Number(editForm.maxUsage)
+      if (editForm.expiresAt) payload.expiresAt = editForm.expiresAt
+      const r = await updateCoupon(editCoupon.id, payload)
+      setState((p) => ({ ...p, items: p.items.map((c) => c.id === editCoupon.id ? r.item : c) }))
+      setEditCoupon(null)
+    } catch (e) {
+      setEditError(e.message || 'Lỗi cập nhật coupon')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -70,9 +111,12 @@ export function CouponListScreen({ canUpdate }) {
     canUpdate ? {
       key: 'actions', label: '', align: 'right',
       render: (c) => (
-        <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => handleToggleStatus(c)}>
-          {c.status === 'ACTIVE' ? 'Tắt' : 'Bật'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => openEdit(c)}>Sửa</button>
+          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => handleToggleStatus(c)}>
+            {c.status === 'ACTIVE' ? 'Tắt' : 'Bật'}
+          </button>
+        </div>
       ),
     } : null,
   ].filter(Boolean), [canUpdate])
@@ -111,10 +155,35 @@ export function CouponListScreen({ canUpdate }) {
             </label>
             <label>Giá trị giảm <input className="control-input" type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} /></label>
             <label>Đơn tối thiểu <input className="control-input" type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} /></label>
+            <label>Số lần dùng tối đa <input className="control-input" type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))} /></label>
+            <label>Ngày hết hạn <input className="control-input" type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))} /></label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? 'Đang tạo...' : 'Tạo coupon'}</button>
             <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError('') }}>Huỷ</button>
+          </div>
+        </form>
+      )}
+
+      {editCoupon && (
+        <form onSubmit={handleEdit} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-primary)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Chỉnh sửa: <code>{editCoupon.code}</code></h3>
+          {editError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{editError}</p>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <label>Loại giảm
+              <select className="control-select" value={editForm.discountType} onChange={(e) => setEditForm((p) => ({ ...p, discountType: e.target.value }))}>
+                <option value="FIXED_AMOUNT">Số tiền cố định</option>
+                <option value="PERCENT">Phần trăm</option>
+              </select>
+            </label>
+            <label>Giá trị giảm <input className="control-input" type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))} /></label>
+            <label>Đơn tối thiểu <input className="control-input" type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} /></label>
+            <label>Số lần dùng tối đa <input className="control-input" type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))} /></label>
+            <label>Ngày hết hạn <input className="control-input" type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))} /></label>
+          </div>
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+            <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditCoupon(null)}>Huỷ</button>
           </div>
         </form>
       )}

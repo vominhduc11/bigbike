@@ -21,6 +21,18 @@ export function formatVnd(value: number | null | undefined): string {
   }).format(safeValue) + " VND";
 }
 
+const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
+const WP_UPLOADS_PROXY = "/wp-content/uploads/";
+
+export function resolveMediaUrl(url: string | null | undefined): string | null | undefined {
+  if (!url) return url;
+  // Legacy CDN absolute URL → same-origin proxy path (for any residual cdn.bigbike.vn references)
+  if (url.startsWith(LEGACY_CDN_PREFIX)) {
+    return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
+  }
+  return url;
+}
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) {
     return "Đang cập nhật";
@@ -41,4 +53,70 @@ export function formatDate(value: string | null | undefined): string {
 export function normalizeHeading(value: string | null | undefined, fallback: string): string {
   const text = safeText(value, fallback);
   return text.length > 120 ? `${text.slice(0, 117)}...` : text;
+}
+
+export function stockStateLabel(stockState: string | null | undefined): string {
+  switch (stockState) {
+    case "IN_STOCK":
+      return "Còn hàng";
+    case "LOW_STOCK":
+      return "Sắp hết";
+    case "PREORDER":
+      return "Đặt trước";
+    case "OUT_OF_STOCK":
+      return "Hết hàng";
+    case "CONTACT_FOR_STOCK":
+      return "Liên hệ";
+    default:
+      return "Đang cập nhật";
+  }
+}
+
+export function orderStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "PENDING":
+      return "Chờ xác nhận";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "COMPLETED":
+      return "Hoàn thành";
+    case "CANCELLED":
+      return "Đã huỷ";
+    case "REFUNDED":
+      return "Đã hoàn tiền";
+    case "FAILED":
+      return "Thất bại";
+    default:
+      return status ?? "Đang cập nhật";
+  }
+}
+
+export function paymentStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "PENDING":
+      return "Chờ thanh toán";
+    case "PAID":
+      return "Đã thanh toán";
+    case "COD_PENDING":
+      return "Thanh toán khi nhận hàng";
+    case "FAILED":
+      return "Thanh toán thất bại";
+    case "REFUNDED":
+      return "Đã hoàn tiền";
+    default:
+      return status ?? "Đang cập nhật";
+  }
+}
+
+export function customerStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "ACTIVE":
+      return "Đang hoạt động";
+    case "INACTIVE":
+      return "Tạm ngừng";
+    case "BANNED":
+      return "Bị khoá";
+    default:
+      return status ?? "Đang cập nhật";
+  }
 }

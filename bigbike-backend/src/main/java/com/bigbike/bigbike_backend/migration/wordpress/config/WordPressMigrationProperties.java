@@ -66,13 +66,6 @@ public class WordPressMigrationProperties {
      */
     private String environment = "";
 
-    /**
-     * Base URL for legacy WordPress uploads served via CDN/proxy.
-     * Used to construct image_url for products and articles during Phase 2D.
-     * Example: https://cdn.bigbike.vn/uploads
-     */
-    private String legacyUploadsBaseUrl = "https://cdn.bigbike.vn/uploads";
-
     // ---- Phase 2E: media copy to MinIO ----
 
     /** MinIO API endpoint. Example: http://localhost:9000 */
@@ -119,9 +112,6 @@ public class WordPressMigrationProperties {
 
     public String getEnvironment() { return environment; }
     public void setEnvironment(String environment) { this.environment = environment; }
-
-    public String getLegacyUploadsBaseUrl() { return legacyUploadsBaseUrl; }
-    public void setLegacyUploadsBaseUrl(String legacyUploadsBaseUrl) { this.legacyUploadsBaseUrl = legacyUploadsBaseUrl; }
 
     public String getMinioEndpoint() { return minioEndpoint; }
     public void setMinioEndpoint(String minioEndpoint) { this.minioEndpoint = minioEndpoint; }

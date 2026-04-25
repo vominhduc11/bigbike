@@ -326,6 +326,57 @@
   color: var(--bb-text-brand);
 }
 
+.bb-heading-racing {
+  font-family: var(--bb-font-display);
+  font-weight: var(--bb-font-weight-regular);
+  font-size: var(--bb-text-xl);
+  line-height: var(--bb-line-tight);
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+}
+
+.bb-h1 {
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-4xl);
+  line-height: var(--bb-line-tight);
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+}
+
+.bb-h2 {
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-3xl);
+  line-height: var(--bb-line-heading);
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+}
+
+.bb-h3 {
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-2xl);
+  line-height: var(--bb-line-heading);
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+}
+
+.bb-kicker {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-xs);
+  font-weight: var(--bb-font-weight-bold);
+  line-height: var(--bb-line-ui);
+  letter-spacing: var(--bb-letter-wide);
+  text-transform: uppercase;
+  color: var(--bb-text-brand);
+}
+
+.bb-meta {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-xs);
+  font-weight: var(--bb-font-weight-regular);
+  line-height: var(--bb-line-body);
+  color: var(--bb-text-muted);
+}
+
 /* ============================================================
  * UI Components: Token-backed defaults
  * ============================================================ */
@@ -515,6 +566,101 @@
 
 .bb-hero-overlay {
   background: var(--bb-overlay-gradient);
+}
+
+/* ============================================================
+ * Rich Text (WP HTML content rendered via dangerouslySetInnerHTML)
+ * ============================================================ */
+
+.bb-richtext {
+  color: var(--bb-text-primary);
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-base);
+  line-height: var(--bb-line-body);
+}
+
+.bb-richtext h1,
+.bb-richtext h2,
+.bb-richtext h3,
+.bb-richtext h4,
+.bb-richtext h5,
+.bb-richtext h6 {
+  font-family: var(--bb-font-display);
+  font-weight: var(--bb-font-weight-regular);
+  line-height: var(--bb-line-heading);
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+  margin-top: var(--bb-space-6);
+  margin-bottom: var(--bb-space-3);
+}
+
+.bb-richtext h2 { font-size: var(--bb-text-2xl); }
+.bb-richtext h3 { font-size: var(--bb-text-xl); }
+.bb-richtext h4 { font-size: var(--bb-text-lg); }
+
+.bb-richtext p {
+  margin-bottom: var(--bb-space-4);
+}
+
+.bb-richtext a {
+  color: var(--bb-brand-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bb-richtext a:hover {
+  color: var(--bb-brand-hover);
+}
+
+.bb-richtext strong,
+.bb-richtext b {
+  font-weight: var(--bb-font-weight-bold);
+}
+
+.bb-richtext ul,
+.bb-richtext ol {
+  padding-left: var(--bb-space-6);
+  margin-bottom: var(--bb-space-4);
+}
+
+.bb-richtext ul { list-style: disc; }
+.bb-richtext ol { list-style: decimal; }
+
+.bb-richtext li {
+  margin-bottom: var(--bb-space-2);
+}
+
+.bb-richtext table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--bb-space-6);
+  font-size: var(--bb-text-sm);
+}
+
+.bb-richtext th,
+.bb-richtext td {
+  padding: var(--bb-space-2) var(--bb-space-3);
+  border: 1px solid var(--bb-border-subtle);
+  text-align: left;
+}
+
+.bb-richtext th {
+  background: var(--bb-bg-surface-raised);
+  font-weight: var(--bb-font-weight-bold);
+}
+
+.bb-richtext img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--bb-radius-sm);
+}
+
+.bb-richtext blockquote {
+  border-left: 3px solid var(--bb-brand-primary);
+  margin: var(--bb-space-4) 0;
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-bg-surface-raised);
+  font-style: italic;
 }
 
 /* ============================================================

@@ -73,10 +73,6 @@ export default async function CategoryListPage({ searchParams }: CategoryListPag
           </p>
         </header>
 
-        {result.fromFallback ? (
-          <p className="bb-status-banner">Đang hiển thị dữ liệu fallback dev cho danh mục.</p>
-        ) : null}
-
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toCategoryListPath()} />
         ) : result.data.length === 0 ? (

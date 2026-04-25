@@ -50,10 +50,11 @@ function toNextPath(pattern: string): string | null {
 }
 
 function buildRedirectRules(rows: SeoRedirectRow[]) {
-  // Preserve rows are kept by route behavior + trailingSlash policy.
-  // Only explicit redirect rows are emitted here; large legacy maps can be owned by CDN/nginx later.
+  // Only emit rows with status=active. Rows marked rewrite/removed/inactive are
+  // handled by afterFiles rewrites or no longer needed.
   return rows
     .filter((row) =>
+      row.status === "active" &&
       ["301", "302", "307", "308"].includes(row.redirectType) &&
       row.sourcePattern !== row.targetPattern,
     )
@@ -110,15 +111,33 @@ const API_ORIGIN = (() => {
   try { return new URL(API_BASE).origin; } catch { return "http://localhost:8080"; }
 })();
 
+// Extract media origin for CSP img-src.
+// In dev this resolves to http://localhost:9000 (MinIO); in prod CDN is https: so already covered.
+const MEDIA_ORIGIN = (() => {
+  try { return new URL(LEGACY_UPLOADS_BASE).origin; } catch { return ""; }
+})();
+
+
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
   async redirects() {
     return [
+      // /home.html → / is a true redirect (home.html was the WP default page slug,
+      // not a canonical we want to preserve).
+      {
+        source: "/home.html",
+        destination: "/",
+        permanent: true,
+      },
+      // /san-pham.html → danh-muc-san-pham.html keeps one extra alias working.
+      {
+        source: "/san-pham.html",
+        destination: "/danh-muc-san-pham.html",
+        permanent: true,
+      },
       ...csvRedirectRules,
       // Legacy WP sitemap index → consolidated Next.js sitemap.
-      // Anchored exact match on the sitemap_index path so we don't accidentally
-      // intercept any other /sitemap*.xml routes Next emits.
       {
         source: "/sitemap_index.xml",
         destination: "/sitemap.xml",
@@ -129,21 +148,102 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       // beforeFiles ensures legacy upload URLs are served from the CDN/MinIO
-      // before Next's filesystem routing tries to match a page. The path
-      // segment is intentionally narrow (`/wp-content/uploads/...`) so this
-      // rule cannot capture other routes.
+      // before Next's filesystem routing tries to match a page.
       beforeFiles: [
         {
           source: "/wp-content/uploads/:path*",
           destination: `${LEGACY_UPLOADS_BASE}/:path*`,
         },
       ],
+      // afterFiles: checked after pages/public files but before dynamic routes.
+      // These serve WordPress canonical .html URLs from existing Next.js app routes
+      // without redirecting, so .html remains the canonical URL.
       afterFiles: [
-        // Article URLs use .html suffix in links/SEO but the route segment is [slug].
-        // Rewrite strips .html before Next.js resolves the dynamic segment.
+        // Products: /sp/{slug}.html → /product/{slug}/
+        {
+          source: "/sp/:slug.html",
+          destination: "/product/:slug/",
+        },
+        // Brands: /brand/{slug}.html → /brands/{slug}/
+        {
+          source: "/brand/:slug.html",
+          destination: "/brands/:slug/",
+        },
+        // Articles: /tin-tuc/{slug}.html → /tin-tuc/{slug}/
         {
           source: "/tin-tuc/:slug.html",
           destination: "/tin-tuc/:slug/",
+        },
+        // Shop listing: /danh-muc-san-pham.html → /san-pham/
+        {
+          source: "/danh-muc-san-pham.html",
+          destination: "/san-pham/",
+        },
+        // Known static page .html → internal trailing-slash routes
+        {
+          source: "/gio-hang.html",
+          destination: "/gio-hang/",
+        },
+        {
+          source: "/thanh-toan.html",
+          destination: "/thanh-toan/",
+        },
+        {
+          source: "/dang-nhap.html",
+          destination: "/dang-nhap/",
+        },
+        {
+          source: "/dang-ky.html",
+          destination: "/dang-ky/",
+        },
+        {
+          source: "/quen-mat-khau.html",
+          destination: "/quen-mat-khau/",
+        },
+        {
+          source: "/tai-khoan.html",
+          destination: "/tai-khoan/",
+        },
+        {
+          source: "/gioi-thieu.html",
+          destination: "/gioi-thieu/",
+        },
+        {
+          source: "/huong-dan.html",
+          destination: "/huong-dan/",
+        },
+        {
+          source: "/huong-dan-mua-hang.html",
+          destination: "/huong-dan-mua-hang/",
+        },
+        {
+          source: "/lien-he.html",
+          destination: "/lien-he/",
+        },
+        // Legacy WP account sub-routes → current app routes
+        {
+          source: "/tai-khoan/orders/",
+          destination: "/tai-khoan/don-hang/",
+        },
+        {
+          source: "/tai-khoan/view-order/:id/",
+          destination: "/tai-khoan/don-hang/:id/",
+        },
+        {
+          source: "/tai-khoan/lost-password/",
+          destination: "/quen-mat-khau/",
+        },
+        // Hierarchical category URLs: /{parent}/{child}.html → /danh-muc-san-pham/{child}/
+        // (simplified; parent context not used by current category page)
+        {
+          source: "/:parent/:child.html",
+          destination: "/danh-muc-san-pham/:child/",
+        },
+        // Catch-all for flat category URLs: /{cat}.html → /danh-muc-san-pham/{cat}/
+        // Must be last — specific rules above take precedence by ordering.
+        {
+          source: "/:slug.html",
+          destination: "/danh-muc-san-pham/:slug/",
         },
       ],
       fallback: [],
@@ -164,11 +264,12 @@ const nextConfig: NextConfig = {
         value: [
           "default-src 'self'",
           // Next.js inline scripts (nonces are ideal but require middleware; this is a pragmatic baseline)
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
           "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob: https:",
+          `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
           "font-src 'self' data:",
-          `connect-src 'self' https: ${API_ORIGIN}`,
+          `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
+          "frame-src https://www.google.com https://maps.google.com",
           "frame-ancestors 'none'",
           "base-uri 'self'",
           "form-action 'self'",

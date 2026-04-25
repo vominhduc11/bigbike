@@ -4,6 +4,9 @@ bigbike_vn__2026_04_17/
 # Local agent/tooling state
 .claude/
 
+# Temporary local dev data (Docker volume mounts, pgdata, etc.)
+.tmp/
+
 # Environment files
 .env
 .env.local

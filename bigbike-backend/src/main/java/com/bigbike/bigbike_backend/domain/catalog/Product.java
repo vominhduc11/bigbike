@@ -23,9 +23,9 @@ public record Product(
         PublishStatus publishStatus,
         Boolean isFeatured,
         Boolean showOnHomepage,
+        java.math.BigDecimal rating,
         SeoMeta seo,
         Instant createdAt,
         Instant updatedAt
 ) {
 }
-

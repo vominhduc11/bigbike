@@ -1,22 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import type { Metadata } from "next";
 import { useCallback, useEffect, useState } from "react";
-import { clearCart, fetchCart, removeCartItem, updateCartItem } from "@/lib/api/client-api";
-import type { Cart } from "@/lib/contracts/commerce";
+import { applyCoupon, clearCart, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
+import type { Cart, CartItem } from "@/lib/contracts/commerce";
+import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
+
+function toGtmCartItems(items: CartItem[]) {
+  return items.map((item) => ({
+    item_id: item.productId ?? item.sku ?? item.id,
+    item_name: item.productName,
+    price: item.unitPrice,
+    quantity: item.quantity,
+    currency: "VND",
+  }));
+}
 
 export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mutating, setMutating] = useState<Record<string, boolean>>({});
+  const [couponInput, setCouponInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
 
   useEffect(() => {
     fetchCart()
-      .then(setCart)
+      .then((c) => {
+        setCart(c);
+        pushDataLayer("view_cart", {
+          currency: c.currency ?? "VND",
+          value: c.totals.totalAmount,
+          items: toGtmCartItems(c.items),
+        });
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -59,177 +79,264 @@ export default function CartPage() {
     }
   }, [cart]);
 
+  const handleApplyCoupon = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const updated = await applyCoupon(code);
+      setCart(updated);
+      setCouponInput("");
+    } catch (e: unknown) {
+      setCouponError((e as Error).message);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [couponInput]);
+
+  const handleRemoveCoupon = useCallback(async (code: string) => {
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const updated = await removeCoupon(code);
+      setCart(updated);
+    } catch (e: unknown) {
+      setCouponError((e as Error).message);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, []);
+
   if (loading) {
     return (
-      <section className="bb-page">
-        <div className="bb-container">
-          <div className="bb-skeleton-item" style={{ minHeight: "320px" }} />
-        </div>
-      </section>
+      <div style={{ maxWidth: 1440, margin: "40px auto", padding: "0 24px" }}>
+        <div style={{ background: "#141414", borderRadius: 8, minHeight: 320 }} />
+      </div>
     );
   }
 
+  const hasItems = cart && cart.items.length > 0;
+
   return (
-    <section className="bb-page">
-      <div className="bb-container">
-        <header style={{ marginBottom: "var(--bb-space-6)" }}>
-          <p className="bb-kicker">Commerce</p>
-          <h1>Giỏ hàng</h1>
-        </header>
+    <>
+      <div className="wp-breadcrumb">
+        <Link href="/">Trang chủ</Link>
+        <span className="sep">/</span>
+        <span>Giỏ hàng</span>
+      </div>
 
-        {error && (
-          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
-            {error}
-          </p>
-        )}
+      <div className="wp-page-head">
+        <span className="kicker">Mua sắm</span>
+        <h1>Giỏ hàng</h1>
+      </div>
 
-        {!cart || cart.items.length === 0 ? (
-          <div className="bb-empty-state">
-            <h3>Giỏ hàng trống</h3>
-            <p>Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
-            <Link href={toProductListPath()} className="bb-button bb-button-primary" style={{ width: "fit-content" }}>
-              Xem sản phẩm
-            </Link>
-          </div>
-        ) : (
-          <div className="bb-cart-layout">
-            <div>
-              <table className="bb-cart-table">
-                <thead>
-                  <tr>
-                    <th>Sản phẩm</th>
-                    <th style={{ textAlign: "center" }}>Số lượng</th>
-                    <th style={{ textAlign: "right" }}>Đơn giá</th>
-                    <th style={{ textAlign: "right" }}>Thành tiền</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {cart.items.map((item) => (
-                    <tr key={item.id} style={{ opacity: mutating[item.id] ? 0.5 : 1 }}>
-                      <td>
-                        <p style={{ fontWeight: 700 }}>{item.productName}</p>
-                        {item.variantName && (
-                          <p style={{ fontSize: "var(--bb-text-xs)", color: "var(--bb-text-muted)" }}>
-                            {item.variantName}
-                          </p>
-                        )}
-                        {item.sku && (
-                          <p style={{ fontSize: "var(--bb-text-xs)", color: "var(--bb-text-muted)" }}>
-                            SKU: {item.sku}
-                          </p>
-                        )}
-                      </td>
-                      <td>
-                        <div className="bb-qty-control">
-                          <button
-                            type="button"
-                            className="bb-qty-btn"
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                            disabled={mutating[item.id] || item.quantity <= 1}
-                            aria-label="Giảm số lượng"
-                          >
-                            −
-                          </button>
-                          <input
-                            className="bb-qty-input"
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (Number.isFinite(v) && v >= 1) handleQuantityChange(item.id, v);
-                            }}
-                            disabled={mutating[item.id]}
-                          />
-                          <button
-                            type="button"
-                            className="bb-qty-btn"
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                            disabled={mutating[item.id]}
-                            aria-label="Tăng số lượng"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        {formatVnd(item.unitPrice)}
-                      </td>
-                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        <strong>{formatVnd(item.lineTotal)}</strong>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <button
-                          type="button"
-                          className="bb-button bb-button-secondary"
-                          style={{ padding: "0 var(--bb-space-3)", minHeight: "2rem", fontSize: "var(--bb-text-xs)" }}
-                          onClick={() => handleRemove(item.id)}
-                          disabled={mutating[item.id]}
-                        >
-                          Xoá
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {error && (
+        <div style={{ maxWidth: 1440, margin: "0 auto 16px", padding: "0 24px" }}>
+          <p style={{ color: "var(--bb-brand-primary)", fontSize: 13 }}>{error}</p>
+        </div>
+      )}
 
-              <div style={{ marginTop: "var(--bb-space-4)", display: "flex", justifyContent: "flex-end" }}>
-                <button type="button" className="bb-button bb-button-secondary" onClick={handleClear}>
+      <div className="wp-cart-layout">
+        {/* Left: cart items */}
+        <div>
+          {!hasItems ? (
+            <div className="wp-cart-list">
+              <div className="wp-cart-empty">
+                <b>Giỏ hàng trống</b>
+                <p>Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
+                <Link href={toProductListPath()} className="wp-btn-primary" style={{ display: "inline-block" }}>
+                  Xem sản phẩm
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="wp-cart-list">
+              <div className="wp-cart-header-row">
+                <span>Sản phẩm</span>
+                <span style={{ textAlign: "center" }}>Số lượng</span>
+                <span style={{ textAlign: "right" }}>Đơn giá</span>
+                <span style={{ textAlign: "right" }}>Thành tiền</span>
+                <span />
+              </div>
+
+              {cart.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="wp-cart-item"
+                  style={{ opacity: mutating[item.id] ? 0.5 : 1 }}
+                >
+                  <div className="wp-cart-item-prod">
+                    <div className="wp-cart-item-thumb">
+                      <span style={{ fontFamily: "var(--bb-font-display)", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" }}>
+                        {item.productName.slice(0, 2)}
+                      </span>
+                    </div>
+                    <div className="wp-cart-item-info">
+                      <p className="wp-cart-item-name">{item.productName}</p>
+                      {item.variantName && (
+                        <p className="wp-cart-item-variant">{item.variantName}</p>
+                      )}
+                      {item.sku && (
+                        <p className="wp-cart-item-variant">SKU: {item.sku}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="wp-pdp-qty-stepper" style={{ justifySelf: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      disabled={mutating[item.id] || item.quantity <= 1}
+                      aria-label="Giảm"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        if (Number.isFinite(v) && v >= 1) handleQuantityChange(item.id, v);
+                      }}
+                      disabled={mutating[item.id]}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      disabled={mutating[item.id]}
+                      aria-label="Tăng"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <span className="wp-cart-price" style={{ justifySelf: "end" }}>
+                    {formatVnd(item.unitPrice)}
+                  </span>
+
+                  <span className="wp-cart-subtotal" style={{ justifySelf: "end" }}>
+                    {formatVnd(item.lineTotal)}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="wp-cart-remove"
+                    onClick={() => handleRemove(item.id)}
+                    disabled={mutating[item.id]}
+                    aria-label="Xoá"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              <div className="wp-cart-footer">
+                <Link href={toProductListPath()} className="link">
+                  ← Tiếp tục mua hàng
+                </Link>
+                <button type="button" className="link" onClick={handleClear}>
                   Xoá toàn bộ
                 </button>
               </div>
             </div>
+          )}
+        </div>
 
-            <aside className="bb-cart-summary">
-              <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-                <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>
-                  Tổng đơn hàng
-                </h2>
-                <div className="bb-summary-rows">
-                  <div className="bb-summary-row">
-                    <span>Tạm tính</span>
-                    <span>{formatVnd(cart.totals.subtotalAmount)}</span>
-                  </div>
-                  {cart.totals.discountAmount > 0 && (
-                    <div className="bb-summary-row">
-                      <span>Giảm giá</span>
-                      <span style={{ color: "var(--bb-state-success)" }}>
-                        −{formatVnd(cart.totals.discountAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {cart.totals.shippingAmount > 0 && (
-                    <div className="bb-summary-row">
-                      <span>Phí ship</span>
-                      <span>{formatVnd(cart.totals.shippingAmount)}</span>
-                    </div>
-                  )}
-                  <div className="bb-summary-row bb-summary-total">
-                    <span>Tổng cộng</span>
-                    <span>{formatVnd(cart.totals.totalAmount)}</span>
-                  </div>
-                </div>
-                <Link
-                  href={toCheckoutPath()}
-                  className="bb-button bb-button-primary"
-                  style={{ width: "100%", marginTop: "var(--bb-space-4)", justifyContent: "center" }}
-                >
-                  Tiến hành thanh toán
-                </Link>
-                <Link
-                  href={toProductListPath()}
-                  className="bb-button bb-button-secondary"
-                  style={{ width: "100%", marginTop: "var(--bb-space-2)", justifyContent: "center" }}
-                >
-                  Tiếp tục mua hàng
-                </Link>
+        {/* Right: order summary */}
+        <div className="wp-summary-card">
+          <h3>Tổng đơn hàng</h3>
+
+          {cart && (
+            <>
+              <div className="wp-summary-row">
+                <span>Tạm tính</span>
+                <b>{formatVnd(cart.totals.subtotalAmount)}</b>
               </div>
-            </aside>
+              {cart.totals.discountAmount > 0 && (
+                <div className="wp-summary-row discount">
+                  <span>Giảm giá</span>
+                  <b>−{formatVnd(cart.totals.discountAmount)}</b>
+                </div>
+              )}
+              {cart.totals.shippingAmount > 0 && (
+                <div className="wp-summary-row">
+                  <span>Phí vận chuyển</span>
+                  <b>{formatVnd(cart.totals.shippingAmount)}</b>
+                </div>
+              )}
+              <div className="wp-summary-total">
+                <span>Tổng cộng</span>
+                <b>{formatVnd(cart.totals.totalAmount)}</b>
+              </div>
+
+              {/* Applied coupons */}
+              {cart.couponCodes && cart.couponCodes.length > 0 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {cart.couponCodes.map((code) => (
+                    <div key={code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(98,187,70,0.08)", border: "1px solid rgba(98,187,70,0.3)", borderRadius: 4, padding: "6px 10px", fontSize: 12 }}>
+                      <span style={{ color: "#62bb46", fontWeight: 600, letterSpacing: "0.04em" }}>{code}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoupon(code)}
+                        disabled={couponLoading}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 0, fontSize: 14, lineHeight: 1 }}
+                        aria-label="Xoá mã giảm giá"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Coupon input */}
+              <form onSubmit={handleApplyCoupon} style={{ marginTop: 14, display: "flex", gap: 8 }}>
+                <input
+                  className="wp-input"
+                  style={{ flex: 1, fontSize: 13 }}
+                  placeholder="Mã giảm giá"
+                  value={couponInput}
+                  onChange={(e) => { setCouponInput(e.target.value); setCouponError(""); }}
+                  disabled={couponLoading}
+                />
+                <button
+                  type="submit"
+                  className="wp-btn-secondary"
+                  style={{ flex: "none", padding: "0 14px", fontSize: 13 }}
+                  disabled={couponLoading || !couponInput.trim()}
+                >
+                  {couponLoading ? "..." : "Áp dụng"}
+                </button>
+              </form>
+              {couponError && (
+                <p style={{ fontSize: 12, color: "var(--bb-brand-primary)", marginTop: 6 }}>{couponError}</p>
+              )}
+            </>
+          )}
+
+          <Link
+            href={toCheckoutPath()}
+            className="wp-summary-cta"
+            style={{ pointerEvents: hasItems ? undefined : "none", opacity: hasItems ? 1 : 0.4 }}
+          >
+            Tiến hành thanh toán
+          </Link>
+
+          <div className="wp-summary-trust">
+            {["Hàng chính hãng", "COD toàn quốc", "Bảo hành hãng", "Đổi trả 7 ngày"].map((t) => (
+              <div key={t}>
+                <span className="dot" />
+                {t}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
-    </section>
+    </>
   );
 }

@@ -82,6 +82,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 ),
                 toAuthorSummary(entity.getAuthor()),
                 toCategorySummary(entity),
+                toCategorySummaries(entity),
                 entity.getTags() == null ? List.of() : entity.getTags().stream()
                         .map(BlogTagEntity::getName)
                         .filter(Objects::nonNull)
@@ -153,6 +154,18 @@ public class JpaContentReadRepository implements ContentReadRepository {
             return toCategorySummary(entity.getCategories().get(0));
         }
         return null;
+    }
+
+    private List<ContentCategorySummary> toCategorySummaries(ArticleEntity entity) {
+        if (entity.getCategories() == null || entity.getCategories().isEmpty()) {
+            ContentCategorySummary primary = toCategorySummary(entity.getCategory());
+            return primary == null ? List.of() : List.of(primary);
+        }
+        return entity.getCategories().stream()
+                .filter(Objects::nonNull)
+                .map(this::toCategorySummary)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private static ImageAsset toImageAsset(

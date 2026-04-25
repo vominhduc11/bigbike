@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "etl:start": "docker-compose -f scripts/extract-wp-data/docker-compose.etl.yml up -d",
+    "etl:run": "tsx scripts/extract-wp-data/extract.ts",
+    "etl:load-sliders": "tsx scripts/extract-wp-data/load-sliders-to-backend.ts",
+    "etl:stop": "docker-compose -f scripts/extract-wp-data/docker-compose.etl.yml down"
   },
   "dependencies": {
     "ioredis": "^5.4.1",
@@ -21,7 +25,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "mysql2": "^3",
     "tailwindcss": "^4",
+    "tsx": "^4",
     "typescript": "^5"
   }
 }

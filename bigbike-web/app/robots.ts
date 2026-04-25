@@ -7,6 +7,18 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/api/",
+        "/gio-hang.html",
+        "/gio-hang/",
+        "/thanh-toan.html",
+        "/thanh-toan/",
+        "/tai-khoan",
+        "/dang-nhap",
+        "/dang-ky",
+        "/quen-mat-khau",
+        "/tim-kiem",
+      ],
     },
     sitemap: `${origin}/sitemap.xml`,
   };

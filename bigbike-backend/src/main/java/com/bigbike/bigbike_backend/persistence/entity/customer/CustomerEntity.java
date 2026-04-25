@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -49,6 +50,12 @@ public class CustomerEntity {
 
     @Column(name = "phone_verified_at")
     private Instant phoneVerifiedAt;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "dob")
+    private LocalDate dob;
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
@@ -94,6 +101,12 @@ public class CustomerEntity {
 
     public Instant getPhoneVerifiedAt() { return phoneVerifiedAt; }
     public void setPhoneVerifiedAt(Instant phoneVerifiedAt) { this.phoneVerifiedAt = phoneVerifiedAt; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public LocalDate getDob() { return dob; }
+    public void setDob(LocalDate dob) { this.dob = dob; }
 
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }

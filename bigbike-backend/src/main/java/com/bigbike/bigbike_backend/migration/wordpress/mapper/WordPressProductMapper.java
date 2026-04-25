@@ -33,6 +33,9 @@ public class WordPressProductMapper {
             BigDecimal heightCm,
             Boolean forceOutOfStock,
             BigDecimal discountPercentOverride,
+            Boolean isFeatured,
+            Boolean showOnHomepage,
+            BigDecimal rating,
             Long thumbnailId,
             List<Long> galleryIds,
             String status,
@@ -83,6 +86,20 @@ public class WordPressProductMapper {
             discountPercent = null;
         }
 
+        Boolean showOnHomepage = parseTruthy(firstNonBlank(
+                metaMap.get("show_on_homepage"),
+                metaMap.get("_show_on_homepage"),
+                metaMap.get("showOnHomepage"),
+                metaMap.get("homepage_product")
+        ));
+        BigDecimal rating = parseBigDecimal(firstNonBlank(metaMap.get("rating"), metaMap.get("_rating")), "rating", warnings);
+        if (rating == null) {
+            rating = new BigDecimal("4.5");
+        } else if (rating.compareTo(BigDecimal.ZERO) < 0 || rating.compareTo(new BigDecimal("5")) > 0) {
+            warnings.add("rating out of range [0,5]: " + rating);
+            rating = null;
+        }
+
         Long thumbnailId = parseLong(metaMap.get("_thumbnail_id"), "_thumbnail_id", warnings);
         List<Long> galleryIds = parseGalleryIds(metaMap.get("_product_image_gallery"), warnings);
 
@@ -104,6 +121,7 @@ public class WordPressProductMapper {
                 post.postContent(), sku, price, regularPrice, salePrice,
                 stockQty, stockStatus, manageStock, backorders,
                 weight, length, width, height, forceOutOfStock, discountPercent,
+                false, showOnHomepage, rating,
                 thumbnailId, galleryIds,
                 status, seoTitle, seoDescription, unmapped, warnings
         );
@@ -155,6 +173,15 @@ public class WordPressProductMapper {
         return "yes".equalsIgnoreCase(value.trim());
     }
 
+    private Boolean parseTruthy(String value) {
+        if (value == null || value.isBlank()) return null;
+        String normalized = value.trim().toLowerCase();
+        return normalized.equals("1")
+                || normalized.equals("true")
+                || normalized.equals("yes")
+                || normalized.equals("on");
+    }
+
     private String normalizeBackorders(String value, List<String> warnings) {
         if (value == null || value.isBlank()) return null;
         String normalized = value.trim().toLowerCase();
@@ -165,9 +192,13 @@ public class WordPressProductMapper {
         return normalized;
     }
 
-    private String firstNonBlank(String a, String b) {
-        if (a != null && !a.isBlank()) return a;
-        if (b != null && !b.isBlank()) return b;
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value;
+        }
         return null;
     }
 

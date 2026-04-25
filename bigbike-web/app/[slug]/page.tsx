@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
   const { slug } = await params;
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Trang khong hop le",
-      description: "Slug trang khong hop le.",
+      title: "Trang không hợp lệ",
+      description: "Slug trang không hợp lệ.",
       canonicalPath: toPagePath("invalid"),
       noIndex: true,
     });
@@ -26,8 +26,8 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
   const result = await getPageBySlug(slug);
   if (!result.data) {
     return buildPublicMetadata({
-      title: "Khong tim thay trang",
-      description: "Khong tim thay noi dung trang yeu cau.",
+      title: "Không tìm thấy trang",
+      description: "Không tìm thấy nội dung trang yêu cầu.",
       canonicalPath: toPagePath(slug),
       noIndex: true,
     });
@@ -36,9 +36,7 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
   const page = result.data;
   return buildPublicMetadata({
     title: page.seo?.title ?? page.title,
-    description:
-      page.seo?.description ??
-      `Noi dung static page ${page.slug} theo route legacy /${page.slug}/.`,
+    description: page.seo?.description ?? `${page.title} — BigBike.`,
     canonicalPath: page.seo?.canonicalUrl ?? toPagePath(page.slug),
     noIndex: page.seo?.noIndex ?? false,
   });
@@ -58,7 +56,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={result.error?.message ?? "Khong tai duoc noi dung page."} />
+          <ErrorState message={result.error?.message ?? "Không tải được nội dung trang."} />
         </div>
       </section>
     );
@@ -70,25 +68,8 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
     <section className="bb-page">
       <div className="bb-container">
         <header>
-          <p className="bb-kicker">Static Page</p>
-          <h1>{safeText(page.title, "Noi dung")}</h1>
-          <p className="bb-page-subtitle">
-            Trang nay duoc map tu API /api/v1/pages/{'{slug}'} de preserve route legacy.
-          </p>
+          <h1>{safeText(page.title, "Nội dung")}</h1>
         </header>
-
-        {result.fromFallback ? (
-          <p className="bb-status-banner">Dang hien thi du lieu fallback dev cho static page.</p>
-        ) : null}
-
-        <div className="bb-metadata">
-          <p>
-            <strong>Loai trang:</strong> {safeText(page.type, "CUSTOM")}
-          </p>
-          <p>
-            <strong>Ngay cap nhat:</strong> {formatDate(page.updatedAt)}
-          </p>
-        </div>
 
         <article
           className="bb-richtext bb-section"
@@ -96,6 +77,9 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
             __html: sanitizeRichHtml(page.body),
           }}
         />
+        <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
+          Cập nhật {formatDate(page.updatedAt)}
+        </p>
       </div>
     </section>
   );

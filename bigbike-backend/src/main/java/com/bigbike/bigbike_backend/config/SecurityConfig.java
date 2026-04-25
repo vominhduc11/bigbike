@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
                         .requestMatchers("/api/v1/cart/**").permitAll()
@@ -86,13 +87,23 @@ public class SecurityConfig {
                         // Internal redirect lookup consumed by bigbike-web proxy/middleware.
                         // No PII; lock down at infra layer (private network / IP allowlist) for prod.
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
+                        // Contact form — public, no auth required
+                        .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // Shipping admin — covered by /api/v1/admin/** above but listed for clarity
+                        .requestMatchers("/api/v1/admin/shipping/**").hasRole("ADMIN")
+                        // Reviews admin
+                        .requestMatchers("/api/v1/admin/reviews/**").hasRole("ADMIN")
+                        // Admin-users management
+                        .requestMatchers("/api/v1/admin/admin-users/**").hasRole("ADMIN")
                         // Customer order read requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/orders/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/customer/orders").hasRole("CUSTOMER")
-                        // Customer profile requires ROLE_CUSTOMER
+                        // Customer profile and addresses require ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/me").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/customer/addresses/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/customer/addresses").hasRole("CUSTOMER")
                         // Actuator health: public for Docker/k8s health checks
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Admin /auth/me requires any authenticated user

@@ -145,6 +145,7 @@ public class ProductNormalizationService {
                     mp.manageStock(), mp.backorders(),
                     mp.weightKg(), mp.lengthCm(), mp.widthCm(), mp.heightCm(),
                     mp.forceOutOfStock(), mp.discountPercentOverride(),
+                    mp.isFeatured(), mp.showOnHomepage(), mp.rating(),
                     mp.thumbnailId(), mp.galleryIds(), mp.status(),
                     mp.seoTitle(), mp.seoDescription(),
                     mp.unmappedFields(), warnings);

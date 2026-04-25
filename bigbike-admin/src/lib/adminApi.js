@@ -597,6 +597,12 @@ export async function updateBrand(brandId, input) {
   return parseDetailPayload(payload, normalizeBrand)
 }
 
+export async function deleteBrand(brandId) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/brands/${brandId}`, { method: 'DELETE' })
+  return parseDetailPayload(payload, normalizeBrand)
+}
+
 export async function fetchContent(query) {
   if (FORCE_MOCK) {
     return withMockFallback(
@@ -661,6 +667,13 @@ export async function updateContent(contentType, contentId, input) {
     method: 'PATCH',
     body: input,
   })
+  return parseDetailPayload(payload, normalizeContentItem)
+}
+
+export async function deleteContent(contentType, contentId) {
+  assertMutationEnabled()
+  const pathType = normalizeContentPathType(contentType)
+  const payload = await requestJson(`/admin/content/${pathType}/${contentId}`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeContentItem)
 }
 
@@ -881,6 +894,15 @@ export async function updateCouponStatus(couponId, status) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
+export async function updateCoupon(couponId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/coupons/${couponId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeCoupon)
+}
+
 // ── Redirects ─────────────────────────────────────────────────────────────────
 
 export async function fetchRedirects(query) {
@@ -959,5 +981,249 @@ export async function createMenuItem(menuId, input) {
 export async function deleteMenuItem(menuId, itemId) {
   assertMutationEnabled()
   await requestJson(`/admin/menus/${menuId}/items/${itemId}`, { method: 'DELETE' })
+}
+
+export async function createMenu(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/menus', { method: 'POST', body: input })
+  return parseDetailPayload(payload, normalizeMenu)
+}
+
+export async function updateMenu(menuId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/menus/${menuId}`, { method: 'PATCH', body: input })
+  return parseDetailPayload(payload, normalizeMenu)
+}
+
+export async function deleteMenu(menuId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/menus/${menuId}`, { method: 'DELETE' })
+}
+
+export async function updateMenuItem(menuId, itemId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/menus/${menuId}/items/${itemId}`, { method: 'PATCH', body: input })
+  return { item: payload?.data }
+}
+
+// ── Sliders ───────────────────────────────────────────────────────────────────
+
+function normalizeSlider(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(s.id || ''),
+    location: String(s.location || 'home'),
+    sortOrder: Number(s.sortOrder ?? 0),
+    desktopImage: s.desktopImage || null,
+    mobileImage: s.mobileImage || null,
+    externalLink: s.externalLink || null,
+    productId: s.productId || null,
+  }
+}
+
+export async function fetchSliders(location = 'home') {
+  if (FORCE_MOCK) {
+    return withMockFallback('Slider list served from mock.', { items: [] })
+  }
+  try {
+    const payload = await requestJson('/admin/sliders', { query: { location } })
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSlider) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [] })
+  }
+}
+
+export async function upsertSlider(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/sliders', { method: 'POST', body: input })
+  return { item: normalizeSlider(payload?.data || {}) }
+}
+
+export async function deleteSlider(sliderId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/sliders/${sliderId}`, { method: 'DELETE' })
+}
+
+// ── Shipping ──────────────────────────────────────────────────────────────────
+
+function normalizeShippingZone(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(s.id || ''),
+    name: String(s.name || ''),
+    regionCode: String(s.regionCode || ''),
+    sortOrder: Number(s.sortOrder ?? 0),
+    enabled: s.enabled !== false,
+    createdAt: s.createdAt || '',
+    updatedAt: s.updatedAt || '',
+  }
+}
+
+function normalizeShippingMethod(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(s.id || ''),
+    zoneId: String(s.zoneId || ''),
+    methodCode: String(s.methodCode || ''),
+    title: String(s.title || ''),
+    description: String(s.description || ''),
+    cost: Number(s.cost ?? 0),
+    minOrderAmount: Number(s.minOrderAmount ?? 0),
+    sortOrder: Number(s.sortOrder ?? 0),
+    enabled: s.enabled !== false,
+  }
+}
+
+export async function fetchShippingZones(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Shipping zones served from mock.', { items: [], pagination: normalizePagination({}) })
+  }
+  try {
+    const payload = await requestJson('/admin/shipping/zones', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search },
+    })
+    return withLiveData(parseListPayload(payload, normalizeShippingZone, 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+  }
+}
+
+export async function createShippingZone(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/shipping/zones', { method: 'POST', body: input })
+  return { item: normalizeShippingZone(payload?.data || {}) }
+}
+
+export async function updateShippingZone(zoneId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/shipping/zones/${zoneId}`, { method: 'PATCH', body: input })
+  return { item: normalizeShippingZone(payload?.data || {}) }
+}
+
+export async function deleteShippingZone(zoneId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/shipping/zones/${zoneId}`, { method: 'DELETE' })
+}
+
+export async function fetchShippingMethods(zoneId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Shipping methods served from mock.', { items: [] })
+  }
+  try {
+    const payload = await requestJson(`/admin/shipping/zones/${zoneId}/methods`)
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeShippingMethod) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [] })
+  }
+}
+
+export async function createShippingMethod(zoneId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/shipping/zones/${zoneId}/methods`, { method: 'POST', body: input })
+  return { item: normalizeShippingMethod(payload?.data || {}) }
+}
+
+export async function updateShippingMethod(zoneId, methodId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/shipping/zones/${zoneId}/methods/${methodId}`, { method: 'PATCH', body: input })
+  return { item: normalizeShippingMethod(payload?.data || {}) }
+}
+
+export async function deleteShippingMethod(zoneId, methodId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/shipping/zones/${zoneId}/methods/${methodId}`, { method: 'DELETE' })
+}
+
+// ── Admin Users ───────────────────────────────────────────────────────────────
+
+function normalizeAdminUser(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(s.id || ''),
+    email: String(s.email || ''),
+    displayName: String(s.displayName || ''),
+    role: String(s.role || ''),
+    status: String(s.status || ''),
+    lastLoginAt: s.lastLoginAt || null,
+    createdAt: s.createdAt || '',
+    updatedAt: s.updatedAt || '',
+  }
+}
+
+export async function fetchAdminUsers(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Admin users served from mock.', { items: [], pagination: normalizePagination({}) })
+  }
+  try {
+    const payload = await requestJson('/admin/admin-users', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search },
+    })
+    return withLiveData(parseListPayload(payload, normalizeAdminUser, 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+  }
+}
+
+export async function updateAdminUser(userId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/admin-users/${userId}`, { method: 'PATCH', body: input })
+  return { item: normalizeAdminUser(payload?.data || {}) }
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+function normalizeReview(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: s.id,
+    productId: String(s.productId || ''),
+    authorName: String(s.authorName || ''),
+    authorEmail: String(s.authorEmail || ''),
+    rating: Number(s.rating ?? 0),
+    body: String(s.body || ''),
+    status: String(s.status || ''),
+    createdAt: s.createdAt || '',
+    updatedAt: s.updatedAt || '',
+  }
+}
+
+export async function fetchReviews(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Reviews served from mock.', { items: [], pagination: normalizePagination({}) })
+  }
+  try {
+    const payload = await requestJson('/admin/reviews', {
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status },
+    })
+    return withLiveData(parseListPayload(payload, normalizeReview, 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+  }
+}
+
+export async function updateReviewStatus(reviewId, status) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/reviews/${reviewId}/status`, {
+    method: 'PATCH',
+    body: { status },
+  })
+  return { item: normalizeReview(payload?.data || {}) }
+}
+
+export async function deleteReview(reviewId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/reviews/${reviewId}`, { method: 'DELETE' })
 }
 

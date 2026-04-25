@@ -23,7 +23,7 @@ public class ShippingZoneEntity {
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(name = "region_code", length = 10)
+    @Column(name = "region_code", length = 50)
     private String regionCode;
 
     @Column(name = "sort_order", nullable = false)

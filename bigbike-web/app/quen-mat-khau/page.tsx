@@ -13,10 +13,10 @@ export async function generateMetadata({ searchParams }: ForgotPasswordPageProps
   const hasToken = Boolean(readSingleSearchParam(params.token));
 
   return buildPublicMetadata({
-    title: hasToken ? "Dat lai mat khau" : "Quen mat khau",
+    title: hasToken ? "Đặt lại mật khẩu" : "Quên mật khẩu",
     description: hasToken
-      ? "Dat lai mat khau BigBike bang lien ket xac thuc."
-      : "Gui yeu cau dat lai mat khau cho tai khoan BigBike.",
+      ? "Đặt lại mật khẩu BigBike bằng liên kết xác thực."
+      : "Gửi yêu cầu đặt lại mật khẩu cho tài khoản BigBike.",
     canonicalPath: toForgotPasswordPath(),
     noIndex: true,
   });

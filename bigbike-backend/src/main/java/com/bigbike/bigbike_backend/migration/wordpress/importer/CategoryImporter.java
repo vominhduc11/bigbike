@@ -62,6 +62,8 @@ public class CategoryImporter implements DomainImporter {
                 entity.setName(mc.name() != null && !mc.name().isBlank() ? mc.name() : mc.slug());
                 entity.setDescription(mc.description());
                 entity.setVisible(true);
+                entity.setShowOnHomepage(mc.showOnHomepage());
+                entity.setSortOrder(mc.sortOrder());
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mc.warnings());
 

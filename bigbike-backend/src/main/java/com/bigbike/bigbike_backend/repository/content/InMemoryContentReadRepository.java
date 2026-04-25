@@ -42,6 +42,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 ),
                 editor,
                 ridingGuide,
+                List.of(ridingGuide),
                 List.of("mu-bao-hiem", "huong-dan"),
                 PublishStatus.PUBLISHED,
                 new SeoMeta(
@@ -72,6 +73,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 ),
                 editor,
                 news,
+                List.of(news),
                 List.of("tin-tuc", "bao-ho"),
                 PublishStatus.DRAFT,
                 new SeoMeta(

@@ -30,6 +30,7 @@ public class UpsertCategoryRequest {
     private SeoMetaRequest seo;
 
     private Boolean visible;
+    private Boolean showOnHomepage;
     private Integer sortOrder;
 
     public String getSlug() {
@@ -96,6 +97,14 @@ public class UpsertCategoryRequest {
         this.visible = visible;
     }
 
+    public Boolean getShowOnHomepage() {
+        return showOnHomepage;
+    }
+
+    public void setShowOnHomepage(Boolean showOnHomepage) {
+        this.showOnHomepage = showOnHomepage;
+    }
+
     public Integer getSortOrder() {
         return sortOrder;
     }
@@ -104,4 +113,3 @@ public class UpsertCategoryRequest {
         this.sortOrder = sortOrder;
     }
 }
-

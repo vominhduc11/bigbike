@@ -5,7 +5,10 @@ import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -60,6 +63,12 @@ final class AdminMutationValidators {
         }
     }
 
+    static void validateRating(BigDecimal value, String field, List<ApiErrorDetail> errors) {
+        if (value != null && (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(new BigDecimal("5")) > 0)) {
+            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Rating must be between 0 and 5."));
+        }
+    }
+
     static void validateCurrency(String currency, String field, List<ApiErrorDetail> errors) {
         String normalized = trimToNull(currency);
         if (normalized == null) {
@@ -87,25 +96,35 @@ final class AdminMutationValidators {
         }
     }
 
-    static void validateImageAsset(ImageAssetRequest image, String fieldPrefix, List<ApiErrorDetail> errors) {
+    static void validateImageAsset(
+            ImageAssetRequest image,
+            String fieldPrefix,
+            String allowedMediaBaseUrl,
+            List<ApiErrorDetail> errors
+    ) {
         if (image == null) {
             return;
         }
 
-        validatePublicMediaUrl(image.getUrl(), fieldPrefix + ".url", errors);
+        validateWhitelistedMediaUrl(image.getUrl(), fieldPrefix + ".url", allowedMediaBaseUrl, errors);
         validateNonNegativeInteger(image.getWidth(), fieldPrefix + ".width", "Image width", errors);
         validateNonNegativeInteger(image.getHeight(), fieldPrefix + ".height", "Image height", errors);
     }
 
-    static void validateSeoMeta(SeoMetaRequest seo, String fieldPrefix, List<ApiErrorDetail> errors) {
+    static void validateSeoMeta(
+            SeoMetaRequest seo,
+            String fieldPrefix,
+            String allowedMediaBaseUrl,
+            List<ApiErrorDetail> errors
+    ) {
         if (seo == null) {
             return;
         }
-        validatePublicMediaUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", errors);
-        validateImageAsset(seo.getOgImage(), fieldPrefix + ".ogImage", errors);
+        validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", errors);
+        validateImageAsset(seo.getOgImage(), fieldPrefix + ".ogImage", allowedMediaBaseUrl, errors);
     }
 
-    static void validatePublicMediaUrl(String url, String field, List<ApiErrorDetail> errors) {
+    static void validatePublicUrl(String url, String field, List<ApiErrorDetail> errors) {
         String normalized = trimToNull(url);
         if (normalized == null) {
             return;
@@ -125,7 +144,43 @@ final class AdminMutationValidators {
                 || normalized.startsWith("/private/");
 
         if (invalid) {
-            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Media URL must be a public http(s) URL."));
+            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "URL must be a public http(s) URL."));
+        }
+    }
+
+    static void validateWhitelistedMediaUrl(
+            String url,
+            String field,
+            String allowedMediaBaseUrl,
+            List<ApiErrorDetail> errors
+    ) {
+        String normalized = trimToNull(url);
+        if (normalized == null) {
+            return;
+        }
+
+        int initialErrorCount = errors.size();
+        validatePublicUrl(normalized, field, errors);
+        if (errors.size() > initialErrorCount) {
+            return;
+        }
+
+        String allowedBase = trimToNull(allowedMediaBaseUrl);
+        if (allowedBase == null) {
+            errors.add(new ApiErrorDetail(
+                    field,
+                    "INVALID_VALUE",
+                    "Media URL whitelist is not configured."
+            ));
+            return;
+        }
+
+        if (!isAllowedMediaUrl(normalized, allowedBase)) {
+            errors.add(new ApiErrorDetail(
+                    field,
+                    "INVALID_VALUE",
+                    "Media URL must start with the configured MinIO public base URL."
+            ));
         }
     }
 
@@ -183,6 +238,69 @@ final class AdminMutationValidators {
         if (!SLUG_PATTERN.matcher(slug).matches()) {
             errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "Slug format is invalid."));
         }
+    }
+
+    private static boolean isAllowedMediaUrl(String url, String allowedBaseUrl) {
+        try {
+            URI candidate = new URI(url).normalize();
+            URI allowedBase = new URI(allowedBaseUrl).normalize();
+
+            String candidateScheme = safeLower(candidate.getScheme());
+            String allowedScheme = safeLower(allowedBase.getScheme());
+            if (!candidateScheme.equals(allowedScheme)) {
+                return false;
+            }
+
+            String candidateHost = safeLower(candidate.getHost());
+            String allowedHost = safeLower(allowedBase.getHost());
+            if (!candidateHost.equals(allowedHost)) {
+                return false;
+            }
+
+            if (effectivePort(candidate) != effectivePort(allowedBase)) {
+                return false;
+            }
+
+            String candidatePath = normalizePath(candidate.getPath());
+            String allowedPath = normalizePath(allowedBase.getPath());
+            if (candidatePath == null || allowedPath == null) {
+                return false;
+            }
+
+            return candidatePath.equals(allowedPath) || candidatePath.startsWith(allowedPath + "/");
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    private static String normalizePath(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        String normalized = path;
+        while (normalized.endsWith("/") && normalized.length() > 1) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        return normalized;
+    }
+
+    private static String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
+    }
+
+    private static int effectivePort(URI uri) {
+        if (uri.getPort() != -1) {
+            return uri.getPort();
+        }
+        String scheme = safeLower(uri.getScheme());
+        return switch (scheme) {
+            case "https" -> 443;
+            case "http" -> 80;
+            default -> -1;
+        };
     }
 }
 

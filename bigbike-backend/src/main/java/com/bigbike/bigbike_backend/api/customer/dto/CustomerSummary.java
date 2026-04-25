@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.customer.dto;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record CustomerSummary(
@@ -7,5 +8,7 @@ public record CustomerSummary(
         String email,
         String phone,
         String displayName,
-        String status
+        String status,
+        String gender,
+        LocalDate dob
 ) {}
