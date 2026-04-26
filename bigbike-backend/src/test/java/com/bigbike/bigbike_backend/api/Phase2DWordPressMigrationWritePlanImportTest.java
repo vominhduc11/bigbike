@@ -245,7 +245,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_categories_idempotent() {
         MappedCategory cat = new MappedCategory(
                 9001L, 9001L, "test-category-phase2d",
-                "Test Category 2D", "Test desc", null, 0, null, null, "/test-category-phase2d.html",
+                "Test Category 2D", "Test desc", null, 0, null, null, null, "/test-category-phase2d.html",
                 List.of());
 
         MigrationExecutionOptions dryRunOpts = new MigrationExecutionOptions(
@@ -253,13 +253,13 @@ class Phase2DWordPressMigrationWritePlanImportTest {
 
         // First import (dry-run only — no actual DB write needed for this test)
         MigrationExecutionReport.DomainResult r1 =
-                categoryImporter.importBatch(List.of(cat), dryRunOpts);
+                categoryImporter.importBatch(List.of(cat), dryRunOpts, java.util.Map.of(), "");
         assertThat(r1.inserted() + r1.updated()).isEqualTo(1);
         assertThat(r1.failed()).isEqualTo(0);
 
         // Second import should produce the same result (idempotent)
         MigrationExecutionReport.DomainResult r2 =
-                categoryImporter.importBatch(List.of(cat), dryRunOpts);
+                categoryImporter.importBatch(List.of(cat), dryRunOpts, java.util.Map.of(), "");
         assertThat(r2.inserted() + r2.updated()).isEqualTo(1);
         assertThat(r2.failed()).isEqualTo(0);
     }
@@ -268,14 +268,14 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_secondRunDoesNotDuplicateRows() {
         MappedCategory cat = new MappedCategory(
                 9002L, 9002L, "no-dupe-phase2d",
-                "No Dupe 2D", "", null, 0, null, null, "/no-dupe-phase2d.html", List.of());
+                "No Dupe 2D", "", null, 0, null, null, null, "/no-dupe-phase2d.html", List.of());
 
         MigrationExecutionOptions opts = new MigrationExecutionOptions(
                 null, Set.of(), 500, false, false); // dryRun=false, writes to H2
 
         // Run twice
-        categoryImporter.importBatch(List.of(cat), opts);
-        categoryImporter.importBatch(List.of(cat), opts);
+        categoryImporter.importBatch(List.of(cat), opts, java.util.Map.of(), "");
+        categoryImporter.importBatch(List.of(cat), opts, java.util.Map.of(), "");
 
         // Count entities with this slug — should be exactly 1
         long count = categoryRepo.findAll().stream()
@@ -303,12 +303,12 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_missingRequiredFieldsSkippedWithWarning() {
         // Category with blank slug is skipped
         MappedCategory badCat = new MappedCategory(
-                9003L, 9003L, "", "Bad Cat", "", null, 0, null, null, "", List.of());
+                9003L, 9003L, "", "Bad Cat", "", null, 0, null, null, null, "", List.of());
 
         MigrationExecutionOptions opts = new MigrationExecutionOptions(
                 null, Set.of(), 500, false, true);
         MigrationExecutionReport.DomainResult result =
-                categoryImporter.importBatch(List.of(badCat), opts);
+                categoryImporter.importBatch(List.of(badCat), opts, java.util.Map.of(), "");
 
         assertThat(result.skipped()).isEqualTo(1);
         assertThat(result.inserted()).isEqualTo(0);

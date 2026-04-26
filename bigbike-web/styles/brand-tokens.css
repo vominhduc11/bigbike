@@ -194,8 +194,22 @@
   --bb-page-padding-desktop: var(--bb-space-8);
 
   --bb-header-height: 4.5rem;
+  --bb-promo-strip-height: 2.125rem; /* 34px */
+  --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-sidebar-width: 17.5rem;
   --bb-product-card-min-width: 16rem;
+
+  /* Responsive breakpoints — single source of truth.
+   * Mobile-first: use min-width for these. Use max-width only for legacy
+   * desktop-first overrides during the transition. */
+  --bb-bp-sm: 640px;   /* large mobile */
+  --bb-bp-md: 768px;   /* tablet portrait */
+  --bb-bp-lg: 1024px;  /* tablet landscape / small laptop */
+  --bb-bp-xl: 1280px;  /* desktop */
+  --bb-bp-2xl: 1440px; /* wide desktop */
+
+  /* Touch target floor — WCAG 2.5.5 / Apple HIG. Use as min-width/min-height. */
+  --bb-touch-target: 44px;
 
   /* ============================================================
    * 7. Radius / Shape
@@ -675,5 +689,21 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* ============================================================
+ * Promo strip auto-collapse — drop the second line on small
+ * screens so the sticky header takes less vertical space.
+ * ============================================================ */
+@media (max-width: 768px) {
+  :root {
+    --bb-promo-strip-height: 1.875rem; /* 30px */
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --bb-header-height: 4rem;          /* 64px — logo shrinks at this BP */
   }
 }

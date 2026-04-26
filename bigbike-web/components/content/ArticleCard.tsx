@@ -6,26 +6,35 @@ import { MediaImage } from "@/components/ui/MediaImage";
 
 type ArticleCardProps = {
   article: Article;
+  variant?: "default" | "featured";
 };
 
-export function ArticleCard({ article }: ArticleCardProps) {
+export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
   const title = safeText(article.title, "Bài viết đang cập nhật");
   const excerpt = safeText(article.excerpt, "Nội dung đang được cập nhật.");
+  const category = safeText(article.category?.name ?? article.categories?.[0]?.name, "Tin tức");
+  const publishedDate = formatDate(article.publishedAt ?? article.createdAt);
 
   return (
-    <Link href={toArticlePath(article.slug)} className="wp-news-card">
-      <div className="wp-news-img">
+    <Link
+      href={toArticlePath(article.slug)}
+      className={`wp-news-card${variant === "featured" ? " wp-news-card-featured" : ""}`}
+    >
+      <div className="wp-news-img-wrap">
         <MediaImage
           image={article.coverImage}
           altFallback={title}
+          className="wp-news-img"
           width={1200}
           height={675}
         />
+        <span className="wp-news-date">{publishedDate}</span>
       </div>
       <div className="wp-news-body">
-        <p className="wp-news-meta">{formatDate(article.publishedAt ?? article.createdAt)}</p>
-        <h3 className="wp-news-title">{title}</h3>
+        <p className="wp-news-meta">{category}</p>
+        <h3 className="wp-news-card-title">{title}</h3>
         <p className="wp-news-excerpt">{excerpt}</p>
+        <span className="wp-news-read-more">Đọc tiếp</span>
       </div>
     </Link>
   );

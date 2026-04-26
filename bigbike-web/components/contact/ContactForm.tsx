@@ -37,9 +37,9 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
 
   if (success) {
     return (
-      <div style={{ padding: "var(--bb-space-5)", background: "rgba(98,187,70,0.08)", border: "1px solid rgba(98,187,70,0.3)", borderRadius: "var(--bb-radius-lg)" }}>
-        <p style={{ color: "#62bb46", fontWeight: 600, marginBottom: 8 }}>Gửi tin nhắn thành công!</p>
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "var(--bb-text-sm)" }}>
+      <div className="wp-alert-success" style={{ borderRadius: "var(--bb-radius-lg)", padding: "var(--bb-space-5)" }}>
+        <p style={{ color: "var(--bb-state-success)", fontWeight: 600, marginBottom: 8 }}>Gửi tin nhắn thành công!</p>
+        <p style={{ color: "var(--bb-text-secondary)", fontSize: "var(--bb-text-sm)" }}>
           Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể.
         </p>
         <button

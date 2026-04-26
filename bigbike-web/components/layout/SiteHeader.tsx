@@ -1,13 +1,34 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment } from "react";
 import { CartIcon } from "@/components/cart/CartIcon";
+import { HeaderNavItem, type HeaderNavNode } from "@/components/layout/HeaderNavItem";
+import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
+import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
-import { toAccountPath } from "@/lib/utils/routes";
+import type { PublicMenuItem } from "@/lib/contracts/public";
 
 const DEFAULT_SITE_NAME = "BigBike";
 const PRIMARY_MENU_LOCATION = "primary";
+
+function buildMenuTree(items: PublicMenuItem[]): HeaderNavNode[] {
+  const map = new Map<string, HeaderNavNode>();
+  items.forEach((item) => map.set(item.id, { ...item, children: [] }));
+  const roots: HeaderNavNode[] = [];
+  map.forEach((node) => {
+    if (node.parentId && map.has(node.parentId)) {
+      map.get(node.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  const sortRecursive = (nodes: HeaderNavNode[]) => {
+    nodes.sort((a, b) => a.sortOrder - b.sortOrder);
+    nodes.forEach((n) => sortRecursive(n.children));
+  };
+  sortRecursive(roots);
+  return roots;
+}
 
 function getSettingValue(
   settings: { settingKey: string; settingValue: string }[],
@@ -21,11 +42,6 @@ function getSettingValue(
     if (found) return found.settingValue.trim();
   }
   return fallback;
-}
-
-function normalizeMenuUrl(url: string): string {
-  const trimmed = url.trim();
-  return trimmed.length === 0 ? "/" : trimmed;
 }
 
 function PromoStrip({
@@ -67,16 +83,13 @@ export async function SiteHeader() {
   );
   const hotline = getSettingValue(settings, ["hotline", "phone", "support_phone"]);
   const zaloUrl = getSettingValue(settings, ["zalo_url", "zalo"]);
-  const menuItems = (menuResult.data?.items ?? [])
-    .filter((item) => item.parentId === null)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const menuTree = buildMenuTree(menuResult.data?.items ?? []);
 
   return (
-    <>
+    <header className="wp-header">
       <PromoStrip hotline={hotline} zaloUrl={zaloUrl} />
-      <header className="wp-header">
-        <div className="bb-container wp-header-inner">
-          <div className="wp-logo-panel">
+      <div className="bb-container wp-header-inner">
+        <div className="wp-logo-panel">
             <Link
               href="/"
               className="wp-logo-link"
@@ -97,22 +110,8 @@ export async function SiteHeader() {
             className="wp-nav"
             aria-label={menuResult.data?.name ?? "Điều hướng chính"}
           >
-            {menuItems.map((item, index) => (
-              <Fragment key={item.id}>
-                {index > 0 && (
-                  <span className="wp-nav-sep" aria-hidden="true">
-                    •
-                  </span>
-                )}
-                <Link
-                  href={normalizeMenuUrl(item.url)}
-                  className={`wp-nav-link ${item.cssClass ?? ""}`.trim()}
-                  target={item.openInNewTab ? "_blank" : undefined}
-                  rel={item.openInNewTab ? "noreferrer" : undefined}
-                >
-                  {item.label}
-                </Link>
-              </Fragment>
+            {menuTree.map((node) => (
+              <HeaderNavItem key={node.id} node={node} />
             ))}
           </nav>
 
@@ -121,46 +120,16 @@ export async function SiteHeader() {
 
             <CartIcon />
 
-            <Link
-              href={toAccountPath()}
-              className="wp-icon-btn"
-              aria-label="Tài khoản"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </Link>
+            <HeaderUserMenu />
 
-            <button className="wp-icon-btn" aria-label="Menu" type="button">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-          </div>
+            <MobileHeaderMenu
+              menuTree={menuTree}
+              menuLabel={menuResult.data?.name ?? "Điều hướng chính"}
+              hotline={hotline}
+              zaloUrl={zaloUrl}
+            />
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 }

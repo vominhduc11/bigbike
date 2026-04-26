@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -153,20 +154,42 @@ public class ProductImporter implements DomainImporter {
                 if (mp.thumbnailId() != null) {
                     MappedMedia thumb = mediaByLegacyId.get(mp.thumbnailId());
                     if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
-                        String base = mediaPublicBaseUrl.endsWith("/")
-                                ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
-                                : mediaPublicBaseUrl;
-                        String storagePath = thumb.storagePath().startsWith("/")
-                                ? thumb.storagePath().substring(1)
-                                : thumb.storagePath();
                         entity.setImageId(String.valueOf(mp.thumbnailId()));
-                        entity.setImageUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setImageUrl(buildMediaUrl(mediaPublicBaseUrl, thumb.storagePath()));
                         entity.setImageAlt(thumb.altText());
                         entity.setImageWidth(thumb.width());
                         entity.setImageHeight(thumb.height());
                         entity.setImageMimeType(thumb.mimeType());
                     }
                 }
+
+                // Gallery images — resolved from WP _product_image_gallery (comma-separated media IDs)
+                List<ProductGalleryImageEntity> galleryEntities = new ArrayList<>();
+                String thumbUrl = entity.getImageUrl();
+                if (mp.galleryIds() != null) {
+                    int order = 0;
+                    for (Long gid : mp.galleryIds()) {
+                        MappedMedia gm = mediaByLegacyId.get(gid);
+                        if (gm == null || gm.storagePath() == null || gm.storagePath().isBlank()) continue;
+                        String url = buildMediaUrl(mediaPublicBaseUrl, gm.storagePath());
+                        if (url.equals(thumbUrl)) continue; // skip duplicate of main image
+                        ProductGalleryImageEntity gi = new ProductGalleryImageEntity();
+                        gi.setProduct(entity);
+                        gi.setImageId(String.valueOf(gid));
+                        gi.setImageUrl(url);
+                        gi.setImageAlt(gm.altText());
+                        gi.setImageWidth(gm.width());
+                        gi.setImageHeight(gm.height());
+                        gi.setImageMimeType(gm.mimeType());
+                        gi.setSortOrder(order++);
+                        galleryEntities.add(gi);
+                    }
+                }
+                if (entity.getGallery() == null) {
+                    entity.setGallery(new ArrayList<>());
+                }
+                entity.getGallery().clear();
+                entity.getGallery().addAll(galleryEntities);
 
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mp.warnings());
@@ -246,6 +269,14 @@ public class ProductImporter implements DomainImporter {
         public ResolvedProduct {
             categorySlugs = categorySlugs == null ? List.of() : List.copyOf(categorySlugs);
         }
+    }
+
+    private String buildMediaUrl(String mediaPublicBaseUrl, String storagePath) {
+        String base = mediaPublicBaseUrl.endsWith("/")
+                ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                : mediaPublicBaseUrl;
+        String path = storagePath.startsWith("/") ? storagePath.substring(1) : storagePath;
+        return base + "/wp-uploads/" + path;
     }
 
     private Set<CategoryEntity> resolveCategories(CategoryEntity primaryCategory, List<String> categorySlugs) {

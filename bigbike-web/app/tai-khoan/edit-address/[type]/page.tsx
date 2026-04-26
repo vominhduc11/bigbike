@@ -12,6 +12,7 @@ function EditAddressContent({ type }: { type: string }) {
   const label = addressType === "BILLING" ? "Địa chỉ thanh toán" : "Địa chỉ giao hàng";
 
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CustomerAddress | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -19,9 +20,11 @@ function EditAddressContent({ type }: { type: string }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
+    setLoading(true);
     fetchMyAddresses()
       .then((all) => setAddresses(all.filter((a) => a.type === addressType)))
-      .catch(() => setError("Không tải được danh sách địa chỉ."));
+      .catch(() => setError("Không tải được danh sách địa chỉ."))
+      .finally(() => setLoading(false));
   }, [addressType]);
 
   function startAdd() {
@@ -102,18 +105,33 @@ function EditAddressContent({ type }: { type: string }) {
       </div>
 
       {success && (
-        <div style={{ background: "rgba(98,187,70,0.1)", border: "1px solid rgba(98,187,70,0.3)", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: "#62bb46", margin: 0 }}>{success}</p>
+        <div className="wp-alert-success">
+          <p>{success}</p>
         </div>
       )}
       {error && (
-        <div style={{ background: "rgba(249,6,6,0.08)", border: "1px solid rgba(249,6,6,0.25)", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0 }}>{error}</p>
+        <div className="wp-alert-error">
+          <p>{error}</p>
         </div>
       )}
 
       {/* Address list */}
-      {addresses.length > 0 && (
+      {loading ? (
+        <div className="wp-address-grid" aria-busy="true" style={{ marginBottom: 20 }}>
+          {[1, 2].map((i) => (
+            <div key={i} className="wp-address-card">
+              <span className="bb-skel bb-skel--title bb-skel-w-50" />
+              <span className="bb-skel bb-skel--text bb-skel-w-40" style={{ marginTop: 8 }} />
+              <span className="bb-skel bb-skel--text bb-skel-w-100" style={{ marginTop: 10 }} />
+              <span className="bb-skel bb-skel--text bb-skel-w-80" style={{ marginTop: 4 }} />
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10 }}>
+                <span className="bb-skel bb-skel--text" style={{ width: 60 }} />
+                <span className="bb-skel bb-skel--text" style={{ width: 40 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : addresses.length > 0 ? (
         <div className="wp-address-grid" style={{ marginBottom: 20 }}>
           {addresses.map((addr) => (
             <div key={addr.id} className={`wp-address-card${addr.isDefault ? " default" : ""}`}>
@@ -131,18 +149,16 @@ function EditAddressContent({ type }: { type: string }) {
             <button type="button" className="wp-address-add" onClick={startAdd}>+ Thêm địa chỉ mới</button>
           )}
         </div>
-      )}
-
-      {addresses.length === 0 && !showForm && (
+      ) : !showForm ? (
         <div style={{ marginBottom: 20 }}>
           <button type="button" className="wp-address-add" onClick={startAdd}>+ Thêm địa chỉ mới</button>
         </div>
-      )}
+      ) : null}
 
       {/* Form */}
       {showForm && (
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "22px 24px" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 18 }}>
+        <div className="wp-info-card-form">
+          <p className="wp-info-label" style={{ marginBottom: 18 }}>
             {editing ? `Chỉnh sửa — ${label}` : `Thêm — ${label}`}
           </p>
           <form onSubmit={handleSubmit}>
@@ -176,7 +192,7 @@ function EditAddressContent({ type }: { type: string }) {
                 <label htmlFor="isDefault" style={{ margin: 0 }}>Đặt làm địa chỉ mặc định</label>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+            <div className="wp-form-actions">
               <button type="submit" className="wp-btn-primary" disabled={saving}>
                 {saving ? "Đang lưu..." : "Lưu địa chỉ"}
               </button>

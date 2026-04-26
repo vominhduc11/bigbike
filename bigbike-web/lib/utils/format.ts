@@ -23,12 +23,19 @@ export function formatVnd(value: number | null | undefined): string {
 
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PROXY = "/wp-content/uploads/";
+const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 
 export function resolveMediaUrl(url: string | null | undefined): string | null | undefined {
   if (!url) return url;
-  // Legacy CDN absolute URL → same-origin proxy path (for any residual cdn.bigbike.vn references)
+  // Legacy CDN absolute URL → same-origin proxy path
   if (url.startsWith(LEGACY_CDN_PREFIX)) {
     return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
+  }
+  // MinIO/object-storage absolute URL (http://localhost:9000/bigbike-media/wp-uploads/...)
+  // → same-origin proxy path so Next.js rewrite forwards to the correct CDN/MinIO instance
+  if (url.startsWith("http") && url.includes(MINIO_UPLOADS_SUBPATH)) {
+    const idx = url.indexOf(MINIO_UPLOADS_SUBPATH);
+    return WP_UPLOADS_PROXY + url.slice(idx + MINIO_UPLOADS_SUBPATH.length);
   }
   return url;
 }
@@ -76,8 +83,14 @@ export function orderStatusLabel(status: string | null | undefined): string {
   switch (status) {
     case "PENDING":
       return "Chờ xác nhận";
+    case "CONFIRMED":
+      return "Đã xác nhận";
     case "PROCESSING":
       return "Đang xử lý";
+    case "SHIPPED":
+      return "Đang giao";
+    case "DELIVERED":
+      return "Đã giao";
     case "COMPLETED":
       return "Hoàn thành";
     case "CANCELLED":

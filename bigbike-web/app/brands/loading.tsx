@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { BrandListSkeleton } from "@/components/ui/Skeletons";
 
 export default function BrandsLoading() {
-  return <LoadingGrid title="Đang tải danh sách thương hiệu" count={6} />;
+  return <BrandListSkeleton />;
 }
-

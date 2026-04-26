@@ -41,7 +41,7 @@ export function parsePositiveIntParam(
   if (!Number.isInteger(parsed) || parsed < options.min || parsed > options.max) {
     return {
       value: options.defaultValue,
-      error: `Tham so "${options.field}" phai la so nguyen trong khoang ${options.min}-${options.max}.`,
+      error: `Tham số "${options.field}" phải là số nguyên trong khoảng ${options.min}-${options.max}.`,
     };
   }
 
@@ -65,7 +65,7 @@ export function parseOptionalPositiveIntParam(
   if (!Number.isInteger(parsed) || parsed < options.min || parsed > options.max) {
     return {
       value: undefined as number | undefined,
-      error: `Tham so "${options.field}" phai la so nguyen trong khoang ${options.min}-${options.max}.`,
+      error: `Tham số "${options.field}" phải là số nguyên trong khoảng ${options.min}-${options.max}.`,
     };
   }
 
@@ -81,7 +81,7 @@ export function parseSlugParam(value: SearchParamValue, field: string) {
   if (!SLUG_PATTERN.test(raw)) {
     return {
       value: undefined,
-      error: `Tham so "${field}" khong dung dinh dang slug hop le.`,
+      error: `Tham số "${field}" không đúng định dạng slug hợp lệ.`,
     };
   }
 
@@ -101,7 +101,7 @@ export function parseSortParam(
   if (!allowedSorts.includes(raw)) {
     return {
       value: defaultValue,
-      error: `Tham so "sort" khong hop le. Gia tri cho phep: ${allowedSorts.join(", ")}.`,
+      error: `Tham số "sort" không hợp lệ. Giá trị cho phép: ${allowedSorts.join(", ")}.`,
     };
   }
 
@@ -117,7 +117,7 @@ export function parseTextParam(value: SearchParamValue, maxLength: number) {
   if (raw.length > maxLength) {
     return {
       value: undefined,
-      error: `Tham so text vuot qua ${maxLength} ky tu.`,
+      error: `Tham số text vượt quá ${maxLength} ký tự.`,
     };
   }
 

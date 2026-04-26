@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import type { Brand } from "@/lib/contracts/public";
 import { buildQueryString } from "@/lib/utils/query";
@@ -57,17 +59,121 @@ function buildChips(
   return chips;
 }
 
+function FilterSection({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="wp-filter-section">
+      <button
+        type="button"
+        className="wp-filter-section-header"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span>{title}</span>
+        <svg
+          className={`wp-filter-chevron${open ? " open" : ""}`}
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </button>
+      {open && <div className="wp-filter-section-body">{children}</div>}
+    </div>
+  );
+}
+
 export function CatalogFilters({
   brands,
   current,
   resetHref,
   hiddenParams = {},
 }: CatalogFiltersProps) {
+  const [brandSearch, setBrandSearch] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const chips = buildChips(current, resetHref, hiddenParams);
 
+  const filteredBrands = brandSearch.trim()
+    ? brands.filter((b) =>
+        b.name.toLowerCase().includes(brandSearch.toLowerCase()),
+      )
+    : brands;
+
+  const hasActiveFilters =
+    current.brand || current.color || current.gender || current.minPrice || current.maxPrice || current.q;
+
   return (
-    <aside className="wp-filters">
-      <form method="GET">
+    <aside className="wp-filters-v2">
+      {/* Header */}
+      <div className="wp-filters-v2-header">
+        <span className="wp-filters-v2-title">BỘ LỌC</span>
+        <div className="wp-filters-v2-header-actions">
+          {hasActiveFilters && (
+            <Link href={resetHref} className="wp-filters-v2-clear">
+              Xoá tất cả
+            </Link>
+          )}
+          <button
+            type="button"
+            className="wp-filters-mobile-toggle"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}
+          >
+            <svg
+              className={`wp-filter-chevron${mobileOpen ? " open" : ""}`}
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 4l4 4 4-4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className={`wp-filters-v2-body${mobileOpen ? " is-open" : ""}`}>
+      {/* Active filter chips */}
+      {chips.length > 0 && (
+        <div className="wp-filter-chips">
+          {chips.map((chip) => (
+            <Link
+              key={chip.label}
+              href={chip.removeHref}
+              className="wp-filter-chip"
+              aria-label={`Bỏ bộ lọc: ${chip.label}`}
+            >
+              {chip.label}
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <form method="GET" className="wp-filters-v2-form">
         {Object.entries(hiddenParams).map(([key, value]) =>
           value ? <input key={key} type="hidden" name={key} value={value} /> : null,
         )}
@@ -75,19 +181,30 @@ export function CatalogFilters({
           <input type="hidden" name="sort" value={current.sort} />
         )}
 
+        {/* Brand filter */}
         {brands.length > 0 && (
-          <div className="wp-filter-group">
-            <h5>Thương hiệu</h5>
+          <FilterSection title="Thương hiệu">
+            {brands.length > 6 && (
+              <div className="wp-filter-search-wrap">
+                <svg className="wp-filter-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <circle cx="5.5" cy="5.5" r="4" />
+                  <path d="M8.5 8.5l3 3" />
+                </svg>
+                <input
+                  type="text"
+                  className="wp-filter-search"
+                  placeholder="Tìm thương hiệu..."
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  aria-label="Tìm kiếm thương hiệu"
+                />
+              </div>
+            )}
             <label className="wp-filter-row">
-              <input
-                type="radio"
-                name="pwb-brand"
-                value=""
-                defaultChecked={!current.brand}
-              />
-              Tất cả
+              <input type="radio" name="pwb-brand" value="" defaultChecked={!current.brand} />
+              <span className="wp-filter-row-label">Tất cả</span>
             </label>
-            {brands.map((b) => (
+            {filteredBrands.map((b) => (
               <label key={b.id} className="wp-filter-row">
                 <input
                   type="radio"
@@ -95,68 +212,78 @@ export function CatalogFilters({
                   value={b.slug}
                   defaultChecked={current.brand === b.slug}
                 />
-                {b.name}
+                <span className="wp-filter-row-label">{b.name}</span>
               </label>
             ))}
-          </div>
+            {filteredBrands.length === 0 && (
+              <p className="wp-filter-empty">Không tìm thấy</p>
+            )}
+          </FilterSection>
         )}
 
-        <div className="wp-filter-group">
-          <h5>Khoảng giá</h5>
-          <label
-            className="wp-filter-row"
-            style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}
-          >
-            <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--bb-text-muted)" }}>
-              Từ (₫)
-            </span>
-            <input
-              name="min_price"
-              type="number"
-              min="0"
-              step="50000"
-              defaultValue={current.minPrice}
-              placeholder="0"
-              style={{
-                width: "100%",
-                background: "#0d0d0d",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "#fff",
-                padding: "8px 10px",
-                borderRadius: 4,
-                fontSize: 12,
-              }}
-            />
-          </label>
-          <label
-            className="wp-filter-row"
-            style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}
-          >
-            <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--bb-text-muted)" }}>
-              Đến (₫)
-            </span>
-            <input
-              name="max_price"
-              type="number"
-              min="0"
-              step="50000"
-              defaultValue={current.maxPrice}
-              placeholder="Không giới hạn"
-              style={{
-                width: "100%",
-                background: "#0d0d0d",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "#fff",
-                padding: "8px 10px",
-                borderRadius: 4,
-                fontSize: 12,
-              }}
-            />
-          </label>
-        </div>
+        {/* Price filter */}
+        <FilterSection title="Khoảng giá">
+          <div className="wp-filter-price-row">
+            <div className="wp-filter-price-field">
+              <label className="wp-filter-price-label" htmlFor="min_price">Từ (₫)</label>
+              <input
+                id="min_price"
+                name="min_price"
+                type="number"
+                min="0"
+                step="50000"
+                defaultValue={current.minPrice}
+                placeholder="0"
+                className="wp-filter-price-input"
+              />
+            </div>
+            <span className="wp-filter-price-sep">—</span>
+            <div className="wp-filter-price-field">
+              <label className="wp-filter-price-label" htmlFor="max_price">Đến (₫)</label>
+              <input
+                id="max_price"
+                name="max_price"
+                type="number"
+                min="0"
+                step="50000"
+                defaultValue={current.maxPrice}
+                placeholder="∞"
+                className="wp-filter-price-input"
+              />
+            </div>
+          </div>
+          <div className="wp-filter-price-presets">
+            {[
+              { label: "< 1tr", min: undefined, max: 1000000 },
+              { label: "1–3tr", min: 1000000, max: 3000000 },
+              { label: "3–5tr", min: 3000000, max: 5000000 },
+              { label: "> 5tr", min: 5000000, max: undefined },
+            ].map((p) => {
+              const active = current.minPrice === p.min && current.maxPrice === p.max;
+              const qs = buildQueryString({
+                ...hiddenParams,
+                "pwb-brand": current.brand,
+                filter_gender: current.gender,
+                q: current.q,
+                sort: current.sort,
+                min_price: p.min,
+                max_price: p.max,
+              });
+              return (
+                <Link
+                  key={p.label}
+                  href={`${resetHref}${qs}`}
+                  className={`wp-filter-preset${active ? " active" : ""}`}
+                >
+                  {p.label}
+                </Link>
+              );
+            })}
+          </div>
+        </FilterSection>
 
-        <div className="wp-filter-group">
-          <h5>Giới tính</h5>
+        {/* Gender filter */}
+        <FilterSection title="Giới tính" defaultOpen={false}>
           {[
             { value: "", label: "Tất cả" },
             { value: "nam", label: "Nam" },
@@ -169,47 +296,19 @@ export function CatalogFilters({
                 value={opt.value}
                 defaultChecked={(current.gender ?? "") === opt.value}
               />
-              {opt.label}
+              <span className="wp-filter-row-label">{opt.label}</span>
             </label>
           ))}
-        </div>
+        </FilterSection>
 
         <button className="wp-filter-apply" type="submit">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M1 3h12M3 7h8M5 11h4" />
+          </svg>
           Áp dụng bộ lọc
         </button>
-        <Link href={resetHref} className="wp-filter-reset">
-          Xoá bộ lọc
-        </Link>
       </form>
-
-      {chips.length > 0 && (
-        <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {chips.map((chip) => (
-            <Link
-              key={chip.label}
-              href={chip.removeHref}
-              style={{
-                fontSize: 10,
-                padding: "3px 8px",
-                background: "rgba(249,6,6,0.12)",
-                color: "var(--bb-brand-primary)",
-                border: "1px solid var(--bb-brand-primary-border)",
-                borderRadius: 3,
-                textDecoration: "none",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-              aria-label={`Bỏ bộ lọc: ${chip.label}`}
-            >
-              {chip.label} ✕
-            </Link>
-          ))}
-        </div>
-      )}
+      </div>
     </aside>
   );
 }

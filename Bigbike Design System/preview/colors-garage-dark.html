@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Colors — Garage Dark</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background: var(--bb-bg-page); color: var(--bb-text-primary); font-family: var(--bb-font-body); }
+  .card { padding: 22px 24px; }
+  .grid { display:grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .sw { height: 110px; border-radius: var(--bb-radius-sm); padding: 10px 12px; display:flex; flex-direction:column; justify-content:space-between; border:1px solid rgba(255,255,255,0.08); font-family: var(--bb-font-body); }
+  .sw b { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sw .hex { font-size: 10px; opacity: 0.6; letter-spacing: 0.02em; }
+  .sw .use { font-size: 10px; opacity: 0.55; letter-spacing: 0.04em; text-transform: uppercase; }
+  .title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 13px; letter-spacing: 0.06em; margin: 0 0 14px 0; }
+</style>
+</head>
+<body class="bb-theme-dark">
+<div class="card">
+  <h3 class="title">GARAGE DARK — SURFACES</h3>
+  <div class="grid">
+    <div class="sw" style="background:#0a0a0a;color:#fff"><div><b>Page</b><div class="hex">#0A0A0A</div></div><div class="use">bb-bg-page</div></div>
+    <div class="sw" style="background:#141414;color:#fff"><div><b>Surface</b><div class="hex">#141414</div></div><div class="use">bb-bg-surface</div></div>
+    <div class="sw" style="background:#191919;color:#fff"><div><b>Section</b><div class="hex">#191919</div></div><div class="use">bb-bg-section</div></div>
+    <div class="sw" style="background:#202020;color:#fff"><div><b>Raised</b><div class="hex">#202020</div></div><div class="use">bb-bg-surface-raised</div></div>
+    <div class="sw" style="background:#292929;color:#fff"><div><b>Hover</b><div class="hex">#292929</div></div><div class="use">bb-bg-surface-hover</div></div>
+  </div>
+</div>
+</body>
+</html>

@@ -199,13 +199,20 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         <span className="kicker">Thương hiệu</span>
         <h1>{brandName}</h1>
         {brand.description && (
-          <p style={{ color: "var(--bb-text-muted)", marginTop: 8, fontSize: 14 }}>{brand.description}</p>
+          <p className="wp-entity-desc">{brand.description}</p>
         )}
       </div>
 
       {brand.logo && (
         <div style={{ maxWidth: 1440, margin: "0 auto 24px", padding: "0 24px" }}>
-          <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 16 }}>
+          <div
+            style={{
+              padding: 16,
+              background: "var(--bb-bg-surface)",
+              border: "1px solid var(--bb-border-subtle)",
+              borderRadius: 8,
+            }}
+          >
             <MediaImage
               image={brand.logo}
               altFallback={brandName}

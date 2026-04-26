@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -10,7 +12,7 @@ import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { safeText } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import {
   buildQueryString,
   collectErrors,
@@ -24,6 +26,9 @@ import {
 } from "@/lib/utils/query";
 import { toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+
+const DEFAULT_SORT = "createdAt:desc";
+const DEFAULT_PAGE_SIZE = 24;
 
 type CategoryDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -100,7 +105,7 @@ export default async function CategoryDetailPage({
     field: "page",
   });
   const sizeParsed = parsePositiveIntParam(pageParams.size, {
-    defaultValue: 24,
+    defaultValue: DEFAULT_PAGE_SIZE,
     min: 1,
     max: 100,
     field: "size",
@@ -119,7 +124,7 @@ export default async function CategoryDetailPage({
     max: 1_000_000_000,
     field: "max_price",
   });
-  const sortParsed = parseSortParam(pageParams.sort, PRODUCT_SORT_VALUES, "createdAt:desc");
+  const sortParsed = parseSortParam(pageParams.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
 
   const validationErrors = collectErrors(
     pageParsed.error,
@@ -188,26 +193,59 @@ export default async function CategoryDetailPage({
     sort: sortParsed.value,
   };
 
+  const heroImgAsset = category.image ?? category.icon;
+  const heroImgSrc = heroImgAsset?.url ? resolveMediaUrl(heroImgAsset.url.trim()) : null;
+
+  const rawDescription = category.description ?? null;
+  const isHtmlDescription = rawDescription ? /<[a-z][\s\S]*>/i.test(rawDescription) : false;
+  const heroDescription = isHtmlDescription
+    ? rawDescription!.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim()
+    : rawDescription;
+
   return (
     <>
-      <div className="wp-breadcrumb">
-        <Link href={toHomePath()}>Trang chủ</Link>
-        <span className="sep">/</span>
-        <Link href={toProductListPath()}>Sản phẩm</Link>
-        <span className="sep">/</span>
-        <span>{categoryName}</span>
-      </div>
-
-      <div className="wp-page-head">
-        <span className="kicker">Danh mục sản phẩm</span>
-        <h1>{categoryName}</h1>
-        {category.description && (
-          <p style={{ color: "var(--bb-text-muted)", marginTop: 8, fontSize: 14 }}>{category.description}</p>
+      {/* ── Category Hero ──────────────────────────────────────── */}
+      <div className={`wp-cat-hero${heroImgSrc ? "" : " wp-cat-hero--no-img"}`}>
+        {heroImgSrc && (
+          <Image
+            src={heroImgSrc}
+            alt={safeText(
+              (category.image ?? category.icon)?.alt,
+              categoryName,
+            )}
+            fill
+            className="wp-cat-hero-bg"
+            unoptimized
+            priority
+            sizes="100vw"
+          />
         )}
+        {heroImgSrc && <div className="wp-cat-hero-overlay" />}
+        <div className="wp-cat-hero-content bb-container">
+          <nav className="wp-cat-hero-breadcrumb" aria-label="Điều hướng">
+            <Link href={toHomePath()}>Trang chủ</Link>
+            <span aria-hidden="true">/</span>
+            <Link href={toProductListPath()}>Sản phẩm</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{categoryName}</span>
+          </nav>
+          <p className="wp-cat-hero-kicker">DANH MỤC SẢN PHẨM</p>
+          <h1 className="wp-cat-hero-title">{categoryName}</h1>
+          {heroDescription && (
+            <p className="wp-cat-hero-desc">{heroDescription}</p>
+          )}
+          {pagination && (
+            <span className="wp-cat-hero-count">
+              {pagination.totalItems} sản phẩm
+            </span>
+          )}
+        </div>
       </div>
 
+      {/* ── Catalog body ──────────────────────────────────────── */}
       <div className="wp-cat-layout">
         <CatalogFilters
+          key={[currentFilters.brand, currentFilters.color, currentFilters.gender, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
           current={currentFilters}
           resetHref={canonicalPath}
@@ -221,17 +259,33 @@ export default async function CategoryDetailPage({
                   Hiển thị{" "}
                   <b>
                     {(pagination.page - 1) * pagination.pageSize + 1}–
-                    {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)}
+                    {Math.min(
+                      pagination.page * pagination.pageSize,
+                      pagination.totalItems,
+                    )}
                   </b>{" "}
                   / {pagination.totalItems} sản phẩm
                 </>
               ) : null}
             </div>
-            <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            <Suspense
+              fallback={
+                <span
+                  className="bb-skel"
+                  aria-hidden="true"
+                  style={{ width: 160, height: 36, borderRadius: 4 }}
+                />
+              }
+            >
+              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            </Suspense>
           </div>
 
           {productsResult.error && productsResult.data.length === 0 ? (
-            <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
+            <ErrorState
+              message={productsResult.error.message}
+              retryHref={canonicalPath}
+            />
           ) : productsResult.data.length === 0 ? (
             <EmptyState
               title="Danh mục chưa có sản phẩm"
@@ -251,8 +305,8 @@ export default async function CategoryDetailPage({
                   makeHref={(nextPage) =>
                     `${canonicalPath}${buildQueryString({
                       page: nextPage,
-                      size: sizeParsed.value,
-                      sort: sortParsed.value,
+                      size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+                      sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
                       "pwb-brand": brandParsed.value,
                       q: qParsed.value,
                       filter_color: colorParsed.value,
@@ -267,6 +321,16 @@ export default async function CategoryDetailPage({
           )}
         </div>
       </div>
+
+      {/* ── SEO description (full HTML) ────────────────────────── */}
+      {isHtmlDescription && rawDescription && (
+        <div className="wp-cat-seo">
+          <div
+            className="wp-cat-seo-prose"
+            dangerouslySetInnerHTML={{ __html: rawDescription }}
+          />
+        </div>
+      )}
     </>
   );
 }

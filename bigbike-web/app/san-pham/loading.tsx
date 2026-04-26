@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { CatalogSkeleton } from "@/components/ui/Skeletons";
 
 export default function ProductListLoading() {
-  return <LoadingGrid title="Đang tải danh sách sản phẩm" count={8} />;
+  return <CatalogSkeleton />;
 }
-

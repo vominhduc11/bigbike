@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { ArticleListSkeleton } from "@/components/ui/Skeletons";
 
 export default function ArticleListLoading() {
-  return <LoadingGrid title="Đang tải danh sách bài viết" count={6} />;
+  return <ArticleListSkeleton />;
 }
-

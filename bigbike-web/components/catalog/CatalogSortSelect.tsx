@@ -24,8 +24,8 @@ export function CatalogSortSelect({ current }: { current: string }) {
 
   return (
     <div className="wp-catalog-sort">
-      <label>Sắp xếp</label>
-      <select value={current} onChange={handleChange}>
+      <label htmlFor="sort-select">Sắp xếp</label>
+      <select id="sort-select" value={current} onChange={handleChange}>
         {Object.entries(SORT_LABELS).map(([value, label]) => (
           <option key={value} value={value}>
             {label}

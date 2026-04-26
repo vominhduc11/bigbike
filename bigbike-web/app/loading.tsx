@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { HomeSkeleton } from "@/components/ui/Skeletons";
 
 export default function Loading() {
-  return <LoadingGrid title="Đang tải trang BigBike" count={8} />;
+  return <HomeSkeleton />;
 }
-

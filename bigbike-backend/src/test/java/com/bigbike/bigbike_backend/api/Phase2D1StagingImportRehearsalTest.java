@@ -289,7 +289,7 @@ class Phase2D1StagingImportRehearsalTest {
             throws Exception {
         List<MappedCategory> cats = parseFixtureCategories(dump);
 
-        MigrationExecutionReport.DomainResult result = categoryImporter.importBatch(cats, opts);
+        MigrationExecutionReport.DomainResult result = categoryImporter.importBatch(cats, opts, java.util.Map.of(), "");
         return new MigrationExecutionReport(
                 opts.dryRun(),
                 java.util.Map.of(MigrationDomain.CATEGORIES, result),
@@ -329,7 +329,7 @@ class Phase2D1StagingImportRehearsalTest {
             if (info == null) continue;
             cats.add(new MappedCategory(
                     termId, termId, info[0], info[1], "", 0L, 0,
-                    null, null, "/" + info[0] + "/", List.of()));
+                    null, null, null, "/" + info[0] + "/", List.of()));
         }
         return cats;
     }

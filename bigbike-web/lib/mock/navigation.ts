@@ -5,7 +5,7 @@ export const MOCK_MAIN_MENU: PublicMenu = {
   name: "Main menu",
   items: [
     { id: "m1", parentId: null, label: "TRANG CHỦ", url: "/", sortOrder: 0, openInNewTab: false, cssClass: null },
-    { id: "m2", parentId: null, label: "SẢN PHẨM", url: "/danh-muc-san-pham/", sortOrder: 1, openInNewTab: false, cssClass: null },
+    { id: "m2", parentId: null, label: "SẢN PHẨM", url: "/san-pham/", sortOrder: 1, openInNewTab: false, cssClass: null },
     // Children of SẢN PHẨM
     { id: "m2-1", parentId: "m2", label: "Mũ Bảo Hiểm", url: "/danh-muc-san-pham/non-bao-hiem-moto/", sortOrder: 0, openInNewTab: false, cssClass: null },
     { id: "m2-1-1", parentId: "m2-1", label: "Mũ Fullface", url: "/danh-muc-san-pham/mu-bao-hiem-fullface/", sortOrder: 0, openInNewTab: false, cssClass: null },

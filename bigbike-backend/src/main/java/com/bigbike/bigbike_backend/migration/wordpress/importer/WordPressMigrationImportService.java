@@ -342,29 +342,9 @@ public class WordPressMigrationImportService {
                 }
             }
 
-            // ── 4. Categories ─────────────────────────────────────────────────
-            if (options.includesDomain(MigrationDomain.CATEGORIES)) {
-                List<WordPressCategoryMapper.MappedCategory> cats = new ArrayList<>();
-                for (Map.Entry<Long, WpTermTaxonomy> e : productCatByTermId.entrySet()) {
-                    WpTerm term = termsById.get(e.getKey());
-                    if (term != null) {
-                        cats.add(categoryMapper.map(term, e.getValue(), metaByTerm.getOrDefault(e.getKey(), List.of())));
-                    }
-                }
-                results.put(MigrationDomain.CATEGORIES, categoryImporter.importBatch(cats, options));
-            }
-
-            // ── 5. Brands ─────────────────────────────────────────────────────
-            if (options.includesDomain(MigrationDomain.BRANDS)) {
-                List<WordPressBrandMapper.MappedBrand> brands = new ArrayList<>();
-                for (Map.Entry<Long, WpTermTaxonomy> e : brandByTermId.entrySet()) {
-                    WpTerm term = termsById.get(e.getKey());
-                    if (term != null) brands.add(brandMapper.map(term, e.getValue()));
-                }
-                results.put(MigrationDomain.BRANDS, brandImporter.importBatch(brands, options));
-            }
-
-            // ── 6. Media (metadata only) ──────────────────────────────────────
+            // ── 4. Media (metadata only) ──────────────────────────────────────
+            // Imported BEFORE categories so category thumbnails (termmeta thumbnail_id)
+            // can resolve attachment URLs.
             List<WordPressMediaMapper.MappedMedia> media = new ArrayList<>();
             if (options.includesDomain(MigrationDomain.MEDIA)) {
                 for (WpPost post : attachmentPosts) {
@@ -386,12 +366,39 @@ public class WordPressMigrationImportService {
                 }
                 results.put(MigrationDomain.MEDIA, mediaImporter.importBatch(media, options));
             }
-            // Build attachment-id → MappedMedia lookup for thumbnail resolution during product import
+            // Build attachment-id → MappedMedia lookup used by category, product, and article importers
             Map<Long, WordPressMediaMapper.MappedMedia> mediaByLegacyId = new HashMap<>();
             for (WordPressMediaMapper.MappedMedia mm : media) {
                 if (mm.storagePath() != null && !mm.storagePath().isBlank()) {
                     mediaByLegacyId.put(mm.sourceId(), mm);
                 }
+            }
+
+            // ── 5. Categories ─────────────────────────────────────────────────
+            if (options.includesDomain(MigrationDomain.CATEGORIES)) {
+                List<WordPressCategoryMapper.MappedCategory> cats = new ArrayList<>();
+                for (Map.Entry<Long, WpTermTaxonomy> e : productCatByTermId.entrySet()) {
+                    WpTerm term = termsById.get(e.getKey());
+                    if (term != null) {
+                        cats.add(categoryMapper.map(term, e.getValue(), metaByTerm.getOrDefault(e.getKey(), List.of())));
+                    }
+                }
+                results.put(MigrationDomain.CATEGORIES, categoryImporter.importBatch(
+                        cats, options, mediaByLegacyId, mediaUrlProperties.getPublicBaseUrl()));
+            }
+
+            // ── 6. Brands ─────────────────────────────────────────────────────
+            if (options.includesDomain(MigrationDomain.BRANDS)) {
+                List<WordPressBrandMapper.MappedBrand> brands = new ArrayList<>();
+                for (Map.Entry<Long, WpTermTaxonomy> e : brandByTermId.entrySet()) {
+                    WpTerm term = termsById.get(e.getKey());
+                    if (term != null) {
+                        brands.add(brandMapper.map(term, e.getValue(),
+                                metaByTerm.getOrDefault(e.getKey(), List.of())));
+                    }
+                }
+                results.put(MigrationDomain.BRANDS, brandImporter.importBatch(
+                        brands, options, mediaByLegacyId, mediaUrlProperties.getPublicBaseUrl()));
             }
 
             // ── 7. Pages ──────────────────────────────────────────────────────

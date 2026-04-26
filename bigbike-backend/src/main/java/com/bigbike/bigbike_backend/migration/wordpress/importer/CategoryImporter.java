@@ -1,12 +1,14 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper.MappedCategory;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +35,10 @@ public class CategoryImporter implements DomainImporter {
 
     @Transactional
     public MigrationExecutionReport.DomainResult importBatch(
-            List<MappedCategory> items, MigrationExecutionOptions options) {
+            List<MappedCategory> items,
+            MigrationExecutionOptions options,
+            Map<Long, MappedMedia> mediaByLegacyId,
+            String mediaPublicBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
@@ -64,6 +69,30 @@ public class CategoryImporter implements DomainImporter {
                 entity.setVisible(true);
                 entity.setShowOnHomepage(mc.showOnHomepage());
                 entity.setSortOrder(mc.sortOrder());
+
+                // Thumbnail image — resolved from WP termmeta thumbnail_id via mediaByLegacyId map
+                if (mc.thumbnailId() != null && mediaByLegacyId != null) {
+                    MappedMedia thumb = mediaByLegacyId.get(mc.thumbnailId());
+                    if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
+                        String base = mediaPublicBaseUrl == null ? "" :
+                                (mediaPublicBaseUrl.endsWith("/")
+                                        ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                                        : mediaPublicBaseUrl);
+                        String storagePath = thumb.storagePath().startsWith("/")
+                                ? thumb.storagePath().substring(1)
+                                : thumb.storagePath();
+                        entity.setImageId(String.valueOf(mc.thumbnailId()));
+                        entity.setImageUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setImageAlt(thumb.altText());
+                        entity.setImageWidth(thumb.width());
+                        entity.setImageHeight(thumb.height());
+                        entity.setImageMimeType(thumb.mimeType());
+                    } else {
+                        warnings.add("Category slug=" + mc.slug()
+                                + ": thumbnail_id=" + mc.thumbnailId() + " not found in media map");
+                    }
+                }
+
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mc.warnings());
 

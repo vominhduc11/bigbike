@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Colors — Brand Red</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background: var(--bb-bg-page); color: var(--bb-text-primary); font-family: var(--bb-font-body); }
+  .card { padding: 22px 24px; }
+  .row { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+  .swatch { height: 86px; border-radius: var(--bb-radius-sm); display:flex; align-items:flex-end; padding: 8px 9px; font-size: 10px; font-family: var(--bb-font-body); letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.06); }
+  .swatch b { font-weight: 700; }
+  .swatch .hex { display:block; opacity: 0.7; font-size: 9px; letter-spacing: 0.02em; text-transform: none; }
+  .tag { display:inline-block; margin-top: 8px; background: var(--bb-brand-primary); color: #fff; padding: 3px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 13px; letter-spacing: 0.06em; margin: 0 0 14px 0; }
+  .title em { color: var(--bb-brand-primary); font-style: normal; }
+</style>
+</head>
+<body class="bb-theme-dark">
+<div class="card">
+  <h3 class="title">RACING <em>RED</em> — SINGLE BRAND ACCENT</h3>
+  <div class="row">
+    <div class="swatch" style="background:#fff1f1;color:#610101"><div><b>50</b><span class="hex">#FFF1F1</span></div></div>
+    <div class="swatch" style="background:#ffdede;color:#8f0202"><div><b>100</b><span class="hex">#FFDEDE</span></div></div>
+    <div class="swatch" style="background:#ffbcbc;color:#8f0202"><div><b>200</b><span class="hex">#FFBCBC</span></div></div>
+    <div class="swatch" style="background:#ff8b8b;color:#610101"><div><b>300</b><span class="hex">#FF8B8B</span></div></div>
+    <div class="swatch" style="background:#ff4d4d;color:#fff"><div><b>400</b><span class="hex">#FF4D4D</span></div></div>
+    <div class="swatch" style="background:#f90606;color:#fff;box-shadow:0 12px 30px rgba(249,6,6,0.22);border-color:#fff"><div><b>500 ◄</b><span class="hex">#F90606</span></div></div>
+    <div class="swatch" style="background:#d90404;color:#fff"><div><b>600</b><span class="hex">#D90404</span></div></div>
+    <div class="swatch" style="background:#b80303;color:#fff"><div><b>700</b><span class="hex">#B80303</span></div></div>
+    <div class="swatch" style="background:#8f0202;color:#fff"><div><b>900</b><span class="hex">#610101</span></div></div>
+  </div>
+  <span class="tag">500 is brand primary</span>
+</div>
+</body>
+</html>

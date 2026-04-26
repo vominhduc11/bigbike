@@ -64,40 +64,30 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         )}
 
         {order && (
-          <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 22px", marginBottom: 22, textAlign: "left", maxWidth: 560, margin: "0 auto 22px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 12 }}>
-              Sản phẩm đã đặt
-            </p>
+          <div className="wp-info-card" style={{ maxWidth: 560, margin: "0 auto 22px", textAlign: "left" }}>
+            <p className="wp-info-label">Sản phẩm đã đặt</p>
             {order.lineItems.map((item) => (
-              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <span style={{ color: "rgba(255,255,255,0.85)" }}>
+              <div key={item.id} className="wp-order-confirm-row">
+                <span className="wp-checkout-address">
                   {safeText(item.productName, "Sản phẩm")}
                   {item.variantName ? ` · ${item.variantName}` : ""} × {item.quantity}
                 </span>
-                <b style={{ color: "#fff", whiteSpace: "nowrap", marginLeft: 12 }}>{formatVnd(item.unitPrice * item.quantity)}</b>
+                <b className="wp-order-confirm-total">{formatVnd(item.unitPrice * item.quantity)}</b>
               </div>
             ))}
             {order.customerNote && (
-              <p style={{ fontSize: 12, color: "var(--bb-text-muted)", marginTop: 10 }}>
-                Ghi chú: {order.customerNote}
-              </p>
+              <p className="wp-muted-text" style={{ marginTop: 10 }}>Ghi chú: {order.customerNote}</p>
             )}
           </div>
         )}
 
         {orderLookup.error && !order && orderNumber && (
-          <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 16 }}>
-            Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.
-          </p>
+          <p className="wp-error-text">Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.</p>
         )}
 
         <div className="cta-row">
-          <Link href={toProductListPath()} className="wp-btn-secondary" style={{ padding: "14px 24px" }}>
-            Tiếp tục mua hàng
-          </Link>
-          <Link href={toOrderHistoryPath()} className="wp-btn-primary" style={{ flex: "none", padding: "14px 28px" }}>
-            Xem đơn hàng của tôi →
-          </Link>
+          <Link href={toProductListPath()} className="wp-btn-secondary">Tiếp tục mua hàng</Link>
+          <Link href={toOrderHistoryPath()} className="wp-btn-primary">Xem đơn hàng của tôi →</Link>
         </div>
       </div>
     </>

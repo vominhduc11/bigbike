@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GuidePage } from "../GuidePage";
+import { GuidePage, resolveGuideRoute } from "../GuidePage";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
 type Props = {
@@ -8,12 +8,12 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sub } = await params;
-  const canonicalPath = `/huong-dan/${sub.map((segment) => encodeURIComponent(segment)).join("/")}/`;
+  const route = resolveGuideRoute(sub);
 
   return buildPublicMetadata({
-    title: "Hướng dẫn",
-    description: "Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike.",
-    canonicalPath,
+    title: route.title,
+    description: route.description,
+    canonicalPath: route.path,
     noIndex: false,
   });
 }

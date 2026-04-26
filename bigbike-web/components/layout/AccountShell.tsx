@@ -4,9 +4,10 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { fetchMe, logoutCustomer } from "@/lib/api/client-api";
+import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import { toLoginPath } from "@/lib/utils/routes";
+import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
 const AccountRefreshContext = createContext<(() => Promise<void>) | null>(null);
@@ -41,36 +42,29 @@ type Props = { children: ReactNode; loginRedirect: string };
 export function AccountShell({ children, loginRedirect }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const auth = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    fetchMe()
-      .then(setProfile)
-      .catch(() => router.replace(toLoginPath(loginRedirect)))
-      .finally(() => setLoading(false));
-  }, [router, loginRedirect]);
+    if (auth.status === "anonymous") {
+      router.replace(toLoginPath(loginRedirect));
+    }
+  }, [auth.status, router, loginRedirect]);
 
   async function handleLogout() {
     setLoggingOut(true);
-    try { await logoutCustomer(); } catch { /* ignore */ }
+    await performLogout();
     router.push("/");
   }
 
-  if (loading) {
-    return (
-      <div className="wp-account-layout">
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, minHeight: 320 }} />
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, minHeight: 320 }} />
-      </div>
-    );
+  if (auth.status !== "authenticated") {
+    return <AccountLayoutSkeleton rows={3} />;
   }
 
-  if (!profile) return null;
+  const profile = auth.profile;
 
   async function refreshProfile() {
-    try { setProfile(await fetchMe()); } catch { /* ignore */ }
+    await refreshAuth();
   }
 
   return (
@@ -97,25 +91,9 @@ export function AccountShell({ children, loginRedirect }: Props) {
             <div className="logout">
               <button
                 type="button"
+                className="wp-logout-btn"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "11px 14px",
-                  background: "none",
-                  border: "none",
-                  width: "100%",
-                  textAlign: "left",
-                  cursor: loggingOut ? "default" : "pointer",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: loggingOut ? "rgba(255,255,255,0.3)" : "var(--bb-text-muted)",
-                  borderRadius: 4,
-                  fontFamily: "inherit",
-                }}
               >
                 {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
               </button>

@@ -195,15 +195,6 @@ export const PRODUCT_SORT_VALUES = [
   "price:desc",
 ] as const;
 
-export const CATEGORY_SORT_VALUES = [
-  "sortOrder:asc",
-  "sortOrder:desc",
-  "name:asc",
-  "name:desc",
-  "createdAt:desc",
-  "createdAt:asc",
-] as const;
-
 export const BRAND_SORT_VALUES = [
   "name:asc",
   "name:desc",

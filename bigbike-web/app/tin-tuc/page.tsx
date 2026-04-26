@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { ARTICLE_SORT_VALUES, listArticles } from "@/lib/api/public-api";
+import type { Article, ContentCategorySummary } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import {
   buildQueryString,
@@ -17,9 +18,39 @@ import {
 } from "@/lib/utils/query";
 import { toArticleListPath } from "@/lib/utils/routes";
 
+const SORT_LABELS: Record<(typeof ARTICLE_SORT_VALUES)[number], string> = {
+  "publishedAt:desc": "Mới nhất",
+  "publishedAt:asc": "Cũ nhất",
+  "createdAt:desc": "Mới tạo",
+  "createdAt:asc": "Tạo cũ nhất",
+  "title:asc": "Tên A-Z",
+  "title:desc": "Tên Z-A",
+};
+
 type ArticleListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function collectArticleCategories(articles: Article[]): ContentCategorySummary[] {
+  const categories = new Map<string, ContentCategorySummary>();
+
+  for (const article of articles) {
+    const articleCategories = [
+      article.category,
+      ...(article.categories ?? []),
+    ].filter((category): category is ContentCategorySummary => Boolean(category?.slug && category.name));
+
+    for (const category of articleCategories) {
+      categories.set(category.slug, category);
+    }
+  }
+
+  return Array.from(categories.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"));
+}
+
+function sortLabel(value: string): string {
+  return SORT_LABELS[value as keyof typeof SORT_LABELS] ?? value;
+}
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
   const params = await searchParams;
@@ -83,62 +114,183 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     q: qParsed.value,
   });
 
+  const articles = result.data;
+  const totalItems = result.pagination?.totalItems ?? articles.length;
+  const hasContentFilters = Boolean(qParsed.value || categoryParsed.value);
+  const hasVisibleFilters =
+    hasContentFilters ||
+    Boolean(readSingleSearchParam(params.sort)) ||
+    pageParsed.value > 1 ||
+    sizeParsed.value !== 12;
+  const featuredArticle = !hasContentFilters && pageParsed.value === 1 ? articles[0] : undefined;
+  const gridArticles = featuredArticle ? articles.slice(1) : articles;
+  const categories = collectArticleCategories(articles);
+  const activeCategoryLabel =
+    categories.find((category) => category.slug === categoryParsed.value)?.name ??
+    categoryParsed.value;
+
+  const makeListHref = (overrides: {
+    page?: number;
+    category?: string;
+    q?: string;
+    sort?: string;
+    size?: number;
+  }) =>
+    `${toArticleListPath()}${buildQueryString({
+      page: overrides.page,
+      size: overrides.size,
+      sort: overrides.sort,
+      category: overrides.category,
+      q: overrides.q,
+    })}`;
+
   return (
-    <>
+    <div className="wp-news-page">
       <div className="wp-breadcrumb">
         <Link href="/">Trang chủ</Link>
         <span className="sep">/</span>
         <span>Tin tức</span>
       </div>
 
-      <div className="wp-page-head">
-        <span className="kicker">BigBike Blog</span>
-        <h1>Tin tức và hướng dẫn</h1>
-      </div>
+      <section className="wp-news-hero" aria-labelledby="news-heading">
+        <div className="wp-news-hero-copy">
+          <span className="wp-news-kicker">BigBike Blog</span>
+          <h1 id="news-heading">Tin tức và hướng dẫn biker</h1>
+          <p>
+            Kiến thức chọn gear, kinh nghiệm sử dụng đồ bảo hộ moto và cập nhật
+            sản phẩm chính hãng cho anh em rider Việt Nam.
+          </p>
+        </div>
+        <div className="wp-news-hero-panel" aria-label="Tổng quan bài viết">
+          <span>Bài viết</span>
+          <b>{totalItems}</b>
+          <p>
+            {hasContentFilters
+              ? "Kết quả đang được lọc theo từ khoá hoặc danh mục."
+              : "Sắp xếp theo bài mới nhất từ hệ thống BigBike."}
+          </p>
+        </div>
+      </section>
 
-      <div style={{ maxWidth: 1440, margin: "0 auto 40px", padding: "0 24px" }}>
-        {/* Search/filter bar */}
-        <form
-          method="GET"
-          style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28, alignItems: "flex-end" }}
-        >
-          <div className="wp-field" style={{ flex: "1 1 200px" }}>
-            <label>Tìm kiếm</label>
-            <input name="q" defaultValue={qParsed.value} className="wp-input" placeholder="Tìm bài viết..." />
-          </div>
-          <div className="wp-field" style={{ flex: "0 1 160px" }}>
-            <label>Danh mục</label>
-            <input name="category" defaultValue={categoryParsed.value} className="wp-input" placeholder="huong-dan" />
-          </div>
-          <div className="wp-field" style={{ flex: "0 1 160px" }}>
-            <label>Sắp xếp</label>
-            <select name="sort" defaultValue={sortParsed.value} className="wp-input">
-              {ARTICLE_SORT_VALUES.map((value) => (
-                <option value={value} key={value}>
-                  {value === "publishedAt:desc" ? "Mới nhất" : value === "publishedAt:asc" ? "Cũ nhất" : value}
-                </option>
+      <div className="wp-news-section">
+        <div className="wp-news-toolbar">
+          <form method="GET" className="wp-news-filter-form" aria-label="Lọc bài viết">
+            <div className="wp-field wp-news-filter-search">
+              <label>Tìm kiếm</label>
+              <input
+                name="q"
+                defaultValue={qParsed.value}
+                className="wp-input"
+                placeholder="VD: chọn size mũ, găng tay touring..."
+              />
+            </div>
+            <div className="wp-field">
+              <label>Danh mục</label>
+              <input
+                name="category"
+                defaultValue={categoryParsed.value}
+                className="wp-input"
+                placeholder="VD: tin-tuc, huong-dan..."
+              />
+            </div>
+            <div className="wp-field">
+              <label>Sắp xếp</label>
+              <select name="sort" defaultValue={sortParsed.value} className="wp-input">
+                {ARTICLE_SORT_VALUES.map((value) => (
+                  <option value={value} key={value}>
+                    {sortLabel(value)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="wp-news-filter-actions">
+              <button type="submit" className="wp-btn-primary">
+                Áp dụng
+              </button>
+              {hasVisibleFilters ? (
+                <Link href={toArticleListPath()} className="wp-filter-reset">
+                  Xoá lọc
+                </Link>
+              ) : null}
+            </div>
+          </form>
+
+          {categories.length > 0 ? (
+            <nav className="wp-news-category-strip" aria-label="Danh mục tin tức">
+              <Link
+                href={makeListHref({
+                  q: qParsed.value,
+                  sort: sortParsed.value === "publishedAt:desc" ? undefined : sortParsed.value,
+                })}
+                className={`wp-news-category-chip${categoryParsed.value ? "" : " active"}`}
+              >
+                Tất cả
+              </Link>
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={makeListHref({
+                    category: category.slug,
+                    q: qParsed.value,
+                    sort: sortParsed.value === "publishedAt:desc" ? undefined : sortParsed.value,
+                  })}
+                  className={`wp-news-category-chip${
+                    categoryParsed.value === category.slug ? " active" : ""
+                  }`}
+                >
+                  {category.name}
+                </Link>
               ))}
-            </select>
+            </nav>
+          ) : null}
+        </div>
+
+        <div className="wp-news-results-head">
+          <div>
+            <span className="wp-news-results-kicker">
+              {hasContentFilters ? "Kết quả lọc" : "Bài mới nhất"}
+            </span>
+            <h2>
+              {hasContentFilters
+                ? `${totalItems} bài viết phù hợp`
+                : "Cập nhật từ BigBike"}
+            </h2>
           </div>
-          <button type="submit" className="wp-btn-primary" style={{ flexShrink: 0 }}>
-            Áp dụng
-          </button>
-        </form>
+          <p>
+            {qParsed.value ? `Từ khoá: "${qParsed.value}"` : null}
+            {qParsed.value && activeCategoryLabel ? " · " : null}
+            {activeCategoryLabel ? `Danh mục: ${activeCategoryLabel}` : null}
+            {!qParsed.value && !activeCategoryLabel ? `Sắp xếp: ${sortLabel(sortParsed.value)}` : null}
+          </p>
+        </div>
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toArticleListPath()} />
         ) : result.data.length === 0 ? (
           <EmptyState
             title="Không có bài viết"
-            description="Danh sách bài viết hiện tại đang rỗng."
+            description="Chưa có bài viết phù hợp với bộ lọc hiện tại."
+            action={
+              hasVisibleFilters ? (
+                <Link href={toArticleListPath()} className="bb-button bb-button-primary">
+                  Xem tất cả bài viết
+                </Link>
+              ) : null
+            }
           />
         ) : (
           <>
-            <div className="wp-news-grid">
-              {result.data.map((article) => (
+            {featuredArticle ? (
+              <ArticleCard article={featuredArticle} variant="featured" />
+            ) : null}
+
+            {gridArticles.length > 0 ? (
+              <div className="wp-news-grid">
+                {gridArticles.map((article) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
-            </div>
+              </div>
+            ) : null}
             {result.pagination ? (
               <PaginationNav
                 page={result.pagination.page}
@@ -157,6 +309,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }

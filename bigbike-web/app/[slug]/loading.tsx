@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { StaticPageSkeleton } from "@/components/ui/Skeletons";
 
 export default function StaticPageLoading() {
-  return <LoadingGrid title="Đang tải trang nội dung" count={2} />;
+  return <StaticPageSkeleton title="Đang tải trang nội dung" />;
 }
-

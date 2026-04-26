@@ -7,6 +7,7 @@ import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
+import { CartSkeleton } from "@/components/ui/Skeletons";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -110,11 +111,7 @@ export default function CartPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div style={{ maxWidth: 1440, margin: "40px auto", padding: "0 24px" }}>
-        <div style={{ background: "#141414", borderRadius: 8, minHeight: 320 }} />
-      </div>
-    );
+    return <CartSkeleton />;
   }
 
   const hasItems = cart && cart.items.length > 0;
@@ -134,7 +131,7 @@ export default function CartPage() {
 
       {error && (
         <div style={{ maxWidth: 1440, margin: "0 auto 16px", padding: "0 24px" }}>
-          <p style={{ color: "var(--bb-brand-primary)", fontSize: 13 }}>{error}</p>
+          <p className="wp-error-text">{error}</p>
         </div>
       )}
 
@@ -146,7 +143,7 @@ export default function CartPage() {
               <div className="wp-cart-empty">
                 <b>Giỏ hàng trống</b>
                 <p>Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
-                <Link href={toProductListPath()} className="wp-btn-primary" style={{ display: "inline-block" }}>
+                <Link href={toProductListPath()} className="wp-btn-primary">
                   Xem sản phẩm
                 </Link>
               </div>
@@ -169,7 +166,7 @@ export default function CartPage() {
                 >
                   <div className="wp-cart-item-prod">
                     <div className="wp-cart-item-thumb">
-                      <span style={{ fontFamily: "var(--bb-font-display)", fontSize: 11, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" }}>
+                      <span className="wp-thumb-initials" style={{ fontSize: 11 }}>
                         {item.productName.slice(0, 2)}
                       </span>
                     </div>
@@ -276,15 +273,15 @@ export default function CartPage() {
 
               {/* Applied coupons */}
               {cart.couponCodes && cart.couponCodes.length > 0 && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className="wp-coupon-list">
                   {cart.couponCodes.map((code) => (
-                    <div key={code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(98,187,70,0.08)", border: "1px solid rgba(98,187,70,0.3)", borderRadius: 4, padding: "6px 10px", fontSize: 12 }}>
-                      <span style={{ color: "#62bb46", fontWeight: 600, letterSpacing: "0.04em" }}>{code}</span>
+                    <div key={code} className="wp-coupon-tag">
+                      <span className="wp-coupon-code">{code}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveCoupon(code)}
                         disabled={couponLoading}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 0, fontSize: 14, lineHeight: 1 }}
+                        className="wp-coupon-remove"
                         aria-label="Xoá mã giảm giá"
                       >
                         ×
@@ -295,7 +292,7 @@ export default function CartPage() {
               )}
 
               {/* Coupon input */}
-              <form onSubmit={handleApplyCoupon} style={{ marginTop: 14, display: "flex", gap: 8 }}>
+              <form onSubmit={handleApplyCoupon} className="wp-coupon-form">
                 <input
                   className="wp-input"
                   style={{ flex: 1, fontSize: 13 }}
@@ -313,9 +310,7 @@ export default function CartPage() {
                   {couponLoading ? "..." : "Áp dụng"}
                 </button>
               </form>
-              {couponError && (
-                <p style={{ fontSize: 12, color: "var(--bb-brand-primary)", marginTop: 6 }}>{couponError}</p>
-              )}
+              {couponError && <p className="wp-coupon-error">{couponError}</p>}
             </>
           )}
 
@@ -323,8 +318,9 @@ export default function CartPage() {
             href={toCheckoutPath()}
             className="wp-summary-cta"
             style={{ pointerEvents: hasItems ? undefined : "none", opacity: hasItems ? 1 : 0.4 }}
+            aria-disabled={!hasItems}
           >
-            Tiến hành thanh toán
+            {loading ? "Đang tải..." : "Tiến hành thanh toán"}
           </Link>
 
           <div className="wp-summary-trust">

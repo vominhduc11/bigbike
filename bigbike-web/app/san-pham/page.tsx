@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -27,6 +28,7 @@ type ProductListPageProps = {
 };
 
 const DEFAULT_PAGE_SIZE = 24;
+const DEFAULT_SORT = "createdAt:desc";
 const PRICE_PARAM_MAX = 1_000_000_000;
 
 export async function generateMetadata({ searchParams }: ProductListPageProps): Promise<Metadata> {
@@ -94,7 +96,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     max: PRICE_PARAM_MAX,
     field: "max_price",
   });
-  const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, "createdAt:desc");
+  const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
 
   const validationErrors = collectErrors(
     pageParsed.error,
@@ -163,7 +165,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       <div className="wp-breadcrumb">
         <Link href="/">Trang chủ</Link>
         <span className="sep">/</span>
-        <span style={{ color: "#fff" }}>Sản phẩm</span>
+        <span className="wp-breadcrumb-active">Sản phẩm</span>
       </div>
 
       <div className="wp-page-head">
@@ -173,6 +175,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
       <div className="wp-cat-layout">
         <CatalogFilters
+          key={[currentFilters.brand, currentFilters.color, currentFilters.gender, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
           current={currentFilters}
           resetHref={toProductListPath()}
@@ -192,7 +195,17 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                 </>
               ) : null}
             </div>
-            <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            <Suspense
+              fallback={
+                <span
+                  className="bb-skel"
+                  aria-hidden="true"
+                  style={{ width: 160, height: 36, borderRadius: 4 }}
+                />
+              }
+            >
+              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            </Suspense>
           </div>
 
           {result.error && result.data.length === 0 ? (
@@ -216,8 +229,8 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                   makeHref={(nextPage) =>
                     `${toProductListPath()}${buildQueryString({
                       page: nextPage,
-                      size: sizeParsed.value,
-                      sort: sortParsed.value,
+                      size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+                      sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
                       category: categoryParsed.value,
                       "pwb-brand": brandParsed.value,
                       q: qParsed.value,

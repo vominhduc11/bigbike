@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { BrandDetailSkeleton } from "@/components/ui/Skeletons";
 
 export default function BrandDetailLoading() {
-  return <LoadingGrid title="Đang tải trang thương hiệu" count={8} />;
+  return <BrandDetailSkeleton />;
 }
-

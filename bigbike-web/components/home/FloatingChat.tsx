@@ -17,13 +17,16 @@ export function FloatingChat({ href, isExternal }: FloatingChatProps) {
         aria-label="Liên hệ hỗ trợ"
       >
         <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
+          width="28"
+          height="28"
+          viewBox="0 0 28 28"
+          fill="none"
           aria-hidden="true"
         >
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+          <rect width="28" height="28" rx="8" fill="white" fillOpacity="0.15" />
+          <text x="14" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="15" fill="white">Z</text>
+          <ellipse cx="14" cy="14" rx="11" ry="9" stroke="white" strokeWidth="1.8" fill="none" />
+          <path d="M6 22 Q5 24 8 23" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none" />
         </svg>
       </a>
     </div>

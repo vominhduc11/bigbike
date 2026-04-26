@@ -70,19 +70,19 @@ function toHeroSlide(slider: HomeSlider) {
 function HomeTrustRail() {
   const items = [
     {
-      title: "Chính hãng 100%",
-      sub: "Ưu tiên gear có nguồn gốc rõ, bảo hành minh bạch.",
-      icon: "M12 2 20 6v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-4Z",
+      title: "100% Chính hãng",
+      sub: "Gear có nguồn gốc rõ, bảo hành theo hãng, cam kết chính hãng.",
+      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-17.svg",
     },
     {
-      title: "Tư vấn đúng nhu cầu",
-      sub: "Chọn mũ, áo giáp, găng tay theo xe, cung đường và dáng người.",
-      icon: "M4 5h16M4 12h10M4 19h16",
+      title: "Giao hàng toàn quốc",
+      sub: "Ship nhanh toàn quốc, miễn phí từ 2 triệu, đóng gói chắc chắn.",
+      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-19.svg",
     },
     {
-      title: "Garage rider since 2013",
-      sub: "Không gian gọn gàng, mạnh mẽ, biết món nào đáng tiền cho dân chạy.",
-      icon: "M5 17h14M7 17l2-8h6l2 8M9 9l1-4h4l1 4",
+      title: "Tư vấn kỹ — đáng tin",
+      sub: "Chọn mũ, áo giáp, găng tay theo xe, cung đường và nhu cầu thực.",
+      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-21.svg",
     },
   ];
 
@@ -91,18 +91,8 @@ function HomeTrustRail() {
       {items.map((item) => (
         <div className="wp-feature-tile" key={item.title}>
           <span className="wp-feat-icon" aria-hidden="true">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d={item.icon} />
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.icon} alt="" width="52" height="52" />
           </span>
           <span className="wp-feat-text">
             <b>{item.title}</b>
@@ -270,7 +260,7 @@ export default async function HomePage() {
       listHomeSliders(),
       listProducts({ page: 1, filterFeatured: true, size: 3, sort: "sortOrder:asc" }),
       listProducts({ page: 1, size: 5, sort: "createdAt:desc" }),
-      listCategories({ page: 1, filterHome: true, size: 8, sort: "sortOrder:desc" }),
+      listCategories({ page: 1, size: 200, sort: "sortOrder:desc" }),
       listArticles({ page: 1, category: "trai-nghiem", size: 3, sort: "publishedAt:desc" }),
       listArticles({ page: 1, category: "blog", size: 3, sort: "publishedAt:desc" }),
       listBrands({ page: 1, size: 12, sort: "name:asc" }),
@@ -284,7 +274,7 @@ export default async function HomePage() {
     findSetting(settings, "promo_title") || "LS2 DUAL SPORT MX436\nPIONEER";
   const promoOff = findSetting(settings, "promo_off") || "20% OFF";
   const promoHref = findSetting(settings, "promo_href") || toProductListPath();
-  const promoImageSrc = resolveMediaUrl(findSetting(settings, "promo_image_url").trim());
+  const promoImageSrc = resolveMediaUrl(findSetting(settings, "promo_image_url").trim()) || "/banner-ads.jpg";
   const aboutTitle = findSetting(settings, "about_title").trim();
   const aboutSubtitle = findSetting(settings, "about_subtitle").trim();
   const aboutContentHtml = findSetting(settings, "about_content_html").trim();
@@ -428,8 +418,20 @@ export default async function HomePage() {
           (4 col desktop, 2 col mobile, image bg, hover red overlay + arrow)
       ───────────────────────────────────────────────────── */}
       {categoriesResult.data.length > 0 && (
-        <section className="wp-cat-section" aria-label="Danh mục sản phẩm">
-          <p className="wp-section-kicker">DANH MỤC SẢN PHẨM</p>
+        <section className="wp-cat-section" aria-labelledby="home-cat-heading">
+          <div className="bb-container">
+            <div className="wp-cat-section-header">
+              <div>
+                <p className="wp-kicker">DANH MỤC SẢN PHẨM</p>
+                <h2 id="home-cat-heading" className="wp-cat-section-title">
+                  KHÁM PHÁ DANH MỤC
+                </h2>
+              </div>
+              <Link href={toProductListPath()} className="wp-view-all-link">
+                Xem tất cả →
+              </Link>
+            </div>
+          </div>
           <div className="wp-cat-grid-img">
             {categoriesResult.data.map((cat) => (
               <WpCategoryImageCell key={cat.id} category={cat} />
@@ -547,12 +549,7 @@ export default async function HomePage() {
       {brandsResult.data.length > 0 && (
         <section className="wp-brands-section" aria-label="Thương hiệu đối tác">
           <div className="bb-container">
-            <p
-              className="wp-section-kicker"
-              style={{ textAlign: "left", paddingBottom: "1.25rem" }}
-            >
-              THƯƠNG HIỆU ĐỐI TÁC
-            </p>
+            <p className="wp-kicker">THƯƠNG HIỆU ĐỐI TÁC</p>
           </div>
           <BrandCarousel brands={brandsResult.data} />
         </section>

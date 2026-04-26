@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { getArticleBySlug } from "@/lib/api/public-api";
@@ -14,8 +13,10 @@ import {
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toArticlePath } from "@/lib/utils/routes";
+import { toArticleListPath, toArticlePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+
+export const dynamic = "force-dynamic";
 
 type ArticleDetailPageProps = Readonly<{
   params: Promise<{ slug: string }>;
@@ -76,6 +77,11 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const breadcrumbJsonLd = serializeJsonLd(buildArticleBreadcrumbJsonLd(article));
 
   const articleTitle = safeText(article.title, "Bài viết");
+  const articleCategory = safeText(article.category?.name, "Tin tức");
+  const articleDate = article.publishedAt ?? article.createdAt;
+  const categoryHref = article.category?.slug
+    ? `${toArticleListPath()}?category=${encodeURIComponent(article.category.slug)}`
+    : toArticleListPath();
 
   return (
     <>
@@ -96,24 +102,30 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         <span>{articleTitle}</span>
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto 60px", padding: "0 24px" }}>
-        <header style={{ marginBottom: 28 }}>
-          <p className="wp-pdp-info-brand" style={{ marginBottom: 12 }}>
-            {article.category?.name ?? "Tin tức"}
-            {article.author?.name ? ` · ${article.author.name}` : ""}
-            {" · "}
-            {formatDate(article.publishedAt ?? article.createdAt)}
-          </p>
-          <h1 style={{ fontFamily: "var(--bb-font-display)", fontSize: "clamp(1.8rem,3vw,2.4rem)", textTransform: "uppercase", letterSpacing: "0.01em", lineHeight: 1.1, margin: "0 0 14px" }}>
-            {articleTitle}
-          </h1>
+      <div className="wp-article-wrap">
+        <header className="wp-article-header">
+          <div className="wp-article-meta-row">
+            <Link href={categoryHref} className="wp-article-meta-chip">
+              {articleCategory}
+            </Link>
+            {article.author?.name ? <span>{article.author.name}</span> : null}
+            <time dateTime={articleDate}>{formatDate(articleDate)}</time>
+          </div>
+          <h1 className="wp-article-h1">{articleTitle}</h1>
           {article.excerpt && (
-            <p style={{ color: "var(--bb-text-muted)", fontSize: 15, lineHeight: 1.6 }}>{article.excerpt}</p>
+            <p className="wp-article-excerpt">{article.excerpt}</p>
           )}
+          {article.tags && article.tags.length > 0 ? (
+            <div className="wp-article-tags" aria-label="Thẻ bài viết">
+              {article.tags.slice(0, 8).map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </div>
+          ) : null}
         </header>
 
         {article.coverImage && (
-          <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 32, background: "#141414" }}>
+          <div className="wp-cover-image">
             <MediaImage
               image={article.coverImage}
               altFallback={articleTitle}
@@ -125,14 +137,20 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         )}
 
         <article
-          className="bb-richtext"
-          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "28px 32px" }}
+          className="bb-richtext wp-article-body"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(article.body) }}
         />
 
-        <div style={{ marginTop: 32 }}>
-          <Link href="/tin-tuc/" className="bb-link">← Tất cả bài viết</Link>
-        </div>
+        <nav className="wp-article-footer-nav" aria-label="Điều hướng bài viết">
+          <Link href={toArticleListPath()} className="bb-button bb-button-secondary">
+            Tất cả bài viết
+          </Link>
+          {article.category?.slug ? (
+            <Link href={categoryHref} className="bb-button bb-button-primary">
+              Xem cùng danh mục
+            </Link>
+          ) : null}
+        </nav>
       </div>
     </>
   );

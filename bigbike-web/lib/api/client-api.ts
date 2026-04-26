@@ -43,9 +43,10 @@ async function clientRequest<T>(
 
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = (payload as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`;
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
+  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
   return (payload as { data: T }).data ?? (payload as T);
 }
 
@@ -157,14 +158,14 @@ export async function fetchMyOrders(page = 1): Promise<{ data: OrderListItem[]; 
     credentials: "include",
     headers: { Accept: "application/json" },
   });
-  const payload = await res.json().catch(() => null);
+  const payload = await res.json().catch(() => null) as Record<string, unknown> | null;
   if (!res.ok) {
-    const msg = (payload as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`;
+    const msg = (payload?.error as { message?: string } | undefined)?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
   return {
-    data: (payload as { data: OrderListItem[] }).data ?? [],
-    pagination: (payload as { pagination: { totalPages: number } }).pagination ?? { totalPages: 1 },
+    data: (payload?.data as OrderListItem[] | undefined) ?? [],
+    pagination: (payload?.pagination as { totalPages: number } | undefined) ?? { totalPages: 1 },
   };
 }
 
@@ -175,8 +176,9 @@ export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
   });
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = (payload as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`;
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
     throw new Error(msg);
   }
-  return (payload as { data: OrderDetail }).data;
+  if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
+  return (payload as { data: OrderDetail }).data ?? (payload as OrderDetail);
 }

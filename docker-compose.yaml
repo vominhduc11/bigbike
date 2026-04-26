@@ -97,6 +97,9 @@ services:
         # Bake MinIO origin into CSP img-src at build time.
         # Browser accesses MinIO via the host-mapped port localhost:9000.
         BIGBIKE_LEGACY_UPLOADS_BASE: http://localhost:9000/bigbike-media/wp-uploads
+        # Server-side rewrite destination: Next.js server (inside Docker) must reach
+        # MinIO via the internal Docker network name, not localhost.
+        BIGBIKE_MEDIA_INTERNAL_URL: http://minio:9000/bigbike-media/wp-uploads
     container_name: bigbike-web
     restart: unless-stopped
     depends_on:

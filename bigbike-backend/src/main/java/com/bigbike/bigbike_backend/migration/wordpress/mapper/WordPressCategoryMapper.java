@@ -23,6 +23,7 @@ public class WordPressCategoryMapper {
             long count,
             Boolean showOnHomepage,
             Integer sortOrder,
+            Long thumbnailId,
             String expectedUrl,
             List<String> warnings
     ) {}
@@ -45,6 +46,7 @@ public class WordPressCategoryMapper {
         String expectedUrl = buildCategoryUrl(term.slug());
         Boolean showOnHomepage = parseBoolean(readTermMeta(metas, "show_on_homepage"));
         Integer sortOrder = parseInteger(readTermMeta(metas, "ordering"), "ordering", warnings);
+        Long thumbnailId = parseLong(readTermMeta(metas, "thumbnail_id"), "thumbnail_id", warnings);
 
         return new MappedCategory(
                 term.termId(),
@@ -56,6 +58,7 @@ public class WordPressCategoryMapper {
                 taxonomy.count(),
                 showOnHomepage,
                 sortOrder,
+                thumbnailId,
                 expectedUrl,
                 warnings
         );
@@ -98,6 +101,19 @@ public class WordPressCategoryMapper {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             warnings.add("Cannot parse termmeta " + field + " as int: " + value);
+            return null;
+        }
+    }
+
+    private static Long parseLong(String value, String field, List<String> warnings) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            long parsed = Long.parseLong(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            warnings.add("Cannot parse termmeta " + field + " as long: " + value);
             return null;
         }
     }

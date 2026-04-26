@@ -1,12 +1,14 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapper.MappedBrand;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,13 @@ public class BrandImporter implements DomainImporter {
     @Transactional
     public MigrationExecutionReport.DomainResult importBatch(
             List<MappedBrand> items, MigrationExecutionOptions options) {
+        return importBatch(items, options, null, null);
+    }
+
+    @Transactional
+    public MigrationExecutionReport.DomainResult importBatch(
+            List<MappedBrand> items, MigrationExecutionOptions options,
+            Map<Long, MappedMedia> mediaByLegacyId, String mediaPublicBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
@@ -62,6 +71,23 @@ public class BrandImporter implements DomainImporter {
                 entity.setDescription(mb.description());
                 entity.setVisible(true);
                 entity.setUpdatedAt(Instant.now());
+
+                if (mb.thumbnailId() != null && mediaByLegacyId != null) {
+                    MappedMedia thumb = mediaByLegacyId.get(mb.thumbnailId());
+                    if (thumb != null && thumb.storagePath() != null && !thumb.storagePath().isBlank()) {
+                        String base = mediaPublicBaseUrl != null
+                                ? mediaPublicBaseUrl.replaceAll("/+$", "") : "";
+                        String storagePath = thumb.storagePath().startsWith("/")
+                                ? thumb.storagePath().substring(1) : thumb.storagePath();
+                        entity.setLogoId(String.valueOf(mb.thumbnailId()));
+                        entity.setLogoUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setLogoAlt(thumb.altText());
+                        entity.setLogoWidth(thumb.width());
+                        entity.setLogoHeight(thumb.height());
+                        entity.setLogoMimeType(thumb.mimeType());
+                    }
+                }
+
                 warnings.addAll(mb.warnings());
 
                 if (!options.dryRun()) {

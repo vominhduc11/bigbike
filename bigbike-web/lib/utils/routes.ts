@@ -19,10 +19,6 @@ export function toCategoryHierPath(parentSlug: string, childSlug: string): strin
   return `/${parentSlug}/${childSlug}.html`;
 }
 
-export function toCategoryListPath(): string {
-  return "/danh-muc-san-pham/";
-}
-
 export function toBrandPath(slug: string): string {
   return `/brand/${slug}.html`;
 }
@@ -32,7 +28,7 @@ export function toBrandListPath(): string {
 }
 
 export function toArticlePath(slug: string): string {
-  return `/tin-tuc/${slug}.html`;
+  return `/tin-tuc/${slug}/`;
 }
 
 export function toArticleListPath(): string {

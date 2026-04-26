@@ -10,11 +10,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# Bake media origin into CSP img-src and rewrite destination at build time.
-# In the Docker Compose stack, the browser accesses MinIO via the host-mapped port
-# (http://localhost:9000), so CSP must explicitly allow that origin.
+# Bake media origin into CSP img-src at build time.
+# Browser accesses MinIO via the host-mapped port (http://localhost:9000).
 ARG BIGBIKE_LEGACY_UPLOADS_BASE=http://localhost:9000/bigbike-media/wp-uploads
 ENV BIGBIKE_LEGACY_UPLOADS_BASE=${BIGBIKE_LEGACY_UPLOADS_BASE}
+# Server-side rewrite destination: when running inside Docker the Next.js server
+# must reach MinIO via the internal Docker network name (minio:9000), not localhost.
+ARG BIGBIKE_MEDIA_INTERNAL_URL=http://localhost:9000/bigbike-media/wp-uploads
+ENV BIGBIKE_MEDIA_INTERNAL_URL=${BIGBIKE_MEDIA_INTERNAL_URL}
 RUN npm run build
 
 # ---- Runner stage ----

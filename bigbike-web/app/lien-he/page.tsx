@@ -51,16 +51,14 @@ export default async function ContactPage() {
 
         <div className="bb-detail-layout bb-section">
           {/* Main: page content + contact form */}
-          <div style={{ display: "grid", gap: "var(--bb-space-5)" }}>
+          <div className="bb-main-gap">
             {page.body && (
-              <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
+              <div className="bb-card bb-card-content">
                 <article
                   className="bb-richtext"
                   dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
                 />
-                <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
-                  Cập nhật {formatDate(page.updatedAt)}
-                </p>
+                <p className="bb-updated-date">Cập nhật {formatDate(page.updatedAt)}</p>
               </div>
             )}
 
@@ -68,31 +66,31 @@ export default async function ContactPage() {
           </div>
 
           {/* Sidebar: contact info + map + navigation */}
-          <aside style={{ display: "grid", gap: "var(--bb-space-4)", alignContent: "start" }}>
-            <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-              <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Thông tin liên hệ</h2>
+          <aside className="bb-sidebar-grid">
+            <div className="bb-card bb-card-content">
+              <h2 className="bb-sidebar-heading">Thông tin liên hệ</h2>
               <div style={{ display: "grid", gap: "var(--bb-space-3)" }}>
                 {hotline && (
                   <div>
-                    <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)" }}>Hotline</p>
+                    <p className="bb-contact-label">Hotline</p>
                     <a href={`tel:${hotline}`} className="bb-link">{hotline}</a>
                   </div>
                 )}
                 {email && (
                   <div>
-                    <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)" }}>Email</p>
+                    <p className="bb-contact-label">Email</p>
                     <a href={`mailto:${email}`} className="bb-link">{email}</a>
                   </div>
                 )}
                 {address && (
                   <div>
-                    <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)" }}>Địa chỉ</p>
+                    <p className="bb-contact-label">Địa chỉ</p>
                     <p>{address}</p>
                   </div>
                 )}
                 {zalo && (
                   <div>
-                    <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-sm)" }}>Zalo / Chat</p>
+                    <p className="bb-contact-label">Zalo / Chat</p>
                     {/^https?:\/\//.test(zalo) ? (
                       <a href={zalo} className="bb-link" target="_blank" rel="noreferrer noopener">Nhắn Zalo</a>
                     ) : (
@@ -101,15 +99,15 @@ export default async function ContactPage() {
                   </div>
                 )}
                 {!hotline && !email && !address && !zalo && (
-                  <p style={{ color: "var(--bb-text-muted)" }}>Đang cập nhật thông tin liên hệ.</p>
+                  <p className="wp-muted-text">Đang cập nhật thông tin liên hệ.</p>
                 )}
               </div>
             </div>
 
             {canEmbedMap ? (
-              <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-                <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Bản đồ</h2>
-                <div style={{ aspectRatio: "16 / 9", overflow: "hidden", borderRadius: "var(--bb-radius-lg)" }}>
+              <div className="bb-card bb-card-content">
+                <h2 className="bb-sidebar-heading">Bản đồ</h2>
+                <div className="bb-map-frame">
                   <iframe
                     title="Bản đồ liên hệ BigBike"
                     src={mapUrl}
@@ -124,9 +122,9 @@ export default async function ContactPage() {
               </div>
             ) : null}
 
-            <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-              <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Di chuyển nhanh</h2>
-              <div style={{ display: "grid", gap: "var(--bb-space-2)" }}>
+            <div className="bb-card bb-card-content">
+              <h2 className="bb-sidebar-heading">Di chuyển nhanh</h2>
+              <div className="bb-nav-links">
                 <Link href={toHomePath()} className="bb-link">Về trang chủ</Link>
                 <Link href={toProductListPath()} className="bb-link">Xem sản phẩm</Link>
                 <Link href={toArticleListPath()} className="bb-link">Xem tin tức</Link>

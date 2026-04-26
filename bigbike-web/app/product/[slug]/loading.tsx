@@ -1,6 +1,5 @@
-import { LoadingGrid } from "@/components/ui/LoadingGrid";
+import { PdpSkeleton } from "@/components/ui/Skeletons";
 
 export default function ProductDetailLoading() {
-  return <LoadingGrid title="Đang tải chi tiết sản phẩm" count={4} />;
+  return <PdpSkeleton />;
 }
-

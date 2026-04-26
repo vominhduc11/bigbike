@@ -1,0 +1,346 @@
+/**
+ * Bigbike Design System — Colors & Type
+ * =====================================
+ * Single-file token sheet pulled from the production codebase
+ * (styles/brand-tokens.css + app/globals.css).
+ *
+ * Brand: BigBike — shop bảo hộ moto / biker gear, TP.HCM, est. 2013.
+ * Feel: dark-first, rugged, racing-red accent, sharp-edged, uppercase.
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="colors_and_type.css">
+ *   <body class="bb-theme-dark"> ... </body>
+ */
+
+/* =====================================================
+ * 1.  FONTS
+ * ===================================================== */
+
+@font-face {
+  font-family: "Bungee";
+  src: url("fonts/Bungee-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Exo";
+  src: url("fonts/Exo-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =====================================================
+ * 2.  COLOR PRIMITIVES
+ * ===================================================== */
+:root {
+  /* Racing red — the single brand accent */
+  --bb-color-red-50:  #fff1f1;
+  --bb-color-red-100: #ffdede;
+  --bb-color-red-200: #ffbcbc;
+  --bb-color-red-300: #ff8b8b;
+  --bb-color-red-400: #ff4d4d;
+  --bb-color-red-500: #f90606;   /* BRAND RED */
+  --bb-color-red-600: #d90404;
+  --bb-color-red-700: #b80303;
+  --bb-color-red-800: #8f0202;
+  --bb-color-red-900: #610101;
+
+  /* Garage black → dark greys */
+  --bb-color-black:   #0a0a0a;
+  --bb-color-dark:    #191919;
+  --bb-color-dark-2:  #141414;
+  --bb-color-dark-3:  #202020;
+  --bb-color-dark-4:  #292929;
+
+  /* Neutral grey ramp (for WP light surfaces + borders) */
+  --bb-color-gray-50:  #f7f7f8;
+  --bb-color-gray-100: #eeeeef;
+  --bb-color-gray-200: #d8d8db;
+  --bb-color-gray-300: #b8b8be;
+  --bb-color-gray-400: #9a9aa2;
+  --bb-color-gray-500: #818189;
+  --bb-color-gray-600: #66666d;
+  --bb-color-gray-700: #333333;
+  --bb-color-gray-800: #242424;
+  --bb-color-gray-900: #171717;
+
+  --bb-color-white: #ffffff;
+
+  /* Supporting accents (use sparingly — status only) */
+  --bb-color-orange:  #f99d1c;
+  --bb-color-magenta: #e1058c;
+  --bb-color-blue:    #20c4f4;
+  --bb-color-green:   #62bb46;
+
+  /* =====================================================
+   * 3.  SEMANTIC COLORS
+   * ===================================================== */
+  --bb-brand-primary:         var(--bb-color-red-500);
+  --bb-brand-primary-hover:   var(--bb-color-red-600);
+  --bb-brand-primary-active:  var(--bb-color-red-700);
+  --bb-brand-primary-soft:    rgba(249, 6, 6, 0.12);
+  --bb-brand-primary-border:  rgba(249, 6, 6, 0.36);
+
+  --bb-bg-page:            var(--bb-color-black);
+  --bb-bg-section:         var(--bb-color-dark);
+  --bb-bg-surface:         var(--bb-color-dark-2);
+  --bb-bg-surface-raised:  var(--bb-color-dark-3);
+  --bb-bg-surface-hover:   var(--bb-color-dark-4);
+  --bb-bg-inverse:         var(--bb-color-white);
+
+  --bb-text-primary:   rgba(255, 255, 255, 0.96);
+  --bb-text-secondary: rgba(255, 255, 255, 0.74);
+  --bb-text-muted:     rgba(255, 255, 255, 0.56);
+  --bb-text-disabled:  rgba(255, 255, 255, 0.36);
+  --bb-text-inverse:   #111111;
+  --bb-text-brand:     var(--bb-brand-primary);
+
+  --bb-border-subtle:  rgba(255, 255, 255, 0.10);
+  --bb-border-default: rgba(255, 255, 255, 0.16);
+  --bb-border-strong:  rgba(255, 255, 255, 0.28);
+  --bb-border-brand:   var(--bb-brand-primary-border);
+
+  --bb-overlay-dark: rgba(0, 0, 0, 0.72);
+  --bb-overlay-soft: rgba(0, 0, 0, 0.48);
+  --bb-overlay-gradient: linear-gradient(
+    90deg,
+    rgba(10, 10, 10, 0.96) 0%,
+    rgba(10, 10, 10, 0.78) 42%,
+    rgba(10, 10, 10, 0.32) 100%
+  );
+
+  /* State colors */
+  --bb-state-success:         #62bb46;
+  --bb-state-success-bg:      rgba(98, 187, 70, 0.14);
+  --bb-state-success-border:  rgba(98, 187, 70, 0.34);
+  --bb-state-warning:         #f99d1c;
+  --bb-state-warning-bg:      rgba(249, 157, 28, 0.14);
+  --bb-state-warning-border:  rgba(249, 157, 28, 0.34);
+  --bb-state-danger:          #f90606;
+  --bb-state-danger-bg:       rgba(249, 6, 6, 0.14);
+  --bb-state-danger-border:   rgba(249, 6, 6, 0.38);
+  --bb-state-info:            #20c4f4;
+  --bb-state-info-bg:         rgba(32, 196, 244, 0.14);
+  --bb-state-info-border:     rgba(32, 196, 244, 0.34);
+
+  /* =====================================================
+   * 4.  TYPOGRAPHY
+   * ===================================================== */
+  --bb-font-display: "Bungee", "Exo", "Inter", Arial, sans-serif;
+  --bb-font-body:    "Exo", "Inter", Arial, sans-serif;
+  --bb-font-system:  "Inter", Arial, sans-serif;
+
+  --bb-text-xs:   0.75rem;
+  --bb-text-sm:   0.875rem;
+  --bb-text-base: 1rem;
+  --bb-text-lg:   1.125rem;
+  --bb-text-xl:   1.25rem;
+  --bb-text-2xl:  1.5rem;
+  --bb-text-3xl:  1.875rem;
+  --bb-text-4xl:  2.25rem;
+  --bb-text-5xl:  3rem;
+  --bb-text-6xl:  3.75rem;
+  --bb-text-7xl:  4.5rem;
+
+  --bb-text-hero: clamp(2.5rem, 6vw, 5.5rem);
+  --bb-text-h1:   clamp(2rem, 4vw, 3.5rem);
+  --bb-text-h2:   clamp(1.625rem, 3vw, 2.5rem);
+  --bb-text-h3:   clamp(1.375rem, 2vw, 1.75rem);
+
+  --bb-font-weight-regular:  400;
+  --bb-font-weight-medium:   500;
+  --bb-font-weight-semibold: 600;
+  --bb-font-weight-bold:     700;
+  --bb-font-weight-black:    900;
+
+  --bb-line-none:    1;
+  --bb-line-tight:   1.08;
+  --bb-line-heading: 1.16;
+  --bb-line-body:    1.6;
+  --bb-line-ui:      1.4;
+
+  --bb-letter-tight:   -0.02em;
+  --bb-letter-normal:  0;
+  --bb-letter-wide:    0.04em;
+  --bb-letter-display: 0.01em;
+
+  /* =====================================================
+   * 5.  SPACING / SHAPE / MOTION
+   * ===================================================== */
+  --bb-space-0: 0;
+  --bb-space-1: 0.25rem;
+  --bb-space-2: 0.5rem;
+  --bb-space-3: 0.75rem;
+  --bb-space-4: 1rem;
+  --bb-space-5: 1.25rem;
+  --bb-space-6: 1.5rem;
+  --bb-space-8: 2rem;
+  --bb-space-10: 2.5rem;
+  --bb-space-12: 3rem;
+  --bb-space-16: 4rem;
+  --bb-space-20: 5rem;
+  --bb-space-24: 6rem;
+  --bb-space-32: 8rem;
+
+  --bb-radius-none: 0;
+  --bb-radius-xs: 0.125rem;
+  --bb-radius-sm: 0.25rem;
+  --bb-radius-md: 0.5rem;
+  --bb-radius-lg: 0.75rem;
+  --bb-radius-xl: 1rem;
+  --bb-radius-pill: 999px;
+
+  /* Bigbike prefers sharp / slightly angular shapes */
+  --bb-radius-brand:  var(--bb-radius-sm);
+  --bb-radius-card:   var(--bb-radius-md);
+  --bb-radius-button: var(--bb-radius-sm);
+  --bb-radius-input:  var(--bb-radius-sm);
+
+  --bb-shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.24);
+  --bb-shadow-md:    0 8px 24px rgba(0, 0, 0, 0.32);
+  --bb-shadow-lg:    0 18px 48px rgba(0, 0, 0, 0.42);
+  --bb-shadow-brand: 0 12px 30px rgba(249, 6, 6, 0.22);
+
+  --bb-focus-ring:    0 0 0 3px rgba(249, 6, 6, 0.36);
+  --bb-focus-outline: 2px solid var(--bb-brand-primary);
+
+  --bb-duration-instant: 80ms;
+  --bb-duration-fast:    140ms;
+  --bb-duration-normal:  220ms;
+  --bb-duration-slow:    360ms;
+  --bb-ease-standard:    cubic-bezier(0.2, 0, 0, 1);
+  --bb-ease-emphasized:  cubic-bezier(0.2, 0, 0, 1.2);
+  --bb-ease-exit:        cubic-bezier(0.4, 0, 1, 1);
+
+  /* =====================================================
+   * 6.  SEMANTIC TEXT ROLES
+   * ===================================================== */
+  --fg1: var(--bb-text-primary);
+  --fg2: var(--bb-text-secondary);
+  --fg3: var(--bb-text-muted);
+  --bg1: var(--bb-bg-page);
+  --bg2: var(--bb-bg-surface);
+  --bg3: var(--bb-bg-surface-raised);
+  --accent: var(--bb-brand-primary);
+  --serif-display: var(--bb-font-display);
+  --sans-body: var(--bb-font-body);
+}
+
+/* =====================================================
+ * 7.  BASE + SEMANTIC ELEMENT STYLES
+ * ===================================================== */
+.bb-theme-dark {
+  color-scheme: dark;
+  background: var(--bb-bg-page);
+  color: var(--bb-text-primary);
+  font-family: var(--bb-font-body);
+}
+
+.bb-theme-light {
+  background: #fff;
+  color: #111;
+  font-family: var(--bb-font-body);
+}
+
+/* Display (Bungee) — used for hero / section titles. All caps, slight track. */
+.bb-display,
+.bb-h1, .bb-h2, .bb-h3 {
+  font-family: var(--bb-font-display);
+  font-weight: 400;
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+  line-height: var(--bb-line-tight);
+}
+
+.bb-h1 { font-size: var(--bb-text-h1); }
+.bb-h2 { font-size: var(--bb-text-h2); }
+.bb-h3 { font-size: var(--bb-text-h3); }
+
+/* Alt heading style — Exo 900 italic, racing feel */
+.bb-heading-racing {
+  font-family: var(--bb-font-body);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: var(--bb-letter-display);
+  text-transform: uppercase;
+  line-height: var(--bb-line-tight);
+}
+
+.bb-body {
+  font-family: var(--bb-font-body);
+  font-weight: 400;
+  line-height: var(--bb-line-body);
+  font-size: var(--bb-text-base);
+}
+
+.bb-kicker {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bb-text-brand);
+}
+
+.bb-meta {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bb-text-muted);
+}
+
+.bb-text-muted { color: var(--bb-text-muted); }
+.bb-text-brand { color: var(--bb-text-brand); }

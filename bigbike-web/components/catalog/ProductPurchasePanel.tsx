@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addCartItem, fetchCheckoutOptions, submitQuickBuy } from "@/lib/api/client-api";
 import type { CheckoutAddress, CheckoutOptions, QuickBuyPayload } from "@/lib/contracts/commerce";
-import type { Product, ProductVariant } from "@/lib/contracts/public";
+import type { ImageAsset, Product, ProductVariant } from "@/lib/contracts/public";
 import { formatVnd, safeText, stockStateLabel } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 
 type ProductPurchasePanelProps = {
   product: Product;
+  onVariantImageChange?: (image: ImageAsset | null) => void;
 };
 
 type VariantSelection = Record<string, string>;
@@ -26,7 +27,31 @@ const EMPTY_ADDRESS: CheckoutAddress = {
   addressLine2: "",
 };
 
-export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
+const FEATURES = [
+  "Hàng chính hãng 100%",
+  "Bảo hành theo chính sách hãng",
+  "Thanh toán COD hoặc chuyển khoản",
+  "Giao toàn quốc",
+];
+
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="wp-pdp-feat-icon">
+      <circle cx="7" cy="7" r="6" />
+      <path d="M4.5 7l2 2 3-3" />
+    </svg>
+  );
+}
+
+function IconClose() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+export function ProductPurchasePanel({ product, onVariantImageChange }: ProductPurchasePanelProps) {
   const router = useRouter();
   const variants = product.variants ?? [];
   const defaultVariantId =
@@ -62,6 +87,23 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  // Notify gallery when selected variant changes (so gallery can switch to variant image)
+  useEffect(() => {
+    if (!onVariantImageChange) return;
+    const variant = variants.find((v) => v.id === selectedVariantId) ?? null;
+    onVariantImageChange(variant?.image ?? null);
+  }, [selectedVariantId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Close drawer on ESC
+  useEffect(() => {
+    if (!quickBuyOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setQuickBuyOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [quickBuyOpen]);
 
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? null;
   const pricing = selectedVariant?.price ?? product.price;
@@ -134,29 +176,35 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
 
   return (
     <div>
-      {/* Price */}
-      <div className="wp-pdp-price">
-        {pricing ? (
-          <>
-            <b>{formatVnd(current)}</b>
-            {compare && compare > current ? <s>{formatVnd(compare)}</s> : null}
-            {compare && compare > current ? (
-              <span className="save">Tiết kiệm {formatVnd(compare - current)}</span>
-            ) : null}
-          </>
-        ) : (
-          <b>Liên hệ</b>
-        )}
-      </div>
-
-      {/* Stock status */}
-      {selectedVariant && (
-        <div style={{ marginBottom: 18 }}>
-          <span className={`wp-stock-badge ${stockBadgeClass(selectedVariant.stockState)}`}>
-            {selectedAvailability ? stockStateLabel(selectedVariant.stockState) : "Hết hàng"}
-          </span>
-        </div>
-      )}
+      {/* Price + Stock — same row */}
+      {(() => {
+        const stockState = selectedVariant?.stockState ?? product.stockState;
+        const available = selectedVariant
+          ? selectedAvailability
+          : (product.stockState !== "OUT_OF_STOCK" && product.stockState !== "CONTACT_FOR_STOCK");
+        return (
+          <div className="wp-pdp-price-row">
+            <div className="wp-pdp-price">
+              {pricing ? (
+                <>
+                  <b>{formatVnd(current)}</b>
+                  {compare && compare > current ? <s>{formatVnd(compare)}</s> : null}
+                  {compare && compare > current ? (
+                    <span className="save">Tiết kiệm {formatVnd(compare - current)}</span>
+                  ) : null}
+                </>
+              ) : (
+                <b>Liên hệ</b>
+              )}
+            </div>
+            <div className="wp-stock-wrap">
+              <span className={`wp-stock-badge ${stockBadgeClass(stockState)}`}>
+                {available ? stockStateLabel(stockState) : "Hết hàng"}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Variant chip groups */}
       {optionGroups.map((group) => {
@@ -189,7 +237,7 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
         );
       })}
 
-      {/* Variant select fallback (when no option groups) */}
+      {/* Variant select fallback */}
       {variants.length > 0 && optionGroups.length === 0 && (
         <div className="wp-pdp-opt-group">
           <h6>Biến thể</h6>
@@ -211,13 +259,7 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
       <div className="wp-pdp-qty">
         <p className="wp-pdp-qty-label">Số lượng</p>
         <div className="wp-pdp-qty-stepper">
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            aria-label="Giảm"
-          >
-            −
-          </button>
+          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Giảm">−</button>
           <input
             type="number"
             min={1}
@@ -226,15 +268,8 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
               const n = parseInt(e.target.value, 10);
               if (Number.isInteger(n) && n > 0) setQuantity(n);
             }}
-            readOnly
           />
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => q + 1)}
-            aria-label="Tăng"
-          >
-            +
-          </button>
+          <button type="button" onClick={() => setQuantity((q) => q + 1)} aria-label="Tăng">+</button>
         </div>
       </div>
 
@@ -251,92 +286,112 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
         <button
           type="button"
           className="wp-btn-secondary"
-          onClick={() => setQuickBuyOpen((o) => !o)}
+          onClick={() => setQuickBuyOpen(true)}
+          disabled={!selectedAvailability}
         >
-          {quickBuyOpen ? "Ẩn" : "Mua ngay"}
+          Mua ngay
         </button>
       </div>
 
-      {addToCartError && (
-        <p style={{ color: "var(--bb-brand-primary)", fontSize: 12, marginTop: 8 }}>{addToCartError}</p>
-      )}
+      {addToCartError && <p className="wp-error-text wp-pdp-error">{addToCartError}</p>}
 
-      {/* Quick buy form */}
+      {/* Trust features */}
+      <div className="wp-pdp-features">
+        {FEATURES.map((feat) => (
+          <div key={feat} className="wp-pdp-feat">
+            <IconCheck />
+            {feat}
+          </div>
+        ))}
+      </div>
+
+      {/* Quick-buy drawer */}
       {quickBuyOpen && (
-        <form
-          onSubmit={handleQuickBuySubmit}
-          style={{ marginTop: 18, display: "grid", gap: 12, background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 18 }}
-        >
-          {checkoutOptionsError && (
-            <p style={{ color: "var(--bb-brand-primary)", fontSize: 12 }}>{checkoutOptionsError}</p>
-          )}
-          <div className="wp-form-grid">
-            <div className="wp-field">
-              <label>Họ tên <span className="req">*</span></label>
-              <input className="wp-input" required value={address.fullName} onChange={(e) => updateAddressField("fullName", e.target.value)} />
+        <>
+          <div className="wp-qb-backdrop" onClick={() => setQuickBuyOpen(false)} aria-hidden="true" />
+          <div className="wp-qb-drawer" role="dialog" aria-label="Mua ngay" aria-modal="true">
+            <div className="wp-qb-header">
+              <h3>Mua ngay</h3>
+              <button type="button" className="wp-qb-close" aria-label="Đóng" onClick={() => setQuickBuyOpen(false)}>
+                <IconClose />
+              </button>
             </div>
-            <div className="wp-field">
-              <label>Số điện thoại <span className="req">*</span></label>
-              <input className="wp-input" required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={address.phone} onChange={(e) => updateAddressField("phone", e.target.value)} />
+
+            <div className="wp-qb-body">
+              {checkoutOptionsError && <p className="wp-error-text">{checkoutOptionsError}</p>}
+              <form onSubmit={handleQuickBuySubmit} id="qb-form" className="wp-quick-buy-form">
+                <div className="wp-form-grid">
+                  <div className="wp-field">
+                    <label>Họ tên <span className="req">*</span></label>
+                    <input className="wp-input" required value={address.fullName} onChange={(e) => updateAddressField("fullName", e.target.value)} />
+                  </div>
+                  <div className="wp-field">
+                    <label>Số điện thoại <span className="req">*</span></label>
+                    <input className="wp-input" required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={address.phone} onChange={(e) => updateAddressField("phone", e.target.value)} />
+                  </div>
+                  <div className="wp-field">
+                    <label>Email</label>
+                    <input className="wp-input" type="email" value={address.email} onChange={(e) => updateAddressField("email", e.target.value)} />
+                  </div>
+                  <div className="wp-field">
+                    <label>Tỉnh / Thành phố</label>
+                    <input className="wp-input" value={address.province} onChange={(e) => updateAddressField("province", e.target.value)} />
+                  </div>
+                  <div className="wp-field">
+                    <label>Quận / Huyện</label>
+                    <input className="wp-input" value={address.district} onChange={(e) => updateAddressField("district", e.target.value)} />
+                  </div>
+                  <div className="wp-field">
+                    <label>Phường / Xã</label>
+                    <input className="wp-input" value={address.ward} onChange={(e) => updateAddressField("ward", e.target.value)} />
+                  </div>
+                  <div className="wp-field full">
+                    <label>Địa chỉ <span className="req">*</span></label>
+                    <input className="wp-input" required value={address.addressLine1} onChange={(e) => updateAddressField("addressLine1", e.target.value)} />
+                  </div>
+                  <div className="wp-field full">
+                    <label>Ghi chú</label>
+                    <textarea className="wp-input wp-textarea-resize" value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="wp-field">
+                  <label>Phương thức thanh toán <span className="req">*</span></label>
+                  <select className="wp-input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required>
+                    <option value="" disabled>Chọn phương thức</option>
+                    {(checkoutOptions?.paymentMethods ?? []).map((m) => (
+                      <option key={m.code} value={m.code}>{m.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="wp-field">
+                  <label>Phương thức giao hàng <span className="req">*</span></label>
+                  <select className="wp-input" value={shippingMethodId} onChange={(e) => setShippingMethodId(e.target.value)} required>
+                    <option value="" disabled>Chọn phương thức</option>
+                    {(checkoutOptions?.shippingMethods ?? []).map((m) => (
+                      <option key={m.id} value={m.id}>{m.title} — {formatVnd(m.cost)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {quickBuyError && <p className="wp-error-text">{quickBuyError}</p>}
+                {quickBuySuccess && <p className="wp-success-text">{quickBuySuccess}</p>}
+              </form>
             </div>
-            <div className="wp-field">
-              <label>Email</label>
-              <input className="wp-input" type="email" value={address.email} onChange={(e) => updateAddressField("email", e.target.value)} />
-            </div>
-            <div className="wp-field">
-              <label>Tỉnh / Thành phố</label>
-              <input className="wp-input" value={address.province} onChange={(e) => updateAddressField("province", e.target.value)} />
-            </div>
-            <div className="wp-field">
-              <label>Quận / Huyện</label>
-              <input className="wp-input" value={address.district} onChange={(e) => updateAddressField("district", e.target.value)} />
-            </div>
-            <div className="wp-field">
-              <label>Phường / Xã</label>
-              <input className="wp-input" value={address.ward} onChange={(e) => updateAddressField("ward", e.target.value)} />
-            </div>
-            <div className="wp-field full">
-              <label>Địa chỉ <span className="req">*</span></label>
-              <input className="wp-input" required value={address.addressLine1} onChange={(e) => updateAddressField("addressLine1", e.target.value)} />
-            </div>
-            <div className="wp-field full">
-              <label>Ghi chú</label>
-              <textarea className="wp-input" style={{ minHeight: 72, resize: "vertical" }} value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} />
+
+            <div className="wp-qb-footer">
+              <button
+                type="submit"
+                form="qb-form"
+                className="wp-btn-primary"
+                disabled={quickBuyLoading || !paymentMethod || !shippingMethodId || !selectedAvailability}
+              >
+                {quickBuyLoading ? "Đang tạo đơn hàng..." : "Xác nhận mua ngay"}
+              </button>
             </div>
           </div>
-
-          <div className="wp-field">
-            <label>Phương thức thanh toán <span className="req">*</span></label>
-            <select className="wp-input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required>
-              <option value="" disabled>Chọn phương thức</option>
-              {(checkoutOptions?.paymentMethods ?? []).map((m) => (
-                <option key={m.code} value={m.code}>{m.title}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="wp-field">
-            <label>Phương thức giao hàng <span className="req">*</span></label>
-            <select className="wp-input" value={shippingMethodId} onChange={(e) => setShippingMethodId(e.target.value)} required>
-              <option value="" disabled>Chọn phương thức</option>
-              {(checkoutOptions?.shippingMethods ?? []).map((m) => (
-                <option key={m.id} value={m.id}>{m.title} — {formatVnd(m.cost)}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="wp-btn-primary"
-            style={{ flex: "none" }}
-            disabled={quickBuyLoading || !paymentMethod || !shippingMethodId || !selectedAvailability}
-          >
-            {quickBuyLoading ? "Đang tạo đơn hàng..." : "Xác nhận mua ngay"}
-          </button>
-
-          {quickBuyError && <p style={{ color: "var(--bb-brand-primary)", fontSize: 12 }}>{quickBuyError}</p>}
-          {quickBuySuccess && <p style={{ color: "#62bb46", fontSize: 12 }}>{quickBuySuccess}</p>}
-        </form>
+        </>
       )}
     </div>
   );

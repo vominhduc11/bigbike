@@ -54,22 +54,20 @@ function EditAccountContent() {
       </div>
 
       {success && (
-        <div style={{ background: "rgba(98,187,70,0.1)", border: "1px solid rgba(98,187,70,0.3)", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: "#62bb46", margin: 0 }}>Thông tin đã được cập nhật.</p>
+        <div className="wp-alert-success">
+          <p>Thông tin đã được cập nhật.</p>
         </div>
       )}
 
       {error && (
-        <div style={{ background: "rgba(249,6,6,0.08)", border: "1px solid rgba(249,6,6,0.25)", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0 }}>{error}</p>
+        <div className="wp-alert-error">
+          <p>{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "22px 24px" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 18 }}>
-            Thông tin tài khoản
-          </p>
+        <div className="wp-info-card-form">
+          <p className="wp-info-label">Thông tin tài khoản</p>
           <div className="wp-form-grid">
             <div className="wp-field">
               <label>Họ tên</label>
@@ -101,7 +99,7 @@ function EditAccountContent() {
               <input className="wp-input" type="password" name="newPassword" placeholder="••••••••" />
             </div>
           </div>
-          <button type="submit" className="wp-btn-primary" style={{ marginTop: 20 }} disabled={saving}>
+          <button type="submit" className="wp-btn-primary" style={{ marginTop: 20, flex: "none" }} disabled={saving}>
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>

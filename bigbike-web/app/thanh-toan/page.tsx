@@ -8,6 +8,40 @@ import type { Cart, CartItem, CheckoutAddress } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
+import { CheckoutSkeleton } from "@/components/ui/Skeletons";
+
+function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
+  return (
+    <div className="wp-radio-stack" aria-busy="true">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="bb-skel"
+          style={{ height: 56, borderRadius: 4, width: "100%" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniSummarySkeleton() {
+  return (
+    <div aria-busy="true" className="bb-skel-stack">
+      {[0, 1].map((i) => (
+        <div key={i} className="bb-skel-row">
+          <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
+          <div className="bb-skel-col" style={{ flex: 1 }}>
+            <span className="bb-skel bb-skel--text bb-skel-w-50" />
+            <span className="bb-skel bb-skel--text bb-skel-w-80" />
+          </div>
+        </div>
+      ))}
+      <span className="bb-skel bb-skel--text bb-skel-w-100" />
+      <span className="bb-skel bb-skel--text bb-skel-w-100" />
+      <span className="bb-skel bb-skel--title bb-skel-w-60" style={{ height: "1.4em" }} />
+    </div>
+  );
+}
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -107,6 +141,10 @@ export default function CheckoutPage() {
   const selectedPayment = checkoutOptions?.paymentMethods.find((m) => m.code === paymentMethod);
   const selectedShipping = checkoutOptions?.shippingMethods.find((m) => m.id === shippingMethodId);
 
+  if (cartLoading && optionsLoading && !cart) {
+    return <CheckoutSkeleton />;
+  }
+
   return (
     <>
       <div className="wp-breadcrumb">
@@ -143,9 +181,7 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          {error && (
-            <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 16 }}>{error}</p>
-          )}
+          {error && <p className="wp-error-text">{error}</p>}
 
           {/* Step 1: Shipping info */}
           {step === 1 && (
@@ -237,8 +273,8 @@ export default function CheckoutPage() {
                   <div className="wp-field full">
                     <label>Ghi chú cho shipper</label>
                     <textarea
-                      className="wp-input"
-                      style={{ minHeight: 64, resize: "vertical", fontFamily: "inherit" }}
+                      className="wp-input wp-textarea-resize"
+                      style={{ minHeight: 64, fontFamily: "inherit" }}
                       placeholder="Ví dụ: gọi trước khi giao 15 phút..."
                       value={customerNote}
                       onChange={(e) => setCustomerNote(e.target.value)}
@@ -251,8 +287,7 @@ export default function CheckoutPage() {
                 <Link href={toCartPath()} className="wp-link-back">← Quay lại giỏ hàng</Link>
                 <button
                   type="button"
-                  className="wp-btn-primary"
-                  style={{ flex: "none", padding: "14px 36px" }}
+                  className="wp-btn-primary wp-btn-wide"
                   disabled={!address.fullName || !address.phone || !address.province || !address.addressLine1}
                   onClick={() => setStep(2)}
                 >
@@ -271,7 +306,7 @@ export default function CheckoutPage() {
                   <span className="badge">02</span>
                 </h3>
                 {optionsLoading ? (
-                  <p style={{ color: "var(--bb-text-muted)", fontSize: 13 }}>Đang tải...</p>
+                  <MiniRadioStackSkeleton rows={3} />
                 ) : checkoutOptions?.paymentMethods.length ? (
                   <div className="wp-radio-stack">
                     {checkoutOptions.paymentMethods.map((method) => (
@@ -299,9 +334,7 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: "var(--bb-brand-primary)", fontSize: 13 }}>
-                    Backend chưa trả về phương thức thanh toán.
-                  </p>
+                  <p className="wp-error-text">Backend chưa trả về phương thức thanh toán.</p>
                 )}
               </div>
 
@@ -311,7 +344,7 @@ export default function CheckoutPage() {
                   <span className="badge">03</span>
                 </h3>
                 {optionsLoading ? (
-                  <p style={{ color: "var(--bb-text-muted)", fontSize: 13 }}>Đang tải...</p>
+                  <MiniRadioStackSkeleton rows={2} />
                 ) : checkoutOptions?.shippingMethods.length ? (
                   <div className="wp-radio-stack">
                     {checkoutOptions.shippingMethods.map((method) => (
@@ -336,9 +369,7 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: "var(--bb-brand-primary)", fontSize: 13 }}>
-                    Backend chưa trả về phương thức giao hàng.
-                  </p>
+                  <p className="wp-error-text">Backend chưa trả về phương thức giao hàng.</p>
                 )}
               </div>
 
@@ -348,8 +379,7 @@ export default function CheckoutPage() {
                 </button>
                 <button
                   type="button"
-                  className="wp-btn-primary"
-                  style={{ flex: "none", padding: "14px 36px" }}
+                  className="wp-btn-primary wp-btn-wide"
                   disabled={!paymentMethod || !shippingMethodId}
                   onClick={() => setStep(3)}
                 >
@@ -364,20 +394,15 @@ export default function CheckoutPage() {
             <>
               <div className="wp-checkout-section">
                 <h3>Giao đến</h3>
-                <div style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,0.85)" }}>
-                  <b style={{ textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {address.fullName}
-                  </b>
+                <div className="wp-checkout-address">
+                  <b>{address.fullName}</b>
                   {" · "}{address.phone}
                   <br />
-                  {[address.addressLine1, address.ward, address.district, address.province]
-                    .filter(Boolean)
-                    .join(", ")}
+                  {[address.addressLine1, address.ward, address.district, address.province].filter(Boolean).join(", ")}
                 </div>
                 <button
                   type="button"
-                  className="wp-link-back"
-                  style={{ marginTop: 12 }}
+                  className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(1)}
                 >
                   ✏ Chỉnh sửa
@@ -386,24 +411,20 @@ export default function CheckoutPage() {
 
               <div className="wp-checkout-section">
                 <h3>Phương thức thanh toán</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13 }}>
-                  <span className={`pay-logo ${paymentMethod}`} style={{ width: 42, height: 28, background: "#222", color: "#fff", borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 10, border: "1px solid rgba(255,255,255,0.2)" }}>
+                <div className="wp-checkout-pay-row">
+                  <span className={`wp-pay-logo ${paymentMethod}`}>
                     {paymentMethod.toUpperCase()}
                   </span>
                   <span>{selectedPayment?.title ?? paymentMethod}</span>
                 </div>
                 {selectedShipping && (
-                  <div style={{ fontSize: 13, color: "var(--bb-text-muted)", marginTop: 8 }}>
-                    Vận chuyển: {selectedShipping.title}
-                    {selectedShipping.cost === 0
-                      ? " — Miễn phí"
-                      : ` — ${formatVnd(selectedShipping.cost)}`}
-                  </div>
+                  <p className="wp-muted-text wp-edit-trigger">
+                    Vận chuyển: {selectedShipping.title}{selectedShipping.cost === 0 ? " — Miễn phí" : ` — ${formatVnd(selectedShipping.cost)}`}
+                  </p>
                 )}
                 <button
                   type="button"
-                  className="wp-link-back"
-                  style={{ marginTop: 12 }}
+                  className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(2)}
                 >
                   ✏ Chỉnh sửa
@@ -419,9 +440,7 @@ export default function CheckoutPage() {
                     <div key={item.id} className="wp-mini-item">
                       <div className="wp-mini-thumb">
                         <span className="qty-badge">{item.quantity}</span>
-                        <span style={{ fontFamily: "var(--bb-font-display)", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" }}>
-                          {item.productName.slice(0, 2)}
-                        </span>
+                        <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
                       </div>
                       <div className="wp-mini-body">
                         <p className="name">{item.productName}</p>
@@ -433,17 +452,15 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <div style={{ background: "rgba(249,6,6,0.06)", border: "1px solid var(--bb-brand-primary-border)", borderRadius: 6, padding: "14px 18px", fontSize: 12, color: "rgba(255,255,255,0.85)", marginBottom: 18 }}>
+              <div className="wp-terms-notice">
                 Bằng việc đặt hàng, bạn đồng ý với{" "}
-                <a style={{ color: "var(--bb-brand-primary)", cursor: "pointer" }}>Điều khoản dịch vụ</a>
+                <Link href="/dieu-khoan-dich-vu">Điều khoản dịch vụ</Link>
                 {" "}và{" "}
-                <a style={{ color: "var(--bb-brand-primary)", cursor: "pointer" }}>Chính sách đổi trả</a>
+                <Link href="/chinh-sach-doi-tra">Chính sách đổi trả</Link>
                 {" "}của BigBike.
               </div>
 
-              {error && (
-                <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 16 }}>{error}</p>
-              )}
+              {error && <p className="wp-error-text">{error}</p>}
 
               <div className="wp-checkout-nav">
                 <button type="button" className="wp-link-back" onClick={() => setStep(2)}>
@@ -451,8 +468,7 @@ export default function CheckoutPage() {
                 </button>
                 <button
                   type="button"
-                  className="wp-btn-primary"
-                  style={{ flex: "none", padding: "14px 40px" }}
+                  className="wp-btn-primary wp-btn-wide"
                   disabled={submitting || cartLoading}
                   onClick={handleSubmit}
                 >
@@ -472,12 +488,10 @@ export default function CheckoutPage() {
           <h3>Đơn hàng của bạn</h3>
 
           {cartLoading ? (
-            <p style={{ color: "var(--bb-text-muted)", fontSize: 13 }}>Đang tải...</p>
+            <MiniSummarySkeleton />
           ) : !cart || cart.items.length === 0 ? (
             <>
-              <p style={{ color: "var(--bb-text-muted)", fontSize: 13, marginBottom: 12 }}>
-                Giỏ hàng trống.
-              </p>
+              <p className="wp-loading-text" style={{ marginBottom: 12 }}>Giỏ hàng trống.</p>
               <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link>
             </>
           ) : (
@@ -486,9 +500,7 @@ export default function CheckoutPage() {
                 <div key={item.id} className="wp-mini-item">
                   <div className="wp-mini-thumb">
                     <span className="qty-badge">{item.quantity}</span>
-                    <span style={{ fontFamily: "var(--bb-font-display)", fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" }}>
-                      {item.productName.slice(0, 2)}
-                    </span>
+                    <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
                   </div>
                   <div className="wp-mini-body">
                     <p className="name">{item.productName}</p>
@@ -498,7 +510,7 @@ export default function CheckoutPage() {
                 </div>
               ))}
 
-              <div className="wp-summary-row" style={{ marginTop: 8 }}>
+              <div className="wp-summary-row" style={{ marginTop: 8 }} >
                 <span>Tạm tính</span>
                 <b>{formatVnd(cart.totals.subtotalAmount)}</b>
               </div>

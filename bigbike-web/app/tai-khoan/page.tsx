@@ -16,50 +16,35 @@ function AccountOverview() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, marginBottom: 28 }}>
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
-            Email
-          </p>
-          <p style={{ fontSize: 14, color: "#fff", margin: 0 }}>{profile.email}</p>
+      <div className="wp-info-grid">
+        <div className="wp-info-card">
+          <p className="wp-info-label">Email</p>
+          <p className="wp-info-val">{profile.email}</p>
         </div>
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
-            Số điện thoại
-          </p>
-          <p style={{ fontSize: 14, color: "#fff", margin: 0 }}>{profile.phone ?? "Chưa cập nhật"}</p>
+        <div className="wp-info-card">
+          <p className="wp-info-label">Số điện thoại</p>
+          <p className="wp-info-val">{profile.phone ?? "Chưa cập nhật"}</p>
         </div>
-        <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "20px 22px" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 10 }}>
-            Trạng thái
-          </p>
-          <p style={{ fontSize: 14, color: profile.status === "ACTIVE" ? "#62bb46" : "var(--bb-text-muted)", margin: 0, fontWeight: 700 }}>
+        <div className="wp-info-card">
+          <p className="wp-info-label">Trạng thái</p>
+          <p className={`wp-info-val${profile.status === "ACTIVE" ? " wp-info-val--success" : ""}`}>
             {customerStatusLabel(profile.status)}
           </p>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-        <Link
-          href="/tai-khoan/don-hang/"
-          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
-        >
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Đơn hàng</p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Xem lịch sử đặt hàng →</p>
+      <div className="wp-nav-grid">
+        <Link href="/tai-khoan/don-hang/" className="wp-nav-card">
+          <p className="wp-nav-card-title">Đơn hàng</p>
+          <p className="wp-nav-card-desc">Xem lịch sử đặt hàng →</p>
         </Link>
-        <Link
-          href="/tai-khoan/edit-account"
-          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
-        >
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Tài khoản</p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Chỉnh sửa thông tin →</p>
+        <Link href="/tai-khoan/edit-account" className="wp-nav-card">
+          <p className="wp-nav-card-title">Tài khoản</p>
+          <p className="wp-nav-card-desc">Chỉnh sửa thông tin →</p>
         </Link>
-        <Link
-          href="/tai-khoan/edit-address/billing"
-          style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px", textDecoration: "none", display: "block" }}
-        >
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-brand-primary)", marginBottom: 6 }}>Địa chỉ</p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Quản lý địa chỉ →</p>
+        <Link href="/tai-khoan/edit-address/billing" className="wp-nav-card">
+          <p className="wp-nav-card-title">Địa chỉ</p>
+          <p className="wp-nav-card-desc">Quản lý địa chỉ →</p>
         </Link>
       </div>
     </>

@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProductCard } from "@/components/catalog/ProductCard";
-import { ProductPurchasePanel } from "@/components/catalog/ProductPurchasePanel";
+import { ProductDetailClient } from "@/components/catalog/ProductDetailClient";
+import { ProductTabs } from "@/components/catalog/ProductTabs";
+import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { MediaImage } from "@/components/ui/MediaImage";
 import { getProductBySlug, listProducts } from "@/lib/api/public-api";
 import { buildBreadcrumbJsonLd, buildProductJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeArray, safeText } from "@/lib/utils/format";
-import { toHomePath, toProductListPath, toProductPath, toCategoryPath } from "@/lib/utils/routes";
+import { toCategoryPath, toHomePath, toProductListPath, toProductPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
-import { sanitizeRichHtml } from "@/lib/utils/html";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 
 type ProductDetailPageProps = {
@@ -96,156 +96,93 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       <AnalyticsView product={product} />
 
       {/* Breadcrumb */}
-      <div className="wp-breadcrumb">
-        <a href={toHomePath()}>Trang chủ</a>
-        {product.category?.name && product.category.slug && (
+      <nav className="wp-breadcrumb" aria-label="Điều hướng">
+        <Link href={toHomePath()}>Trang chủ</Link>
+        {product.category?.name && product.category.slug ? (
           <>
-            <span className="sep">/</span>
-            <a href={toCategoryPath(product.category.slug)}>{product.category.name}</a>
+            <span className="sep" aria-hidden="true">/</span>
+            <Link href={toCategoryPath(product.category.slug)}>{product.category.name}</Link>
+          </>
+        ) : (
+          <>
+            <span className="sep" aria-hidden="true">/</span>
+            <Link href={toProductListPath()}>Sản phẩm</Link>
           </>
         )}
-        <span className="sep">/</span>
-        <span>{productName}</span>
-      </div>
+        <span className="sep" aria-hidden="true">/</span>
+        <span aria-current="page">{productName}</span>
+      </nav>
 
       {/* PDP two-column */}
       <div className="wp-pdp">
-        {/* Left: gallery */}
-        <div className="wp-pdp-gallery">
-          <div className="wp-pdp-main">
-            <MediaImage
-              image={product.image}
-              altFallback={productName}
-              width={1200}
-              height={1200}
-              priority
-            />
-          </div>
+        <ProductDetailClient
+          product={product}
+          gallery={gallery}
+          altFallback={productName}
+          infoSlot={
+            <>
+              <p className="wp-pdp-info-brand">
+                {safeText(product.brand?.name, "BigBike")}
+                {product.category?.name ? ` · ${safeText(product.category.name, "")}` : ""}
+              </p>
+              <h1 className="wp-pdp-info-title">{productName}</h1>
 
-          {gallery.length > 0 && (
-            <div className="wp-pdp-thumbs">
-              {gallery.slice(0, 5).map((image) => (
-                <div key={image.id ?? image.url} className="wp-pdp-thumb">
-                  <MediaImage
-                    image={image}
-                    altFallback={productName}
-                    width={160}
-                    height={160}
-                  />
+              {product.rating && product.rating > 0 ? (
+                <div className="wp-pdp-rating">
+                  <span className="stars" aria-label={`${product.rating} sao`}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <svg key={i} width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"
+                        fill={i < Math.round(product.rating!) ? "#f99d1c" : "none"}
+                        stroke="#f99d1c" strokeWidth="1.8">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </span>
+                  <span>{product.rating.toFixed(1)}/5</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              ) : null}
 
-        {/* Right: info + purchase */}
-        <div className="wp-pdp-info">
-          <p className="wp-pdp-info-brand">
-            {safeText(product.brand?.name, "BigBike")}
-            {product.category?.name ? ` · ${safeText(product.category.name, "")}` : ""}
-          </p>
-          <h1 className="wp-pdp-info-title">{productName}</h1>
-
-          {product.shortDescription && (
-            <p style={{ fontSize: 14, color: "var(--bb-text-muted)", margin: "0 0 16px" }}>
-              {product.shortDescription}
-            </p>
-          )}
-
-          <ProductPurchasePanel product={product} />
-
-          <div className="wp-pdp-features" style={{ marginTop: 24 }}>
-            {[
-              "Hàng chính hãng 100%",
-              "Bảo hành theo chính sách hãng",
-              "Thanh toán COD hoặc chuyển khoản",
-              "Giao toàn quốc",
-            ].map((feat) => (
-              <div key={feat} className="wp-pdp-feat">
-                <span className="dot" />
-                {feat}
-              </div>
-            ))}
-          </div>
-        </div>
+              {product.shortDescription && (
+                <p className="wp-pdp-short-desc">{product.shortDescription}</p>
+              )}
+            </>
+          }
+        />
       </div>
 
-      {/* Below: specs, description, videos, related */}
-      <div style={{ maxWidth: 1440, margin: "40px auto 0", padding: "0 24px" }}>
-        {product.specifications && product.specifications.length > 0 && (
-          <section style={{ marginBottom: 40 }}>
-            <h2 className="bb-section-title">Thông số kỹ thuật</h2>
-            <table className="bb-spec-table">
-              <tbody>
-                {product.specifications.map((specification) => (
-                  <tr key={`${specification.group}-${specification.name}`}>
-                    <td>{safeText(specification.name, "Thông tin")}</td>
-                    <td>{safeText(specification.value, "Đang cập nhật")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-        {product.description && (
-          <section style={{ marginBottom: 40 }}>
-            <h2 className="bb-section-title">Mô tả sản phẩm</h2>
-            <article
-              className="bb-richtext"
-              style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 24 }}
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }}
-            />
-          </section>
-        )}
-
-        {videos.length > 0 && (
-          <section style={{ marginBottom: 40 }}>
-            <h2 className="bb-section-title">Video sản phẩm</h2>
-            <div className="bb-grid-articles">
-              {videos.map((video, index) => (
-                <article
-                  key={video.id ?? video.url ?? index}
-                  style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 16 }}
-                >
-                  <MediaImage
-                    image={video.thumbnail}
-                    altFallback={safeText(video.title, productName)}
-                    width={960}
-                    height={540}
-                  />
-                  <h3 style={{ marginTop: 12, fontSize: 14 }}>
-                    {safeText(video.title, "Video sản phẩm")}
-                  </h3>
-                  {video.url && (
-                    <a className="bb-link" href={video.url} target="_blank" rel="noreferrer">
-                      Xem video
-                    </a>
-                  )}
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+      {/* Below: tabbed content + related */}
+      <div className="wp-pdp-below">
+        <ProductTabs
+          specifications={product.specifications ?? []}
+          description={product.description}
+          videos={videos}
+          productName={productName}
+        />
 
         {relatedProducts.length > 0 && (
-          <section style={{ marginBottom: 40 }}>
-            <div className="bb-section-row">
-              <h2 className="bb-section-title">Sản phẩm liên quan</h2>
+          <section className="wp-pdp-related">
+            <div className="wp-pdp-related-header">
+              <div>
+                <p className="wp-kicker">DANH MỤC {product.category?.name?.toUpperCase() ?? "SẢN PHẨM"}</p>
+                <h2 className="wp-pdp-related-title">Sản phẩm liên quan</h2>
+              </div>
               {product.category?.slug && (
-                <a href={toCategoryPath(product.category.slug)} className="bb-link">Xem thêm</a>
+                <Link href={toCategoryPath(product.category.slug)} className="wp-view-all-link">
+                  Xem tất cả →
+                </Link>
               )}
             </div>
-            <div className="wp-product-grid">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard key={relatedProduct.id} product={relatedProduct} />
-              ))}
-            </div>
+            <FeaturedProductsCarousel products={relatedProducts} />
           </section>
         )}
 
-        <div style={{ marginTop: 16, paddingBottom: 40 }}>
-          <a href={toProductListPath()} className="bb-link">← Xem tất cả sản phẩm</a>
+        <div className="wp-pdp-back">
+          <Link
+            href={product.category?.slug ? toCategoryPath(product.category.slug) : toProductListPath()}
+            className="bb-link"
+          >
+            ← Quay lại {product.category?.name ?? "tất cả sản phẩm"}
+          </Link>
         </div>
       </div>
     </>

@@ -109,6 +109,18 @@ export function SearchToggle() {
 
           {/* Search shell */}
           <div className="wp-search-shell" role="dialog" aria-label="Tìm kiếm">
+            <button
+              type="button"
+              className="wp-search-close"
+              aria-label="Đóng tìm kiếm"
+              onClick={() => setOpen(false)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span>ESC</span>
+            </button>
+
             <form
               className="wp-search-bar"
               onSubmit={(e) => {

@@ -58,24 +58,50 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         </Link>
       </div>
 
-      {error && (
-        <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 20 }}>{error}</p>
-      )}
+      {error && <p className="wp-error-text">{error}</p>}
 
       {loading ? (
-        <div style={{ display: "grid", gap: 14 }}>
-          <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, height: 200 }} />
-          <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, height: 160 }} />
+        <div className="bb-skel-stack" aria-busy="true">
+          <div className="wp-order-card">
+            <div className="wp-order-head">
+              <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
+                <div className="bb-skel-col">
+                  <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                  <span className="bb-skel bb-skel--text" style={{ width: 100 }} />
+                </div>
+                <div className="bb-skel-col">
+                  <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                  <span className="bb-skel bb-skel--text" style={{ width: 110 }} />
+                </div>
+              </div>
+              <span className="bb-skel bb-skel--chip" style={{ width: 100 }} />
+            </div>
+            <div style={{ padding: "16px 20px" }}>
+              <div className="bb-skel-stack">
+                <span className="bb-skel bb-skel--text bb-skel-w-100" />
+                <span className="bb-skel bb-skel--text bb-skel-w-80" />
+                <span className="bb-skel bb-skel--text bb-skel-w-60" />
+              </div>
+            </div>
+          </div>
+          <div className="wp-order-card" style={{ padding: 20 }}>
+            <div className="bb-skel-stack">
+              <span className="bb-skel bb-skel--title bb-skel-w-40" />
+              <span className="bb-skel bb-skel--text bb-skel-w-100" />
+              <span className="bb-skel bb-skel--text bb-skel-w-80" />
+              <span className="bb-skel bb-skel--text bb-skel-w-60" />
+            </div>
+          </div>
         </div>
       ) : !order ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--bb-text-muted)" }}>
+        <div className="wp-empty-state">
           <p style={{ fontSize: 14, marginBottom: 16 }}>Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.</p>
           <Link href={toOrderHistoryPath()} className="wp-btn-secondary" style={{ fontSize: 12, padding: "10px 18px" }}>
             Quay lại đơn hàng
           </Link>
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="wp-list-gap">
           {/* Order summary card */}
           <div className="wp-order-card">
             <div className="wp-order-head">
@@ -83,7 +109,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                 <div>Mã đơn <b>#{order.orderNumber}</b></div>
                 <div>Đặt lúc <b>{formatDate(order.placedAt)}</b></div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="wp-tag-row">
                 <span className={`wp-order-status ${orderStatusClass(order.status)}`}>
                   {orderStatusLabel(order.status)}
                 </span>
@@ -94,36 +120,36 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             </div>
 
             {/* Line items */}
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="wp-order-items-section">
               {order.lineItems.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", gap: 14 }}>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 13, color: "#fff", margin: "0 0 3px 0", fontWeight: 600 }}>{safeText(item.productName, "Sản phẩm")}</p>
-                    {item.variantName && <p style={{ fontSize: 11, color: "var(--bb-text-muted)", margin: 0 }}>{item.variantName}</p>}
-                    <p style={{ fontSize: 11, color: "var(--bb-text-muted)", margin: "2px 0 0 0" }}>SL: {item.quantity} · {formatVnd(item.unitPrice)} / cái</p>
+                <div key={item.id} className="wp-order-item-row">
+                  <div className="wp-order-item-info">
+                    <p className="wp-order-item-name">{safeText(item.productName, "Sản phẩm")}</p>
+                    {item.variantName && <p className="wp-order-item-meta">{item.variantName}</p>}
+                    <p className="wp-order-item-meta" style={{ marginTop: 2 }}>SL: {item.quantity} · {formatVnd(item.unitPrice)} / cái</p>
                   </div>
-                  <strong style={{ fontSize: 14, color: "#fff", whiteSpace: "nowrap" }}>{formatVnd(item.lineTotal)}</strong>
+                  <strong className="wp-order-item-total">{formatVnd(item.lineTotal)}</strong>
                 </div>
               ))}
             </div>
 
             {/* Totals */}
-            <div style={{ padding: "14px 20px" }}>
+            <div className="wp-order-totals">
               {[
                 { label: "Tạm tính", value: formatVnd(order.subtotalAmount) },
-                order.discountAmount > 0 ? { label: "Giảm giá", value: `-${formatVnd(order.discountAmount)}`, red: true } : null,
+                order.discountAmount > 0 ? { label: "Giảm giá", value: `-${formatVnd(order.discountAmount)}`, discount: true } : null,
                 { label: "Phí giao hàng", value: formatVnd(order.shippingAmount) },
                 order.feeAmount > 0 ? { label: "Phí phụ thu", value: formatVnd(order.feeAmount) } : null,
                 order.taxAmount > 0 ? { label: "Thuế", value: formatVnd(order.taxAmount) } : null,
               ].filter(Boolean).map((row) => row && (
-                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "5px 0", color: "rgba(255,255,255,0.65)" }}>
+                <div key={row.label} className="wp-totals-row">
                   <span>{row.label}</span>
-                  <span style={row.red ? { color: "#62bb46" } : undefined}>{row.value}</span>
+                  <span className={row.discount ? "wp-totals-discount-val" : undefined}>{row.value}</span>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, padding: "10px 0 0 0", borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, fontWeight: 700 }}>
-                <span style={{ color: "#fff" }}>Tổng cộng</span>
-                <span style={{ color: "var(--bb-brand-primary)", fontFamily: "var(--bb-font-display)" }}>{formatVnd(order.totalAmount)}</span>
+              <div className="wp-totals-final">
+                <span>Tổng cộng</span>
+                <span className="wp-totals-total-amount">{formatVnd(order.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -152,24 +178,22 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           </div>
 
           {/* Payment info */}
-          <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 14 }}>
-              Thanh toán & vận chuyển
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+          <div className="wp-info-card">
+            <p className="wp-info-label">Thanh toán &amp; vận chuyển</p>
+            <div className="wp-detail-grid">
               <div>
-                <p style={{ fontSize: 11, color: "var(--bb-text-muted)", marginBottom: 4 }}>Phương thức</p>
-                <p style={{ fontSize: 13, color: "#fff", margin: 0 }}>{safeText(order.payments[0]?.method ?? order.paymentStatus, "—")}</p>
+                <p className="wp-detail-label">Phương thức</p>
+                <p className="wp-detail-val">{safeText(order.payments[0]?.method ?? order.paymentStatus, "—")}</p>
               </div>
               <div>
-                <p style={{ fontSize: 11, color: "var(--bb-text-muted)", marginBottom: 4 }}>Đã thanh toán</p>
-                <p style={{ fontSize: 13, color: "#fff", margin: 0 }}>{formatVnd(order.paidAmount)}</p>
+                <p className="wp-detail-label">Đã thanh toán</p>
+                <p className="wp-detail-val">{formatVnd(order.paidAmount)}</p>
               </div>
               {order.shippingItems.length > 0 && (
                 <div>
-                  <p style={{ fontSize: 11, color: "var(--bb-text-muted)", marginBottom: 4 }}>Vận chuyển</p>
+                  <p className="wp-detail-label">Vận chuyển</p>
                   {order.shippingItems.map((item) => (
-                    <p key={item.id} style={{ fontSize: 13, color: "#fff", margin: 0 }}>{safeText(item.title, "—")} · {formatVnd(item.cost)}</p>
+                    <p key={item.id} className="wp-detail-val">{safeText(item.title, "—")} · {formatVnd(item.cost)}</p>
                   ))}
                 </div>
               )}
@@ -178,21 +202,21 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* Customer note */}
           {order.customerNote && (
-            <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 8 }}>Ghi chú</p>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", margin: 0 }}>{order.customerNote}</p>
+            <div className="wp-info-card">
+              <p className="wp-info-label">Ghi chú</p>
+              <p className="wp-note-text">{order.customerNote}</p>
             </div>
           )}
 
           {/* Order notes timeline */}
           {order.notes.length > 0 && (
-            <div style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "18px 20px" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--bb-text-muted)", marginBottom: 14 }}>Lịch sử</p>
-              <div style={{ display: "grid", gap: 12 }}>
+            <div className="wp-info-card">
+              <p className="wp-info-label">Lịch sử</p>
+              <div className="wp-timeline">
                 {order.notes.map((note) => (
-                  <div key={note.id} style={{ borderLeft: "2px solid rgba(255,255,255,0.08)", paddingLeft: 14 }}>
-                    <p style={{ fontSize: 11, color: "var(--bb-text-muted)", margin: "0 0 4px 0" }}>{safeText(note.type, "Ghi chú")} · {formatDate(note.createdAt)}</p>
-                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", margin: 0 }}>{note.content}</p>
+                  <div key={note.id} className="wp-timeline-item">
+                    <p className="wp-timeline-meta">{safeText(note.type, "Ghi chú")} · {formatDate(note.createdAt)}</p>
+                    <p className="wp-note-text">{note.content}</p>
                   </div>
                 ))}
               </div>

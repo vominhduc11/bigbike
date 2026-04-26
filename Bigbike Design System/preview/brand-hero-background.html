@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Brand — Hero Background Recipe</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background: var(--bb-bg-page); color: var(--bb-text-primary); font-family: var(--bb-font-body); }
+  .card { padding: 14px; }
+  .hero { position: relative; height: 280px; border-radius: 8px; overflow: hidden; padding: 28px 32px; display:flex; flex-direction:column; justify-content:flex-end; gap: 8px;
+    background:
+      radial-gradient(circle at 88% 22%, rgba(249,6,6,0.22), transparent 28%),
+      radial-gradient(circle at 20%  0%, rgba(255,255,255,0.12), transparent 42%),
+      linear-gradient(145deg, #0d0d0d 0%, #171717 48%, #1f1f1f 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: var(--bb-brand-primary); }
+  .hero h1 { margin: 0; font-family: var(--bb-font-display); font-size: 44px; line-height: 1.02; text-transform: uppercase; letter-spacing: 0.01em; max-width: 520px; }
+  .hero p { margin: 0; color: rgba(255,255,255,0.74); font-size: 13px; max-width: 380px; line-height: 1.5; }
+  .meta { position: absolute; top: 10px; right: 12px; font-size: 9px; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; font-family: monospace; text-align: right; line-height: 1.4; }
+  .burner { position: absolute; top: 22px; left: 26px; background: var(--bb-brand-primary); color: #fff; padding: 5px 10px; font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+</style>
+</head>
+<body class="bb-theme-dark">
+<div class="card">
+  <div class="hero">
+    <span class="burner">HOT OFFER · 20% OFF</span>
+    <span class="meta">HERO-HALO<br>red @ 88% 22%<br>+ white @ 20% 0%<br>+ linear 145°</span>
+    <span class="kicker">Sản phẩm nổi bật</span>
+    <h1>Gear Up.<br>Don't Let Behind.</h1>
+    <p>Mũ bảo hiểm, áo giáp, giày moto chính hãng từ LS2, Alpinestars, Furygan.</p>
+  </div>
+</div>
+</body>
+</html>

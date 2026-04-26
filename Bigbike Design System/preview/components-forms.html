@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Form Inputs</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background: var(--bb-bg-page); color: var(--bb-text-primary); font-family: var(--bb-font-body); }
+  .card { padding: 22px 26px; }
+  .title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 12px; letter-spacing: 0.06em; margin: 0 0 16px 0; color: var(--bb-text-muted); }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .f { display:flex; flex-direction:column; gap: 6px; }
+  .lbl { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bb-text-muted); font-weight: 700; }
+  input, select, textarea { background: #141414; border: 1px solid rgba(255,255,255,0.16); color: #fff; padding: 10px 12px; border-radius: 4px; font-family: var(--bb-font-body); font-size: 13px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #f90606; box-shadow: 0 0 0 3px rgba(249,6,6,0.36); }
+  .f-focus input { border-color: #f90606; box-shadow: 0 0 0 3px rgba(249,6,6,0.36); }
+  .f-error input { border-color: #f90606; }
+  .err { font-size: 10px; color: #f90606; letter-spacing: 0.04em; }
+  .help { font-size: 10px; color: var(--bb-text-muted); }
+</style>
+</head>
+<body class="bb-theme-dark">
+<div class="card">
+  <div class="title">FORM INPUTS</div>
+  <div class="grid">
+    <div class="f"><label class="lbl">Họ và tên</label><input placeholder="Nguyễn Văn An"></div>
+    <div class="f f-focus"><label class="lbl">Email · Focused</label><input value="an@bigbike.vn"></div>
+    <div class="f f-error"><label class="lbl">Số điện thoại</label><input value="0903"><span class="err">Số điện thoại không hợp lệ</span></div>
+    <div class="f"><label class="lbl">Kích cỡ</label><select><option>Chọn size mũ bảo hiểm</option><option>M (55–56)</option><option>L (57–58)</option></select></div>
+  </div>
+</div>
+</body>
+</html>

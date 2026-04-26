@@ -8,6 +8,34 @@ type GuidePageProps = {
   subSegments?: string[];
 };
 
+type GuideRoute = {
+  pageSlug: string;
+  path: string;
+  title: string;
+  description: string;
+};
+
+const GUIDE_ROUTE_MAP: Record<string, GuideRoute> = {
+  "mua-hang": {
+    pageSlug: "huong-dan-mua-hang",
+    path: "/huong-dan/mua-hang/",
+    title: "Hướng dẫn mua hàng",
+    description: "Hướng dẫn đặt hàng, thanh toán và nhận hàng tại BigBike.",
+  },
+  "size-mu": {
+    pageSlug: "cach-do-size-dau",
+    path: "/huong-dan/size-mu/",
+    title: "Cách xác định size mũ bảo hiểm",
+    description: "Hướng dẫn đo chu vi đầu và chọn size mũ bảo hiểm phù hợp.",
+  },
+  "size-gang-tay": {
+    pageSlug: "cach-do-size-gang-tay",
+    path: "/huong-dan/size-gang-tay/",
+    title: "Cách đo size găng tay bảo hộ",
+    description: "Hướng dẫn đo bàn tay và chọn size găng tay bảo hộ moto.",
+  },
+};
+
 function normalizeMenuUrl(url: string): string {
   if (!url) {
     return "/";
@@ -22,9 +50,35 @@ function buildCurrentPath(subSegments?: string[]): string {
   return `/huong-dan/${subSegments.map((segment) => encodeURIComponent(segment)).join("/")}/`;
 }
 
+export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
+  if (!subSegments || subSegments.length === 0) {
+    return {
+      pageSlug: "huong-dan",
+      path: "/huong-dan/",
+      title: "Hướng dẫn",
+      description: "Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike.",
+    };
+  }
+
+  if (subSegments.length === 1) {
+    const mapped = GUIDE_ROUTE_MAP[subSegments[0]];
+    if (mapped) {
+      return mapped;
+    }
+  }
+
+  return {
+    pageSlug: "huong-dan",
+    path: buildCurrentPath(subSegments),
+    title: "Hướng dẫn",
+    description: "Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike.",
+  };
+}
+
 export async function GuidePage({ subSegments }: GuidePageProps) {
+  const route = resolveGuideRoute(subSegments);
   const [pageResult, menuResult] = await Promise.all([
-    getPageBySlug("huong-dan"),
+    getPageBySlug(route.pageSlug),
     getPublicMenu("guide"),
   ]);
 
@@ -39,7 +93,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   }
 
   const page = pageResult.data;
-  const currentPath = buildCurrentPath(subSegments);
+  const currentPath = route.path;
   const menuItems = menuResult.data?.items ?? [];
 
   return (
@@ -50,25 +104,23 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         </header>
 
         <div className="bb-detail-layout bb-section">
-          <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
+          <div className="bb-card bb-card-content">
             <article
               className="bb-richtext"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
             />
-            <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
-              Cập nhật {formatDate(page.updatedAt)}
-            </p>
+            <p className="bb-updated-date">Cập nhật {formatDate(page.updatedAt)}</p>
           </div>
 
-          <aside style={{ display: "grid", gap: "var(--bb-space-4)" }}>
-            <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-              <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Mục hướng dẫn</h2>
+          <aside className="bb-sidebar-grid">
+            <div className="bb-card bb-card-content">
+              <h2 className="bb-sidebar-heading">Mục hướng dẫn</h2>
               {menuResult.error ? (
                 <p className="bb-status-banner">{menuResult.error.message}</p>
               ) : menuItems.length === 0 ? (
-                <p style={{ color: "var(--bb-text-muted)" }}>Chưa có mục hướng dẫn.</p>
+                <p className="wp-muted-text">Chưa có mục hướng dẫn.</p>
               ) : (
-                <nav style={{ display: "grid", gap: "var(--bb-space-2)" }}>
+                <nav className="bb-nav-links">
                   {menuItems.map((item) => {
                     const href = normalizeMenuUrl(item.url);
                     const active = href === currentPath || href === `${currentPath}index.html`;
@@ -78,10 +130,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                         href={href}
                         className="bb-link"
                         aria-current={active ? "page" : undefined}
-                        style={{
-                          fontWeight: active ? 700 : 500,
-                          color: active ? "var(--bb-text-brand)" : undefined,
-                        }}
+                        style={{ fontWeight: active ? 700 : 500, color: active ? "var(--bb-text-brand)" : undefined }}
                       >
                         {safeText(item.label, "Hướng dẫn")}
                       </Link>
@@ -92,9 +141,9 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             </div>
 
             {subSegments && subSegments.length > 0 ? (
-              <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
-                <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Đường dẫn hiện tại</h2>
-                <p style={{ color: "var(--bb-text-muted)" }}>{currentPath}</p>
+              <div className="bb-card bb-card-content">
+                <h2 className="bb-sidebar-heading">Đường dẫn hiện tại</h2>
+                <p className="wp-muted-text">{currentPath}</p>
               </div>
             ) : null}
           </aside>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchMyOrders } from "@/lib/api/client-api";
 import type { OrderListItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
@@ -38,12 +39,14 @@ const TABS = [
 ];
 
 function OrderHistoryContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("ALL");
+  const activeTab = searchParams.get("status") ?? "ALL";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -77,7 +80,12 @@ function OrderHistoryContent() {
             key={tab.key}
             type="button"
             className={`wp-tab${activeTab === tab.key ? " active" : ""}`}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              const url = tab.key === "ALL"
+                ? "/tai-khoan/don-hang"
+                : `/tai-khoan/don-hang?status=${tab.key}`;
+              router.replace(url, { scroll: false });
+            }}
           >
             {tab.label}
             {tab.key !== "ALL" && (
@@ -89,19 +97,49 @@ function OrderHistoryContent() {
         ))}
       </div>
 
-      {error && (
-        <p style={{ color: "var(--bb-brand-primary)", fontSize: 13, marginBottom: 16 }}>{error}</p>
-      )}
+      {error && <p className="wp-error-text">{error}</p>}
 
       {loading ? (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="bb-skel-stack" aria-busy="true">
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, height: 120 }} />
+            <div key={i} className="wp-order-card">
+              <div className="wp-order-head">
+                <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
+                  <div className="bb-skel-col">
+                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                    <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
+                  </div>
+                  <div className="bb-skel-col">
+                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                    <span className="bb-skel bb-skel--text" style={{ width: 90 }} />
+                  </div>
+                  <div className="bb-skel-col">
+                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                    <span className="bb-skel bb-skel--text" style={{ width: 70 }} />
+                  </div>
+                </div>
+                <span className="bb-skel bb-skel--chip" style={{ width: 90 }} />
+              </div>
+              <div className="wp-order-body">
+                <div className="bb-skel-row">
+                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
+                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
+                </div>
+                <div className="bb-skel-col" style={{ flex: 1 }}>
+                  <span className="bb-skel bb-skel--text bb-skel-w-60" />
+                  <span className="bb-skel bb-skel--text bb-skel-w-40" />
+                </div>
+                <div className="bb-skel-col" style={{ alignItems: "flex-end" }}>
+                  <span className="bb-skel bb-skel--title" style={{ width: 120, height: "1.2em" }} />
+                  <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--bb-text-muted)" }}>
-          <p style={{ fontSize: 14 }}>Không có đơn hàng nào.</p>
+        <div className="wp-empty-state">
+          <p className="wp-muted-text">Không có đơn hàng nào.</p>
         </div>
       ) : (
         <>
@@ -140,7 +178,7 @@ function OrderHistoryContent() {
                 </div>
               </div>
               <div className="wp-order-actions">
-                <Link href={toOrderDetailPath(order.id)} className="wp-btn-secondary" style={{ fontSize: 11, padding: "8px 14px", textDecoration: "none", display: "inline-block" }}>
+                <Link href={toOrderDetailPath(order.id)} className="wp-btn-secondary wp-btn-sm">
                   Xem chi tiết
                 </Link>
               </div>
@@ -148,21 +186,19 @@ function OrderHistoryContent() {
           ))}
 
           {totalPages > 1 && (
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 20 }}>
+            <div className="wp-pagination">
               <button
                 type="button"
-                className="wp-btn-secondary"
-                style={{ fontSize: 12, padding: "9px 16px" }}
+                className="wp-btn-secondary wp-btn-sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
                 Trang trước
               </button>
-              <span style={{ fontSize: 12, color: "var(--bb-text-muted)" }}>{page} / {totalPages}</span>
+              <span className="wp-pagination-page">{page} / {totalPages}</span>
               <button
                 type="button"
-                className="wp-btn-secondary"
-                style={{ fontSize: 12, padding: "9px 16px" }}
+                className="wp-btn-secondary wp-btn-sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
               >

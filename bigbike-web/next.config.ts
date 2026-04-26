@@ -10,7 +10,7 @@ type SeoRedirectRow = {
   notes: string;
 };
 
-const REDIRECT_CSV_PATH = path.resolve(process.cwd(), "../docs/legacy/SEO_REDIRECT_MAP.csv");
+const REDIRECT_CSV_PATH = path.resolve(process.cwd(), "docs/legacy/SEO_REDIRECT_MAP.csv");
 
 function parseCsvRows(): SeoRedirectRow[] {
   if (!fs.existsSync(REDIRECT_CSV_PATH)) {
@@ -100,9 +100,20 @@ const redirectRows = parseCsvRows();
 const csvRedirectRules = buildRedirectRules(redirectRows);
 const csvNoIndexHeaders = buildNoIndexHeaders(redirectRows);
 
+// BIGBIKE_LEGACY_UPLOADS_BASE — used for CSP img-src at build time (browser-visible origin).
+// In Docker Compose this is baked as http://localhost:9000/bigbike-media/wp-uploads so
+// the browser's CSP allows loading images from the host-mapped MinIO port.
 const LEGACY_UPLOADS_BASE =
   process.env.BIGBIKE_LEGACY_UPLOADS_BASE?.replace(/\/$/, "") ??
   "https://cdn.bigbike.vn/uploads";
+
+// BIGBIKE_MEDIA_INTERNAL_URL — used for the Next.js server-side rewrite destination.
+// When Next.js runs inside Docker it must reach MinIO via the internal Docker network
+// (minio:9000), NOT localhost:9000 which is unreachable from inside the container.
+// Falls back to BIGBIKE_LEGACY_UPLOADS_BASE so local `next dev` still works unchanged.
+const MEDIA_INTERNAL_BASE =
+  process.env.BIGBIKE_MEDIA_INTERNAL_URL?.replace(/\/$/, "") ??
+  LEGACY_UPLOADS_BASE;
 
 // Extract API origin so CSP allows backend calls in any environment
 // (http://localhost:8080 in dev, https://api.bigbike.vn in prod)
@@ -152,7 +163,7 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         {
           source: "/wp-content/uploads/:path*",
-          destination: `${LEGACY_UPLOADS_BASE}/:path*`,
+          destination: `${MEDIA_INTERNAL_BASE}/:path*`,
         },
       ],
       // afterFiles: checked after pages/public files but before dynamic routes.
@@ -219,19 +230,6 @@ const nextConfig: NextConfig = {
         {
           source: "/lien-he.html",
           destination: "/lien-he/",
-        },
-        // Legacy WP account sub-routes → current app routes
-        {
-          source: "/tai-khoan/orders/",
-          destination: "/tai-khoan/don-hang/",
-        },
-        {
-          source: "/tai-khoan/view-order/:id/",
-          destination: "/tai-khoan/don-hang/:id/",
-        },
-        {
-          source: "/tai-khoan/lost-password/",
-          destination: "/quen-mat-khau/",
         },
         // Hierarchical category URLs: /{parent}/{child}.html → /danh-muc-san-pham/{child}/
         // (simplified; parent context not used by current category page)

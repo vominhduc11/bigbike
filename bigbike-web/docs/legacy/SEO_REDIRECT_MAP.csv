@@ -30,3 +30,7 @@ sourcePattern,targetPattern,redirectType,status,notes
 /cach-do-size-gang-tay.html,/huong-dan/size-gang-tay/,301,active,Glove size guide legacy
 /cach-do-size-dau.html,/huong-dan/size-mu/,301,active,Helmet size guide legacy
 /giam-10-khi-mua-hang-online-html/,/,301,active,Old promo page - redirect to home
+/chinh-sach-bao-ve-thong-tin-ca-nhan/,/chinh-sach/bao-mat/,301,active,WP page slug renamed in new platform
+/cac-dieu-kien-va-dieu-khoan/,/chinh-sach/dieu-khoan/,301,active,WP page slug renamed in new platform
+/huong-dan-mua-hang-online-html/,/huong-dan-mua-hang/,301,active,Old WP .html promo page redirect
+/home-2/,/,301,active,Old WP staging page redirect to home

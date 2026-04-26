@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { loginCustomer } from "@/lib/api/client-api";
+import { refreshAuth } from "@/lib/auth/auth-store";
 import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
 
 function LoginForm() {
@@ -22,7 +23,9 @@ function LoginForm() {
     setSubmitting(true);
     try {
       await loginCustomer(login, password);
+      await refreshAuth();
       router.push(returnTo);
+      router.refresh();
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
@@ -32,19 +35,17 @@ function LoginForm() {
 
   return (
     <div className="bb-auth-wrap">
-      <div className="bb-card" style={{ padding: "var(--bb-space-8)" }}>
-        <header style={{ marginBottom: "var(--bb-space-6)", textAlign: "center" }}>
+      <div className="bb-card bb-card-padded">
+        <header className="bb-auth-header">
           <p className="bb-kicker">Tài khoản</p>
-          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}>Đăng nhập</h1>
+          <h1 className="bb-auth-title">Đăng nhập</h1>
         </header>
 
         {error ? (
-          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
-            {error}
-          </p>
+          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>{error}</p>
         ) : null}
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "var(--bb-space-4)" }}>
+        <form onSubmit={handleSubmit} className="bb-form-stack">
           <label className="bb-form-label">
             Email hoặc số điện thoại
             <input
@@ -68,33 +69,37 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
-          <button
-            type="submit"
-            className="bb-button bb-button-primary"
-            style={{ width: "100%", justifyContent: "center" }}
-            disabled={submitting}
-          >
+          <button type="submit" className="bb-button bb-button-primary bb-btn-full" disabled={submitting}>
             {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
 
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "var(--bb-space-4)",
-            color: "var(--bb-text-secondary)",
-            fontSize: "var(--bb-text-sm)",
-          }}
-        >
-          <Link href={toForgotPasswordPath()} className="bb-link" style={{ display: "inline-block", marginBottom: "var(--bb-space-2)" }}>
-            Quên mật khẩu?
-          </Link>
+        <p className="bb-auth-footer">
+          <Link href={toForgotPasswordPath()} className="bb-link bb-auth-footer-link">Quên mật khẩu?</Link>
           <br />
           Chưa có tài khoản?{" "}
-          <Link href={toRegisterPath()} className="bb-link">
-            Đăng ký ngay
-          </Link>
+          <Link href={toRegisterPath()} className="bb-link">Đăng ký ngay</Link>
         </p>
+      </div>
+    </div>
+  );
+}
+
+function LoginFormSkeleton() {
+  return (
+    <div className="bb-auth-wrap" aria-busy="true">
+      <div className="bb-card bb-card-padded" style={{ padding: 24 }}>
+        <div className="bb-skel-stack">
+          <span className="bb-skel bb-skel--text bb-skel-w-25" />
+          <span className="bb-skel bb-skel--title bb-skel-w-50" style={{ height: "1.8em" }} />
+          <div style={{ height: 8 }} />
+          <span className="bb-skel bb-skel--text bb-skel-w-40" />
+          <span className="bb-skel" style={{ height: 42, width: "100%", borderRadius: 4 }} />
+          <span className="bb-skel bb-skel--text bb-skel-w-25" />
+          <span className="bb-skel" style={{ height: 42, width: "100%", borderRadius: 4 }} />
+          <span className="bb-skel bb-skel--btn" style={{ width: "100%" }} />
+          <span className="bb-skel bb-skel--text bb-skel-w-60" />
+        </div>
       </div>
     </div>
   );
@@ -104,9 +109,7 @@ export default function LoginPage() {
   return (
     <section className="bb-page">
       <div className="bb-container">
-        <Suspense
-          fallback={<div className="bb-skeleton-item" style={{ maxWidth: "480px", margin: "0 auto", minHeight: "400px" }} />}
-        >
+        <Suspense fallback={<LoginFormSkeleton />}>
           <LoginForm />
         </Suspense>
       </div>
