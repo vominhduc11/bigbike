@@ -3,10 +3,10 @@ services:
     image: mariadb:10.11
     container_name: bigbike-etl-db
     environment:
-      MYSQL_ROOT_PASSWORD: bigbike_etl_root
-      MYSQL_DATABASE: bigbike_wp
-      MYSQL_USER: etl_user
-      MYSQL_PASSWORD: etl_pass
+      MYSQL_ROOT_PASSWORD: ${ETL_DB_ROOT_PASSWORD:-bigbike_etl_root}
+      MYSQL_DATABASE: ${ETL_DB_NAME:-bigbike_wp}
+      MYSQL_USER: ${ETL_DB_USER:-etl_user}
+      MYSQL_PASSWORD: ${ETL_DB_PASSWORD:-etl_pass}
     volumes:
       - ../../bigbike_vn__2026_04_17/sqldump.sql:/docker-entrypoint-initdb.d/01-dump.sql:ro
     ports:

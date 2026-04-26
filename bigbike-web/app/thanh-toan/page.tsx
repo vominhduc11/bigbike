@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 import { fetchCart, fetchCheckoutOptions, submitCheckout } from "@/lib/api/client-api";
 import type { Cart, CartItem, CheckoutAddress } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
-import { formatVnd } from "@/lib/utils/format";
+import { formatVnd, isValidVnPhone } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
@@ -53,6 +54,19 @@ function toGtmCartItems(items: CartItem[]) {
   }));
 }
 
+function MiniCartThumb({ item }: { item: CartItem }) {
+  return (
+    <div className="wp-mini-thumb">
+      <span className="qty-badge">{item.quantity}</span>
+      {item.image?.url ? (
+        <MediaImage image={item.image} altFallback={item.productName} width={112} height={112} />
+      ) : (
+        <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_ADDRESS: CheckoutAddress = {
   fullName: "",
   email: "",
@@ -91,6 +105,7 @@ export default function CheckoutPage() {
   const [customerNote, setCustomerNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     Promise.all([fetchCart(), fetchCheckoutOptions()])
@@ -126,9 +141,9 @@ export default function CheckoutPage() {
     try {
       const order = await submitCheckout({
         billingAddress: address,
-        shippingMethodId: shippingMethodId || null,
+        shippingMethod: shippingMethodId || null,
         paymentMethod,
-        customerNote: customerNote.trim() || undefined,
+        notes: customerNote.trim() || undefined,
       });
       router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
     } catch (e: unknown) {
@@ -172,7 +187,13 @@ export default function CheckoutPage() {
                 onClick={() => step > s.n && setStep(s.n)}
                 style={{ cursor: step > s.n ? "pointer" : "default" }}
               >
-                <div className="wp-step-num">{step > s.n ? "✓" : s.n}</div>
+                <div className="wp-step-num">
+                  {step > s.n ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : s.n}
+                </div>
                 <div className="wp-step-label">
                   {s.label}
                   <span>{s.sub}</span>
@@ -205,16 +226,23 @@ export default function CheckoutPage() {
                   <div className="wp-field">
                     <label>Số điện thoại <span className="req">*</span></label>
                     <input
-                      className={`wp-input${address.phone ? " filled" : ""}`}
+                      className={`wp-input${address.phone ? " filled" : ""}${phoneError ? " wp-input-error" : ""}`}
                       required
                       type="tel"
                       inputMode="numeric"
-                      pattern="[0-9]{10}"
+                      pattern="0[3-9][0-9]{8}"
                       maxLength={10}
                       placeholder="0901234567"
                       value={address.phone}
-                      onChange={(e) => setField("phone", e.target.value)}
+                      onChange={(e) => {
+                        setField("phone", e.target.value);
+                        if (phoneError) setPhoneError("");
+                      }}
+                      aria-describedby={phoneError ? "phone-error" : undefined}
                     />
+                    {phoneError && (
+                      <p id="phone-error" className="wp-field-error">{phoneError}</p>
+                    )}
                   </div>
                   <div className="wp-field full">
                     <label>Email</label>
@@ -289,7 +317,14 @@ export default function CheckoutPage() {
                   type="button"
                   className="wp-btn-primary wp-btn-wide"
                   disabled={!address.fullName || !address.phone || !address.province || !address.addressLine1}
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    if (!isValidVnPhone(address.phone)) {
+                      setPhoneError("Số điện thoại không hợp lệ. Vui lòng nhập số VN 10 chữ số (ví dụ: 0901234567).");
+                      return;
+                    }
+                    setPhoneError("");
+                    setStep(2);
+                  }}
                 >
                   Tiếp tục → Thanh toán
                 </button>
@@ -334,7 +369,7 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">Backend chưa trả về phương thức thanh toán.</p>
+                  <p className="wp-error-text">Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
                 )}
               </div>
 
@@ -369,7 +404,7 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">Backend chưa trả về phương thức giao hàng.</p>
+                  <p className="wp-error-text">Phương thức giao hàng tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
                 )}
               </div>
 
@@ -405,7 +440,7 @@ export default function CheckoutPage() {
                   className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(1)}
                 >
-                  ✏ Chỉnh sửa
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>{" "}Chỉnh sửa
                 </button>
               </div>
 
@@ -427,7 +462,7 @@ export default function CheckoutPage() {
                   className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(2)}
                 >
-                  ✏ Chỉnh sửa
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>{" "}Chỉnh sửa
                 </button>
               </div>
 
@@ -438,10 +473,7 @@ export default function CheckoutPage() {
                   </h3>
                   {cart.items.map((item) => (
                     <div key={item.id} className="wp-mini-item">
-                      <div className="wp-mini-thumb">
-                        <span className="qty-badge">{item.quantity}</span>
-                        <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
-                      </div>
+                      <MiniCartThumb item={item} />
                       <div className="wp-mini-body">
                         <p className="name">{item.productName}</p>
                         {item.variantName && <p className="variant">{item.variantName}</p>}
@@ -498,10 +530,7 @@ export default function CheckoutPage() {
             <>
               {cart.items.map((item) => (
                 <div key={item.id} className="wp-mini-item">
-                  <div className="wp-mini-thumb">
-                    <span className="qty-badge">{item.quantity}</span>
-                    <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
-                  </div>
+                  <MiniCartThumb item={item} />
                   <div className="wp-mini-body">
                     <p className="name">{item.productName}</p>
                     {item.variantName && <p className="variant">{item.variantName}</p>}

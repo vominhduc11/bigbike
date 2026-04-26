@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.cart.dto.UpdateCartItemRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
+import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
@@ -203,11 +204,26 @@ public class CartController {
                 item.getSku(),
                 item.getProductName(),
                 item.getVariantName(),
+                toImageAsset(item),
                 item.getQuantity(),
                 item.getUnitPrice(),
                 item.getLineSubtotal(),
                 item.getLineDiscount(),
                 item.getLineTotal()
+        );
+    }
+
+    private ImageAsset toImageAsset(CartItemEntity item) {
+        if (item.getProductImageUrl() == null || item.getProductImageUrl().isBlank()) {
+            return null;
+        }
+        return new ImageAsset(
+                item.getProductImageId(),
+                item.getProductImageUrl(),
+                item.getProductImageAlt(),
+                item.getProductImageWidth(),
+                item.getProductImageHeight(),
+                item.getProductImageMimeType()
         );
     }
 }

@@ -1293,9 +1293,15 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "productId": { "type": "string" },
+          "productVariantId": { "type": "string", "nullable": true },
+          "sku": { "type": "string", "nullable": true },
           "productName": { "type": "string" },
+          "variantName": { "type": "string", "nullable": true },
+          "image": { "$ref": "#/components/schemas/ImageAsset", "nullable": true },
           "quantity": { "type": "integer" },
           "unitPrice": { "type": "number" },
+          "lineSubtotal": { "type": "number" },
+          "lineDiscount": { "type": "number" },
           "lineTotal": { "type": "number" }
         }
       },

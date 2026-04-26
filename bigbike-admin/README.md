@@ -1,45 +1,46 @@
-# BigBike Admin - Phase 4D Foundation
+# bigbike-admin
 
-Admin catalog/content CRUD foundation for:
-
-- product list + product detail/edit shell
-- category list + category detail/edit shell
-- brand list + brand detail/edit shell
-- article/page list + detail/edit shell
-
-This phase intentionally does not implement order/checkout/payment flows.
+Internal admin dashboard for BigBike operations. Vite 8 + React 19 SPA (JavaScript), runs on port **5173** (local dev) / **4000** (Docker behind nginx).
 
 ## Scripts
 
 ```bash
-npm run dev
+npm run dev       # dev server on port 5173
+npm run build     # production build
+npm run preview   # preview build on port 4173
 npm run lint
-npm run build
 ```
 
-`npm run test` is not defined in this package yet.
+`npm run test` is not defined.
 
-## Routing
+## Routes
 
-Foundation routes:
+| Route | Permission |
+|-------|-----------|
+| `/admin/products` | `products.read` |
+| `/admin/categories` | `catalog.read` |
+| `/admin/brands` | `catalog.read` |
+| `/admin/content` | `content.read` |
+| `/admin/orders` | `orders.read` |
+| `/admin/customers` | `customers.read` |
+| `/admin/media` | `media.read` |
+| `/admin/coupons` | `coupons.read` |
+| `/admin/redirects` | `redirects.read` |
+| `/admin/menus` | `menus.read` |
+| `/admin/sliders` | `sliders.read` |
+| `/admin/shipping` | `shipping.read` |
+| `/admin/reviews` | `reviews.read` |
+| `/admin/admin-users` | `admin-users.read` |
+| `/admin/settings` | `settings.read` |
 
-- `/admin/products`
-- `/admin/products/:id`
-- `/admin/categories`
-- `/admin/categories/:id`
-- `/admin/brands`
-- `/admin/brands/:id`
-- `/admin/content`
-- `/admin/content/:type/:id`
+Default landing: `/admin/products`.
 
-## Data Mode
+## Data mode
 
-The admin API client is contract-aware and supports typed mock fallback when backend endpoints are unavailable.
+The API client supports a typed mock fallback when the backend is unavailable. Mock mode renders an explicit read-only banner.
 
-Environment flags:
-
-- `VITE_USE_ADMIN_MOCK=true` forces typed mock mode
-- `VITE_ADMIN_ROLE=ADMIN|MANAGER|CONTENT_EDITOR|VIEWER|SUPER_ADMIN` controls mock permission profile
-- `VITE_ADMIN_API_BASE=/api/v1` overrides API base path
-
-When mock fallback is active, screens render an explicit read-only banner.
+```text
+VITE_USE_ADMIN_MOCK=true                              # force mock mode
+VITE_ADMIN_ROLE=ADMIN|MANAGER|CONTENT_EDITOR|VIEWER|SUPER_ADMIN  # mock permission profile
+VITE_ADMIN_API_BASE=http://localhost:8080/api/v1      # API base
+```

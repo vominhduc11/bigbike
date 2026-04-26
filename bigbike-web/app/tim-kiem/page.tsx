@@ -117,6 +117,11 @@ async function SearchResults({
       <EmptyState
         title={`Không có kết quả cho "${query}"`}
         description="Thử rút gọn từ khoá hoặc kiểm tra chính tả."
+        action={
+          <Link href="/san-pham/" className="bb-button bb-button-primary">
+            XEM TẤT CẢ SẢN PHẨM
+          </Link>
+        }
       />
     );
   }

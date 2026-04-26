@@ -9,10 +9,12 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: [
         "/api/",
+        "/admin/",
         "/gio-hang.html",
         "/gio-hang/",
         "/thanh-toan.html",
         "/thanh-toan/",
+        "/don-hang/",
         "/tai-khoan",
         "/dang-nhap",
         "/dang-ky",

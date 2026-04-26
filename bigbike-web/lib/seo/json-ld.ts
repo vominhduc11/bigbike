@@ -1,14 +1,31 @@
-import type { Article, Product } from "@/lib/contracts/public";
+import type { Article, Brand, Category, Product } from "@/lib/contracts/public";
 import {
   toArticleListPath,
   toArticlePath,
+  toBrandListPath,
+  toBrandPath,
   toCanonicalUrl,
   toCategoryPath,
   toHomePath,
+  toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
 
 type JsonLdObject = Record<string, unknown>;
+
+const SITE_NAME = "BigBike";
+const ORG_LOGO_PATH = "/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png";
+
+function buildPublisher(): JsonLdObject {
+  return {
+    "@type": "Organization",
+    name: SITE_NAME,
+    logo: {
+      "@type": "ImageObject",
+      url: toCanonicalUrl(ORG_LOGO_PATH),
+    },
+  };
+}
 
 export function serializeJsonLd(data: JsonLdObject): string {
   return JSON.stringify(data)
@@ -63,6 +80,7 @@ export function buildArticleJsonLd(article: Article): JsonLdObject {
     dateModified: article.updatedAt,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
+    publisher: buildPublisher(),
   };
 }
 
@@ -126,6 +144,60 @@ export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
       "@type": "ListItem",
       ...item,
     })),
+  };
+}
+
+export function buildCategoryBreadcrumbJsonLd(category: Category): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Trang chủ",
+        item: toCanonicalUrl(toHomePath()),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Sản phẩm",
+        item: toCanonicalUrl(toProductListPath()),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: category.name,
+        item: toCanonicalUrl(category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
+      },
+    ],
+  };
+}
+
+export function buildBrandBreadcrumbJsonLd(brand: Brand): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Trang chủ",
+        item: toCanonicalUrl(toHomePath()),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Thương hiệu",
+        item: toCanonicalUrl(toBrandListPath()),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: brand.name,
+        item: toCanonicalUrl(brand.seo?.canonicalUrl ?? toBrandPath(brand.slug)),
+      },
+    ],
   };
 }
 

@@ -47,6 +47,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
       "Chi tiết sản phẩm bảo hộ biker BigBike.",
     canonicalPath: product.seo?.canonicalUrl ?? toProductPath(product.slug),
     noIndex: product.seo?.noIndex ?? false,
+    ogImage: product.image?.url ?? undefined,
   });
 }
 
@@ -132,8 +133,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <span className="stars" aria-label={`${product.rating} sao`}>
                     {Array.from({ length: 5 }, (_, i) => (
                       <svg key={i} width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"
-                        fill={i < Math.round(product.rating!) ? "#f99d1c" : "none"}
-                        stroke="#f99d1c" strokeWidth="1.8">
+                        fill={i < Math.round(product.rating!) ? "currentColor" : "none"}
+                        stroke="currentColor" strokeWidth="1.8"
+                        style={{ color: "var(--bb-brand-primary)" }}>
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
                     ))}

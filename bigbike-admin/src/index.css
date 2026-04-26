@@ -173,9 +173,9 @@ textarea {
 }
 
 .read-only-banner {
-  border: 1px solid #fdd7aa;
-  background: #fff7ed;
-  color: #9a3412;
+  border: 1px solid var(--admin-color-status-warning-orange-border);
+  background: var(--admin-color-status-warning-orange-bg);
+  color: var(--admin-color-status-warning-orange-text);
   padding: var(--admin-space-3) var(--admin-space-4);
   border-radius: var(--admin-radius-sm);
 }
@@ -428,18 +428,18 @@ textarea {
 }
 
 .state-panel-info {
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  border-color: var(--admin-color-status-info-border);
+  background: var(--admin-color-status-info-bg);
 }
 
 .state-panel-warning {
-  border-color: #fde68a;
-  background: #fffbeb;
+  border-color: var(--admin-color-status-warning-border);
+  background: var(--admin-color-status-warning-bg);
 }
 
 .state-panel-danger {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--admin-color-status-danger-border);
+  background: var(--admin-color-status-danger-bg);
 }
 
 .detail-section {
@@ -555,15 +555,15 @@ textarea {
 }
 
 .inline-feedback-success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--admin-color-status-success-border);
+  background: var(--admin-color-status-success-bg);
+  color: var(--admin-color-status-success-text);
 }
 
 .inline-feedback-danger {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #991b1b;
+  border-color: var(--admin-color-status-danger-border);
+  background: var(--admin-color-status-danger-bg);
+  color: var(--admin-color-status-danger-text);
 }
 
 .detail-grid {

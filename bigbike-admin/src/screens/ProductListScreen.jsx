@@ -112,8 +112,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
         label: 'Price',
         render: (product) => (
           <div className="price-cell">
-            <strong>{formatCurrencyVnd(product.price.retailPrice)}</strong>
-            {product.price.salePrice ? (
+            <strong>{formatCurrencyVnd(product.price?.retailPrice)}</strong>
+            {product.price?.salePrice ? (
               <span>{formatCurrencyVnd(product.price.salePrice)}</span>
             ) : null}
           </div>

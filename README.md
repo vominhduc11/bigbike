@@ -30,6 +30,8 @@ bigbike/
 ├── README.md                       # This file
 ├── .env.example                    # Root environment template (Docker Compose)
 ├── docker-compose.yaml             # Full stack infrastructure
+├── docs/                           # Architecture decision records
+│   └── DECISIONS.md                # Recorded architecture / product decisions (what was rejected and why)
 ├── bigbike-web/                    # Public SEO + sales website (Next.js)
 │   └── docs/                       # SEO redirect map data
 ├── bigbike-admin/                  # Internal admin dashboard (Vite + React)
@@ -82,6 +84,8 @@ components/   # React components (analytics, cart, catalog, content, home, layou
 lib/          # API clients, contracts, SEO utilities, route helpers
 public/       # Static assets
 docs/         # SEO redirect map data (consumed by next.config.ts)
+AGENTS.md     # Next.js version-specific agent rules
+STYLEGUIDE.md # Condensed brand + UI rules for bigbike-web
 ```
 
 ### 2.2 `bigbike-admin`
@@ -118,7 +122,7 @@ Primary goals:
 
 - REST API.
 - Business validation.
-- Data persistence (PostgreSQL via JPA + Flyway migrations V1–V16).
+- Data persistence (PostgreSQL via JPA + Flyway migrations V1–V25).
 - Authentication and authorization (JWT + Argon2id password hashing via BouncyCastle).
 - Product / order / content state management.
 - Admin permissions.
@@ -270,7 +274,15 @@ bigbike-web/docs/
 
 SEO redirect map data consumed by `bigbike-web/next.config.ts` for legacy URL handling.
 
-### 4.6 Legacy WordPress migration reference
+### 4.6 Architecture decisions
+
+```text
+docs/DECISIONS.md
+```
+
+Records architecture and product decisions that are not obvious from the code — what was considered, what was rejected, and why. Read before implementing features that touch the same domain.
+
+### 4.7 Legacy WordPress migration reference
 
 ```text
 bigbike_vn__2026_04_17/             # Local-only — do not commit
@@ -288,11 +300,14 @@ Raw WordPress export used for migration reference. See section 18.1 for handling
 
 ```text
 AGENTS.md
+bigbike-web/AGENTS.md
+bigbike-web/STYLEGUIDE.md
 Bigbike Design System/README.md
 Bigbike Design System/colors_and_type.css
 Bigbike Design System/ui_kits/website/
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+docs/DECISIONS.md
 ```
 
 ### Working on `bigbike-admin`
@@ -312,6 +327,7 @@ bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
 bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
 bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+docs/DECISIONS.md
 ```
 
 ### Working on legacy migration

@@ -1,23 +1,23 @@
-// In-memory token store — access token lives only in JS memory (cleared on page reload).
-// Refresh token is stored exclusively as a server-side httpOnly cookie so XSS cannot read it.
-// On page reload the AuthProvider calls performTokenRefresh() which uses the httpOnly cookie
-// to silently obtain a new access token without requiring the user to log in again.
+// In-memory token store — both tokens live only in JS memory (cleared on page reload).
+// The server also sets a httpOnly refresh cookie as a fallback. On page reload,
+// performTokenRefresh() sends the stored refreshToken in the request body (per spec) and
+// also includes credentials so the httpOnly cookie acts as a secondary fallback.
 
 let _accessToken = null
+let _refreshToken = null
 
 export function readTokens() {
-  return { accessToken: _accessToken, refreshToken: null }
+  return { accessToken: _accessToken, refreshToken: _refreshToken }
 }
 
-export function writeTokens({ accessToken }) {
-  if (accessToken !== undefined) {
-    _accessToken = accessToken || null
-  }
-  // refreshToken is intentionally ignored — it lives in the httpOnly cookie managed by the server.
+export function writeTokens({ accessToken, refreshToken }) {
+  if (accessToken !== undefined) _accessToken = accessToken || null
+  if (refreshToken !== undefined) _refreshToken = refreshToken || null
 }
 
 export function clearTokens() {
   _accessToken = null
+  _refreshToken = null
 }
 
 export function hasAccessToken() {

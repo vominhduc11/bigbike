@@ -67,13 +67,13 @@ export function stockStateLabel(stockState: string | null | undefined): string {
     case "IN_STOCK":
       return "Còn hàng";
     case "LOW_STOCK":
-      return "Sắp hết";
+      return "Sắp hết hàng";
     case "PREORDER":
       return "Đặt trước";
     case "OUT_OF_STOCK":
       return "Hết hàng";
     case "CONTACT_FOR_STOCK":
-      return "Liên hệ";
+      return "Liên hệ tồn kho";
     default:
       return "Đang cập nhật";
   }
@@ -83,14 +83,10 @@ export function orderStatusLabel(status: string | null | undefined): string {
   switch (status) {
     case "PENDING":
       return "Chờ xác nhận";
-    case "CONFIRMED":
-      return "Đã xác nhận";
+    case "ON_HOLD":
+      return "Tạm giữ";
     case "PROCESSING":
       return "Đang xử lý";
-    case "SHIPPED":
-      return "Đang giao";
-    case "DELIVERED":
-      return "Đã giao";
     case "COMPLETED":
       return "Hoàn thành";
     case "CANCELLED":
@@ -102,6 +98,10 @@ export function orderStatusLabel(status: string | null | undefined): string {
     default:
       return status ?? "Đang cập nhật";
   }
+}
+
+export function isValidVnPhone(phone: string): boolean {
+  return /^0[3-9]\d{8}$/.test(phone.trim());
 }
 
 export function paymentStatusLabel(status: string | null | undefined): string {

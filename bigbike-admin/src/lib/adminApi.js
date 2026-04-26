@@ -62,17 +62,18 @@ async function performTokenRefresh() {
   if (refreshInFlight) return refreshInFlight
   refreshInFlight = (async () => {
     try {
-      // Refresh token is in httpOnly cookie — send credentials, no body needed.
+      const { refreshToken } = readTokens()
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: { Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ refreshToken }),
       })
       if (!response.ok) return null
       const payload = await response.json().catch(() => null)
       const data = payload?.data
       if (!data?.accessToken) return null
-      writeTokens({ accessToken: data.accessToken })
+      writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
       return data.accessToken
     } catch {
       return null
@@ -186,21 +187,23 @@ export async function loginAdmin({ email, password }) {
   if (!data?.accessToken) {
     throw new ApiClientError('Login response missing access token.', 500, 'INVALID_LOGIN_RESPONSE')
   }
-  // Store only the access token in memory; refresh token is in the httpOnly cookie.
-  writeTokens({ accessToken: data.accessToken })
+  // Store both tokens in memory; refresh token is also set as httpOnly cookie by the server.
+  writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
   return { user: data.user }
 }
 
 export async function logoutAdmin() {
+  const { refreshToken } = readTokens()
   try {
-    // Server clears the httpOnly refresh cookie via Set-Cookie on this call.
+    // Send refreshToken in body per spec (LogoutRequest); credentials also clears the httpOnly cookie.
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
-      headers: { Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       credentials: 'include',
+      body: JSON.stringify({ refreshToken }),
     })
   } catch {
-    // Ignore network errors — still clear local access token below.
+    // Ignore network errors — still clear local tokens below.
   }
   clearTokens()
 }
@@ -685,7 +688,7 @@ export async function fetchOrders(query) {
   }
   try {
     const payload = await requestJson('/admin/orders', {
-      query: { page: query?.page, size: query?.pageSize, sort: query?.sort, q: query?.search, orderStatus: query?.orderStatus },
+      query: { page: query?.page, size: query?.pageSize, sort: query?.sort, q: query?.search, status: query?.orderStatus },
     })
     return withLiveData(parseListPayload(payload, normalizeOrder, Number(query?.pageSize) || 10))
   } catch (error) {
@@ -713,7 +716,7 @@ export async function updateOrderStatus(orderId, orderStatus) {
   assertMutationEnabled()
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
-    body: { orderStatus },
+    body: { status: orderStatus },
   })
   return parseDetailPayload(payload, normalizeOrder)
 }
@@ -931,7 +934,7 @@ export async function toggleRedirect(redirectId, isEnabled) {
   assertMutationEnabled()
   const payload = await requestJson(`/admin/redirects/${redirectId}/enabled`, {
     method: 'PATCH',
-    body: { isEnabled },
+    body: { enabled: isEnabled },
   })
   return parseDetailPayload(payload, normalizeRedirect)
 }

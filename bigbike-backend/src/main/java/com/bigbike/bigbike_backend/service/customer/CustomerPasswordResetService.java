@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerPasswordR
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerPasswordResetTokenJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,14 +15,12 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
 
 @Service
 public class CustomerPasswordResetService {
@@ -35,8 +34,7 @@ public class CustomerPasswordResetService {
     private final CustomerPasswordResetTokenJpaRepository tokenRepo;
     private final PasswordService passwordService;
     private final CustomerSessionService sessionService;
-    private final JavaMailSender mailSender;
-    private final String fromAddress;
+    private final EmailDispatchService emailDispatch;
     private final String resetBaseUrl;
 
     public CustomerPasswordResetService(
@@ -44,16 +42,13 @@ public class CustomerPasswordResetService {
             CustomerPasswordResetTokenJpaRepository tokenRepo,
             PasswordService passwordService,
             CustomerSessionService sessionService,
-            Optional<JavaMailSender> mailSender,
-            @Value("${bigbike.mail.from:no-reply@bigbike.vn}") String fromAddress,
-            @Value("${bigbike.mail.reset-base-url:https://bigbike.vn/quen-mat-khau}") String resetBaseUrl
-    ) {
+            EmailDispatchService emailDispatch,
+            @Value("${bigbike.mail.reset-base-url:https://bigbike.vn/quen-mat-khau}") String resetBaseUrl) {
         this.customerRepo = customerRepo;
         this.tokenRepo = tokenRepo;
         this.passwordService = passwordService;
         this.sessionService = sessionService;
-        this.mailSender = mailSender.orElse(null);
-        this.fromAddress = fromAddress;
+        this.emailDispatch = emailDispatch;
         this.resetBaseUrl = resetBaseUrl;
     }
 
@@ -84,26 +79,20 @@ public class CustomerPasswordResetService {
         token.setCreatedAt(now);
         tokenRepo.save(token);
 
-        if (mailSender == null) {
-            log.info("No JavaMailSender configured - password reset email skipped for customer {}", customer.getId());
+        if (!emailDispatch.isEnabled()) {
+            log.info("Mail not configured — password reset email skipped for customer {}", customer.getId());
             return;
         }
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
-            message.setTo(customer.getEmail());
-            message.setSubject("Dat lai mat khau BigBike");
-            message.setText(
-                    "Xin chao " + safeDisplayName(customer) + ",\n\n"
-                    + "Ban da yeu cau dat lai mat khau. Bam vao lien ket sau trong 60 phut:\n\n"
-                    + resetBaseUrl + "?token=" + rawToken + "\n\n"
-                    + "Neu ban khong yeu cau thao tac nay, hay bo qua email nay.\n"
-            );
-            mailSender.send(message);
-        } catch (Exception e) {
-            log.warn("Failed to send password reset email to customer {}: {}", customer.getId(), e.getMessage());
-        }
+        Context ctx = new Context();
+        ctx.setVariable("displayName", safeDisplayName(customer));
+        ctx.setVariable("resetUrl", resetBaseUrl + "?token=" + rawToken);
+
+        emailDispatch.send(
+                customer.getEmail(),
+                "Đặt lại mật khẩu BigBike",
+                "password-reset",
+                ctx);
     }
 
     @Transactional
@@ -138,7 +127,31 @@ public class CustomerPasswordResetService {
         sessionService.revokeAllSessions(customer.getId());
 
         log.info("Password reset completed for customer {} from {}", customer.getId(), ipAddress);
+
+        sendPasswordChangeAlert(customer);
     }
+
+    // ── Security alert ────────────────────────────────────────────────────────
+
+    private void sendPasswordChangeAlert(CustomerEntity customer) {
+        if (customer.getEmail() == null || customer.getEmail().isBlank()) return;
+        if (!emailDispatch.isEnabled()) return;
+
+        String accountLogin = customer.getEmail() != null ? customer.getEmail()
+                : (customer.getPhone() != null ? customer.getPhone() : "—");
+
+        Context ctx = new Context();
+        ctx.setVariable("displayName", safeDisplayName(customer));
+        ctx.setVariable("accountLogin", accountLogin);
+
+        emailDispatch.send(
+                customer.getEmail(),
+                "[BigBike] Mật khẩu của bạn vừa được thay đổi",
+                "password-change-alert",
+                ctx);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private CustomerEntity findByLogin(String login) {
         if (login == null || login.isBlank()) {
@@ -150,14 +163,14 @@ public class CustomerPasswordResetService {
         return customerRepo.findByPhone(login).orElse(null);
     }
 
-    private String safeDisplayName(CustomerEntity customer) {
+    private static String safeDisplayName(CustomerEntity customer) {
         if (customer.getDisplayName() != null && !customer.getDisplayName().isBlank()) {
             return customer.getDisplayName();
         }
         if (customer.getEmail() != null && !customer.getEmail().isBlank()) {
             return customer.getEmail();
         }
-        return "ban";
+        return "bạn";
     }
 
     private static String generateRawToken() {

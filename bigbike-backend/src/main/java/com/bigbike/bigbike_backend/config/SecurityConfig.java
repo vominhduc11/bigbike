@@ -78,9 +78,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
-                        // OpenAPI docs
-                        .requestMatchers(HttpMethod.GET, "/v3/api-docs").permitAll()
-                        .requestMatchers("/swagger-ui/**").permitAll()
+                        // OpenAPI docs — available in dev/test only (controller is @Profile("!prod"))
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs").hasRole("ADMIN")
+                        .requestMatchers("/swagger-ui/**").hasRole("ADMIN")
                         // Public settings and menus
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
@@ -89,6 +89,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
                         // Contact form — public, no auth required
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
+                        // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor
+                        .requestMatchers("/ws/**").permitAll()
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // Shipping admin — covered by /api/v1/admin/** above but listed for clarity

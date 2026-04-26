@@ -13,6 +13,12 @@ type ProductGalleryProps = {
 
 const THUMB_VISIBLE = 4;
 
+function clampStripStart(idx: number, current: number): number {
+  if (idx < current) return idx;
+  if (idx >= current + THUMB_VISIBLE) return idx - THUMB_VISIBLE + 1;
+  return current;
+}
+
 export function ProductGallery({ mainImage, gallery, altFallback, variantImage }: ProductGalleryProps) {
   const allImages: ImageAsset[] = [
     ...(mainImage ? [mainImage] : []),
@@ -23,21 +29,20 @@ export function ProductGallery({ mainImage, gallery, altFallback, variantImage }
   const [stripStart, setStripStart] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // When variant image changes, jump to it in the gallery (or show it as override)
-  useEffect(() => {
-    if (!variantImage?.url) return;
-    const idx = allImages.findIndex((img) => img.url === variantImage.url);
-    if (idx !== -1) {
-      setSelectedIndex(idx);
-      setStripStart((s) => {
-        if (idx < s) return idx;
-        if (idx >= s + THUMB_VISIBLE) return idx - THUMB_VISIBLE + 1;
-        return s;
-      });
+  // Track previous variantImage URL to detect changes and adjust strip during render.
+  // React docs recommend this setState-during-render pattern over useEffect for
+  // derived state adjustments: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevVariantUrl, setPrevVariantUrl] = useState(variantImage?.url);
+  if (variantImage?.url !== prevVariantUrl) {
+    setPrevVariantUrl(variantImage?.url);
+    if (variantImage?.url) {
+      const idx = allImages.findIndex((img) => img.url === variantImage.url);
+      if (idx !== -1) {
+        setSelectedIndex(idx);
+        setStripStart((s) => clampStripStart(idx, s));
+      }
     }
-    // If variant image is not in gallery at all, selectedImage fallback below handles it
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variantImage?.url]);
+  }
 
   const count = allImages.length;
   // If variant has an image not in the gallery, display it directly in the main slot

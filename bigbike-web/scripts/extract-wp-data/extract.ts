@@ -15,11 +15,11 @@ import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 
 const DB = {
-  host: "127.0.0.1",
-  port: 3307,
-  user: "etl_user",
-  password: "etl_pass",
-  database: "bigbike_wp",
+  host: process.env.ETL_DB_HOST ?? "127.0.0.1",
+  port: Number(process.env.ETL_DB_PORT ?? "3307"),
+  user: process.env.ETL_DB_USER ?? "etl_user",
+  password: process.env.ETL_DB_PASSWORD ?? "etl_pass",
+  database: process.env.ETL_DB_NAME ?? "bigbike_wp",
   charset: "utf8mb4",
 };
 

@@ -3,6 +3,7 @@ import type { Product } from "@/lib/contracts/public";
 import { formatVnd, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
 
 type ProductCardProps = {
   product: Product;
@@ -27,7 +28,13 @@ export function ProductCard({ product }: ProductCardProps) {
   );
 
   return (
-    <Link href={toProductPath(product.slug)} className="wp-product-card">
+    <article className="wp-product-card">
+      <Link
+        href={toProductPath(product.slug)}
+        className="wp-product-card-link"
+        aria-label={`Xem ${name}`}
+        tabIndex={0}
+      />
       <div className="wp-product-image">
         {isSale && <span className="wp-product-tag">Sale</span>}
         <MediaImage
@@ -36,7 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
           width={480}
           height={480}
         />
-        <span className="wp-product-addbar">Xem chi tiết</span>
+        <ProductCardAddBar productId={product.id} />
       </div>
 
       <div className="wp-product-body">
@@ -49,14 +56,14 @@ export function ProductCard({ product }: ProductCardProps) {
               {compare && compare > current ? <s>{formatVnd(compare)}</s> : null}
             </>
           ) : (
-            <b style={{ fontSize: 13 }}>Liên hệ</b>
+            <b>Liên hệ</b>
           )}
         </div>
         <span className={`wp-stock-badge ${stockLabel.className}`}>
           {stockLabel.label}
         </span>
       </div>
-    </Link>
+    </article>
   );
 }
 

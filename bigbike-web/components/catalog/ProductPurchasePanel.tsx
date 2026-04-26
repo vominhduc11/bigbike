@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { addCartItem, fetchCheckoutOptions, submitQuickBuy } from "@/lib/api/client-api";
+import { fetchCheckoutOptions, submitQuickBuy } from "@/lib/api/client-api";
+import { useCart } from "@/lib/cart-context";
 import type { CheckoutAddress, CheckoutOptions, QuickBuyPayload } from "@/lib/contracts/commerce";
 import type { ImageAsset, Product, ProductVariant } from "@/lib/contracts/public";
 import { formatVnd, safeText, stockStateLabel } from "@/lib/utils/format";
-import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
+import { toOrderConfirmPath } from "@/lib/utils/routes";
 
 type ProductPurchasePanelProps = {
   product: Product;
@@ -53,6 +55,7 @@ function IconClose() {
 
 export function ProductPurchasePanel({ product, onVariantImageChange }: ProductPurchasePanelProps) {
   const router = useRouter();
+  const { addToCart } = useCart();
   const variants = product.variants ?? [];
   const defaultVariantId =
     variants.find((v) => v.isAvailable)?.id ?? variants[0]?.id ?? "";
@@ -114,13 +117,13 @@ export function ProductPurchasePanel({ product, onVariantImageChange }: ProductP
   const optionGroups = buildVariantOptionGroups(variants);
   const selectedOptions = getVariantSelection(selectedVariant);
   const selectedAvailability = selectedVariant?.isAvailable ?? variants.length === 0;
+  const stockState = selectedVariant?.stockState ?? product.stockState;
 
   async function handleAddToCart() {
     setAddToCartLoading(true);
     setAddToCartError("");
     try {
-      await addCartItem(product.id, quantity, selectedVariantId || undefined);
-      router.push(toCartPath());
+      await addToCart(product.id, quantity, selectedVariantId || undefined);
     } catch (error) {
       setAddToCartError(error instanceof Error ? error.message : "Không thể thêm vào giỏ hàng.");
     } finally {
@@ -178,10 +181,9 @@ export function ProductPurchasePanel({ product, onVariantImageChange }: ProductP
     <div>
       {/* Price + Stock — same row */}
       {(() => {
-        const stockState = selectedVariant?.stockState ?? product.stockState;
         const available = selectedVariant
           ? selectedAvailability
-          : (product.stockState !== "OUT_OF_STOCK" && product.stockState !== "CONTACT_FOR_STOCK");
+          : (stockState !== "OUT_OF_STOCK" && stockState !== "CONTACT_FOR_STOCK");
         return (
           <div className="wp-pdp-price-row">
             <div className="wp-pdp-price">
@@ -275,19 +277,23 @@ export function ProductPurchasePanel({ product, onVariantImageChange }: ProductP
 
       {/* Action buttons */}
       <div className="wp-pdp-actions">
-        <button
-          type="button"
-          className="wp-btn-primary"
-          onClick={handleAddToCart}
-          disabled={addToCartLoading || !selectedAvailability}
-        >
-          {addToCartLoading ? "Đang thêm..." : selectedAvailability ? "Thêm vào giỏ" : "Tạm hết hàng"}
-        </button>
+        {stockState === "CONTACT_FOR_STOCK" ? (
+          <Link href="/lien-he/" className="wp-btn-primary">Liên hệ tư vấn</Link>
+        ) : (
+          <button
+            type="button"
+            className="wp-btn-primary"
+            onClick={handleAddToCart}
+            disabled={addToCartLoading || !selectedAvailability}
+          >
+            {addToCartLoading ? "Đang thêm..." : selectedAvailability ? "Thêm vào giỏ" : "Tạm hết hàng"}
+          </button>
+        )}
         <button
           type="button"
           className="wp-btn-secondary"
           onClick={() => setQuickBuyOpen(true)}
-          disabled={!selectedAvailability}
+          disabled={!selectedAvailability || stockState === "CONTACT_FOR_STOCK"}
         >
           Mua ngay
         </button>
@@ -327,7 +333,7 @@ export function ProductPurchasePanel({ product, onVariantImageChange }: ProductP
                   </div>
                   <div className="wp-field">
                     <label>Số điện thoại <span className="req">*</span></label>
-                    <input className="wp-input" required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={address.phone} onChange={(e) => updateAddressField("phone", e.target.value)} />
+                    <input className="wp-input" required type="tel" inputMode="numeric" pattern="0[3-9][0-9]{8}" maxLength={10} value={address.phone} onChange={(e) => updateAddressField("phone", e.target.value)} />
                   </div>
                   <div className="wp-field">
                     <label>Email</label>

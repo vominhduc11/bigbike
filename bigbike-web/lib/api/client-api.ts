@@ -69,7 +69,7 @@ export function removeCartItem(itemId: string): Promise<Cart> {
 }
 
 export function clearCart(): Promise<Cart> {
-  return clientRequest("DELETE", "/api/v1/cart");
+  return clientRequest("DELETE", "/api/v1/cart/clear");
 }
 
 export function applyCoupon(code: string): Promise<Cart> {
@@ -102,11 +102,11 @@ export function loginCustomer(login: string, password: string): Promise<Customer
 
 export function registerCustomer(
   email: string,
-  phone: string,
   password: string,
-  displayName: string,
+  firstName: string,
+  lastName?: string,
 ): Promise<CustomerAuthData> {
-  return clientRequest("POST", "/api/v1/customer/auth/register", { email, phone, password, displayName });
+  return clientRequest("POST", "/api/v1/customer/auth/register", { email, password, firstName, lastName });
 }
 
 export function logoutCustomer(): Promise<void> {

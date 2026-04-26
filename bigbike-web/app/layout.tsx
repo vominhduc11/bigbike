@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { CartProvider } from "@/lib/cart-context";
 
 const bungee = localFont({
   src: "../public/fonts/Bungee-Regular.ttf",
@@ -38,9 +39,6 @@ export const metadata: Metadata = {
   },
   description:
     "BigBike — chuyên đồ bảo hộ biker, gear touring, mũ bảo hiểm, áo giáp, găng tay và phụ kiện rider chính hãng.",
-  alternates: {
-    canonical: "https://bigbike.vn/",
-  },
 };
 
 export const viewport: Viewport = {
@@ -86,9 +84,11 @@ export default function RootLayout({
             />
           </noscript>
         )}
-        <SiteHeader />
-        <main className="bb-main">{children}</main>
-        <SiteFooter />
+        <CartProvider>
+          <SiteHeader />
+          <main className="bb-main">{children}</main>
+          <SiteFooter />
+        </CartProvider>
       </body>
     </html>
   );

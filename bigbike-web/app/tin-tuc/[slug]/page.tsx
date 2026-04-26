@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
     description: article.seo?.description ?? article.excerpt ?? "Chi tiết bài viết BigBike.",
     canonicalPath: article.seo?.canonicalUrl ?? toArticlePath(article.slug),
     noIndex: article.seo?.noIndex ?? false,
+    ogImage: article.coverImage?.url ?? undefined,
   });
 }
 

@@ -40,11 +40,15 @@ bigbike/
 ├── BIGBIKE_BRANDGUIDELINE.pdf # Brand identity reference (PDF)
 ├── README.md                  # Project overview
 ├── docker-compose.yaml        # Full stack infrastructure
+├── docs/                      # Architecture decision records
+│   └── DECISIONS.md           # Recorded architecture / product decisions
 ├── bigbike-web/               # Public SEO + sales website (Next.js)
 ├── bigbike-admin/             # Internal admin dashboard (Vite + React)
 ├── bigbike-backend/           # Spring Boot backend
-├── ui_kits/website/           # Click-through prototype — design reference cho bigbike-web
-└── preview/                   # Design system visual previews (brand, tokens, components)
+├── Bigbike Design System/     # Brand assets, CSS tokens, fonts, UI kit
+│   ├── ui_kits/website/       # Click-through prototype — design reference cho bigbike-web
+│   └── preview/               # Design system visual previews (brand, tokens, components)
+└── bigbike_vn__2026_04_17/    # Local-only legacy WordPress export (do not commit)
 ```
 
 Primary product domain:
@@ -89,6 +93,8 @@ BIGBIKE_BRANDGUIDELINE.pdf               # PDF gốc 23 trang — không đọc 
 ### 3.2 For `bigbike-web` changes
 
 ```text
+bigbike-web/AGENTS.md                    # Next.js version-specific agent rules — read before any code change
+bigbike-web/STYLEGUIDE.md               # Condensed brand + UI rules for bigbike-web
 Bigbike Design System/README.md          # Brand rules, copy, visual foundations
 Bigbike Design System/colors_and_type.css
 Bigbike Design System/ui_kits/website/   # Click-through prototype — design reference cho public website
@@ -168,8 +174,10 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 | Brand assets (logos, icons, fonts, favicons) | `Bigbike Design System/assets/` + `Bigbike Design System/fonts/` |
 | Web UI design reference | `Bigbike Design System/ui_kits/website/` |
 | Visual design previews | `Bigbike Design System/preview/` |
+| bigbike-web UI rules (condensed) | `bigbike-web/STYLEGUIDE.md` |
 | Backend API contract | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 | Backend phase implementation reports | `bigbike-backend/docs/` |
+| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` |
 | SEO redirect map | `bigbike-web/docs/` |
 | Legacy WordPress data and migration reference | `bigbike_vn__2026_04_17/` (local-only) |
 
@@ -890,12 +898,15 @@ Do not claim imaginary test results. The CI gods are petty and they keep receipt
 
 ```text
 AGENTS.md
+bigbike-web/AGENTS.md
+bigbike-web/STYLEGUIDE.md
 Bigbike Design System/README.md
 Bigbike Design System/colors_and_type.css
 Bigbike Design System/ui_kits/website/
 Bigbike Design System/preview/
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
+docs/DECISIONS.md
 ```
 
 ### Admin change
@@ -916,6 +927,7 @@ bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
 bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
 bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+docs/DECISIONS.md
 ```
 
 ### Legacy migration change

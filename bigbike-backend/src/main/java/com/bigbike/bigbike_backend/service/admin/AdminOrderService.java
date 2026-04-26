@@ -27,7 +27,10 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLi
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
+import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
+import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -79,6 +82,8 @@ public class AdminOrderService {
     private final PaymentJpaRepository paymentRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
+    private final OrderNotificationService orderNotificationService;
+    private final AdminOrderWsService adminOrderWsService;
 
     public AdminOrderService(
             OrderJpaRepository orderRepo,
@@ -88,7 +93,9 @@ public class AdminOrderService {
             OrderNoteJpaRepository noteRepo,
             PaymentJpaRepository paymentRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            PaginationService paginationService,
+            OrderNotificationService orderNotificationService,
+            AdminOrderWsService adminOrderWsService
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
@@ -98,6 +105,8 @@ public class AdminOrderService {
         this.paymentRepo = paymentRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
+        this.orderNotificationService = orderNotificationService;
+        this.adminOrderWsService = adminOrderWsService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -214,6 +223,12 @@ public class AdminOrderService {
         auditLogRepo.save(buildAudit(adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"status\":\"" + beforeStatus + "\"}",
                 "{\"status\":\"" + newStatus + "\"}", now));
+
+        // Email customer when status is customer-visible
+        String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
+                ? req.note() : null;
+        orderNotificationService.sendOrderStatusUpdate(order, newStatus, customerNote);
+        adminOrderWsService.pushEvent(buildStatusChangedEvent(order, newStatus));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
@@ -457,5 +472,21 @@ public class AdminOrderService {
 
     private static boolean matchesQ(String field, String qLower) {
         return field != null && field.toLowerCase(Locale.ROOT).contains(qLower);
+    }
+
+    private static OrderWsEvent buildStatusChangedEvent(OrderEntity order, String newStatus) {
+        String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()
+                ? order.getCustomerEmail()
+                : (order.getCustomerPhone() != null ? order.getCustomerPhone() : "Khách hàng");
+        return new OrderWsEvent(
+                "ORDER_STATUS_CHANGED",
+                order.getId(),
+                order.getOrderNumber(),
+                customerName,
+                order.getTotalAmount(),
+                newStatus,
+                order.getPaymentStatus(),
+                Instant.now()
+        );
     }
 }

@@ -21,7 +21,7 @@ export async function generateMetadata({ searchParams }: BrandListPageProps): Pr
 
   return buildPublicMetadata({
     title: "Thương hiệu",
-    description: "Danh sách thương hiệu theo route /brands/.",
+    description: "Khám phá tất cả thương hiệu đồ bảo hộ biker tại BigBike — mũ bảo hiểm, áo giáp, găng tay và phụ kiện rider chính hãng.",
     canonicalPath: toBrandListPath(),
     noIndex: hasQueryVariant,
   });
@@ -66,7 +66,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
         <header>
           <p className="bb-kicker">Brand</p>
           <h1>Thương hiệu</h1>
-          <p className="bb-page-subtitle">Route legacy dang duoc preserve la /brands/{'{slug}'}.</p>
+          <p className="bb-page-subtitle">Tất cả thương hiệu đồ bảo hộ biker tại BigBike.</p>
         </header>
 
         {result.error && result.data.length === 0 ? (

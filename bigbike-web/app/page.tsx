@@ -198,7 +198,7 @@ function WpExperienceSlide({ article }: { article: Article }) {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(135deg, #1a0000, #3a0000)",
+            background: "linear-gradient(135deg, #c00, #8b0000)",
           }}
         />
       )}
@@ -230,7 +230,7 @@ function WpNewsCard({ article }: { article: Article }) {
             sizes="(max-width: 600px) 100vw, 33vw"
           />
         ) : (
-          <div style={{ width: "100%", height: "100%", background: "#e8e8e8" }} />
+          <div style={{ width: "100%", height: "100%", background: "var(--bb-bg-surface-raised)" }} />
         )}
         <span className="wp-news-date">{dateStr}</span>
       </div>

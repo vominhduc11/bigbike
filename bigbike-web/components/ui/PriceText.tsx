@@ -8,7 +8,7 @@ type PriceTextProps = {
 
 export function PriceText({ price, className }: PriceTextProps) {
   if (!price) {
-    return <p className={className ?? "bb-price"}>Lien he</p>;
+    return <p className={className ?? "bb-price"}>Liên hệ</p>;
   }
 
   const retailPrice = Number.isFinite(price.retailPrice) ? price.retailPrice : null;

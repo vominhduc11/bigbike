@@ -1,3 +1,5 @@
+import type { ImageAsset } from "@/lib/contracts/public"
+
 export type CartItem = {
   id: string
   productId: string | null
@@ -5,6 +7,7 @@ export type CartItem = {
   sku: string | null
   productName: string
   variantName: string | null
+  image?: ImageAsset | null
   quantity: number
   unitPrice: number
   lineSubtotal: number
@@ -54,9 +57,9 @@ export type QuickBuyPayload = {
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  shippingMethodId?: string | null
+  shippingMethod?: string | null
   paymentMethod: string
-  customerNote?: string
+  notes?: string
 }
 
 export type PaymentMethodOption = {

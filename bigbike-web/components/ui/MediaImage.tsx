@@ -37,7 +37,6 @@ export function MediaImage({
       width={image?.width ?? width}
       height={image?.height ?? height}
       className={className}
-      unoptimized
       priority={priority}
     />
   );

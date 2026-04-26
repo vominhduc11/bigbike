@@ -11,7 +11,7 @@ function AccountOverview() {
     <>
       <div className="wp-account-header">
         <div>
-          <h2>Tổng quan</h2>
+          <h1>Tài khoản của tôi</h1>
           <p className="sub">Xin chào, {profile.displayName ?? profile.email}</p>
         </div>
       </div>

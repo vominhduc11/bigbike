@@ -1,21 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { fetchCart } from "@/lib/api/client-api";
+import { useCart } from "@/lib/cart-context";
 import { toCartPath } from "@/lib/utils/routes";
 
 export function CartIcon() {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchCart()
-      .then((cart) => {
-        const total = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-        setCount(total);
-      })
-      .catch(() => setCount(null));
-  }, []);
+  const { cartCount } = useCart();
 
   return (
     <Link href={toCartPath()} className="bb-cart-icon-link" aria-label="Giỏ hàng">
@@ -35,8 +25,8 @@ export function CartIcon() {
         <circle cx="20" cy="21" r="1" />
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
-      {count !== null && (
-        <span className="bb-cart-badge">{count > 99 ? "99+" : count}</span>
+      {cartCount !== null && cartCount > 0 && (
+        <span className="bb-cart-badge">{cartCount > 99 ? "99+" : cartCount}</span>
       )}
     </Link>
   );

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminShell } from './components/AdminShell'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { OrderNotificationToast } from './components/OrderNotificationToast'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
+import { readTokens } from './lib/authStorage'
+import { connectAdminWs, disconnectAdminWs } from './lib/adminWebSocket'
 import { LoginScreen } from './screens/LoginScreen'
 // fetchCurrentAdminUser is now owned by AuthProvider — no direct import here.
 import { BrandDetailScreen } from './screens/BrandDetailScreen'
@@ -171,6 +174,12 @@ function AdminApp() {
     )
   }
 
+  // Connect WebSocket once authenticated; disconnect on logout
+  useEffect(() => {
+    connectAdminWs(() => readTokens().accessToken)
+    return () => disconnectAdminWs()
+  }, [])
+
   const permissions = new Set(authState.user.permissions || [])
   const hasPermission = (permission) => permissions.has('*') || permissions.has(permission)
   const visibleNav = NAV_ITEMS.filter((item) => hasPermission(item.permission))
@@ -257,6 +266,7 @@ function AdminApp() {
   return (
     <AdminShell navItems={visibleNav} activePath={activePath} navigate={navigate} user={authState.user} authMode={authState.mode}>
       {screen}
+      <OrderNotificationToast navigate={navigate} />
     </AdminShell>
   )
 }

@@ -231,7 +231,9 @@ export function SearchToggle() {
               <span className="wp-search-hint">
                 Hoặc{" "}
                 <a
-                  onClick={() => {
+                  href={toProductListPath()}
+                  onClick={(e) => {
+                    e.preventDefault();
                     setOpen(false);
                     router.push(toProductListPath());
                   }}

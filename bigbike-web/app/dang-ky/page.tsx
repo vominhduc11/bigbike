@@ -10,8 +10,8 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -24,14 +24,14 @@ export default function RegisterPage() {
       setError("Mật khẩu xác nhận không khớp.");
       return;
     }
-    if (password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+    if (password.length < 8) {
+      setError("Mật khẩu phải có ít nhất 8 ký tự.");
       return;
     }
     setError("");
     setSubmitting(true);
     try {
-      await registerCustomer(email, phone, password, displayName);
+      await registerCustomer(email, password, firstName, lastName || undefined);
       setRegistered(true);
     } catch (e: unknown) {
       setError((e as Error).message);
@@ -46,7 +46,11 @@ export default function RegisterPage() {
         <div className="bb-container">
           <div className="bb-auth-wrap">
             <div className="bb-card bb-card-padded" style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 48, marginBottom: "var(--bb-space-4)" }}>✓</div>
+              <div style={{ marginBottom: "var(--bb-space-4)", display: "flex", justifyContent: "center" }}>
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--bb-brand-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
               <h1 style={{ fontSize: "clamp(1.25rem, 3vw, 1.75rem)", marginBottom: "var(--bb-space-3)" }}>
                 Tài khoản đã được tạo!
               </h1>
@@ -86,23 +90,23 @@ export default function RegisterPage() {
 
             <form onSubmit={handleSubmit} className="bb-form-stack">
               <label className="bb-form-label">
-                Họ tên
-                <input className="bb-input" required autoComplete="name" placeholder="Nguyen Van A" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                Tên <span style={{ color: "var(--bb-error, red)" }}>*</span>
+                <input className="bb-input" required autoComplete="given-name" placeholder="Văn A" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               </label>
               <label className="bb-form-label">
-                Email
+                Họ
+                <input className="bb-input" autoComplete="family-name" placeholder="Nguyễn" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </label>
+              <label className="bb-form-label">
+                Email <span style={{ color: "var(--bb-error, red)" }}>*</span>
                 <input className="bb-input" required type="email" autoComplete="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
               </label>
               <label className="bb-form-label">
-                Số điện thoại
-                <input className="bb-input" type="tel" autoComplete="tel" placeholder="0901234567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                Mật khẩu <span style={{ color: "var(--bb-error, red)" }}>*</span>
+                <input className="bb-input" required type="password" autoComplete="new-password" placeholder="Ít nhất 8 ký tự" value={password} onChange={(e) => setPassword(e.target.value)} />
               </label>
               <label className="bb-form-label">
-                Mật khẩu
-                <input className="bb-input" required type="password" autoComplete="new-password" placeholder="Ít nhất 6 ký tự" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </label>
-              <label className="bb-form-label">
-                Xác nhận mật khẩu
+                Xác nhận mật khẩu <span style={{ color: "var(--bb-error, red)" }}>*</span>
                 <input className="bb-input" required type="password" autoComplete="new-password" placeholder="Nhập lại mật khẩu" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
               </label>
               <button type="submit" className="bb-button bb-button-primary bb-btn-full" disabled={submitting}>

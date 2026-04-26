@@ -10,6 +10,7 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
+import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import {
@@ -82,6 +83,7 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
       Boolean(color) ||
       Boolean(minPrice) ||
       Boolean(maxPrice),
+    ogImage: brand.logo?.url ?? undefined,
   });
 }
 
@@ -172,6 +174,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
 
   const brand = brandResult.data;
   const canonicalPath = brand.seo?.canonicalUrl ?? toBrandPath(brand.slug);
+  const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
 
   const brandName = safeText(brand.name, "Thương hiệu");
   const pagination = productsResult.pagination;
@@ -187,6 +190,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       <div className="wp-breadcrumb">
         <Link href={toHomePath()}>Trang chủ</Link>
         <span className="sep">/</span>

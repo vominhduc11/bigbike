@@ -5,12 +5,16 @@ import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpdateMediaRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.MediaUrlProperties;
+import com.bigbike.bigbike_backend.config.MinioProperties;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class AdminMediaService {
@@ -27,19 +32,84 @@ public class AdminMediaService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "DELETED");
+    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "video/mp4");
+    private static final long MAX_UPLOAD_BYTES = 50L * 1024 * 1024; // 50 MB
 
     private final MediaJpaRepository mediaRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
+    private final MinioClient minioClient;
+    private final MinioProperties minioProperties;
+    private final MediaUrlProperties mediaUrlProperties;
 
     public AdminMediaService(
             MediaJpaRepository mediaRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            PaginationService paginationService,
+            MinioClient minioClient,
+            MinioProperties minioProperties,
+            MediaUrlProperties mediaUrlProperties
     ) {
         this.mediaRepo = mediaRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
+        this.minioClient = minioClient;
+        this.minioProperties = minioProperties;
+        this.mediaUrlProperties = mediaUrlProperties;
+    }
+
+    // ── Upload ────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public AdminMediaDetailResponse uploadMedia(MultipartFile file, String altText, UUID adminId) {
+        String mimeType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+        if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
+            throw ValidationException.fromField("file", "INVALID_MIME",
+                    "Unsupported file type: " + mimeType);
+        }
+        if (file.getSize() > MAX_UPLOAD_BYTES) {
+            throw ValidationException.fromField("file", "FILE_TOO_LARGE",
+                    "File exceeds 50 MB limit.");
+        }
+
+        String safeFilename = sanitizeFilename(file.getOriginalFilename());
+        String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
+        String bucket = minioProperties.getBucket();
+
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(objectKey)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(mimeType)
+                            .build());
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to upload file to storage: " + e.getMessage(), e);
+        }
+
+        String publicUrl = mediaUrlProperties.getPublicBaseUrl() + "/" + objectKey;
+
+        Instant now = Instant.now();
+        MediaEntity media = new MediaEntity();
+        media.setFilePath(objectKey);
+        media.setPublicUrl(publicUrl);
+        media.setStorageProvider("minio");
+        media.setBucket(bucket);
+        media.setMimeType(mimeType);
+        media.setFileSize(file.getSize());
+        media.setAltText(altText != null ? altText.strip() : null);
+        media.setTitle(safeFilename);
+        media.setStatus("ACTIVE");
+        media.setCreatedAt(now);
+        media.setUpdatedAt(now);
+        MediaEntity saved = mediaRepo.save(media);
+
+        auditLogRepo.save(buildAudit(adminId, "MEDIA_UPLOADED", saved.getId(), null,
+                "{\"filePath\":\"" + objectKey + "\",\"mimeType\":\"" + mimeType + "\"}"));
+
+        return toDetail(saved);
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -175,4 +245,10 @@ public class AdminMediaService {
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }
+
+    private static String sanitizeFilename(String original) {
+        if (original == null || original.isBlank()) return "upload";
+        String name = original.replaceAll("[^a-zA-Z0-9._-]", "_");
+        return name.length() > 200 ? name.substring(name.length() - 200) : name;
+    }
 }

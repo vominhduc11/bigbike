@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
+import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import {
@@ -85,6 +86,7 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       Boolean(color) ||
       Boolean(minPrice) ||
       Boolean(maxPrice),
+    ogImage: (category.image ?? category.icon)?.url ?? undefined,
   });
 }
 
@@ -180,6 +182,7 @@ export default async function CategoryDetailPage({
 
   const category = categoryResult.data;
   const canonicalPath = category.seo?.canonicalUrl ?? toCategoryPath(category.slug);
+  const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category));
 
   const categoryName = safeText(category.name, "Danh mục");
   const pagination = productsResult.pagination;
@@ -204,6 +207,7 @@ export default async function CategoryDetailPage({
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       {/* ── Category Hero ──────────────────────────────────────── */}
       <div className={`wp-cat-hero${heroImgSrc ? "" : " wp-cat-hero--no-img"}`}>
         {heroImgSrc && (

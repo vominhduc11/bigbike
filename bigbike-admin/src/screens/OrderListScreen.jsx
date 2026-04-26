@@ -4,26 +4,27 @@ import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchOrders } from '../lib/adminApi'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 
 const ORDER_STATUS_LABELS = {
   PENDING: 'Chờ xác nhận',
-  CONFIRMED: 'Đã xác nhận',
+  ON_HOLD: 'Tạm giữ',
   PROCESSING: 'Đang xử lý',
-  SHIPPED: 'Đang giao',
-  DELIVERED: 'Đã giao',
+  COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã huỷ',
+  FAILED: 'Thất bại',
   REFUNDED: 'Đã hoàn',
   UNKNOWN: 'Không rõ',
 }
 
 const STATUS_TONES = {
   PENDING: 'warning',
-  CONFIRMED: 'info',
+  ON_HOLD: 'warning',
   PROCESSING: 'info',
-  SHIPPED: 'info',
-  DELIVERED: 'success',
+  COMPLETED: 'success',
   CANCELLED: 'danger',
+  FAILED: 'danger',
   REFUNDED: 'neutral',
   UNKNOWN: 'neutral',
 }
@@ -44,6 +45,9 @@ const INITIAL_QUERY = {
 export function OrderListScreen({ navigate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  // Incremented by WS events to trigger a silent background refetch
+  const [wsRevision, setWsRevision] = useState(0)
+  const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
 
   useEffect(() => {
     let active = true
@@ -57,7 +61,17 @@ export function OrderListScreen({ navigate }) {
         setState({ status: 'error', items: [], pagination: null, warning: '', error: error.message })
       })
     return () => { active = false }
-  }, [query])
+  }, [query, wsRevision])
+
+  // Re-fetch silently when a new order or status change arrives — only on page 1 / no filters
+  // to avoid disrupting admins who are in the middle of filtering.
+  useEffect(() => {
+    if (!isFirstPage) return
+    const unsubscribe = subscribeAdminWs('/topic/admin/orders', () => {
+      setWsRevision((r) => r + 1)
+    })
+    return unsubscribe
+  }, [isFirstPage])
 
   const columns = useMemo(() => [
     {

@@ -34,6 +34,8 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderSh
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
+import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
+import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -67,6 +69,8 @@ public class CheckoutService {
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final CartCalculator cartCalculator;
+    private final OrderNotificationService orderNotificationService;
+    private final AdminOrderWsService adminOrderWsService;
 
     public CheckoutService(
             CartJpaRepository cartRepo,
@@ -81,7 +85,9 @@ public class CheckoutService {
             ProductVariantJpaRepository variantRepo,
             OrderNumberGenerator orderNumberGenerator,
             OrderKeyGenerator orderKeyGenerator,
-            CartCalculator cartCalculator
+            CartCalculator cartCalculator,
+            OrderNotificationService orderNotificationService,
+            AdminOrderWsService adminOrderWsService
     ) {
         this.cartRepo = cartRepo;
         this.orderRepo = orderRepo;
@@ -96,6 +102,8 @@ public class CheckoutService {
         this.orderNumberGenerator = orderNumberGenerator;
         this.orderKeyGenerator = orderKeyGenerator;
         this.cartCalculator = cartCalculator;
+        this.orderNotificationService = orderNotificationService;
+        this.adminOrderWsService = adminOrderWsService;
     }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
@@ -168,6 +176,10 @@ public class CheckoutService {
         cart.setStatus(CART_STATUS_CONVERTED);
         cart.setUpdatedAt(now);
         cartRepo.save(cart);
+
+        orderNotificationService.sendOrderConfirmation(savedOrder, req.paymentMethod());
+        orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
+        adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
         return toSummary(savedOrder, req.paymentMethod());
     }
@@ -245,6 +257,10 @@ public class CheckoutService {
         noteRepo.save(buildSystemNote(savedOrder,
                 "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
                 ". Sản phẩm: " + product.getName() + " x" + qty + ".", now));
+
+        orderNotificationService.sendOrderConfirmation(savedOrder, req.paymentMethod());
+        orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
+        adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
         return toSummary(savedOrder, req.paymentMethod());
     }
@@ -543,5 +559,21 @@ public class CheckoutService {
     private UUID tryParseUUID(String id) {
         if (id == null) return null;
         try { return UUID.fromString(id); } catch (IllegalArgumentException e) { return null; }
+    }
+
+    private OrderWsEvent buildNewOrderEvent(OrderEntity order, String paymentMethod) {
+        String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()
+                ? order.getCustomerEmail()
+                : (order.getCustomerPhone() != null ? order.getCustomerPhone() : "Khách hàng");
+        return new OrderWsEvent(
+                "NEW_ORDER",
+                order.getId(),
+                order.getOrderNumber(),
+                customerName,
+                order.getTotalAmount(),
+                order.getStatus(),
+                paymentMethod,
+                java.time.Instant.now()
+        );
     }
 }

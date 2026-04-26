@@ -623,7 +623,7 @@
 }
 
 .bb-richtext a:hover {
-  color: var(--bb-brand-hover);
+  color: var(--bb-brand-primary-hover);
 }
 
 .bb-richtext strong,

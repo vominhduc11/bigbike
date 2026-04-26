@@ -162,10 +162,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             <tbody>
               {order.items.map((item) => (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--c-border)' }}>
-                  <td style={{ padding: '0.5rem 0' }}>{item.productName}</td>
+                  <td style={{ padding: '0.5rem 0' }}>{formatText(item.productName)}</td>
                   <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{item.quantity}</td>
                   <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(item.unitPrice)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(item.subtotal)}</td>
+                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(item.lineTotal)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,9 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { addCartItem } from "@/lib/api/client-api";
-import { toCartPath } from "@/lib/utils/routes";
+import { useCart } from "@/lib/cart-context";
 
 type AddToCartButtonProps = {
   productId: string;
@@ -11,7 +9,7 @@ type AddToCartButtonProps = {
 };
 
 export function AddToCartButton({ productId, variantId }: AddToCartButtonProps) {
-  const router = useRouter();
+  const { addToCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,8 +17,7 @@ export function AddToCartButton({ productId, variantId }: AddToCartButtonProps) 
     setLoading(true);
     setError("");
     try {
-      await addCartItem(productId, 1, variantId ?? undefined);
-      router.push(toCartPath());
+      await addToCart(productId, 1, variantId ?? undefined);
     } catch (e: unknown) {
       setError((e as Error).message);
     } finally {
@@ -37,7 +34,7 @@ export function AddToCartButton({ productId, variantId }: AddToCartButtonProps) 
         onClick={handleAddToCart}
         disabled={loading}
       >
-        {loading ? "Đang thêm..." : "Thêm vào giỏ"}
+        {loading ? "Đang thêm..." : "THÊM VÀO GIỎ HÀNG"}
       </button>
       {error ? (
         <p className="bb-status-banner" style={{ marginTop: "var(--bb-space-3)" }}>

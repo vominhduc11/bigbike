@@ -22,13 +22,21 @@
   --admin-color-text-muted: #6b7280;
   --admin-color-text-inverse: #ffffff;
 
-  --admin-color-status-success-bg: #ecfdf3;
+  --admin-color-status-success-bg: #f0fdf4;
+  --admin-color-status-success-bg-subtle: #ecfdf3;
+  --admin-color-status-success-border: #bbf7d0;
   --admin-color-status-success-text: #166534;
   --admin-color-status-warning-bg: #fffbeb;
+  --admin-color-status-warning-border: #fde68a;
   --admin-color-status-warning-text: #92400e;
+  --admin-color-status-warning-orange-bg: #fff7ed;
+  --admin-color-status-warning-orange-border: #fdd7aa;
+  --admin-color-status-warning-orange-text: #9a3412;
   --admin-color-status-danger-bg: #fef2f2;
+  --admin-color-status-danger-border: #fecaca;
   --admin-color-status-danger-text: #991b1b;
   --admin-color-status-info-bg: #eff6ff;
+  --admin-color-status-info-border: #bfdbfe;
   --admin-color-status-info-text: #1d4ed8;
   --admin-color-status-neutral-bg: #f3f4f6;
   --admin-color-status-neutral-text: #374151;

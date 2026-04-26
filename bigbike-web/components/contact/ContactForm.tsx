@@ -21,6 +21,7 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
 
     if (!fullName) { setError("Vui lòng nhập họ tên."); return; }
     if (!phone) { setError("Vui lòng nhập số điện thoại."); return; }
+    if (!/^0[3-9]\d{8}$/.test(phone)) { setError("Số điện thoại không hợp lệ. Vui lòng nhập số VN 10 chữ số (ví dụ: 0901234567)."); return; }
     if (!content) { setError("Vui lòng nhập nội dung."); return; }
 
     setSaving(true);
@@ -59,7 +60,7 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
       <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Gửi tin nhắn</h2>
 
       {error && (
-        <div style={{ padding: "10px 14px", background: "rgba(249,6,6,0.08)", border: "1px solid rgba(249,6,6,0.25)", borderRadius: 6, marginBottom: "var(--bb-space-4)" }}>
+        <div style={{ padding: "10px 14px", background: "var(--bb-brand-primary-soft)", border: "1px solid var(--bb-brand-primary-border)", borderRadius: 6, marginBottom: "var(--bb-space-4)" }}>
           <p style={{ fontSize: "var(--bb-text-sm)", color: "rgba(255,255,255,0.85)", margin: 0 }}>{error}</p>
         </div>
       )}

@@ -7,6 +7,7 @@ import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { CartSkeleton } from "@/components/ui/Skeletons";
 
 function toGtmCartItems(items: CartItem[]) {
@@ -17,6 +18,20 @@ function toGtmCartItems(items: CartItem[]) {
     quantity: item.quantity,
     currency: "VND",
   }));
+}
+
+function CartItemThumb({ item }: { item: CartItem }) {
+  return (
+    <div className="wp-cart-item-thumb">
+      {item.image?.url ? (
+        <MediaImage image={item.image} altFallback={item.productName} width={144} height={144} />
+      ) : (
+        <span className="wp-thumb-initials">
+          {item.productName.slice(0, 2)}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function CartPage() {
@@ -165,11 +180,7 @@ export default function CartPage() {
                   style={{ opacity: mutating[item.id] ? 0.5 : 1 }}
                 >
                   <div className="wp-cart-item-prod">
-                    <div className="wp-cart-item-thumb">
-                      <span className="wp-thumb-initials" style={{ fontSize: 11 }}>
-                        {item.productName.slice(0, 2)}
-                      </span>
-                    </div>
+                    <CartItemThumb item={item} />
                     <div className="wp-cart-item-info">
                       <p className="wp-cart-item-name">{item.productName}</p>
                       {item.variantName && (

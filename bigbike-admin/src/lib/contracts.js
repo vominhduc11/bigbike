@@ -263,7 +263,7 @@ export function normalizeContentItem(input) {
 // ── Orders ──────────────────────────────────────────────────────────────────
 
 export const ORDER_STATUS_VALUES = [
-  'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED',
+  'PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED',
 ]
 export const PAYMENT_STATUS_VALUES = [
   'PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED',
@@ -294,7 +294,7 @@ function normalizeOrderItem(input) {
     sku: toTrimmedStringLocal(s.sku) || undefined,
     quantity: toIntegerLocal(s.quantity, 1),
     unitPrice: toIntegerLocal(s.unitPrice, 0),
-    subtotal: toIntegerLocal(s.subtotal, 0),
+    lineTotal: toIntegerLocal(s.lineTotal ?? s.subtotal, 0),
   }
 }
 

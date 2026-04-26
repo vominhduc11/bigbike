@@ -40,6 +40,18 @@ public class CartItemEntity {
     @Column(name = "variant_name", columnDefinition = "text")
     private String variantName;
 
+    private String productImageId;
+
+    @Column(columnDefinition = "text")
+    private String productImageUrl;
+
+    @Column(columnDefinition = "text")
+    private String productImageAlt;
+
+    private Integer productImageWidth;
+    private Integer productImageHeight;
+    private String productImageMimeType;
+
     @Column(nullable = false)
     private int quantity;
 
@@ -90,6 +102,24 @@ public class CartItemEntity {
 
     public String getVariantName() { return variantName; }
     public void setVariantName(String variantName) { this.variantName = variantName; }
+
+    public String getProductImageId() { return productImageId; }
+    public void setProductImageId(String productImageId) { this.productImageId = productImageId; }
+
+    public String getProductImageUrl() { return productImageUrl; }
+    public void setProductImageUrl(String productImageUrl) { this.productImageUrl = productImageUrl; }
+
+    public String getProductImageAlt() { return productImageAlt; }
+    public void setProductImageAlt(String productImageAlt) { this.productImageAlt = productImageAlt; }
+
+    public Integer getProductImageWidth() { return productImageWidth; }
+    public void setProductImageWidth(Integer productImageWidth) { this.productImageWidth = productImageWidth; }
+
+    public Integer getProductImageHeight() { return productImageHeight; }
+    public void setProductImageHeight(Integer productImageHeight) { this.productImageHeight = productImageHeight; }
+
+    public String getProductImageMimeType() { return productImageMimeType; }
+    public void setProductImageMimeType(String productImageMimeType) { this.productImageMimeType = productImageMimeType; }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }

@@ -132,6 +132,24 @@ const MEDIA_ORIGIN = (() => {
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
+  images: {
+    remotePatterns: [
+      // Production CDN — images proxied via /wp-content/uploads/ rewrite,
+      // but listed here so next/image can optimize any direct CDN URL.
+      {
+        protocol: "https",
+        hostname: "cdn.bigbike.vn",
+        pathname: "/uploads/**",
+      },
+      // MinIO dev — reachable at localhost:9000 during local development
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+        pathname: "/**",
+      },
+    ],
+  },
   async redirects() {
     return [
       // /home.html → / is a true redirect (home.html was the WP default page slug,

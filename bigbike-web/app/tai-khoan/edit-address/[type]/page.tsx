@@ -20,11 +20,12 @@ function EditAddressContent({ type }: { type: string }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    setLoading(true);
+    let ignore = false;
     fetchMyAddresses()
-      .then((all) => setAddresses(all.filter((a) => a.type === addressType)))
-      .catch(() => setError("Không tải được danh sách địa chỉ."))
-      .finally(() => setLoading(false));
+      .then((all) => { if (!ignore) setAddresses(all.filter((a) => a.type === addressType)); })
+      .catch(() => { if (!ignore) setError("Không tải được danh sách địa chỉ."); })
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
   }, [addressType]);
 
   function startAdd() {

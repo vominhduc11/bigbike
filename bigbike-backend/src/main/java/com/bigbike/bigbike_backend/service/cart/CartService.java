@@ -125,6 +125,7 @@ public class CartService {
             item = existing.get();
             item.setQuantity(item.getQuantity() + req.quantity());
             item.setUnitPrice(unitPrice);
+            applyImageSnapshot(item, product, variant);
         } else {
             item = new CartItemEntity();
             item.setCart(cart);
@@ -133,6 +134,7 @@ public class CartService {
             item.setSku(variant != null ? variant.getSku() : product.getSku());
             item.setProductName(product.getName());
             item.setVariantName(variant != null ? variant.getName() : null);
+            applyImageSnapshot(item, product, variant);
             item.setQuantity(req.quantity());
             item.setUnitPrice(unitPrice);
             item.setRegularPrice(product.getRetailPrice());
@@ -272,6 +274,38 @@ public class CartService {
         BigDecimal price = product.getSalePrice() != null
                 ? product.getSalePrice() : product.getRetailPrice();
         return price.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void applyImageSnapshot(CartItemEntity item, ProductEntity product, ProductVariantEntity variant) {
+        String imageUrl = variant != null && hasText(variant.getImageUrl())
+                ? variant.getImageUrl()
+                : product.getImageUrl();
+        String imageId = variant != null && hasText(variant.getImageId())
+                ? variant.getImageId()
+                : product.getImageId();
+        String imageAlt = variant != null && hasText(variant.getImageAlt())
+                ? variant.getImageAlt()
+                : product.getImageAlt();
+        Integer imageWidth = variant != null && variant.getImageWidth() != null
+                ? variant.getImageWidth()
+                : product.getImageWidth();
+        Integer imageHeight = variant != null && variant.getImageHeight() != null
+                ? variant.getImageHeight()
+                : product.getImageHeight();
+        String imageMimeType = variant != null && hasText(variant.getImageMimeType())
+                ? variant.getImageMimeType()
+                : product.getImageMimeType();
+
+        item.setProductImageId(imageId);
+        item.setProductImageUrl(imageUrl);
+        item.setProductImageAlt(imageAlt);
+        item.setProductImageWidth(imageWidth);
+        item.setProductImageHeight(imageHeight);
+        item.setProductImageMimeType(imageMimeType);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private boolean matchesProductVariant(CartItemEntity item, UUID productUuid, UUID variantUuid) {

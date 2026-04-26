@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEmailVeri
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerEmailVerificationTokenJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,15 +14,13 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
 
 /**
  * Issues and redeems email verification tokens. The raw token is only ever
@@ -37,21 +36,17 @@ public class EmailVerificationService {
 
     private final CustomerEmailVerificationTokenJpaRepository tokenRepo;
     private final CustomerJpaRepository customerRepo;
-    private final JavaMailSender mailSender;
-    private final String fromAddress;
+    private final EmailDispatchService emailDispatch;
     private final String verifyBaseUrl;
 
     public EmailVerificationService(
             CustomerEmailVerificationTokenJpaRepository tokenRepo,
             CustomerJpaRepository customerRepo,
-            Optional<JavaMailSender> mailSender,
-            @Value("${bigbike.mail.from:no-reply@bigbike.vn}") String fromAddress,
-            @Value("${bigbike.mail.verify-base-url:https://bigbike.vn/xac-nhan-email}") String verifyBaseUrl
-    ) {
+            EmailDispatchService emailDispatch,
+            @Value("${bigbike.mail.verify-base-url:https://bigbike.vn/xac-nhan-email}") String verifyBaseUrl) {
         this.tokenRepo = tokenRepo;
         this.customerRepo = customerRepo;
-        this.mailSender = mailSender.orElse(null);
-        this.fromAddress = fromAddress;
+        this.emailDispatch = emailDispatch;
         this.verifyBaseUrl = verifyBaseUrl;
     }
 
@@ -74,26 +69,22 @@ public class EmailVerificationService {
         entity.setCreatedAt(Instant.now());
         tokenRepo.save(entity);
 
-        if (mailSender == null) {
-            log.info("No JavaMailSender configured — verification email skipped for customer {}", customer.getId());
+        if (!emailDispatch.isEnabled()) {
+            log.info("Mail not configured — verification email skipped for customer {}", customer.getId());
             return;
         }
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
-            message.setTo(customer.getEmail());
-            message.setSubject("Xác nhận địa chỉ email của bạn — BigBike");
-            message.setText(
-                    "Xin chào " + (customer.getDisplayName() == null ? "" : customer.getDisplayName()) + ",\n\n"
-                    + "Vui lòng xác nhận email bằng cách bấm vào liên kết sau (có hiệu lực 24 giờ):\n\n"
-                    + verifyBaseUrl + "?token=" + rawToken + "\n\n"
-                    + "Nếu bạn không tạo tài khoản này, bạn có thể bỏ qua email này.\n"
-            );
-            mailSender.send(message);
-        } catch (Exception e) {
-            // NEVER log the raw token. Log the customer ID so ops can retry if needed.
-            log.warn("Failed to send verification email to customer {}: {}", customer.getId(), e.getMessage());
-        }
+
+        String verifyUrl = verifyBaseUrl + "?token=" + rawToken;
+
+        Context ctx = new Context();
+        ctx.setVariable("displayName", safeDisplayName(customer));
+        ctx.setVariable("verifyUrl", verifyUrl);
+
+        emailDispatch.send(
+                customer.getEmail(),
+                "Xác nhận địa chỉ email của bạn — BigBike",
+                "email-verification",
+                ctx);
     }
 
     /**
@@ -126,6 +117,16 @@ public class EmailVerificationService {
         token.setUsedAt(now);
         tokenRepo.save(token);
         return customer.getId();
+    }
+
+    private static String safeDisplayName(CustomerEntity customer) {
+        if (customer.getDisplayName() != null && !customer.getDisplayName().isBlank()) {
+            return customer.getDisplayName();
+        }
+        if (customer.getEmail() != null && !customer.getEmail().isBlank()) {
+            return customer.getEmail();
+        }
+        return "bạn";
     }
 
     private static String generateRawToken() {
