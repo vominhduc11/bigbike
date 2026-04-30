@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAdminUsers, updateAdminUser } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
+import { useDebounce } from '../lib/useDebounce'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20 }
 
 export function AdminUsersScreen({ canUpdate }) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState(INITIAL_QUERY)
+  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const debouncedSearch = useDebounce(searchInput, 250)
+  const isFirstSearchRender = useRef(true)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   const [editUser, setEditUser] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -24,9 +30,15 @@ export function AdminUsersScreen({ canUpdate }) {
     return () => { active = false }
   }, [query])
 
+  useEffect(() => {
+    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    setState((prev) => ({ ...prev, status: 'loading' }))
+    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+  }, [debouncedSearch])
+
   function openEdit(user) {
     setEditUser(user)
-    setEditForm({ displayName: user.displayName || '', status: user.status || '', newPassword: '' })
+    setEditForm({ displayName: user.displayName || '', status: user.status || '', role: user.role || '', newPassword: '' })
     setEditError('')
   }
 
@@ -35,44 +47,55 @@ export function AdminUsersScreen({ canUpdate }) {
     setEditSaving(true)
     setEditError('')
     try {
-      const payload = {}
-      if (editForm.displayName.trim()) payload.displayName = editForm.displayName.trim()
-      if (editForm.status.trim()) payload.status = editForm.status.trim()
-      if (editForm.newPassword.trim()) payload.newPassword = editForm.newPassword.trim()
+      const payload = {
+        displayName: editForm.displayName,
+        status: editForm.status.trim() || undefined,
+        role: editForm.role.trim() || undefined,
+        newPassword: editForm.newPassword.trim() || undefined,
+      }
       const r = await updateAdminUser(editUser.id, payload)
+      if (r.item.role !== editForm.role.trim() && editForm.role.trim()) {
+        setEditError(t('adminUsers.roleIgnored'))
+        setState((p) => ({ ...p, items: p.items.map((u) => u.id === editUser.id ? r.item : u) }))
+        return
+      }
       setState((p) => ({ ...p, items: p.items.map((u) => u.id === editUser.id ? r.item : u) }))
       setEditUser(null)
-    } catch (e) {
-      setEditError(e.message || 'Lỗi cập nhật')
+    } catch (err) {
+      setEditError(err.message || t('common.error'))
     } finally {
       setEditSaving(false)
     }
   }
 
   const columns = useMemo(() => [
-    { key: 'email', label: 'Email', render: (u) => u.email },
-    { key: 'displayName', label: 'Tên', render: (u) => u.displayName },
-    { key: 'role', label: 'Role', render: (u) => u.role || '—' },
-    { key: 'status', label: 'Trạng thái', render: (u) => <span style={{ color: u.status === 'ACTIVE' ? 'var(--c-success)' : 'var(--c-text-muted)' }}>{u.status}</span> },
-    { key: 'lastLoginAt', label: 'Đăng nhập cuối', render: (u) => formatDateTime(u.lastLoginAt) },
+    { key: 'email', label: t('adminUsers.colEmail'), render: (u) => u.email },
+    { key: 'displayName', label: t('adminUsers.formDisplayName'), render: (u) => u.displayName },
+    { key: 'role', label: t('adminUsers.colRole'), render: (u) => u.role || '—' },
+    { key: 'status', label: t('adminUsers.formStatus'), render: (u) => <span style={{ color: u.status === 'ACTIVE' ? 'var(--c-success)' : 'var(--c-text-muted)' }}>{u.status}</span> },
+    { key: 'lastLoginAt', label: t('common.lastUpdated'), render: (u) => formatDateTime(u.lastLoginAt) },
     canUpdate ? {
       key: 'actions', label: '', align: 'right',
-      render: (u) => <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => openEdit(u)}>Sửa</button>,
+      render: (u) => <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => openEdit(u)}>{t('common.edit')}</button>,
     } : null,
-  ].filter(Boolean), [canUpdate])
+  ].filter(Boolean), [canUpdate, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
     setState((p) => ({ ...p, status: 'loading' }))
-    setQuery((p) => ({ ...p, ...partial, page: options.resetPage ? 1 : p.page }))
+    setQuery((p) => {
+      const next = { ...p, ...partial }
+      if (options.resetPage) next.page = 1
+      return next
+    })
   }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Admin</p>
-          <h1>Admin Users</h1>
-          <p>Quản lý tài khoản quản trị viên.</p>
+          <p className="eyebrow">{t('adminUsers.eyebrow')}</p>
+          <h1>{t('adminUsers.title')}</h1>
+          <p>{t('adminUsers.description')}</p>
         </div>
       </header>
 
@@ -80,42 +103,48 @@ export function AdminUsersScreen({ canUpdate }) {
 
       {editUser && (
         <form onSubmit={handleEdit} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-primary)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Chỉnh sửa: <strong>{editUser.email}</strong></h3>
+          <h3 style={{ marginBottom: '1rem' }}>{t('adminUsers.editTitle', { name: editUser.email })}</h3>
           {editError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{editError}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <label>Tên hiển thị <input className="control-input" value={editForm.displayName} onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))} /></label>
-            <label>Trạng thái
+            <label>{t('adminUsers.formDisplayName')} <input className="control-input" value={editForm.displayName} onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))} /></label>
+            <label>{t('adminUsers.formStatus')}
               <select className="control-select" value={editForm.status} onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}>
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="DISABLED">DISABLED</option>
                 <option value="SUSPENDED">SUSPENDED</option>
               </select>
             </label>
-            <label>Mật khẩu mới <input className="control-input" type="password" value={editForm.newPassword} placeholder="Để trống = giữ nguyên" onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))} /></label>
+            <label>{t('adminUsers.colRole')}
+              <select className="control-select" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}>
+                {['SUPER_ADMIN','ADMIN','EDITOR','SHOP_MANAGER','AUTHOR','CONTRIBUTOR','SEO_EDITOR'].map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </label>
+            <label>{t('adminUsers.formPassword')} <input className="control-input" type="password" value={editForm.newPassword} placeholder={t('adminUsers.formPasswordHint')} onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))} /></label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => setEditUser(null)}>Huỷ</button>
+            <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('adminUsers.saveBtn')}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditUser(null)}>{t('common.cancel')}</button>
           </div>
         </form>
       )}
 
       <section className="filter-bar">
-        <label>Tìm kiếm
-          <input className="control-input" type="search" value={query.search}
-            onChange={(e) => updateQuery({ search: e.target.value }, { resetPage: true })} placeholder="Email hoặc tên" />
+        <label>{t('common.search')}
+          <input className="control-input" type="search" value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('adminUsers.searchPlaceholder')} />
         </label>
       </section>
 
-      {state.status === 'loading' && <StatePanel tone="info" title="Đang tải admin users" description="Vui lòng chờ..." />}
-      {state.status === 'error' && <StatePanel tone="danger" title="Lỗi" description={state.error} actionLabel="Thử lại" onAction={() => setQuery((p) => ({ ...p }))} />}
-      {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title="Không có kết quả" description="Không tìm thấy admin user nào." />}
-      {state.status === 'success' && state.items.length > 0 && (
+      {state.status === 'error' && <StatePanel tone="danger" title={t('adminUsers.error')} description={state.error} actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
+      {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title={t('adminUsers.empty')} description={t('adminUsers.emptyDesc')} />}
+      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
-          <AdminTable caption="Danh sách admin users" columns={columns} rows={state.items} />
-          <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />
+          <AdminTable caption={t('adminUsers.tableCaption')} columns={columns} rows={state.items} loading={state.status === 'loading'} pageSize={query.pageSize} />
+          {state.status === 'success' && <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />}
         </>
-      )}
+      ) : null}
     </section>
   )
 }

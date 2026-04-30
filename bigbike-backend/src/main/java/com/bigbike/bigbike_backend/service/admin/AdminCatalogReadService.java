@@ -46,7 +46,9 @@ public class AdminCatalogReadService {
             String q,
             String search,
             String publishStatus,
-            String stockState
+            String stockState,
+            String brandId,
+            String categoryId
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
@@ -55,6 +57,8 @@ public class AdminCatalogReadService {
                 .filter(product -> matchesPublishStatus(product, publishStatus))
                 .filter(product -> matchesStockState(product, stockState))
                 .filter(product -> matchesProductQuery(product, query))
+                .filter(product -> matchesBrandId(product, brandId))
+                .filter(product -> matchesCategoryId(product, categoryId))
                 .sorted(productComparator(sortSpec))
                 .toList();
 
@@ -145,6 +149,20 @@ public class AdminCatalogReadService {
             return isVisible;
         }
         return !isVisible;
+    }
+
+    private static boolean matchesBrandId(Product product, String brandId) {
+        if (brandId == null || brandId.isBlank()) return true;
+        return product.brand() != null && brandId.equals(product.brand().id());
+    }
+
+    private static boolean matchesCategoryId(Product product, String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) return true;
+        if (product.category() != null && categoryId.equals(product.category().id())) return true;
+        if (product.categories() != null) {
+            return product.categories().stream().anyMatch(c -> categoryId.equals(c.id()));
+        }
+        return false;
     }
 
     private static boolean matchesProductQuery(Product product, String query) {

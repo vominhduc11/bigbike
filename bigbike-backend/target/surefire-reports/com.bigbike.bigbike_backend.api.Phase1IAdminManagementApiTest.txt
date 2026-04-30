@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.bigbike.bigbike_backend.api.Phase1IAdminManagementApiTest
+-------------------------------------------------------------------------------
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.417 s -- in com.bigbike.bigbike_backend.api.Phase1IAdminManagementApiTest

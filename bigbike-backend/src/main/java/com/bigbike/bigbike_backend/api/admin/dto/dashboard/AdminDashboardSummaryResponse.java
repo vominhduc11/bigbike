@@ -1,0 +1,53 @@
+package com.bigbike.bigbike_backend.api.admin.dto.dashboard;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+public record AdminDashboardSummaryResponse(
+        KpiResponse kpi,
+        List<RevenueDayResponse> revenueData,
+        List<OrderStatusBreakdownItem> orderStatusBreakdown,
+        List<RecentOrderItem> recentOrders,
+        List<TopProductItem> topProducts
+) {
+
+    public record KpiResponse(
+            BigDecimal todayRevenue,
+            Double todayRevenuePct,       // null when no prev-day data
+            int todayOrders,
+            int todayOrdersDelta,
+            long pendingOrders,
+            long activeProducts
+    ) {}
+
+    public record RevenueDayResponse(
+            String date,      // ISO yyyy-MM-dd, parsed by FE
+            BigDecimal revenue,
+            int orders
+    ) {}
+
+    // Only status + count — label/color are UI concerns handled by FE
+    public record OrderStatusBreakdownItem(
+            String status,
+            long count
+    ) {}
+
+    public record RecentOrderItem(
+            UUID id,
+            String orderNumber,
+            String customerEmail,
+            BigDecimal total,             // renamed from totalAmount for FE contract
+            String orderStatus,
+            String currency,
+            Instant placedAt
+    ) {}
+
+    public record TopProductItem(
+            UUID productId,               // added for FE navigation
+            String name,                  // renamed from productName
+            BigDecimal revenue,
+            long units
+    ) {}
+}

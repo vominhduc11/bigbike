@@ -80,6 +80,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getCoverImageHeight(),
                         entity.getCoverImageMimeType()
                 ),
+                toImageAsset(null, entity.getProductImageUrl(), entity.getProductImageAlt(), null, null, null),
                 toAuthorSummary(entity.getAuthor()),
                 toCategorySummary(entity),
                 toCategorySummaries(entity),

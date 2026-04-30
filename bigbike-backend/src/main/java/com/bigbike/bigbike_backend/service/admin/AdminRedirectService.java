@@ -12,15 +12,17 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,18 +33,20 @@ public class AdminRedirectService {
     private static final int MAX_SIZE = 100;
     private static final Set<Integer> ALLOWED_STATUS_CODES = Set.of(301, 302, 307, 308);
 
+    private static final String CACHE_TAG = "redirects";
+
     private final RedirectJpaRepository redirectRepo;
     private final AuditLogJpaRepository auditLogRepo;
-    private final PaginationService paginationService;
+    private final WebRevalidationService webRevalidationService;
 
     public AdminRedirectService(
             RedirectJpaRepository redirectRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            WebRevalidationService webRevalidationService
     ) {
         this.redirectRepo = redirectRepo;
         this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
+        this.webRevalidationService = webRevalidationService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -53,28 +57,19 @@ public class AdminRedirectService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Stream<RedirectEntity> stream = redirectRepo.findAll().stream();
+        PageRequest pageable = PageRequest.of(
+                normalizedPage - 1, normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
-            stream = stream.filter(r ->
-                    matchesQ(r.getSourcePattern(), qLower) ||
-                    matchesQ(r.getTargetUrl(), qLower)
-            );
-        }
-        if (enabled != null) {
-            stream = stream.filter(r -> r.isEnabled() == enabled);
-        }
-        if (statusCode != null) {
-            stream = stream.filter(r -> r.getStatusCode() == statusCode);
-        }
+        Page<RedirectEntity> dbPage = redirectRepo.findAll(
+                RedirectSpecification.withFilters(q, enabled, statusCode), pageable);
 
-        List<AdminRedirectListItemResponse> items = stream
-                .sorted(Comparator.comparing(RedirectEntity::getCreatedAt, Comparator.reverseOrder()))
+        List<AdminRedirectListItemResponse> items = dbPage.getContent().stream()
                 .map(this::toListItem)
                 .toList();
 
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        return new PageResult<>(items, normalizedPage, normalizedSize, dbPage.getTotalElements(), dbPage.getTotalPages());
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -119,6 +114,7 @@ public class AdminRedirectService {
                 "{\"source\":\"" + escapeJson(source) + "\",\"target\":\"" + escapeJson(target) +
                 "\",\"statusCode\":" + code + ",\"enabled\":" + isEnabled + "}"));
 
+        webRevalidationService.revalidate(CACHE_TAG);
         return toDetail(entity);
     }
 
@@ -159,6 +155,7 @@ public class AdminRedirectService {
 
         auditLogRepo.save(buildAudit(adminId, "REDIRECT_UPDATED", redirectId, before, snapshot(entity)));
 
+        webRevalidationService.revalidate(CACHE_TAG);
         return toDetail(entity);
     }
 
@@ -185,6 +182,7 @@ public class AdminRedirectService {
                 "{\"enabled\":" + before + "}",
                 "{\"enabled\":" + newEnabled + "}"));
 
+        webRevalidationService.revalidate(CACHE_TAG);
         return toDetail(entity);
     }
 
@@ -202,6 +200,8 @@ public class AdminRedirectService {
 
         auditLogRepo.save(buildAudit(adminId, "REDIRECT_DELETED", redirectId, before,
                 "{\"enabled\":false,\"deleted\":true}"));
+
+        webRevalidationService.revalidate(CACHE_TAG);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -267,10 +267,6 @@ public class AdminRedirectService {
                "\",\"target\":\"" + escapeJson(r.getTargetUrl()) +
                "\",\"statusCode\":" + r.getStatusCode() +
                ",\"enabled\":" + r.isEnabled() + "}";
-    }
-
-    private static boolean matchesQ(String field, String qLower) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(qLower);
     }
 
     private static String escapeJson(String s) {

@@ -96,12 +96,7 @@ public class CustomerAddressService {
     }
 
     private void clearDefault(UUID customerId, String type) {
-        addressRepo.findByCustomerIdAndType(customerId, type).forEach(a -> {
-            if (a.isDefault()) {
-                a.setDefault(false);
-                addressRepo.save(a);
-            }
-        });
+        addressRepo.clearDefaultByCustomerIdAndType(customerId, type);
     }
 
     private CustomerAddressResponse toResponse(CustomerAddressEntity a) {

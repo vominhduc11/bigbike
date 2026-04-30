@@ -11,34 +11,43 @@ import com.bigbike.bigbike_backend.api.checkout.dto.ShippingMethodOptionResponse
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
+import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -57,53 +66,68 @@ public class CheckoutService {
     private static final String CURRENCY_VND = "VND";
 
     private final CartJpaRepository cartRepo;
+    private final CartCouponJpaRepository cartCouponRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
+    private final OrderAppliedCouponJpaRepository orderAppliedCouponRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
     private final ShippingMethodJpaRepository shippingMethodRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
+    private final StockMovementJpaRepository stockMovementRepo;
+    private final CouponJpaRepository couponRepo;
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final CartCalculator cartCalculator;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
+    private final InventoryPolicyService inventoryPolicyService;
 
     public CheckoutService(
             CartJpaRepository cartRepo,
+            CartCouponJpaRepository cartCouponRepo,
             OrderJpaRepository orderRepo,
             OrderLineItemJpaRepository lineItemRepo,
             OrderAddressJpaRepository addressRepo,
+            OrderAppliedCouponJpaRepository orderAppliedCouponRepo,
             OrderShippingItemJpaRepository shippingItemRepo,
             OrderNoteJpaRepository noteRepo,
             PaymentJpaRepository paymentRepo,
             ShippingMethodJpaRepository shippingMethodRepo,
             ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
+            StockMovementJpaRepository stockMovementRepo,
+            CouponJpaRepository couponRepo,
             OrderNumberGenerator orderNumberGenerator,
             OrderKeyGenerator orderKeyGenerator,
             CartCalculator cartCalculator,
             OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService
+            AdminOrderWsService adminOrderWsService,
+            InventoryPolicyService inventoryPolicyService
     ) {
         this.cartRepo = cartRepo;
+        this.cartCouponRepo = cartCouponRepo;
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
         this.addressRepo = addressRepo;
+        this.orderAppliedCouponRepo = orderAppliedCouponRepo;
         this.shippingItemRepo = shippingItemRepo;
         this.noteRepo = noteRepo;
         this.paymentRepo = paymentRepo;
         this.shippingMethodRepo = shippingMethodRepo;
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
+        this.stockMovementRepo = stockMovementRepo;
+        this.couponRepo = couponRepo;
         this.orderNumberGenerator = orderNumberGenerator;
         this.orderKeyGenerator = orderKeyGenerator;
         this.cartCalculator = cartCalculator;
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
+        this.inventoryPolicyService = inventoryPolicyService;
     }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
@@ -122,17 +146,27 @@ public class CheckoutService {
         }
         validateAddress(req.billingAddress());
         validatePaymentMethod(req.paymentMethod());
+        // Validate stock and re-sync prices. Stock is NOT decremented yet so we have an orderId.
+        List<OrderSummaryResponse.PriceChange> priceChanges = new ArrayList<>();
+        syncPricesAndValidateStock(items, priceChanges);
+
+        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> cartCoupons =
+                cartCouponRepo.findByCartId(cart.getId());
+        cartCalculator.recalculateCart(cart, items, cartCoupons);
 
         ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
 
         BigDecimal subtotal = items.stream()
-                .map(CartItemEntity::getLineTotal)
+                .map(CartItemEntity::getLineSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal discount = cart.getDiscountAmount() != null
+                ? cart.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         BigDecimal shippingCost = resolveShippingCost(shippingMethod, subtotal);
-        BigDecimal total = subtotal.add(shippingCost).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = subtotal.subtract(discount).add(shippingCost).max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        // Build order
         Instant now = Instant.now();
         OrderEntity order = buildOrder(
                 customerId,
@@ -141,7 +175,7 @@ public class CheckoutService {
                 req.customerNote(),
                 req.paymentMethod(),
                 subtotal,
-                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+                discount,
                 shippingCost,
                 total,
                 "checkout",
@@ -150,6 +184,9 @@ public class CheckoutService {
                 now
         );
         OrderEntity savedOrder = orderRepo.save(order);
+
+        // Decrement stock after order is saved so movements carry the correct orderId.
+        decrementStockForCartItems(items, savedOrder.getId(), now);
 
         // Line items from cart
         for (CartItemEntity cartItem : items) {
@@ -167,10 +204,30 @@ public class CheckoutService {
         // Payment
         paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
 
+        // Record applied coupons on the order + increment usageCount
+        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> freshCartCoupons =
+                cartCouponRepo.findByCartId(cart.getId());
+        List<String> couponCodes = freshCartCoupons.stream()
+                .map(cc -> cc.getCouponCode())
+                .toList();
+        for (var cc : freshCartCoupons) {
+            OrderAppliedCouponEntity appliedCoupon = new OrderAppliedCouponEntity();
+            appliedCoupon.setOrder(savedOrder);
+            appliedCoupon.setCode(cc.getCouponCode());
+            appliedCoupon.setDiscountAmount(cc.getDiscountAmount());
+            appliedCoupon.setCreatedAt(now);
+            couponRepo.findByCode(cc.getCouponCode()).ifPresent(coupon -> {
+                appliedCoupon.setCouponId(coupon.getId());
+                couponRepo.incrementUsageCount(coupon.getId(), now);
+            });
+            orderAppliedCouponRepo.save(appliedCoupon);
+        }
+
         // System note
+        String couponNote = couponCodes.isEmpty() ? "" : ". Mã giảm giá: " + String.join(", ", couponCodes);
         noteRepo.save(buildSystemNote(savedOrder,
                 "Đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
-                ". Phương thức vận chuyển: " + shippingMethod.getTitle() + ".", now));
+                ". Phương thức vận chuyển: " + shippingMethod.getTitle() + couponNote + ".", now));
 
         // Mark cart converted
         cart.setStatus(CART_STATUS_CONVERTED);
@@ -181,7 +238,7 @@ public class CheckoutService {
         orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
-        return toSummary(savedOrder, req.paymentMethod());
+        return toSummary(savedOrder, req.paymentMethod(), priceChanges);
     }
 
     // ── Quick-buy ─────────────────────────────────────────────────────────────
@@ -196,7 +253,7 @@ public class CheckoutService {
         validateAddress(req.billingAddress());
         validatePaymentMethod(req.paymentMethod());
 
-        ProductEntity product = productRepo.findById(req.productId())
+        ProductEntity product = productRepo.findByIdForUpdate(req.productId().toString())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
         if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
             throw new ConflictException("Product is not available.");
@@ -204,10 +261,26 @@ public class CheckoutService {
 
         ProductVariantEntity variant = null;
         if (req.productVariantId() != null && !req.productVariantId().isBlank()) {
-            variant = variantRepo.findByIdAndProductId(req.productVariantId(), product.getId())
+            variant = variantRepo.findByIdForUpdate(req.productVariantId())
                     .orElseThrow(() -> new NotFoundException("Variant not found: " + req.productVariantId()));
             if (!variant.isAvailable()) {
-                throw new ConflictException("Product variant is not available.");
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' tạm ngừng bán.");
+            }
+            if (variant.getQuantityOnHand() < req.quantity()) {
+                int onHand = variant.getQuantityOnHand();
+                throw new ConflictException(onHand <= 0
+                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+            }
+        } else {
+            if (Boolean.TRUE.equals(product.getForceOutOfStock())
+                    || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
+            }
+            if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
+                    && product.getStockQuantity() < req.quantity()) {
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                        + product.getStockQuantity() + " trong kho.");
             }
         }
 
@@ -239,6 +312,20 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.save(order);
 
+        if (variant != null) {
+            decrementVariantStock(variant, qty, savedOrder.getId(), now);
+        } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
+            int newQty = product.getStockQuantity() - qty;
+            product.setStockQuantity(newQty);
+            int threshold = inventoryPolicyService.lowStockThreshold();
+            if (newQty <= 0) {
+                product.setStockState(ProductStockState.OUT_OF_STOCK);
+            } else if (newQty <= threshold) {
+                product.setStockState(ProductStockState.LOW_STOCK);
+            }
+            productRepo.save(product);
+        }
+
         // Line item from product snapshot
         lineItemRepo.save(buildLineItemFromProduct(savedOrder, product, variant,
                 unitPrice, qty, lineSubtotal, lineDiscount, lineTotal, now));
@@ -262,7 +349,7 @@ public class CheckoutService {
         orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
-        return toSummary(savedOrder, req.paymentMethod());
+        return toSummary(savedOrder, req.paymentMethod(), List.of());
     }
 
     // ── Checkout options ──────────────────────────────────────────────────────
@@ -303,13 +390,14 @@ public class CheckoutService {
         if (addr.fullName() == null || addr.fullName().isBlank()) {
             throw ValidationException.fromField("billingAddress.fullName", "REQUIRED", "Full name is required.");
         }
-        if (addr.phone() == null || !addr.phone().matches("\\d{10}")) {
+        if (addr.phone() == null || !addr.phone().matches("0[3-9]\\d{8}|\\+84[3-9]\\d{8}")) {
             throw ValidationException.fromField("billingAddress.phone", "INVALID_PHONE",
-                    "Phone must be 10 digits.");
+                    "Số điện thoại không hợp lệ. Vui lòng nhập số VN 10 chữ số (ví dụ: 0901234567).");
         }
-        if (addr.email() != null && !addr.email().isBlank() && !addr.email().contains("@")) {
+        if (addr.email() != null && !addr.email().isBlank()
+                && !addr.email().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             throw ValidationException.fromField("billingAddress.email", "INVALID_EMAIL",
-                    "Email is invalid.");
+                    "Email không hợp lệ.");
         }
         if (addr.addressLine1() == null || addr.addressLine1().isBlank()) {
             throw ValidationException.fromField("billingAddress.addressLine1", "REQUIRED",
@@ -523,7 +611,7 @@ public class CheckoutService {
     private OrderNoteEntity buildSystemNote(OrderEntity order, String content, Instant now) {
         OrderNoteEntity note = new OrderNoteEntity();
         note.setOrder(order);
-        note.setAuthorType("system");
+        note.setAuthorType("SYSTEM");
         note.setNoteType("SYSTEM");
         note.setContent(content);
         note.setCustomerVisible(false);
@@ -531,7 +619,8 @@ public class CheckoutService {
         return note;
     }
 
-    private OrderSummaryResponse toSummary(OrderEntity order, String paymentMethod) {
+    private OrderSummaryResponse toSummary(OrderEntity order, String paymentMethod,
+            List<OrderSummaryResponse.PriceChange> priceChanges) {
         return new OrderSummaryResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -543,15 +632,119 @@ public class CheckoutService {
                 order.getShippingAmount(),
                 order.getDiscountAmount(),
                 order.getTotalAmount(),
-                order.getCurrency()
+                order.getCurrency(),
+                priceChanges
         );
     }
 
-    private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
-        if (variant != null) {
-            BigDecimal vp = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getRetailPrice();
-            if (vp != null) return vp.setScale(2, RoundingMode.HALF_UP);
+    /**
+     * Pass 1: validate stock availability and re-sync prices from DB.
+     * Collects price changes into the provided list for inclusion in the response.
+     * Does NOT write any stock changes — that happens in decrementStockForCartItems after order is saved.
+     */
+    private void syncPricesAndValidateStock(List<CartItemEntity> items,
+            List<OrderSummaryResponse.PriceChange> priceChanges) {
+        for (CartItemEntity cartItem : items) {
+            if (cartItem.getProductId() == null) continue;
+            ProductEntity product = productRepo.findByIdForUpdate(cartItem.getProductId().toString())
+                    .orElseThrow(() -> new ConflictException(
+                            "Product no longer exists: " + cartItem.getProductName()));
+
+            ProductVariantEntity variant = null;
+            if (cartItem.getProductVariantId() != null) {
+                variant = variantRepo
+                        .findByIdForUpdate(cartItem.getProductVariantId().toString())
+                        .orElseThrow(() -> new ConflictException(
+                                "Variant no longer exists for: " + cartItem.getProductName()));
+                if (!variant.isAvailable()) {
+                    throw new ConflictException(
+                            "Sản phẩm '" + cartItem.getProductName() + "' tạm ngừng bán.");
+                }
+                if (variant.getQuantityOnHand() < cartItem.getQuantity()) {
+                    int onHand = variant.getQuantityOnHand();
+                    throw new ConflictException(onHand <= 0
+                            ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
+                            : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + onHand + " trong kho.");
+                }
+            } else {
+                if (Boolean.TRUE.equals(product.getForceOutOfStock())
+                        || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
+                    throw new ConflictException(
+                            "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
+                }
+                if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
+                        && product.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new ConflictException(
+                            "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " +
+                            product.getStockQuantity() + " trong kho.");
+                }
+            }
+
+            BigDecimal currentPrice = resolveUnitPrice(product, variant);
+            BigDecimal cartPrice = cartItem.getUnitPrice();
+            if (cartPrice != null && cartPrice.compareTo(currentPrice) != 0) {
+                priceChanges.add(new OrderSummaryResponse.PriceChange(
+                        cartItem.getProductName(), cartPrice, currentPrice));
+            }
+            cartItem.setUnitPrice(currentPrice);
+            cartCalculator.recalculateItem(cartItem);
         }
+    }
+
+    /**
+     * Pass 2: decrement stock and write stock_movements for each cart item.
+     * Called after order is saved so movements carry the correct orderId.
+     */
+    private void decrementStockForCartItems(List<CartItemEntity> items, UUID orderId, Instant now) {
+        int threshold = inventoryPolicyService.lowStockThreshold();
+        for (CartItemEntity cartItem : items) {
+            if (cartItem.getProductId() == null) continue;
+            if (cartItem.getProductVariantId() != null) {
+                variantRepo.findByIdForUpdate(cartItem.getProductVariantId().toString())
+                        .ifPresent(v -> decrementVariantStock(v, cartItem.getQuantity(), orderId, now));
+            } else {
+                productRepo.findByIdForUpdate(cartItem.getProductId().toString()).ifPresent(product -> {
+                    if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
+                    int newQty = product.getStockQuantity() - cartItem.getQuantity();
+                    product.setStockQuantity(newQty);
+                    ProductStockState current = product.getStockState();
+                    if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
+                        product.setStockState(newQty <= 0 ? ProductStockState.OUT_OF_STOCK
+                                : (newQty <= threshold ? ProductStockState.LOW_STOCK : ProductStockState.IN_STOCK));
+                    }
+                    productRepo.save(product);
+                });
+            }
+        }
+    }
+
+    private void decrementVariantStock(ProductVariantEntity variant, int qty, UUID orderId, Instant now) {
+        int before = variant.getQuantityOnHand();
+        int after = before - qty;
+        variant.setQuantityOnHand(after);
+        inventoryPolicyService.recomputeStockState(variant);
+        variantRepo.save(variant);
+
+        StockMovementEntity movement = new StockMovementEntity();
+        movement.setVariant(variant);
+        movement.setMovementType("OUT");
+        movement.setQuantityDelta(-qty);
+        movement.setQuantityBefore(before);
+        movement.setQuantityAfter(after);
+        movement.setReferenceType("ORDER");
+        movement.setReferenceId(orderId);
+        movement.setCreatedAt(now);
+        stockMovementRepo.save(movement);
+    }
+
+    /**
+     * Order unit price always comes from the parent product. Variant-level
+     * price columns are intentionally ignored — the storefront and cart
+     * display the product price regardless of variant, so checkout must
+     * agree to keep the displayed total consistent with what the customer
+     * paid.
+     */
+    private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
         BigDecimal p = product.getSalePrice() != null ? product.getSalePrice() : product.getRetailPrice();
         return p.setScale(2, RoundingMode.HALF_UP);
     }

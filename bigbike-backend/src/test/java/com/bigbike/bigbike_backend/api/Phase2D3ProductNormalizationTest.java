@@ -278,7 +278,7 @@ class Phase2D3ProductNormalizationTest {
         MappedVariation mv = new MappedVariation(
                 90801L, 80801L, "VAR-REC-001",
                 new BigDecimal("2000000"), null, null,
-                1, "instock", Map.of("color", "red"), "ACTIVE", List.of());
+                1, "instock", Map.of("color", "red"), "ACTIVE", List.of(), List.of());
 
         MigrationExecutionReport.DomainResult varResult =
                 variationImporter.importBatch(List.of(mv), variantOpts());

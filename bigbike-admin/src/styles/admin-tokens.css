@@ -1,62 +1,205 @@
 :root {
-  --admin-color-brand-red: #f90606;
-  --admin-color-brand-red-hover: #d90404;
-  --admin-color-brand-red-active: #b80303;
+  /* ─── Brand ─────────────────────────────────────────────────────────────── */
+  --admin-color-brand-red:         #e8281e;
+  --admin-color-brand-red-hover:   #cc1f17;
+  --admin-color-brand-red-active:  #b01810;
+  --admin-color-brand-red-subtle:  #fff1f0;
+  --admin-color-brand-red-muted:   rgba(232, 40, 30, 0.12);
 
-  --admin-color-background-app: #f5f6f8;
-  --admin-color-background-page: #f8f9fb;
-  --admin-color-background-sidebar: #0a0a0a;
-  --admin-color-background-header: #ffffff;
-  --admin-color-overlay: rgba(10, 10, 10, 0.56);
+  /* ─── Backgrounds ───────────────────────────────────────────────────────── */
+  --admin-color-background-app:     #f2f3f5;
+  --admin-color-background-page:    #f6f7f9;
+  --admin-color-background-sidebar: #0d1117;
+  --admin-color-background-header:  #ffffff;
+  --admin-color-overlay:            rgba(0, 0, 0, 0.48);
 
-  --admin-color-surface-base: #ffffff;
-  --admin-color-surface-muted: #f3f4f6;
-  --admin-color-surface-hover: #f9fafb;
-  --admin-color-surface-selected: #fff1f1;
-  --admin-color-border-subtle: #e5e7eb;
+  /* ─── Surfaces ──────────────────────────────────────────────────────────── */
+  --admin-color-surface-base:     #ffffff;
+  --admin-color-surface-muted:    #f8f9fa;
+  --admin-color-surface-raised:   #f1f3f5;
+  --admin-color-surface-hover:    #f3f4f6;
+  --admin-color-surface-selected: #fff1f0;
+
+  /* ─── Rank badges (top-products) ─────────────────────────────────────── */
+  --admin-rank-1-bg:   #fef3c7;
+  --admin-rank-1-text: #d97706;
+  --admin-rank-2-bg:   #f3f4f6;
+  --admin-rank-2-text: #6b7280;
+  --admin-rank-3-bg:   #ffedd5;
+  --admin-rank-3-text: #c2410c;
+
+  /* ─── Borders ───────────────────────────────────────────────────────────── */
+  --admin-color-border-subtle:  #e8eaed;
   --admin-color-border-default: #d1d5db;
-  --admin-color-border-strong: #9ca3af;
+  --admin-color-border-strong:  #9ca3af;
 
-  --admin-color-text-primary: #151515;
-  --admin-color-text-secondary: #4b5563;
-  --admin-color-text-muted: #6b7280;
-  --admin-color-text-inverse: #ffffff;
+  /* ─── Text ──────────────────────────────────────────────────────────────── */
+  --admin-color-text-primary:     #111827;
+  --admin-color-text-secondary:   #374151;
+  --admin-color-text-muted:       #6b7280;
+  --admin-color-text-placeholder: #adb5bd;
+  --admin-color-text-inverse:     #ffffff;
 
-  --admin-color-status-success-bg: #f0fdf4;
-  --admin-color-status-success-bg-subtle: #ecfdf3;
+  /* ─── Status: Success ───────────────────────────────────────────────────── */
+  --admin-color-status-success-bg:     #f0fdf4;
   --admin-color-status-success-border: #bbf7d0;
-  --admin-color-status-success-text: #166534;
-  --admin-color-status-warning-bg: #fffbeb;
+  --admin-color-status-success-text:   #15803d;
+
+  /* ─── Status: Warning ───────────────────────────────────────────────────── */
+  --admin-color-status-warning-bg:     #fffbeb;
   --admin-color-status-warning-border: #fde68a;
-  --admin-color-status-warning-text: #92400e;
-  --admin-color-status-warning-orange-bg: #fff7ed;
+  --admin-color-status-warning-text:   #92400e;
+
+  /* ─── Status: Warning Orange ────────────────────────────────────────────── */
+  --admin-color-status-warning-orange-bg:     #fff7ed;
   --admin-color-status-warning-orange-border: #fdd7aa;
-  --admin-color-status-warning-orange-text: #9a3412;
-  --admin-color-status-danger-bg: #fef2f2;
+  --admin-color-status-warning-orange-text:   #9a3412;
+
+  /* ─── Status: Danger ────────────────────────────────────────────────────── */
+  --admin-color-status-danger-bg:     #fef2f2;
   --admin-color-status-danger-border: #fecaca;
-  --admin-color-status-danger-text: #991b1b;
-  --admin-color-status-info-bg: #eff6ff;
+  --admin-color-status-danger-text:   #b91c1c;
+
+  /* ─── Status: Info ──────────────────────────────────────────────────────── */
+  --admin-color-status-info-bg:     #eff6ff;
   --admin-color-status-info-border: #bfdbfe;
-  --admin-color-status-info-text: #1d4ed8;
-  --admin-color-status-neutral-bg: #f3f4f6;
+  --admin-color-status-info-text:   #1d4ed8;
+
+  /* ─── Status: Neutral ───────────────────────────────────────────────────── */
+  --admin-color-status-neutral-bg:   #f3f4f6;
   --admin-color-status-neutral-text: #374151;
 
-  --admin-font-body: Exo, Inter, Arial, sans-serif;
-  --admin-font-display: Bungee, Exo, Inter, Arial, sans-serif;
+  /* ─── Typography ────────────────────────────────────────────────────────── */
+  --admin-font-body:    Inter, Exo, system-ui, -apple-system, sans-serif;
+  --admin-font-display: Bungee, Exo, system-ui, sans-serif;
+  --admin-font-mono:    ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
 
-  --admin-space-1: 4px;
-  --admin-space-2: 8px;
-  --admin-space-3: 12px;
-  --admin-space-4: 16px;
-  --admin-space-5: 20px;
-  --admin-space-6: 24px;
-  --admin-space-8: 32px;
+  --admin-text-xs:   0.75rem;    /* 12px   */
+  --admin-text-sm:   0.875rem;   /* 14px   */
+  --admin-text-base: 0.9375rem;  /* 15px   */
+  --admin-text-md:   1rem;       /* 16px   */
+  --admin-text-lg:   1.0625rem;  /* 17px   */
+  --admin-text-xl:   1.1875rem;  /* 19px   */
+  --admin-text-2xl:  1.4375rem;  /* 23px   */
 
-  --admin-radius-sm: 6px;
-  --admin-radius-md: 10px;
-  --admin-radius-lg: 14px;
+  /* ─── Spacing ───────────────────────────────────────────────────────────── */
+  --admin-space-1:  4px;
+  --admin-space-2:  8px;
+  --admin-space-3:  12px;
+  --admin-space-4:  16px;
+  --admin-space-5:  20px;
+  --admin-space-6:  24px;
+  --admin-space-8:  32px;
+  --admin-space-10: 40px;
 
-  --admin-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --admin-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.08);
-  --admin-shadow-md: 0 16px 40px rgba(15, 23, 42, 0.16);
+  /* ─── Radius ────────────────────────────────────────────────────────────── */
+  --admin-radius-xs:   4px;
+  --admin-radius-sm:   7px;
+  --admin-radius-md:   10px;
+  --admin-radius-lg:   14px;
+  --admin-radius-full: 9999px;
+
+  /* ─── Shadows ───────────────────────────────────────────────────────────── */
+  --admin-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --admin-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* ─── Transitions ───────────────────────────────────────────────────────── */
+  --admin-transition-fast: 100ms ease;
+  --admin-transition-base: 160ms ease;
+
+  /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
+  --c-text-primary:  var(--admin-color-text-primary);
+  --c-text-muted:    var(--admin-color-text-muted);
+  --c-danger:        var(--admin-color-status-danger-text);
+  --c-success:       var(--admin-color-status-success-text);
+  --c-warning:       var(--admin-color-status-warning-text);
+  --c-border:        var(--admin-color-border-subtle);
+  --c-surface:       var(--admin-color-surface-base);
+  --c-bg-subtle:     var(--admin-color-surface-muted);
+  --c-primary:       var(--admin-color-brand-red);
+  --c-primary-subtle: var(--admin-color-surface-selected);
+}
+
+/* ─── Dark mode token overrides ───────────────────────────────────────────────
+   Applied via [data-theme="dark"] on <html>.
+   All semantic variables point to these primitives so every CSS class
+   that already uses var(--admin-color-*) switches automatically.
+   ─────────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ─── Brand — unchanged, red stays red ─── */
+  --admin-color-brand-red-subtle:  #2a1010;
+  --admin-color-brand-red-muted:   rgba(232, 40, 30, 0.16);
+
+  /* ─── Backgrounds ─── */
+  --admin-color-background-app:     #010409;
+  --admin-color-background-page:    #0d1117;
+  --admin-color-background-sidebar: #0d1117;
+  --admin-color-background-header:  #161b22;
+  --admin-color-overlay:            rgba(1, 4, 9, 0.80);
+
+  /* ─── Surfaces ─── */
+  --admin-color-surface-base:     #161b22;
+  --admin-color-surface-muted:    #1c2128;
+  --admin-color-surface-raised:   #21262d;
+  --admin-color-surface-hover:    #21262d;
+  --admin-color-surface-selected: rgba(232, 40, 30, 0.12);
+
+  /* ─── Rank badges ─── */
+  --admin-rank-1-bg:   rgba(251, 191, 36, 0.15);
+  --admin-rank-1-text: #fbbf24;
+  --admin-rank-2-bg:   rgba(110, 118, 129, 0.15);
+  --admin-rank-2-text: #8b949e;
+  --admin-rank-3-bg:   rgba(234, 88, 12, 0.15);
+  --admin-rank-3-text: #fb923c;
+
+  /* ─── Borders ─── */
+  --admin-color-border-subtle:  #21262d;
+  --admin-color-border-default: #30363d;
+  --admin-color-border-strong:  #484f58;
+
+  /* ─── Text ─── */
+  --admin-color-text-primary:     #e6edf3;
+  --admin-color-text-secondary:   #8b949e;
+  --admin-color-text-muted:       #6e7681;
+  --admin-color-text-placeholder: #484f58;
+  --admin-color-text-inverse:     #0d1117;
+
+  /* ─── Status: Success ─── */
+  --admin-color-status-success-bg:     rgba(35, 134, 54, 0.15);
+  --admin-color-status-success-border: rgba(35, 134, 54, 0.40);
+  --admin-color-status-success-text:   #3fb950;
+
+  /* ─── Status: Warning ─── */
+  --admin-color-status-warning-bg:     rgba(187, 128, 9, 0.15);
+  --admin-color-status-warning-border: rgba(187, 128, 9, 0.40);
+  --admin-color-status-warning-text:   #d29922;
+
+  /* ─── Status: Warning Orange ─── */
+  --admin-color-status-warning-orange-bg:     rgba(154, 73, 7, 0.15);
+  --admin-color-status-warning-orange-border: rgba(154, 73, 7, 0.40);
+  --admin-color-status-warning-orange-text:   #e3b341;
+
+  /* ─── Status: Danger ─── */
+  --admin-color-status-danger-bg:     rgba(218, 54, 51, 0.15);
+  --admin-color-status-danger-border: rgba(218, 54, 51, 0.40);
+  --admin-color-status-danger-text:   #f85149;
+
+  /* ─── Status: Info ─── */
+  --admin-color-status-info-bg:     rgba(31, 111, 235, 0.15);
+  --admin-color-status-info-border: rgba(31, 111, 235, 0.40);
+  --admin-color-status-info-text:   #58a6ff;
+
+  /* ─── Status: Neutral ─── */
+  --admin-color-status-neutral-bg:   rgba(110, 118, 129, 0.12);
+  --admin-color-status-neutral-text: #8b949e;
+
+  /* ─── Shadows — heavier on dark to keep elevation readable ─── */
+  --admin-shadow-xs: 0 1px 2px rgba(1, 4, 9, 0.30);
+  --admin-shadow-sm: 0 1px 3px rgba(1, 4, 9, 0.40), 0 1px 2px rgba(1, 4, 9, 0.30);
+  --admin-shadow-md: 0 4px 16px rgba(1, 4, 9, 0.50), 0 2px 4px rgba(1, 4, 9, 0.30);
+  --admin-shadow-lg: 0 20px 40px rgba(1, 4, 9, 0.70), 0 4px 12px rgba(1, 4, 9, 0.40);
 }

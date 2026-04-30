@@ -7,12 +7,17 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import type { ProductSpecification, VideoAsset } from "@/lib/contracts/public";
 
 function getYouTubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
-    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
-  } catch { /* invalid url */ }
-  return null;
+  if (!url) return null;
+  // Covers watch?v=, share (youtu.be/), embed/, shorts/, and /v/ paths.
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function isUploadedVideoUrl(url: string): boolean {
+  if (!url) return false;
+  // Strip query/hash before extension check.
+  const path = url.split(/[?#]/, 1)[0];
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(path);
 }
 
 type ProductTabsProps = {
@@ -97,9 +102,15 @@ export function ProductTabs({ specifications, description, videos, productName }
         {active === "videos" && hasVideos && (
           <div className="wp-pdp-videos">
             {videos.map((video, index) => {
-              const ytId = video.url ? getYouTubeId(video.url) : null;
+              const url = video.url ?? "";
+              const ytId = url ? getYouTubeId(url) : null;
+              // Treat as uploaded video when admin marked provider=upload OR
+              // the URL has a recognizable video file extension.
+              const isUpload =
+                !ytId && (video.provider === "upload" || isUploadedVideoUrl(url));
+              const posterImage = video.thumbnail ?? undefined;
               return (
-                <article key={video.id ?? video.url ?? index} className="wp-pdp-video-card">
+                <article key={video.id ?? url ?? index} className="wp-pdp-video-card">
                   {ytId ? (
                     <div className="wp-pdp-video-embed">
                       <iframe
@@ -110,10 +121,20 @@ export function ProductTabs({ specifications, description, videos, productName }
                         loading="lazy"
                       />
                     </div>
+                  ) : isUpload && url ? (
+                    <div className="wp-pdp-video-embed">
+                      <video
+                        src={url}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        poster={posterImage?.url}
+                      />
+                    </div>
                   ) : (
                     <div className="wp-pdp-video-thumb">
                       <MediaImage
-                        image={video.thumbnail ?? undefined}
+                        image={posterImage}
                         altFallback={safeText(video.title, productName)}
                         width={960}
                         height={540}
@@ -121,8 +142,8 @@ export function ProductTabs({ specifications, description, videos, productName }
                     </div>
                   )}
                   <h3 className="wp-video-title">{safeText(video.title, "Video sản phẩm")}</h3>
-                  {video.url && !ytId && (
-                    <a className="bb-link" href={video.url} target="_blank" rel="noreferrer">
+                  {url && !ytId && !isUpload && (
+                    <a className="bb-link" href={url} target="_blank" rel="noreferrer">
                       Xem video →
                     </a>
                   )}

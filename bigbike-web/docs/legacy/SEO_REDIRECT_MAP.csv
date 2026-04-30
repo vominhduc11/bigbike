@@ -7,7 +7,7 @@ sourcePattern,targetPattern,redirectType,status,notes
 /vi/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang vi blog
 /en/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang en blog
 /{slug}.html,/{slug}/,301,active,Generic legacy WP .html permalink
-/san-pham/,/danh-muc-san-pham/,301,active,Old product listing URL
+/san-pham/,/danh-muc-san-pham/,301,inactive,Disabled — /san-pham/ is the canonical product listing in Next.js app
 /danh-muc-san-pham/{slug}.html,/danh-muc-san-pham/{slug}/,301,active,Old category .html
 /non-bao-hiem-moto/,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,Old root category
 /gang-tay/,/danh-muc-san-pham/gang-tay/,301,active,Old root category
@@ -34,3 +34,11 @@ sourcePattern,targetPattern,redirectType,status,notes
 /cac-dieu-kien-va-dieu-khoan/,/chinh-sach/dieu-khoan/,301,active,WP page slug renamed in new platform
 /huong-dan-mua-hang-online-html/,/huong-dan-mua-hang/,301,active,Old WP .html promo page redirect
 /home-2/,/,301,active,Old WP staging page redirect to home
+/mu-bao-hiem/,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,WP slug mu-bao-hiem renamed to non-bao-hiem-moto
+/mu-bao-hiem.html,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,WP slug mu-bao-hiem renamed to non-bao-hiem-moto
+/ao-quan-bao-ho/,/danh-muc-san-pham/quan-ao-bao-ho-moto/,301,active,WP slug ao-quan-bao-ho renamed to quan-ao-bao-ho-moto
+/ao-quan-bao-ho.html,/danh-muc-san-pham/quan-ao-bao-ho-moto/,301,active,WP slug ao-quan-bao-ho renamed to quan-ao-bao-ho-moto
+/phu-kien-khac/,/danh-muc-san-pham/,301,active,WP discontinued category phu-kien-khac
+/phu-kien-khac.html,/danh-muc-san-pham/,301,active,WP discontinued category phu-kien-khac
+/san-pham-khuyen-mai/,/danh-muc-san-pham/,301,active,WP discontinued category san-pham-khuyen-mai
+/san-pham-khuyen-mai.html,/danh-muc-san-pham/,301,active,WP discontinued category san-pham-khuyen-mai

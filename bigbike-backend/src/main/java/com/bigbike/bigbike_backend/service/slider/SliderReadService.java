@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.service.slider;
 
-import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.slider.Slider;
 import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
@@ -31,7 +30,21 @@ public class SliderReadService {
                 .toList();
     }
 
-    private Slider toDomain(SliderEntity entity) {
+    @Transactional(readOnly = true)
+    public List<Slider> listActiveByLocation(String location) {
+        return sliderJpaRepository.findByLocationAndIsActiveTrueOrderBySortOrderAsc(location).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Slider findById(String id) {
+        return sliderJpaRepository.findById(id)
+                .map(this::toDomain)
+                .orElseThrow(() -> new IllegalStateException("Slider was saved but not found: " + id));
+    }
+
+    Slider toDomain(SliderEntity entity) {
         Product product = null;
         String productId = null;
         String productLink = null;
@@ -52,7 +65,8 @@ public class SliderReadService {
                 entity.getId(),
                 entity.getSortOrder(),
                 entity.getLocation(),
-                imageOrEmpty(entity.getDesktopImage()),
+                entity.isActive(),
+                entity.getDesktopImage(),
                 entity.getMobileImage(),
                 productId,
                 entity.getExternalLink(),
@@ -62,9 +76,5 @@ public class SliderReadService {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
-    }
-
-    private static ImageAsset imageOrEmpty(ImageAsset image) {
-        return image == null ? new ImageAsset(null, null, null, null, null, null) : image;
     }
 }

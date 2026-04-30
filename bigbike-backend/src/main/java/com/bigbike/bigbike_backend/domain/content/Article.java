@@ -13,6 +13,7 @@ public record Article(
         String excerpt,
         String body,
         ImageAsset coverImage,
+        ImageAsset productImage,
         AuthorSummary author,
         ContentCategorySummary category,
         List<ContentCategorySummary> categories,

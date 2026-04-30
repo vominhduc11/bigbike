@@ -20,11 +20,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +39,7 @@ public class CustomerAuthController {
     private static final String COOKIE_REFRESH = "bb_refresh";
     private static final String COOKIE_CSRF = "bb_csrf";
 
+    private final boolean cookiesSecure;
     private final CustomerAuthService authService;
     private final CustomerSessionService sessionService;
     private final CustomerPasswordResetService passwordResetService;
@@ -46,11 +47,13 @@ public class CustomerAuthController {
     private final EmailVerificationService emailVerificationService;
 
     public CustomerAuthController(
+            @Value("${bigbike.cookies.secure:true}") boolean cookiesSecure,
             CustomerAuthService authService,
             CustomerSessionService sessionService,
             CustomerPasswordResetService passwordResetService,
             ApiResponseFactory apiResponseFactory,
             EmailVerificationService emailVerificationService) {
+        this.cookiesSecure = cookiesSecure;
         this.authService = authService;
         this.sessionService = sessionService;
         this.passwordResetService = passwordResetService;
@@ -58,16 +61,14 @@ public class CustomerAuthController {
         this.emailVerificationService = emailVerificationService;
     }
 
-    @GetMapping("/verify-email")
+    /** Token arrives in POST body to keep it out of server access logs and Referer headers. */
+    @PostMapping("/verify-email")
     public ApiDataResponse<Map<String, Object>> verifyEmail(
             @RequestParam("token") String token,
             HttpServletRequest request
     ) {
-        UUID customerId = emailVerificationService.verify(token);
-        return apiResponseFactory.data(
-                Map.of("customerId", customerId, "verified", Boolean.TRUE),
-                request
-        );
+        emailVerificationService.verify(token);
+        return apiResponseFactory.data(Map.of("verified", Boolean.TRUE), request);
     }
 
     @PostMapping("/register")
@@ -159,7 +160,7 @@ public class CustomerAuthController {
             String path, int maxAge, boolean httpOnly) {
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(httpOnly)
-                .secure(false)
+                .secure(cookiesSecure)
                 .path(path)
                 .maxAge(maxAge)
                 .sameSite("Strict")
@@ -168,8 +169,9 @@ public class CustomerAuthController {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
+        // Only trust X-Forwarded-For when the direct caller is a known reverse-proxy.
+        // Without a trusted-proxy allowlist, XFF can be spoofed to bypass rate limits.
+        // In production, configure a load-balancer/proxy that strips/rewrites XFF.
         return request.getRemoteAddr();
     }
 }

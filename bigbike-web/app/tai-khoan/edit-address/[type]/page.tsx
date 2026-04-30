@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
@@ -7,7 +8,30 @@ import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commer
 
 type Props = { params: Promise<{ type: string }> };
 
-function EditAddressContent({ type }: { type: string }) {
+type ValidAddressType = "billing" | "shipping";
+
+function InvalidAddressType({ type }: { type: string }) {
+  return (
+    <>
+      <div className="wp-account-header">
+        <div>
+          <h2>Địa chỉ không hợp lệ</h2>
+          <p className="sub">Loại địa chỉ không được hỗ trợ.</p>
+        </div>
+      </div>
+      <div className="wp-empty-state">
+        <p className="wp-muted-text">
+          Không tìm thấy loại địa chỉ &ldquo;{type}&rdquo;.{" "}
+          <Link href="/tai-khoan" style={{ color: "var(--bb-brand-primary, #F90606)" }}>
+            Quay lại tài khoản
+          </Link>
+        </p>
+      </div>
+    </>
+  );
+}
+
+function EditAddressContent({ type }: { type: ValidAddressType }) {
   const addressType = type === "billing" ? "BILLING" : "SHIPPING";
   const label = addressType === "BILLING" ? "Địa chỉ thanh toán" : "Địa chỉ giao hàng";
 
@@ -208,9 +232,13 @@ function EditAddressContent({ type }: { type: string }) {
 
 export default function EditAddressPage({ params }: Props) {
   const { type } = use(params);
+  const isValid = type === "billing" || type === "shipping";
   return (
     <AccountShell loginRedirect={`/tai-khoan/edit-address/${type}`}>
-      <EditAddressContent type={type} />
+      {isValid
+        ? <EditAddressContent type={type as ValidAddressType} />
+        : <InvalidAddressType type={type} />
+      }
     </AccountShell>
   );
 }

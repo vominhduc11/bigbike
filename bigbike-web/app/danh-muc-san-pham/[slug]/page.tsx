@@ -9,7 +9,7 @@ import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listProducts } from "@/lib/api/public-api";
+import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -27,6 +27,14 @@ import {
 } from "@/lib/utils/query";
 import { toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+import { sanitizeRichHtml } from "@/lib/utils/html";
+
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const result = await listCategories({ page: 1, size: 100 });
+  return (result.data ?? []).map((c) => ({ slug: c.slug }));
+}
 
 const DEFAULT_SORT = "createdAt:desc";
 const DEFAULT_PAGE_SIZE = 24;
@@ -149,7 +157,7 @@ export default async function CategoryDetailPage({
     );
   }
 
-  const [categoryResult, productsResult, brandsResult] = await Promise.all([
+  const [categoryResult, productsResult, brandsResult, allCategoriesResult] = await Promise.all([
     getCategoryBySlug(slug),
     listProducts({
       page: pageParsed.value,
@@ -164,6 +172,7 @@ export default async function CategoryDetailPage({
       maxPrice: maxPriceParsed.value,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
+    listCategories({ page: 1, size: 200, sort: "sortOrder:asc" }),
   ]);
 
   if (!categoryResult.data && categoryResult.error?.status === 404) {
@@ -182,7 +191,14 @@ export default async function CategoryDetailPage({
 
   const category = categoryResult.data;
   const canonicalPath = category.seo?.canonicalUrl ?? toCategoryPath(category.slug);
-  const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category));
+
+  const allCategories = allCategoriesResult.data ?? [];
+  const parentCategory = category.parentId
+    ? (allCategories.find((c) => c.id === category.parentId) ?? null)
+    : null;
+  const childCategories = allCategories.filter((c) => c.parentId === category.id && c.isVisible);
+
+  const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
 
   const categoryName = safeText(category.name, "Danh mục");
   const pagination = productsResult.pagination;
@@ -219,7 +235,6 @@ export default async function CategoryDetailPage({
             )}
             fill
             className="wp-cat-hero-bg"
-            unoptimized
             priority
             sizes="100vw"
           />
@@ -230,6 +245,14 @@ export default async function CategoryDetailPage({
             <Link href={toHomePath()}>Trang chủ</Link>
             <span aria-hidden="true">/</span>
             <Link href={toProductListPath()}>Sản phẩm</Link>
+            {parentCategory && (
+              <>
+                <span aria-hidden="true">/</span>
+                <Link href={toCategoryPath(parentCategory.slug)}>
+                  {safeText(parentCategory.name, "Danh mục cha")}
+                </Link>
+              </>
+            )}
             <span aria-hidden="true">/</span>
             <span aria-current="page">{categoryName}</span>
           </nav>
@@ -245,6 +268,26 @@ export default async function CategoryDetailPage({
           )}
         </div>
       </div>
+
+      {/* ── Sub-categories ────────────────────────────────────── */}
+      {childCategories.length > 0 && (
+        <div className="wp-cat-children">
+          <div className="bb-container wp-cat-children-inner">
+            <span className="wp-cat-children-label">Danh mục con:</span>
+            <div className="wp-cat-children-chips">
+              {childCategories.map((child) => (
+                <Link
+                  key={child.id}
+                  href={toCategoryPath(child.slug)}
+                  className="wp-cat-child-chip"
+                >
+                  {safeText(child.name, child.slug)}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Catalog body ──────────────────────────────────────── */}
       <div className="wp-cat-layout">
@@ -331,7 +374,7 @@ export default async function CategoryDetailPage({
         <div className="wp-cat-seo">
           <div
             className="wp-cat-seo-prose"
-            dangerouslySetInnerHTML={{ __html: rawDescription }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(rawDescription) }}
           />
         </div>
       )}

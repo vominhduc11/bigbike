@@ -56,6 +56,9 @@ public class ProductVariantEntity {
     private Integer imageHeight;
     private String imageMimeType;
 
+    @Column(name = "quantity_on_hand", nullable = false)
+    private int quantityOnHand;
+
     @Column(nullable = false)
     private boolean isAvailable;
 
@@ -64,6 +67,9 @@ public class ProductVariantEntity {
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantOptionEntity> options;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductVariantGalleryImageEntity> gallery;
 
     public String getId() {
         return id;
@@ -185,6 +191,14 @@ public class ProductVariantEntity {
         this.imageMimeType = imageMimeType;
     }
 
+    public int getQuantityOnHand() {
+        return quantityOnHand;
+    }
+
+    public void setQuantityOnHand(int quantityOnHand) {
+        this.quantityOnHand = quantityOnHand;
+    }
+
     public boolean isAvailable() {
         return isAvailable;
     }
@@ -207,5 +221,13 @@ public class ProductVariantEntity {
 
     public void setOptions(List<ProductVariantOptionEntity> options) {
         this.options = options;
+    }
+
+    public List<ProductVariantGalleryImageEntity> getGallery() {
+        return gallery;
+    }
+
+    public void setGallery(List<ProductVariantGalleryImageEntity> gallery) {
+        this.gallery = gallery;
     }
 }

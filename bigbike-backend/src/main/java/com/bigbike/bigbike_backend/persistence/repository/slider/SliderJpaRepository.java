@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SliderJpaRepository extends JpaRepository<SliderEntity, String> {
     List<SliderEntity> findByLocationOrderBySortOrderAsc(String location);
+    List<SliderEntity> findByLocationAndIsActiveTrueOrderBySortOrderAsc(String location);
     Optional<SliderEntity> findByLocationAndSortOrder(String location, Integer sortOrder);
 }

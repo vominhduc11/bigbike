@@ -24,36 +24,7 @@ public class DevAdminAuthService {
     private static final String HEADER_PERMISSIONS = "X-Admin-Permissions";
     private static final Set<String> DEV_MOCK_PROFILES = Set.of("dev", "mock", "test", "local");
     private static final Set<String> PROD_PROFILES = Set.of("prod", "production");
-    private static final Map<String, List<String>> ROLE_PERMISSION_MAP = Map.of(
-            "SUPER_ADMIN", List.of("*"),
-            "ADMIN", List.of(
-                    "products.read",
-                    "products.update",
-                    "catalog.read",
-                    "catalog.update",
-                    "content.read",
-                    "content.update",
-                    "orders.read",
-                    "orders.write",
-                    "customers.read",
-                    "customers.write",
-                    "media.read",
-                    "media.write",
-                    "redirects.read",
-                    "redirects.write",
-                    "settings.read",
-                    "settings.write",
-                    "menus.read",
-                    "menus.write",
-                    "sliders.read",
-                    "sliders.write",
-                    "coupons.read",
-                    "coupons.write"
-            ),
-            "MANAGER", List.of("products.read", "catalog.read", "content.read"),
-            "CONTENT_EDITOR", List.of("content.read", "content.update"),
-            "VIEWER", List.of("products.read", "catalog.read", "content.read")
-    );
+    private static final Map<String, List<String>> ROLE_PERMISSION_MAP = AdminRolePermissions.MAP;
 
     private final Environment environment;
 
@@ -116,8 +87,7 @@ public class DevAdminAuthService {
 
     /** Returns default permissions for a given role string — used by other services. */
     public static List<String> defaultPermissionsForRole(String role) {
-        if (role == null) return List.of();
-        return ROLE_PERMISSION_MAP.getOrDefault(role.toUpperCase(Locale.ROOT), List.of());
+        return AdminRolePermissions.forRole(role);
     }
 
     private void ensureDevMockProfile() {

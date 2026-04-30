@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminAdminUsersService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/admin/admin-users")
 public class AdminAdminUsersController {
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminAdminUsersService adminAdminUsersService;
     private final DevAdminAuthService devAdminAuthService;
@@ -67,12 +72,24 @@ public class AdminAdminUsersController {
         devAdminAuthService.requirePermission(request, "admin-users.write");
         return apiResponseFactory.data(
                 adminAdminUsersService.updateAdminUser(
+                        resolveAdminId(),
                         id,
                         body.get("displayName"),
                         body.get("status"),
-                        body.get("newPassword")
+                        body.get("newPassword"),
+                        body.get("role")
                 ),
                 request
         );
+    }
+
+    private UUID resolveAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            try {
+                return UUID.fromString(principal.id());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return DEV_ADMIN_ID;
     }
 }

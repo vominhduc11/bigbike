@@ -2,14 +2,17 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,32 +21,35 @@ public class AdminReviewService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
-    private static final Set<String> ALLOWED_STATUSES = Set.of("APPROVED", "PENDING", "SPAM", "TRASH");
 
     private final ReviewJpaRepository reviewRepo;
-    private final PaginationService paginationService;
+    private final ProductJpaRepository productRepo;
+    private final WebRevalidationService webRevalidationService;
 
-    public AdminReviewService(ReviewJpaRepository reviewRepo, PaginationService paginationService) {
+    public AdminReviewService(
+            ReviewJpaRepository reviewRepo,
+            ProductJpaRepository productRepo,
+            WebRevalidationService webRevalidationService) {
         this.reviewRepo = reviewRepo;
-        this.paginationService = paginationService;
+        this.productRepo = productRepo;
+        this.webRevalidationService = webRevalidationService;
     }
 
     public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        List<ReviewEntity> all = reviewRepo.findAll();
-        if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
-            all = all.stream()
-                    .filter(r -> matches(r.getAuthorName(), qLower) || matches(r.getBody(), qLower))
-                    .toList();
-        }
-        if (status != null && !status.isBlank()) {
-            all = all.stream().filter(r -> status.equalsIgnoreCase(r.getStatus())).toList();
-        }
-        List<Map<String, Object>> mapped = all.stream().map(this::toMap).toList();
-        return paginationService.paginate(mapped, normalizedPage, normalizedSize);
+        // Empty string (not null) — see ReviewJpaRepository.findByFilters comment for why.
+        String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
+        String qFilter = (q != null && !q.isBlank()) ? q : "";
+
+        PageRequest pageRequest = PageRequest.of(
+                normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, pageRequest);
+
+        List<Map<String, Object>> mapped = dbPage.getContent().stream().map(this::toMap).toList();
+        return new PageResult<>(mapped, normalizedPage, normalizedSize,
+                dbPage.getTotalElements(), dbPage.getTotalPages());
     }
 
     public Map<String, Object> getReview(Long id) {
@@ -57,18 +63,28 @@ public class AdminReviewService {
                 .orElseThrow(() -> new NotFoundException("Review not found."));
         entity.setStatus(status.toUpperCase(Locale.ROOT));
         entity.setUpdatedAt(Instant.now());
-        return toMap(reviewRepo.save(entity));
+        Map<String, Object> result = toMap(reviewRepo.save(entity));
+        revalidateProduct(entity.getProductId());
+        return result;
     }
 
     @Transactional
     public void deleteReview(Long id) {
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
+        String productId = entity.getProductId();
         reviewRepo.delete(entity);
+        revalidateProduct(productId);
     }
 
-    private boolean matches(String field, String q) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(q);
+    private void revalidateProduct(String productId) {
+        if (productId == null) return;
+        productRepo.findById(productId).ifPresent(p -> {
+            String slug = p.getSlug();
+            if (slug != null && !slug.isBlank()) {
+                webRevalidationService.revalidate("product:" + slug, "products");
+            }
+        });
     }
 
     private Map<String, Object> toMap(ReviewEntity r) {

@@ -2,11 +2,14 @@ import {
   normalizeBrand,
   normalizeCategory,
   normalizeContentItem,
+  normalizeCoupon,
   normalizeCustomer,
   normalizeMediaItem,
   normalizeOrder,
   normalizePagination,
   normalizeProduct,
+  normalizeRedirect,
+  normalizeSetting,
 } from './contracts'
 
 const ISO_NOW = new Date().toISOString()
@@ -426,7 +429,7 @@ export const ROLE_PERMISSION_MAP = {
     'settings.read', 'settings.update',
     'coupons.read', 'coupons.update',
     'redirects.read', 'redirects.update',
-    'menus.read', 'menus.update',
+    'menus.read', 'menus.write',
   ],
   MANAGER: [
     'products.read', 'catalog.read', 'content.read',
@@ -523,5 +526,282 @@ export function buildMockAdminUser(role = 'ADMIN') {
     email: 'admin@bigbike.local',
     roles: [normalizedRole],
     permissions,
+  }
+}
+
+// ── Mock Admin Users ─────────────────────────────────────────────────────────
+
+const ADMIN_USERS_DATA = [
+  { id: 'adm-001', email: 'admin@bigbike.local', displayName: 'BigBike Admin', role: 'SUPER_ADMIN', status: 'ACTIVE', lastLoginAt: ISO_NOW, createdAt: '2025-01-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'adm-002', email: 'editor@bigbike.local', displayName: 'Nội dung Editor', role: 'CONTENT_EDITOR', status: 'ACTIVE', lastLoginAt: '2026-04-25T08:00:00Z', createdAt: '2025-06-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'adm-003', email: 'viewer@bigbike.local', displayName: 'Viewer Test', role: 'VIEWER', status: 'INACTIVE', lastLoginAt: null, createdAt: '2026-01-15T00:00:00Z', updatedAt: ISO_NOW },
+]
+
+export function queryMockAdminUsers(query) {
+  let items = ADMIN_USERS_DATA
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((u) => u.email.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 20
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Reviews ─────────────────────────────────────────────────────────────
+
+const REVIEWS_DATA = [
+  { id: 'rev-001', productId: 'prod-agv-k1', authorName: 'Nguyễn Văn A', authorEmail: 'khach@example.com', rating: 5, body: 'Mũ rất tốt, đầu vào vừa, đẹp lắm!', status: 'APPROVED', createdAt: '2026-04-10T09:00:00Z', updatedAt: ISO_NOW },
+  { id: 'rev-002', productId: 'prod-ls2-ff352', authorName: 'Trần Thị B', authorEmail: 'tran@example.com', rating: 3, body: 'Tạm ổn, giao hàng hơi chậm.', status: 'PENDING', createdAt: '2026-04-20T11:30:00Z', updatedAt: ISO_NOW },
+  { id: 'rev-003', productId: 'prod-agv-k1', authorName: 'Spam Bot', authorEmail: 'spam@evil.com', rating: 1, body: 'Buy cheap stuff at example.com!!!', status: 'SPAM', createdAt: '2026-04-22T03:00:00Z', updatedAt: ISO_NOW },
+]
+
+export function queryMockReviews(query) {
+  let items = REVIEWS_DATA
+  if (query?.status && query.status !== 'ALL') {
+    items = items.filter((r) => r.status === query.status)
+  }
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((r) => r.authorName.toLowerCase().includes(q) || r.body.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 20
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Sliders ─────────────────────────────────────────────────────────────
+
+const SLIDERS_DATA = [
+  { id: 'sld-001', location: 'home', sortOrder: 1, isActive: true, desktopImage: { url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200', alt: 'Banner 1' }, mobileImage: null, externalLink: '/collections/new', productId: null },
+  { id: 'sld-002', location: 'home', sortOrder: 2, isActive: false, desktopImage: { url: 'https://images.unsplash.com/photo-1610642372651-3e0e4af7fcd2?w=1200', alt: 'Banner 2' }, mobileImage: null, externalLink: null, productId: 'prod-agv-k1' },
+  { id: 'sld-003', location: 'category', sortOrder: 1, isActive: true, desktopImage: { url: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=1200', alt: 'Category banner' }, mobileImage: null, externalLink: '/collections/helmets', productId: null },
+]
+
+export function queryMockSliders(location) {
+  const items = SLIDERS_DATA.filter((s) => !location || s.location === location)
+  return { items }
+}
+
+// ── Mock Coupons ─────────────────────────────────────────────────────────────
+
+const COUPONS_DATA = [
+  { id: 'cpn-001', code: 'BIGBIKE10', name: 'Giảm 10% toàn bộ', discountType: 'PERCENT', amount: 10, minimumAmount: 500000, usageLimit: 100, usageCount: 23, status: 'ACTIVE', expiresAt: '2026-12-31T16:59:59Z', createdAt: '2026-01-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'cpn-002', code: 'FREESHIP', name: 'Giảm phí vận chuyển', discountType: 'FIXED', amount: 50000, minimumAmount: 0, usageLimit: null, usageCount: 87, status: 'ACTIVE', expiresAt: null, createdAt: '2026-02-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'cpn-003', code: 'SUMMER2025', name: 'Summer Sale 2025', discountType: 'PERCENT', amount: 15, minimumAmount: 1000000, usageLimit: 50, usageCount: 50, status: 'EXPIRED', expiresAt: '2025-09-30T16:59:59Z', createdAt: '2025-06-01T00:00:00Z', updatedAt: ISO_NOW },
+].map(normalizeCoupon)
+
+export function queryMockCoupons(query) {
+  let items = COUPONS_DATA
+  if (query?.status && query.status !== 'ALL') {
+    items = items.filter((c) => c.status === query.status)
+  }
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((c) => c.code.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 10
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Settings ─────────────────────────────────────────────────────────────
+
+const SETTINGS_DATA = [
+  { key: 'store_name', value: 'BigBike Store', description: 'Tên cửa hàng hiển thị trên website', updatedAt: ISO_NOW },
+  { key: 'store_email', value: 'contact@bigbike.local', description: 'Email liên hệ', updatedAt: ISO_NOW },
+  { key: 'store_phone', value: '0901234567', description: 'Số điện thoại liên hệ', updatedAt: ISO_NOW },
+  { key: 'free_shipping_threshold', value: '2000000', description: 'Giá trị đơn hàng miễn phí ship (VND)', updatedAt: ISO_NOW },
+].map(normalizeSetting)
+
+export function queryMockSettings() {
+  return { items: SETTINGS_DATA }
+}
+
+// ── Mock Shipping ─────────────────────────────────────────────────────────────
+
+const SHIPPING_ZONES_DATA = [
+  { id: 'zone-hcm', name: 'TP. Hồ Chí Minh', regionCode: 'HCM', sortOrder: 1, enabled: true, createdAt: '2025-01-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'zone-hn', name: 'Hà Nội', regionCode: 'HN', sortOrder: 2, enabled: true, createdAt: '2025-01-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'zone-other', name: 'Tỉnh thành khác', regionCode: 'OTHER', sortOrder: 3, enabled: true, createdAt: '2025-01-01T00:00:00Z', updatedAt: ISO_NOW },
+]
+
+const SHIPPING_METHODS_DATA = [
+  { id: 'mth-001', zoneId: 'zone-hcm', methodCode: 'STANDARD', title: 'Giao hàng tiêu chuẩn', description: '2-3 ngày', cost: 30000, minOrderAmount: 0, sortOrder: 1, enabled: true },
+  { id: 'mth-002', zoneId: 'zone-hcm', methodCode: 'EXPRESS', title: 'Giao hàng nhanh', description: 'Trong ngày', cost: 60000, minOrderAmount: 0, sortOrder: 2, enabled: true },
+  { id: 'mth-003', zoneId: 'zone-hn', methodCode: 'STANDARD', title: 'Giao hàng tiêu chuẩn', description: '3-5 ngày', cost: 40000, minOrderAmount: 0, sortOrder: 1, enabled: true },
+]
+
+export function queryMockShippingZones(query) {
+  let items = SHIPPING_ZONES_DATA
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((z) => z.name.toLowerCase().includes(q))
+  }
+  const pageSize = Number(query?.pageSize) || 20
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+export function queryMockShippingMethods(zoneId) {
+  return { items: SHIPPING_METHODS_DATA.filter((m) => !zoneId || m.zoneId === zoneId) }
+}
+
+// ── Mock Dashboard ────────────────────────────────────────────────────────────
+
+function generateRevenueSeries(days) {
+  const today = new Date()
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (days - 1 - i))
+    const dow = d.getDay()
+    const isWeekend = dow === 0 || dow === 6
+    const seed = d.getDate() + d.getMonth() * 31
+    const base = isWeekend ? 9000000 : 24000000
+    const variance = ((seed * 17 + 11) % 28) * 1000000
+    const trend = Math.round((i / days) * 6000000)
+    const revenue = Math.round((base + variance + trend) / 500000) * 500000
+    const orders = isWeekend ? 4 + (seed % 9) : 11 + (seed % 16)
+    // ISO yyyy-MM-dd — matches BE contract, FE formats for display
+    const iso = d.toISOString().slice(0, 10)
+    return { date: iso, revenue, orders }
+  })
+}
+
+export function getMockDashboardSummary(period = '30d') {
+  const days = period === '7d' ? 7 : period === '90d' ? 90 : 30
+  const revenueData = generateRevenueSeries(days)
+  const todayRevenue = revenueData[revenueData.length - 1].revenue
+  const prevRevenue = revenueData[revenueData.length - 2].revenue
+  const todayRevenuePct = prevRevenue > 0 ? ((todayRevenue - prevRevenue) / prevRevenue) * 100 : null
+  const todayOrders = revenueData[revenueData.length - 1].orders
+  const prevOrders = revenueData[revenueData.length - 2].orders
+
+  return {
+    kpi: {
+      todayRevenue,
+      todayRevenuePct: todayRevenuePct !== null ? Math.round(todayRevenuePct * 10) / 10 : null,
+      todayOrders,
+      todayOrdersDelta: todayOrders - prevOrders,
+      pendingOrders: 5,
+      activeProducts: 124,
+    },
+    revenueData,
+    // Only real OrderStatus values — label/color are mapped by FE from i18n/constants
+    orderStatusBreakdown: [
+      { status: 'COMPLETED',  count: 67 },
+      { status: 'PROCESSING', count: 12 },
+      { status: 'PENDING',    count: 5  },
+      { status: 'ON_HOLD',    count: 3  },
+      { status: 'CANCELLED',  count: 5  },
+      { status: 'REFUNDED',   count: 2  },
+    ],
+    recentOrders: ORDER_DATA.map(normalizeOrder),
+    topProducts: [
+      { productId: 'prod-ls2-ff800',       name: 'Mũ bảo hiểm LS2 FF800',        units: 42, revenue: 119700000 },
+      { productId: 'prod-astars-jacket-v2', name: 'Áo giáp Alpinestars V2',        units: 28, revenue: 100520000 },
+      { productId: 'prod-astars-gloves',    name: 'Găng tay Alpinestars City',      units: 31, revenue: 30690000  },
+      { productId: 'prod-cardo-spirit',     name: 'Cardo Spirit Intercom',          units: 19, revenue: 47310000  },
+      { productId: 'prod-ls2-rapid',        name: 'Mũ bảo hiểm LS2 Rapid White',   units: 15, revenue: 27750000  },
+    ],
+  }
+}
+
+// ── Mock Redirects ────────────────────────────────────────────────────────────
+
+const REDIRECTS_DATA = [
+  { id: 'rdr-001', sourcePattern: '/san-pham/mu-agv-old', targetUrl: '/product/mu-agv-k1/', redirectType: 'EXACT', statusCode: 301, enabled: true, hitCount: 142, lastHitAt: ISO_NOW, createdAt: '2025-12-01T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'rdr-002', sourcePattern: '/tin-tuc/chuyen-muc-cu', targetUrl: '/tin-tuc/', redirectType: 'EXACT', statusCode: 302, enabled: true, hitCount: 7, lastHitAt: '2026-03-15T08:00:00Z', createdAt: '2026-01-10T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'rdr-003', sourcePattern: '/old-homepage', targetUrl: '/', redirectType: 'EXACT', statusCode: 301, enabled: false, hitCount: 0, lastHitAt: null, notes: 'Disabled — homepage slug changed', createdAt: '2026-02-20T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'rdr-004', sourcePattern: '/mu-bao-hiem-cu', targetUrl: '/danh-muc-san-pham/non-bao-hiem-moto/', redirectType: 'EXACT', statusCode: 301, enabled: true, hitCount: 55, lastHitAt: '2026-04-01T12:00:00Z', createdAt: '2026-03-01T00:00:00Z', updatedAt: ISO_NOW },
+].map(normalizeRedirect)
+
+export function queryMockRedirects(query) {
+  let items = REDIRECTS_DATA
+  if (query?.search) {
+    const q = query.search.toLowerCase()
+    items = items.filter((r) => r.sourcePattern.toLowerCase().includes(q) || r.targetUrl.toLowerCase().includes(q))
+  }
+  if (query?.enabled != null) {
+    const wantEnabled = query.enabled === true || query.enabled === 'true'
+    items = items.filter((r) => r.isEnabled === wantEnabled)
+  }
+  if (query?.statusCode != null) {
+    const code = Number(query.statusCode)
+    items = items.filter((r) => r.statusCode === code)
+  }
+  const pageSize = Number(query?.pageSize) || 20
+  const page = Number(query?.page) || 1
+  const start = (page - 1) * pageSize
+  return {
+    items: items.slice(start, start + pageSize),
+    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
+  }
+}
+
+// ── Mock Analytics ────────────────────────────────────────────────────────────
+
+export function queryMockAnalytics(from, to) {
+  const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 86400000)
+  const toDate = to ? new Date(to) : new Date()
+  const days = Math.max(1, Math.round((toDate - fromDate) / 86400000) + 1)
+
+  const dailyRevenue = Array.from({ length: days }, (_, i) => {
+    const d = new Date(fromDate)
+    d.setDate(d.getDate() + i)
+    const dow = d.getDay()
+    const isWeekend = dow === 0 || dow === 6
+    const seed = d.getDate() + d.getMonth() * 31
+    const base = isWeekend ? 9000000 : 24000000
+    const variance = ((seed * 17 + 11) % 28) * 1000000
+    const trend = Math.round((i / days) * 6000000)
+    const revenue = Math.round((base + variance + trend) / 500000) * 500000
+    const orders = isWeekend ? 4 + (seed % 9) : 11 + (seed % 16)
+    return {
+      date: d.toLocaleDateString('vi-VN', { month: 'numeric', day: 'numeric' }),
+      revenue,
+      orders,
+    }
+  })
+
+  const totalRevenue = dailyRevenue.reduce((s, d) => s + d.revenue, 0)
+  const orderCount = dailyRevenue.reduce((s, d) => s + d.orders, 0)
+
+  return {
+    summary: {
+      totalRevenue,
+      orderCount,
+      avgOrderValue: orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0,
+      refundAmount: Math.round(totalRevenue * 0.02),
+    },
+    dailyRevenue,
+    topProducts: [
+      { productName: 'Mũ bảo hiểm LS2 FF800', revenue: 119700000, unitsSold: 42 },
+      { productName: 'Áo giáp Alpinestars V2', revenue: 100520000, unitsSold: 28 },
+      { productName: 'Intercom Cardo Spirit', revenue: 47310000, unitsSold: 19 },
+      { productName: 'Găng tay Alpinestars City', revenue: 30690000, unitsSold: 31 },
+      { productName: 'Mũ bảo hiểm LS2 Rapid', revenue: 27750000, unitsSold: 15 },
+    ],
+    topCustomers: [
+      { email: 'nguyen.van.a@example.com', orderCount: 12, totalSpent: 48500000 },
+      { email: 'tran.thi.b@example.com', orderCount: 9, totalSpent: 31200000 },
+      { email: 'le.van.c@example.com', orderCount: 7, totalSpent: 26800000 },
+    ],
   }
 }

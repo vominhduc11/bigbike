@@ -27,6 +27,13 @@ import {
 import { toBrandPath, toHomePath, toBrandListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const result = await listBrands({ page: 1, size: 1000, sort: "name:asc" });
+  return (result.data ?? []).map((b) => ({ slug: b.slug }));
+}
+
 type BrandDetailPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

@@ -336,7 +336,7 @@ class Phase2D2ProductVariationImporterTest {
             java.math.BigDecimal salePrice, Integer stock, String stockStatus,
             Map<String, String> attributes, String status) {
         return new MappedVariation(sourceId, parentId, sku, price, regularPrice, salePrice,
-                stock, stockStatus, attributes, status, List.of());
+                stock, stockStatus, attributes, status, List.of(), List.of());
     }
 
     private MigrationExecutionOptions opts(boolean dryRun) {

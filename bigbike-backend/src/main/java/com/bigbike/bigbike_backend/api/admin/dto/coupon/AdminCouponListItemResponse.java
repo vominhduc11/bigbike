@@ -10,6 +10,8 @@ public record AdminCouponListItemResponse(
         String name,
         String discountType,
         BigDecimal amount,
+        BigDecimal minimumAmount,
+        BigDecimal maximumAmount,
         String status,
         int usageCount,
         Integer usageLimit,

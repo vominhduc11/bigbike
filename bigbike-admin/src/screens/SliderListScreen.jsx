@@ -1,138 +1,483 @@
-import { useEffect, useState } from 'react'
-import { deleteSlider, fetchSliders, upsertSlider } from '../lib/adminApi'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical } from 'lucide-react'
+import { toast } from 'sonner'
+import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
+import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { showConfirm } from '../lib/confirm'
 
 const LOCATIONS = ['home', 'category', 'promotion']
-const EMPTY_FORM = { location: 'home', sortOrder: '0', desktopImageUrl: '', mobileImageUrl: '', externalLink: '', productId: '' }
+const EMPTY_FORM = {
+  location: 'home',
+  sortOrder: '0',
+  desktopImageUrl: '',
+  desktopAlt: '',
+  mobileImageUrl: '',
+  mobileAlt: '',
+  externalLink: '',
+  productId: '',
+  isActive: true,
+}
 
-export function SliderListScreen({ canUpdate }) {
-  const [location, setLocation] = useState('home')
-  const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
-  const [formError, setFormError] = useState('')
-  const [formSaving, setFormSaving] = useState(false)
+function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
+  const { t } = useTranslation()
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSelf } = useSortable({ id: slider.id })
 
-  function load(loc) {
-    setState((p) => ({ ...p, status: 'loading' }))
-    fetchSliders(loc)
-      .then((r) => setState({ status: 'success', items: r.items, warning: r.mode === 'mock' ? r.warning : '' }))
-      .catch((e) => setState({ status: 'error', items: [], warning: '', error: e.message }))
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isSelf ? 0.4 : 1,
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(location) }, [location])
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        background: 'var(--admin-color-surface-base)',
+        border: '1px solid var(--admin-color-border-subtle)',
+        borderRadius: 'var(--admin-radius-md)',
+        padding: '12px 16px',
+        display: 'flex',
+        gap: 12,
+        alignItems: 'flex-start',
+        boxShadow: 'var(--admin-shadow-xs)',
+        opacity: slider.isActive === false ? 0.55 : undefined,
+      }}
+    >
+      {canUpdate && (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'grab',
+            padding: '2px 4px',
+            color: 'var(--admin-color-text-muted)',
+            flexShrink: 0,
+            touchAction: 'none',
+          }}
+          title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+        >
+          <GripVertical size={16} />
+        </button>
+      )}
 
-  async function handleUpsert(e) {
-    e.preventDefault()
-    if (!form.externalLink.trim() && !form.productId.trim()) {
-      setFormError('Cần nhập externalLink hoặc productId.')
-      return
-    }
-    setFormSaving(true)
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+        {slider.desktopImage?.url && (
+          <img
+            src={slider.desktopImage.url}
+            alt={slider.desktopImage.alt || ''}
+            title="Desktop"
+            style={{ width: 100, height: 52, objectFit: 'cover', borderRadius: 4 }}
+          />
+        )}
+        {slider.mobileImage?.url && (
+          <img
+            src={slider.mobileImage.url}
+            alt={slider.mobileImage.alt || ''}
+            title="Mobile"
+            style={{ width: 60, height: 32, objectFit: 'cover', borderRadius: 4 }}
+          />
+        )}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <p style={{ fontWeight: 600, fontSize: 'var(--admin-text-sm)', margin: 0 }}>
+            #{slider.sortOrder} · {slider.location}
+          </p>
+          <span className={`status-badge status-${slider.isActive !== false ? 'success' : 'neutral'}`}>
+            {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
+          </span>
+        </div>
+        {slider.externalLink && (
+          <p style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {t('sliders.linkLabel')} {slider.externalLink}
+          </p>
+        )}
+        {slider.productId && (
+          <p style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)' }}>
+            {t('sliders.productLabel')} {slider.productId}
+          </p>
+        )}
+      </div>
+
+      {canUpdate && (
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'flex-start' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: 'var(--admin-text-xs)' }}
+            onClick={() => onToggleActive(slider)}
+          >
+            {slider.isActive !== false ? t('common.disable') : t('common.enable')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: 'var(--admin-text-xs)' }}
+            onClick={() => onEdit(slider)}
+          >
+            {t('common.edit')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            style={{ fontSize: 'var(--admin-text-xs)' }}
+            onClick={() => onDelete(slider.id)}
+          >
+            {t('common.delete')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function SliderListScreen({ canUpdate }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [location, setLocation] = useState('home')
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
+  const [formError, setFormError] = useState('')
+  const [activeId, setActiveId] = useState(null)
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['sliders', location],
+    queryFn: () => fetchSliders(location),
+  })
+
+  const items = [...(data?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
+  const warning = data?.mode === 'mock' ? (data?.warning ?? '') : ''
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const reorderMutation = useMutation({
+    mutationFn: ({ location: loc, items }) => reorderSliders(loc, items),
+    onMutate: async ({ location: loc }) => {
+      await queryClient.cancelQueries({ queryKey: ['sliders', loc] })
+      return { previous: queryClient.getQueryData(['sliders', loc]), loc }
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData(['sliders', location], result)
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['sliders', context.loc], context.previous)
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      }
+      toast.error(t('sliders.saveError', { defaultValue: 'Lỗi khi lưu thứ tự' }))
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (payload) => createSlider(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      closeForm()
+      toast.success(t('sliders.saveSuccess', { defaultValue: 'Đã lưu banner' }))
+    },
+    onError: (e) => setFormError(e.message || t('sliders.saveError')),
+  })
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }) => updateSlider(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      closeForm()
+      toast.success(t('sliders.saveSuccess', { defaultValue: 'Đã lưu slider' }))
+    },
+    onError: (e) => setFormError(e.message || t('sliders.saveError')),
+  })
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }) => updateSlider(id, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      toast.success(t('sliders.toggleSuccess', { defaultValue: 'Đã cập nhật trạng thái' }))
+    },
+    onError: (e) => toast.error(e?.message || t('sliders.saveError', { defaultValue: 'Lỗi khi cập nhật trạng thái' })),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (sliderId) => deleteSlider(sliderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sliders', location] })
+      toast.success(t('sliders.deleteSuccess', { defaultValue: 'Đã xoá slider' }))
+    },
+    onError: (e) => toast.error(e.message || t('sliders.deleteError')),
+  })
+
+  function openAddForm() {
+    setEditingId(null)
+    const nextOrder = items.length > 0
+      ? Math.max(...items.map((i) => Number(i.sortOrder ?? 0))) + 1
+      : 0
+    setForm({ ...EMPTY_FORM, location, sortOrder: String(nextOrder) })
     setFormError('')
-    try {
-      const payload = {
-        location: form.location,
-        sortOrder: Number(form.sortOrder),
-        externalLink: form.externalLink.trim() || undefined,
-        productId: form.productId.trim() || undefined,
-      }
-      if (form.desktopImageUrl.trim()) {
-        payload.desktopImage = { url: form.desktopImageUrl.trim() }
-      }
-      if (form.mobileImageUrl.trim()) {
-        payload.mobileImage = { url: form.mobileImageUrl.trim() }
-      }
-      await upsertSlider(payload)
-      setShowForm(false)
-      setForm({ ...EMPTY_FORM, location })
-      load(location)
-    } catch (e) {
-      setFormError(e.message || 'Lỗi lưu slider')
-    } finally {
-      setFormSaving(false)
-    }
+    setShowForm(true)
+  }
+
+  function handleEdit(slider) {
+    setEditingId(slider.id)
+    setForm({
+      location: slider.location,
+      sortOrder: String(slider.sortOrder),
+      desktopImageUrl: slider.desktopImage?.url || '',
+      desktopAlt: slider.desktopImage?.alt || '',
+      mobileImageUrl: slider.mobileImage?.url || '',
+      mobileAlt: slider.mobileImage?.alt || '',
+      externalLink: slider.externalLink || '',
+      productId: slider.productId || '',
+      isActive: slider.isActive !== false,
+    })
+    setFormError('')
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditingId(null)
+    setFormError('')
   }
 
   async function handleDelete(sliderId) {
-    if (!window.confirm('Xoá slider này?')) return
-    try {
-      await deleteSlider(sliderId)
-      load(location)
-    } catch (e) { alert(e.message) }
+    const confirmed = await showConfirm(t('sliders.deleteConfirm'), t('sliders.deleteConfirmTitle'))
+    if (!confirmed) return
+    deleteMutation.mutate(sliderId)
   }
+
+  function handleToggleActive(slider) {
+    toggleActiveMutation.mutate({ id: slider.id, isActive: slider.isActive === false })
+  }
+
+  function buildPayload() {
+    const payload = {
+      location: form.location,
+      sortOrder: Number(form.sortOrder),
+      isActive: form.isActive,
+      externalLink: form.externalLink.trim() || undefined,
+      productId: form.productId.trim() || undefined,
+    }
+    if (form.desktopImageUrl.trim()) {
+      payload.desktopImage = { url: form.desktopImageUrl.trim(), alt: form.desktopAlt.trim() || undefined }
+    }
+    if (form.mobileImageUrl.trim()) {
+      payload.mobileImage = { url: form.mobileImageUrl.trim(), alt: form.mobileAlt.trim() || undefined }
+    }
+    return payload
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.externalLink.trim() && !form.productId.trim()) {
+      setFormError(t('sliders.formRequired'))
+      return
+    }
+    setFormError('')
+    const payload = buildPayload()
+    if (editingId) {
+      editMutation.mutate({ id: editingId, payload })
+    } else {
+      createMutation.mutate(payload)
+    }
+  }
+
+  function handleDragStart(event) {
+    setActiveId(event.active.id)
+  }
+
+  function handleDragEnd(event) {
+    const { active, over } = event
+    setActiveId(null)
+    if (!over || active.id === over.id) return
+
+    const oldIndex = items.findIndex((i) => i.id === active.id)
+    const newIndex = items.findIndex((i) => i.id === over.id)
+    const reordered = arrayMove(items, oldIndex, newIndex)
+
+    // Optimistic update
+    queryClient.setQueryData(['sliders', location], (prev) => {
+      if (!prev) return prev
+      const updated = reordered.map((item, idx) => ({ ...item, sortOrder: idx }))
+      return { ...prev, items: updated }
+    })
+
+    // Single batch call — avoids UNIQUE(location, sort_order) race conditions
+    reorderMutation.mutate({
+      location,
+      items: reordered.map((item, idx) => ({ id: item.id, sortOrder: idx })),
+    })
+  }
+
+  const activeSlider = activeId ? items.find((i) => i.id === activeId) : null
+  const isSaving = createMutation.isPending || editMutation.isPending
+    || reorderMutation.isPending || toggleActiveMutation.isPending
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Content</p>
-          <h1>Sliders</h1>
-          <p>Quản lý banner slider theo vị trí.</p>
+          <p className="eyebrow">{t('sliders.eyebrow')}</p>
+          <h1>{t('sliders.title')}</h1>
+          <p>{t('sliders.description')}</p>
         </div>
         {canUpdate && (
-          <button type="button" className="btn btn-primary" onClick={() => { setForm({ ...EMPTY_FORM, location }); setShowForm(!showForm) }}>
-            {showForm ? 'Huỷ' : 'Thêm slider'}
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
+          >
+            {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
           </button>
         )}
       </header>
 
-      {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
+      {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
       <section className="filter-bar">
-        <label>Vị trí
-          <select className="control-select" value={location} onChange={(e) => setLocation(e.target.value)}>
+        <label>
+          {t('sliders.filterLocation')}
+          <select className="control-select" value={location} onChange={(e) => { setLocation(e.target.value); closeForm() }}>
             {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
           </select>
         </label>
       </section>
 
       {showForm && (
-        <form onSubmit={handleUpsert} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Thêm / cập nhật slider</h3>
-          {formError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{formError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <label>Vị trí
-              <select className="control-select" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}>
-                {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
-            </label>
-            <label>Sort Order <input className="control-input" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} /></label>
-            <label>Desktop Image URL <input className="control-input" placeholder="https://..." value={form.desktopImageUrl} onChange={(e) => setForm((p) => ({ ...p, desktopImageUrl: e.target.value }))} /></label>
-            <label>Mobile Image URL <input className="control-input" placeholder="https://..." value={form.mobileImageUrl} onChange={(e) => setForm((p) => ({ ...p, mobileImageUrl: e.target.value }))} /></label>
-            <label>External Link <input className="control-input" placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} /></label>
-            <label>Product ID <input className="control-input" value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))} /></label>
+        <form onSubmit={handleSubmit} className="detail-section">
+          <div className="detail-section-header">
+            <h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? 'Đang lưu...' : 'Lưu slider'}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setFormError('') }}>Huỷ</button>
+          <div className="detail-section-content">
+            {formError && <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12 }}>{formError}</p>}
+            <div className="form-grid">
+              <label className="form-field">
+                {t('sliders.formLocation')}
+                <select className="control-select" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}>
+                  {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
+                </select>
+              </label>
+              <label className="form-field">
+                {t('sliders.formSortOrder')}
+                <input className="control-input" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
+              </label>
+              <label className="form-field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                />
+                {t('sliders.formIsActive')}
+              </label>
+
+              <div className="form-field form-field-wide">
+                <span>{t('sliders.formDesktopUrl')}</span>
+                <ImageUrlInput
+                  value={form.desktopImageUrl}
+                  onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))}
+                />
+              </div>
+              <label className="form-field form-field-wide">
+                {t('sliders.formDesktopAlt')}
+                <input className="control-input" value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))} />
+              </label>
+
+              <div className="form-field form-field-wide">
+                <span>{t('sliders.formMobileUrl')}</span>
+                <ImageUrlInput
+                  value={form.mobileImageUrl}
+                  onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
+                />
+              </div>
+              <label className="form-field form-field-wide">
+                {t('sliders.formMobileAlt')}
+                <input className="control-input" value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
+              </label>
+
+              <label className="form-field form-field-wide">
+                {t('sliders.formExternalLink')}
+                <input className="control-input" placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                {t('sliders.formProductId')}
+                <input className="control-input" value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))} />
+              </label>
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+              <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                {isSaving ? t('sliders.saving') : (editingId ? t('common.update') : t('sliders.saveBtn'))}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={closeForm}>
+                {t('common.cancel')}
+              </button>
+            </div>
           </div>
         </form>
       )}
 
-      {state.status === 'loading' && <StatePanel tone="info" title="Đang tải sliders" description="Vui lòng chờ..." />}
-      {state.status === 'error' && <StatePanel tone="danger" title="Lỗi" description={state.error} actionLabel="Thử lại" onAction={() => load(location)} />}
-      {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title="Chưa có slider" description={`Chưa có slider nào ở vị trí "${location}".`} />}
-      {state.status === 'success' && state.items.length > 0 && (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {[...state.items].sort((a, b) => a.sortOrder - b.sortOrder).map((slider) => (
-            <div key={slider.id} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              {slider.desktopImage?.url && (
-                <img src={slider.desktopImage.url} alt="" style={{ width: '120px', height: '60px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
-              )}
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Slot {slider.sortOrder} — {slider.location}</p>
-                {slider.externalLink && <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>Link: {slider.externalLink}</p>}
-                {slider.productId && <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>Product: {slider.productId}</p>}
-              </div>
-              {canUpdate && (
-                <button type="button" className="btn btn-danger" style={{ fontSize: '0.8rem', flexShrink: 0 }} onClick={() => handleDelete(slider.id)}>Xoá</button>
-              )}
+      {isLoading && <StatePanel tone="info" title={t('sliders.loading')} description={t('common.pleaseWait')} />}
+      {isError && <StatePanel tone="danger" title={t('sliders.error')} description={error?.message} actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['sliders', location] })} />}
+      {!isLoading && !isError && items.length === 0 && (
+        <StatePanel tone="neutral" title={t('sliders.empty')} description={t('sliders.emptyDesc', { location })} />
+      )}
+
+      {items.length > 0 && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {items.map((slider) => (
+                <SliderCard
+                  key={slider.id}
+                  slider={slider}
+                  canUpdate={canUpdate}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleActive={handleToggleActive}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeSlider ? (
+              <SliderCard slider={activeSlider} canUpdate={false} onEdit={() => {}} onDelete={() => {}} onToggleActive={() => {}} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
     </section>
   )

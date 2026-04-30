@@ -57,9 +57,9 @@ export type QuickBuyPayload = {
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  shippingMethod?: string | null
+  shippingMethodId?: string | null
   paymentMethod: string
-  notes?: string
+  customerNote?: string
 }
 
 export type PaymentMethodOption = {
@@ -138,7 +138,7 @@ export type OrderPayment = {
 
 export type OrderNote = {
   id: string
-  type: string
+  type?: string  // backend CustomerOrderReadService does not return type; admin-visible only
   content: string
   createdAt: string
 }
@@ -161,6 +161,9 @@ export type OrderDetail = {
   taxAmount: number
   totalAmount: number
   paidAmount: number
+  refundAmount: number
+  refundReason: string | null
+  refundedAt: string | null
   placedAt: string
   lineItems: OrderLineItem[]
   addresses: OrderAddress[]
@@ -219,6 +222,7 @@ export type UpdateCustomerProfilePayload = {
   displayName?: string
   phone?: string
   email?: string
+  currentPassword?: string
   newPassword?: string
   gender?: string
   dob?: string
@@ -241,4 +245,53 @@ export type ContactPayload = {
   phone: string
   email?: string
   content: string
+}
+
+export type CustomerReturnItem = {
+  id: string
+  productName: string
+  variantName: string | null
+  sku: string | null
+  quantity: number
+  unitPrice: number
+  reason: string | null
+}
+
+export type CustomerReturnHistory = {
+  fromStatus: string | null
+  toStatus: string
+  note: string | null
+  createdAt: string
+}
+
+export type CustomerReturn = {
+  id: string
+  returnNumber: string
+  orderId: string
+  orderNumber: string | null
+  status: string
+  reason: string
+  customerNote: string | null
+  adminNote: string | null
+  refundAmount: number
+  items: CustomerReturnItem[]
+  history: CustomerReturnHistory[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateReturnItemPayload = {
+  orderLineItemId: string
+  productName: string
+  variantName?: string | null
+  sku?: string | null
+  quantity: number
+  unitPrice?: number | null
+  reason?: string | null
+}
+
+export type CreateReturnPayload = {
+  reason: string
+  customerNote?: string
+  items?: CreateReturnItemPayload[]
 }

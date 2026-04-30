@@ -9,6 +9,7 @@ import type {
   ClientError,
   DataResult,
   HomeSlider,
+  HomeVideo,
   ListResult,
   Page,
   PublicMenu,
@@ -96,14 +97,19 @@ function parseError(status: number, payload: unknown): ClientError {
   };
 }
 
-// revalidate=0 → cache: "no-store" (search, user-specific). Otherwise ISR.
-async function requestJson<T>(path: string, query?: RequestQuery, revalidate = 60): Promise<T> {
+// revalidate=0 → cache: "no-store" (search, user-specific). Otherwise ISR + optional tags.
+async function requestJson<T>(
+  path: string,
+  query?: RequestQuery,
+  revalidate = 3600,
+  tags?: string[],
+): Promise<T> {
   const init: RequestInit = {
     method: "GET",
     headers: { Accept: "application/json" },
     ...(revalidate === 0
       ? { cache: "no-store" }
-      : { next: { revalidate } }),
+      : { next: { revalidate, ...(tags && tags.length > 0 ? { tags } : {}) } }),
   };
   const response = await fetch(toUrl(path, query), init);
 
@@ -131,10 +137,11 @@ function toClientError(error: unknown): ClientError {
 async function loadList<T>(
   endpoint: string,
   query: RequestQuery,
-  revalidate = 60,
+  revalidate = 3600,
+  tags?: string[],
 ): Promise<ListResult<T>> {
   try {
-    const response = await requestJson<ApiListResponse<T>>(endpoint, query, revalidate);
+    const response = await requestJson<ApiListResponse<T>>(endpoint, query, revalidate, tags);
     return {
       data: response.data,
       pagination: response.pagination,
@@ -151,10 +158,11 @@ async function loadList<T>(
 
 async function loadData<T>(
   endpoint: string,
-  revalidate = 300,
+  revalidate = 3600,
+  tags?: string[],
 ): Promise<DataResult<T>> {
   try {
-    const response = await requestJson<ApiDataResponse<T>>(endpoint, undefined, revalidate);
+    const response = await requestJson<ApiDataResponse<T>>(endpoint, undefined, revalidate, tags);
     return {
       data: response.data,
       error: null,
@@ -170,10 +178,11 @@ async function loadData<T>(
 async function loadDataWithQuery<T>(
   endpoint: string,
   query: RequestQuery,
-  revalidate = 300,
+  revalidate = 3600,
+  tags?: string[],
 ): Promise<DataResult<T>> {
   try {
-    const response = await requestJson<ApiDataResponse<T>>(endpoint, query, revalidate);
+    const response = await requestJson<ApiDataResponse<T>>(endpoint, query, revalidate, tags);
     return {
       data: response.data,
       error: null,
@@ -243,11 +252,13 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       featured: query.filterFeatured ? "true" : undefined,
       showOnHomepage: query.showOnHomepage ? "true" : undefined,
     },
+    3600,
+    ["products"],
   );
 }
 
 export function getProductBySlug(slug: string): Promise<DataResult<Product>> {
-  return loadData(`/api/v1/products/${slug}`);
+  return loadData(`/api/v1/products/${slug}`, 3600, ["products", `product:${slug}`]);
 }
 
 export type CategoryListQuery = {
@@ -268,11 +279,13 @@ export function listCategories(query: CategoryListQuery): Promise<ListResult<Cat
       filterHome: query.filterHome ? "true" : undefined,
       showOnHomepage: query.showOnHomepage ? "true" : undefined,
     },
+    3600,
+    ["categories"],
   );
 }
 
 export function getCategoryBySlug(slug: string): Promise<DataResult<Category>> {
-  return loadData(`/api/v1/categories/${slug}`);
+  return loadData(`/api/v1/categories/${slug}`, 3600, ["categories", `category:${slug}`]);
 }
 
 export type BrandListQuery = {
@@ -289,11 +302,13 @@ export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
       size: query.size,
       sort: query.sort ?? "name:asc",
     },
+    3600,
+    ["brands"],
   );
 }
 
 export function getBrandBySlug(slug: string): Promise<DataResult<Brand>> {
-  return loadData(`/api/v1/brands/${slug}`);
+  return loadData(`/api/v1/brands/${slug}`, 3600, ["brands", `brand:${slug}`]);
 }
 
 export type ArticleListQuery = {
@@ -314,27 +329,33 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
       category: query.category,
       q: query.q,
     },
+    3600,
+    ["articles"],
   );
 }
 
 export function getArticleBySlug(slug: string): Promise<DataResult<Article>> {
-  return loadData(`/api/v1/articles/${slug}`);
+  return loadData(`/api/v1/articles/${slug}`, 3600, ["articles", `article:${slug}`]);
 }
 
 export function getPageBySlug(slug: string): Promise<DataResult<Page>> {
-  return loadData(`/api/v1/pages/${slug}`);
+  return loadData(`/api/v1/pages/${slug}`, 3600, ["pages", `page:${slug}`]);
 }
 
 export function getPublicMenu(location: string): Promise<DataResult<PublicMenu>> {
-  return loadData(`/api/v1/menus/${location}`);
+  return loadData(`/api/v1/menus/${location}`, 3600, ["menus"]);
 }
 
 export function listPublicSettings(): Promise<DataResult<PublicSiteSetting[]>> {
-  return loadData("/api/v1/settings/public");
+  return loadData("/api/v1/settings/public", 3600, ["settings"]);
 }
 
 export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
-  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location: "home" });
+  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location: "home" }, 3600, ["sliders"]);
+}
+
+export function listHomeVideos(): Promise<DataResult<HomeVideo[]>> {
+  return loadData<HomeVideo[]>("/api/v1/home-videos", 3600, ["home-videos"]);
 }
 
 export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {

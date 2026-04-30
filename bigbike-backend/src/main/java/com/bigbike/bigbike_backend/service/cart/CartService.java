@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.cart;
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -19,6 +20,7 @@ import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaReposi
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -104,6 +106,14 @@ public class CartService {
             if (!variant.isAvailable()) {
                 throw new ConflictException("Product variant is not available.");
             }
+            if (variant.getStockState() == ProductStockState.OUT_OF_STOCK) {
+                throw new ConflictException("Product variant is out of stock.");
+            }
+        } else {
+            if (Boolean.TRUE.equals(product.getForceOutOfStock())
+                    || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
+                throw new ConflictException("Product is out of stock.");
+            }
         }
 
         BigDecimal unitPrice = resolveUnitPrice(product, variant);
@@ -120,10 +130,13 @@ public class CartService {
                 .filter(i -> matchesProductVariant(i, productUuid, variantUuid))
                 .findFirst();
 
+        int newQuantity = existing.map(i -> i.getQuantity() + req.quantity()).orElse(req.quantity());
+        validateQuantityAgainstStock(product, variant, newQuantity);
+
         CartItemEntity item;
         if (existing.isPresent()) {
             item = existing.get();
-            item.setQuantity(item.getQuantity() + req.quantity());
+            item.setQuantity(newQuantity);
             item.setUnitPrice(unitPrice);
             applyImageSnapshot(item, product, variant);
         } else {
@@ -151,6 +164,15 @@ public class CartService {
     @Transactional
     public CartEntity updateItemQuantity(CartEntity cart, UUID itemId, int quantity) {
         CartItemEntity item = findOwnedItem(cart, itemId);
+        if (item.getProductId() != null) {
+            ProductEntity product = productRepo.findById(item.getProductId().toString()).orElse(null);
+            if (product != null) {
+                ProductVariantEntity variant = item.getProductVariantId() != null
+                        ? variantRepo.findById(item.getProductVariantId().toString()).orElse(null)
+                        : null;
+                validateQuantityAgainstStock(product, variant, quantity);
+            }
+        }
         item.setQuantity(quantity);
         item.setUpdatedAt(Instant.now());
         calculator.recalculateItem(item);
@@ -172,6 +194,39 @@ public class CartService {
         return refreshCartTotals(cart);
     }
 
+    @Transactional
+    public CartEntity mergeGuestCart(String guestId, CartEntity customerCart) {
+        return cartRepo.findBySessionId(guestId).map(guestCart -> {
+            if (guestCart.getId().equals(customerCart.getId())) return customerCart;
+
+            List<CartItemEntity> customerItems = cartItemRepo.findByCartId(customerCart.getId());
+            for (CartItemEntity guestItem : cartItemRepo.findByCartId(guestCart.getId())) {
+                UUID pId = guestItem.getProductId();
+                UUID vId = guestItem.getProductVariantId();
+                Optional<CartItemEntity> existing = customerItems.stream()
+                        .filter(i -> matchesProductVariant(i, pId, vId))
+                        .findFirst();
+                if (existing.isPresent()) {
+                    CartItemEntity ci = existing.get();
+                    ci.setQuantity(ci.getQuantity() + guestItem.getQuantity());
+                    ci.setUpdatedAt(Instant.now());
+                    calculator.recalculateItem(ci);
+                    cartItemRepo.save(ci);
+                } else {
+                    guestItem.setCart(customerCart);
+                    guestItem.setUpdatedAt(Instant.now());
+                    cartItemRepo.save(guestItem);
+                }
+            }
+
+            guestCart.setStatus("MERGED");
+            guestCart.setUpdatedAt(Instant.now());
+            cartRepo.save(guestCart);
+
+            return refreshCartTotals(customerCart);
+        }).orElse(customerCart);
+    }
+
     public List<CartItemEntity> getItems(CartEntity cart) {
         return cartItemRepo.findByCartId(cart.getId());
     }
@@ -184,11 +239,14 @@ public class CartService {
     public CartEntity applyCoupon(CartEntity cart, String code) {
         String normalized = code.trim().toUpperCase(Locale.ROOT);
 
-        if (cartCouponRepo.findByCartIdAndCouponCode(cart.getId(), normalized).isPresent()) {
-            throw new ConflictException("Mã giảm giá đã được áp dụng.");
+        // Enforce one coupon per cart
+        List<CartCouponEntity> existing = cartCouponRepo.findByCartId(cart.getId());
+        if (!existing.isEmpty()) {
+            throw new ConflictException("Mỗi đơn hàng chỉ được áp dụng một mã giảm giá.");
         }
 
-        CouponEntity coupon = couponRepo.findByCode(normalized)
+        // Pessimistic lock prevents two concurrent requests from both passing the usage limit check
+        CouponEntity coupon = couponRepo.findByCodeForUpdate(normalized)
                 .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
 
         Instant now = Instant.now();
@@ -205,24 +263,18 @@ public class CartService {
             throw new ConflictException("Mã giảm giá đã đạt giới hạn sử dụng.");
         }
 
-        BigDecimal subtotal = cart.getSubtotalAmount();
+        // Recompute current cart subtotal before checking minAmount
+        List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
+        BigDecimal subtotal = items.stream()
+                .map(CartItemEntity::getLineSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
         if (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0) {
             throw new ConflictException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá.");
         }
 
-        BigDecimal discountAmount;
-        if ("PERCENT".equals(coupon.getDiscountType())) {
-            discountAmount = subtotal.multiply(coupon.getAmount())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-        } else {
-            discountAmount = coupon.getAmount().setScale(2, RoundingMode.HALF_UP);
-        }
-        if (coupon.getMaxAmount() != null && discountAmount.compareTo(coupon.getMaxAmount()) > 0) {
-            discountAmount = coupon.getMaxAmount().setScale(2, RoundingMode.HALF_UP);
-        }
-        if (discountAmount.compareTo(subtotal) > 0) {
-            discountAmount = subtotal;
-        }
+        BigDecimal discountAmount = computeDiscount(coupon, subtotal);
 
         CartCouponEntity cartCoupon = new CartCouponEntity();
         cartCoupon.setCart(cart);
@@ -246,6 +298,24 @@ public class CartService {
 
     // ── private helpers ───────────────────────────────────────────────────────
 
+    private void validateQuantityAgainstStock(ProductEntity product, ProductVariantEntity variant, int quantity) {
+        if (variant != null) {
+            if (variant.getQuantityOnHand() < quantity) {
+                int onHand = variant.getQuantityOnHand();
+                throw new ConflictException(onHand <= 0
+                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+            }
+        } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
+            if (product.getStockQuantity() < quantity) {
+                int onHand = product.getStockQuantity();
+                throw new ConflictException(onHand <= 0
+                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+            }
+        }
+    }
+
     private CartItemEntity findOwnedItem(CartEntity cart, UUID itemId) {
         CartItemEntity item = cartItemRepo.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Cart item not found."));
@@ -257,20 +327,69 @@ public class CartService {
 
     private CartEntity refreshCartTotals(CartEntity cart) {
         List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
+        BigDecimal subtotal = items.stream()
+                .map(CartItemEntity::getLineSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
         List<CartCouponEntity> coupons = cartCouponRepo.findByCartId(cart.getId());
+        Instant now = Instant.now();
+        List<CartCouponEntity> toRemove = new ArrayList<>();
+
+        for (CartCouponEntity cc : coupons) {
+            Optional<CouponEntity> couponOpt = couponRepo.findByCode(cc.getCouponCode());
+            if (couponOpt.isEmpty()) {
+                toRemove.add(cc);
+                continue;
+            }
+            CouponEntity coupon = couponOpt.get();
+            boolean nowInvalid = !"ACTIVE".equals(coupon.getStatus())
+                    || (coupon.getExpiresAt() != null && now.isAfter(coupon.getExpiresAt()))
+                    || (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit());
+            if (nowInvalid) {
+                toRemove.add(cc);
+                continue;
+            }
+            // Recompute — handles PERCENT discount changing with subtotal and minAmount changes
+            BigDecimal recomputed = computeDiscount(coupon, subtotal);
+            if (cc.getDiscountAmount().compareTo(recomputed) != 0) {
+                cc.setDiscountAmount(recomputed);
+                cartCouponRepo.save(cc);
+            }
+        }
+
+        if (!toRemove.isEmpty()) {
+            cartCouponRepo.deleteAll(toRemove);
+            coupons = cartCouponRepo.findByCartId(cart.getId());
+        }
+
         calculator.recalculateCart(cart, items, coupons);
-        cart.setUpdatedAt(Instant.now());
+        cart.setUpdatedAt(now);
         return cartRepo.save(cart);
     }
 
-    private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
-        if (variant != null) {
-            BigDecimal variantPrice = variant.getSalePrice() != null
-                    ? variant.getSalePrice() : variant.getRetailPrice();
-            if (variantPrice != null) {
-                return variantPrice.setScale(2, RoundingMode.HALF_UP);
-            }
+    private static BigDecimal computeDiscount(CouponEntity coupon, BigDecimal subtotal) {
+        BigDecimal discount;
+        if ("PERCENT".equals(coupon.getDiscountType())) {
+            discount = subtotal.multiply(coupon.getAmount())
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        } else {
+            discount = coupon.getAmount().setScale(2, RoundingMode.HALF_UP);
         }
+        if (coupon.getMaxAmount() != null && discount.compareTo(coupon.getMaxAmount()) > 0) {
+            discount = coupon.getMaxAmount().setScale(2, RoundingMode.HALF_UP);
+        }
+        return discount.compareTo(subtotal) > 0 ? subtotal : discount;
+    }
+
+    /**
+     * Cart unit price always comes from the parent product. Variant-level
+     * price columns exist in the schema for legacy reasons but are
+     * intentionally ignored — the storefront displays a single product price
+     * regardless of which variant the customer picks, and the cart must
+     * agree.
+     */
+    private BigDecimal resolveUnitPrice(ProductEntity product, ProductVariantEntity variant) {
         BigDecimal price = product.getSalePrice() != null
                 ? product.getSalePrice() : product.getRetailPrice();
         return price.setScale(2, RoundingMode.HALF_UP);

@@ -28,13 +28,17 @@ public record AdminOrderDetailResponse(
         BigDecimal taxAmount,
         BigDecimal totalAmount,
         BigDecimal paidAmount,
+        BigDecimal refundAmount,
+        String refundReason,
         Instant placedAt,
         Instant paidAt,
         Instant completedAt,
         Instant cancelledAt,
+        Instant refundedAt,
         List<OrderLineItemResponse> lineItems,
         List<OrderAddressResponse> addresses,
         List<OrderShippingItemResponse> shippingItems,
         List<OrderPaymentResponse> payments,
-        List<AdminOrderNoteResponse> notes
+        List<AdminOrderNoteResponse> notes,
+        List<OrderAppliedCouponResponse> appliedCoupons
 ) {}

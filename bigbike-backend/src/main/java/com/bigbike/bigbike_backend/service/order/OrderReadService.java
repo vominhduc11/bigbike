@@ -22,11 +22,16 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNo
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
-import java.util.Comparator;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,7 +46,6 @@ public class OrderReadService {
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final PaginationService paginationService;
 
     public OrderReadService(
             OrderJpaRepository orderRepo,
@@ -49,8 +53,7 @@ public class OrderReadService {
             OrderAddressJpaRepository addressRepo,
             OrderShippingItemJpaRepository shippingItemRepo,
             OrderNoteJpaRepository noteRepo,
-            PaymentJpaRepository paymentRepo,
-            PaginationService paginationService
+            PaymentJpaRepository paymentRepo
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
@@ -58,7 +61,6 @@ public class OrderReadService {
         this.shippingItemRepo = shippingItemRepo;
         this.noteRepo = noteRepo;
         this.paymentRepo = paymentRepo;
-        this.paginationService = paginationService;
     }
 
     // ── Customer orders list ──────────────────────────────────────────────────
@@ -69,24 +71,31 @@ public class OrderReadService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        List<OrderEntity> all = orderRepo.findByCustomerId(customerId);
+        Specification<OrderEntity> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("customerId"), customerId));
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(cb.upper(root.get("status")), status.toUpperCase()));
+            }
+            if (paymentStatus != null && !paymentStatus.isBlank()) {
+                predicates.add(cb.equal(cb.upper(root.get("paymentStatus")), paymentStatus.toUpperCase()));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        Stream<OrderEntity> stream = all.stream();
-        if (status != null && !status.isBlank()) {
-            stream = stream.filter(o -> status.equalsIgnoreCase(o.getStatus()));
+        Sort sort = Sort.by(Sort.Order.desc("placedAt").nullsLast(), Sort.Order.desc("createdAt"));
+        PageRequest pageable = PageRequest.of(normalizedPage - 1, normalizedSize, sort);
+        Page<OrderEntity> dbPage = orderRepo.findAll(spec, pageable);
+
+        List<UUID> orderIds = dbPage.getContent().stream().map(OrderEntity::getId).toList();
+        Map<UUID, Long> countMap = batchCountLineItems(orderIds);
+
+        List<OrderListItemResponse> items = new ArrayList<>(dbPage.getContent().size());
+        for (OrderEntity o : dbPage.getContent()) {
+            items.add(toListItem(o, countMap.getOrDefault(o.getId(), 0L)));
         }
-        if (paymentStatus != null && !paymentStatus.isBlank()) {
-            stream = stream.filter(o -> paymentStatus.equalsIgnoreCase(o.getPaymentStatus()));
-        }
 
-        List<OrderListItemResponse> items = stream
-                .sorted(Comparator
-                        .comparing(OrderEntity::getPlacedAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(OrderEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(this::toListItem)
-                .toList();
-
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        return new PageResult<>(items, normalizedPage, normalizedSize, dbPage.getTotalElements(), dbPage.getTotalPages());
     }
 
     // ── Customer order detail (ownership enforced) ────────────────────────────
@@ -124,8 +133,7 @@ public class OrderReadService {
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
-    private OrderListItemResponse toListItem(OrderEntity order) {
-        long itemCount = lineItemRepo.countByOrderId(order.getId());
+    private OrderListItemResponse toListItem(OrderEntity order, long itemCount) {
         return new OrderListItemResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -136,6 +144,15 @@ public class OrderReadService {
                 order.getPlacedAt(),
                 (int) itemCount
         );
+    }
+
+    private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) return Map.of();
+        return lineItemRepo.countByOrderIdIn(orderIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (Long) row[1]
+                ));
     }
 
     private OrderDetailResponse toDetail(OrderEntity order, boolean customerVisibleNotesOnly) {
@@ -178,6 +195,9 @@ public class OrderReadService {
                 order.getTaxAmount(),
                 order.getTotalAmount(),
                 order.getPaidAmount(),
+                order.getRefundAmount(),
+                order.getRefundReason(),
+                order.getRefundedAt(),
                 order.getPlacedAt(),
                 lineItems,
                 addresses,

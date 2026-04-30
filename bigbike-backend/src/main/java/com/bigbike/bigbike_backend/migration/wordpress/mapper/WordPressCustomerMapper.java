@@ -3,6 +3,8 @@ package com.bigbike.bigbike_backend.migration.wordpress.mapper;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpUser;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpUserMeta;
 import com.bigbike.bigbike_backend.migration.wordpress.parser.WordPressRoleParser;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ public class WordPressCustomerMapper {
             String phone,
             String status,               // ACTIVE | DISABLED
             boolean isSynthetic,
+            java.time.Instant registeredAt, // WP user_registered — preserved for analytics
             // ── Billing address ───────────────────────────────────────────────
             String billingFirstName,
             String billingLastName,
@@ -87,17 +90,26 @@ public class WordPressCustomerMapper {
             return null;  // caller increments excludedPrivileged count
         }
 
-        String email = user.userEmail();
+        // Normalize email: lowercase + trim to avoid login mismatches after cutover.
+        String rawEmail = user.userEmail();
+        String email = (rawEmail != null && !rawEmail.isBlank()) ? rawEmail.trim().toLowerCase() : null;
         if (email == null || email.isBlank()) {
             warnings.add("Missing email for user id=" + user.id());
         } else if (!email.contains("@")) {
-            warnings.add("Invalid email format for user id=" + user.id() + ": " + email);
+            warnings.add("Invalid email format for user id=" + user.id());
         }
 
         String status = "0".equals(user.userStatus()) || user.userStatus() == null
                 ? "ACTIVE" : "DISABLED";
 
         String phone = meta.getOrDefault("billing_phone", "");
+
+        // Preserve WP registration timestamp for cohort analytics.
+        Instant registeredAt = user.userRegistered() != null
+                ? user.userRegistered().toInstant(ZoneOffset.UTC) : null;
+
+        String shippingPhone = meta.getOrDefault("shipping_phone",
+                meta.getOrDefault("billing_phone", ""));
 
         return new MappedCustomer(
                 user.id(),
@@ -109,6 +121,7 @@ public class WordPressCustomerMapper {
                 phone.isBlank() ? null : phone,
                 status,
                 false,
+                registeredAt,
                 meta.get("billing_first_name"),
                 meta.get("billing_last_name"),
                 meta.get("billing_company"),
@@ -162,6 +175,7 @@ public class WordPressCustomerMapper {
                 phone.isEmpty() ? null : phone,
                 "ACTIVE",
                 true,
+                null,  // synthetic guest — no registration timestamp
                 firstName,
                 lastName,
                 billingMeta.get("_billing_company"),

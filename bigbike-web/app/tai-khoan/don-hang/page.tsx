@@ -11,21 +11,22 @@ import { toOrderDetailPath } from "@/lib/utils/routes";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
+  ON_HOLD: "Tạm giữ",
   PROCESSING: "Đang xử lý",
-  SHIPPED: "Đang giao",
-  DELIVERED: "Đã giao",
+  COMPLETED: "Hoàn thành",
   CANCELLED: "Đã hủy",
   REFUNDED: "Hoàn tiền",
+  FAILED: "Thất bại",
 };
 
 function orderStatusClass(status: string): string {
   const map: Record<string, string> = {
-    DELIVERED: "delivered",
-    SHIPPED: "shipping",
+    COMPLETED: "delivered",
     PROCESSING: "processing",
+    ON_HOLD: "processing",
     CANCELLED: "cancelled",
     REFUNDED: "cancelled",
+    FAILED: "cancelled",
   };
   return map[status] ?? "";
 }
@@ -33,8 +34,7 @@ function orderStatusClass(status: string): string {
 const TABS = [
   { key: "ALL", label: "Tất cả" },
   { key: "PROCESSING", label: "Đang xử lý" },
-  { key: "SHIPPED", label: "Đang giao" },
-  { key: "DELIVERED", label: "Đã giao" },
+  { key: "COMPLETED", label: "Hoàn thành" },
   { key: "CANCELLED", label: "Đã hủy" },
 ];
 
@@ -45,32 +45,47 @@ function OrderHistoryContent() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState<number | undefined>(undefined);
   const [error, setError] = useState("");
   const activeTab = searchParams.get("status") ?? "ALL";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    fetchMyOrders(page)
+    const statusParam = activeTab !== "ALL" ? activeTab : undefined;
+    fetchMyOrders(page, statusParam)
       .then((res) => {
         setOrders(res.data);
         setTotalPages(res.pagination?.totalPages ?? 1);
+        setTotalItems(res.pagination?.totalItems);
         setError("");
       })
       .catch((e: Error | undefined) => {
         if (e) setError(e.message ?? "Không tải được đơn hàng.");
       })
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, activeTab]);
 
-  const filtered = activeTab === "ALL" ? orders : orders.filter((o) => o.status === activeTab);
+  function handleTabClick(tabKey: string) {
+    const url = tabKey === "ALL"
+      ? "/tai-khoan/don-hang"
+      : `/tai-khoan/don-hang?status=${tabKey}`;
+    setPage(1);
+    router.replace(url, { scroll: false });
+  }
 
   return (
     <>
       <div className="wp-account-header">
         <div>
           <h2>Đơn hàng</h2>
-          <p className="sub">{orders.length > 0 ? `${orders.length} đơn hàng` : "Lịch sử mua hàng"}</p>
+          <p className="sub">
+            {totalItems !== undefined
+              ? `${totalItems} đơn hàng`
+              : orders.length > 0
+              ? `${orders.length} đơn hàng`
+              : "Lịch sử mua hàng"}
+          </p>
         </div>
       </div>
 
@@ -80,18 +95,11 @@ function OrderHistoryContent() {
             key={tab.key}
             type="button"
             className={`wp-tab${activeTab === tab.key ? " active" : ""}`}
-            onClick={() => {
-              const url = tab.key === "ALL"
-                ? "/tai-khoan/don-hang"
-                : `/tai-khoan/don-hang?status=${tab.key}`;
-              router.replace(url, { scroll: false });
-            }}
+            onClick={() => handleTabClick(tab.key)}
           >
             {tab.label}
-            {tab.key !== "ALL" && (
-              <span className="count-pill">
-                {orders.filter((o) => o.status === tab.key).length}
-              </span>
+            {tab.key === activeTab && totalItems !== undefined && tab.key !== "ALL" && (
+              <span className="count-pill">{totalItems}</span>
             )}
           </button>
         ))}
@@ -137,13 +145,13 @@ function OrderHistoryContent() {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="wp-empty-state">
           <p className="wp-muted-text">Không có đơn hàng nào.</p>
         </div>
       ) : (
         <>
-          {filtered.map((order) => (
+          {orders.map((order) => (
             <div key={order.id} className="wp-order-card">
               <div className="wp-order-head">
                 <div className="meta">

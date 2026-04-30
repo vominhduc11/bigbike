@@ -64,7 +64,6 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             alt=""
             fill
             sizes="(max-width: 900px) 70vw, 42vw"
-            unoptimized
           />
         </div>
       </section>

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import { BBTooltip } from "@/components/ui/BBTooltip";
 import { toCartPath } from "@/lib/utils/routes";
 
 export function CartIcon() {
   const { cartCount } = useCart();
 
   return (
+    <BBTooltip content="Giỏ hàng">
     <Link href={toCartPath()} className="bb-cart-icon-link" aria-label="Giỏ hàng">
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -29,5 +31,6 @@ export function CartIcon() {
         <span className="bb-cart-badge">{cartCount > 99 ? "99+" : cartCount}</span>
       )}
     </Link>
+    </BBTooltip>
   );
 }

@@ -65,14 +65,23 @@ public class CustomerImporter implements DomainImporter {
                 entity.setLegacyId(mc.sourceId());
                 entity.setEmail(truncate(mc.email(), 255));
                 entity.setPhone(truncate(mc.phone(), 50));
-                entity.setDisplayName(truncate(mc.displayName(), 255));
-                entity.setFirstName(truncate(mc.firstName(), 127));
-                entity.setLastName(truncate(mc.lastName(), 127));
+                entity.setDisplayName(truncate(graphemeSafeTruncate(mc.displayName(), 255), 255));
+                entity.setFirstName(truncate(graphemeSafeTruncate(mc.firstName(), 127), 127));
+                entity.setLastName(truncate(graphemeSafeTruncate(mc.lastName(), 127), 127));
                 entity.setSynthetic(mc.isSynthetic());
                 entity.setStatus(mc.status() != null ? mc.status() : "ACTIVE");
                 // Preserve legacy phpass hash — Phase 2F handles verifier. DO NOT log hash value.
                 if (mc.legacyPasswordHash() != null && !mc.legacyPasswordHash().isBlank()) {
                     entity.setPasswordHash(mc.legacyPasswordHash());
+                }
+                // Preserve WP registration date; mark WP customers as verified (they proved email by placing orders).
+                if (isNew) {
+                    if (mc.registeredAt() != null) {
+                        entity.setCreatedAt(mc.registeredAt());
+                    }
+                    if (!mc.isSynthetic()) {
+                        entity.setEmailVerifiedAt(mc.registeredAt() != null ? mc.registeredAt() : Instant.now());
+                    }
                 }
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mc.warnings());
@@ -126,6 +135,7 @@ public class CustomerImporter implements DomainImporter {
             shipping.setCustomer(customer);
             shipping.setType("SHIPPING");
             shipping.setFullName(join(mc.shippingFirstName(), mc.shippingLastName()));
+            // WooCommerce stores only billing_phone; shipping address inherits it (no separate shipping phone in WC).
             shipping.setPhone(mc.billingPhone());
             shipping.setAddressLine1(mc.shippingAddress1());
             shipping.setAddressLine2(mc.shippingAddress2());
@@ -142,6 +152,14 @@ public class CustomerImporter implements DomainImporter {
     private static String truncate(String s, int max) {
         if (s == null) return null;
         return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    /** Truncates at grapheme-cluster boundaries to avoid splitting Vietnamese combining marks. */
+    private static String graphemeSafeTruncate(String s, int maxCodePoints) {
+        if (s == null) return null;
+        if (s.codePointCount(0, s.length()) <= maxCodePoints) return s;
+        int offset = s.offsetByCodePoints(0, maxCodePoints);
+        return s.substring(0, offset);
     }
 
     private CustomerAddressEntity findByType(List<CustomerAddressEntity> list, String type) {

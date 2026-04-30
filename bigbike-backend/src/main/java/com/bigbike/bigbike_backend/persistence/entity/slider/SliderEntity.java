@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.entity.slider;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "sliders")
@@ -28,9 +31,11 @@ public class SliderEntity {
     @Column(nullable = false)
     private String location;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "desktop_image", columnDefinition = "json")
     private String desktopImageJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mobile_image", columnDefinition = "json")
     private String mobileImageJson;
 
@@ -40,6 +45,9 @@ public class SliderEntity {
 
     @Column(name = "external_link", columnDefinition = "text")
     private String externalLink;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -103,6 +111,14 @@ public class SliderEntity {
         this.externalLink = externalLink;
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -124,11 +140,15 @@ public class SliderEntity {
             return null;
         }
         try {
-            String json = value;
-            if (json.length() >= 2 && json.startsWith("\"") && json.endsWith("\"")) {
-                json = OBJECT_MAPPER.readValue(json, String.class);
+            JsonNode node = OBJECT_MAPPER.readTree(value);
+            // Unwrap JSON strings regardless of encoding depth (H2 may double-encode on UPDATE)
+            while (node.isTextual()) {
+                node = OBJECT_MAPPER.readTree(node.textValue());
             }
-            return OBJECT_MAPPER.readValue(json, ImageAsset.class);
+            if (node.isNull() || node.isMissingNode()) {
+                return null;
+            }
+            return OBJECT_MAPPER.treeToValue(node, ImageAsset.class);
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Invalid slider image JSON.", ex);
         }

@@ -1,15 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import localFont from "next/font/local";
+import { Oswald } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { CartProvider } from "@/lib/cart-context";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 const bungee = localFont({
   src: "../public/fonts/Bungee-Regular.ttf",
   variable: "--font-bungee",
   weight: "400",
+  display: "swap",
+});
+
+const oswald = Oswald({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-oswald",
   display: "swap",
 });
 
@@ -60,8 +70,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${bungee.variable} ${exo.variable} h-full antialiased`}>
-      <head>
+    <html lang="vi" className={`${bungee.variable} ${exo.variable} ${oswald.variable} h-full antialiased`}>
+      <body className="bb-theme-dark min-h-full flex flex-col">
         {GTM_ID && (
           <Script
             id="gtm-init"
@@ -71,8 +81,6 @@ export default function RootLayout({
             }}
           />
         )}
-      </head>
-      <body className="bb-theme-dark min-h-full flex flex-col">
         {GTM_ID && (
           <noscript>
             <iframe
@@ -84,11 +92,14 @@ export default function RootLayout({
             />
           </noscript>
         )}
-        <CartProvider>
-          <SiteHeader />
-          <main className="bb-main">{children}</main>
-          <SiteFooter />
-        </CartProvider>
+        <QueryProvider>
+          <CartProvider>
+            <SiteHeader />
+            <main className="bb-main">{children}</main>
+            <SiteFooter />
+            <FloatingChatLoader />
+          </CartProvider>
+        </QueryProvider>
       </body>
     </html>
   );

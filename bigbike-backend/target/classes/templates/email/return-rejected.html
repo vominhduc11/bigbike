@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Yêu cầu đổi trả bị từ chối — BigBike</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6f8">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+        <tr th:replace="~{email/layout :: header-row}"></tr>
+
+        <tr>
+          <td style="background-color:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+
+            <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td style="background-color:#fee2e2;border-radius:20px;padding:4px 14px;">
+                  <span style="font-size:12px;font-weight:600;color:#991b1b;letter-spacing:0.3px;">TỪ CHỐI</span>
+                </td>
+              </tr>
+            </table>
+
+            <h1 style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#151515;">Yêu cầu đổi trả không được chấp thuận</h1>
+            <p style="margin:0 0 24px 0;font-size:15px;color:#4b5563;line-height:1.6;">
+              Xin chào <strong th:text="${customerName}">Khách hàng</strong>,<br/>
+              Rất tiếc, sau khi xem xét yêu cầu đổi/trả hàng của bạn, chúng tôi không thể chấp thuận yêu cầu này.
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background-color:#f7f7f8;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:24px;">
+              <tr>
+                <td style="padding:20px 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="font-size:13px;color:#6b7280;padding-bottom:6px;">Mã yêu cầu</td>
+                      <td align="right" style="font-size:15px;font-weight:700;color:#151515;padding-bottom:6px;"
+                          th:text="${returnNumber}">RMA-001</td>
+                    </tr>
+                    <tr>
+                      <td style="font-size:13px;color:#6b7280;">Mã đơn hàng</td>
+                      <td align="right" style="font-size:14px;font-weight:600;color:#151515;"
+                          th:text="'#' + ${orderNumber}">#BB-001</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <div th:if="${hasAdminNote}"
+                 style="background-color:#fff7ed;border-left:4px solid #f97316;padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:24px;">
+              <p style="margin:0 0 4px 0;font-size:12px;font-weight:600;color:#9a3412;">Lý do từ BigBike:</p>
+              <p style="margin:0;font-size:13px;color:#9a3412;line-height:1.5;" th:text="${adminNote}">Ghi chú</p>
+            </div>
+
+            <p style="font-size:14px;color:#4b5563;line-height:1.6;margin:0 0 24px 0;">
+              Nếu bạn có thắc mắc, vui lòng liên hệ hotline <strong>0906.902.404</strong> hoặc email <a href="mailto:info@bigbike.vn" style="color:#F90606;">info@bigbike.vn</a> để được hỗ trợ thêm.
+            </p>
+
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-radius:6px;background-color:#F90606;">
+                  <a th:href="${returnsUrl}" href="#"
+                     style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
+                    Xem yêu cầu đổi trả →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <tr th:replace="~{email/layout :: footer-row}"></tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

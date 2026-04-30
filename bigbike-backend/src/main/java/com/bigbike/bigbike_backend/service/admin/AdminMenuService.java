@@ -19,6 +19,7 @@ import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
@@ -47,17 +48,20 @@ public class AdminMenuService {
     private final MenuItemJpaRepository menuItemRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
+    private final WebRevalidationService webRevalidationService;
 
     public AdminMenuService(
             MenuJpaRepository menuRepo,
             MenuItemJpaRepository menuItemRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            PaginationService paginationService,
+            WebRevalidationService webRevalidationService
     ) {
         this.menuRepo = menuRepo;
         this.menuItemRepo = menuItemRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
+        this.webRevalidationService = webRevalidationService;
     }
 
     // ── List menus ────────────────────────────────────────────────────────────
@@ -124,6 +128,7 @@ public class AdminMenuService {
         entity.setUpdatedAt(now);
         entity = menuRepo.save(entity);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildMenuAudit(adminId, "MENU_CREATED", entity.getId(), null,
                 "{\"location\":\"" + escapeJson(entity.getLocation()) + "\",\"name\":\"" + escapeJson(entity.getName()) + "\"}"));
 
@@ -153,6 +158,7 @@ public class AdminMenuService {
         entity.setUpdatedAt(Instant.now());
         menuRepo.save(entity);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildMenuAudit(adminId, "MENU_UPDATED", menuId, before, menuSnapshot(entity)));
 
         return toMenuResponse(entity, menuItemRepo.findByMenuIdOrderBySortOrderAsc(menuId));
@@ -170,6 +176,7 @@ public class AdminMenuService {
         menuItemRepo.deleteAll(items);
         menuRepo.delete(entity);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildMenuAudit(adminId, "MENU_DELETED", menuId, before, null));
     }
 
@@ -209,6 +216,7 @@ public class AdminMenuService {
         item.setUpdatedAt(now);
         item = menuItemRepo.save(item);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildItemAudit(adminId, "MENU_ITEM_CREATED", item.getId(), null,
                 "{\"label\":\"" + escapeJson(item.getLabel()) + "\",\"menuId\":\"" + menuId + "\"}"));
 
@@ -244,6 +252,9 @@ public class AdminMenuService {
         }
         if (req.targetType() != null) {
             item.setTargetType(req.targetType());
+            if ("CUSTOM".equalsIgnoreCase(req.targetType())) {
+                item.setTargetId(null);
+            }
         }
         if (req.targetId() != null) {
             item.setTargetId(req.targetId());
@@ -268,6 +279,7 @@ public class AdminMenuService {
         item.setUpdatedAt(Instant.now());
         menuItemRepo.save(item);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildItemAudit(adminId, "MENU_ITEM_UPDATED", itemId, before, itemSnapshot(item)));
 
         return toItemResponse(item);
@@ -289,6 +301,7 @@ public class AdminMenuService {
         String before = itemSnapshot(item);
         menuItemRepo.delete(item);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildItemAudit(adminId, "MENU_ITEM_DELETED", itemId, before, null));
     }
 
@@ -347,6 +360,7 @@ public class AdminMenuService {
         }
         menuItemRepo.saveAll(existingItems);
 
+        webRevalidationService.revalidate("menus");
         auditLogRepo.save(buildMenuAudit(adminId, "MENU_ITEMS_REORDERED", menuId, null,
                 "{\"itemCount\":" + req.items().size() + "}"));
 
@@ -364,14 +378,32 @@ public class AdminMenuService {
             throw new NotFoundException("Menu not found for location: " + location);
         }
 
-        List<PublicMenuItemResponse> items = menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId()).stream()
+        List<MenuItemEntity> allItems = menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId());
+
+        // Build active-item index for ancestor chain check
+        Map<UUID, MenuItemEntity> activeById = allItems.stream()
                 .filter(i -> "ACTIVE".equalsIgnoreCase(i.getStatus()))
+                .collect(Collectors.toMap(MenuItemEntity::getId, i -> i));
+
+        List<PublicMenuItemResponse> items = activeById.values().stream()
+                .filter(i -> isAncestorChainActive(i, activeById))
+                .sorted(Comparator.comparingInt(MenuItemEntity::getSortOrder))
                 .map(i -> new PublicMenuItemResponse(
                         i.getId(), i.getParentId(), i.getLabel(), i.getUrl(),
                         i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass()))
                 .toList();
 
         return new PublicMenuResponse(menu.getLocation(), menu.getName(), items);
+    }
+
+    private static boolean isAncestorChainActive(MenuItemEntity item, Map<UUID, MenuItemEntity> activeById) {
+        UUID parentId = item.getParentId();
+        while (parentId != null) {
+            MenuItemEntity parent = activeById.get(parentId);
+            if (parent == null) return false;
+            parentId = parent.getParentId();
+        }
+        return true;
     }
 
     // ── Validation ────────────────────────────────────────────────────────────

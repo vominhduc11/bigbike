@@ -3,16 +3,24 @@ package com.bigbike.bigbike_backend.api.order;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.api.order.dto.CreateReturnRequest;
+import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.service.order.CustomerReturnService;
 import com.bigbike.bigbike_backend.service.order.OrderReadService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,10 +30,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerOrderController {
 
     private final OrderReadService orderReadService;
+    private final CustomerReturnService customerReturnService;
     private final ApiResponseFactory apiResponseFactory;
 
-    public CustomerOrderController(OrderReadService orderReadService, ApiResponseFactory apiResponseFactory) {
+    public CustomerOrderController(
+            OrderReadService orderReadService,
+            CustomerReturnService customerReturnService,
+            ApiResponseFactory apiResponseFactory
+    ) {
         this.orderReadService = orderReadService;
+        this.customerReturnService = customerReturnService;
         this.apiResponseFactory = apiResponseFactory;
     }
 
@@ -44,6 +58,19 @@ public class CustomerOrderController {
         );
     }
 
+    /**
+     * Declared BEFORE /{orderId} so Spring doesn't try to parse "returns" as a UUID.
+     */
+    @GetMapping("/returns")
+    public List<CustomerReturnResponse> listReturns() {
+        return customerReturnService.listCustomerReturns(requireCustomerId());
+    }
+
+    @GetMapping("/returns/{returnId}")
+    public CustomerReturnResponse getReturn(@PathVariable UUID returnId) {
+        return customerReturnService.getCustomerReturn(requireCustomerId(), returnId);
+    }
+
     @GetMapping("/{orderId}")
     public ApiDataResponse<OrderDetailResponse> getOrderDetail(
             @PathVariable UUID orderId,
@@ -56,11 +83,20 @@ public class CustomerOrderController {
         );
     }
 
+    @PostMapping("/{orderId}/returns")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+    public CustomerReturnResponse createReturn(
+            @PathVariable UUID orderId,
+            @Valid @RequestBody CreateReturnRequest req
+    ) {
+        return customerReturnService.createReturn(requireCustomerId(), orderId, req);
+    }
+
     private UUID requireCustomerId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof CustomerPrincipal cp) {
             return cp.customerId();
         }
-        throw new IllegalStateException("Customer authentication required but not found.");
+        throw new UnauthorizedException("Customer authentication required.");
     }
 }

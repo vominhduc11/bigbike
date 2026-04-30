@@ -12,6 +12,7 @@ import {
   toOrderHistoryPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
+import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
 
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
@@ -19,18 +20,6 @@ type MobileHeaderMenuProps = {
   hotline: string;
   zaloUrl: string;
 };
-
-function normalizeMenuUrl(url: string): string {
-  const trimmed = url.trim();
-  return trimmed.length === 0 ? "/" : trimmed;
-}
-
-function isActivePath(pathname: string | null, href: string): boolean {
-  if (!pathname) return false;
-  if (href === "/") return pathname === "/";
-  const normalizedHref = href.endsWith("/") ? href.slice(0, -1) : href;
-  return pathname === normalizedHref || pathname.startsWith(`${normalizedHref}/`);
-}
 
 function MenuIcon() {
   return (

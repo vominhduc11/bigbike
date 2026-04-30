@@ -20,10 +20,17 @@ public record Product(
         List<ProductVariant> variants,
         List<ProductSpecification> specifications,
         ProductStockState stockState,
+        /** Best-effort on-hand count (product-level). Null if not tracked. */
+        Integer stockQuantity,
+        Boolean forceOutOfStock,
         PublishStatus publishStatus,
         Boolean isFeatured,
         Boolean showOnHomepage,
         java.math.BigDecimal rating,
+        /** Manual review count carried over from the legacy WP ACF field. */
+        Integer ratingCount,
+        /** Long-form rich-HTML SEO copy rendered at the bottom of PDP. */
+        String contentBottom,
         SeoMeta seo,
         Instant createdAt,
         Instant updatedAt

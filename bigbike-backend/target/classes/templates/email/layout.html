@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--
+  Thymeleaf fragment definitions shared by all email templates.
+  Include with: <tr th:replace="~{email/layout :: header-row}"></tr>
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<body>
+
+<tr th:fragment="header-row">
+  <td style="background-color:#0a0a0a;padding:24px 32px;border-radius:8px 8px 0 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;text-decoration:none;">
+            BIG<span style="color:#F90606;">BIKE</span>
+          </span>
+        </td>
+        <td align="right">
+          <span style="font-size:11px;color:#888888;letter-spacing:0.5px;">bigbike.vn</span>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<tr th:fragment="footer-row">
+  <td style="background-color:#f7f7f8;padding:20px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;">
+    <p style="margin:0 0 6px 0;font-size:12px;color:#6b7280;line-height:1.6;">
+      BigBike Shop — 79/30/52 Âu Cơ, P.14, Q.11, TP.HCM<br/>
+      Hotline: <a href="tel:09069024040" style="color:#F90606;text-decoration:none;">0906.902.404</a>
+      &nbsp;|&nbsp;
+      <a href="https://bigbike.vn" style="color:#F90606;text-decoration:none;">bigbike.vn</a>
+    </p>
+    <p style="margin:0;font-size:11px;color:#9ca3af;">
+      Đây là email tự động, vui lòng không trả lời trực tiếp email này.
+    </p>
+  </td>
+</tr>
+
+</body>
+</html>

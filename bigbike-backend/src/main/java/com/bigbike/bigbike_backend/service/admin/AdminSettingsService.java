@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
@@ -33,15 +34,18 @@ public class AdminSettingsService {
     private final SiteSettingJpaRepository settingRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
+    private final WebRevalidationService webRevalidationService;
 
     public AdminSettingsService(
             SiteSettingJpaRepository settingRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            PaginationService paginationService,
+            WebRevalidationService webRevalidationService
     ) {
         this.settingRepo = settingRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
+        this.webRevalidationService = webRevalidationService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -119,6 +123,7 @@ public class AdminSettingsService {
         entity.setUpdatedAt(Instant.now());
         settingRepo.save(entity);
 
+        webRevalidationService.revalidate("settings");
         auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before, snapshot(entity)));
 
         return toAdminResponse(entity);

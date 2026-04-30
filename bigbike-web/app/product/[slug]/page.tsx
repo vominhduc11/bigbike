@@ -1,23 +1,48 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProductDetailClient } from "@/components/catalog/ProductDetailClient";
+import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
 import { ProductTabs } from "@/components/catalog/ProductTabs";
+import { ReviewsSection } from "@/components/catalog/ReviewsSection";
+import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
+import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getProductBySlug, listProducts } from "@/lib/api/public-api";
-import { buildBreadcrumbJsonLd, buildProductJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildProductJsonLd,
+  serializeJsonLd,
+} from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeArray, safeText } from "@/lib/utils/format";
-import { toCategoryPath, toHomePath, toProductListPath, toProductPath } from "@/lib/utils/routes";
+import {
+  toCanonicalUrl,
+  toCategoryPath,
+  toHomePath,
+  toProductListPath,
+  toProductPath,
+} from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
-import { AnalyticsView } from "@/components/analytics/AnalyticsView";
+
+// Static content is ISR-cached for 1 hour.
+// Dynamic content (pricing, stock, variants, reviews) is always fetched fresh
+// client-side via /api/products/[id]/snapshot route.
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const result = await listProducts({ page: 1, size: 100, sort: "createdAt:desc" });
+  return (result.data ?? []).map((p) => ({ slug: p.slug }));
+}
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
@@ -51,22 +76,22 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   });
 }
 
-export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default async function ProductDetailPage({
+  params,
+}: ProductDetailPageProps) {
   const { slug } = await params;
-  if (!isValidSlug(slug)) {
-    notFound();
-  }
+  if (!isValidSlug(slug)) notFound();
 
   const result = await getProductBySlug(slug);
-  if (!result.data && result.error?.status === 404) {
-    notFound();
-  }
+  if (!result.data && result.error?.status === 404) notFound();
 
   if (!result.data) {
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={result.error?.message ?? "Không tải được chi tiết sản phẩm."} />
+          <ErrorState
+            message={result.error?.message ?? "Không tải được chi tiết sản phẩm."}
+          />
         </div>
       </section>
     );
@@ -76,9 +101,24 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const productName = safeText(product.name, "Sản phẩm");
   const gallery = safeArray(product.gallery);
   const videos = safeArray(product.videos);
+  const specs = safeArray(product.specifications);
+
+  // ── JSON-LD ────────────────────────────────────────────────────────────────
+
   const productJsonLd = serializeJsonLd(buildProductJsonLd(product));
   const breadcrumbJsonLd = serializeJsonLd(buildBreadcrumbJsonLd(product));
-  const relatedProductsResult = product.category?.slug
+  const faqJsonLd =
+    specs.length > 0
+      ? serializeJsonLd(
+          buildFaqPageJsonLd(
+            specs.map((s) => ({ question: s.name, answer: s.value })),
+          ),
+        )
+      : null;
+
+  // ── Related products (ISR-cached) ─────────────────────────────────────────
+
+  const relatedResult = product.category?.slug
     ? await listProducts({
         page: 1,
         size: 8,
@@ -86,14 +126,31 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         category: product.category.slug,
       })
     : null;
-  const relatedProducts = (relatedProductsResult?.data ?? [])
-    .filter((item) => item.id !== product.id)
+  const relatedProducts = (relatedResult?.data ?? [])
+    .filter((p) => p.id !== product.id)
     .slice(0, 8);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
+      {/* Structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: productJsonLd }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: faqJsonLd }}
+        />
+      )}
+
+      {/* Analytics (CSR) */}
       <AnalyticsView product={product} />
 
       {/* Breadcrumb */}
@@ -102,7 +159,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         {product.category?.name && product.category.slug ? (
           <>
             <span className="sep" aria-hidden="true">/</span>
-            <Link href={toCategoryPath(product.category.slug)}>{product.category.name}</Link>
+            <Link href={toCategoryPath(product.category.slug)}>
+              {product.category.name}
+            </Link>
           </>
         ) : (
           <>
@@ -114,62 +173,69 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <span aria-current="page">{productName}</span>
       </nav>
 
-      {/* PDP two-column */}
+      {/*
+       * Two-column PDP layout.
+       * PurchaseSectionClient is a single client component that owns:
+       *   - ProductGallery (left) — shows variant image on selection
+       *   - Static info header (brand, name, short description)
+       *   - Dynamic purchase controls (pricing, stock, variants, cart, quick buy)
+       *
+       * Static content is passed as props from the ISR-rendered server component.
+       * Dynamic content is fetched fresh via /api/products/[id]/* routes.
+       */}
       <div className="wp-pdp">
-        <ProductDetailClient
-          product={product}
+        <PurchaseSectionClient
+          productId={product.id}
+          productSlug={product.slug}
+          productName={productName}
+          brandName={safeText(product.brand?.name, "BigBike")}
+          categoryName={safeText(product.category?.name, "")}
+          shortDescription={product.shortDescription}
+          initialRating={product.rating ?? null}
+          initialRatingCount={product.ratingCount ?? null}
+          mainImage={product.image}
           gallery={gallery}
-          altFallback={productName}
-          infoSlot={
-            <>
-              <p className="wp-pdp-info-brand">
-                {safeText(product.brand?.name, "BigBike")}
-                {product.category?.name ? ` · ${safeText(product.category.name, "")}` : ""}
-              </p>
-              <h1 className="wp-pdp-info-title">{productName}</h1>
-
-              {product.rating && product.rating > 0 ? (
-                <div className="wp-pdp-rating">
-                  <span className="stars" aria-label={`${product.rating} sao`}>
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <svg key={i} width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"
-                        fill={i < Math.round(product.rating!) ? "currentColor" : "none"}
-                        stroke="currentColor" strokeWidth="1.8"
-                        style={{ color: "var(--bb-brand-primary)" }}>
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    ))}
-                  </span>
-                  <span>{product.rating.toFixed(1)}/5</span>
-                </div>
-              ) : null}
-
-              {product.shortDescription && (
-                <p className="wp-pdp-short-desc">{product.shortDescription}</p>
-              )}
-            </>
-          }
+          fallbackPrice={product.price}
+          fallbackStockState={product.stockState}
+          fallbackVariants={product.variants ?? []}
+          canonicalUrl={toCanonicalUrl(
+            product.seo?.canonicalUrl ?? toProductPath(product.slug),
+          )}
         />
       </div>
 
-      {/* Below: tabbed content + related */}
+      {/* Below-fold: tabs, reviews, related products */}
       <div className="wp-pdp-below">
+        {/* Tabbed static content — ISR-cached */}
         <ProductTabs
-          specifications={product.specifications ?? []}
+          specifications={specs}
           description={product.description}
           videos={videos}
           productName={productName}
         />
 
+        {/* Reviews — always fresh (CSR) */}
+        <ReviewsSection
+          productId={product.id}
+          initialRating={product.rating ?? null}
+        />
+
+        {/* Related products — ISR-cached */}
         {relatedProducts.length > 0 && (
           <section className="wp-pdp-related">
             <div className="wp-pdp-related-header">
               <div>
-                <p className="wp-kicker">DANH MỤC {product.category?.name?.toUpperCase() ?? "SẢN PHẨM"}</p>
+                <p className="wp-kicker">
+                  DANH MỤC{" "}
+                  {product.category?.name?.toUpperCase() ?? "SẢN PHẨM"}
+                </p>
                 <h2 className="wp-pdp-related-title">Sản phẩm liên quan</h2>
               </div>
               {product.category?.slug && (
-                <Link href={toCategoryPath(product.category.slug)} className="wp-view-all-link">
+                <Link
+                  href={toCategoryPath(product.category.slug)}
+                  className="wp-view-all-link"
+                >
                   Xem tất cả →
                 </Link>
               )}
@@ -178,14 +244,27 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </section>
         )}
 
-        <div className="wp-pdp-back">
-          <Link
-            href={product.category?.slug ? toCategoryPath(product.category.slug) : toProductListPath()}
-            className="bb-link"
-          >
-            ← Quay lại {product.category?.name ?? "tất cả sản phẩm"}
-          </Link>
-        </div>
+        {/* Recently viewed — client-only localStorage */}
+        <RecentlyViewedSection
+          currentProductId={product.id}
+          currentProduct={{
+            id: product.id,
+            slug: product.slug,
+            name: productName,
+            price: product.price?.salePrice ?? product.price?.retailPrice ?? null,
+            imageUrl: product.image?.url ?? null,
+            categoryName: product.category?.name ?? null,
+          }}
+        />
+
+        {/* Long-form SEO copy (parity with WP ACF `content_bottom`). Only rendered
+            when admin has filled it in — most products leave it empty. */}
+        {product.contentBottom && product.contentBottom.trim() && (
+          <section
+            className="wp-pdp-content-bottom wp-content"
+            dangerouslySetInnerHTML={{ __html: product.contentBottom }}
+          />
+        )}
       </div>
     </>
   );

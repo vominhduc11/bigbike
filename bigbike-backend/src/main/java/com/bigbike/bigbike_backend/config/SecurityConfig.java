@@ -63,12 +63,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        // Public review submission — no auth required, status defaults to PENDING
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products/*/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search-suggest").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/address/**").permitAll()
                         // Cart endpoints: guest + customer access, CSRF enforced on mutations by filter
                         .requestMatchers("/api/v1/cart/**").permitAll()
                         .requestMatchers("/api/v1/cart").permitAll()
@@ -78,15 +83,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/checkout/options").permitAll()
                         // Order lookup: public GET, no CSRF needed (safe method)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/lookup").permitAll()
-                        // OpenAPI docs — available in dev/test only (controller is @Profile("!prod"))
-                        .requestMatchers(HttpMethod.GET, "/v3/api-docs").hasRole("ADMIN")
-                        .requestMatchers("/swagger-ui/**").hasRole("ADMIN")
+                        // OpenAPI docs: disabled in prod via springdoc.api-docs.enabled=false
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
                         // Public settings and menus
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
-                        // Internal redirect lookup consumed by bigbike-web proxy/middleware.
+                        // Internal redirect endpoints consumed by bigbike-web middleware.
                         // No PII; lock down at infra layer (private network / IP allowlist) for prod.
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/internal/redirects/active").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/internal/redirects/hit/**").permitAll()
                         // Contact form — public, no auth required
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor

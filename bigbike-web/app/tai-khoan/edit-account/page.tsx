@@ -11,19 +11,35 @@ function EditAccountContent() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setSuccess(false);
+    setPasswordError("");
 
     const fd = new FormData(e.currentTarget);
     const displayName = (fd.get("displayName") as string).trim();
     const phone = (fd.get("phone") as string).trim();
     const email = (fd.get("email") as string).trim();
+    const currentPassword = (fd.get("currentPassword") as string).trim();
     const newPassword = (fd.get("newPassword") as string).trim();
+    const confirmPassword = (fd.get("confirmPassword") as string).trim();
     const gender = (fd.get("gender") as string).trim();
     const dob = (fd.get("dob") as string).trim();
+
+    // Client-side password validation
+    if (newPassword) {
+      if (newPassword.length < 8) {
+        setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPasswordError("Mật khẩu xác nhận không khớp.");
+        return;
+      }
+    }
 
     setSaving(true);
     try {
@@ -31,6 +47,7 @@ function EditAccountContent() {
         displayName: displayName || undefined,
         phone: phone || undefined,
         email: email || undefined,
+        currentPassword: newPassword && currentPassword ? currentPassword : undefined,
         newPassword: newPassword || undefined,
         gender: gender || undefined,
         dob: dob || undefined,
@@ -94,11 +111,29 @@ function EditAccountContent() {
               <label>Ngày sinh</label>
               <input className="wp-input" type="date" name="dob" defaultValue={profile?.dob ?? ""} />
             </div>
+          </div>
+
+          <p className="wp-info-label" style={{ marginTop: 24 }}>Đổi mật khẩu (để trống nếu không đổi)</p>
+          <div className="wp-form-grid">
             <div className="wp-field">
-              <label>Mật khẩu mới (để trống nếu không đổi)</label>
-              <input className="wp-input" type="password" name="newPassword" placeholder="••••••••" />
+              <label>Mật khẩu hiện tại</label>
+              <input className="wp-input" type="password" name="currentPassword" placeholder="••••••••" autoComplete="current-password" />
+            </div>
+            <div className="wp-field">
+              <label>Mật khẩu mới</label>
+              <input className="wp-input" type="password" name="newPassword" placeholder="••••••••" autoComplete="new-password" />
+            </div>
+            <div className="wp-field">
+              <label>Xác nhận mật khẩu mới</label>
+              <input className="wp-input" type="password" name="confirmPassword" placeholder="••••••••" autoComplete="new-password" />
             </div>
           </div>
+          {passwordError && (
+            <p style={{ color: "var(--bb-brand-primary, #F90606)", fontSize: "0.85rem", marginTop: 6 }}>
+              {passwordError}
+            </p>
+          )}
+
           <button type="submit" className="wp-btn-primary" style={{ marginTop: 20, flex: "none" }} disabled={saving}>
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>

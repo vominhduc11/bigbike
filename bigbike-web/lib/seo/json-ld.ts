@@ -147,30 +147,45 @@ export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
   };
 }
 
-export function buildCategoryBreadcrumbJsonLd(category: Category): JsonLdObject {
+export function buildCategoryBreadcrumbJsonLd(
+  category: Category,
+  parent?: Category | null,
+): JsonLdObject {
+  const items: Array<{ "@type": "ListItem"; position: number; name: string; item: string }> = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Trang chủ",
+      item: toCanonicalUrl(toHomePath()),
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Sản phẩm",
+      item: toCanonicalUrl(toProductListPath()),
+    },
+  ];
+
+  if (parent) {
+    items.push({
+      "@type": "ListItem",
+      position: 3,
+      name: parent.name,
+      item: toCanonicalUrl(parent.seo?.canonicalUrl ?? toCategoryPath(parent.slug)),
+    });
+  }
+
+  items.push({
+    "@type": "ListItem",
+    position: items.length + 1,
+    name: category.name,
+    item: toCanonicalUrl(category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
+  });
+
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Trang chủ",
-        item: toCanonicalUrl(toHomePath()),
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Sản phẩm",
-        item: toCanonicalUrl(toProductListPath()),
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: category.name,
-        item: toCanonicalUrl(category.seo?.canonicalUrl ?? toCategoryPath(category.slug)),
-      },
-    ],
+    itemListElement: items,
   };
 }
 
@@ -266,41 +281,28 @@ function collectProductImages(product: Product): string[] {
 }
 
 function buildProductOffers(product: Product, canonicalUrl: string, priceCurrency: string): JsonLdObject | undefined {
-  const prices = [
-    product.price?.salePrice,
-    product.price?.retailPrice,
-    ...(product.variants ?? []).flatMap((variant) => [
-      variant?.price?.salePrice,
-      variant?.price?.retailPrice,
-    ]),
-  ].filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  // Price is product-level only; variant prices are intentionally excluded so
+  // SEO offers stay consistent with what the storefront actually displays.
+  const sale = product.price?.salePrice;
+  const retail = product.price?.retailPrice;
+  const price =
+    typeof sale === "number" && Number.isFinite(sale)
+      ? sale
+      : typeof retail === "number" && Number.isFinite(retail)
+        ? retail
+        : null;
 
-  if (prices.length === 0) {
+  if (price === null) {
     return undefined;
   }
 
-  const lowPrice = Math.min(...prices);
-  const highPrice = Math.max(...prices);
-
-  if (lowPrice === highPrice) {
-    return {
-      "@type": "Offer",
-      url: canonicalUrl,
-      priceCurrency,
-      price: lowPrice,
-      availability: stockStateToAvailability(product.stockState),
-      itemCondition: "https://schema.org/NewCondition",
-    };
-  }
-
   return {
-    "@type": "AggregateOffer",
+    "@type": "Offer",
     url: canonicalUrl,
     priceCurrency,
-    lowPrice,
-    highPrice,
-    offerCount: prices.length,
+    price,
     availability: stockStateToAvailability(product.stockState),
+    itemCondition: "https://schema.org/NewCondition",
   };
 }
 
@@ -317,4 +319,20 @@ function stockStateToAvailability(stockState: Product["stockState"]): string {
     default:
       return "https://schema.org/OutOfStock";
   }
+}
+
+export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[]): JsonLdObject {
+  if (faqs.length === 0) return {};
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
 }

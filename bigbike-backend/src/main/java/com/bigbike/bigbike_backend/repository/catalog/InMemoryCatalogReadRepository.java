@@ -204,7 +204,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 ),
                                 new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.IN_STOCK,
+                                12,
                                 null,
+                                List.of(),
                                 true
                         ),
                         new ProductVariant(
@@ -217,7 +219,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 ),
                                 new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
                                 ProductStockState.LOW_STOCK,
+                                3,
                                 null,
+                                List.of(),
                                 true
                         )
                 ),
@@ -226,10 +230,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         new ProductSpecification("Trọng lượng", "1500g ± 50g", "Thông số")
                 ),
                 ProductStockState.IN_STOCK,
+                15,
+                false,
                 PublishStatus.PUBLISHED,
                 true,
                 true,
                 new BigDecimal("4.50"),
+                null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -265,10 +273,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số")),
                 ProductStockState.PREORDER,
+                null,
+                false,
                 PublishStatus.HIDDEN,
                 false,
                 false,
                 new BigDecimal("4.50"),
+                null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -304,10 +316,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số")),
                 ProductStockState.LOW_STOCK,
+                4,
+                false,
                 PublishStatus.PUBLISHED,
                 true,
                 false,
                 new BigDecimal("4.50"),
+                null,
+                null,
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",

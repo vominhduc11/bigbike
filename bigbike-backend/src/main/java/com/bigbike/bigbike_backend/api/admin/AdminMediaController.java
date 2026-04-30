@@ -103,10 +103,25 @@ public class AdminMediaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteMedia(
             @PathVariable UUID mediaId,
+            @RequestParam(defaultValue = "false") boolean permanent,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
-        adminMediaService.deleteMedia(mediaId, resolveAdminId());
+        if (permanent) {
+            adminMediaService.hardDeleteMedia(mediaId, resolveAdminId());
+        } else {
+            adminMediaService.deleteMedia(mediaId, resolveAdminId());
+        }
+    }
+
+    @PostMapping("/{mediaId}/restore")
+    public ApiDataResponse<AdminMediaDetailResponse> restoreMedia(
+            @PathVariable UUID mediaId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        return apiResponseFactory.data(
+                adminMediaService.restoreMedia(mediaId, resolveAdminId()), request);
     }
 
     private UUID resolveAdminId() {

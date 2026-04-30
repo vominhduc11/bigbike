@@ -18,7 +18,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.media.MediaCopyReport;
 import com.bigbike.bigbike_backend.migration.wordpress.media.MediaCopyService;
 import com.bigbike.bigbike_backend.migration.wordpress.media.MediaPathResolver;
 import com.bigbike.bigbike_backend.migration.wordpress.media.MediaStoragePort;
-import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import java.io.ByteArrayInputStream;
@@ -52,7 +51,6 @@ class Phase2EMediaCopyTest {
     MediaJpaRepository mediaRepo;
     MediaPathResolver pathResolver;
     MediaChecksumService checksumService;
-    MediaUrlProperties mediaUrlProperties;
     MediaCopyService copyService;
     MediaStoragePort storage;
 
@@ -64,9 +62,7 @@ class Phase2EMediaCopyTest {
         mediaRepo = mock(MediaJpaRepository.class);
         pathResolver = new MediaPathResolver();
         checksumService = new MediaChecksumService();
-        mediaUrlProperties = new MediaUrlProperties();
-        mediaUrlProperties.setPublicBaseUrl("http://localhost:9000/bigbike-media");
-        copyService = new MediaCopyService(mediaRepo, pathResolver, checksumService, mediaUrlProperties);
+        copyService = new MediaCopyService(mediaRepo, pathResolver, checksumService);
         storage = mock(MediaStoragePort.class);
         doNothing().when(storage).ensureBucket(anyString());
     }

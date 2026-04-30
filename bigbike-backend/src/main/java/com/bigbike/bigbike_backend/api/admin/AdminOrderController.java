@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -60,11 +61,12 @@ public class AdminOrderController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "placedAt:desc") String sort,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "orders.read");
         return apiResponseFactory.list(
-                adminOrderService.listOrders(page, size, status, paymentStatus, q, from, to),
+                adminOrderService.listOrders(page, size, status, paymentStatus, q, from, to, sort),
                 request
         );
     }
@@ -111,6 +113,20 @@ public class AdminOrderController {
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
                 adminOrderService.updatePaymentStatus(orderId, adminId, body),
+                request
+        );
+    }
+
+    @PostMapping("/{orderId}/refund")
+    public ApiDataResponse<AdminOrderDetailResponse> createRefund(
+            @PathVariable UUID orderId,
+            @Valid @RequestBody CreateRefundRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.write");
+        UUID adminId = resolveAdminId();
+        return apiResponseFactory.data(
+                adminOrderService.createRefund(orderId, adminId, body),
                 request
         );
     }

@@ -3,9 +3,11 @@ import type {
   CheckoutOptions,
   CheckoutPayload,
   ContactPayload,
+  CreateReturnPayload,
   CustomerAddress,
   CustomerAuthData,
   CustomerProfile,
+  CustomerReturn,
   OrderDetail,
   OrderListItem,
   OrderSummary,
@@ -13,6 +15,9 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
+
+// Re-export for consumers that import from client-api
+export type { CustomerReturn } from "@/lib/contracts/commerce";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
@@ -26,8 +31,9 @@ async function clientRequest<T>(
   method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", ...extraHeaders };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET") {
     const csrf = getCsrfToken();
@@ -82,8 +88,9 @@ export function removeCoupon(code: string): Promise<Cart> {
 
 // ── Checkout ──────────────────────────────────────────────────────────────────
 
-export function submitCheckout(payload: CheckoutPayload): Promise<OrderSummary> {
-  return clientRequest("POST", "/api/v1/checkout", payload);
+export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string): Promise<OrderSummary> {
+  const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
+  return clientRequest("POST", "/api/v1/checkout", payload, extra);
 }
 
 export function fetchCheckoutOptions(): Promise<CheckoutOptions> {
@@ -153,8 +160,10 @@ export function submitContactForm(payload: ContactPayload): Promise<void> {
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 
-export async function fetchMyOrders(page = 1): Promise<{ data: OrderListItem[]; pagination: { totalPages: number } }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/customer/orders?page=${page}&size=10`, {
+export async function fetchMyOrders(page = 1, status?: string): Promise<{ data: OrderListItem[]; pagination: { totalPages: number; totalItems?: number } }> {
+  const qs = new URLSearchParams({ page: String(page), size: "10" });
+  if (status && status !== "ALL") qs.set("status", status);
+  const res = await fetch(`${API_BASE_URL}/api/v1/customer/orders?${qs.toString()}`, {
     credentials: "include",
     headers: { Accept: "application/json" },
   });
@@ -165,8 +174,22 @@ export async function fetchMyOrders(page = 1): Promise<{ data: OrderListItem[]; 
   }
   return {
     data: (payload?.data as OrderListItem[] | undefined) ?? [],
-    pagination: (payload?.pagination as { totalPages: number } | undefined) ?? { totalPages: 1 },
+    pagination: (payload?.pagination as { totalPages: number; totalItems?: number } | undefined) ?? { totalPages: 1 },
   };
+}
+
+// ── Returns ───────────────────────────────────────────────────────────────────
+
+export function fetchMyReturns(): Promise<CustomerReturn[]> {
+  return clientRequest("GET", "/api/v1/customer/orders/returns");
+}
+
+export function fetchMyReturn(returnId: string): Promise<CustomerReturn> {
+  return clientRequest("GET", `/api/v1/customer/orders/returns/${encodeURIComponent(returnId)}`);
+}
+
+export function createReturn(orderId: string, payload: CreateReturnPayload): Promise<CustomerReturn> {
+  return clientRequest("POST", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/returns`, payload);
 }
 
 export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {

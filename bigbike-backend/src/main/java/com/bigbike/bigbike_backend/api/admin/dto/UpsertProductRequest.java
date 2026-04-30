@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class UpsertProductRequest {
 
@@ -13,7 +14,9 @@ public class UpsertProductRequest {
 
     @Size(max = 100, message = "SKU is too long.")
     private String sku;
+    private boolean skuPresent = false;
 
+    @Size(max = 200, message = "Slug is too long.")
     @Pattern(regexp = SLUG_REGEX, message = "Slug format is invalid.")
     private String slug;
 
@@ -34,10 +37,14 @@ public class UpsertProductRequest {
 
     @Valid
     private ImageAssetRequest image;
+    private boolean imagePresent = false;
 
     private BigDecimal retailPrice;
+    private boolean retailPricePresent = false;
     private BigDecimal compareAtPrice;
+    private boolean compareAtPricePresent = false;
     private BigDecimal salePrice;
+    private boolean salePricePresent = false;
 
     @Pattern(regexp = "^(VND)$", message = "Currency must be VND.")
     private String currency;
@@ -45,12 +52,34 @@ public class UpsertProductRequest {
     private ProductStockState stockState;
     private PublishStatus publishStatus;
 
+    private Boolean forceOutOfStock;
     private Boolean isFeatured;
     private Boolean showOnHomepage;
     private BigDecimal rating;
+    private Integer ratingCount;
+
+    @Size(max = 50000, message = "Content bottom is too long.")
+    private String contentBottom;
 
     @Valid
     private SeoMetaRequest seo;
+    private boolean seoPresent = false;
+
+    @Valid
+    @Size(max = 50, message = "Gallery may not have more than 50 images.")
+    private List<GalleryImageRequest> gallery;
+
+    @Valid
+    @Size(max = 20, message = "Videos may not have more than 20 items.")
+    private List<VideoRequest> videos;
+
+    @Valid
+    @Size(max = 100, message = "Specifications may not have more than 100 items.")
+    private List<SpecificationRequest> specifications;
+
+    @Valid
+    @Size(max = 200, message = "Variants may not have more than 200 items.")
+    private List<VariantRequest> variants;
 
     public String getSku() {
         return sku;
@@ -58,6 +87,11 @@ public class UpsertProductRequest {
 
     public void setSku(String sku) {
         this.sku = sku;
+        this.skuPresent = true;
+    }
+
+    public boolean isSkuPresent() {
+        return skuPresent;
     }
 
     public String getSlug() {
@@ -114,6 +148,11 @@ public class UpsertProductRequest {
 
     public void setImage(ImageAssetRequest image) {
         this.image = image;
+        this.imagePresent = true;
+    }
+
+    public boolean isImagePresent() {
+        return imagePresent;
     }
 
     public BigDecimal getRetailPrice() {
@@ -122,6 +161,11 @@ public class UpsertProductRequest {
 
     public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
+        this.retailPricePresent = true;
+    }
+
+    public boolean isRetailPricePresent() {
+        return retailPricePresent;
     }
 
     public BigDecimal getCompareAtPrice() {
@@ -130,6 +174,11 @@ public class UpsertProductRequest {
 
     public void setCompareAtPrice(BigDecimal compareAtPrice) {
         this.compareAtPrice = compareAtPrice;
+        this.compareAtPricePresent = true;
+    }
+
+    public boolean isCompareAtPricePresent() {
+        return compareAtPricePresent;
     }
 
     public BigDecimal getSalePrice() {
@@ -138,6 +187,11 @@ public class UpsertProductRequest {
 
     public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
+        this.salePricePresent = true;
+    }
+
+    public boolean isSalePricePresent() {
+        return salePricePresent;
     }
 
     public String getCurrency() {
@@ -164,6 +218,14 @@ public class UpsertProductRequest {
         this.publishStatus = publishStatus;
     }
 
+    public Boolean getForceOutOfStock() {
+        return forceOutOfStock;
+    }
+
+    public void setForceOutOfStock(Boolean forceOutOfStock) {
+        this.forceOutOfStock = forceOutOfStock;
+    }
+
     public Boolean getFeatured() {
         return isFeatured;
     }
@@ -188,12 +250,45 @@ public class UpsertProductRequest {
         this.rating = rating;
     }
 
+    public Integer getRatingCount() {
+        return ratingCount;
+    }
+
+    public void setRatingCount(Integer ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+
+    public String getContentBottom() {
+        return contentBottom;
+    }
+
+    public void setContentBottom(String contentBottom) {
+        this.contentBottom = contentBottom;
+    }
+
     public SeoMetaRequest getSeo() {
         return seo;
     }
 
     public void setSeo(SeoMetaRequest seo) {
         this.seo = seo;
+        this.seoPresent = true;
     }
+
+    public boolean isSeoPresent() {
+        return seoPresent;
+    }
+
+    public List<GalleryImageRequest> getGallery() { return gallery; }
+    public void setGallery(List<GalleryImageRequest> gallery) { this.gallery = gallery; }
+
+    public List<VideoRequest> getVideos() { return videos; }
+    public void setVideos(List<VideoRequest> videos) { this.videos = videos; }
+
+    public List<SpecificationRequest> getSpecifications() { return specifications; }
+    public void setSpecifications(List<SpecificationRequest> specifications) { this.specifications = specifications; }
+
+    public List<VariantRequest> getVariants() { return variants; }
+    public void setVariants(List<VariantRequest> variants) { this.variants = variants; }
 }
 

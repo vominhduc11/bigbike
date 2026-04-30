@@ -2,7 +2,6 @@ package com.bigbike.bigbike_backend.migration.wordpress.media;
 
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
-import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,17 +39,14 @@ public class MediaCopyService {
     private final MediaJpaRepository mediaRepo;
     private final MediaPathResolver pathResolver;
     private final MediaChecksumService checksumService;
-    private final MediaUrlProperties mediaUrlProperties;
 
     public MediaCopyService(
             MediaJpaRepository mediaRepo,
             MediaPathResolver pathResolver,
-            MediaChecksumService checksumService,
-            MediaUrlProperties mediaUrlProperties) {
+            MediaChecksumService checksumService) {
         this.mediaRepo = mediaRepo;
         this.pathResolver = pathResolver;
         this.checksumService = checksumService;
-        this.mediaUrlProperties = mediaUrlProperties;
     }
 
     public MediaCopyReport run(MediaCopyOptions options, MediaStoragePort storage) {
@@ -222,8 +218,7 @@ public class MediaCopyService {
         }
     }
 
-    private String publicUrlFor(String key) {
-        String base = mediaUrlProperties.getPublicBaseUrl();
-        return base.endsWith("/") ? base + key : base + "/" + key;
+    private static String publicUrlFor(String key) {
+        return "/media/" + key;
     }
 }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
@@ -6,6 +7,9 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchContent } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
+import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const INITIAL_QUERY = {
   search: '',
@@ -17,112 +21,109 @@ const INITIAL_QUERY = {
 }
 
 export function ContentListScreen({ navigate, canUpdate }) {
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [state, setState] = useState({
-    status: 'loading',
-    items: [],
-    pagination: null,
-    warning: '',
+  const { t } = useTranslation()
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
   })
+  const debouncedSearch = useDebounce(searchInput, 250)
+  const isFirstSearchRender = useRef(true)
+
+  const state = useAdminList(['content', query], () => fetchContent(query))
 
   useEffect(() => {
-    let active = true
-
-    fetchContent(query)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'success',
-          items: response.items,
-          pagination: response.pagination,
-          warning: response.mode === 'mock' ? response.warning : '',
-        })
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'error',
-          items: [],
-          pagination: null,
-          warning: '',
-          error: error.message,
-        })
-      })
-
-    return () => {
-      active = false
-    }
+    syncQueryToUrl(query, INITIAL_QUERY)
   }, [query])
+
+  useEffect(() => {
+    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+  }, [debouncedSearch])
 
   const columns = useMemo(
     () => [
       {
         key: 'title',
-        label: 'Content',
+        label: t('content.colContent'),
         render: (item) => (
-          <div>
-            <strong>{formatText(item.title)}</strong>
-            <p>{item.slug}</p>
+          <div className="product-cell">
+            <div className="thumbnail-wrap">
+              {item.coverImage?.url ? (
+                <img
+                  src={item.coverImage.url}
+                  alt={item.coverImage.alt || item.title}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = ''; }}
+                />
+              ) : null}
+              <span style={{ display: item.coverImage?.url ? 'none' : '' }}>IMG</span>
+            </div>
+            <div>
+              <strong>{formatText(item.title)}</strong>
+              <p>{item.slug}</p>
+            </div>
           </div>
         ),
       },
       {
         key: 'type',
-        label: 'Type',
-        render: (item) => item.type,
+        label: t('content.colType'),
+        render: (item) => (
+          <span className={`status-badge ${item.type === 'PAGE' ? 'status-neutral' : 'status-info'}`}>
+            {item.type === 'PAGE' ? t('content.typePage') : t('content.typeArticle')}
+          </span>
+        ),
       },
       {
         key: 'publishStatus',
-        label: 'Publish',
+        label: t('content.colPublish'),
         render: (item) => <PublishStatusBadge value={item.publishStatus} />,
       },
       {
         key: 'updatedAt',
-        label: 'Updated',
+        label: t('content.colUpdated'),
         render: (item) => formatDateTime(item.updatedAt),
       },
       {
         key: 'actions',
-        label: 'Actions',
+        label: t('content.colActions'),
         align: 'right',
         render: (item) => (
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() =>
-              navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)
-            }
+            onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
           >
-            Edit
+            {t('common.edit')}
           </button>
         ),
       },
     ],
-    [navigate],
+    [navigate, t],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((previous) => ({ ...previous, status: 'loading' }))
-    setQuery((previous) => ({
-      ...previous,
-      ...partial,
-      page: options.resetPage ? 1 : previous.page,
-    }))
+    setQuery((previous) => {
+      const next = { ...previous, ...partial }
+      if (options.resetPage) next.page = 1
+      return next
+    })
+  }
+
+  function resetFilters() {
+    setSearchInput(INITIAL_QUERY.search)
+    setQuery(INITIAL_QUERY)
   }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Content</p>
-          <h1>Article/Page list</h1>
-          <p>Content management list with article and page mutation forms.</p>
+          <p className="eyebrow">{t('content.eyebrow')}</p>
+          <h1>{t('content.title')}</h1>
+          <p>{t('content.description')}</p>
         </div>
         <div className="screen-actions">
           <button
@@ -131,7 +132,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             onClick={() => navigate('/admin/content/articles/new')}
             disabled={!canUpdate}
           >
-            New article
+            {t('content.newArticle')}
           </button>
           <button
             type="button"
@@ -139,7 +140,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             onClick={() => navigate('/admin/content/pages/new')}
             disabled={!canUpdate}
           >
-            New page
+            {t('content.newPage')}
           </button>
         </div>
       </header>
@@ -148,19 +149,17 @@ export function ContentListScreen({ navigate, canUpdate }) {
 
       <section className="filter-bar">
         <label>
-          Search
+          {t('common.search')}
           <input
             className="control-input"
             type="search"
-            value={query.search}
-            onChange={(event) =>
-              updateQuery({ search: event.target.value }, { resetPage: true })
-            }
-            placeholder="Search by title or slug"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('content.searchPlaceholder')}
           />
         </label>
         <label>
-          Type
+          {t('content.filterType')}
           <select
             className="control-select"
             value={query.type}
@@ -168,13 +167,13 @@ export function ContentListScreen({ navigate, canUpdate }) {
               updateQuery({ type: event.target.value }, { resetPage: true })
             }
           >
-            <option value="ALL">All</option>
-            <option value="ARTICLE">Article</option>
-            <option value="PAGE">Page</option>
+            <option value="ALL">{t('common.all')}</option>
+            <option value="ARTICLE">{t('content.typeArticle')}</option>
+            <option value="PAGE">{t('content.typePage')}</option>
           </select>
         </label>
         <label>
-          Publish status
+          {t('content.filterPublish')}
           <select
             className="control-select"
             value={query.publishStatus}
@@ -182,53 +181,50 @@ export function ContentListScreen({ navigate, canUpdate }) {
               updateQuery({ publishStatus: event.target.value }, { resetPage: true })
             }
           >
-            <option value="ALL">All</option>
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="HIDDEN">Hidden</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value="ALL">{t('common.all')}</option>
+            <option value="DRAFT">{t('status.publish.DRAFT')}</option>
+            <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
+            <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
+            <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
           </select>
         </label>
       </section>
 
-      {state.status === 'loading' ? (
-        <StatePanel
-          tone="info"
-          title="Loading content list"
-          description="Fetching article/page list data."
-        />
-      ) : null}
-
       {state.status === 'error' ? (
         <StatePanel
           tone="danger"
-          title="Failed to load content list"
+          title={t('content.loadError')}
           description={state.error || 'Unknown content list error.'}
-          actionLabel="Retry"
-          onAction={() => {
-            setState((previous) => ({ ...previous, status: 'loading' }))
-            setQuery((previous) => ({ ...previous }))
-          }}
+          actionLabel={t('common.retry')}
+          onAction={() => state.refetch()}
         />
       ) : null}
 
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title="No content found"
-          description="Try another search/filter combination."
-          actionLabel="Reset filters"
-          onAction={() => setQuery(INITIAL_QUERY)}
+          title={t('content.empty')}
+          description={t('content.emptyDesc')}
+          actionLabel={t('common.resetFilters')}
+          onAction={resetFilters}
         />
       ) : null}
 
-      {state.status === 'success' && state.items.length > 0 ? (
+      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
-          <AdminTable caption="Content list" columns={columns} rows={state.items} />
-          <PaginationControls
-            pagination={state.pagination}
-            onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+          <AdminTable
+            caption={t('content.tableCaption')}
+            columns={columns}
+            rows={state.items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
           />
+          {state.status === 'success' && (
+            <PaginationControls
+              pagination={state.pagination}
+              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+            />
+          )}
         </>
       ) : null}
     </section>

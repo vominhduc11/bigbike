@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { submitContactForm } from "@/lib/api/client-api";
+
+const COOLDOWN_MS = 30_000;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ContactForm({ hotline, email }: { hotline: string; email: string }) {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const lastSubmitAt = useRef<number>(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    const now = Date.now();
+    if (now - lastSubmitAt.current < COOLDOWN_MS) {
+      const remaining = Math.ceil((COOLDOWN_MS - (now - lastSubmitAt.current)) / 1000);
+      setError(`Vui lòng chờ ${remaining} giây trước khi gửi lại.`);
+      return;
+    }
     const fd = new FormData(e.currentTarget);
 
     const fullName = (fd.get("fullName") as string).trim();
@@ -25,6 +34,7 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
     if (!content) { setError("Vui lòng nhập nội dung."); return; }
 
     setSaving(true);
+    lastSubmitAt.current = Date.now();
     try {
       await submitContactForm({ fullName, phone, email: emailVal || undefined, content });
       setSuccess(true);

@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.checkout;
 
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -9,6 +10,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 
@@ -40,6 +42,7 @@ public class OrderNotificationService {
 
     // ── Customer: order confirmation ──────────────────────────────────────────
 
+    @Async
     public void sendOrderConfirmation(OrderEntity order, String paymentMethod) {
         String customerEmail = order.getCustomerEmail();
         if (customerEmail == null || customerEmail.isBlank()) {
@@ -72,6 +75,7 @@ public class OrderNotificationService {
 
     // ── Admin: new order notification ─────────────────────────────────────────
 
+    @Async
     public void sendAdminNewOrderNotification(OrderEntity order, String paymentMethod) {
         if (!emailDispatch.isEnabled()) return;
 
@@ -94,6 +98,7 @@ public class OrderNotificationService {
 
     // ── Customer: order status update ─────────────────────────────────────────
 
+    @Async
     public void sendOrderStatusUpdate(OrderEntity order, String newStatus, String customerVisibleNote) {
         if (!CUSTOMER_NOTIFIABLE_STATUSES.contains(newStatus)) return;
 
@@ -126,6 +131,85 @@ public class OrderNotificationService {
         log.info("Order status update ({}) sent for order {}.", newStatus, order.getOrderNumber());
     }
 
+    // ── Return notifications ──────────────────────────────────────────────────
+
+    public void sendReturnReceived(ReturnEntity ret, String customerEmail, String orderNumber) {
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) {
+            log.info("Mail not configured — return-received notification skipped for {}.", ret.getReturnNumber());
+            return;
+        }
+        Context ctx = new Context();
+        ctx.setVariable("customerName", customerEmail);
+        ctx.setVariable("returnNumber", ret.getReturnNumber());
+        ctx.setVariable("orderNumber", orderNumber);
+        ctx.setVariable("reasonLabel", reasonLabel(ret.getReason()));
+        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
+        emailDispatch.send(customerEmail,
+                "[BigBike] Đã nhận yêu cầu đổi trả " + ret.getReturnNumber(),
+                "return-received", ctx);
+    }
+
+    public void sendReturnApproved(ReturnEntity ret, String customerEmail, String orderNumber) {
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) return;
+        Context ctx = new Context();
+        ctx.setVariable("customerName", customerEmail);
+        ctx.setVariable("returnNumber", ret.getReturnNumber());
+        ctx.setVariable("orderNumber", orderNumber);
+        ctx.setVariable("hasAdminNote", ret.getAdminNote() != null && !ret.getAdminNote().isBlank());
+        ctx.setVariable("adminNote", ret.getAdminNote());
+        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
+        emailDispatch.send(customerEmail,
+                "[BigBike] Yêu cầu đổi trả " + ret.getReturnNumber() + " đã được duyệt",
+                "return-approved", ctx);
+    }
+
+    public void sendReturnRejected(ReturnEntity ret, String customerEmail, String orderNumber) {
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) return;
+        Context ctx = new Context();
+        ctx.setVariable("customerName", customerEmail);
+        ctx.setVariable("returnNumber", ret.getReturnNumber());
+        ctx.setVariable("orderNumber", orderNumber);
+        ctx.setVariable("hasAdminNote", ret.getAdminNote() != null && !ret.getAdminNote().isBlank());
+        ctx.setVariable("adminNote", ret.getAdminNote());
+        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
+        emailDispatch.send(customerEmail,
+                "[BigBike] Yêu cầu đổi trả " + ret.getReturnNumber() + " không được chấp thuận",
+                "return-rejected", ctx);
+    }
+
+    public void sendReturnRefunded(ReturnEntity ret, String customerEmail, String orderNumber) {
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) return;
+        Context ctx = new Context();
+        ctx.setVariable("customerName", customerEmail);
+        ctx.setVariable("returnNumber", ret.getReturnNumber());
+        ctx.setVariable("orderNumber", orderNumber);
+        ctx.setVariable("refundFormatted", formatVnd(ret.getRefundAmount()));
+        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
+        emailDispatch.send(customerEmail,
+                "[BigBike] Hoàn tiền " + formatVnd(ret.getRefundAmount()) + " — " + ret.getReturnNumber(),
+                "return-refunded", ctx);
+    }
+
+    public void sendReturnGoodsReceived(ReturnEntity ret, String customerEmail, String orderNumber) {
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) {
+            log.info("Mail not configured — return-goods-received notification skipped for {}.", ret.getReturnNumber());
+            return;
+        }
+        Context ctx = new Context();
+        ctx.setVariable("customerName", customerEmail);
+        ctx.setVariable("returnNumber", ret.getReturnNumber());
+        ctx.setVariable("orderNumber", orderNumber);
+        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
+        emailDispatch.send(customerEmail,
+                "[BigBike] BigBike đã nhận hàng trả — " + ret.getReturnNumber(),
+                "return-goods-received", ctx);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static String safeCustomerName(OrderEntity order) {
@@ -141,6 +225,17 @@ public class OrderNotificationService {
     private static String formatVnd(BigDecimal amount) {
         if (amount == null) return "—";
         return VND.format(amount.toBigIntegerExact()) + " VND";
+    }
+
+    private static String reasonLabel(String reason) {
+        if (reason == null) return "Khác";
+        return switch (reason.toUpperCase(Locale.ROOT)) {
+            case "DEFECTIVE"        -> "Hàng bị lỗi";
+            case "WRONG_ITEM"       -> "Sai sản phẩm";
+            case "NOT_AS_DESCRIBED" -> "Không như mô tả";
+            case "CHANGED_MIND"     -> "Đổi ý";
+            default                 -> "Khác";
+        };
     }
 
     private static String paymentLabel(String method) {

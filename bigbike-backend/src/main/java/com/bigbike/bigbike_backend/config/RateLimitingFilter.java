@@ -9,8 +9,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -22,21 +28,43 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Limits (per IP, refill per minute):
  *   login endpoints         → 5 req/min
  *   register endpoint       → 3 req/min
+ *   token refresh           → 10 req/min
+ *   contact form            → 3 req/min
+ *   cart mutations          → 30 req/min
+ *   checkout / quick-buy    → 5 req/min
  *   order lookup (GET)      → 20 req/min
  *   search (GET)            → 60 req/min
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, ORDER_LOOKUP, SEARCH }
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
+
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final Map<String, Bucket> loginBuckets       = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerBuckets    = new ConcurrentHashMap<>();
+    /** IPs allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies (comma-separated). */
+    private final Set<String> trustedProxies;
+
+    public RateLimitingFilter(
+            @Value("${bigbike.trusted-proxies:127.0.0.1,::1}") String trustedProxiesConfig
+    ) {
+        this.trustedProxies = Arrays.stream(trustedProxiesConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    private final Map<String, Bucket> loginBuckets         = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> registerBuckets      = new ConcurrentHashMap<>();
     private final Map<String, Bucket> passwordResetBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> orderLookupBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> searchBuckets      = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> refreshBuckets       = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> contactBuckets       = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> cartBuckets          = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> checkoutBuckets      = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> orderLookupBuckets   = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> searchBuckets        = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(
@@ -75,11 +103,24 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)) {
                 return LimitTier.PASSWORD_RESET;
             }
-        } else if ("GET".equalsIgnoreCase(method)) {
+            if ("/api/v1/auth/refresh".equals(path) || "/api/v1/customer/auth/refresh".equals(path)) {
+                return LimitTier.REFRESH;
+            }
+            if ("/api/v1/contact".equals(path)) {
+                return LimitTier.CONTACT;
+            }
+            if ("/api/v1/checkout".equals(path) || "/api/v1/orders/quick-buy".equals(path)) {
+                return LimitTier.CHECKOUT;
+            }
+        }
+        if (path.startsWith("/api/v1/cart") && ("POST".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method))) {
+            return LimitTier.CART;
+        }
+        if ("GET".equalsIgnoreCase(method)) {
             if ("/api/v1/orders/lookup".equals(path)) {
                 return LimitTier.ORDER_LOOKUP;
             }
-            if ("/api/v1/search".equals(path)) {
+            if ("/api/v1/search".equals(path) || "/api/v1/search-suggest".equals(path)) {
                 return LimitTier.SEARCH;
             }
         }
@@ -88,15 +129,23 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private Bucket bucketFor(LimitTier tier, String clientIp) {
         return switch (tier) {
-            case LOGIN        -> loginBuckets.computeIfAbsent(clientIp,
+            case LOGIN         -> loginBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(5, Duration.ofMinutes(1)));
-            case REGISTER     -> registerBuckets.computeIfAbsent(clientIp,
+            case REGISTER      -> registerBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(3, Duration.ofMinutes(1)));
             case PASSWORD_RESET -> passwordResetBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(5, Duration.ofMinutes(1)));
-            case ORDER_LOOKUP -> orderLookupBuckets.computeIfAbsent(clientIp,
+            case REFRESH       -> refreshBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(10, Duration.ofMinutes(1)));
+            case CONTACT       -> contactBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(3, Duration.ofMinutes(1)));
+            case CART          -> cartBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(30, Duration.ofMinutes(1)));
+            case CHECKOUT      -> checkoutBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(5, Duration.ofMinutes(1)));
+            case ORDER_LOOKUP  -> orderLookupBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(20, Duration.ofMinutes(1)));
-            case SEARCH       -> searchBuckets.computeIfAbsent(clientIp,
+            case SEARCH        -> searchBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(60, Duration.ofMinutes(1)));
         };
     }
@@ -111,11 +160,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        String remoteAddr = request.getRemoteAddr();
+        if (trustedProxies.contains(remoteAddr)) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                String candidate = forwarded.split(",")[0].trim();
+                if (!candidate.isEmpty()) {
+                    return candidate;
+                }
+            }
         }
-        return request.getRemoteAddr();
+        return remoteAddr;
     }
 
     private void sendRateLimitResponse(HttpServletResponse response) throws IOException {

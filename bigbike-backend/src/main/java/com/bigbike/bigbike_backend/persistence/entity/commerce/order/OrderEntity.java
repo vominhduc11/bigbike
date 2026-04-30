@@ -72,6 +72,15 @@ public class OrderEntity {
     @Column(name = "paid_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal paidAmount = BigDecimal.ZERO;
 
+    @Column(name = "refund_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal refundAmount = BigDecimal.ZERO;
+
+    @Column(name = "refund_reason", columnDefinition = "text")
+    private String refundReason;
+
+    @Column(name = "refunded_at")
+    private Instant refundedAt;
+
     @Column(length = 100)
     private String source;
 
@@ -155,6 +164,15 @@ public class OrderEntity {
 
     public BigDecimal getPaidAmount() { return paidAmount; }
     public void setPaidAmount(BigDecimal paidAmount) { this.paidAmount = paidAmount; }
+
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
+
+    public String getRefundReason() { return refundReason; }
+    public void setRefundReason(String refundReason) { this.refundReason = refundReason; }
+
+    public Instant getRefundedAt() { return refundedAt; }
+    public void setRefundedAt(Instant refundedAt) { this.refundedAt = refundedAt; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }

@@ -132,6 +132,12 @@ public class ProductEntity {
     @Column(name = "rating", precision = 3, scale = 2)
     private BigDecimal rating;
 
+    @Column(name = "rating_count")
+    private Integer ratingCount;
+
+    @Column(name = "content_bottom", columnDefinition = "text")
+    private String contentBottom;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -447,6 +453,22 @@ public class ProductEntity {
 
     public void setRating(BigDecimal rating) {
         this.rating = rating;
+    }
+
+    public Integer getRatingCount() {
+        return ratingCount;
+    }
+
+    public void setRatingCount(Integer ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+
+    public String getContentBottom() {
+        return contentBottom;
+    }
+
+    public void setContentBottom(String contentBottom) {
+        this.contentBottom = contentBottom;
     }
 
     public String getSeoTitle() {

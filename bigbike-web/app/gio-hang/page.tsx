@@ -39,6 +39,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mutating, setMutating] = useState<Record<string, boolean>>({});
+  const [clearConfirm, setClearConfirm] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
@@ -87,6 +88,7 @@ export default function CartPage() {
 
   const handleClear = useCallback(async () => {
     if (!cart?.items.length) return;
+    setClearConfirm(false);
     try {
       const updated = await clearCart();
       setCart(updated);
@@ -247,9 +249,21 @@ export default function CartPage() {
                 <Link href={toProductListPath()} className="link">
                   ← Tiếp tục mua hàng
                 </Link>
-                <button type="button" className="link" onClick={handleClear}>
-                  Xoá toàn bộ
-                </button>
+                {clearConfirm ? (
+                  <span style={{ display: "inline-flex", gap: 8, alignItems: "center", fontSize: "var(--bb-text-sm)" }}>
+                    <span>Xoá tất cả sản phẩm?</span>
+                    <button type="button" className="link" style={{ color: "var(--bb-state-error)" }} onClick={handleClear}>
+                      Xác nhận
+                    </button>
+                    <button type="button" className="link" onClick={() => setClearConfirm(false)}>
+                      Huỷ
+                    </button>
+                  </span>
+                ) : (
+                  <button type="button" className="link" onClick={() => setClearConfirm(true)}>
+                    Xoá toàn bộ
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -271,12 +285,14 @@ export default function CartPage() {
                   <b>−{formatVnd(cart.totals.discountAmount)}</b>
                 </div>
               )}
-              {cart.totals.shippingAmount > 0 && (
-                <div className="wp-summary-row">
-                  <span>Phí vận chuyển</span>
+              <div className="wp-summary-row">
+                <span>Phí vận chuyển</span>
+                {cart.totals.shippingAmount > 0 ? (
                   <b>{formatVnd(cart.totals.shippingAmount)}</b>
-                </div>
-              )}
+                ) : (
+                  <span className="wp-summary-ship-note">Tính ở bước thanh toán</span>
+                )}
+              </div>
               <div className="wp-summary-total">
                 <span>Tổng cộng</span>
                 <b>{formatVnd(cart.totals.totalAmount)}</b>

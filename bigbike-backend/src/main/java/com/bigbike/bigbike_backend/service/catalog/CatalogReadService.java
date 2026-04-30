@@ -4,8 +4,6 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
-import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
-import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -79,6 +77,18 @@ public class CatalogReadService {
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
         return product;
+    }
+
+    /**
+     * Fetch a published product by either its slug or its internal id.
+     * The storefront uses slugs for SEO URLs; the mobile app stores the id with cart entries
+     * and refreshes pricing via {@code /products/{id}/snapshot}.
+     */
+    public Product getProductByIdOrSlug(String key) {
+        return catalogReadRepository.findProductBySlug(key)
+                .or(() -> catalogReadRepository.findProductById(key))
+                .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
     public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage) {
@@ -186,21 +196,12 @@ public class CatalogReadService {
         return expected == null || Boolean.TRUE.equals(actual) == expected;
     }
 
+    /**
+     * Price filtering and sorting use the parent product price only. Variant
+     * prices are intentionally ignored so list-page filter results stay
+     * consistent with the price the storefront displays.
+     */
     private static BigDecimal effectivePrice(Product product) {
-        if (product.variants() != null && !product.variants().isEmpty()) {
-            BigDecimal variantPrice = product.variants().stream()
-                    .filter(Objects::nonNull)
-                    .map(ProductVariant::price)
-                    .filter(Objects::nonNull)
-                    .map(ProductPrice::retailPrice)
-                    .filter(Objects::nonNull)
-                    .min(BigDecimal::compareTo)
-                    .orElse(null);
-            if (variantPrice != null) {
-                return variantPrice;
-            }
-        }
-
         if (product.price() == null) {
             return null;
         }

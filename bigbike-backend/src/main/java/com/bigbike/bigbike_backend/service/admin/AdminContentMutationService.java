@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
@@ -42,6 +43,7 @@ public class AdminContentMutationService {
     private final BlogTagJpaRepository blogTagJpaRepository;
     private final ContentReadRepository contentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
+    private final WebRevalidationService webRevalidationService;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -50,7 +52,8 @@ public class AdminContentMutationService {
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
-            MediaUrlProperties mediaUrlProperties
+            MediaUrlProperties mediaUrlProperties,
+            WebRevalidationService webRevalidationService
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
@@ -59,6 +62,7 @@ public class AdminContentMutationService {
         this.blogTagJpaRepository = blogTagJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
         this.mediaUrlProperties = mediaUrlProperties;
+        this.webRevalidationService = webRevalidationService;
     }
 
     @Transactional
@@ -79,6 +83,7 @@ public class AdminContentMutationService {
 
         applyArticlePatch(entity, request, slug, author, category, true);
         articleJpaRepository.save(entity);
+        revalidateArticle(entity, null);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -91,6 +96,7 @@ public class AdminContentMutationService {
 
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
+        String previousSlug = entity.getSlug();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateArticleRequest(request, entity, false, errors);
@@ -103,6 +109,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyArticlePatch(entity, request, slug, author, category, false);
         articleJpaRepository.save(entity);
+        revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -127,6 +134,7 @@ public class AdminContentMutationService {
         AdminMutationValidators.throwIfErrors(errors);
         applyPagePatch(entity, request, slug, parent, true);
         pageJpaRepository.save(entity);
+        revalidatePage(entity, null);
 
         Page page = contentReadRepository.findPageById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -139,6 +147,7 @@ public class AdminContentMutationService {
 
         PageEntity entity = pageJpaRepository.findById(pageId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
+        String previousSlug = entity.getSlug();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validatePageRequest(request, entity, false, errors);
@@ -150,6 +159,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyPagePatch(entity, request, slug, parent, false);
         pageJpaRepository.save(entity);
+        revalidatePage(entity, previousSlug);
 
         Page page = contentReadRepository.findPageById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -164,6 +174,7 @@ public class AdminContentMutationService {
         entity.setPublishStatus(PublishStatus.ARCHIVED);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
+        revalidateArticle(entity, null);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         return toAdminContentItem(article);
@@ -177,6 +188,7 @@ public class AdminContentMutationService {
         entity.setPublishStatus(PublishStatus.ARCHIVED);
         entity.setUpdatedAt(Instant.now());
         pageJpaRepository.save(entity);
+        revalidatePage(entity, null);
         Page page = contentReadRepository.findPageById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         return toAdminContentItem(page);
@@ -221,6 +233,12 @@ public class AdminContentMutationService {
         AdminMutationValidators.validateImageAsset(
                 request.getCoverImage(),
                 "coverImage",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
+        AdminMutationValidators.validateImageAsset(
+                request.getProductImage(),
+                "productImage",
                 mediaUrlProperties.getPublicBaseUrl(),
                 errors
         );
@@ -321,16 +339,24 @@ public class AdminContentMutationService {
             clearCoverImage(entity);
         }
 
+        if (request.getProductImage() != null) {
+            applyProductImage(entity, request.getProductImage());
+        } else if (create) {
+            clearProductImage(entity);
+        }
+
         if (create || request.getAuthorId() != null) {
             entity.setAuthor(author);
         }
         if (create || request.getCategoryId() != null) {
             entity.setCategory(category);
-            List<ContentCategoryEntity> categories = new ArrayList<>();
-            if (category != null) {
-                categories.add(category);
+            if (create) {
+                List<ContentCategoryEntity> categories = new ArrayList<>();
+                if (category != null) {
+                    categories.add(category);
+                }
+                entity.setCategories(categories);
             }
-            entity.setCategories(categories);
         }
         if (create || request.getTags() != null) {
             entity.setTags(resolveTags(request.getTags()));
@@ -484,6 +510,16 @@ public class AdminContentMutationService {
         entity.setCoverImageMimeType(null);
     }
 
+    private static void applyProductImage(ArticleEntity entity, ImageAssetRequest request) {
+        entity.setProductImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setProductImageAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearProductImage(ArticleEntity entity) {
+        entity.setProductImageUrl(null);
+        entity.setProductImageAlt(null);
+    }
+
     private static void applySeo(ArticleEntity entity, SeoMetaRequest request) {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
@@ -567,6 +603,7 @@ public class AdminContentMutationService {
                 article.excerpt(),
                 article.body(),
                 article.coverImage(),
+                article.productImage(),
                 article.publishStatus(),
                 article.seo(),
                 article.publishedAt(),
@@ -584,6 +621,7 @@ public class AdminContentMutationService {
                 null,
                 page.body(),
                 null,
+                null,
                 page.publishStatus(),
                 page.seo(),
                 page.publishedAt(),
@@ -592,7 +630,42 @@ public class AdminContentMutationService {
         );
     }
 
+    private void revalidateArticle(ArticleEntity entity, String previousSlug) {
+        revalidateEntityTags("articles", "article:", previousSlug, entity.getSlug());
+    }
+
+    private void revalidatePage(PageEntity entity, String previousSlug) {
+        revalidateEntityTags("pages", "page:", previousSlug, entity.getSlug());
+    }
+
+    private void revalidateEntityTags(
+            String listTag,
+            String itemTagPrefix,
+            String previousSlug,
+            String currentSlug
+    ) {
+        LinkedHashSet<String> tags = new LinkedHashSet<>();
+        addTag(tags, listTag);
+        addSlugTag(tags, itemTagPrefix, previousSlug);
+        addSlugTag(tags, itemTagPrefix, currentSlug);
+        webRevalidationService.revalidate(tags.toArray(String[]::new));
+    }
+
+    private static void addSlugTag(LinkedHashSet<String> tags, String prefix, String slug) {
+        String normalized = AdminMutationValidators.trimToNull(slug);
+        if (normalized != null) {
+            tags.add(prefix + normalized);
+        }
+    }
+
+    private static void addTag(LinkedHashSet<String> tags, String tag) {
+        String normalized = AdminMutationValidators.trimToNull(tag);
+        if (normalized != null) {
+            tags.add(normalized);
+        }
+    }
+
     private static String generateId(String prefix) {
-        return prefix + "_" + Instant.now().toEpochMilli() + "_" + Math.abs((int) (Math.random() * 100000));
+        return prefix + "_" + java.util.UUID.randomUUID().toString().replace("-", "");
     }
 }

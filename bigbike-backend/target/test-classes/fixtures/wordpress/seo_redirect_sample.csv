@@ -1,0 +1,5 @@
+sourcePattern,targetPattern,redirectType,status,notes
+/vi/san-pham,/san-pham.html,301,active,Polylang vi prefix removal
+/en/products,/san-pham.html,301,active,Polylang en prefix removal
+/old-category/xe-may.html,/xe-may.html,301,active,Category URL restructure
+/product/honda-abc,/sp/honda-abc-125.html,301,active,Product URL format change

@@ -4,23 +4,27 @@ const SITE_ORIGIN =
   "https://bigbike.vn";
 
 export function toProductPath(slug: string): string {
-  return `/sp/${slug}.html`;
+  return `/product/${slug}/`;
 }
 
 export function toProductListPath(): string {
-  return "/danh-muc-san-pham.html";
+  return "/san-pham/";
+}
+
+export function toCategoryListPath(): string {
+  return "/danh-muc-san-pham/";
 }
 
 export function toCategoryPath(slug: string): string {
-  return `/${slug}.html`;
+  return `/danh-muc-san-pham/${slug}/`;
 }
 
-export function toCategoryHierPath(parentSlug: string, childSlug: string): string {
-  return `/${parentSlug}/${childSlug}.html`;
+export function toCategoryHierPath(childSlug: string): string {
+  return `/danh-muc-san-pham/${childSlug}/`;
 }
 
 export function toBrandPath(slug: string): string {
-  return `/brand/${slug}.html`;
+  return `/brands/${slug}/`;
 }
 
 export function toBrandListPath(): string {
@@ -36,7 +40,7 @@ export function toArticleListPath(): string {
 }
 
 export function toPagePath(slug: string): string {
-  return `/${slug}.html`;
+  return `/${slug}/`;
 }
 
 export function toHomePath(): string {
@@ -44,11 +48,11 @@ export function toHomePath(): string {
 }
 
 export function toCartPath(): string {
-  return "/gio-hang.html";
+  return "/gio-hang/";
 }
 
 export function toCheckoutPath(): string {
-  return "/thanh-toan.html";
+  return "/thanh-toan/";
 }
 
 export function toOrderConfirmPath(orderNumber: string, orderKey?: string): string {
@@ -64,21 +68,21 @@ export function toOrderDetailPath(orderId: string): string {
 }
 
 export function toLoginPath(returnTo?: string): string {
-  if (returnTo) return `/dang-nhap.html?tiep=${encodeURIComponent(returnTo)}`;
-  return "/dang-nhap.html";
+  if (returnTo) return `/dang-nhap/?tiep=${encodeURIComponent(returnTo)}`;
+  return "/dang-nhap/";
 }
 
 export function toForgotPasswordPath(token?: string): string {
-  if (token) return `/quen-mat-khau.html?token=${encodeURIComponent(token)}`;
-  return "/quen-mat-khau.html";
+  if (token) return `/quen-mat-khau/?token=${encodeURIComponent(token)}`;
+  return "/quen-mat-khau/";
 }
 
 export function toRegisterPath(): string {
-  return "/dang-ky.html";
+  return "/dang-ky/";
 }
 
 export function toAccountPath(): string {
-  return "/tai-khoan.html";
+  return "/tai-khoan/";
 }
 
 export function toOrderHistoryPath(): string {

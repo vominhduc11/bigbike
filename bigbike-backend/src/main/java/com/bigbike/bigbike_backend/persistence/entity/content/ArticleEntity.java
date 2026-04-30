@@ -47,6 +47,12 @@ public class ArticleEntity {
     private Integer coverImageHeight;
     private String coverImageMimeType;
 
+    @Column(columnDefinition = "text")
+    private String productImageUrl;
+
+    @Column(length = 500)
+    private String productImageAlt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
     private ContentAuthorEntity author;
@@ -190,6 +196,22 @@ public class ArticleEntity {
 
     public void setCoverImageMimeType(String coverImageMimeType) {
         this.coverImageMimeType = coverImageMimeType;
+    }
+
+    public String getProductImageUrl() {
+        return productImageUrl;
+    }
+
+    public void setProductImageUrl(String productImageUrl) {
+        this.productImageUrl = productImageUrl;
+    }
+
+    public String getProductImageAlt() {
+        return productImageAlt;
+    }
+
+    public void setProductImageAlt(String productImageAlt) {
+        this.productImageAlt = productImageAlt;
     }
 
     public ContentAuthorEntity getAuthor() {

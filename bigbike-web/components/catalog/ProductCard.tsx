@@ -4,6 +4,7 @@ import { formatVnd, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
+import { RatingStars } from "@/components/ui/RatingStars";
 
 type ProductCardProps = {
   product: Product;
@@ -49,6 +50,11 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="wp-product-body">
         <p className="wp-product-brand">{brandName}</p>
         <h3 className="wp-product-name">{name}</h3>
+        {product.rating != null && product.rating > 0 && (
+          <div className="wp-product-rating">
+            <RatingStars value={product.rating} />
+          </div>
+        )}
         <div className="wp-product-price">
           {product.price ? (
             <>

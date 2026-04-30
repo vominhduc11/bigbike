@@ -545,7 +545,11 @@ public class WordPressMigrationImportService {
                     variations.add(variationMapper.map(post, metaByPost.getOrDefault(post.id(), List.of())));
                 }
                 results.put(MigrationDomain.PRODUCT_VARIATIONS,
-                        productVariationImporter.importBatch(variations, options));
+                        productVariationImporter.importBatch(
+                                variations,
+                                options,
+                                mediaByLegacyId,
+                                mediaUrlProperties.getPublicBaseUrl()));
             }
 
             // ── 11c. Redirects — FG resolution (requires products in DB) ─────

@@ -1,0 +1,413 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createReturn, fetchMyOrders, fetchMyReturn, fetchMyReturns } from "@/lib/api/client-api";
+import type { CustomerReturn, OrderListItem } from "@/lib/contracts/commerce";
+import { AccountShell } from "@/components/layout/AccountShell";
+import { formatDate, formatVnd } from "@/lib/utils/format";
+
+const RETURN_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Từ chối",
+  RECEIVED: "Đã nhận hàng",
+  COMPLETED: "Hoàn thành",
+  REFUNDED: "Đã hoàn tiền",
+};
+
+const RETURN_REASON_LABELS: Record<string, string> = {
+  DEFECTIVE: "Hàng bị lỗi",
+  WRONG_ITEM: "Sai sản phẩm",
+  NOT_AS_DESCRIBED: "Không như mô tả",
+  CHANGED_MIND: "Đổi ý",
+  OTHER: "Khác",
+};
+
+const RETURNABLE_STATUSES = ["COMPLETED", "DELIVERED"];
+
+function returnStatusClass(status: string): string {
+  const map: Record<string, string> = {
+    COMPLETED: "delivered",
+    REFUNDED: "delivered",
+    APPROVED: "processing",
+    RECEIVED: "processing",
+    REJECTED: "cancelled",
+  };
+  return map[status] ?? "";
+}
+
+function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<CustomerReturn | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    fetchMyReturn(id)
+      .then((d) => { setDetail(d); setError(""); })
+      .catch((e: Error | undefined) => setError(e?.message ?? "Không tải được chi tiết."))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  return (
+    <div className="wp-detail-overlay" role="dialog" aria-modal="true">
+      <div className="wp-detail-panel">
+        <div className="wp-detail-panel-head">
+          <h3>Chi tiết yêu cầu đổi trả</h3>
+          <button type="button" className="wp-detail-close" onClick={onClose} aria-label="Đóng">✕</button>
+        </div>
+
+        {loading && (
+          <div className="bb-skel-stack" style={{ padding: 24 }}>
+            {[1, 2, 3].map((i) => <div key={i} className="bb-skel bb-skel--text" style={{ width: "100%", height: 18, marginBottom: 12 }} />)}
+          </div>
+        )}
+
+        {error && <p className="wp-error-text" style={{ padding: 24 }}>{error}</p>}
+
+        {detail && !loading && (
+          <div className="wp-detail-panel-body">
+            {/* Meta */}
+            <div className="wp-detail-meta">
+              <div><span>Mã yêu cầu</span><b style={{ fontFamily: "monospace" }}>{detail.returnNumber}</b></div>
+              {detail.orderNumber && <div><span>Đơn hàng</span><b>#{detail.orderNumber}</b></div>}
+              <div><span>Lý do</span><b>{RETURN_REASON_LABELS[detail.reason] ?? detail.reason}</b></div>
+              <div><span>Trạng thái</span>
+                <span className={`wp-order-status ${returnStatusClass(detail.status)}`}>
+                  {RETURN_STATUS_LABELS[detail.status] ?? detail.status}
+                </span>
+              </div>
+              {detail.refundAmount > 0 && (
+                <div><span>Hoàn tiền</span><b>{formatVnd(detail.refundAmount)}</b></div>
+              )}
+              <div><span>Ngày tạo</span><b>{formatDate(detail.createdAt)}</b></div>
+            </div>
+
+            {/* Customer note */}
+            {detail.customerNote && (
+              <div className="wp-detail-note wp-detail-note--grey">
+                <p className="wp-detail-note-label">Ghi chú của bạn</p>
+                <p>{detail.customerNote}</p>
+              </div>
+            )}
+
+            {/* Admin note */}
+            {detail.adminNote && (
+              <div className="wp-detail-note wp-detail-note--yellow">
+                <p className="wp-detail-note-label">Phản hồi từ cửa hàng</p>
+                <p>{detail.adminNote}</p>
+              </div>
+            )}
+
+            {/* Items */}
+            {detail.items && detail.items.length > 0 && (
+              <div className="wp-detail-section">
+                <p className="wp-detail-section-title">Sản phẩm đổi trả</p>
+                <table className="wp-detail-table">
+                  <thead>
+                    <tr>
+                      <th>Sản phẩm</th>
+                      <th style={{ textAlign: "center" }}>SL</th>
+                      <th style={{ textAlign: "right" }}>Đơn giá</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.items.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <span>{item.productName}</span>
+                          {item.variantName && <span style={{ color: "var(--bb-text-muted)", fontSize: "0.8rem", display: "block" }}>{item.variantName}</span>}
+                        </td>
+                        <td style={{ textAlign: "center" }}>{item.quantity}</td>
+                        <td style={{ textAlign: "right" }}>{formatVnd(item.unitPrice)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* History */}
+            {detail.history && detail.history.length > 0 && (
+              <div className="wp-detail-section">
+                <p className="wp-detail-section-title">Lịch sử xử lý</p>
+                <ol className="wp-return-timeline">
+                  {detail.history.map((h, i) => (
+                    <li key={i} className="wp-return-timeline-item">
+                      <span className="wp-timeline-dot" />
+                      <div className="wp-timeline-content">
+                        <p className="wp-timeline-label">
+                          {h.fromStatus ? `${RETURN_STATUS_LABELS[h.fromStatus] ?? h.fromStatus} → ` : ""}
+                          {RETURN_STATUS_LABELS[h.toStatus] ?? h.toStatus}
+                        </p>
+                        <p className="wp-timeline-date">{formatDate(h.createdAt)}</p>
+                        {h.note && <p className="wp-timeline-note">{h.note}</p>}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReturnsContent() {
+  const [returns, setReturns] = useState<CustomerReturn[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Create form state
+  const [showForm, setShowForm] = useState(false);
+  const [returnableOrders, setReturnableOrders] = useState<OrderListItem[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  function loadReturns() {
+    setLoading(true);
+    fetchMyReturns()
+      .then((data) => {
+        setReturns(Array.isArray(data) ? data : []);
+        setError("");
+      })
+      .catch((e: Error | undefined) => {
+        if (e) setError(e.message ?? "Không tải được yêu cầu đổi trả.");
+      })
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadReturns();
+  }, []);
+
+  async function openForm() {
+    setShowForm(true);
+    setFormError("");
+    setFormSuccess("");
+    setOrdersLoading(true);
+    try {
+      // Fetch all orders (first page, large size) to find returnable ones
+      const res = await fetchMyOrders(1);
+      const eligible = res.data.filter((o) => RETURNABLE_STATUSES.includes(o.status));
+      setReturnableOrders(eligible);
+    } catch {
+      setReturnableOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setFormError("");
+    setFormSuccess("");
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setFormError("");
+    setFormSuccess("");
+
+    const fd = new FormData(e.currentTarget);
+    const orderId = (fd.get("orderId") as string).trim();
+    const reason = (fd.get("reason") as string).trim();
+    const customerNote = (fd.get("customerNote") as string).trim();
+
+    if (!orderId) {
+      setFormError("Vui lòng chọn đơn hàng.");
+      return;
+    }
+    if (!reason) {
+      setFormError("Vui lòng chọn lý do đổi trả.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await createReturn(orderId, { reason, customerNote: customerNote || undefined });
+      setFormSuccess("Yêu cầu đổi trả đã được gửi thành công.");
+      closeForm();
+      loadReturns();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="wp-account-header">
+        <div>
+          <h2>Đổi trả</h2>
+          <p className="sub">Lịch sử yêu cầu đổi trả và hoàn tiền</p>
+        </div>
+        {!showForm && (
+          <button type="button" className="wp-btn-primary wp-btn-sm" onClick={openForm}>
+            Tạo yêu cầu đổi trả
+          </button>
+        )}
+      </div>
+
+      {formSuccess && (
+        <div className="wp-alert-success">
+          <p>{formSuccess}</p>
+        </div>
+      )}
+
+      {error && <p className="wp-error-text">{error}</p>}
+
+      {/* Create return form */}
+      {showForm && (
+        <div className="wp-info-card-form" style={{ marginBottom: 24 }}>
+          <p className="wp-info-label" style={{ marginBottom: 16 }}>Tạo yêu cầu đổi trả</p>
+          {formError && (
+            <div className="wp-alert-error" style={{ marginBottom: 12 }}>
+              <p>{formError}</p>
+            </div>
+          )}
+          <form onSubmit={handleSubmit}>
+            <div className="wp-form-grid">
+              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+                <label>Đơn hàng</label>
+                {ordersLoading ? (
+                  <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 38 }} />
+                ) : returnableOrders.length === 0 ? (
+                  <p style={{ fontSize: "0.85rem", color: "var(--bb-text-muted)" }}>
+                    Không có đơn hàng nào đủ điều kiện đổi trả (cần trạng thái Hoàn thành).
+                  </p>
+                ) : (
+                  <select className="wp-input" name="orderId" required>
+                    <option value="">-- Chọn đơn hàng --</option>
+                    {returnableOrders.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        Đơn #{o.orderNumber}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+                <label>Lý do đổi trả</label>
+                <select className="wp-input" name="reason" required>
+                  <option value="">-- Chọn lý do --</option>
+                  {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+                <label>Mô tả thêm (không bắt buộc)</label>
+                <textarea
+                  className="wp-input"
+                  name="customerNote"
+                  rows={3}
+                  placeholder="Mô tả thêm về vấn đề..."
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+            </div>
+            <div className="wp-form-actions">
+              <button type="submit" className="wp-btn-primary" disabled={submitting || (returnableOrders.length === 0 && !ordersLoading)}>
+                {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
+              </button>
+              <button type="button" className="wp-btn-secondary" onClick={closeForm} disabled={submitting}>
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="bb-skel-stack" aria-busy="true">
+          {[1, 2].map((i) => (
+            <div key={i} className="wp-order-card">
+              <div className="wp-order-head">
+                <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
+                  <div className="bb-skel-col">
+                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                    <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
+                  </div>
+                  <div className="bb-skel-col">
+                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
+                    <span className="bb-skel bb-skel--text" style={{ width: 90 }} />
+                  </div>
+                </div>
+                <span className="bb-skel bb-skel--chip" style={{ width: 90 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : returns.length === 0 ? (
+        <div className="wp-empty-state">
+          <p className="wp-muted-text">Bạn chưa có yêu cầu đổi trả nào.</p>
+        </div>
+      ) : (
+        <>
+          <div className="bb-skel-stack">
+            {returns.map((ret) => (
+              <button
+                key={ret.id}
+                type="button"
+                className="wp-order-card wp-order-card--clickable"
+                onClick={() => setSelectedId(ret.id)}
+              >
+                <div className="wp-order-head">
+                  <div className="meta">
+                    <div>
+                      Mã yêu cầu
+                      <b style={{ fontFamily: "monospace" }}>{ret.returnNumber}</b>
+                    </div>
+                    {ret.orderNumber && (
+                      <div>
+                        Đơn hàng
+                        <b>#{ret.orderNumber}</b>
+                      </div>
+                    )}
+                    <div>
+                      Lý do
+                      <b>{RETURN_REASON_LABELS[ret.reason] ?? ret.reason}</b>
+                    </div>
+                    <div>
+                      Ngày tạo
+                      <b>{formatDate(ret.createdAt)}</b>
+                    </div>
+                    {ret.refundAmount > 0 && (
+                      <div>
+                        Hoàn tiền
+                        <b>{formatVnd(ret.refundAmount)}</b>
+                      </div>
+                    )}
+                  </div>
+                  <span className={`wp-order-status ${returnStatusClass(ret.status)}`}>
+                    {RETURN_STATUS_LABELS[ret.status] ?? ret.status}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {selectedId && (
+            <ReturnDetailPanel id={selectedId} onClose={() => setSelectedId(null)} />
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+export default function ReturnsPage() {
+  return (
+    <AccountShell loginRedirect="/tai-khoan/doi-tra">
+      <ReturnsContent />
+    </AccountShell>
+  );
+}

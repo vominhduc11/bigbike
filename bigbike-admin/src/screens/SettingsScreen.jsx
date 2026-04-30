@@ -1,22 +1,163 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useEffect, useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchSettings, updateSetting } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 
+function groupLabel(group, t) {
+  const key = `settings.group_${group?.toLowerCase?.() ?? 'general'}`
+  const translated = t(key)
+  return translated === key ? (group ?? t('settings.groupGeneral')) : translated
+}
+
+function SettingGroup({ group, items, canUpdate, editing, saving, errors, onEdit, onSave, onCancel, t }) {
+  const [open, setOpen] = useState(true)
+
+  return (
+    <div className="settings-group">
+      <button
+        type="button"
+        className="settings-group-header"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="settings-group-label">{groupLabel(group, t)}</span>
+        <span className="settings-group-count">{items.length}</span>
+        {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+      </button>
+
+      {open && (
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('settings.colKey')}</th>
+                <th scope="col">{t('settings.colValue')}</th>
+                <th scope="col">{t('common.lastUpdated')}</th>
+                {canUpdate && <th scope="col" className="align-right">{t('settings.colActions')}</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((setting) => {
+                const isEditing = setting.key in editing
+                return (
+                  <tr key={setting.key}>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
+                      {setting.key}
+                      {setting.description && (
+                        <p style={{ fontFamily: 'inherit', fontSize: '0.75rem', marginTop: 2, color: 'var(--admin-color-text-muted)' }}>
+                          {setting.description}
+                        </p>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          className="control-input"
+                          style={{ width: '100%' }}
+                          value={editing[setting.key]}
+                          onChange={(e) => onEdit(setting.key, e.target.value)}
+                        />
+                      ) : (
+                        <span>
+                          {setting.value || <em style={{ color: 'var(--admin-color-text-muted)' }}>{t('settings.empty')}</em>}
+                        </span>
+                      )}
+                      {errors[setting.key] && (
+                        <p className="field-error" style={{ marginTop: 4 }}>{errors[setting.key]}</p>
+                      )}
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
+                      {formatDateTime(setting.updatedAt)}
+                    </td>
+                    {canUpdate && (
+                      <td className="align-right">
+                        {isEditing ? (
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              style={{ fontSize: '0.8rem' }}
+                              onClick={() => onSave(setting.key)}
+                              disabled={saving[setting.key]}
+                            >
+                              {saving[setting.key] ? t('common.saving') : t('common.save')}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.8rem' }}
+                              onClick={() => onCancel(setting.key)}
+                            >
+                              {t('common.cancel')}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.8rem' }}
+                            onClick={() => onEdit(setting.key, setting.value || '')}
+                          >
+                            {t('common.edit')}
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function SettingsScreen({ canUpdate }) {
+  const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
   const [editing, setEditing] = useState({})
   const [saving, setSaving] = useState({})
   const [errors, setErrors] = useState({})
+  const [fetchKey, setFetchKey] = useState(0)
 
   useEffect(() => {
     let active = true
+    setState((p) => ({ ...p, status: 'loading' }))
     fetchSettings()
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, warning: r.mode === 'mock' ? r.warning : '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', items: [], warning: '', error: e.message }) })
+      .then((r) => {
+        if (!active) return
+        setState({ status: 'success', items: r.items, warning: r.mode === 'mock' ? r.warning : '' })
+      })
+      .catch((e) => {
+        if (!active) return
+        setState({ status: 'error', items: [], warning: '', error: e.message })
+      })
     return () => { active = false }
-  }, [])
+  }, [fetchKey])
+
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const s of state.items) {
+      const g = s.settingGroup || 'GENERAL'
+      if (!map.has(g)) map.set(g, [])
+      map.get(g).push(s)
+    }
+    return [...map.entries()]
+  }, [state.items])
+
+  function handleEdit(key, value) {
+    setEditing((p) => ({ ...p, [key]: value }))
+  }
+
+  function handleCancel(key) {
+    setEditing((p) => { const n = { ...p }; delete n[key]; return n })
+    setErrors((p) => { const n = { ...p }; delete n[key]; return n })
+  }
 
   async function handleSave(key) {
     const value = editing[key]
@@ -25,84 +166,61 @@ export function SettingsScreen({ canUpdate }) {
     try {
       const r = await updateSetting(key, value)
       setState((p) => ({ ...p, items: p.items.map((s) => s.key === key ? r.item : s) }))
-      setEditing((p) => { const n = { ...p }; delete n[key]; return n })
+      handleCancel(key)
     } catch (e) {
-      setErrors((p) => ({ ...p, [key]: e.message || 'Lỗi lưu setting' }))
+      setErrors((p) => ({ ...p, [key]: e.message || t('settings.saveError') }))
     } finally {
       setSaving((p) => ({ ...p, [key]: false }))
     }
   }
 
-  if (state.status === 'loading') return <StatePanel tone="info" title="Đang tải settings" description="Vui lòng chờ..." />
-  if (state.status === 'error') return <StatePanel tone="danger" title="Lỗi tải settings" description={state.error} />
+  if (state.status === 'loading') {
+    return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
+  }
+  if (state.status === 'error') {
+    return (
+      <StatePanel
+        tone="danger"
+        title={t('settings.loadError')}
+        description={state.error}
+        actionLabel={t('common.retry')}
+        onAction={() => setFetchKey((k) => k + 1)}
+      />
+    )
+  }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Hệ thống</p>
-          <h1>Cài đặt website</h1>
-          <p>Các thông số vận hành toàn trang.</p>
+          <p className="eyebrow">{t('settings.eyebrow')}</p>
+          <h1>{t('settings.title')}</h1>
+          <p>{t('settings.description')}</p>
         </div>
       </header>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {state.items.length === 0 ? (
-        <StatePanel tone="neutral" title="Chưa có cài đặt" description="Settings trống hoặc chưa được import." />
+        <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--c-border)', textAlign: 'left' }}>
-              <th style={{ padding: '0.75rem 0' }}>Key</th>
-              <th style={{ padding: '0.75rem 0' }}>Value</th>
-              <th style={{ padding: '0.75rem 0' }}>Cập nhật</th>
-              {canUpdate && <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Thao tác</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {state.items.map((setting) => {
-              const isEditing = setting.key in editing
-              return (
-                <tr key={setting.key} style={{ borderBottom: '1px solid var(--c-border)' }}>
-                  <td style={{ padding: '0.75rem 0', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--c-text-muted)' }}>{setting.key}</td>
-                  <td style={{ padding: '0.75rem 0.5rem' }}>
-                    {isEditing ? (
-                      <input className="control-input" style={{ width: '100%' }}
-                        value={editing[setting.key]}
-                        onChange={(e) => setEditing((p) => ({ ...p, [setting.key]: e.target.value }))} />
-                    ) : (
-                      <span>{setting.value || <em style={{ color: 'var(--c-text-muted)' }}>trống</em>}</span>
-                    )}
-                    {errors[setting.key] && <p style={{ color: 'var(--c-danger)', fontSize: '0.8rem' }}>{errors[setting.key]}</p>}
-                  </td>
-                  <td style={{ padding: '0.75rem 0', fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>{formatDateTime(setting.updatedAt)}</td>
-                  {canUpdate && (
-                    <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
-                      {isEditing ? (
-                        <span style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button type="button" className="btn btn-primary" style={{ fontSize: '0.8rem' }}
-                            onClick={() => handleSave(setting.key)} disabled={saving[setting.key]}>
-                            {saving[setting.key] ? 'Lưu...' : 'Lưu'}
-                          </button>
-                          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}
-                            onClick={() => setEditing((p) => { const n = { ...p }; delete n[setting.key]; return n })}>
-                            Huỷ
-                          </button>
-                        </span>
-                      ) : (
-                        <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }}
-                          onClick={() => setEditing((p) => ({ ...p, [setting.key]: setting.value || '' }))}>
-                          Sửa
-                        </button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <div className="settings-groups">
+          {groups.map(([group, items]) => (
+            <SettingGroup
+              key={group}
+              group={group}
+              items={items}
+              canUpdate={canUpdate}
+              editing={editing}
+              saving={saving}
+              errors={errors}
+              onEdit={handleEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              t={t}
+            />
+          ))}
+        </div>
       )}
     </section>
   )

@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   createBrand,
   deleteBrand,
@@ -6,10 +9,12 @@ import {
   mapValidationErrors,
   updateBrand,
 } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
+import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
-
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+import { ImageUrlInput } from '../components/ImageUrlInput'
+import { RichTextEditor } from '../components/RichTextEditor'
 
 function buildEmptyForm() {
   return {
@@ -28,9 +33,7 @@ function buildEmptyForm() {
 }
 
 function buildFormFromItem(item) {
-  if (!item) {
-    return buildEmptyForm()
-  }
+  if (!item) return buildEmptyForm()
   return {
     slug: item.slug || '',
     name: item.name || '',
@@ -46,33 +49,6 @@ function buildFormFromItem(item) {
   }
 }
 
-function validateForm(form) {
-  const errors = {}
-  if (!form.slug.trim()) {
-    errors.slug = 'Slug is required.'
-  } else if (!SLUG_REGEX.test(form.slug.trim())) {
-    errors.slug = 'Slug can only contain lowercase letters, numbers and hyphens.'
-  }
-  if (!form.name.trim()) {
-    errors.name = 'Brand name is required.'
-  }
-  if (form.logoUrl.trim() && !/^https?:\/\//.test(form.logoUrl.trim())) {
-    errors.logoUrl = 'Logo URL must start with http:// or https://.'
-  }
-  if (
-    form.seoCanonicalUrl.trim() &&
-    !/^https?:\/\//.test(form.seoCanonicalUrl.trim())
-  ) {
-    errors.seoCanonicalUrl = 'Canonical URL must start with http:// or https://.'
-  }
-  if (
-    form.seoOgImageUrl.trim() &&
-    !/^https?:\/\//.test(form.seoOgImageUrl.trim())
-  ) {
-    errors.seoOgImageUrl = 'SEO OG image URL must start with http:// or https://.'
-  }
-  return errors
-}
 
 function toPayload(form) {
   const payload = {
@@ -82,12 +58,9 @@ function toPayload(form) {
     visible: Boolean(form.visible),
   }
 
-  if (form.logoUrl.trim()) {
-    payload.logo = {
-      url: form.logoUrl.trim(),
-      alt: form.logoAlt.trim() || undefined,
-    }
-  }
+  payload.logo = form.logoUrl.trim()
+    ? { url: form.logoUrl.trim(), alt: form.logoAlt.trim() || undefined }
+    : { url: '' }
 
   if (
     form.seoTitle.trim() ||
@@ -102,156 +75,120 @@ function toPayload(form) {
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
       noIndex: Boolean(form.seoNoIndex),
     }
-
     if (form.seoOgImageUrl.trim()) {
-      payload.seo.ogImage = {
-        url: form.seoOgImageUrl.trim(),
-      }
+      payload.seo.ogImage = { url: form.seoOgImageUrl.trim() }
     }
   }
 
   return payload
 }
 
-export function BrandDetailScreen({
-  brandId,
-  isCreate = false,
-  navigate,
-  canUpdate,
-}) {
-  const [state, setState] = useState({
-    status: isCreate ? 'success' : 'loading',
-    item: null,
-    warning: '',
-    error: '',
-  })
+export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpdate }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
-  const [initialSnapshot, setInitialSnapshot] = useState(
-    JSON.stringify(buildEmptyForm()),
-  )
+  const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
   const [validationErrors, setValidationErrors] = useState({})
-  const [submitState, setSubmitState] = useState({
-    status: 'idle',
-    message: '',
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+    queryKey: ['brand', brandId],
+    queryFn: () => fetchBrandDetail(brandId),
+    enabled: !isCreate,
   })
 
   useEffect(() => {
-    if (isCreate) {
-      return
-    }
+    if (!fetchResult) return
+    const nextForm = buildFormFromItem(fetchResult.item)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm(nextForm)
+    setInitialSnapshot(JSON.stringify(nextForm))
+  }, [fetchResult])
 
-    let active = true
+  const state = {
+    status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
+    item: fetchResult?.item ?? null,
+    warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
+    error: fetchError?.message ?? '',
+  }
 
-    fetchBrandDetail(brandId)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'success',
-          item: response.item ?? null,
-          warning: response.mode === 'mock' ? response.warning : '',
-          error: '',
-        })
-
-        const nextForm = buildFormFromItem(response.item)
-        setForm(nextForm)
-        setInitialSnapshot(JSON.stringify(nextForm))
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'error',
-          item: null,
-          warning: '',
-          error: error.message || 'Unknown brand detail error.',
-        })
-      })
-
-    return () => {
-      active = false
-    }
-  }, [brandId, isCreate])
-
-  const isSubmitting = submitState.status === 'submitting'
-  const isDirty = useMemo(
-    () => JSON.stringify(form) !== initialSnapshot,
-    [form, initialSnapshot],
-  )
+  const formRef = useRef(null)
+  const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
+
+  useEffect(() => {
+    if (!isDirty) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  const saveMutation = useMutation({
+    mutationFn: (payload) => isCreate ? createBrand(payload) : updateBrand(brandId, payload),
+    onSuccess: (response) => {
+      const savedItem = response.item || null
+      const nextForm = buildFormFromItem(savedItem)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      if (!isCreate) queryClient.setQueryData(['brand', brandId], response)
+      toast.success(isCreate ? t('brands.detail.successCreate') : t('brands.detail.successUpdate'))
+      setIsSubmitting(false)
+      if (isCreate && savedItem?.id) navigate(`/admin/brands/${savedItem.id}`, { replace: true })
+    },
+    onError: (error) => {
+      setValidationErrors(mapValidationErrors(error))
+      toast.error(error.message || t('brands.detail.errSaveFailed'))
+      setIsSubmitting(false)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteBrand(brandId),
+    onSuccess: () => {
+      toast.success(t('brands.detail.successDelete'))
+      queryClient.invalidateQueries({ queryKey: ['brands'] })
+      navigate('/admin/brands')
+    },
+    onError: (error) => {
+      toast.error(error.message || t('brands.detail.errDeleteFailed'))
+      setIsSubmitting(false)
+    },
+  })
 
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
-    setSubmitState({ status: 'idle', message: '' })
     setValidationErrors((previous) => {
-      if (!previous[field]) {
-        return previous
-      }
+      if (!previous[field]) return previous
       const next = { ...previous }
       delete next[field]
       return next
     })
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
-    if (!canUpdate) {
-      return
-    }
+    if (!canUpdate) return
 
-    const clientErrors = validateForm(form)
+    const schema = createBrandSchema(t)
+    const result = schema.safeParse(form)
+    const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
-      setSubmitState({ status: 'idle', message: '' })
       return
     }
 
-    setSubmitState({ status: 'submitting', message: '' })
+    setIsSubmitting(true)
     setValidationErrors({})
-
-    try {
-      const payload = toPayload(form)
-      const response = isCreate
-        ? await createBrand(payload)
-        : await updateBrand(brandId, payload)
-
-      const savedItem = response.item || null
-      const nextForm = buildFormFromItem(savedItem)
-      setForm(nextForm)
-      setInitialSnapshot(JSON.stringify(nextForm))
-      setState((previous) => ({
-        ...previous,
-        item: savedItem,
-      }))
-      setSubmitState({
-        status: 'success',
-        message: isCreate
-          ? 'Brand created successfully.'
-          : 'Brand updated successfully.',
-      })
-
-      if (isCreate && savedItem?.id) {
-        navigate(`/admin/brands/${savedItem.id}`, { replace: true })
-      }
-    } catch (error) {
-      setValidationErrors(mapValidationErrors(error))
-      setSubmitState({
-        status: 'error',
-        message: error.message || 'Failed to save brand.',
-      })
-    }
+    saveMutation.mutate(toPayload(form))
   }
 
   if (state.status === 'loading') {
     return (
       <StatePanel
         tone="info"
-        title="Loading brand detail"
-        description="Fetching brand detail/edit shell."
+        title={t('brands.detail.loading')}
+        description={t('brands.detail.loadingDesc')}
       />
     )
   }
@@ -260,21 +197,21 @@ export function BrandDetailScreen({
     return (
       <StatePanel
         tone="danger"
-        title="Failed to load brand"
+        title={t('brands.detail.loadError')}
         description={state.error}
-        actionLabel="Back to brands"
+        actionLabel={t('brands.detail.backToList')}
         onAction={() => navigate('/admin/brands')}
       />
     )
   }
 
-  if (!state.item) {
+  if (!isCreate && !state.item) {
     return (
       <StatePanel
         tone="neutral"
-        title="Brand not found"
-        description="The selected brand does not exist."
-        actionLabel="Back to brands"
+        title={t('brands.detail.notFound')}
+        description={t('brands.detail.notFoundDesc')}
+        actionLabel={t('brands.detail.backToList')}
         onAction={() => navigate('/admin/brands')}
       />
     )
@@ -284,13 +221,9 @@ export function BrandDetailScreen({
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Catalog</p>
-          <h1>{isCreate ? 'Create brand' : 'Edit brand'}</h1>
-          <p>
-            {isCreate
-              ? 'Create a new brand record.'
-              : 'Update brand information and visibility.'}
-          </p>
+          <p className="eyebrow">{t('brands.detail.eyebrow')}</p>
+          <h1>{isCreate ? t('brands.detail.createTitle') : t('brands.detail.editTitle')}</h1>
+          <p>{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
           <button
@@ -298,7 +231,7 @@ export function BrandDetailScreen({
             className="btn btn-secondary"
             onClick={() => navigate('/admin/brands')}
           >
-            Back to list
+            {t('brands.detail.backToList')}
           </button>
           {!isCreate && canUpdate && (
             <button
@@ -306,46 +239,51 @@ export function BrandDetailScreen({
               className="btn btn-danger"
               disabled={isSubmitting}
               onClick={async () => {
-                if (!window.confirm('Ẩn brand này? Brand sẽ bị tắt hiển thị.')) return
-                setSubmitState({ status: 'submitting', message: '' })
-                try {
-                  await deleteBrand(brandId)
-                  navigate('/admin/brands')
-                } catch (error) {
-                  setSubmitState({ status: 'error', message: error.message || 'Failed to delete brand.' })
-                }
+                const confirmed = await showConfirm(
+                  t('brands.detail.hideConfirm').replace('{slug}', form.slug || state.item?.slug || '…'),
+                  t('brands.detail.hideConfirmTitle'),
+                )
+                if (!confirmed) return
+                setIsSubmitting(true)
+                deleteMutation.mutate()
               }}
             >
-              Delete brand
+              {isSubmitting ? t('brands.detail.hidingBtn') : t('brands.detail.hideBtn')}
             </button>
           )}
         </div>
       </header>
 
       {state.warning ? (
-        <StatePanel
-          tone="warning"
-          title="Read data is currently mock"
-          description={state.warning}
-        />
+        <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
       ) : null}
 
       {!canUpdate ? (
         <StatePanel
           tone="warning"
-          title="Permission denied"
-          description="You can view this brand, but catalog.update is required to save changes."
+          title={t('brands.detail.permissionDenied')}
+          description={t('brands.detail.permissionDesc')}
         />
       ) : null}
 
-      <form className="entity-form" onSubmit={handleSubmit}>
+      <form
+        className="entity-form"
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault()
+            if (!isReadOnly && isDirty) handleSubmit(e)
+          }
+        }}
+      >
         <section className="detail-section">
           <header className="detail-section-header">
-            <h2>Basic information</h2>
+            <h2>{t('brands.detail.sectionBasic')}</h2>
           </header>
           <div className="detail-section-content form-grid">
             <label className="form-field">
-              <span>Slug *</span>
+              <span>{t('brands.detail.slug')}</span>
               <input
                 className="control-input"
                 value={form.slug}
@@ -358,7 +296,7 @@ export function BrandDetailScreen({
             </label>
 
             <label className="form-field">
-              <span>Name *</span>
+              <span>{t('brands.detail.name')}</span>
               <input
                 className="control-input"
                 value={form.name}
@@ -377,17 +315,46 @@ export function BrandDetailScreen({
                 onChange={(event) => updateField('visible', event.target.checked)}
                 disabled={isReadOnly}
               />
-              <span>Visible</span>
+              <span>{t('brands.detail.isVisible')}</span>
             </label>
 
-            <label className="form-field form-field-wide">
-              <span>Description</span>
-              <textarea
-                className="control-input control-textarea"
+            <div className="form-field form-field-wide">
+              <span>{t('brands.detail.description')}</span>
+              <RichTextEditor
                 value={form.description}
-                onChange={(event) =>
-                  updateField('description', event.target.value)
-                }
+                onChange={(html) => updateField('description', html)}
+                placeholder="Nhập mô tả thương hiệu..."
+                disabled={isReadOnly}
+                enableImagePicker
+              />
+              {validationErrors.description ? (
+                <small className="field-error">{validationErrors.description}</small>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>{t('brands.detail.sectionMedia')}</h2>
+          </header>
+          <div className="detail-section-content form-grid">
+            <div className="form-field form-field-wide">
+              <span>{t('brands.detail.logoUrl')}</span>
+              <ImageUrlInput
+                value={form.logoUrl}
+                onChange={(url) => updateField('logoUrl', url)}
+                disabled={isReadOnly}
+                error={validationErrors.logoUrl}
+              />
+            </div>
+
+            <label className="form-field">
+              <span>{t('brands.detail.logoAlt')}</span>
+              <input
+                className="control-input"
+                value={form.logoAlt}
+                onChange={(event) => updateField('logoAlt', event.target.value)}
                 disabled={isReadOnly}
               />
             </label>
@@ -396,35 +363,11 @@ export function BrandDetailScreen({
 
         <section className="detail-section">
           <header className="detail-section-header">
-            <h2>Media and SEO</h2>
+            <h2>{t('brands.detail.sectionSeo')}</h2>
           </header>
           <div className="detail-section-content form-grid">
             <label className="form-field form-field-wide">
-              <span>Logo URL</span>
-              <input
-                className="control-input"
-                value={form.logoUrl}
-                onChange={(event) => updateField('logoUrl', event.target.value)}
-                disabled={isReadOnly}
-                placeholder="https://..."
-              />
-              {validationErrors.logoUrl ? (
-                <small className="field-error">{validationErrors.logoUrl}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>Logo alt</span>
-              <input
-                className="control-input"
-                value={form.logoAlt}
-                onChange={(event) => updateField('logoAlt', event.target.value)}
-                disabled={isReadOnly}
-              />
-            </label>
-
-            <label className="form-field form-field-wide">
-              <span>SEO title</span>
+              <span>{t('brands.detail.seoTitle')}</span>
               <input
                 className="control-input"
                 value={form.seoTitle}
@@ -434,42 +377,34 @@ export function BrandDetailScreen({
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO description</span>
+              <span>{t('brands.detail.seoDescription')}</span>
               <textarea
                 className="control-input control-textarea"
                 value={form.seoDescription}
-                onChange={(event) =>
-                  updateField('seoDescription', event.target.value)
-                }
+                onChange={(event) => updateField('seoDescription', event.target.value)}
                 disabled={isReadOnly}
               />
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO canonical URL</span>
+              <span>{t('brands.detail.seoCanonicalUrl')}</span>
               <input
                 className="control-input"
                 value={form.seoCanonicalUrl}
-                onChange={(event) =>
-                  updateField('seoCanonicalUrl', event.target.value)
-                }
+                onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
                 disabled={isReadOnly}
               />
               {validationErrors.seoCanonicalUrl ? (
-                <small className="field-error">
-                  {validationErrors.seoCanonicalUrl}
-                </small>
+                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
               ) : null}
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO OG image URL</span>
+              <span>{t('brands.detail.seoOgImageUrl')}</span>
               <input
                 className="control-input"
                 value={form.seoOgImageUrl}
-                onChange={(event) =>
-                  updateField('seoOgImageUrl', event.target.value)
-                }
+                onChange={(event) => updateField('seoOgImageUrl', event.target.value)}
                 disabled={isReadOnly}
               />
               {validationErrors.seoOgImageUrl ? (
@@ -484,7 +419,7 @@ export function BrandDetailScreen({
                 onChange={(event) => updateField('seoNoIndex', event.target.checked)}
                 disabled={isReadOnly}
               />
-              <span>SEO noIndex</span>
+              <span>{t('brands.detail.seoNoIndex')}</span>
             </label>
           </div>
         </section>
@@ -492,10 +427,10 @@ export function BrandDetailScreen({
         <div className="form-footer">
           <div className="form-status">
             <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
-              {isDirty ? 'Dirty changes' : 'No unsaved changes'}
+              {isDirty ? t('common.dirty') : t('common.clean')}
             </span>
             {!isCreate && state.item?.updatedAt ? (
-              <small>Last updated: {formatDateTime(state.item.updatedAt)}</small>
+              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
             ) : null}
           </div>
           <div className="screen-actions">
@@ -505,24 +440,14 @@ export function BrandDetailScreen({
               disabled={isReadOnly || !isDirty}
             >
               {isSubmitting
-                ? 'Saving...'
+                ? t('common.saving')
                 : isCreate
-                  ? 'Create brand'
-                  : 'Save changes'}
+                  ? t('brands.detail.createBtn')
+                  : t('brands.detail.saveBtn')}
             </button>
           </div>
         </div>
 
-        {submitState.status === 'success' ? (
-          <p className="inline-feedback inline-feedback-success">
-            {submitState.message}
-          </p>
-        ) : null}
-        {submitState.status === 'error' ? (
-          <p className="inline-feedback inline-feedback-danger">
-            {submitState.message}
-          </p>
-        ) : null}
       </form>
     </section>
   )

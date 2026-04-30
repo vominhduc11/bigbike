@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.PatchSliderRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ReorderSlidersRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertSliderRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,12 +56,35 @@ public class AdminSliderController {
     }
 
     @PostMapping
-    public ApiDataResponse<Slider> upsertSlider(
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiDataResponse<Slider> createSlider(
             @Valid @RequestBody UpsertSliderRequest payload,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "sliders.write");
-        return apiResponseFactory.data(adminSliderService.upsert(payload), request);
+        String createdId = adminSliderService.create(payload);
+        return apiResponseFactory.data(adminSliderService.findById(createdId), request);
+    }
+
+    @PostMapping("/reorder")
+    public ApiDataResponse<List<Slider>> reorderSliders(
+            @Valid @RequestBody ReorderSlidersRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "sliders.write");
+        adminSliderService.reorder(payload);
+        return apiResponseFactory.data(adminSliderService.list(payload.getLocation()), request);
+    }
+
+    @PatchMapping("/{id}")
+    public ApiDataResponse<Slider> patchSlider(
+            @PathVariable String id,
+            @Valid @RequestBody PatchSliderRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "sliders.write");
+        adminSliderService.patch(id, payload);
+        return apiResponseFactory.data(adminSliderService.findById(id), request);
     }
 
     @DeleteMapping("/{id}")

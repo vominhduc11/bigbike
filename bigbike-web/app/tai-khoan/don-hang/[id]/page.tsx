@@ -2,21 +2,144 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { fetchMyOrder } from "@/lib/api/client-api";
+import { createReturn, fetchMyOrder } from "@/lib/api/client-api";
 import type { OrderDetail } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
+import type { CreateReturnPayload } from "@/lib/contracts/commerce";
 import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 
 function orderStatusClass(status: string): string {
   const map: Record<string, string> = {
-    DELIVERED: "delivered",
-    SHIPPED: "shipping",
+    COMPLETED: "delivered",
     PROCESSING: "processing",
+    ON_HOLD: "processing",
     CANCELLED: "cancelled",
     REFUNDED: "cancelled",
+    FAILED: "cancelled",
   };
   return map[status] ?? "";
+}
+
+type TimelineStep = { key: string; label: string; sub: string };
+
+// Matches backend OrderStatus: PENDING → PROCESSING → COMPLETED
+const ORDER_TIMELINE_STEPS: TimelineStep[] = [
+  { key: "PENDING", label: "Đã tiếp nhận", sub: "Đơn hàng đã được tạo thành công" },
+  { key: "PROCESSING", label: "Đang xử lý", sub: "Đơn đang được đóng gói & kiểm tra" },
+  { key: "COMPLETED", label: "Hoàn thành", sub: "Đơn hàng đã được giao thành công" },
+];
+
+const TERMINAL_STEPS: Record<string, TimelineStep> = {
+  CANCELLED: { key: "CANCELLED", label: "Đã huỷ", sub: "Đơn hàng đã bị huỷ" },
+  REFUNDED:  { key: "REFUNDED",  label: "Đã hoàn tiền", sub: "Tiền đã được hoàn trả" },
+  FAILED:    { key: "FAILED",    label: "Thất bại", sub: "Đơn hàng không thể xử lý" },
+  ON_HOLD:   { key: "ON_HOLD",   label: "Tạm giữ", sub: "Đơn đang được xem xét" },
+};
+
+const RETURNABLE_ORDER_STATUSES = new Set(["COMPLETED"]);
+
+const RETURN_REASON_LABELS: Record<string, string> = {
+  DEFECTIVE: "Hàng bị lỗi",
+  WRONG_ITEM: "Sai sản phẩm",
+  NOT_AS_DESCRIBED: "Không như mô tả",
+  CHANGED_MIND: "Đổi ý",
+  OTHER: "Khác",
+};
+
+function CreateReturnForm({ orderId, onDone }: { orderId: string; onDone: () => void }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setFormError("");
+    const fd = new FormData(e.currentTarget);
+    const reason = (fd.get("reason") as string).trim();
+    const customerNote = (fd.get("customerNote") as string).trim();
+    if (!reason) { setFormError("Vui lòng chọn lý do."); return; }
+    setSubmitting(true);
+    try {
+      const payload: CreateReturnPayload = { reason, customerNote: customerNote || undefined };
+      await createReturn(orderId, payload);
+      onDone();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Có lỗi xảy ra.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="wp-info-card-form">
+      <p className="wp-info-label" style={{ marginBottom: 14 }}>Tạo yêu cầu đổi trả</p>
+      {formError && <div className="wp-alert-error" style={{ marginBottom: 12 }}><p>{formError}</p></div>}
+      <form onSubmit={handleSubmit}>
+        <div className="wp-form-grid">
+          <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+            <label>Lý do đổi trả</label>
+            <select className="wp-input" name="reason" required>
+              <option value="">-- Chọn lý do --</option>
+              {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+            <label>Ghi chú thêm (không bắt buộc)</label>
+            <textarea className="wp-input" name="customerNote" rows={2} placeholder="Mô tả thêm..." style={{ resize: "vertical" }} />
+          </div>
+        </div>
+        <div className="wp-form-actions">
+          <button type="submit" className="wp-btn-primary" disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi yêu cầu"}</button>
+          <button type="button" className="wp-btn-secondary" onClick={onDone} disabled={submitting}>Hủy</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function statusOrder(status: string): number {
+  const idx = ORDER_TIMELINE_STEPS.findIndex((s) => s.key === status);
+  return idx >= 0 ? idx : 0;
+}
+
+function OrderTimeline({ status }: { status: string }) {
+  const terminalStep = TERMINAL_STEPS[status];
+  const steps = terminalStep ? [...ORDER_TIMELINE_STEPS, terminalStep] : ORDER_TIMELINE_STEPS;
+  const currentIdx = terminalStep
+    ? steps.length - 1
+    : statusOrder(status);
+
+  return (
+    <div className="wp-order-timeline">
+      {steps.map((step, i) => {
+        const done = i < currentIdx;
+        const active = i === currentIdx;
+        return (
+          <div
+            key={step.key}
+            className={`wp-order-tl-step${done ? " done" : ""}${active ? " active" : ""}${terminalStep && i === steps.length - 1 ? " cancelled" : ""}`}
+          >
+            <div className="wp-order-tl-indicator">
+              <div className="wp-order-tl-dot">
+                {done && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+              {i < steps.length - 1 && <div className="wp-order-tl-line" />}
+            </div>
+            <div className="wp-order-tl-content">
+              <p className="wp-order-tl-label">{step.label}</p>
+              {active && <p className="wp-order-tl-sub">{step.sub}</p>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 type Props = { params: Promise<{ id: string }> };
@@ -25,6 +148,8 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnSubmitted, setReturnSubmitted] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -154,6 +279,12 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             </div>
           </div>
 
+          {/* Order status timeline */}
+          <div className="wp-info-card">
+            <p className="wp-info-label">Trạng thái đơn hàng</p>
+            <OrderTimeline status={order.status} />
+          </div>
+
           {/* Addresses */}
           <div className="wp-address-grid">
             <div className="wp-address-card">
@@ -200,6 +331,35 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             </div>
           </div>
 
+          {/* Refund info — visible when order has been refunded */}
+          {order.refundAmount > 0 && (
+            <div className="wp-info-card" style={{ borderLeft: "3px solid var(--c-danger, #ef4444)" }}>
+              <p className="wp-info-label">Thông tin hoàn tiền</p>
+              <div className="wp-detail-grid">
+                <div>
+                  <p className="wp-detail-label">Trạng thái</p>
+                  <p className="wp-detail-val">{paymentStatusLabel(order.paymentStatus)}</p>
+                </div>
+                <div>
+                  <p className="wp-detail-label">Số tiền hoàn</p>
+                  <p className="wp-detail-val" style={{ fontWeight: 600 }}>{formatVnd(order.refundAmount)}</p>
+                </div>
+                {order.refundedAt && (
+                  <div>
+                    <p className="wp-detail-label">Ngày hoàn tiền</p>
+                    <p className="wp-detail-val">{formatDate(order.refundedAt)}</p>
+                  </div>
+                )}
+                {order.refundReason && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <p className="wp-detail-label">Lý do</p>
+                    <p className="wp-detail-val">{order.refundReason}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Customer note */}
           {order.customerNote && (
             <div className="wp-info-card">
@@ -215,12 +375,27 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
               <div className="wp-timeline">
                 {order.notes.map((note) => (
                   <div key={note.id} className="wp-timeline-item">
-                    <p className="wp-timeline-meta">{safeText(note.type, "Ghi chú")} · {formatDate(note.createdAt)}</p>
+                    <p className="wp-timeline-meta">{note.type ? safeText(note.type, "Ghi chú") : "Ghi chú"} · {formatDate(note.createdAt)}</p>
                     <p className="wp-note-text">{note.content}</p>
                   </div>
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Return request */}
+          {RETURNABLE_ORDER_STATUSES.has(order.status) && (
+            returnSubmitted ? (
+              <div className="wp-alert-success"><p>Yêu cầu đổi trả đã được gửi. <Link href="/tai-khoan/doi-tra" className="bb-link">Xem đổi trả của tôi</Link></p></div>
+            ) : showReturnForm ? (
+              <CreateReturnForm orderId={order.id} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
+            ) : (
+              <div style={{ textAlign: "right" }}>
+                <button type="button" className="wp-btn-secondary wp-btn-sm" onClick={() => setShowReturnForm(true)}>
+                  Yêu cầu đổi trả
+                </button>
+              </div>
+            )
           )}
         </div>
       )}

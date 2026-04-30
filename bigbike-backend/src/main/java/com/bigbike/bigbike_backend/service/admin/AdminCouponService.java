@@ -12,16 +12,19 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,21 +33,19 @@ public class AdminCouponService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
-    private static final Set<String> ALLOWED_DISCOUNT_TYPES = Set.of("FIXED", "PERCENT");
+    // Canonical stored value is FIXED; accept FIXED_AMOUNT from clients for backward compat
+    private static final Set<String> ALLOWED_DISCOUNT_TYPES = Set.of("FIXED", "PERCENT", "FIXED_AMOUNT");
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED");
 
     private final CouponJpaRepository couponRepo;
     private final AuditLogJpaRepository auditLogRepo;
-    private final PaginationService paginationService;
 
     public AdminCouponService(
             CouponJpaRepository couponRepo,
-            AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.couponRepo = couponRepo;
         this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -56,36 +57,24 @@ public class AdminCouponService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Instant now = Instant.now();
-        Stream<CouponEntity> stream = couponRepo.findAll().stream();
+        // code filter folds into q when present
+        String effectiveQ = (code != null && !code.isBlank()) ? code : q;
 
-        if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
-            stream = stream.filter(c ->
-                    matchesQ(c.getCode(), qLower) || matchesQ(c.getName(), qLower));
-        }
-        if (code != null && !code.isBlank()) {
-            stream = stream.filter(c -> code.equalsIgnoreCase(c.getCode()));
-        }
-        if (status != null && !status.isBlank()) {
-            stream = stream.filter(c -> status.equalsIgnoreCase(c.getStatus()));
-        }
-        if (discountType != null && !discountType.isBlank()) {
-            stream = stream.filter(c -> discountType.equalsIgnoreCase(c.getDiscountType()));
-        }
-        if (expired != null) {
-            stream = stream.filter(c -> {
-                boolean isExpired = c.getExpiresAt() != null && c.getExpiresAt().isBefore(now);
-                return isExpired == expired;
-            });
-        }
+        Specification<CouponEntity> spec = CouponSpecification.build(effectiveQ, status, discountType, expired);
+        Pageable pageable = PageRequest.of(
+                normalizedPage - 1, normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        List<AdminCouponListItemResponse> items = stream
-                .sorted(Comparator.comparing(CouponEntity::getCreatedAt, Comparator.reverseOrder()))
+        Page<CouponEntity> pageResult = couponRepo.findAll(spec, pageable);
+        List<AdminCouponListItemResponse> items = pageResult.getContent()
+                .stream()
                 .map(this::toListItem)
                 .toList();
 
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        long totalItems = pageResult.getTotalElements();
+        int totalPages = pageResult.getTotalPages() == 0 ? 1 : pageResult.getTotalPages();
+        return new PageResult<>(items, normalizedPage, normalizedSize, totalItems, totalPages);
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -101,46 +90,21 @@ public class AdminCouponService {
     @Transactional
     public AdminCouponDetailResponse createCoupon(UUID adminId, CreateCouponRequest req) {
         String code = req.code().trim().toUpperCase(Locale.ROOT);
-        String type = req.discountType().trim().toUpperCase(Locale.ROOT);
+        String type = normalizeDiscountType(req.discountType());
 
-        // Code uniqueness
         couponRepo.findByCode(code).ifPresent(existing -> {
             throw new ConflictException("Coupon code '" + code + "' already exists.");
         });
 
-        // discountType validation
-        if (!ALLOWED_DISCOUNT_TYPES.contains(type)) {
+        if (!ALLOWED_DISCOUNT_TYPES.contains(req.discountType().trim().toUpperCase(Locale.ROOT))) {
             throw ValidationException.fromField("discountType", "INVALID",
                     "discountType must be FIXED or PERCENT.");
         }
 
-        // Amount validation
-        if (req.amount() == null || req.amount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw ValidationException.fromField("amount", "INVALID",
-                    "amount must be greater than 0.");
-        }
-
-        if ("PERCENT".equals(type) && req.amount().compareTo(new BigDecimal("100")) > 0) {
-            throw ValidationException.fromField("amount", "EXCEEDS_MAX",
-                    "Percent discount amount cannot exceed 100.");
-        }
-
-        if (req.minimumAmount() != null && req.minimumAmount().compareTo(BigDecimal.ZERO) < 0) {
-            throw ValidationException.fromField("minimumAmount", "INVALID",
-                    "minimumAmount must be >= 0.");
-        }
-
-        if (req.maximumAmount() != null && req.maximumAmount().compareTo(BigDecimal.ZERO) < 0) {
-            throw ValidationException.fromField("maximumAmount", "INVALID",
-                    "maximumAmount must be >= 0.");
-        }
-
-        // Date validation
-        if (req.startsAt() != null && req.expiresAt() != null
-                && !req.expiresAt().isAfter(req.startsAt())) {
-            throw ValidationException.fromField("expiresAt", "INVALID",
-                    "expiresAt must be after startsAt.");
-        }
+        validateAmount(req.amount(), type);
+        validateMinMaxAmounts(req.minimumAmount(), req.maximumAmount(), req.amount(), type);
+        validateUsageLimit(req.usageLimit());
+        validateDates(req.startsAt(), req.expiresAt());
 
         Instant now = Instant.now();
         CouponEntity entity = new CouponEntity();
@@ -166,9 +130,7 @@ public class AdminCouponService {
         entity.setUpdatedAt(now);
         entity = couponRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "COUPON_CREATED", entity.getId(), null,
-                "{\"code\":\"" + escapeJson(code) + "\",\"discountType\":\"" + type + "\"}"));
-
+        auditLogRepo.save(buildAudit(adminId, "COUPON_CREATED", entity.getId(), null, snapshotFull(entity)));
         return toDetail(entity);
     }
 
@@ -179,9 +141,8 @@ public class AdminCouponService {
         CouponEntity entity = couponRepo.findById(couponId)
                 .orElseThrow(() -> new NotFoundException("Coupon not found."));
 
-        String before = snapshot(entity);
+        String before = snapshotFull(entity);
 
-        // Code uniqueness (if changed)
         if (req.code() != null && !req.code().isBlank()) {
             String newCode = req.code().trim().toUpperCase(Locale.ROOT);
             if (!newCode.equals(entity.getCode())) {
@@ -192,29 +153,25 @@ public class AdminCouponService {
             }
         }
 
-        String type = req.discountType() != null
-                ? req.discountType().trim().toUpperCase(Locale.ROOT) : entity.getDiscountType();
-
-        if (req.discountType() != null) {
-            if (!ALLOWED_DISCOUNT_TYPES.contains(type)) {
+        String type = entity.getDiscountType();
+        if (req.discountType() != null && !req.discountType().isBlank()) {
+            type = normalizeDiscountType(req.discountType());
+            if (!ALLOWED_DISCOUNT_TYPES.contains(req.discountType().trim().toUpperCase(Locale.ROOT))) {
                 throw ValidationException.fromField("discountType", "INVALID",
                         "discountType must be FIXED or PERCENT.");
             }
             entity.setDiscountType(type);
         }
 
-        BigDecimal amount = req.amount() != null ? req.amount() : entity.getAmount();
         if (req.amount() != null) {
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw ValidationException.fromField("amount", "INVALID",
-                        "amount must be greater than 0.");
-            }
-            if ("PERCENT".equals(type) && amount.compareTo(new BigDecimal("100")) > 0) {
-                throw ValidationException.fromField("amount", "EXCEEDS_MAX",
-                        "Percent discount amount cannot exceed 100.");
-            }
-            entity.setAmount(amount);
+            validateAmount(req.amount(), type);
+            entity.setAmount(req.amount());
         }
+
+        BigDecimal effectiveMin = req.minimumAmount() != null ? req.minimumAmount() : entity.getMinAmount();
+        BigDecimal effectiveMax = req.maximumAmount() != null ? req.maximumAmount() : entity.getMaxAmount();
+        BigDecimal effectiveAmount = entity.getAmount();
+        validateMinMaxAmounts(effectiveMin, effectiveMax, effectiveAmount, type);
 
         if (req.name() != null && !req.name().isBlank()) {
             entity.setName(req.name().trim());
@@ -223,20 +180,13 @@ public class AdminCouponService {
             entity.setDescription(req.description());
         }
         if (req.minimumAmount() != null) {
-            if (req.minimumAmount().compareTo(BigDecimal.ZERO) < 0) {
-                throw ValidationException.fromField("minimumAmount", "INVALID",
-                        "minimumAmount must be >= 0.");
-            }
             entity.setMinAmount(req.minimumAmount());
         }
         if (req.maximumAmount() != null) {
-            if (req.maximumAmount().compareTo(BigDecimal.ZERO) < 0) {
-                throw ValidationException.fromField("maximumAmount", "INVALID",
-                        "maximumAmount must be >= 0.");
-            }
             entity.setMaxAmount(req.maximumAmount());
         }
         if (req.usageLimit() != null) {
+            validateUsageLimit(req.usageLimit());
             entity.setUsageLimit(req.usageLimit());
         }
         if (req.startsAt() != null) {
@@ -246,13 +196,7 @@ public class AdminCouponService {
             entity.setExpiresAt(req.expiresAt());
         }
 
-        Instant effectiveStarts = entity.getStartsAt();
-        Instant effectiveExpires = entity.getExpiresAt();
-        if (effectiveStarts != null && effectiveExpires != null
-                && !effectiveExpires.isAfter(effectiveStarts)) {
-            throw ValidationException.fromField("expiresAt", "INVALID",
-                    "expiresAt must be after startsAt.");
-        }
+        validateDates(entity.getStartsAt(), entity.getExpiresAt());
 
         if (req.status() != null && !req.status().isBlank()) {
             String updStatus = req.status().trim().toUpperCase(Locale.ROOT);
@@ -268,8 +212,7 @@ public class AdminCouponService {
         entity.setUpdatedAt(Instant.now());
         couponRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "COUPON_UPDATED", couponId, before, snapshot(entity)));
-
+        auditLogRepo.save(buildAudit(adminId, "COUPON_UPDATED", couponId, before, snapshotFull(entity)));
         return toDetail(entity);
     }
 
@@ -293,7 +236,6 @@ public class AdminCouponService {
 
         auditLogRepo.save(buildAudit(adminId, "COUPON_STATUS_UPDATED", couponId, before,
                 "{\"status\":\"" + newStatus + "\"}"));
-
         return toDetail(entity);
     }
 
@@ -302,7 +244,8 @@ public class AdminCouponService {
     private AdminCouponListItemResponse toListItem(CouponEntity c) {
         return new AdminCouponListItemResponse(
                 c.getId(), c.getCode(), c.getName(), c.getDiscountType(),
-                c.getAmount(), c.getStatus(), c.getUsageCount(),
+                c.getAmount(), c.getMinAmount(), c.getMaxAmount(),
+                c.getStatus(), c.getUsageCount(),
                 c.getUsageLimit(), c.getExpiresAt(), c.getCreatedAt()
         );
     }
@@ -319,6 +262,50 @@ public class AdminCouponService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private static String normalizeDiscountType(String raw) {
+        if (raw == null) return "FIXED";
+        String upper = raw.trim().toUpperCase(Locale.ROOT);
+        return "FIXED_AMOUNT".equals(upper) ? "FIXED" : upper;
+    }
+
+    private static void validateAmount(BigDecimal amount, String type) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw ValidationException.fromField("amount", "INVALID", "amount must be greater than 0.");
+        }
+        if ("PERCENT".equals(type) && amount.compareTo(new BigDecimal("100")) > 0) {
+            throw ValidationException.fromField("amount", "EXCEEDS_MAX",
+                    "Percent discount amount cannot exceed 100.");
+        }
+    }
+
+    private static void validateMinMaxAmounts(BigDecimal min, BigDecimal max, BigDecimal amount, String type) {
+        if (min != null && min.compareTo(BigDecimal.ZERO) < 0) {
+            throw ValidationException.fromField("minimumAmount", "INVALID", "minimumAmount must be >= 0.");
+        }
+        if (max != null) {
+            if (max.compareTo(BigDecimal.ZERO) <= 0) {
+                throw ValidationException.fromField("maximumAmount", "INVALID", "maximumAmount must be > 0.");
+            }
+            // For FIXED coupons, cap must not be lower than the discount amount itself
+            if ("FIXED".equals(type) && amount != null && max.compareTo(amount) < 0) {
+                throw ValidationException.fromField("maximumAmount", "INVALID",
+                        "maximumAmount cannot be less than amount for a FIXED discount.");
+            }
+        }
+    }
+
+    private static void validateUsageLimit(Integer usageLimit) {
+        if (usageLimit != null && usageLimit < 0) {
+            throw ValidationException.fromField("usageLimit", "INVALID", "usageLimit must be >= 0.");
+        }
+    }
+
+    private static void validateDates(Instant startsAt, Instant expiresAt) {
+        if (startsAt != null && expiresAt != null && !expiresAt.isAfter(startsAt)) {
+            throw ValidationException.fromField("expiresAt", "INVALID", "expiresAt must be after startsAt.");
+        }
+    }
+
     private AuditLogEntity buildAudit(UUID adminId, String action, UUID resourceId,
             String before, String after) {
         AuditLogEntity log = new AuditLogEntity();
@@ -333,15 +320,17 @@ public class AdminCouponService {
         return log;
     }
 
-    private static String snapshot(CouponEntity c) {
+    private static String snapshotFull(CouponEntity c) {
         return "{\"code\":\"" + escapeJson(c.getCode()) +
+               "\",\"name\":\"" + escapeJson(c.getName()) +
                "\",\"discountType\":\"" + c.getDiscountType() +
                "\",\"amount\":" + c.getAmount() +
-               ",\"status\":\"" + c.getStatus() + "\"}";
-    }
-
-    private static boolean matchesQ(String field, String qLower) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(qLower);
+               ",\"minimumAmount\":" + (c.getMinAmount() != null ? c.getMinAmount() : "null") +
+               ",\"maximumAmount\":" + (c.getMaxAmount() != null ? c.getMaxAmount() : "null") +
+               ",\"usageLimit\":" + (c.getUsageLimit() != null ? c.getUsageLimit() : "null") +
+               ",\"usageCount\":" + c.getUsageCount() +
+               ",\"expiresAt\":\"" + (c.getExpiresAt() != null ? c.getExpiresAt() : "") +
+               "\",\"status\":\"" + c.getStatus() + "\"}";
     }
 
     private static String escapeJson(String s) {

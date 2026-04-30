@@ -1,10 +1,15 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
 
 public class ImageAssetRequest {
 
     @Size(max = 2048, message = "Image URL is too long.")
+    @URL(message = "Image URL must be a valid URL.")
+    @Pattern(regexp = "^https?://.*", flags = Pattern.Flag.CASE_INSENSITIVE,
+            message = "Image URL must use http or https scheme.")
     private String url;
 
     @Size(max = 255, message = "Image alt is too long.")

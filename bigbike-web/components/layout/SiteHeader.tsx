@@ -5,6 +5,7 @@ import { HeaderNavItem, type HeaderNavNode } from "@/components/layout/HeaderNav
 import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
 import { SearchToggle } from "@/components/layout/SearchToggle";
+import { StickyHeaderShell } from "@/components/layout/StickyHeaderShell";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import type { PublicMenuItem } from "@/lib/contracts/public";
 
@@ -83,53 +84,72 @@ export async function SiteHeader() {
   );
   const hotline = getSettingValue(settings, ["hotline", "phone", "support_phone"]);
   const zaloUrl = getSettingValue(settings, ["zalo_url", "zalo"]);
+
+  if (!menuResult.data) {
+    console.warn(
+      `[SiteHeader] Menu "${PRIMARY_MENU_LOCATION}" could not be loaded.`,
+      menuResult.error?.message ?? "unknown error",
+    );
+  }
+
   const menuTree = buildMenuTree(menuResult.data?.items ?? []);
 
   return (
-    <header className="wp-header">
+    <StickyHeaderShell>
       <PromoStrip hotline={hotline} zaloUrl={zaloUrl} />
       <div className="bb-container wp-header-inner">
         <div className="wp-logo-panel">
-            <Link
-              href="/"
-              className="wp-logo-link"
-              aria-label={`${siteName} Home`}
-              title={siteName}
-            >
-              <Image
-                src="/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png"
-                alt={siteName}
-                width={130}
-                height={56}
-                priority
-              />
-            </Link>
-          </div>
-
-          <nav
-            className="wp-nav"
-            aria-label={menuResult.data?.name ?? "Điều hướng chính"}
+          <Link
+            href="/"
+            className="wp-logo-link"
+            aria-label={`${siteName} Home`}
+            title={siteName}
           >
-            {menuTree.map((node) => (
-              <HeaderNavItem key={node.id} node={node} />
-            ))}
-          </nav>
-
-          <div className="wp-header-actions">
-            <SearchToggle />
-
-            <CartIcon />
-
-            <HeaderUserMenu />
-
-            <MobileHeaderMenu
-              menuTree={menuTree}
-              menuLabel={menuResult.data?.name ?? "Điều hướng chính"}
-              hotline={hotline}
-              zaloUrl={zaloUrl}
+            {/* WP-style dual logo: emblem (default, ≥768px while not scrolled)
+                cross-fades with wordmark (scrolled and/or <768px). */}
+            <Image
+              className="wp-logo-emblem hide-mobile"
+              src="/brand/wp-logo/emblem.png"
+              alt={siteName}
+              width={210}
+              height={190}
+              priority
             />
+            <Image
+              className="wp-logo-wordmark hide-desktop"
+              src="/brand/wp-logo/wordmark.png"
+              alt={siteName}
+              width={120}
+              height={44}
+              priority
+            />
+          </Link>
+        </div>
+
+        <nav
+          className="wp-nav"
+          aria-label={menuResult.data?.name ?? "Điều hướng chính"}
+        >
+          {menuTree.map((node) => (
+            <HeaderNavItem key={node.id} node={node} />
+          ))}
+        </nav>
+
+        <div className="wp-header-actions">
+          <SearchToggle />
+
+          <CartIcon />
+
+          <HeaderUserMenu />
+
+          <MobileHeaderMenu
+            menuTree={menuTree}
+            menuLabel={menuResult.data?.name ?? "Điều hướng chính"}
+            hotline={hotline}
+            zaloUrl={zaloUrl}
+          />
         </div>
       </div>
-    </header>
+    </StickyHeaderShell>
   );
 }

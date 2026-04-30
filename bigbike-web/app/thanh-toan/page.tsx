@@ -2,24 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { fetchCart, fetchCheckoutOptions, submitCheckout } from "@/lib/api/client-api";
-import type { Cart, CartItem, CheckoutAddress } from "@/lib/contracts/commerce";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { submitCheckout } from "@/lib/api/client-api";
+import { useCart } from "@/lib/cart-context";
+import { useCartQuery, useCheckoutOptions } from "@/lib/query/hooks";
+import type { CartItem } from "@/lib/contracts/commerce";
+import { checkoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer } from "@/lib/analytics";
-import { formatVnd, isValidVnPhone } from "@/lib/utils/format";
+import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
+import { VnAddressFields } from "@/components/ui/VnAddressFields";
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
   return (
     <div className="wp-radio-stack" aria-busy="true">
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="bb-skel"
-          style={{ height: 56, borderRadius: 4, width: "100%" }}
-        />
+        <div key={i} className="bb-skel" style={{ height: 56, borderRadius: 4, width: "100%" }} />
       ))}
     </div>
   );
@@ -67,17 +69,6 @@ function MiniCartThumb({ item }: { item: CartItem }) {
   );
 }
 
-const EMPTY_ADDRESS: CheckoutAddress = {
-  fullName: "",
-  email: "",
-  phone: "",
-  country: "VN",
-  province: "",
-  district: "",
-  ward: "",
-  addressLine1: "",
-};
-
 const PAYMENT_DESC: Record<string, string> = {
   cod: "Thanh toán khi nhận hàng — kiểm tra hàng rồi mới trả tiền.",
   bacs: "Chuyển khoản ngân hàng — thông tin TK gửi qua email sau khi đặt hàng.",
@@ -91,63 +82,77 @@ const STEPS = [
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { refreshCount } = useCart();
   const [step, setStep] = useState(1);
-  const [cart, setCart] = useState<Cart | null>(null);
-  const [cartLoading, setCartLoading] = useState(true);
-  const [optionsLoading, setOptionsLoading] = useState(true);
-  const [address, setAddress] = useState<CheckoutAddress>(EMPTY_ADDRESS);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [shippingMethodId, setShippingMethodId] = useState("");
-  const [checkoutOptions, setCheckoutOptions] = useState<{
-    paymentMethods: { code: string; title: string }[];
-    shippingMethods: { id: string; code: string; title: string; cost: number }[];
-  } | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [gtmFired, setGtmFired] = useState(false);
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
 
+  const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
+  const { data: checkoutOptions, isLoading: optionsLoading } = useCheckoutOptions();
+
+  // Prefill payment/shipping defaults when options load
   useEffect(() => {
-    Promise.all([fetchCart(), fetchCheckoutOptions()])
-      .then(([c, options]) => {
-        setCart(c);
-        setCheckoutOptions(options);
-        setPaymentMethod((prev) => prev || options.paymentMethods[0]?.code || "");
-        setShippingMethodId((prev) => prev || options.shippingMethods[0]?.id || "");
-        pushDataLayer("begin_checkout", {
-          currency: c.currency ?? "VND",
-          value: c.totals.totalAmount,
-          items: toGtmCartItems(c.items),
-        });
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => {
-        setCartLoading(false);
-        setOptionsLoading(false);
-      });
-  }, []);
+    if (!checkoutOptions) return;
+    setPaymentMethod((prev) => prev || checkoutOptions.paymentMethods[0]?.code || "");
+    setShippingMethodId((prev) => prev || checkoutOptions.shippingMethods[0]?.id || "");
+  }, [checkoutOptions]);
 
-  function setField<K extends keyof CheckoutAddress>(key: K, value: string) {
-    setAddress((p) => ({ ...p, [key]: value }));
-  }
+  // Fire GTM begin_checkout once cart is loaded
+  useEffect(() => {
+    if (!cart || gtmFired) return;
+    pushDataLayer("begin_checkout", {
+      currency: cart.currency ?? "VND",
+      value: cart.totals.totalAmount,
+      items: toGtmCartItems(cart.items),
+    });
+    setGtmFired(true);
+  }, [cart, gtmFired]);
 
-  async function handleSubmit() {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors: addressErrors },
+  } = useForm<CheckoutAddressFormValues>({
+    resolver: zodResolver(checkoutAddressSchema),
+    defaultValues: { country: "VN" },
+  });
+
+  const address = watch();
+
+  async function placeOrder() {
     if (!cart?.items.length) {
-      setError("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
+      setSubmitError("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
       return;
     }
-    setError("");
+    setSubmitError("");
     setSubmitting(true);
     try {
       const order = await submitCheckout({
-        billingAddress: address,
-        shippingMethod: shippingMethodId || null,
+        billingAddress: {
+          fullName: address.fullName,
+          phone: address.phone,
+          email: address.email || "",
+          country: address.country,
+          province: address.province,
+          district: address.district,
+          ward: address.ward || "",
+          addressLine1: address.addressLine1,
+        },
+        shippingMethodId: shippingMethodId || null,
         paymentMethod,
-        notes: customerNote.trim() || undefined,
-      });
+        customerNote: customerNote.trim() || undefined,
+      }, idempotencyKey.current);
+      refreshCount();
       router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
-    } catch (e: unknown) {
-      setError((e as Error).message);
+    } catch (err: unknown) {
+      setSubmitError((err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -158,6 +163,14 @@ export default function CheckoutPage() {
 
   if (cartLoading && optionsLoading && !cart) {
     return <CheckoutSkeleton />;
+  }
+
+  if (cartError) {
+    return (
+      <div className="bb-container" style={{ paddingBlock: "var(--bb-space-8)" }}>
+        <p className="wp-error-text">Không tải được giỏ hàng. <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link></p>
+      </div>
+    );
   }
 
   return (
@@ -202,11 +215,12 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          {error && <p className="wp-error-text">{error}</p>}
-
           {/* Step 1: Shipping info */}
           {step === 1 && (
-            <>
+            <form
+              onSubmit={handleSubmit(() => setStep(2))}
+              noValidate
+            >
               <div className="wp-checkout-section">
                 <h3>
                   Thông tin người nhận
@@ -216,43 +230,41 @@ export default function CheckoutPage() {
                   <div className="wp-field">
                     <label>Họ và tên <span className="req">*</span></label>
                     <input
-                      className={`wp-input${address.fullName ? " filled" : ""}`}
-                      required
+                      className={`wp-input${address.fullName ? " filled" : ""}${addressErrors.fullName ? " wp-input-error" : ""}`}
                       placeholder="Nguyễn Văn A"
-                      value={address.fullName}
-                      onChange={(e) => setField("fullName", e.target.value)}
+                      {...register("fullName")}
                     />
+                    {addressErrors.fullName && (
+                      <p className="wp-field-error">{addressErrors.fullName.message}</p>
+                    )}
                   </div>
+
                   <div className="wp-field">
                     <label>Số điện thoại <span className="req">*</span></label>
                     <input
-                      className={`wp-input${address.phone ? " filled" : ""}${phoneError ? " wp-input-error" : ""}`}
-                      required
+                      className={`wp-input${address.phone ? " filled" : ""}${addressErrors.phone ? " wp-input-error" : ""}`}
                       type="tel"
                       inputMode="numeric"
-                      pattern="0[3-9][0-9]{8}"
                       maxLength={10}
                       placeholder="0901234567"
-                      value={address.phone}
-                      onChange={(e) => {
-                        setField("phone", e.target.value);
-                        if (phoneError) setPhoneError("");
-                      }}
-                      aria-describedby={phoneError ? "phone-error" : undefined}
+                      {...register("phone")}
                     />
-                    {phoneError && (
-                      <p id="phone-error" className="wp-field-error">{phoneError}</p>
+                    {addressErrors.phone && (
+                      <p className="wp-field-error">{addressErrors.phone.message}</p>
                     )}
                   </div>
+
                   <div className="wp-field full">
                     <label>Email</label>
                     <input
-                      className={`wp-input${address.email ? " filled" : ""}`}
+                      className={`wp-input${address.email ? " filled" : ""}${addressErrors.email ? " wp-input-error" : ""}`}
                       type="email"
                       placeholder="email@example.com"
-                      value={address.email}
-                      onChange={(e) => setField("email", e.target.value)}
+                      {...register("email")}
                     />
+                    {addressErrors.email && (
+                      <p className="wp-field-error">{addressErrors.email.message}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -260,43 +272,30 @@ export default function CheckoutPage() {
               <div className="wp-checkout-section">
                 <h3>Địa chỉ giao hàng</h3>
                 <div className="wp-form-grid">
-                  <div className="wp-field">
-                    <label>Tỉnh / Thành phố <span className="req">*</span></label>
-                    <input
-                      className={`wp-input${address.province ? " filled" : ""}`}
-                      required
-                      placeholder="TP. Hồ Chí Minh"
-                      value={address.province}
-                      onChange={(e) => setField("province", e.target.value)}
-                    />
-                  </div>
-                  <div className="wp-field">
-                    <label>Quận / Huyện</label>
-                    <input
-                      className={`wp-input${address.district ? " filled" : ""}`}
-                      placeholder="Quận 1"
-                      value={address.district}
-                      onChange={(e) => setField("district", e.target.value)}
-                    />
-                  </div>
-                  <div className="wp-field">
-                    <label>Phường / Xã</label>
-                    <input
-                      className={`wp-input${address.ward ? " filled" : ""}`}
-                      placeholder="Phường Bến Nghé"
-                      value={address.ward}
-                      onChange={(e) => setField("ward", e.target.value)}
-                    />
-                  </div>
+                  <VnAddressFields
+                    value={{
+                      province: address.province ?? "",
+                      district: address.district ?? "",
+                      ward: address.ward ?? "",
+                    }}
+                    onChange={(field, val) => setValue(field as keyof CheckoutAddressFormValues, val, { shouldValidate: true })}
+                    required
+                  />
+                  {(addressErrors.province || addressErrors.district) && (
+                    <p className="wp-field-error full">
+                      {addressErrors.province?.message ?? addressErrors.district?.message}
+                    </p>
+                  )}
                   <div className="wp-field full">
                     <label>Địa chỉ chi tiết <span className="req">*</span></label>
                     <input
-                      className={`wp-input${address.addressLine1 ? " filled" : ""}`}
-                      required
+                      className={`wp-input${address.addressLine1 ? " filled" : ""}${addressErrors.addressLine1 ? " wp-input-error" : ""}`}
                       placeholder="Số nhà, tên đường..."
-                      value={address.addressLine1}
-                      onChange={(e) => setField("addressLine1", e.target.value)}
+                      {...register("addressLine1")}
                     />
+                    {addressErrors.addressLine1 && (
+                      <p className="wp-field-error">{addressErrors.addressLine1.message}</p>
+                    )}
                   </div>
                   <div className="wp-field full">
                     <label>Ghi chú cho shipper</label>
@@ -313,23 +312,11 @@ export default function CheckoutPage() {
 
               <div className="wp-checkout-nav">
                 <Link href={toCartPath()} className="wp-link-back">← Quay lại giỏ hàng</Link>
-                <button
-                  type="button"
-                  className="wp-btn-primary wp-btn-wide"
-                  disabled={!address.fullName || !address.phone || !address.province || !address.addressLine1}
-                  onClick={() => {
-                    if (!isValidVnPhone(address.phone)) {
-                      setPhoneError("Số điện thoại không hợp lệ. Vui lòng nhập số VN 10 chữ số (ví dụ: 0901234567).");
-                      return;
-                    }
-                    setPhoneError("");
-                    setStep(2);
-                  }}
-                >
+                <button type="submit" className="wp-btn-primary wp-btn-wide">
                   Tiếp tục → Thanh toán
                 </button>
               </div>
-            </>
+            </form>
           )}
 
           {/* Step 2: Payment + Shipping */}
@@ -369,7 +356,9 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+                  <p className="wp-error-text">
+                    Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
+                  </p>
                 )}
               </div>
 
@@ -404,7 +393,9 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">Phương thức giao hàng tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+                  <p className="wp-error-text">
+                    Phương thức giao hàng tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
+                  </p>
                 )}
               </div>
 
@@ -433,14 +424,20 @@ export default function CheckoutPage() {
                   <b>{address.fullName}</b>
                   {" · "}{address.phone}
                   <br />
-                  {[address.addressLine1, address.ward, address.district, address.province].filter(Boolean).join(", ")}
+                  {[address.addressLine1, address.ward, address.district, address.province]
+                    .filter(Boolean)
+                    .join(", ")}
                 </div>
                 <button
                   type="button"
                   className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(1)}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>{" "}Chỉnh sửa
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>{" "}
+                  Chỉnh sửa
                 </button>
               </div>
 
@@ -454,7 +451,8 @@ export default function CheckoutPage() {
                 </div>
                 {selectedShipping && (
                   <p className="wp-muted-text wp-edit-trigger">
-                    Vận chuyển: {selectedShipping.title}{selectedShipping.cost === 0 ? " — Miễn phí" : ` — ${formatVnd(selectedShipping.cost)}`}
+                    Vận chuyển: {selectedShipping.title}
+                    {selectedShipping.cost === 0 ? " — Miễn phí" : ` — ${formatVnd(selectedShipping.cost)}`}
                   </p>
                 )}
                 <button
@@ -462,15 +460,17 @@ export default function CheckoutPage() {
                   className="wp-link-back wp-edit-trigger"
                   onClick={() => setStep(2)}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>{" "}Chỉnh sửa
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>{" "}
+                  Chỉnh sửa
                 </button>
               </div>
 
               {cart && cart.items.length > 0 && (
                 <div className="wp-checkout-section">
-                  <h3>
-                    Sản phẩm ({cart.items.reduce((s, it) => s + it.quantity, 0)})
-                  </h3>
+                  <h3>Sản phẩm ({cart.items.reduce((s, it) => s + it.quantity, 0)})</h3>
                   {cart.items.map((item) => (
                     <div key={item.id} className="wp-mini-item">
                       <MiniCartThumb item={item} />
@@ -492,7 +492,7 @@ export default function CheckoutPage() {
                 {" "}của BigBike.
               </div>
 
-              {error && <p className="wp-error-text">{error}</p>}
+              {submitError && <p className="wp-error-text">{submitError}</p>}
 
               <div className="wp-checkout-nav">
                 <button type="button" className="wp-link-back" onClick={() => setStep(2)}>
@@ -502,13 +502,13 @@ export default function CheckoutPage() {
                   type="button"
                   className="wp-btn-primary wp-btn-wide"
                   disabled={submitting || cartLoading}
-                  onClick={handleSubmit}
+                  onClick={placeOrder}
                 >
                   {submitting
                     ? "Đang đặt hàng..."
                     : cart
-                    ? `Đặt hàng · ${formatVnd(cart.totals.totalAmount)}`
-                    : "Đặt hàng"}
+                      ? `Đặt hàng · ${formatVnd(cart.totals.totalAmount)}`
+                      : "Đặt hàng"}
                 </button>
               </div>
             </>
@@ -539,10 +539,16 @@ export default function CheckoutPage() {
                 </div>
               ))}
 
-              <div className="wp-summary-row" style={{ marginTop: 8 }} >
+              <div className="wp-summary-row" style={{ marginTop: 8 }}>
                 <span>Tạm tính</span>
                 <b>{formatVnd(cart.totals.subtotalAmount)}</b>
               </div>
+              {cart.couponCodes && cart.couponCodes.length > 0 && (
+                <div className="wp-summary-row" style={{ fontSize: "0.85em", color: "var(--c-success, #16a34a)" }}>
+                  <span>Mã giảm giá</span>
+                  <b>{cart.couponCodes.join(", ")}</b>
+                </div>
+              )}
               {cart.totals.discountAmount > 0 && (
                 <div className="wp-summary-row discount">
                   <span>Giảm giá</span>

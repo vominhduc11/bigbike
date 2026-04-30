@@ -29,6 +29,8 @@ public class UpsertSliderRequest {
     @Size(max = 2048, message = "externalLink is too long.")
     private String externalLink;
 
+    private Boolean isActive;
+
     public String getLocation() {
         return location;
     }
@@ -75,5 +77,13 @@ public class UpsertSliderRequest {
 
     public void setExternalLink(String externalLink) {
         this.externalLink = externalLink;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 }

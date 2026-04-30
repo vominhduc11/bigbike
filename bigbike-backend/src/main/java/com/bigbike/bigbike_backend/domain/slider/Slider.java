@@ -8,6 +8,7 @@ public record Slider(
         String id,
         Integer sortOrder,
         String location,
+        boolean isActive,
         ImageAsset desktopImage,
         ImageAsset mobileImage,
         String productId,

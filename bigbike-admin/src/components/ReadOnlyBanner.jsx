@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next'
+
 export function ReadOnlyBanner({ warning }) {
+  const { t } = useTranslation()
   return (
     <div className="read-only-banner" role="status">
-      <strong>Read-only shell:</strong>{' '}
-      {warning ||
-        'Admin mutation API is not implemented in this phase. This screen is foundation-only.'}
+      <strong>{t('readOnly.prefix')}</strong>{' '}
+      {warning || t('readOnly.defaultDesc')}
     </div>
   )
 }

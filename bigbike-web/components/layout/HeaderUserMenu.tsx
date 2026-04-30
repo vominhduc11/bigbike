@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
+import { BBTooltip } from "@/components/ui/BBTooltip";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import {
   toAccountPath,
@@ -84,30 +85,34 @@ export function HeaderUserMenu() {
 
   if (auth.status === "loading") {
     return (
-      <Link
-        href={toAccountPath()}
-        className="wp-icon-btn wp-account-icon"
-        aria-label="Tài khoản"
-      >
-        <UserIcon />
-      </Link>
+      <BBTooltip content="Tài khoản">
+        <Link
+          href={toAccountPath()}
+          className="wp-icon-btn wp-account-icon"
+          aria-label="Tài khoản"
+        >
+          <UserIcon />
+        </Link>
+      </BBTooltip>
     );
   }
 
   if (auth.status === "anonymous") {
     return (
       <div className="wp-user-menu" ref={wrapperRef}>
-        <button
-          type="button"
-          className="wp-icon-btn wp-account-icon"
-          aria-label="Tài khoản"
-          aria-haspopup="true"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((prev) => !prev)}
-        >
-          <UserIcon />
-        </button>
+        <BBTooltip content="Tài khoản">
+          <button
+            type="button"
+            className="wp-icon-btn wp-account-icon"
+            aria-label="Tài khoản"
+            aria-haspopup="true"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen((prev) => !prev)}
+          >
+            <UserIcon />
+          </button>
+        </BBTooltip>
         {open && (
           <div id={panelId} className="wp-user-dropdown" role="menu">
             <div className="wp-user-dropdown-head">
@@ -141,17 +146,19 @@ export function HeaderUserMenu() {
 
   return (
     <div className="wp-user-menu" ref={wrapperRef}>
-      <button
-        type="button"
-        className="wp-icon-btn wp-account-icon wp-account-avatar"
-        aria-label={`Tài khoản của ${displayName}`}
-        aria-haspopup="true"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((prev) => !prev)}
-      >
-        <span aria-hidden="true">{initials(profile)}</span>
-      </button>
+      <BBTooltip content={displayName ?? "Tài khoản"}>
+        <button
+          type="button"
+          className="wp-icon-btn wp-account-icon wp-account-avatar"
+          aria-label={`Tài khoản của ${displayName}`}
+          aria-haspopup="true"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          <span aria-hidden="true">{initials(profile)}</span>
+        </button>
+      </BBTooltip>
       {open && (
         <div id={panelId} className="wp-user-dropdown" role="menu">
           <div className="wp-user-dropdown-head">

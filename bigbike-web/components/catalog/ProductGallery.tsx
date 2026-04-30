@@ -1,56 +1,85 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import type { ImageAsset } from "@/lib/contracts/public";
+import { resolveMediaUrl } from "@/lib/utils/format";
 
 type ProductGalleryProps = {
   mainImage: ImageAsset | null | undefined;
   gallery: ImageAsset[];
   altFallback: string;
   variantImage?: ImageAsset | null;
+  /**
+   * Active color gallery. Backend/admin normalize this so every size for the
+   * same color exposes the same list. Empty/undefined -> product gallery.
+   */
+  variantGallery?: ImageAsset[];
+  /**
+   * Identifier of the active variant — used to detect transitions and reset
+   * `selectedIndex` to 0 so the user always lands on the variant's first
+   * image, not whatever index they were viewing on the previous variant.
+   */
+  variantKey?: string | null;
 };
 
 const THUMB_VISIBLE = 4;
+const ZOOM_FACTOR = 2.5;
+const LENS_SIZE_PCT = 100 / ZOOM_FACTOR;
 
-function clampStripStart(idx: number, current: number): number {
-  if (idx < current) return idx;
-  if (idx >= current + THUMB_VISIBLE) return idx - THUMB_VISIBLE + 1;
-  return current;
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
 }
 
-export function ProductGallery({ mainImage, gallery, altFallback, variantImage }: ProductGalleryProps) {
-  const allImages: ImageAsset[] = [
-    ...(mainImage ? [mainImage] : []),
-    ...gallery.filter((img) => img.url !== mainImage?.url),
-  ];
+export function ProductGallery({
+  mainImage,
+  gallery,
+  altFallback,
+  variantImage,
+  variantGallery,
+  variantKey,
+}: ProductGalleryProps) {
+  // Color isolation rules:
+  //   cover  = variantImage (if set)        ELSE product.mainImage
+  //   strip  = variantGallery (if non-empty)
+  //            ELSE if variantImage set → [] (single-hero, no fallback to product
+  //            gallery to avoid showing other-color shots)
+  //            ELSE product.gallery
+  // Cover is always prepended to strip (deduped), so allImages[0] is the hero.
+  const hasVariantGallery = Boolean(variantGallery && variantGallery.length > 0);
+  const hasVariantImage = Boolean(variantImage);
+  const stripBody: ImageAsset[] = hasVariantGallery
+    ? variantGallery!
+    : hasVariantImage
+      ? []
+      : gallery;
+  const coverImage: ImageAsset | null = variantImage ?? mainImage ?? null;
+  const allImages: ImageAsset[] = coverImage
+    ? [coverImage, ...stripBody.filter((img) => img.url !== coverImage.url)]
+    : stripBody;
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [stripStart, setStripStart] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 0.5, y: 0.5 });
+  const [canHover, setCanHover] = useState(false);
+  const mainRef = useRef<HTMLButtonElement | null>(null);
 
-  // Track previous variantImage URL to detect changes and adjust strip during render.
-  // React docs recommend this setState-during-render pattern over useEffect for
-  // derived state adjustments: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const [prevVariantUrl, setPrevVariantUrl] = useState(variantImage?.url);
-  if (variantImage?.url !== prevVariantUrl) {
-    setPrevVariantUrl(variantImage?.url);
-    if (variantImage?.url) {
-      const idx = allImages.findIndex((img) => img.url === variantImage.url);
-      if (idx !== -1) {
-        setSelectedIndex(idx);
-        setStripStart((s) => clampStripStart(idx, s));
-      }
-    }
+  // ── Reset to first thumb when the active variant changes ───────────────
+  // Using "adjusting state during render" pattern instead of useEffect.
+  // Tracks the variant identity (or "no variant" sentinel) so we reset
+  // exactly once per transition.
+  const variantToken = variantKey ?? "__no_variant__";
+  const [prevVariantToken, setPrevVariantToken] = useState(variantToken);
+  if (variantToken !== prevVariantToken) {
+    setPrevVariantToken(variantToken);
+    setSelectedIndex(0);
+    setStripStart(0);
   }
 
   const count = allImages.length;
-  // If variant has an image not in the gallery, display it directly in the main slot
-  const variantImageNotInGallery =
-    variantImage?.url && !allImages.some((img) => img.url === variantImage.url)
-      ? variantImage
-      : null;
-  const selectedImage = variantImageNotInGallery ?? allImages[selectedIndex] ?? mainImage;
+  const selectedImage = allImages[selectedIndex] ?? coverImage ?? mainImage;
 
   const prev = useCallback(() => {
     setSelectedIndex((i) => {
@@ -96,6 +125,43 @@ export function ProductGallery({ mainImage, gallery, altFallback, variantImage }
     document.body.style.overflow = lightboxOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [lightboxOpen]);
+
+  // Detect hover-capable pointer once on mount so we never show the zoom panel
+  // on touch devices (mouseenter still fires there on first tap).
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setCanHover(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+
+  const zoomImageUrl = resolveMediaUrl(selectedImage?.url) ?? null;
+  const zoomEnabled = canHover && Boolean(zoomImageUrl) && !lightboxOpen;
+
+  const handleMainMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!zoomEnabled) return;
+    updateZoomPos(e);
+    setZoomActive(true);
+  };
+  const handleMainMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!zoomEnabled || !zoomActive) return;
+    updateZoomPos(e);
+  };
+  const handleMainMouseLeave = () => {
+    if (zoomActive) setZoomActive(false);
+  };
+
+  function updateZoomPos(e: React.MouseEvent<HTMLButtonElement>) {
+    const node = mainRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const x = clamp01((e.clientX - rect.left) / rect.width);
+    const y = clamp01((e.clientY - rect.top) / rect.height);
+    setZoomPos({ x, y });
+  }
 
   return (
     <>
@@ -147,21 +213,50 @@ export function ProductGallery({ mainImage, gallery, altFallback, variantImage }
           </div>
         )}
 
-        {/* Right: main image */}
-        <button
-          type="button"
-          className="wp-pdp-main wp-pdp-main-btn"
-          onClick={() => setLightboxOpen(true)}
-          aria-label="Xem ảnh phóng to"
-        >
-          <MediaImage image={selectedImage} altFallback={altFallback} priority width={1200} height={1200} />
-          <span className="wp-pdp-zoom-hint" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35M11 8v6M8 11h6" />
-            </svg>
-          </span>
-        </button>
+        {/* Right: main image (with elevateZoom-style hover lens + zoom window) */}
+        <div className={`wp-pdp-main-wrap${zoomActive ? " is-zooming" : ""}`}>
+          <button
+            ref={mainRef}
+            type="button"
+            className="wp-pdp-main wp-pdp-main-btn"
+            onClick={() => setLightboxOpen(true)}
+            onMouseEnter={handleMainMouseEnter}
+            onMouseMove={handleMainMouseMove}
+            onMouseLeave={handleMainMouseLeave}
+            aria-label="Xem ảnh phóng to"
+          >
+            <MediaImage image={selectedImage} altFallback={altFallback} priority width={1200} height={1200} />
+            <span className="wp-pdp-zoom-hint" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35M11 8v6M8 11h6" />
+              </svg>
+            </span>
+            {zoomActive && (
+              <span
+                className="wp-pdp-zoom-lens"
+                style={{
+                  width: `${LENS_SIZE_PCT}%`,
+                  height: `${LENS_SIZE_PCT}%`,
+                  left: `${zoomPos.x * (100 - LENS_SIZE_PCT)}%`,
+                  top: `${zoomPos.y * (100 - LENS_SIZE_PCT)}%`,
+                }}
+                aria-hidden="true"
+              />
+            )}
+          </button>
+          {zoomActive && zoomImageUrl && (
+            <div
+              className="wp-pdp-zoom-window"
+              style={{
+                backgroundImage: `url(${zoomImageUrl})`,
+                backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
+                backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%`,
+              }}
+              aria-hidden="true"
+            />
+          )}
+        </div>
       </div>
 
       {/* Lightbox */}

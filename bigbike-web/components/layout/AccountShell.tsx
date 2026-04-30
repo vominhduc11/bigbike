@@ -23,6 +23,7 @@ export function useAccountRefresh(): (() => Promise<void>) | null {
 const NAV = [
   { href: "/tai-khoan", label: "Tổng quan", exact: true },
   { href: "/tai-khoan/don-hang", label: "Đơn hàng", exact: false },
+  { href: "/tai-khoan/doi-tra", label: "Đổi trả", exact: false },
   { href: "/tai-khoan/edit-address", label: "Địa chỉ", exact: false },
   { href: "/tai-khoan/edit-account", label: "Tài khoản", exact: false },
 ];
@@ -44,6 +45,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
   const pathname = usePathname();
   const auth = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (auth.status === "anonymous") {
@@ -52,6 +54,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
   }, [auth.status, router, loginRedirect]);
 
   async function handleLogout() {
+    setLogoutConfirm(false);
     setLoggingOut(true);
     await performLogout();
     router.push("/");
@@ -89,14 +92,28 @@ export function AccountShell({ children, loginRedirect }: Props) {
               </Link>
             ))}
             <div className="logout">
-              <button
-                type="button"
-                className="wp-logout-btn"
-                onClick={handleLogout}
-                disabled={loggingOut}
-              >
-                {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-              </button>
+              {logoutConfirm ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: "var(--bb-text-sm)", color: "var(--bb-text-secondary)" }}>Đăng xuất khỏi tài khoản?</span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" className="wp-logout-btn" onClick={handleLogout} disabled={loggingOut}>
+                      {loggingOut ? "Đang xử lý..." : "Xác nhận"}
+                    </button>
+                    <button type="button" className="wp-logout-btn" onClick={() => setLogoutConfirm(false)}>
+                      Huỷ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="wp-logout-btn"
+                  onClick={() => setLogoutConfirm(true)}
+                  disabled={loggingOut}
+                >
+                  Đăng xuất
+                </button>
+              )}
             </div>
           </nav>
         </aside>

@@ -24,6 +24,9 @@ public class UpsertArticleRequest {
     @Valid
     private ImageAssetRequest coverImage;
 
+    @Valid
+    private ImageAssetRequest productImage;
+
     @Size(max = 64, message = "Author ID is too long.")
     private String authorId;
 
@@ -75,6 +78,14 @@ public class UpsertArticleRequest {
 
     public void setCoverImage(ImageAssetRequest coverImage) {
         this.coverImage = coverImage;
+    }
+
+    public ImageAssetRequest getProductImage() {
+        return productImage;
+    }
+
+    public void setProductImage(ImageAssetRequest productImage) {
+        this.productImage = productImage;
     }
 
     public String getAuthorId() {

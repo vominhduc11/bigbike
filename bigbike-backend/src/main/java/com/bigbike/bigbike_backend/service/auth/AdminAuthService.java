@@ -12,8 +12,6 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepos
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,28 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AdminAuthService {
 
-    private static final Map<String, List<String>> ROLE_PERMISSION_MAP = Map.of(
-            "SUPER_ADMIN", List.of("*"),
-            "ADMIN", List.of(
-                    "products.read", "products.update",
-                    "catalog.read", "catalog.update",
-                    "content.read", "content.update",
-                    "orders.read", "orders.update",
-                    "customers.read", "customers.update",
-                    "media.read", "media.update",
-                    "coupons.read", "coupons.update",
-                    "redirects.read", "redirects.update",
-                    "menus.read", "menus.update",
-                    "sliders.read", "sliders.write",
-                    "shipping.read", "shipping.write",
-                    "reviews.read", "reviews.write",
-                    "admin-users.read", "admin-users.write",
-                    "settings.read", "settings.update"),
-            "SHOP_MANAGER", List.of("products.read", "catalog.read", "content.read",
-                    "orders.read", "customers.read", "coupons.read"),
-            "EDITOR", List.of("content.read", "content.update", "media.read"),
-            "VIEWER", List.of("products.read", "catalog.read", "content.read")
-    );
 
     private final AdminUserJpaRepository adminUserRepo;
     private final AdminRefreshTokenJpaRepository refreshTokenRepo;
@@ -69,15 +45,13 @@ public class AdminAuthService {
         AdminUserEntity user = adminUserRepo.findByEmail(email).orElse(null);
 
         if (user == null) {
-            // Dummy verify to prevent timing-based user enumeration
+            // Constant-time dummy verify prevents timing-based user enumeration
             passwordService.dummyVerify(rawPassword);
             throw new UnauthorizedException("Invalid email or password.");
         }
-        if (!passwordService.verify(rawPassword, user.getPasswordHash())) {
+        // Always verify password before checking status — avoids leaking account existence
+        if (!passwordService.verify(rawPassword, user.getPasswordHash()) || !"ACTIVE".equals(user.getStatus())) {
             throw new UnauthorizedException("Invalid email or password.");
-        }
-        if (!"ACTIVE".equals(user.getStatus())) {
-            throw new UnauthorizedException("Account is not active.");
         }
 
         user.setLastLoginAt(Instant.now());
@@ -138,8 +112,7 @@ public class AdminAuthService {
 
     /** Static helper used by other services that need to map a role to its default permissions. */
     public static List<String> permissionsForRole(String role) {
-        return ROLE_PERMISSION_MAP.getOrDefault(
-                role == null ? "" : role.toUpperCase(Locale.ROOT), List.of());
+        return AdminRolePermissions.forRole(role);
     }
 
     private String saveNewRefreshToken(UUID adminUserId, HttpServletRequest request) {

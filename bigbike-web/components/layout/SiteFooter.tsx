@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import { safeText } from "@/lib/utils/format";
 import { toAccountPath, toArticleListPath, toPagePath, toProductListPath } from "@/lib/utils/routes";
+import { BctBadge } from "./BctBadge";
 
 const DEFAULT_SITE_NAME = "BigBike";
 
@@ -86,6 +87,30 @@ function IconZalo() {
   );
 }
 
+function IconYouTube() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="bb-footer-icon">
+      <path d="M15.3 4.5a2 2 0 0 0-1.4-1.4C12.7 2.8 8 2.8 8 2.8s-4.7 0-5.9.3A2 2 0 0 0 .7 4.5C.4 5.7.4 8 .4 8s0 2.3.3 3.5a2 2 0 0 0 1.4 1.4c1.2.3 5.9.3 5.9.3s4.7 0 5.9-.3a2 2 0 0 0 1.4-1.4c.3-1.2.3-3.5.3-3.5s0-2.3-.3-3.5ZM6.5 10.3V5.7L10.5 8l-4 2.3Z" />
+    </svg>
+  );
+}
+
+function IconTikTok() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="bb-footer-icon">
+      <path d="M11 1h-2v9.5a1.5 1.5 0 1 1-1.5-1.5c.17 0 .34.02.5.07V7.03A3.5 3.5 0 1 0 11 10.5V5.6a5.52 5.52 0 0 0 3 .9V4.52A3.52 3.52 0 0 1 11 1Z" />
+    </svg>
+  );
+}
+
+function IconInstagram() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="bb-footer-icon">
+      <path d="M8 1c1.86 0 2.09.01 2.82.04.73.03 1.23.15 1.66.31.45.17.83.4 1.21.78.38.38.61.76.78 1.21.17.43.28.93.31 1.66.04.73.04.96.04 2.82s-.01 2.09-.04 2.82c-.03.73-.14 1.23-.31 1.66a3.35 3.35 0 0 1-.78 1.21c-.38.38-.76.61-1.21.78-.43.17-.93.28-1.66.31-.73.04-.96.04-2.82.04s-2.09-.01-2.82-.04c-.73-.03-1.23-.14-1.66-.31a3.35 3.35 0 0 1-1.21-.78 3.35 3.35 0 0 1-.78-1.21c-.17-.43-.28-.93-.31-1.66C1.01 10.09 1 9.86 1 8s.01-2.09.04-2.82c.03-.73.14-1.23.31-1.66.17-.45.4-.83.78-1.21.38-.38.76-.61 1.21-.78.43-.17.93-.28 1.66-.31C5.91 1.01 6.14 1 8 1Zm0 1.44c-1.83 0-2.05.01-2.77.04-.67.03-1.03.14-1.27.23-.32.12-.55.27-.79.51-.24.24-.39.47-.51.79-.09.24-.2.6-.23 1.27-.03.72-.04.94-.04 2.77s.01 2.05.04 2.77c.03.67.14 1.03.23 1.27.12.32.27.55.51.79.24.24.47.39.79.51.24.09.6.2 1.27.23.72.03.94.04 2.77.04s2.05-.01 2.77-.04c.67-.03 1.03-.14 1.27-.23.32-.12.55-.27.79-.51.24-.24.39-.47.51-.79.09-.24.2-.6.23-1.27.03-.72.04-.94.04-2.77s-.01-2.05-.04-2.77c-.03-.67-.14-1.03-.23-1.27a2.13 2.13 0 0 0-.51-.79 2.13 2.13 0 0 0-.79-.51c-.24-.09-.6-.2-1.27-.23-.72-.03-.94-.04-2.77-.04ZM8 5.14a2.86 2.86 0 1 1 0 5.72 2.86 2.86 0 0 1 0-5.72Zm0 1.44a1.42 1.42 0 1 0 0 2.84 1.42 1.42 0 0 0 0-2.84Zm3-2.57a.68.68 0 1 1 0 1.36.68.68 0 0 1 0-1.36Z" />
+    </svg>
+  );
+}
+
 export async function SiteFooter() {
   const [footerMenuResult, guideMenuResult, importedGuideMenuResult, settingsResult] = await Promise.all([
     getPublicMenu("footer"),
@@ -104,6 +129,9 @@ export async function SiteFooter() {
   const address = getSettingValue(settings, ["contact_address", "address", "site_address"], "");
   const facebookUrl = getSettingValue(settings, ["facebook_url"], "");
   const zaloUrl = getSettingValue(settings, ["zalo_url"], "");
+  const youtubeUrl = getSettingValue(settings, ["youtube_url"], "");
+  const tiktokUrl = getSettingValue(settings, ["tiktok_url"], "");
+  const instagramUrl = getSettingValue(settings, ["instagram_url"], "");
   const bctUrl = getSettingValue(settings, ["bct_url"], "");
 
   const footerLinks = groupMenuItems(footerMenuResult.data?.items ?? []);
@@ -145,7 +173,7 @@ export async function SiteFooter() {
         </section>
 
         <section className="bb-footer-col">
-          <h3>Menu</h3>
+          <h3>{footerMenuResult.data?.name || "Menu"}</h3>
           {footerLinks.length > 0 ? (
             <nav className="bb-footer-links">
               {footerLinks.map((item) => (
@@ -233,7 +261,7 @@ export async function SiteFooter() {
               <p className="bb-footer-muted">Đang cập nhật thông tin liên hệ.</p>
             ) : null}
           </div>
-          {(facebookUrl || zaloUrl) ? (
+          {(facebookUrl || zaloUrl || youtubeUrl || tiktokUrl || instagramUrl) ? (
             <div className="bb-footer-social">
               {facebookUrl ? (
                 <a href={facebookUrl} className="bb-footer-social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook BigBike">
@@ -245,6 +273,24 @@ export async function SiteFooter() {
                 <a href={zaloUrl} className="bb-footer-social-link" target="_blank" rel="noopener noreferrer" aria-label="Zalo BigBike">
                   <IconZalo />
                   Zalo
+                </a>
+              ) : null}
+              {youtubeUrl ? (
+                <a href={youtubeUrl} className="bb-footer-social-link" target="_blank" rel="noopener noreferrer" aria-label="YouTube BigBike">
+                  <IconYouTube />
+                  YouTube
+                </a>
+              ) : null}
+              {tiktokUrl ? (
+                <a href={tiktokUrl} className="bb-footer-social-link" target="_blank" rel="noopener noreferrer" aria-label="TikTok BigBike">
+                  <IconTikTok />
+                  TikTok
+                </a>
+              ) : null}
+              {instagramUrl ? (
+                <a href={instagramUrl} className="bb-footer-social-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram BigBike">
+                  <IconInstagram />
+                  Instagram
                 </a>
               ) : null}
             </div>
@@ -260,26 +306,22 @@ export async function SiteFooter() {
               alt="BigBike"
               width={108}
               height={36}
-              unoptimized
             />
           </div>
           <div className="bb-footer-bottom-copy">
             <p>© {new Date().getFullYear()} BigBike. Mã ĐKKD: 41K8017383.</p>
             <p>Ngày cấp: 8/3/2016. Nơi cấp: Ủy Ban Nhân Dân Quận 11, TP.HCM.</p>
           </div>
-          {bctUrl ? (
-            <div className="bb-footer-bottom-bct">
-              <a href={bctUrl} target="_blank" rel="noopener noreferrer" aria-label="Đã thông báo Bộ Công Thương">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://online.gov.vn/Content/EndUser/Images/LogoCCDVTMDT.png"
-                  alt="Đã thông báo Bộ Công Thương"
-                  height={36}
-                  loading="lazy"
-                />
-              </a>
-            </div>
-          ) : null}
+          <div className="bb-footer-bottom-bct">
+            <a
+              href={bctUrl || "https://online.gov.vn/"}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Đã thông báo Bộ Công Thương"
+            >
+              <BctBadge alt="Đã thông báo Bộ Công Thương" height={36} />
+            </a>
+          </div>
         </div>
       </div>
     </footer>

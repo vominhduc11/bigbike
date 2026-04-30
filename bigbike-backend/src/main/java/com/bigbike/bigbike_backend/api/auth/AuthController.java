@@ -110,7 +110,7 @@ public class AuthController {
         cookie.setSecure(true);    // HTTPS only — nginx should enforce this in prod
         cookie.setPath("/api/v1/auth");
         cookie.setMaxAge(REFRESH_COOKIE_MAX_AGE);
-        cookie.setAttribute("SameSite", "None"); // cross-origin admin panel
+        cookie.setAttribute("SameSite", "Lax"); // same eTLD+1 (admin.bigbike.vn → api.bigbike.vn)
         response.addCookie(cookie);
     }
 

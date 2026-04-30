@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper.MappedVariation;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -8,6 +9,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
@@ -63,13 +65,31 @@ public class ProductVariationImporter implements DomainImporter {
         throw new UnsupportedOperationException("Use importBatch()");
     }
 
-    @Transactional
+    /**
+     * Backwards-compatible overload — used by tests and any caller that
+     * doesn't yet have a media index. Variation gallery rows from
+     * `rtwpvg_images` will be skipped silently.
+     */
     public MigrationExecutionReport.DomainResult importBatch(
             List<MappedVariation> items, MigrationExecutionOptions options) {
+        return importBatch(items, options, Map.of(), "");
+    }
+
+    @Transactional
+    public MigrationExecutionReport.DomainResult importBatch(
+            List<MappedVariation> items,
+            MigrationExecutionOptions options,
+            Map<Long, MappedMedia> mediaByLegacyId,
+            String mediaPublicBaseUrl) {
 
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+
+        // Both args are nullable so existing call sites that don't yet have
+        // media context still work — variation gallery just stays empty.
+        Map<Long, MappedMedia> mediaIndex = mediaByLegacyId == null ? Map.of() : mediaByLegacyId;
+        String baseUrl = mediaPublicBaseUrl == null ? "" : mediaPublicBaseUrl;
 
         for (MappedVariation mv : items) {
             try {
@@ -123,6 +143,18 @@ public class ProductVariationImporter implements DomainImporter {
                         entity.getOptions().clear();
                     }
                     entity.getOptions().addAll(optionsList);
+
+                    // Per-variant gallery from rtwpvg_images (Phương án A,
+                    // mirrors WP's "Variation Images Gallery" plugin).
+                    List<ProductVariantGalleryImageEntity> galleryList =
+                            buildGallery(entity, mv.galleryAttachmentIds(), mediaIndex, baseUrl, mv.sourceId(), warnings);
+                    if (entity.getGallery() == null) {
+                        entity.setGallery(new ArrayList<>());
+                    } else {
+                        entity.getGallery().clear();
+                    }
+                    entity.getGallery().addAll(galleryList);
+
                     variantRepo.save(entity);
                 }
 
@@ -184,6 +216,52 @@ public class ProductVariationImporter implements DomainImporter {
             sb.append(e.getKey()).append(": ").append(e.getValue());
         }
         return sb.toString();
+    }
+
+    /**
+     * Resolves rtwpvg_images attachment IDs to media URLs and produces
+     * persistable gallery rows. Missing or zero-byte attachments are
+     * skipped with a warning rather than failing the whole variation.
+     */
+    private List<ProductVariantGalleryImageEntity> buildGallery(
+            ProductVariantEntity variant,
+            List<Long> attachmentIds,
+            Map<Long, MappedMedia> mediaByLegacyId,
+            String mediaPublicBaseUrl,
+            long sourceId,
+            List<String> warnings) {
+        if (attachmentIds == null || attachmentIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<ProductVariantGalleryImageEntity> result = new ArrayList<>();
+        int order = 0;
+        for (Long attachmentId : attachmentIds) {
+            if (attachmentId == null) continue;
+            MappedMedia mm = mediaByLegacyId.get(attachmentId);
+            if (mm == null || mm.storagePath() == null || mm.storagePath().isBlank()) {
+                warnings.add("rtwpvg_images attachment id=" + attachmentId
+                        + " not found in media index for variation id=" + sourceId);
+                continue;
+            }
+            ProductVariantGalleryImageEntity row = new ProductVariantGalleryImageEntity();
+            row.setVariant(variant);
+            row.setSortOrder(order++);
+            row.setImageId(String.valueOf(attachmentId));
+            row.setImageUrl(buildMediaUrl(mediaPublicBaseUrl, mm.storagePath()));
+            row.setImageAlt(mm.altText());
+            row.setImageWidth(mm.width());
+            row.setImageHeight(mm.height());
+            row.setImageMimeType(mm.mimeType());
+            result.add(row);
+        }
+        return result;
+    }
+
+    private String buildMediaUrl(String mediaPublicBaseUrl, String storagePath) {
+        String base = mediaPublicBaseUrl == null ? "" : mediaPublicBaseUrl;
+        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+        String path = storagePath.startsWith("/") ? storagePath.substring(1) : storagePath;
+        return base + "/wp-uploads/" + path;
     }
 
     private List<ProductVariantOptionEntity> buildOptions(

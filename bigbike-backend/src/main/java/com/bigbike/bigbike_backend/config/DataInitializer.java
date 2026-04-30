@@ -6,22 +6,34 @@ import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Profile("!prod")
 public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final AdminUserJpaRepository adminUserRepo;
     private final PasswordService passwordService;
+    private final String seedAdminEmail;
+    private final String seedAdminPassword;
 
-    public DataInitializer(AdminUserJpaRepository adminUserRepo, PasswordService passwordService) {
+    public DataInitializer(
+            AdminUserJpaRepository adminUserRepo,
+            PasswordService passwordService,
+            @Value("${bigbike.seed.admin-email:admin@bigbike.vn}") String seedAdminEmail,
+            @Value("${bigbike.seed.admin-password:admin123}") String seedAdminPassword
+    ) {
         this.adminUserRepo = adminUserRepo;
         this.passwordService = passwordService;
+        this.seedAdminEmail = seedAdminEmail;
+        this.seedAdminPassword = seedAdminPassword;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -30,8 +42,8 @@ public class DataInitializer {
         if (adminUserRepo.count() > 0) return;
 
         AdminUserEntity admin = new AdminUserEntity();
-        admin.setEmail("admin@bigbike.vn");
-        admin.setPasswordHash(passwordService.hash("admin123"));
+        admin.setEmail(seedAdminEmail);
+        admin.setPasswordHash(passwordService.hash(seedAdminPassword));
         admin.setDisplayName("Super Admin");
         admin.setRole("SUPER_ADMIN");
         admin.setStatus("ACTIVE");
@@ -39,6 +51,6 @@ public class DataInitializer {
         admin.setUpdatedAt(Instant.now());
         adminUserRepo.save(admin);
 
-        log.info("Seeded default admin user: admin@bigbike.vn / admin123");
+        log.warn("Seeded default admin user: {} — change the password immediately!", seedAdminEmail);
     }
 }

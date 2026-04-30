@@ -44,7 +44,6 @@ export function BrandCarousel({ brands }: Props) {
                     width={120}
                     height={56}
                     style={{ objectFit: "contain", width: "auto", height: 56 }}
-                    unoptimized
                   />
                 ) : (
                   <span className="wp-brand-text-fallback">{b.name}</span>

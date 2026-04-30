@@ -106,16 +106,22 @@ export function isValidVnPhone(phone: string): boolean {
 
 export function paymentStatusLabel(status: string | null | undefined): string {
   switch (status) {
+    case "UNPAID":
+      return "Chưa thanh toán";
     case "PENDING":
       return "Chờ thanh toán";
     case "PAID":
       return "Đã thanh toán";
-    case "COD_PENDING":
-      return "Thanh toán khi nhận hàng";
+    case "PARTIALLY_PAID":
+      return "Đã thanh toán một phần";
     case "FAILED":
       return "Thanh toán thất bại";
     case "REFUNDED":
       return "Đã hoàn tiền";
+    case "PARTIALLY_REFUNDED":
+      return "Hoàn tiền một phần";
+    case "CANCELLED":
+      return "Đã huỷ thanh toán";
     default:
       return status ?? "Đang cập nhật";
   }

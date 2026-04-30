@@ -17,14 +17,24 @@ import {
   getMockBrandById,
   getMockCategoryById,
   getMockContentById,
+  getMockDashboardSummary,
   getMockProductById,
+  queryMockAdminUsers,
+  queryMockAnalytics,
   queryMockBrands,
   queryMockCategories,
   queryMockContent,
+  queryMockCoupons,
   queryMockCustomers,
   queryMockMedia,
   queryMockOrders,
   queryMockProducts,
+  queryMockRedirects,
+  queryMockReviews,
+  queryMockSettings,
+  queryMockShippingMethods,
+  queryMockShippingZones,
+  queryMockSliders,
 } from './mockData'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
 
@@ -263,6 +273,8 @@ function buildProductQuery(query) {
     q: query?.search,
     publishStatus: query?.publishStatus,
     stockState: query?.stockState,
+    brandId: query?.brandId || undefined,
+    categoryId: query?.categoryId || undefined,
   }
 }
 
@@ -353,7 +365,9 @@ export function mapValidationErrors(error) {
     if (!detail || typeof detail !== 'object') {
       return acc
     }
-    const field = typeof detail.field === 'string' ? detail.field : '_form'
+    const rawField = typeof detail.field === 'string' ? detail.field : '_form'
+    // Normalize bracket notation variants[0].field → variants.0.field
+    const field = rawField.replace(/\[(\d+)\]/g, '.$1')
     const message =
       typeof detail.message === 'string'
         ? detail.message
@@ -688,7 +702,15 @@ export async function fetchOrders(query) {
   }
   try {
     const payload = await requestJson('/admin/orders', {
-      query: { page: query?.page, size: query?.pageSize, sort: query?.sort, q: query?.search, status: query?.orderStatus },
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        sort: query?.sort,
+        q: query?.search,
+        status: query?.orderStatus,
+        from: query?.dateRange?.from?.toISOString().slice(0, 10),
+        to: query?.dateRange?.to?.toISOString().slice(0, 10),
+      },
     })
     return withLiveData(parseListPayload(payload, normalizeOrder, Number(query?.pageSize) || 10))
   } catch (error) {
@@ -736,13 +758,24 @@ export async function fetchOrderAllowedTransitions(orderId) {
   }
 }
 
-export async function updateOrderPaymentStatus(orderId, paymentStatus) {
+export async function updateOrderPaymentStatus(orderId, paymentStatus, paidAmount) {
   assertMutationEnabled()
+  const body = { paymentStatus }
+  if (paidAmount !== undefined && paidAmount !== null) body.paidAmount = paidAmount
   const payload = await requestJson(`/admin/orders/${orderId}/payment-status`, {
     method: 'PATCH',
-    body: { paymentStatus },
+    body,
   })
   return parseDetailPayload(payload, normalizeOrder)
+}
+
+export async function addOrderNote(orderId, { content, customerVisible = false }) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/orders/${orderId}/notes`, {
+    method: 'POST',
+    body: { content, customerVisible },
+  })
+  return payload?.data ?? null
 }
 
 // ── Customers ────────────────────────────────────────────────────────────────
@@ -786,6 +819,15 @@ export async function updateCustomerStatus(customerId, status) {
   return parseDetailPayload(payload, normalizeCustomer)
 }
 
+export async function updateCustomer(customerId, data) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/customers/${customerId}`, {
+    method: 'PATCH',
+    body: data,
+  })
+  return parseDetailPayload(payload, normalizeCustomer)
+}
+
 // ── Media ────────────────────────────────────────────────────────────────────
 
 export async function fetchMedia(query) {
@@ -793,9 +835,15 @@ export async function fetchMedia(query) {
     return withMockFallback('Media list served from mock.', queryMockMedia(query))
   }
   try {
-    const payload = await requestJson('/admin/media', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, mimeType: query?.mimeType },
-    })
+    const q = {
+      page: query?.page,
+      size: query?.pageSize,
+      q: query?.search || undefined,
+      mimeType: query?.mimeType && query.mimeType !== 'ALL' ? query.mimeType : undefined,
+      status: query?.status && query.status !== 'ALL' ? query.status : undefined,
+      storageProvider: query?.storageProvider && query.storageProvider !== 'ALL' ? query.storageProvider : undefined,
+    }
+    const payload = await requestJson('/admin/media', { query: q })
     return withLiveData(parseListPayload(payload, normalizeMediaItem, Number(query?.pageSize) || 20))
   } catch (error) {
     const e = normalizeError(error)
@@ -809,49 +857,78 @@ export async function deleteMedia(mediaId) {
   await requestJson(`/admin/media/${mediaId}`, { method: 'DELETE' })
 }
 
-export async function uploadMedia(file, altText = '') {
+export async function hardDeleteMedia(mediaId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/media/${mediaId}`, { method: 'DELETE', query: { permanent: true } })
+}
+
+export async function restoreMedia(mediaId) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/media/${mediaId}/restore`, { method: 'POST' })
+  return { item: normalizeMediaItem(payload?.data || {}) }
+}
+
+export async function updateMedia(mediaId, body) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/media/${mediaId}`, { method: 'PATCH', body })
+  return { item: normalizeMediaItem(payload?.data || {}) }
+}
+
+export async function uploadMedia(file, altText = '', onProgress = null) {
   assertMutationEnabled()
   const { accessToken } = readTokens()
   const formData = new FormData()
   formData.append('file', file)
   if (altText) formData.append('altText', altText)
 
-  const headers = { Accept: 'application/json' }
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
 
-  const response = await fetch(`${API_BASE}/admin/media`, {
-    method: 'POST',
-    headers,
-    body: formData,
+    if (typeof onProgress === 'function') {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+      })
+    }
+
+    xhr.open('POST', `${API_BASE}/admin/media`)
+    xhr.setRequestHeader('Accept', 'application/json')
+    if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
+
+    xhr.onload = () => {
+      let payload = null
+      try { payload = JSON.parse(xhr.responseText) } catch { /* ignore */ }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ item: normalizeMediaItem(payload?.data || {}) })
+      } else {
+        const error = payload?.error || {}
+        reject(new ApiClientError(
+          error.message || `Upload failed with status ${xhr.status}`,
+          xhr.status,
+          error.code || 'UPLOAD_FAILED',
+          error.details || [],
+        ))
+      }
+    }
+    xhr.onerror = () => reject(new ApiClientError('Network error during upload', 0, 'NETWORK_ERROR'))
+    xhr.onabort = () => reject(new ApiClientError('Upload aborted', 0, 'ABORTED'))
+    xhr.send(formData)
   })
-  let payload = null
-  try { payload = await response.json() } catch { /* ignore */ }
-  if (!response.ok) {
-    const error = payload?.error || {}
-    throw new ApiClientError(
-      error.message || `Upload failed with status ${response.status}`,
-      response.status,
-      error.code || 'UPLOAD_FAILED',
-      error.details || [],
-    )
-  }
-  return { item: normalizeMediaItem(payload?.data || {}) }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export async function fetchSettings() {
   if (FORCE_MOCK) {
-    return withMockFallback('Settings served from mock.', { items: [] })
+    return withMockFallback('Settings served from mock.', queryMockSettings())
   }
   try {
-    const payload = await requestJson('/admin/settings')
+    const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })
     const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
     return withLiveData({ items: list })
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [] })
+    return withMockFallback(e.message, queryMockSettings())
   }
 }
 
@@ -868,7 +945,7 @@ export async function updateSetting(key, value) {
 
 export async function fetchCoupons(query) {
   if (FORCE_MOCK) {
-    return withMockFallback('Coupon list served from mock.', { items: [], pagination: normalizePagination({}) })
+    return withMockFallback('Coupon list served from mock.', queryMockCoupons(query))
   }
   try {
     const payload = await requestJson('/admin/coupons', {
@@ -878,7 +955,7 @@ export async function fetchCoupons(query) {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+    return withMockFallback(e.message, queryMockCoupons(query))
   }
 }
 
@@ -910,23 +987,52 @@ export async function updateCoupon(couponId, input) {
 
 export async function fetchRedirects(query) {
   if (FORCE_MOCK) {
-    return withMockFallback('Redirect list served from mock.', { items: [], pagination: normalizePagination({}) })
+    return withMockFallback('Redirect list served from mock.', queryMockRedirects(query))
   }
   try {
-    const payload = await requestJson('/admin/redirects', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search },
-    })
+    const q = {
+      page: query?.page,
+      size: query?.pageSize,
+      q: query?.search || undefined,
+      enabled: query?.enabled != null ? query.enabled : undefined,
+      statusCode: query?.statusCode || undefined,
+    }
+    const payload = await requestJson('/admin/redirects', { query: q })
     return withLiveData(parseListPayload(payload, normalizeRedirect, Number(query?.pageSize) || 20))
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+    return withMockFallback(e.message, queryMockRedirects(query))
+  }
+}
+
+export async function fetchRedirectDetail(redirectId) {
+  if (FORCE_MOCK) {
+    const mock = queryMockRedirects({}).items.find((r) => r.id === redirectId)
+    if (mock) return withMockFallback('Redirect detail served from mock.', { item: mock })
+    throw new Error('Redirect not found')
+  }
+  try {
+    const payload = await requestJson(`/admin/redirects/${redirectId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeRedirect))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    const mock = queryMockRedirects({}).items.find((r) => r.id === redirectId)
+    if (mock) return withMockFallback(e.message, { item: mock })
+    throw e
   }
 }
 
 export async function createRedirect(input) {
   assertMutationEnabled()
   const payload = await requestJson('/admin/redirects', { method: 'POST', body: input })
+  return parseDetailPayload(payload, normalizeRedirect)
+}
+
+export async function updateRedirect(redirectId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/redirects/${redirectId}`, { method: 'PATCH', body: input })
   return parseDetailPayload(payload, normalizeRedirect)
 }
 
@@ -1009,6 +1115,15 @@ export async function updateMenuItem(menuId, itemId, input) {
   return { item: payload?.data }
 }
 
+export async function reorderMenuItems(menuId, items) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/menus/${menuId}/items/reorder`, {
+    method: 'POST',
+    body: { items },
+  })
+  return withLiveData(parseDetailPayload(payload, normalizeMenu))
+}
+
 // ── Sliders ───────────────────────────────────────────────────────────────────
 
 function normalizeSlider(input) {
@@ -1017,6 +1132,7 @@ function normalizeSlider(input) {
     id: String(s.id || ''),
     location: String(s.location || 'home'),
     sortOrder: Number(s.sortOrder ?? 0),
+    isActive: s.isActive !== false,
     desktopImage: s.desktopImage || null,
     mobileImage: s.mobileImage || null,
     externalLink: s.externalLink || null,
@@ -1026,7 +1142,7 @@ function normalizeSlider(input) {
 
 export async function fetchSliders(location = 'home') {
   if (FORCE_MOCK) {
-    return withMockFallback('Slider list served from mock.', { items: [] })
+    return withMockFallback('Slider list served from mock.', queryMockSliders(location))
   }
   try {
     const payload = await requestJson('/admin/sliders', { query: { location } })
@@ -1035,19 +1151,89 @@ export async function fetchSliders(location = 'home') {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [] })
+    return withMockFallback(e.message, queryMockSliders(location))
   }
 }
 
-export async function upsertSlider(input) {
+export async function createSlider(input) {
   assertMutationEnabled()
   const payload = await requestJson('/admin/sliders', { method: 'POST', body: input })
   return { item: normalizeSlider(payload?.data || {}) }
 }
 
+export async function updateSlider(sliderId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/sliders/${sliderId}`, { method: 'PATCH', body: input })
+  return { item: normalizeSlider(payload?.data || {}) }
+}
+
+export async function reorderSliders(location, items) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/sliders/reorder', {
+    method: 'POST',
+    body: { location, items },
+  })
+  const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSlider) : []
+  return withLiveData({ items: list })
+}
+
 export async function deleteSlider(sliderId) {
   assertMutationEnabled()
   await requestJson(`/admin/sliders/${sliderId}`, { method: 'DELETE' })
+}
+
+// ── Home Videos ──────────────────────────────────────────────────────────────
+
+function normalizeHomeVideo(input) {
+  return {
+    id: input.id ?? '',
+    sortOrder: input.sortOrder ?? 0,
+    title: input.title ?? '',
+    videoUrl: input.videoUrl ?? '',
+    youtubeId: input.youtubeId ?? null,
+    thumbnail: input.thumbnail ?? null,
+    isActive: input.isActive !== false,
+    createdAt: input.createdAt ?? null,
+    updatedAt: input.updatedAt ?? null,
+  }
+}
+
+export async function fetchHomeVideos() {
+  try {
+    const payload = await requestJson('/admin/home-videos')
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeHomeVideo) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    throw e
+  }
+}
+
+export async function createHomeVideo(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/home-videos', { method: 'POST', body: input })
+  return { item: normalizeHomeVideo(payload?.data || {}) }
+}
+
+export async function updateHomeVideo(id, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/home-videos/${id}`, { method: 'PATCH', body: input })
+  return { item: normalizeHomeVideo(payload?.data || {}) }
+}
+
+export async function reorderHomeVideos(items) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/home-videos/reorder', {
+    method: 'POST',
+    body: { items },
+  })
+  const list = Array.isArray(payload?.data) ? payload.data.map(normalizeHomeVideo) : []
+  return withLiveData({ items: list })
+}
+
+export async function deleteHomeVideo(id) {
+  assertMutationEnabled()
+  await requestJson(`/admin/home-videos/${id}`, { method: 'DELETE' })
 }
 
 // ── Shipping ──────────────────────────────────────────────────────────────────
@@ -1082,7 +1268,7 @@ function normalizeShippingMethod(input) {
 
 export async function fetchShippingZones(query) {
   if (FORCE_MOCK) {
-    return withMockFallback('Shipping zones served from mock.', { items: [], pagination: normalizePagination({}) })
+    return withMockFallback('Shipping zones served from mock.', queryMockShippingZones(query))
   }
   try {
     const payload = await requestJson('/admin/shipping/zones', {
@@ -1092,7 +1278,7 @@ export async function fetchShippingZones(query) {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+    return withMockFallback(e.message, queryMockShippingZones(query))
   }
 }
 
@@ -1115,7 +1301,7 @@ export async function deleteShippingZone(zoneId) {
 
 export async function fetchShippingMethods(zoneId) {
   if (FORCE_MOCK) {
-    return withMockFallback('Shipping methods served from mock.', { items: [] })
+    return withMockFallback('Shipping methods served from mock.', queryMockShippingMethods(zoneId))
   }
   try {
     const payload = await requestJson(`/admin/shipping/zones/${zoneId}/methods`)
@@ -1124,7 +1310,7 @@ export async function fetchShippingMethods(zoneId) {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [] })
+    return withMockFallback(e.message, queryMockShippingMethods(zoneId))
   }
 }
 
@@ -1163,7 +1349,7 @@ function normalizeAdminUser(input) {
 
 export async function fetchAdminUsers(query) {
   if (FORCE_MOCK) {
-    return withMockFallback('Admin users served from mock.', { items: [], pagination: normalizePagination({}) })
+    return withMockFallback('Admin users served from mock.', queryMockAdminUsers(query))
   }
   try {
     const payload = await requestJson('/admin/admin-users', {
@@ -1173,7 +1359,7 @@ export async function fetchAdminUsers(query) {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+    return withMockFallback(e.message, queryMockAdminUsers(query))
   }
 }
 
@@ -1202,7 +1388,7 @@ function normalizeReview(input) {
 
 export async function fetchReviews(query) {
   if (FORCE_MOCK) {
-    return withMockFallback('Reviews served from mock.', { items: [], pagination: normalizePagination({}) })
+    return withMockFallback('Reviews served from mock.', queryMockReviews(query))
   }
   try {
     const payload = await requestJson('/admin/reviews', {
@@ -1212,7 +1398,7 @@ export async function fetchReviews(query) {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [], pagination: normalizePagination({}) })
+    return withMockFallback(e.message, queryMockReviews(query))
   }
 }
 
@@ -1228,5 +1414,328 @@ export async function updateReviewStatus(reviewId, status) {
 export async function deleteReview(reviewId) {
   assertMutationEnabled()
   await requestJson(`/admin/reviews/${reviewId}`, { method: 'DELETE' })
+}
+
+// ── Audit Logs ────────────────────────────────────────────────────────────────
+
+function normalizeAuditLog(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: s.id || '',
+    actorType: s.actorType || '',
+    actorId: s.actorId || null,
+    action: s.action || '',
+    resourceType: s.resourceType || '',
+    resourceId: s.resourceId || null,
+    beforeData: s.beforeData || null,
+    afterData: s.afterData || null,
+    ipAddress: s.ipAddress || null,
+    createdAt: s.createdAt || '',
+  }
+}
+
+export async function fetchAuditLogs(query) {
+  try {
+    const payload = await requestJson('/admin/audit-logs', {
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        actorType: query?.actorType === 'ALL' ? undefined : query?.actorType,
+        resourceType: query?.resourceType === 'ALL' ? undefined : query?.resourceType,
+        action: query?.action || undefined,
+        from: query?.from || undefined,
+        to: query?.to || undefined,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeAuditLog, Number(query?.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 }, 20) })
+  }
+}
+
+// ── Refund ────────────────────────────────────────────────────────────────────
+
+export async function createRefund(orderId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/orders/${orderId}/refund`, {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeOrder)
+}
+
+// ── Reports / Analytics ───────────────────────────────────────────────────────
+
+export async function fetchAnalytics(from, to) {
+  try {
+    const payload = await requestJson('/admin/reports/analytics', {
+      query: { from: from || undefined, to: to || undefined },
+    })
+    return { data: normalizeAnalytics(payload), mode: 'live' }
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return {
+      data: queryMockAnalytics(from, to),
+      mode: 'mock',
+      warning: e.message,
+    }
+  }
+}
+
+function normalizeAnalytics(payload) {
+  const p = payload && typeof payload === 'object' ? payload : {}
+  const summary = p.summary && typeof p.summary === 'object' ? p.summary : {}
+  return {
+    summary: {
+      totalRevenue: Number(summary.totalRevenue) || 0,
+      orderCount: Number(summary.orderCount) || 0,
+      avgOrderValue: Number(summary.avgOrderValue) || 0,
+      refundAmount: Number(summary.refundAmount) || 0,
+    },
+    dailyRevenue: Array.isArray(p.dailyRevenue) ? p.dailyRevenue.map((r) => ({
+      date: String(r.date || ''),
+      revenue: Number(r.revenue) || 0,
+      orders: Number(r.orders) || 0,
+    })) : [],
+    topProducts: Array.isArray(p.topProducts) ? p.topProducts.map((r) => ({
+      productName: String(r.productName || ''),
+      revenue: Number(r.revenue) || 0,
+      unitsSold: Number(r.unitsSold) || 0,
+    })) : [],
+    topCustomers: Array.isArray(p.topCustomers) ? p.topCustomers.map((r) => ({
+      email: String(r.email || ''),
+      totalSpent: Number(r.totalSpent) || 0,
+      orderCount: Number(r.orderCount) || 0,
+    })) : [],
+  }
+}
+
+// ── Reports / Export ──────────────────────────────────────────────────────────
+
+async function fetchCsvBlob(path, params = {}) {
+  const { accessToken } = readTokens()
+  const qs = Object.entries(params)
+    .filter(([, v]) => v != null && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&')
+  const url = `${API_BASE}${path}${qs ? `?${qs}` : ''}`
+  const headers = { Accept: 'text/csv' }
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) throw new ApiClientError(`Export failed with status ${response.status}`, response.status, 'EXPORT_FAILED')
+  return response.blob()
+}
+
+export async function exportOrdersCsv(filters = {}) {
+  return fetchCsvBlob('/admin/reports/orders/export', {
+    status: filters.status,
+    paymentStatus: filters.paymentStatus,
+    from: filters.from,
+    to: filters.to,
+  })
+}
+
+export async function exportCustomersCsv(filters = {}) {
+  return fetchCsvBlob('/admin/reports/customers/export', { status: filters.status })
+}
+
+export async function exportProductsCsv(filters = {}) {
+  return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus })
+}
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+
+export async function fetchInventory(query = {}) {
+  try {
+    const payload = await requestJson('/admin/inventory', {
+      query: {
+        page: query.page,
+        size: query.pageSize,
+        q: query.q || undefined,
+        stockState: query.stockState === 'ALL' ? undefined : query.stockState,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeStockItem, Number(query.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 }, 20) })
+  }
+}
+
+function normalizeStockItem(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: s.variantId || s.productId || '',
+    productId: s.productId || '',
+    productName: s.productName || '',
+    productSku: s.productSku || undefined,
+    variantId: s.variantId || '',
+    variantName: s.variantName || '',
+    variantSku: s.variantSku || undefined,
+    stockState: s.stockState || 'UNKNOWN',
+    quantityOnHand: Number(s.quantityOnHand) || 0,
+    retailPrice: Number(s.retailPrice) || 0,
+  }
+}
+
+export async function adjustStock(variantId, quantityDelta, movementType, note) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/inventory/variants/${variantId}/adjust`, {
+    method: 'POST',
+    body: { quantityDelta, movementType: movementType || 'ADJUSTMENT', note },
+  })
+  return { item: normalizeStockItem(payload?.data || payload || {}) }
+}
+
+export async function fetchInventorySummary() {
+  try {
+    const payload = await requestJson('/admin/inventory/summary')
+    const d = payload?.data || payload || {}
+    return {
+      totalVariants: Number(d.totalVariants) || 0,
+      outOfStockCount: Number(d.outOfStockCount) || 0,
+      lowStockCount: Number(d.lowStockCount) || 0,
+    }
+  } catch {
+    return { totalVariants: 0, outOfStockCount: 0, lowStockCount: 0 }
+  }
+}
+
+export async function fetchAllMovements(query = {}) {
+  const payload = await requestJson('/admin/inventory/movements', {
+    query: {
+      page: query.page,
+      size: query.pageSize,
+      movementType: query.movementType || undefined,
+      referenceType: query.referenceType || undefined,
+    },
+  })
+  return parseListPayload(payload, normalizeMovement, Number(query.pageSize) || 20)
+}
+
+export async function fetchVariantMovements(variantId, query = {}) {
+  const payload = await requestJson(`/admin/inventory/variants/${variantId}/movements`, {
+    query: { page: query.page, size: query.pageSize },
+  })
+  return parseListPayload(payload, normalizeMovement, Number(query.pageSize) || 20)
+}
+
+function normalizeMovement(input) {
+  const m = input && typeof input === 'object' ? input : {}
+  return {
+    id: m.id || '',
+    movementType: m.movementType || '',
+    quantityDelta: Number(m.quantityDelta) || 0,
+    quantityBefore: Number(m.quantityBefore) || 0,
+    quantityAfter: Number(m.quantityAfter) || 0,
+    referenceType: m.referenceType || '',
+    note: m.note || '',
+    createdAt: m.createdAt || null,
+  }
+}
+
+export function inventoryExportCsvUrl() {
+  return `${API_BASE}/admin/inventory/export.csv`
+}
+
+// ── Returns / RMA ─────────────────────────────────────────────────────────────
+
+function normalizeReturn(s) {
+  if (!s || typeof s !== 'object') return {}
+  return {
+    id: s.id || '',
+    returnNumber: s.returnNumber || '',
+    orderId: s.orderId || '',
+    orderNumber: s.orderNumber || null,
+    customerEmail: s.customerEmail || null,
+    customerId: s.customerId || '',
+    status: s.status || 'PENDING',
+    reason: s.reason || '',
+    customerNote: s.customerNote || '',
+    adminNote: s.adminNote || '',
+    refundAmount: s.refundAmount != null ? Number(s.refundAmount) : 0,
+    createdAt: s.createdAt || null,
+    updatedAt: s.updatedAt || null,
+    items: Array.isArray(s.items) ? s.items : [],
+    history: Array.isArray(s.history) ? s.history : [],
+  }
+}
+
+function buildReturnQuery(query = {}) {
+  const params = {}
+  if (query.page) params.page = query.page
+  if (query.pageSize) params.pageSize = query.pageSize
+  if (query.status && query.status !== 'ALL') params.status = query.status
+  if (query.q) params.q = query.q
+  return params
+}
+
+function mockReturns(query = {}) {
+  const all = [
+    { id: 'r1', returnNumber: 'RMA-001001', orderId: 'ord-aaa-1', customerId: 'c1', status: 'PENDING', reason: 'DEFECTIVE', customerNote: 'Sản phẩm bị lỗi', adminNote: '', refundAmount: 0, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r2', returnNumber: 'RMA-001002', orderId: 'ord-bbb-2', customerId: 'c2', status: 'APPROVED', reason: 'WRONG_ITEM', customerNote: '', adminNote: 'Đã xác nhận', refundAmount: 0, createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r3', returnNumber: 'RMA-001003', orderId: 'ord-ccc-3', customerId: 'c1', status: 'COMPLETED', reason: 'CHANGED_MIND', customerNote: '', adminNote: '', refundAmount: 350000, createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+  ]
+  let filtered = all
+  if (query.status && query.status !== 'ALL') filtered = filtered.filter((r) => r.status === query.status)
+  if (query.q) filtered = filtered.filter((r) => r.returnNumber.includes(query.q))
+  const page = Number(query.page) || 1
+  const pageSize = Number(query.pageSize) || 20
+  const total = filtered.length
+  const items = filtered.slice((page - 1) * pageSize, page * pageSize)
+  return { items: items.map(normalizeReturn), pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } }
+}
+
+export async function fetchReturns(query = {}) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Returns served from mock.', mockReturns(query))
+  }
+  try {
+    const payload = await requestJson('/admin/returns', { query: buildReturnQuery(query) })
+    return withLiveData(parseListPayload(payload, normalizeReturn, Number(query.pageSize) || 20))
+  } catch (error) {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw normalizedError
+    return withMockFallback(normalizedError.message, mockReturns(query))
+  }
+}
+
+export async function fetchReturnDetail(returnId) {
+  try {
+    const payload = await requestJson(`/admin/returns/${returnId}`)
+    return normalizeReturn(payload?.data || payload || {})
+  } catch {
+    return null
+  }
+}
+
+export async function updateReturnStatus(returnId, body) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/returns/${returnId}/status`, {
+    method: 'PATCH',
+    body,
+  })
+  return normalizeReturn(payload?.data || payload || {})
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export async function fetchDashboardSummary(period = '30d') {
+  if (FORCE_MOCK) {
+    await new Promise((r) => setTimeout(r, 280))
+    return { data: getMockDashboardSummary(period), isMock: true }
+  }
+  try {
+    const payload = await requestJson(`/admin/dashboard?period=${period}`)
+    return { data: payload?.data || getMockDashboardSummary(period), isMock: false }
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, getMockDashboardSummary(period))
+  }
 }
 

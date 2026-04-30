@@ -9,7 +9,10 @@ public record ProductVariant(
         List<ProductVariantOption> options,
         ProductPrice price,
         ProductStockState stockState,
+        /** On-hand count for this specific variant. Null if not tracked. */
+        Integer stockQuantity,
         ImageAsset image,
+        List<ImageAsset> gallery,
         boolean isAvailable
 ) {
 }

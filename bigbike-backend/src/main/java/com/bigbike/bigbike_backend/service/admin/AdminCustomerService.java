@@ -21,6 +21,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRe
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -210,10 +211,31 @@ public class AdminCustomerService {
 
     private AdminCustomerOrderSummaryResponse buildOrderSummary(UUID customerId) {
         List<OrderEntity> orders = orderRepo.findByCustomerId(customerId);
+
         BigDecimal totalSpent = orders.stream()
                 .map(OrderEntity::getTotalAmount)
                 .filter(a -> a != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        int count = orders.size();
+        BigDecimal avgOrderValue = count > 0
+                ? totalSpent.divide(BigDecimal.valueOf(count), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        String segment = deriveSegment(count, totalSpent);
+
+        Instant firstOrderAt = orders.stream()
+                .map(OrderEntity::getPlacedAt)
+                .filter(a -> a != null)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+
+        Instant lastOrderAt = orders.stream()
+                .map(OrderEntity::getPlacedAt)
+                .filter(a -> a != null)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+
         List<LatestOrder> latest = orders.stream()
                 .sorted(Comparator.comparing(
                         OrderEntity::getPlacedAt, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -221,7 +243,19 @@ public class AdminCustomerService {
                 .map(o -> new LatestOrder(o.getId(), o.getOrderNumber(), o.getStatus(),
                         o.getTotalAmount(), o.getPlacedAt()))
                 .toList();
-        return new AdminCustomerOrderSummaryResponse(orders.size(), totalSpent, latest);
+
+        return new AdminCustomerOrderSummaryResponse(
+                count, totalSpent, avgOrderValue, segment,
+                firstOrderAt, lastOrderAt, latest);
+    }
+
+    private static String deriveSegment(int orderCount, BigDecimal totalSpent) {
+        if (orderCount == 0) return "INACTIVE";
+        // Thresholds in VND (no decimal currency)
+        if (totalSpent.compareTo(new BigDecimal("10000000")) >= 0) return "VIP";
+        if (totalSpent.compareTo(new BigDecimal("3000000")) >= 0)  return "LOYAL";
+        if (orderCount >= 2) return "REGULAR";
+        return "NEW";
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────

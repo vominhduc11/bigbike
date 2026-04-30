@@ -2,76 +2,165 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
+import {
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  type ForgotPasswordFormValues,
+  type ResetPasswordFormValues,
+} from "@/lib/schemas/auth";
 import { toLoginPath, toRegisterPath } from "@/lib/utils/routes";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
 };
 
-export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
-  const router = useRouter();
-  const hasToken = useMemo(() => Boolean(token), [token]);
+function RequestResetForm() {
+  const [success, setSuccess] = useState(false);
 
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+    reset,
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+  });
 
-  async function handleRequestSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!login.trim()) {
-      setError("Vui lòng nhập email hoặc số điện thoại.");
-      return;
-    }
-
-    setError("");
-    setSuccess("");
-    setLoading(true);
+  async function onSubmit(values: ForgotPasswordFormValues) {
     try {
-      await requestPasswordReset(login.trim());
-      setSuccess("Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.");
-      setLogin("");
+      await requestPasswordReset(values.login.trim());
+      reset();
+      setSuccess(true);
     } catch (err: unknown) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      setError("root", { message: (err as Error).message });
     }
   }
 
-  async function handleResetSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) {
-      setError("Liên kết đặt lại mật khẩu không hợp lệ.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp.");
-      return;
-    }
+  return (
+    <>
+      {errors.root && (
+        <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+          {errors.root.message}
+        </p>
+      )}
 
-    setError("");
-    setSuccess("");
-    setLoading(true);
+      {success ? (
+        <div className="bb-card" style={{ padding: "var(--bb-space-4)", marginBottom: "var(--bb-space-4)" }}>
+          <p>Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
+          <div>
+            <label className="bb-form-label">
+              Email hoặc số điện thoại
+              <input
+                className="bb-input"
+                autoComplete="username"
+                placeholder="email@example.com"
+                {...register("login")}
+              />
+            </label>
+            {errors.login && <p className="wp-field-error">{errors.login.message}</p>}
+          </div>
+          <button
+            type="submit"
+            className="bb-button bb-button-primary bb-btn-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
+          </button>
+        </form>
+      )}
+    </>
+  );
+}
+
+function ResetPasswordForm({ token }: { token: string }) {
+  const router = useRouter();
+  const [success, setSuccess] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+  });
+
+  async function onSubmit(values: ResetPasswordFormValues) {
     try {
-      await resetCustomerPassword(token, password);
-      setSuccess("Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...");
-      setPassword("");
-      setConfirmPassword("");
+      await resetCustomerPassword(token, values.password);
+      setSuccess(true);
       window.setTimeout(() => router.replace(toLoginPath()), 1500);
     } catch (err: unknown) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      setError("root", { message: (err as Error).message });
     }
   }
+
+  return (
+    <>
+      {errors.root && (
+        <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+          {errors.root.message}
+        </p>
+      )}
+
+      {success ? (
+        <div className="bb-card" style={{ padding: "var(--bb-space-4)", marginBottom: "var(--bb-space-4)" }}>
+          <p>Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...</p>
+          <Link href={toLoginPath()} className="bb-link bb-auth-footer-link" style={{ marginTop: "var(--bb-space-3)" }}>
+            Đi đến trang đăng nhập
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
+          <div>
+            <label className="bb-form-label">
+              Mật khẩu mới
+              <input
+                className="bb-input"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Nhập mật khẩu mới"
+                {...register("password")}
+              />
+            </label>
+            {errors.password && <p className="wp-field-error">{errors.password.message}</p>}
+          </div>
+          <div>
+            <label className="bb-form-label">
+              Xác nhận mật khẩu
+              <input
+                className="bb-input"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Nhập lại mật khẩu mới"
+                {...register("confirm")}
+              />
+            </label>
+            {errors.confirm && <p className="wp-field-error">{errors.confirm.message}</p>}
+          </div>
+          <button
+            type="submit"
+            className="bb-button bb-button-primary bb-btn-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
+          </button>
+        </form>
+      )}
+    </>
+  );
+}
+
+export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
+  const hasToken = Boolean(token);
 
   return (
     <div className="bb-auth-wrap">
@@ -88,45 +177,10 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
           </p>
         </header>
 
-        {error ? (
-          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>{error}</p>
-        ) : null}
-
-        {success ? (
-          <div className="bb-card" style={{ padding: "var(--bb-space-4)", marginBottom: "var(--bb-space-4)" }}>
-            <p>{success}</p>
-            {hasToken ? (
-              <Link href={toLoginPath()} className="bb-link bb-auth-footer-link" style={{ marginTop: "var(--bb-space-3)" }}>
-                Đi đến trang đăng nhập
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
-
-        {hasToken ? (
-          <form onSubmit={handleResetSubmit} className="bb-form-stack">
-            <label className="bb-form-label">
-              Mật khẩu mới
-              <input className="bb-input" required type="password" autoComplete="new-password" placeholder="Nhập mật khẩu mới" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </label>
-            <label className="bb-form-label">
-              Xác nhận mật khẩu
-              <input className="bb-input" required type="password" autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </label>
-            <button type="submit" className="bb-button bb-button-primary bb-btn-full" disabled={loading}>
-              {loading ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
-            </button>
-          </form>
+        {hasToken && token ? (
+          <ResetPasswordForm token={token} />
         ) : (
-          <form onSubmit={handleRequestSubmit} className="bb-form-stack">
-            <label className="bb-form-label">
-              Email hoặc số điện thoại
-              <input className="bb-input" required autoComplete="username" placeholder="email@example.com" value={login} onChange={(e) => setLogin(e.target.value)} />
-            </label>
-            <button type="submit" className="bb-button bb-button-primary bb-btn-full" disabled={loading}>
-              {loading ? "Đang gửi..." : "Gửi liên kết đặt lại"}
-            </button>
-          </form>
+          <RequestResetForm />
         )}
 
         <div className="bb-auth-footer" style={{ marginTop: "var(--bb-space-5)" }}>

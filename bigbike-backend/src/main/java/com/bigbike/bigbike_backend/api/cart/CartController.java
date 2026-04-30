@@ -97,7 +97,8 @@ public class CartController {
         return apiResponseFactory.data(toResponse(updated, items, coupons), request);
     }
 
-    @DeleteMapping
+    // Both DELETE /cart and DELETE /cart/clear empty the cart — frontends use the latter.
+    @DeleteMapping(path = {"", "/clear"})
     public ApiDataResponse<CartResponse> clearCart(HttpServletRequest request, HttpServletResponse response) {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.clearCart(cart);
@@ -137,7 +138,12 @@ public class CartController {
     private CartEntity resolveCart(HttpServletRequest request, HttpServletResponse response) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof CustomerPrincipal cp) {
-            return cartService.getOrCreateCustomerCart(cp.customerId());
+            CartEntity customerCart = cartService.getOrCreateCustomerCart(cp.customerId());
+            String guestId = CustomerSessionFilter.extractCookie(request, GUEST_COOKIE);
+            if (guestId != null) {
+                customerCart = cartService.mergeGuestCart(guestId, customerCart);
+            }
+            return customerCart;
         }
         // Guest flow
         String guestId = CustomerSessionFilter.extractCookie(request, GUEST_COOKIE);

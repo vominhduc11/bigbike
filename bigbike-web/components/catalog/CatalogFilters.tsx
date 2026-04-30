@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Brand } from "@/lib/contracts/public";
+import { BBTooltip } from "@/components/ui/BBTooltip";
 import { buildQueryString } from "@/lib/utils/query";
 
 type FilterState = {
@@ -277,6 +278,47 @@ export function CatalogFilters({
                 >
                   {p.label}
                 </Link>
+              );
+            })}
+          </div>
+        </FilterSection>
+
+        {/* Color filter */}
+        <FilterSection title="Màu sắc" defaultOpen={false}>
+          <div className="wp-filter-color-grid">
+            {[
+              { value: "", label: "Tất cả", hex: null },
+              { value: "den", label: "Đen", hex: "#1a1a1a" },
+              { value: "trang", label: "Trắng", hex: "#f5f5f5" },
+              { value: "do", label: "Đỏ", hex: "#e02020" },
+              { value: "xanh", label: "Xanh", hex: "#1d6fe8" },
+              { value: "xam", label: "Xám", hex: "#6b7280" },
+              { value: "cam", label: "Cam", hex: "#f97316" },
+              { value: "vang", label: "Vàng", hex: "#eab308" },
+            ].map((opt) => {
+              const isActive = (current.color ?? "") === opt.value;
+              return (
+                <BBTooltip key={opt.value || "all-color"} content={opt.label} placement="top">
+                  <label
+                    className={`wp-filter-color-swatch${isActive ? " active" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="filter_color"
+                      value={opt.value}
+                      defaultChecked={isActive}
+                      className="wp-filter-color-input"
+                    />
+                    <span
+                      className="wp-filter-color-dot"
+                      style={opt.hex ? { background: opt.hex } : undefined}
+                      aria-hidden="true"
+                    >
+                      {!opt.hex && <span style={{ fontSize: 8, color: "var(--bb-text-muted)" }}>ALL</span>}
+                    </span>
+                    <span className="wp-filter-color-name">{opt.label}</span>
+                  </label>
+                </BBTooltip>
               );
             })}
           </div>

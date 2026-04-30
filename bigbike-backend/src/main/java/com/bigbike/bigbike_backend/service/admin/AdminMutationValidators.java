@@ -121,7 +121,9 @@ final class AdminMutationValidators {
             return;
         }
         validatePublicUrl(seo.getCanonicalUrl(), fieldPrefix + ".canonicalUrl", errors);
-        validateImageAsset(seo.getOgImage(), fieldPrefix + ".ogImage", allowedMediaBaseUrl, errors);
+        if (seo.getOgImage() != null) {
+            validateWhitelistedMediaUrl(seo.getOgImage().getUrl(), fieldPrefix + ".ogImage.url", allowedMediaBaseUrl, errors);
+        }
     }
 
     static void validatePublicUrl(String url, String field, List<ApiErrorDetail> errors) {

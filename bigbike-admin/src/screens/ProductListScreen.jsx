@@ -1,101 +1,111 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { ApiClientError, fetchProducts, softDeleteProduct } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
+import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategories, fetchProductDetail, fetchProducts, softDeleteProduct } from '../lib/adminApi'
+
+const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
+import { ExportButton } from '../components/ExportButton'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
+import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const INITIAL_QUERY = {
   search: '',
   publishStatus: 'ALL',
   stockState: 'ALL',
+  brandId: '',
+  categoryId: '',
   sort: 'updatedAt:desc',
   page: 1,
-  pageSize: 8,
+  pageSize: 20,
 }
 
 export function ProductListScreen({ navigate, canUpdate }) {
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [state, setState] = useState({
-    status: 'loading',
-    items: [],
-    pagination: null,
-    warning: '',
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
   })
-  const [deleteState, setDeleteState] = useState({ id: null, error: '' })
+  const debouncedSearch = useDebounce(searchInput, 250)
+  const isFirstSearchRender = useRef(true)
+  const [deletingId, setDeletingId] = useState(null)
+
+  const state = useAdminList(['products', query], () => fetchProducts(query))
+
+  const { data: brandsData } = useQuery({ queryKey: ['brands-all'], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
+  const { data: categoriesData } = useQuery({ queryKey: ['categories-all'], queryFn: () => fetchCategories({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
+  const brands = brandsData?.items ?? []
+  const categories = categoriesData?.items ?? []
 
   useEffect(() => {
-    let active = true
-
-    fetchProducts(query)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'success',
-          items: response.items,
-          pagination: response.pagination,
-          warning: response.mode === 'mock' ? response.warning : '',
-        })
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'error',
-          items: [],
-          pagination: null,
-          warning: '',
-          error: error.message,
-        })
-      })
-
-    return () => {
-      active = false
-    }
+    syncQueryToUrl(query, INITIAL_QUERY)
   }, [query])
 
-  const refreshList = useCallback(() => {
-    setState((previous) => ({ ...previous, status: 'loading' }))
-    setQuery((previous) => ({ ...previous }))
-  }, [])
+  useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
+    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+  }, [debouncedSearch])
+
+  const handleDuplicate = useCallback(async (product) => {
+    try {
+      // Load full detail (list rows have only summary fields)
+      const result = await fetchProductDetail(product.id)
+      const item = result?.item
+      if (!item) return
+      try {
+        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
+      } catch { /* quota */ }
+      navigate('/admin/products/new')
+    } catch {
+      toast.error('Không thể tải dữ liệu sản phẩm để sao chép.')
+    }
+  }, [navigate])
 
   const handleDelete = useCallback(async (product) => {
-    const confirmed = window.confirm(
-      `Chuyển sản phẩm "${product.name}" vào thùng rác?\n` +
-      `Trạng thái xuất bản sẽ chuyển sang TRASH và sản phẩm sẽ ẩn khỏi website.`,
+    const confirmed = await showConfirm(
+      t('products.deleteConfirm', { name: product.name }),
+      t('products.deleteConfirmTitle'),
     )
     if (!confirmed) return
 
-    setDeleteState({ id: product.id, error: '' })
+    setDeletingId(product.id)
     try {
       await softDeleteProduct(product.id)
-      setDeleteState({ id: null, error: '' })
-      refreshList()
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success(t('products.deleteSuccess', { defaultValue: 'Đã xoá sản phẩm' }))
     } catch (error) {
       const message = error instanceof ApiClientError
         ? error.message
-        : (error?.message || 'Không thể xóa sản phẩm.')
-      setDeleteState({ id: null, error: message })
+        : (error?.message || t('products.deleteError'))
+      toast.error(message)
+    } finally {
+      setDeletingId(null)
     }
-  }, [refreshList])
+  }, [queryClient, t])
 
   const columns = useMemo(
     () => [
       {
         key: 'name',
-        label: 'Product',
+        label: t('products.colProduct'),
         render: (product) => (
           <div className="product-cell">
             <div className="thumbnail-wrap">
               {product.image?.url ? (
-                <img src={product.image.url} alt={product.image.alt || product.name} />
+                <img src={product.image.url} alt={product.image.alt || product.name} referrerPolicy="no-referrer" loading="lazy" />
               ) : (
                 <span>IMG</span>
               )}
@@ -109,7 +119,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
       },
       {
         key: 'price',
-        label: 'Price',
+        label: t('products.colPrice'),
         render: (product) => (
           <div className="price-cell">
             <strong>{formatCurrencyVnd(product.price?.retailPrice)}</strong>
@@ -121,25 +131,25 @@ export function ProductListScreen({ navigate, canUpdate }) {
       },
       {
         key: 'publishStatus',
-        label: 'Publish',
+        label: t('products.colPublish'),
         render: (product) => <PublishStatusBadge value={product.publishStatus} />,
       },
       {
         key: 'stockState',
-        label: 'Stock',
+        label: t('products.colStock'),
         render: (product) => <StockStatusBadge value={product.stockState} />,
       },
       {
         key: 'updatedAt',
-        label: 'Updated',
+        label: t('products.colUpdated'),
         render: (product) => formatDateTime(product.updatedAt),
       },
       {
         key: 'actions',
-        label: 'Actions',
+        label: t('common.actions'),
         align: 'right',
         render: (product) => {
-          const isDeleting = deleteState.id === product.id
+          const isDeleting = deletingId === product.id
           const isTrashed = product.publishStatus === 'TRASH'
           return (
             <div className="row-actions">
@@ -148,74 +158,91 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 className="btn btn-secondary"
                 onClick={() => navigate(`/admin/products/${product.id}`)}
               >
-                Edit
+                {t('common.edit')}
               </button>
+              {canUpdate && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => handleDuplicate(product)}
+                  title="Sao chép sản phẩm này sang sản phẩm mới"
+                >
+                  Sao chép
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-danger"
                 onClick={() => handleDelete(product)}
                 disabled={!canUpdate || isDeleting || isTrashed}
-                title={isTrashed ? 'Sản phẩm đã ở thùng rác.' : 'Chuyển vào thùng rác'}
+                title={isTrashed ? t('products.trashedTitle') : t('products.deleteConfirmTitle')}
               >
-                {isDeleting ? 'Đang xóa…' : 'Xóa'}
+                {isDeleting ? t('products.deletingLabel') : t('common.delete')}
               </button>
             </div>
           )
         },
       },
     ],
-    [navigate, handleDelete, deleteState.id, canUpdate],
+    [navigate, handleDelete, handleDuplicate, deletingId, canUpdate, t],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((previous) => ({ ...previous, status: 'loading' }))
-    setQuery((previous) => ({
-      ...previous,
-      ...partial,
-      page: options.resetPage ? 1 : previous.page,
-    }))
+    setQuery((previous) => {
+      const next = { ...previous, ...partial }
+      if (options.resetPage) next.page = 1
+      return next
+    })
+  }
+
+  function resetFilters() {
+    setSearchInput(INITIAL_QUERY.search)
+    setQuery(INITIAL_QUERY)
   }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Catalog</p>
-          <h1>Products</h1>
-          <p>Manage product catalog records with real create/update mutation APIs.</p>
+          <p className="eyebrow">{t('products.eyebrow')}</p>
+          <h1>{t('products.title')}</h1>
+          <p>{t('products.description')}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => navigate('/admin/products/new')}
-          disabled={!canUpdate}
-        >
-          {canUpdate ? 'Create product' : 'No update permission'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <ExportButton
+            label="Xuất CSV"
+            filename={`products_${new Date().toISOString().slice(0,10)}.csv`}
+            onExport={() => exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate('/admin/products/new')}
+            disabled={!canUpdate}
+            title={!canUpdate ? t('products.requirePermission') : undefined}
+          >
+            {canUpdate ? t('products.create') : t('common.noPermission')}
+          </button>
+        </div>
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      {deleteState.error ? (
-        <StatePanel tone="danger" title="Không thể xóa sản phẩm" description={deleteState.error} />
-      ) : null}
 
       <section className="filter-bar">
         <label>
-          Search
+          {t('common.search')}
           <input
             className="control-input"
             type="search"
-            value={query.search}
-            onChange={(event) =>
-              updateQuery({ search: event.target.value }, { resetPage: true })
-            }
-            placeholder="Search by product name, SKU, slug"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('products.searchPlaceholder')}
           />
         </label>
 
         <label>
-          Publish status
+          {t('products.filterPublish')}
           <select
             className="control-select"
             value={query.publishStatus}
@@ -223,16 +250,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
               updateQuery({ publishStatus: event.target.value }, { resetPage: true })
             }
           >
-            <option value="ALL">All</option>
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="HIDDEN">Hidden</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value="ALL">{t('common.all')}</option>
+            <option value="DRAFT">{t('status.publish.DRAFT')}</option>
+            <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
+            <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
+            <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
           </select>
         </label>
 
         <label>
-          Stock state
+          {t('products.filterStock')}
           <select
             className="control-select"
             value={query.stockState}
@@ -240,17 +267,45 @@ export function ProductListScreen({ navigate, canUpdate }) {
               updateQuery({ stockState: event.target.value }, { resetPage: true })
             }
           >
-            <option value="ALL">All</option>
-            <option value="IN_STOCK">In stock</option>
-            <option value="LOW_STOCK">Low stock</option>
-            <option value="OUT_OF_STOCK">Out of stock</option>
-            <option value="PREORDER">Preorder</option>
-            <option value="CONTACT_FOR_STOCK">Contact for stock</option>
+            <option value="ALL">{t('common.all')}</option>
+            <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
+            <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
+            <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
+            <option value="PREORDER">{t('status.stock.PREORDER')}</option>
+            <option value="CONTACT_FOR_STOCK">{t('status.stock.CONTACT_FOR_STOCK')}</option>
           </select>
         </label>
 
         <label>
-          Sort
+          {t('products.filterBrand')}
+          <select
+            className="control-select"
+            value={query.brandId}
+            onChange={(event) => updateQuery({ brandId: event.target.value }, { resetPage: true })}
+          >
+            <option value="">{t('common.all')}</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          {t('products.filterCategory')}
+          <select
+            className="control-select"
+            value={query.categoryId}
+            onChange={(event) => updateQuery({ categoryId: event.target.value }, { resetPage: true })}
+          >
+            <option value="">{t('common.all')}</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          {t('products.filterSort')}
           <select
             className="control-select"
             value={query.sort}
@@ -258,15 +313,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
               updateQuery({ sort: event.target.value }, { resetPage: true })
             }
           >
-            <option value="updatedAt:desc">Updated (newest)</option>
-            <option value="updatedAt:asc">Updated (oldest)</option>
-            <option value="name:asc">Name (A-Z)</option>
-            <option value="name:desc">Name (Z-A)</option>
+            <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
+            <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
+            <option value="name:asc">{t('sort.nameAZ')}</option>
+            <option value="name:desc">{t('sort.nameZA')}</option>
           </select>
         </label>
 
         <label>
-          Page size
+          {t('common.rowsPerPage')}
           <select
             className="control-select"
             value={query.pageSize}
@@ -277,55 +332,48 @@ export function ProductListScreen({ navigate, canUpdate }) {
               )
             }
           >
-            <option value={8}>8</option>
-            <option value={12}>12</option>
             <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
           </select>
         </label>
       </section>
 
-      {state.status === 'loading' ? (
-        <StatePanel
-          tone="info"
-          title="Loading products"
-          description="Fetching product list and table states."
-        />
-      ) : null}
-
       {state.status === 'error' ? (
         <StatePanel
           tone="danger"
-          title="Failed to load products"
+          title={t('products.loadError')}
           description={state.error || 'Unknown error while loading products.'}
-          actionLabel="Retry"
-          onAction={() => {
-            setState((previous) => ({ ...previous, status: 'loading' }))
-            setQuery((previous) => ({ ...previous }))
-          }}
+          actionLabel={t('common.retry')}
+          onAction={() => state.refetch()}
         />
       ) : null}
 
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title="No products found"
-          description="Try changing search/filter criteria or create the first product."
-          actionLabel="Reset filters"
-          onAction={() => setQuery(INITIAL_QUERY)}
+          title={t('products.empty')}
+          description={t('products.emptyDesc')}
+          actionLabel={t('common.resetFilters')}
+          onAction={resetFilters}
         />
       ) : null}
 
-      {state.status === 'success' && state.items.length > 0 ? (
+      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
           <AdminTable
-            caption="Product list"
+            caption={t('products.tableCaption')}
             columns={columns}
             rows={state.items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
           />
-          <PaginationControls
-            pagination={state.pagination}
-            onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-          />
+          {state.status === 'success' && (
+            <PaginationControls
+              pagination={state.pagination}
+              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+            />
+          )}
         </>
       ) : null}
     </section>

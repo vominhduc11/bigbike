@@ -1,5 +1,5 @@
 // Minimal STOMP-over-WebSocket client for admin push notifications.
-// Implements only the subset needed: CONNECT, SUBSCRIBE, receive MESSAGE.
+// Implements only the subset needed: CONNECT, SUBSCRIBE, UNSUBSCRIBE, receive MESSAGE.
 // No external dependencies — native WebSocket only.
 
 const RECONNECT_DELAY_MS = 4000
@@ -37,6 +37,8 @@ let ws = null
 let alive = false
 let getToken = null
 let subscriptions = {}   // destination → Set<handler>
+let subIdMap = {}        // destination → subId string (e.g. 'sub-0')
+let subCounter = 0
 let reconnectTimer = null
 
 function clearReconnect() {
@@ -73,11 +75,11 @@ function openConnection() {
     const frame = parseFrame(e.data)
 
     if (frame.command === 'CONNECTED') {
-      // Re-subscribe all active topics after (re-)connect
-      let subId = 0
+      // Re-subscribe all active topics after (re-)connect, preserving stable subIds
       for (const dest of Object.keys(subscriptions)) {
         if (subscriptions[dest] && subscriptions[dest].size > 0) {
-          ws.send(buildFrame('SUBSCRIBE', { destination: dest, id: `sub-${subId++}` }))
+          if (!subIdMap[dest]) subIdMap[dest] = `sub-${subCounter++}`
+          ws.send(buildFrame('SUBSCRIBE', { destination: dest, id: subIdMap[dest] }))
         }
       }
     }
@@ -119,7 +121,6 @@ export function disconnectAdminWs() {
   alive = false
   clearReconnect()
   getToken = null
-  subscriptions = {}
   if (ws) { ws.close(); ws = null }
 }
 
@@ -127,13 +128,23 @@ export function subscribeAdminWs(destination, handler) {
   if (!subscriptions[destination]) subscriptions[destination] = new Set()
   subscriptions[destination].add(handler)
 
-  // If already connected, send SUBSCRIBE immediately
+  // If already connected, send SUBSCRIBE immediately (only for first handler on this destination)
   if (ws && ws.readyState === WebSocket.OPEN) {
-    const subId = Object.keys(subscriptions).indexOf(destination)
-    ws.send(buildFrame('SUBSCRIBE', { destination, id: `sub-${subId}` }))
+    if (!subIdMap[destination]) {
+      subIdMap[destination] = `sub-${subCounter++}`
+      ws.send(buildFrame('SUBSCRIBE', { destination, id: subIdMap[destination] }))
+    }
   }
 
   return () => {
     subscriptions[destination]?.delete(handler)
+    // Send UNSUBSCRIBE when the last handler on this destination is removed
+    if (subscriptions[destination] && subscriptions[destination].size === 0) {
+      if (ws && ws.readyState === WebSocket.OPEN && subIdMap[destination]) {
+        ws.send(buildFrame('UNSUBSCRIBE', { id: subIdMap[destination] }))
+      }
+      delete subscriptions[destination]
+      delete subIdMap[destination]
+    }
   }
 }

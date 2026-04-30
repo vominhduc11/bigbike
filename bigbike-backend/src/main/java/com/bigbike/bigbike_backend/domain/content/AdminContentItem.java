@@ -13,6 +13,7 @@ public record AdminContentItem(
         String excerpt,
         String body,
         ImageAsset coverImage,
+        ImageAsset productImage,
         PublishStatus publishStatus,
         SeoMeta seo,
         Instant publishedAt,

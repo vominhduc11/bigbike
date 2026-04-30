@@ -1,14 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   createCategory,
+  fetchCategories,
   fetchCategoryDetail,
   mapValidationErrors,
+  softDeleteCategory,
   updateCategory,
 } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
+import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
-
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+import { ImageUrlInput } from '../components/ImageUrlInput'
+import { RichTextEditor } from '../components/RichTextEditor'
 
 function buildEmptyForm() {
   return {
@@ -18,6 +25,7 @@ function buildEmptyForm() {
     parentId: '',
     sortOrder: '',
     visible: true,
+    showOnHomepage: false,
     imageUrl: '',
     imageAlt: '',
     iconUrl: '',
@@ -31,9 +39,7 @@ function buildEmptyForm() {
 }
 
 function buildFormFromItem(item) {
-  if (!item) {
-    return buildEmptyForm()
-  }
+  if (!item) return buildEmptyForm()
   return {
     slug: item.slug || '',
     name: item.name || '',
@@ -41,6 +47,7 @@ function buildFormFromItem(item) {
     parentId: item.parentId || '',
     sortOrder: Number.isInteger(item.sortOrder) ? String(item.sortOrder) : '',
     visible: item.isVisible !== false,
+    showOnHomepage: Boolean(item.showOnHomepage),
     imageUrl: item.image?.url || '',
     imageAlt: item.image?.alt || '',
     iconUrl: item.icon?.url || '',
@@ -55,42 +62,12 @@ function buildFormFromItem(item) {
 
 function toIntegerOrUndefined(value) {
   const normalized = String(value || '').trim()
-  if (!normalized) {
-    return undefined
-  }
+  if (!normalized) return undefined
   const parsed = Number(normalized)
-  if (!Number.isInteger(parsed)) {
-    return Number.NaN
-  }
+  if (!Number.isInteger(parsed)) return Number.NaN
   return parsed
 }
 
-function validateForm(form) {
-  const errors = {}
-  if (!form.slug.trim()) {
-    errors.slug = 'Slug is required.'
-  } else if (!SLUG_REGEX.test(form.slug.trim())) {
-    errors.slug = 'Slug can only contain lowercase letters, numbers and hyphens.'
-  }
-
-  if (!form.name.trim()) {
-    errors.name = 'Category name is required.'
-  }
-
-  const sortOrder = toIntegerOrUndefined(form.sortOrder)
-  if (Number.isNaN(sortOrder)) {
-    errors.sortOrder = 'Sort order must be an integer.'
-  }
-
-  if (form.imageUrl.trim() && !/^https?:\/\//.test(form.imageUrl.trim())) {
-    errors.imageUrl = 'Image URL must start with http:// or https://.'
-  }
-  if (form.iconUrl.trim() && !/^https?:\/\//.test(form.iconUrl.trim())) {
-    errors.iconUrl = 'Icon URL must start with http:// or https://.'
-  }
-
-  return errors
-}
 
 function toPayload(form) {
   const payload = {
@@ -100,21 +77,15 @@ function toPayload(form) {
     parentId: form.parentId.trim() || undefined,
     sortOrder: toIntegerOrUndefined(form.sortOrder),
     visible: Boolean(form.visible),
+    showOnHomepage: Boolean(form.showOnHomepage),
   }
 
-  if (form.imageUrl.trim()) {
-    payload.image = {
-      url: form.imageUrl.trim(),
-      alt: form.imageAlt.trim() || undefined,
-    }
-  }
-
-  if (form.iconUrl.trim()) {
-    payload.icon = {
-      url: form.iconUrl.trim(),
-      alt: form.iconAlt.trim() || undefined,
-    }
-  }
+  payload.image = form.imageUrl.trim()
+    ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }
+    : { url: '' }
+  payload.icon = form.iconUrl.trim()
+    ? { url: form.iconUrl.trim(), alt: form.iconAlt.trim() || undefined }
+    : { url: '' }
 
   if (
     form.seoTitle.trim() ||
@@ -129,7 +100,6 @@ function toPayload(form) {
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
       noIndex: Boolean(form.seoNoIndex),
     }
-
     if (form.seoOgImageUrl.trim()) {
       payload.seo.ogImage = { url: form.seoOgImageUrl.trim() }
     }
@@ -138,143 +108,169 @@ function toPayload(form) {
   return payload
 }
 
-export function CategoryDetailScreen({
-  categoryId,
-  isCreate = false,
-  navigate,
-  canUpdate,
-}) {
-  const [state, setState] = useState({
-    status: isCreate ? 'success' : 'loading',
-    item: null,
-    warning: '',
-    error: '',
-  })
+export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
-  const [initialSnapshot, setInitialSnapshot] = useState(
-    JSON.stringify(buildEmptyForm()),
-  )
+  const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
   const [validationErrors, setValidationErrors] = useState({})
-  const [submitState, setSubmitState] = useState({
-    status: 'idle',
-    message: '',
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
+    queryKey: ['category', categoryId],
+    queryFn: () => fetchCategoryDetail(categoryId),
+    enabled: !isCreate,
   })
+
+  const { data: categoriesResult } = useQuery({
+    queryKey: ['categories', { page: 1, pageSize: 200, sort: 'sortOrder:asc' }],
+    queryFn: () => fetchCategories({ page: 1, pageSize: 200, sort: 'sortOrder:asc' }),
+  })
+
+  const currentItem = fetchResult?.item ?? null
+
+  const breadcrumbPath = useMemo(() => {
+    const items = categoriesResult?.items ?? []
+    if (!currentItem?.parentId) return null
+    const byId = new Map(items.map((c) => [c.id, c]))
+    const parts = []
+    let cur = byId.get(currentItem.parentId)
+    let safety = 10
+    while (cur && safety-- > 0) {
+      parts.unshift(cur.name)
+      cur = cur.parentId ? byId.get(cur.parentId) : null
+    }
+    return parts.join(' / ')
+  }, [categoriesResult, currentItem])
+
+  const parentOptions = useMemo(() => {
+    const items = categoriesResult?.items ?? []
+    const descendants = new Set()
+    if (categoryId) {
+      const findDescendants = (id) => {
+        items.forEach((c) => {
+          if (c.parentId === id && !descendants.has(c.id)) {
+            descendants.add(c.id)
+            findDescendants(c.id)
+          }
+        })
+      }
+      findDescendants(categoryId)
+    }
+    const eligible = items.filter((c) => c.id !== categoryId && !descendants.has(c.id))
+    const map = new Map(eligible.map((c) => [c.id, { ...c, children: [] }]))
+    const roots = []
+    eligible.forEach((c) => {
+      if (c.parentId && map.has(c.parentId)) {
+        map.get(c.parentId).children.push(map.get(c.id))
+      } else {
+        roots.push(map.get(c.id))
+      }
+    })
+    const flattened = []
+    const flatten = (nodes, depth) => {
+      nodes.forEach((node) => {
+        flattened.push({ id: node.id, label: (depth > 0 ? '— '.repeat(depth) : '') + node.name })
+        flatten(node.children, depth + 1)
+      })
+    }
+    flatten(roots, 0)
+    return flattened
+  }, [categoriesResult, categoryId])
 
   useEffect(() => {
-    if (isCreate) {
-      return
-    }
+    if (!fetchResult) return
+    const item = fetchResult.item || null
+    const nextForm = buildFormFromItem(item)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm(nextForm)
+    setInitialSnapshot(JSON.stringify(nextForm))
+  }, [fetchResult])
 
-    let active = true
+  const state = {
+    status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
+    item: currentItem,
+    warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
+    error: fetchError?.message ?? '',
+  }
 
-    fetchCategoryDetail(categoryId)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-        const item = response.item || null
-        const nextForm = buildFormFromItem(item)
-        setForm(nextForm)
-        setInitialSnapshot(JSON.stringify(nextForm))
-        setState({
-          status: 'success',
-          item,
-          warning: response.mode === 'mock' ? response.warning : '',
-          error: '',
-        })
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-        setState({
-          status: 'error',
-          item: null,
-          warning: '',
-          error: error.message || 'Unknown category detail error.',
-        })
-      })
-
-    return () => {
-      active = false
-    }
-  }, [categoryId, isCreate])
-
-  const isSubmitting = submitState.status === 'submitting'
-  const isDirty = useMemo(
-    () => JSON.stringify(form) !== initialSnapshot,
-    [form, initialSnapshot],
-  )
+  const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
+  const formRef = useRef(null)
+
+  useEffect(() => {
+    if (!isDirty) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  const saveMutation = useMutation({
+    mutationFn: (payload) => isCreate ? createCategory(payload) : updateCategory(categoryId, payload),
+    onSuccess: (response) => {
+      const savedItem = response.item || null
+      const nextForm = buildFormFromItem(savedItem)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      if (!isCreate) queryClient.setQueryData(['category', categoryId], response)
+      toast.success(isCreate ? t('categories.detail.successCreate') : t('categories.detail.successUpdate'))
+      setIsSubmitting(false)
+      if (isCreate && savedItem?.id) navigate(`/admin/categories/${savedItem.id}`, { replace: true })
+    },
+    onError: (error) => {
+      setValidationErrors(mapValidationErrors(error))
+      toast.error(error.message || t('common.error'))
+      setIsSubmitting(false)
+    },
+  })
+
+  const disableMutation = useMutation({
+    mutationFn: () => softDeleteCategory(categoryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success(t('categories.detail.disableSuccess'))
+      navigate('/admin/categories')
+    },
+    onError: (error) => {
+      toast.error(error.message || t('common.error'))
+      setIsSubmitting(false)
+    },
+  })
 
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
-    setSubmitState({ status: 'idle', message: '' })
     setValidationErrors((previous) => {
-      if (!previous[field]) {
-        return previous
-      }
+      if (!previous[field]) return previous
       const next = { ...previous }
       delete next[field]
       return next
     })
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
-    if (!canUpdate) {
-      return
-    }
+    if (!canUpdate) return
 
-    const clientErrors = validateForm(form)
+    const schema = createCategorySchema(t)
+    const result = schema.safeParse(form)
+    const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
-      setSubmitState({ status: 'idle', message: '' })
       return
     }
 
-    setSubmitState({ status: 'submitting', message: '' })
+    setIsSubmitting(true)
     setValidationErrors({})
-
-    try {
-      const payload = toPayload(form)
-      const response = isCreate
-        ? await createCategory(payload)
-        : await updateCategory(categoryId, payload)
-
-      const savedItem = response.item || null
-      const nextForm = buildFormFromItem(savedItem)
-      setForm(nextForm)
-      setInitialSnapshot(JSON.stringify(nextForm))
-      setState((previous) => ({
-        ...previous,
-        item: savedItem,
-      }))
-      setSubmitState({
-        status: 'success',
-        message: isCreate
-          ? 'Category created successfully.'
-          : 'Category updated successfully.',
-      })
-
-      if (isCreate && savedItem?.id) {
-        navigate(`/admin/categories/${savedItem.id}`, { replace: true })
-      }
-    } catch (error) {
-      setValidationErrors(mapValidationErrors(error))
-      setSubmitState({
-        status: 'error',
-        message: error.message || 'Failed to save category.',
-      })
-    }
+    saveMutation.mutate(toPayload(form))
   }
 
   if (state.status === 'loading') {
     return (
       <StatePanel
         tone="info"
-        title="Loading category form"
-        description="Fetching category detail for edit mode."
+        title={t('categories.detail.loading')}
+        description={t('categories.detail.loadingDesc')}
       />
     )
   }
@@ -283,9 +279,9 @@ export function CategoryDetailScreen({
     return (
       <StatePanel
         tone="danger"
-        title="Failed to load category"
+        title={t('categories.detail.loadError')}
         description={state.error}
-        actionLabel="Back to categories"
+        actionLabel={t('categories.detail.backToList')}
         onAction={() => navigate('/admin/categories')}
       />
     )
@@ -295,9 +291,9 @@ export function CategoryDetailScreen({
     return (
       <StatePanel
         tone="neutral"
-        title="Category not found"
-        description="The selected category does not exist."
-        actionLabel="Back to categories"
+        title={t('categories.detail.notFound')}
+        description={t('categories.detail.notFoundDesc')}
+        actionLabel={t('categories.detail.backToList')}
         onAction={() => navigate('/admin/categories')}
       />
     )
@@ -307,13 +303,16 @@ export function CategoryDetailScreen({
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Catalog</p>
-          <h1>{isCreate ? 'Create category' : 'Edit category'}</h1>
-          <p>
-            {isCreate
-              ? 'Create a new category record.'
-              : 'Update category details and visibility.'}
-          </p>
+          <p className="eyebrow">{t('categories.detail.eyebrow')}</p>
+          <h1>{isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}</h1>
+          {breadcrumbPath && (
+            <p className="cat-detail-breadcrumb">
+              <span>{breadcrumbPath}</span>
+              <span className="cat-detail-breadcrumb-sep"> / </span>
+              <strong>{state.item?.name}</strong>
+            </p>
+          )}
+          <p>{isCreate ? t('categories.detail.createDesc') : t('categories.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
           <button
@@ -321,35 +320,66 @@ export function CategoryDetailScreen({
             className="btn btn-secondary"
             onClick={() => navigate('/admin/categories')}
           >
-            Back to list
+            {t('categories.detail.backToList')}
           </button>
+          {!isCreate && canUpdate && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={isSubmitting}
+              onClick={async () => {
+                const confirmed = await showConfirm(
+                  t('categories.detail.disableConfirm'),
+                  t('categories.detail.disableConfirmTitle'),
+                )
+                if (!confirmed) return
+                setIsSubmitting(true)
+                disableMutation.mutate()
+              }}
+            >
+              {isSubmitting ? t('categories.detail.disablingBtn') : t('categories.detail.disableBtn')}
+            </button>
+          )}
         </div>
       </header>
 
       {state.warning ? (
-        <StatePanel
-          tone="warning"
-          title="Read data is currently mock"
-          description={state.warning}
-        />
+        <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
       ) : null}
 
       {!canUpdate ? (
         <StatePanel
           tone="warning"
-          title="Permission denied"
-          description="You can view this category, but catalog.update is required to save changes."
+          title={t('categories.detail.permissionDenied')}
+          description={t('categories.detail.permissionDesc')}
         />
       ) : null}
 
-      <form className="entity-form" onSubmit={handleSubmit}>
+      <StatePanel
+        tone="info"
+        title={t('categories.detail.menuNoticeTitle')}
+        description={t('categories.detail.menuNoticeDesc')}
+        actionLabel={t('categories.detail.menuNoticeAction')}
+        onAction={() => navigate('/admin/menus')}
+      />
+
+      <form
+        ref={formRef}
+        className="entity-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
+            handleSubmit(e)
+          }
+        }}
+      >
         <section className="detail-section">
           <header className="detail-section-header">
-            <h2>Basic information</h2>
+            <h2>{t('categories.detail.sectionBasic')}</h2>
           </header>
           <div className="detail-section-content form-grid">
             <label className="form-field">
-              <span>Slug *</span>
+              <span>{t('categories.detail.slug')}</span>
               <input
                 className="control-input"
                 value={form.slug}
@@ -362,7 +392,7 @@ export function CategoryDetailScreen({
             </label>
 
             <label className="form-field">
-              <span>Name *</span>
+              <span>{t('categories.detail.name')}</span>
               <input
                 className="control-input"
                 value={form.name}
@@ -375,24 +405,32 @@ export function CategoryDetailScreen({
             </label>
 
             <label className="form-field">
-              <span>Parent ID</span>
-              <input
-                className="control-input"
+              <span>{t('categories.detail.parentId')}</span>
+              <select
+                className="control-select"
                 value={form.parentId}
                 onChange={(event) => updateField('parentId', event.target.value)}
                 disabled={isReadOnly}
-              />
+              >
+                <option value="">{t('categories.detail.parentIdNone')}</option>
+                {parentOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
               {validationErrors.parentId ? (
                 <small className="field-error">{validationErrors.parentId}</small>
               ) : null}
             </label>
 
             <label className="form-field">
-              <span>Sort order</span>
+              <span>{t('categories.detail.sortOrder')}</span>
               <input
                 className="control-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={form.sortOrder}
-                onChange={(event) => updateField('sortOrder', event.target.value)}
+                onChange={(event) => updateField('sortOrder', event.target.value.replace(/\D/g, ''))}
                 disabled={isReadOnly}
               />
               {validationErrors.sortOrder ? (
@@ -407,43 +445,49 @@ export function CategoryDetailScreen({
                 onChange={(event) => updateField('visible', event.target.checked)}
                 disabled={isReadOnly}
               />
-              <span>Visible</span>
+              <span>{t('categories.detail.isVisible')}</span>
             </label>
 
-            <label className="form-field form-field-wide">
-              <span>Description</span>
-              <textarea
-                className="control-input control-textarea"
-                value={form.description}
-                onChange={(event) =>
-                  updateField('description', event.target.value)
-                }
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showOnHomepage}
+                onChange={(event) => updateField('showOnHomepage', event.target.checked)}
                 disabled={isReadOnly}
               />
+              <span>{t('categories.detail.showOnHomepage')}</span>
             </label>
+
+            <div className="form-field form-field-wide">
+              <span>{t('categories.detail.description')}</span>
+              <RichTextEditor
+                value={form.description}
+                onChange={(html) => updateField('description', html)}
+                placeholder="Nhập mô tả danh mục..."
+                disabled={isReadOnly}
+                enableImagePicker
+              />
+            </div>
           </div>
         </section>
 
         <section className="detail-section">
           <header className="detail-section-header">
-            <h2>Media and SEO</h2>
+            <h2>{t('categories.detail.sectionMedia')}</h2>
           </header>
           <div className="detail-section-content form-grid">
-            <label className="form-field form-field-wide">
-              <span>Image URL</span>
-              <input
-                className="control-input"
+            <div className="form-field form-field-wide">
+              <span>{t('categories.detail.imageUrl')}</span>
+              <ImageUrlInput
                 value={form.imageUrl}
-                onChange={(event) => updateField('imageUrl', event.target.value)}
+                onChange={(url) => updateField('imageUrl', url)}
                 disabled={isReadOnly}
+                error={validationErrors.imageUrl}
               />
-              {validationErrors.imageUrl ? (
-                <small className="field-error">{validationErrors.imageUrl}</small>
-              ) : null}
-            </label>
+            </div>
 
             <label className="form-field">
-              <span>Image alt</span>
+              <span>{t('categories.detail.imageAlt')}</span>
               <input
                 className="control-input"
                 value={form.imageAlt}
@@ -452,21 +496,18 @@ export function CategoryDetailScreen({
               />
             </label>
 
-            <label className="form-field form-field-wide">
-              <span>Icon URL</span>
-              <input
-                className="control-input"
+            <div className="form-field form-field-wide">
+              <span>{t('categories.detail.iconUrl')}</span>
+              <ImageUrlInput
                 value={form.iconUrl}
-                onChange={(event) => updateField('iconUrl', event.target.value)}
+                onChange={(url) => updateField('iconUrl', url)}
                 disabled={isReadOnly}
+                error={validationErrors.iconUrl}
               />
-              {validationErrors.iconUrl ? (
-                <small className="field-error">{validationErrors.iconUrl}</small>
-              ) : null}
-            </label>
+            </div>
 
             <label className="form-field">
-              <span>Icon alt</span>
+              <span>{t('categories.detail.iconAlt')}</span>
               <input
                 className="control-input"
                 value={form.iconAlt}
@@ -475,8 +516,16 @@ export function CategoryDetailScreen({
               />
             </label>
 
+          </div>
+        </section>
+
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>{t('categories.detail.sectionSeo')}</h2>
+          </header>
+          <div className="detail-section-content form-grid">
             <label className="form-field form-field-wide">
-              <span>SEO title</span>
+              <span>{t('categories.detail.seoTitle')}</span>
               <input
                 className="control-input"
                 value={form.seoTitle}
@@ -486,39 +535,39 @@ export function CategoryDetailScreen({
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO description</span>
+              <span>{t('categories.detail.seoDescription')}</span>
               <textarea
                 className="control-input control-textarea"
                 value={form.seoDescription}
-                onChange={(event) =>
-                  updateField('seoDescription', event.target.value)
-                }
+                onChange={(event) => updateField('seoDescription', event.target.value)}
                 disabled={isReadOnly}
               />
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO canonical URL</span>
+              <span>{t('categories.detail.seoCanonicalUrl')}</span>
               <input
                 className="control-input"
                 value={form.seoCanonicalUrl}
-                onChange={(event) =>
-                  updateField('seoCanonicalUrl', event.target.value)
-                }
+                onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
                 disabled={isReadOnly}
               />
+              {validationErrors.seoCanonicalUrl ? (
+                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
+              ) : null}
             </label>
 
             <label className="form-field form-field-wide">
-              <span>SEO OG image URL</span>
+              <span>{t('categories.detail.seoOgImageUrl')}</span>
               <input
                 className="control-input"
                 value={form.seoOgImageUrl}
-                onChange={(event) =>
-                  updateField('seoOgImageUrl', event.target.value)
-                }
+                onChange={(event) => updateField('seoOgImageUrl', event.target.value)}
                 disabled={isReadOnly}
               />
+              {validationErrors.seoOgImageUrl ? (
+                <small className="field-error">{validationErrors.seoOgImageUrl}</small>
+              ) : null}
             </label>
 
             <label className="form-checkbox">
@@ -528,7 +577,7 @@ export function CategoryDetailScreen({
                 onChange={(event) => updateField('seoNoIndex', event.target.checked)}
                 disabled={isReadOnly}
               />
-              <span>SEO noIndex</span>
+              <span>{t('categories.detail.seoNoIndex')}</span>
             </label>
           </div>
         </section>
@@ -536,10 +585,10 @@ export function CategoryDetailScreen({
         <div className="form-footer">
           <div className="form-status">
             <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
-              {isDirty ? 'Dirty changes' : 'No unsaved changes'}
+              {isDirty ? t('common.dirty') : t('common.clean')}
             </span>
             {!isCreate && state.item?.updatedAt ? (
-              <small>Last updated: {formatDateTime(state.item.updatedAt)}</small>
+              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
             ) : null}
           </div>
           <div className="screen-actions">
@@ -549,24 +598,14 @@ export function CategoryDetailScreen({
               disabled={isReadOnly || !isDirty}
             >
               {isSubmitting
-                ? 'Saving...'
+                ? t('common.saving')
                 : isCreate
-                  ? 'Create category'
-                  : 'Save changes'}
+                  ? t('categories.detail.createBtn')
+                  : t('categories.detail.saveBtn')}
             </button>
           </div>
         </div>
 
-        {submitState.status === 'success' ? (
-          <p className="inline-feedback inline-feedback-success">
-            {submitState.message}
-          </p>
-        ) : null}
-        {submitState.status === 'error' ? (
-          <p className="inline-feedback inline-feedback-danger">
-            {submitState.message}
-          </p>
-        ) : null}
       </form>
     </section>
   )

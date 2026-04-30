@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Validated
 @RestController
-@RequestMapping("/api/v1/search")
+@RequestMapping("/api/v1")
 public class PublicSearchController {
 
     private static final int DEFAULT_LIMIT = 20;
@@ -45,7 +45,7 @@ public class PublicSearchController {
             List<Article> articles
     ) {}
 
-    @GetMapping
+    @GetMapping("/search")
     public ApiDataResponse<SearchPayload> search(
             @RequestParam("q") @Size(min = 1, max = 200) String q,
             @RequestParam(value = "type", required = false) String type,
@@ -58,6 +58,31 @@ public class PublicSearchController {
         SearchResults results = searchService.search(q, types, resolvedLimit);
         return apiResponseFactory.data(
                 new SearchPayload(q, results.products(), results.articles()),
+                request
+        );
+    }
+
+    /**
+     * Lightweight typeahead endpoint used by mobile (and the web BFF). Returns up to {@code limit}
+     * product matches; an empty result for short queries (&lt; 2 chars) keeps the endpoint cheap.
+     */
+    @GetMapping("/search-suggest")
+    public ApiDataResponse<SearchPayload> searchSuggest(
+            @RequestParam(value = "q", required = false) @Size(max = 200) String q,
+            @RequestParam(value = "limit", required = false) @Min(1) @Max(MAX_LIMIT) Integer limit,
+            HttpServletRequest request
+    ) {
+        String trimmed = q == null ? "" : q.strip();
+        if (trimmed.length() < 2) {
+            return apiResponseFactory.data(
+                    new SearchPayload(trimmed, List.of(), List.of()),
+                    request
+            );
+        }
+        int resolvedLimit = limit == null ? 6 : limit;
+        SearchResults results = searchService.search(trimmed, Set.of("product"), resolvedLimit);
+        return apiResponseFactory.data(
+                new SearchPayload(trimmed, results.products(), List.of()),
                 request
         );
     }

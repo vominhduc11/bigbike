@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchBrands } from '../lib/adminApi'
-import { formatDateTime, formatText } from '../lib/formatters'
+import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
+import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
 const INITIAL_QUERY = {
   search: '',
@@ -15,83 +19,69 @@ const INITIAL_QUERY = {
 }
 
 export function BrandListScreen({ navigate, canUpdate }) {
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [state, setState] = useState({
-    status: 'loading',
-    items: [],
-    pagination: null,
-    warning: '',
+  const { t } = useTranslation()
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
   })
+  const debouncedSearch = useDebounce(searchInput, 250)
+  const isFirstSearchRender = useRef(true)
+
+  const state = useAdminList(['brands', query], () => fetchBrands(query))
 
   useEffect(() => {
-    let active = true
-
-    fetchBrands(query)
-      .then((response) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'success',
-          items: response.items,
-          pagination: response.pagination,
-          warning: response.mode === 'mock' ? response.warning : '',
-        })
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setState({
-          status: 'error',
-          items: [],
-          pagination: null,
-          warning: '',
-          error: error.message,
-        })
-      })
-
-    return () => {
-      active = false
-    }
+    syncQueryToUrl(query, INITIAL_QUERY)
   }, [query])
+
+  useEffect(() => {
+    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+  }, [debouncedSearch])
 
   const columns = useMemo(
     () => [
       {
         key: 'name',
-        label: 'Brand',
+        label: t('brands.colBrand'),
         render: (brand) => (
-          <div>
-            <strong>{formatText(brand.name)}</strong>
-            <p>{brand.slug}</p>
+          <div className="product-cell">
+            <div className="thumbnail-wrap">
+              {brand.logo?.url ? (
+                <img src={brand.logo.url} alt={brand.logo.alt || brand.name} referrerPolicy="no-referrer" loading="lazy" />
+              ) : (
+                <span>IMG</span>
+              )}
+            </div>
+            <div>
+              <strong>{formatText(brand.name)}</strong>
+              <p>{brand.slug}</p>
+            </div>
           </div>
         ),
       },
       {
         key: 'description',
-        label: 'Description',
-        render: (brand) => formatText(brand.description),
+        label: t('brands.colDescription'),
+        render: (brand) => stripHtml(brand.description),
       },
       {
         key: 'isVisible',
-        label: 'Visibility',
+        label: t('brands.colVisibility'),
         render: (brand) => (
           <span className={brand.isVisible ? 'status-badge status-success' : 'status-badge status-neutral'}>
-            {brand.isVisible ? 'Visible' : 'Hidden'}
+            {brand.isVisible ? t('common.visible') : t('common.hidden')}
           </span>
         ),
       },
       {
         key: 'updatedAt',
-        label: 'Updated',
+        label: t('brands.colUpdated'),
         render: (brand) => formatDateTime(brand.updatedAt),
       },
       {
         key: 'actions',
-        label: 'Actions',
+        label: t('brands.colActions'),
         align: 'right',
         render: (brand) => (
           <button
@@ -99,30 +89,34 @@ export function BrandListScreen({ navigate, canUpdate }) {
             className="btn btn-secondary"
             onClick={() => navigate(`/admin/brands/${brand.id}`)}
           >
-            Edit
+            {t('common.edit')}
           </button>
         ),
       },
     ],
-    [navigate],
+    [navigate, t],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((previous) => ({ ...previous, status: 'loading' }))
-    setQuery((previous) => ({
-      ...previous,
-      ...partial,
-      page: options.resetPage ? 1 : previous.page,
-    }))
+    setQuery((previous) => {
+      const next = { ...previous, ...partial }
+      if (options.resetPage) next.page = 1
+      return next
+    })
+  }
+
+  function resetFilters() {
+    setSearchInput(INITIAL_QUERY.search)
+    setQuery(INITIAL_QUERY)
   }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Catalog</p>
-          <h1>Brands</h1>
-          <p>Brand management list with live mutation endpoints.</p>
+          <p className="eyebrow">{t('brands.eyebrow')}</p>
+          <h1>{t('brands.title')}</h1>
+          <p>{t('brands.description')}</p>
         </div>
         <button
           type="button"
@@ -130,7 +124,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           onClick={() => navigate('/admin/brands/new')}
           disabled={!canUpdate}
         >
-          {canUpdate ? 'Create brand' : 'No update permission'}
+          {canUpdate ? t('brands.create') : t('common.noPermission')}
         </button>
       </header>
 
@@ -138,19 +132,17 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
       <section className="filter-bar">
         <label>
-          Search
+          {t('common.search')}
           <input
             className="control-input"
             type="search"
-            value={query.search}
-            onChange={(event) =>
-              updateQuery({ search: event.target.value }, { resetPage: true })
-            }
-            placeholder="Search by brand name or slug"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('brands.searchPlaceholder')}
           />
         </label>
         <label>
-          Visibility
+          {t('brands.filterVisibility')}
           <select
             className="control-select"
             value={query.visibility}
@@ -158,13 +150,13 @@ export function BrandListScreen({ navigate, canUpdate }) {
               updateQuery({ visibility: event.target.value }, { resetPage: true })
             }
           >
-            <option value="ALL">All</option>
-            <option value="VISIBLE">Visible</option>
-            <option value="HIDDEN">Hidden</option>
+            <option value="ALL">{t('common.all')}</option>
+            <option value="VISIBLE">{t('common.visible')}</option>
+            <option value="HIDDEN">{t('common.hidden')}</option>
           </select>
         </label>
         <label>
-          Sort
+          {t('brands.filterSort')}
           <select
             className="control-select"
             value={query.sort}
@@ -172,51 +164,48 @@ export function BrandListScreen({ navigate, canUpdate }) {
               updateQuery({ sort: event.target.value }, { resetPage: true })
             }
           >
-            <option value="updatedAt:desc">Updated (newest)</option>
-            <option value="updatedAt:asc">Updated (oldest)</option>
-            <option value="name:asc">Name (A-Z)</option>
+            <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
+            <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
+            <option value="name:asc">{t('sort.nameAZ')}</option>
           </select>
         </label>
       </section>
 
-      {state.status === 'loading' ? (
-        <StatePanel
-          tone="info"
-          title="Loading brands"
-          description="Fetching brand list from admin API."
-        />
-      ) : null}
-
       {state.status === 'error' ? (
         <StatePanel
           tone="danger"
-          title="Failed to load brands"
+          title={t('brands.loadError')}
           description={state.error || 'Unknown brand list error.'}
-          actionLabel="Retry"
-          onAction={() => {
-            setState((previous) => ({ ...previous, status: 'loading' }))
-            setQuery((previous) => ({ ...previous }))
-          }}
+          actionLabel={t('common.retry')}
+          onAction={() => state.refetch()}
         />
       ) : null}
 
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title="No brands found"
-          description="Reset filters or create a new brand."
-          actionLabel="Reset filters"
-          onAction={() => setQuery(INITIAL_QUERY)}
+          title={t('brands.empty')}
+          description={t('brands.emptyDesc')}
+          actionLabel={t('common.resetFilters')}
+          onAction={resetFilters}
         />
       ) : null}
 
-      {state.status === 'success' && state.items.length > 0 ? (
+      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
-          <AdminTable caption="Brand list" columns={columns} rows={state.items} />
-          <PaginationControls
-            pagination={state.pagination}
-            onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+          <AdminTable
+            caption={t('brands.tableCaption')}
+            columns={columns}
+            rows={state.items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
           />
+          {state.status === 'success' && (
+            <PaginationControls
+              pagination={state.pagination}
+              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+            />
+          )}
         </>
       ) : null}
     </section>

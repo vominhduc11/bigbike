@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { loginCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
+import { loginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
 
 function LoginForm() {
@@ -12,24 +15,23 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("tiep") ?? toAccountPath();
 
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
+  async function onSubmit(values: LoginFormValues) {
     try {
-      await loginCustomer(login, password);
+      await loginCustomer(values.login, values.password);
       await refreshAuth();
       router.push(returnTo);
       router.refresh();
     } catch (err: unknown) {
-      setError((err as Error).message);
-    } finally {
-      setSubmitting(false);
+      setError("root", { message: (err as Error).message });
     }
   }
 
@@ -41,44 +43,62 @@ function LoginForm() {
           <h1 className="bb-auth-title">Đăng nhập</h1>
         </header>
 
-        {error ? (
-          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>{error}</p>
-        ) : null}
+        {errors.root && (
+          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+            {errors.root.message}
+          </p>
+        )}
 
-        <form onSubmit={handleSubmit} className="bb-form-stack">
-          <label className="bb-form-label">
-            Email hoặc số điện thoại
-            <input
-              className="bb-input"
-              required
-              autoComplete="username"
-              placeholder="email@example.com"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-            />
-          </label>
-          <label className="bb-form-label">
-            Mật khẩu
-            <input
-              className="bb-input"
-              required
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <button type="submit" className="bb-button bb-button-primary bb-btn-full" disabled={submitting}>
-            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+        <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
+          <div>
+            <label className="bb-form-label">
+              Email hoặc số điện thoại
+              <input
+                className="bb-input"
+                autoComplete="username"
+                placeholder="email@example.com"
+                {...register("login")}
+              />
+            </label>
+            {errors.login && (
+              <p className="wp-field-error">{errors.login.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="bb-form-label">
+              Mật khẩu
+              <input
+                className="bb-input"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                {...register("password")}
+              />
+            </label>
+            {errors.password && (
+              <p className="wp-field-error">{errors.password.message}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="bb-button bb-button-primary bb-btn-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
 
         <p className="bb-auth-footer">
-          <Link href={toForgotPasswordPath()} className="bb-link bb-auth-footer-link">Quên mật khẩu?</Link>
+          <Link href={toForgotPasswordPath()} className="bb-link bb-auth-footer-link">
+            Quên mật khẩu?
+          </Link>
           <br />
           Chưa có tài khoản?{" "}
-          <Link href={toRegisterPath()} className="bb-link">Đăng ký ngay</Link>
+          <Link href={toRegisterPath()} className="bb-link">
+            Đăng ký ngay
+          </Link>
         </p>
       </div>
     </div>

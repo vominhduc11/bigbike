@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 type SeoRedirectRow = {
   sourcePattern: string;
@@ -11,6 +12,15 @@ type SeoRedirectRow = {
 };
 
 const REDIRECT_CSV_PATH = path.resolve(process.cwd(), "docs/legacy/SEO_REDIRECT_MAP.csv");
+
+function normalizeBaseUrl(value: string | undefined, fallback: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  return trimmed.replace(/\/$/, "");
+}
 
 function parseCsvRows(): SeoRedirectRow[] {
   if (!fs.existsSync(REDIRECT_CSV_PATH)) {
@@ -103,17 +113,30 @@ const csvNoIndexHeaders = buildNoIndexHeaders(redirectRows);
 // BIGBIKE_LEGACY_UPLOADS_BASE — used for CSP img-src at build time (browser-visible origin).
 // In Docker Compose this is baked as http://localhost:9000/bigbike-media/wp-uploads so
 // the browser's CSP allows loading images from the host-mapped MinIO port.
-const LEGACY_UPLOADS_BASE =
-  process.env.BIGBIKE_LEGACY_UPLOADS_BASE?.replace(/\/$/, "") ??
-  "https://cdn.bigbike.vn/uploads";
+const LEGACY_UPLOADS_BASE = normalizeBaseUrl(
+  process.env.BIGBIKE_LEGACY_UPLOADS_BASE,
+  "https://cdn.bigbike.vn/uploads",
+);
 
 // BIGBIKE_MEDIA_INTERNAL_URL — used for the Next.js server-side rewrite destination.
 // When Next.js runs inside Docker it must reach MinIO via the internal Docker network
 // (minio:9000), NOT localhost:9000 which is unreachable from inside the container.
 // Falls back to BIGBIKE_LEGACY_UPLOADS_BASE so local `next dev` still works unchanged.
-const MEDIA_INTERNAL_BASE =
-  process.env.BIGBIKE_MEDIA_INTERNAL_URL?.replace(/\/$/, "") ??
-  LEGACY_UPLOADS_BASE;
+const MEDIA_INTERNAL_BASE = normalizeBaseUrl(
+  process.env.BIGBIKE_MEDIA_INTERNAL_URL,
+  LEGACY_UPLOADS_BASE,
+);
+
+// BIGBIKE_MEDIA_BUCKET_URL — bucket root URL (no /wp-uploads suffix) used for the
+// /media/* rewrite that serves both new uploads (uploads/…) and migration files
+// (wp-uploads/…) from the same MinIO bucket.
+// Derived automatically by stripping /wp-uploads from MEDIA_INTERNAL_BASE when unset.
+const MEDIA_BUCKET_INTERNAL_BASE = normalizeBaseUrl(
+  process.env.BIGBIKE_MEDIA_BUCKET_URL,
+  MEDIA_INTERNAL_BASE.endsWith("/wp-uploads")
+    ? MEDIA_INTERNAL_BASE.slice(0, -"/wp-uploads".length)
+    : "http://localhost:9000/bigbike-media",
+);
 
 // Extract API origin so CSP allows backend calls in any environment
 // (http://localhost:8080 in dev, https://api.bigbike.vn in prod)
@@ -132,6 +155,19 @@ const MEDIA_ORIGIN = (() => {
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
+  // Client router cache: keep static segments 3 min, dynamic 30 s.
+  // Avoids full server roundtrip when navigating back to a recently visited page.
+  experimental: {
+    staleTimes: {
+      static: 180,
+      dynamic: 30,
+    },
+  },
+  logging: {
+    fetches: {
+      fullUrl: process.env.NODE_ENV === "development",
+    },
+  },
   images: {
     remotePatterns: [
       // Production CDN — images proxied via /wp-content/uploads/ rewrite,
@@ -147,6 +183,12 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
         port: "9000",
         pathname: "/**",
+      },
+      // YouTube auto-thumbnails used by HomeVideoCarousel when no custom thumbnail is set
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        pathname: "/vi/**",
       },
     ],
   },
@@ -165,6 +207,47 @@ const nextConfig: NextConfig = {
         destination: "/danh-muc-san-pham.html",
         permanent: true,
       },
+      // Category slugs renamed in migration — must precede the generic /{slug}.html→/{slug}/ CSV rule.
+      {
+        source: "/mu-bao-hiem.html",
+        destination: "/danh-muc-san-pham/non-bao-hiem-moto/",
+        permanent: true,
+      },
+      {
+        source: "/mu-bao-hiem",
+        destination: "/danh-muc-san-pham/non-bao-hiem-moto/",
+        permanent: true,
+      },
+      {
+        source: "/ao-quan-bao-ho.html",
+        destination: "/danh-muc-san-pham/quan-ao-bao-ho-moto/",
+        permanent: true,
+      },
+      {
+        source: "/ao-quan-bao-ho",
+        destination: "/danh-muc-san-pham/quan-ao-bao-ho-moto/",
+        permanent: true,
+      },
+      {
+        source: "/phu-kien-khac.html",
+        destination: "/danh-muc-san-pham/",
+        permanent: true,
+      },
+      {
+        source: "/phu-kien-khac",
+        destination: "/danh-muc-san-pham/",
+        permanent: true,
+      },
+      {
+        source: "/san-pham-khuyen-mai.html",
+        destination: "/danh-muc-san-pham/",
+        permanent: true,
+      },
+      {
+        source: "/san-pham-khuyen-mai",
+        destination: "/danh-muc-san-pham/",
+        permanent: true,
+      },
       ...csvRedirectRules,
       // Legacy WP sitemap index → consolidated Next.js sitemap.
       {
@@ -179,6 +262,8 @@ const nextConfig: NextConfig = {
       // beforeFiles ensures legacy upload URLs are served from the CDN/MinIO
       // before Next's filesystem routing tries to match a page.
       beforeFiles: [
+        // New relative media URLs (/media/wp-uploads/… and /media/uploads/…)
+        { source: "/media/:path*", destination: `${MEDIA_BUCKET_INTERNAL_BASE}/:path*` },
         {
           source: "/wp-content/uploads/:path*",
           destination: `${MEDIA_INTERNAL_BASE}/:path*`,
@@ -285,7 +370,7 @@ const nextConfig: NextConfig = {
           `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
           "font-src 'self' data:",
           `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
-          "frame-src https://www.google.com https://maps.google.com",
+          "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com",
           "frame-ancestors 'none'",
           "base-uri 'self'",
           "form-action 'self'",
@@ -305,4 +390,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Upload source maps trong CI/production, tắt khi dev để giữ build nhanh
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+
+  // Tắt toàn bộ Sentry build plugin nếu không có DSN (môi trường dev)
+  ...(!(process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN) && {
+    dryRun: true,
+  }),
+});

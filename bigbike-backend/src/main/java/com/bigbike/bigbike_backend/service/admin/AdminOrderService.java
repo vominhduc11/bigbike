@@ -4,6 +4,8 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAppliedCouponResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -14,37 +16,49 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
+import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +73,7 @@ public class AdminOrderService {
     );
 
     private static final Set<String> ALLOWED_PAYMENT_STATUSES = Set.of(
-            "UNPAID", "PENDING", "PAID", "PARTIALLY_PAID", "FAILED", "REFUNDED", "CANCELLED"
+            "UNPAID", "PENDING", "PAID", "PARTIALLY_PAID", "FAILED", "REFUNDED", "CANCELLED", "PARTIALLY_REFUNDED"
     );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
@@ -74,14 +88,31 @@ public class AdminOrderService {
         ALLOWED_TRANSITIONS.put("REFUNDED",   Set.of());
     }
 
+    private static final Map<String, Set<String>> ALLOWED_PAYMENT_TRANSITIONS;
+    static {
+        ALLOWED_PAYMENT_TRANSITIONS = new HashMap<>();
+        ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",             Set.of("PENDING", "PAID", "PARTIALLY_PAID", "CANCELLED", "FAILED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("PENDING",            Set.of("PAID", "PARTIALLY_PAID", "CANCELLED", "FAILED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",               Set.of("PARTIALLY_REFUNDED", "REFUNDED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("PARTIALLY_PAID",     Set.of("PAID", "PARTIALLY_REFUNDED", "REFUNDED", "CANCELLED", "FAILED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("PARTIALLY_REFUNDED", Set.of("REFUNDED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",           Set.of());
+        ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED",          Set.of());
+        ALLOWED_PAYMENT_TRANSITIONS.put("FAILED",             Set.of("PAID", "PARTIALLY_PAID", "CANCELLED"));
+    }
+
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
+    private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final AuditLogJpaRepository auditLogRepo;
-    private final PaginationService paginationService;
+    private final ProductJpaRepository productRepo;
+    private final ProductVariantJpaRepository variantRepo;
+    private final StockMovementJpaRepository stockMovementRepo;
+    private final InventoryPolicyService inventoryPolicyService;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
 
@@ -92,8 +123,12 @@ public class AdminOrderService {
             OrderShippingItemJpaRepository shippingItemRepo,
             OrderNoteJpaRepository noteRepo,
             PaymentJpaRepository paymentRepo,
+            OrderAppliedCouponJpaRepository appliedCouponRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService,
+            ProductJpaRepository productRepo,
+            ProductVariantJpaRepository variantRepo,
+            StockMovementJpaRepository stockMovementRepo,
+            InventoryPolicyService inventoryPolicyService,
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService
     ) {
@@ -103,8 +138,12 @@ public class AdminOrderService {
         this.shippingItemRepo = shippingItemRepo;
         this.noteRepo = noteRepo;
         this.paymentRepo = paymentRepo;
+        this.appliedCouponRepo = appliedCouponRepo;
         this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
+        this.productRepo = productRepo;
+        this.variantRepo = variantRepo;
+        this.stockMovementRepo = stockMovementRepo;
+        this.inventoryPolicyService = inventoryPolicyService;
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
     }
@@ -112,7 +151,7 @@ public class AdminOrderService {
     // ── List ──────────────────────────────────────────────────────────────────
 
     public PageResult<AdminOrderListItemResponse> listOrders(
-            int page, int size, String status, String paymentStatus, String q, String from, String to
+            int page, int size, String status, String paymentStatus, String q, String from, String to, String sort
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
@@ -120,37 +159,47 @@ public class AdminOrderService {
         Instant fromInstant = parseFromDate(from);
         Instant toInstant = parseToDate(to);
 
-        Stream<OrderEntity> stream = orderRepo.findAll().stream();
+        Specification<OrderEntity> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
+            }
+            if (paymentStatus != null && !paymentStatus.isBlank()) {
+                predicates.add(cb.equal(root.get("paymentStatus"), paymentStatus.toUpperCase(Locale.ROOT)));
+            }
+            if (q != null && !q.isBlank()) {
+                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("orderNumber")), pattern),
+                        cb.like(cb.lower(root.get("orderKey")), pattern),
+                        cb.like(cb.lower(root.get("customerEmail")), pattern),
+                        cb.like(cb.lower(root.get("customerPhone")), pattern)
+                ));
+            }
+            if (fromInstant != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("placedAt"), fromInstant));
+            }
+            if (toInstant != null) {
+                predicates.add(cb.lessThan(root.get("placedAt"), toInstant));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        if (status != null && !status.isBlank()) {
-            stream = stream.filter(o -> status.equalsIgnoreCase(o.getStatus()));
-        }
-        if (paymentStatus != null && !paymentStatus.isBlank()) {
-            stream = stream.filter(o -> paymentStatus.equalsIgnoreCase(o.getPaymentStatus()));
-        }
-        if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
-            stream = stream.filter(o ->
-                    matchesQ(o.getOrderNumber(), qLower) ||
-                    matchesQ(o.getCustomerEmail(), qLower) ||
-                    matchesQ(o.getCustomerPhone(), qLower)
-            );
-        }
-        if (fromInstant != null) {
-            stream = stream.filter(o -> o.getPlacedAt() != null && !o.getPlacedAt().isBefore(fromInstant));
-        }
-        if (toInstant != null) {
-            stream = stream.filter(o -> o.getPlacedAt() != null && !o.getPlacedAt().isAfter(toInstant));
-        }
+        PageRequest pageable = PageRequest.of(
+                normalizedPage - 1, normalizedSize,
+                resolveSort(sort)
+        );
 
-        List<AdminOrderListItemResponse> items = stream
-                .sorted(Comparator
-                        .comparing(OrderEntity::getPlacedAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(OrderEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(this::toListItem)
+        Page<OrderEntity> orderPage = orderRepo.findAll(spec, pageable);
+        List<UUID> orderIds = orderPage.getContent().stream().map(OrderEntity::getId).toList();
+        Map<UUID, Long> itemCountMap = batchCountLineItems(orderIds);
+        List<AdminOrderListItemResponse> items = orderPage.getContent()
+                .stream()
+                .map(o -> toListItem(o, itemCountMap.getOrDefault(o.getId(), 0L)))
                 .toList();
 
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        return new PageResult<>(items, normalizedPage, normalizedSize,
+                orderPage.getTotalElements(), orderPage.getTotalPages());
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -213,6 +262,11 @@ public class AdminOrderService {
         }
         orderRepo.save(order);
 
+        // Restore stock when order is cancelled or refunded
+        if ("CANCELLED".equals(newStatus) || "REFUNDED".equals(newStatus)) {
+            restoreStockForOrder(orderId);
+        }
+
         // Add note if provided
         if (req.note() != null && !req.note().isBlank()) {
             boolean visible = Boolean.TRUE.equals(req.customerVisible());
@@ -246,7 +300,19 @@ public class AdminOrderService {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
-        String beforePaymentStatus = order.getPaymentStatus();
+        String currentPaymentStatus = order.getPaymentStatus();
+        String beforePaymentStatus = currentPaymentStatus;
+
+        if (currentPaymentStatus.equals(newPaymentStatus)) {
+            return toDetail(order);
+        }
+
+        Set<String> allowedPayment = ALLOWED_PAYMENT_TRANSITIONS.getOrDefault(currentPaymentStatus, Set.of());
+        if (!allowedPayment.contains(newPaymentStatus)) {
+            throw new ConflictException(
+                    "Cannot transition payment from " + currentPaymentStatus + " to " + newPaymentStatus + ".");
+        }
+
         Instant now = Instant.now();
 
         switch (newPaymentStatus) {
@@ -299,6 +365,94 @@ public class AdminOrderService {
                 "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
                 "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now));
 
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_PAYMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
+                safeCustomerName(order), order.getTotalAmount(),
+                order.getStatus(), newPaymentStatus, now));
+
+        return toDetail(orderRepo.findById(orderId).orElseThrow());
+    }
+
+    // ── Create refund ─────────────────────────────────────────────────────────
+
+    @Transactional
+    public AdminOrderDetailResponse createRefund(UUID orderId, UUID adminId, CreateRefundRequest req) {
+        OrderEntity order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        String paymentStatus = order.getPaymentStatus();
+        if (!"PAID".equals(paymentStatus) && !"PARTIALLY_PAID".equals(paymentStatus)) {
+            throw new ConflictException(
+                    "Refund requires payment status PAID or PARTIALLY_PAID, current: " + paymentStatus);
+        }
+
+        BigDecimal refundAmount = req.refundAmount().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal alreadyRefunded = order.getRefundAmount() != null
+                ? order.getRefundAmount() : BigDecimal.ZERO;
+        BigDecimal maxRefundable = order.getPaidAmount().subtract(alreadyRefunded);
+
+        if (refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw ValidationException.fromField("refundAmount", "INVALID", "refundAmount must be > 0.");
+        }
+        if (refundAmount.compareTo(maxRefundable) > 0) {
+            throw ValidationException.fromField("refundAmount", "INVALID",
+                    "refundAmount (" + refundAmount + ") exceeds refundable amount (" + maxRefundable + ").");
+        }
+
+        Instant now = Instant.now();
+        BigDecimal newTotalRefunded = alreadyRefunded.add(refundAmount);
+
+        order.setRefundAmount(newTotalRefunded);
+        if (req.refundReason() != null && !req.refundReason().isBlank()) {
+            order.setRefundReason(req.refundReason());
+        }
+        order.setRefundedAt(now);
+
+        boolean fullRefund = newTotalRefunded.compareTo(order.getPaidAmount()) == 0;
+        if (fullRefund) {
+            order.setPaymentStatus("REFUNDED");
+            if (ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of()).contains("REFUNDED")) {
+                order.setStatus("REFUNDED");
+            }
+        } else {
+            order.setPaymentStatus("PARTIALLY_REFUNDED");
+        }
+        order.setUpdatedAt(now);
+        orderRepo.save(order);
+
+        // Update payment record
+        paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
+            p.setRefundAmount(newTotalRefunded);
+            p.setRefundedAt(now);
+            if (fullRefund) p.setStatus("REFUNDED");
+            p.setUpdatedAt(now);
+            paymentRepo.save(p);
+        });
+
+        // Note
+        String noteContent = req.note() != null && !req.note().isBlank()
+                ? req.note()
+                : "Hoàn tiền " + refundAmount + " VND" + (req.refundReason() != null ? " — " + req.refundReason() : "");
+        boolean visible = Boolean.TRUE.equals(req.customerVisible());
+        noteRepo.save(buildNote(order, adminId, "REFUND", noteContent, visible, now));
+
+        // Audit
+        auditLogRepo.save(buildAudit(adminId, "ORDER_REFUND_CREATED", "ORDER", orderId,
+                "{\"paymentStatus\":\"" + paymentStatus + "\",\"refundAmount\":\"" + alreadyRefunded + "\"}",
+                "{\"paymentStatus\":\"" + order.getPaymentStatus() + "\",\"refundAmount\":\"" + newTotalRefunded + "\"}",
+                now));
+
+        // Notify customer on full refund
+        if (fullRefund) {
+            String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible())) ? req.note() : null;
+            orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", customerNote);
+        }
+
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_REFUND_CREATED", order.getId(), order.getOrderNumber(),
+                safeCustomerName(order), order.getTotalAmount(),
+                order.getStatus(), order.getPaymentStatus(), now));
+
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 
@@ -320,6 +474,11 @@ public class AdminOrderService {
                 null,
                 "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now));
 
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_NOTE_ADDED", order.getId(), order.getOrderNumber(),
+                safeCustomerName(order), order.getTotalAmount(),
+                order.getStatus(), order.getPaymentStatus(), now));
+
         return toAdminNote(note);
     }
 
@@ -335,8 +494,15 @@ public class AdminOrderService {
 
     // ── Mapping ───────────────────────────────────────────────────────────────
 
-    private AdminOrderListItemResponse toListItem(OrderEntity order) {
-        long itemCount = lineItemRepo.countByOrderId(order.getId());
+    private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) return Map.of();
+        Map<UUID, Long> result = new HashMap<>();
+        lineItemRepo.countByOrderIdIn(orderIds)
+                .forEach(row -> result.put((UUID) row[0], (Long) row[1]));
+        return result;
+    }
+
+    private AdminOrderListItemResponse toListItem(OrderEntity order, long itemCount) {
         return new AdminOrderListItemResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -368,6 +534,9 @@ public class AdminOrderService {
         List<AdminOrderNoteResponse> notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId())
                 .stream().map(this::toAdminNote).toList();
 
+        List<OrderAppliedCouponResponse> appliedCoupons = appliedCouponRepo.findByOrderId(order.getId())
+                .stream().map(this::toAppliedCoupon).toList();
+
         return new AdminOrderDetailResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -387,15 +556,19 @@ public class AdminOrderService {
                 order.getTaxAmount(),
                 order.getTotalAmount(),
                 order.getPaidAmount(),
+                order.getRefundAmount(),
+                order.getRefundReason(),
                 order.getPlacedAt(),
                 order.getPaidAt(),
                 order.getCompletedAt(),
                 order.getCancelledAt(),
+                order.getRefundedAt(),
                 lineItems,
                 addresses,
                 shippingItems,
                 payments,
-                notes
+                notes,
+                appliedCoupons
         );
     }
 
@@ -425,7 +598,66 @@ public class AdminOrderService {
                 e.getNoteType(), e.getContent(), e.isCustomerVisible(), e.getCreatedAt());
     }
 
+    private OrderAppliedCouponResponse toAppliedCoupon(OrderAppliedCouponEntity e) {
+        return new OrderAppliedCouponResponse(e.getId(), e.getCouponId(), e.getCode(), e.getDiscountAmount());
+    }
+
     // ── Build helpers ─────────────────────────────────────────────────────────
+
+    private static String safeCustomerName(OrderEntity order) {
+        if (order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
+            return order.getCustomerEmail();
+        }
+        if (order.getCustomerPhone() != null && !order.getCustomerPhone().isBlank()) {
+            return order.getCustomerPhone();
+        }
+        return "Khách hàng";
+    }
+
+    private void restoreStockForOrder(UUID orderId) {
+        List<OrderLineItemEntity> items = lineItemRepo.findByOrderId(orderId);
+        Instant now = Instant.now();
+        int threshold = inventoryPolicyService.lowStockThreshold();
+        for (OrderLineItemEntity item : items) {
+            if (item.getProductId() == null) continue;
+            if (item.getProductVariantId() != null) {
+                variantRepo.findByIdForUpdate(item.getProductVariantId().toString()).ifPresent(variant -> {
+                    int before = variant.getQuantityOnHand();
+                    int after = before + item.getQuantity();
+                    variant.setQuantityOnHand(after);
+                    inventoryPolicyService.recomputeStockState(variant);
+                    variantRepo.save(variant);
+                    StockMovementEntity m = new StockMovementEntity();
+                    m.setVariant(variant);
+                    m.setMovementType("IN");
+                    m.setQuantityDelta(item.getQuantity());
+                    m.setQuantityBefore(before);
+                    m.setQuantityAfter(after);
+                    m.setReferenceType("ORDER_CANCEL");
+                    m.setReferenceId(orderId);
+                    m.setCreatedAt(now);
+                    stockMovementRepo.save(m);
+                });
+            } else {
+                productRepo.findByIdForUpdate(item.getProductId().toString()).ifPresent(product -> {
+                    if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
+                    int restored = product.getStockQuantity() + item.getQuantity();
+                    product.setStockQuantity(restored);
+                    ProductStockState current = product.getStockState();
+                    if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
+                        if (restored <= 0) {
+                            product.setStockState(ProductStockState.OUT_OF_STOCK);
+                        } else if (restored <= threshold) {
+                            product.setStockState(ProductStockState.LOW_STOCK);
+                        } else {
+                            product.setStockState(ProductStockState.IN_STOCK);
+                        }
+                    }
+                    productRepo.save(product);
+                });
+            }
+        }
+    }
 
     private OrderNoteEntity buildNote(OrderEntity order, UUID adminId, String noteType,
             String content, boolean customerVisible, Instant now) {
@@ -470,8 +702,23 @@ public class AdminOrderService {
         } catch (Exception e) { return null; }
     }
 
-    private static boolean matchesQ(String field, String qLower) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(qLower);
+    private static Sort resolveSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Order.desc("placedAt").nullsLast(), Sort.Order.desc("createdAt"));
+        }
+        String[] parts = sort.split(":", 2);
+        String field = parts[0].trim();
+        boolean desc = parts.length < 2 || !"asc".equalsIgnoreCase(parts[1].trim());
+        Sort.Order order = switch (field) {
+            case "total", "totalAmount" -> desc
+                    ? Sort.Order.desc("totalAmount")
+                    : Sort.Order.asc("totalAmount");
+            case "createdAt", "placedAt" -> desc
+                    ? Sort.Order.desc("placedAt").nullsLast()
+                    : Sort.Order.asc("placedAt").nullsLast();
+            default -> Sort.Order.desc("placedAt").nullsLast();
+        };
+        return Sort.by(order, Sort.Order.desc("createdAt"));
     }
 
     private static OrderWsEvent buildStatusChangedEvent(OrderEntity order, String newStatus) {

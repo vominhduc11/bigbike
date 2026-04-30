@@ -376,6 +376,32 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   );
 }
 
+/** Category list — breadcrumb + page-head + grid of category cards */
+export function CategoryListSkeleton() {
+  return (
+    <SkeletonRoot label="Đang tải danh sách danh mục">
+      <div className="wp-breadcrumb"><SkelText w={160} /></div>
+      <div className="wp-page-head">
+        <SkelText w="15%" />
+        <SkelTitle w="40%" h="2em" />
+      </div>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px 64px" }}>
+        <div className="bb-grid-categories">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="bb-card">
+              <SkelBlock w="100%" style={{ aspectRatio: "16/9" }} />
+              <div style={{ padding: 16, display: "grid", gap: 8 }}>
+                <SkelTitle w="60%" />
+                <SkelText w="80%" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SkeletonRoot>
+  );
+}
+
 /** Brand list — page-head + grid of brand tiles */
 export function BrandListSkeleton() {
   return (

@@ -16,16 +16,28 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
+import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
+import java.text.Normalizer;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -37,7 +49,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class JpaCatalogReadRepository implements CatalogReadRepository {
 
+    private static final Set<String> COLOR_ATTRIBUTE_KEYS = Set.of(
+            "color", "colour", "mau", "mau sac", "pa color", "pa mau", "pa mau sac"
+    );
     private static final Comparator<ProductGalleryImageEntity> GALLERY_ORDER = Comparator.comparingInt(ProductGalleryImageEntity::getSortOrder);
+    private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
@@ -46,15 +62,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
+    private final MediaJpaRepository mediaJpaRepository;
+    private final AttributeJpaRepository attributeJpaRepository;
+    private final AttributeValueJpaRepository attributeValueJpaRepository;
 
     public JpaCatalogReadRepository(
             ProductJpaRepository productJpaRepository,
             CategoryJpaRepository categoryJpaRepository,
-            BrandJpaRepository brandJpaRepository
+            BrandJpaRepository brandJpaRepository,
+            MediaJpaRepository mediaJpaRepository,
+            AttributeJpaRepository attributeJpaRepository,
+            AttributeValueJpaRepository attributeValueJpaRepository
     ) {
         this.productJpaRepository = productJpaRepository;
         this.categoryJpaRepository = categoryJpaRepository;
         this.brandJpaRepository = brandJpaRepository;
+        this.mediaJpaRepository = mediaJpaRepository;
+        this.attributeJpaRepository = attributeJpaRepository;
+        this.attributeValueJpaRepository = attributeValueJpaRepository;
     }
 
     @Override
@@ -144,10 +169,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 toVariants(entity),
                 toSpecifications(entity),
                 entity.getStockState(),
+                entity.getStockQuantity(),
+                entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getFeatured(),
                 entity.getShowOnHomepage(),
                 entity.getRating(),
+                entity.getRatingCount(),
+                entity.getContentBottom(),
                 toSeoMeta(
                         entity.getSeoTitle(),
                         entity.getSeoDescription(),
@@ -295,10 +324,92 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (entity.getVariants() == null) {
             return List.of();
         }
-        return entity.getVariants().stream()
+        List<ProductVariant> variants = entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
                 .map(this::toVariant)
                 .toList();
+        return withColorScopedVariantMedia(variants);
+    }
+
+    /**
+     * Force every variant in the same color group to expose the same {@code image}
+     * and {@code gallery}. The write path already scopes both fields by color
+     * ({@link com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService}),
+     * but legacy WordPress imports persisted these per-variant rows independently
+     * — and any future write path that bypasses the mutation service could too.
+     * Scoping on read keeps the storefront, mobile app, and admin form aligned
+     * with the "image and gallery are color-scoped" invariant regardless of how
+     * the rows landed in the DB.
+     *
+     * Variants without a recognised color attribute have both fields cleared
+     * since the gallery validator rejects per-variant gallery without a color
+     * — keeping image alive for those rows would be the only place where the
+     * read response disagreed with the write response.
+     */
+    private static List<ProductVariant> withColorScopedVariantMedia(List<ProductVariant> variants) {
+        Map<String, List<ImageAsset>> galleryByColor = new HashMap<>();
+        Map<String, ImageAsset> imageByColor = new HashMap<>();
+        for (ProductVariant variant : variants) {
+            String colorKey = variantColorKey(variant);
+            if (colorKey == null) continue;
+            if (variant.gallery() != null && !variant.gallery().isEmpty()) {
+                galleryByColor.putIfAbsent(colorKey, variant.gallery());
+            }
+            if (variant.image() != null) {
+                imageByColor.putIfAbsent(colorKey, variant.image());
+            }
+        }
+
+        return variants.stream()
+                .map(variant -> {
+                    String colorKey = variantColorKey(variant);
+                    List<ImageAsset> gallery = colorKey == null
+                            ? List.of()
+                            : galleryByColor.getOrDefault(colorKey, List.of());
+                    ImageAsset image = colorKey == null
+                            ? null
+                            : imageByColor.get(colorKey);
+                    return new ProductVariant(
+                            variant.id(),
+                            variant.sku(),
+                            variant.name(),
+                            variant.options(),
+                            variant.price(),
+                            variant.stockState(),
+                            variant.stockQuantity(),
+                            image,
+                            gallery,
+                            variant.isAvailable()
+                    );
+                })
+                .toList();
+    }
+
+    private static String variantColorKey(ProductVariant variant) {
+        if (variant.options() == null) return null;
+        for (ProductVariantOption option : variant.options()) {
+            if (option == null) continue;
+            if (isColorAttributeName(option.name())) {
+                String value = normalizeVariantToken(option.value());
+                return value.isEmpty() ? null : value;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isColorAttributeName(String name) {
+        return COLOR_ATTRIBUTE_KEYS.contains(normalizeVariantToken(name));
+    }
+
+    private static String normalizeVariantToken(String raw) {
+        if (raw == null || raw.isBlank()) return "";
+        return Normalizer.normalize(raw.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('\u0110', 'D')
+                .replace('\u0111', 'd')
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
     }
 
     private ProductVariant toVariant(ProductVariantEntity entity) {
@@ -311,11 +422,33 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getCurrency() == null ? "VND" : entity.getCurrency()
                 );
 
+        // Prefer the human-readable attribute label over the raw slug so the
+        // storefront displays "Đen bóng" / "Màu sắc" rather than "den-bong" /
+        // "color". When the option's FK to AttributeValueEntity is null
+        // (legacy data, manual admin saves before V42 backfill), fall back
+        // to a (code, slug) lookup so colour swatches still render — the
+        // dictionary tables hold the per-term hex/image regardless of
+        // whether the variant_options FK was populated.
         List<ProductVariantOption> options = entity.getOptions() == null
                 ? List.of()
                 : entity.getOptions().stream()
                         .sorted(VARIANT_OPTION_ORDER)
-                        .map(option -> new ProductVariantOption(option.getOptionName(), option.getOptionValue()))
+                        .map(this::toVariantOption)
+                        .toList();
+
+        List<ImageAsset> gallery = entity.getGallery() == null
+                ? List.of()
+                : entity.getGallery().stream()
+                        .sorted(VARIANT_GALLERY_ORDER)
+                        .map(item -> toImageAsset(
+                                item.getImageId(),
+                                item.getImageUrl(),
+                                item.getImageAlt(),
+                                item.getImageWidth(),
+                                item.getImageHeight(),
+                                item.getImageMimeType()
+                        ))
+                        .filter(image -> image != null)
                         .toList();
 
         return new ProductVariant(
@@ -325,6 +458,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 options,
                 price,
                 entity.getStockState(),
+                entity.getQuantityOnHand(),
                 toImageAsset(
                         entity.getImageId(),
                         entity.getImageUrl(),
@@ -333,8 +467,74 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getImageHeight(),
                         entity.getImageMimeType()
                 ),
+                gallery,
                 entity.isAvailable()
         );
+    }
+
+    /**
+     * Build a {@link ProductVariantOption} from one stored option row,
+     * resolving the AttributeValue dictionary lazily when the FK is null.
+     * Without the lazy lookup, products imported / saved before V42's
+     * backfill would render text-only chips even though the per-term
+     * swatch metadata exists in the dictionary tables.
+     */
+    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option) {
+        AttributeEntity attribute = option.getAttribute();
+        AttributeValueEntity value = option.getAttributeValue();
+
+        // Lazy resolution path: only fires when the FK wasn't populated.
+        // Cheap because Hibernate caches single-row PK reads and most
+        // products only have a handful of options.
+        if (attribute == null && option.getOptionName() != null && !option.getOptionName().isBlank()) {
+            attribute = attributeJpaRepository.findByCode(option.getOptionName()).orElse(null);
+        }
+        if (value == null && attribute != null
+                && option.getOptionValue() != null && !option.getOptionValue().isBlank()) {
+            value = attributeValueJpaRepository
+                    .findByAttributeIdAndSlug(attribute.getId(), option.getOptionValue())
+                    .orElse(null);
+        }
+
+        return new ProductVariantOption(
+                preferLabel(
+                        attribute != null ? attribute.getName() : null,
+                        option.getOptionName()
+                ),
+                preferLabel(
+                        value != null ? value.getLabel() : null,
+                        option.getOptionValue()
+                ),
+                value != null ? value.getColorHex() : null,
+                value != null ? resolveSwatchUrl(value.getSwatchImageId()) : null
+        );
+    }
+
+    /** Returns the first non-blank value, or empty string if neither has content. */
+    private static String preferLabel(String preferred, String fallback) {
+        if (preferred != null && !preferred.isBlank()) return preferred;
+        if (fallback != null && !fallback.isBlank()) return fallback;
+        return "";
+    }
+
+    /**
+     * Resolve a WP attachment ID stored in {@code attribute_values.swatch_image_id}
+     * to a public URL via the media table. Returns null when the id is
+     * blank, non-numeric, or no matching media row exists. Lookup failures
+     * are silent — a missing swatch should not block the variant render.
+     */
+    private String resolveSwatchUrl(String swatchImageId) {
+        if (swatchImageId == null || swatchImageId.isBlank()) return null;
+        final long legacyId;
+        try {
+            legacyId = Long.parseLong(swatchImageId.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return mediaJpaRepository.findByLegacyId(legacyId)
+                .map(MediaEntity::getPublicUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .orElse(null);
     }
 
     private CategorySummary toCategorySummary(CategoryEntity entity) {

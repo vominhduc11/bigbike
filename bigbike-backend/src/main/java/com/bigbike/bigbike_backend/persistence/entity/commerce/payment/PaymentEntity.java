@@ -54,6 +54,12 @@ public class PaymentEntity {
     @Column(name = "failed_at")
     private Instant failedAt;
 
+    @Column(name = "refund_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal refundAmount = BigDecimal.ZERO;
+
+    @Column(name = "refunded_at")
+    private Instant refundedAt;
+
     @Column(columnDefinition = "text")
     private String metadata;
 
@@ -95,6 +101,12 @@ public class PaymentEntity {
 
     public Instant getFailedAt() { return failedAt; }
     public void setFailedAt(Instant failedAt) { this.failedAt = failedAt; }
+
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
+
+    public Instant getRefundedAt() { return refundedAt; }
+    public void setRefundedAt(Instant refundedAt) { this.refundedAt = refundedAt; }
 
     public String getMetadata() { return metadata; }
     public void setMetadata(String metadata) { this.metadata = metadata; }

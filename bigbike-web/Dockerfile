@@ -18,6 +18,11 @@ ENV BIGBIKE_LEGACY_UPLOADS_BASE=${BIGBIKE_LEGACY_UPLOADS_BASE}
 # must reach MinIO via the internal Docker network name (minio:9000), not localhost.
 ARG BIGBIKE_MEDIA_INTERNAL_URL=http://localhost:9000/bigbike-media/wp-uploads
 ENV BIGBIKE_MEDIA_INTERNAL_URL=${BIGBIKE_MEDIA_INTERNAL_URL}
+# NEXT_PUBLIC_ vars are baked into the client bundle at build time — must be ARGs, not runtime env.
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 RUN npm run build
 
 # ---- Runner stage ----

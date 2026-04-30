@@ -8,12 +8,15 @@ public record AdminMediaListItemResponse(
         Long legacyId,
         String filePath,
         String publicUrl,
+        String storageProvider,
         String mimeType,
         Long fileSize,
         Integer width,
         Integer height,
         String altText,
         String title,
+        String caption,
         String status,
-        Instant createdAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

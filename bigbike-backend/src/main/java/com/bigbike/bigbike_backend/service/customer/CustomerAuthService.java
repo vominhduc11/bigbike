@@ -44,14 +44,15 @@ public class CustomerAuthService {
         if (req.email() == null && req.phone() == null) {
             throw ValidationException.fromField("email", "REQUIRED", "Email or phone is required.");
         }
-        if (req.password() == null || req.password().length() < 6) {
-            throw ValidationException.fromField("password", "TOO_SHORT", "Password must be at least 6 characters.");
+        if (req.password() == null || req.password().length() < 8) {
+            throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
         }
+        // Generic message prevents account enumeration via register endpoint.
         if (req.email() != null && customerRepo.findByEmail(req.email()).isPresent()) {
-            throw new ConflictException("Email is already registered.");
+            throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
         if (req.phone() != null && customerRepo.findByPhone(req.phone()).isPresent()) {
-            throw new ConflictException("Phone is already registered.");
+            throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
 
         Instant now = Instant.now();
@@ -140,15 +141,30 @@ public class CustomerAuthService {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found."));
 
+        boolean isSensitiveChange = (req.newPassword() != null && !req.newPassword().isBlank())
+                || (req.email() != null && !req.email().isBlank() && !req.email().equals(customer.getEmail()))
+                || (req.phone() != null && !req.phone().isBlank() && !req.phone().equals(customer.getPhone()));
+
+        if (isSensitiveChange) {
+            if (req.currentPassword() == null || req.currentPassword().isBlank()) {
+                throw ValidationException.fromField("currentPassword", "REQUIRED",
+                        "Vui lòng nhập mật khẩu hiện tại để thay đổi thông tin nhạy cảm.");
+            }
+            if (customer.getPasswordHash() == null
+                    || !passwordService.verify(req.currentPassword(), customer.getPasswordHash())) {
+                throw ValidationException.fromField("currentPassword", "INVALID", "Mật khẩu hiện tại không đúng.");
+            }
+        }
+
         if (req.email() != null && !req.email().isBlank() && !req.email().equals(customer.getEmail())) {
             customerRepo.findByEmail(req.email()).ifPresent(c -> {
-                throw new ConflictException("Email đã được đăng ký.");
+                throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
             customer.setEmail(req.email());
         }
         if (req.phone() != null && !req.phone().isBlank() && !req.phone().equals(customer.getPhone())) {
             customerRepo.findByPhone(req.phone()).ifPresent(c -> {
-                throw new ConflictException("Số điện thoại đã được đăng ký.");
+                throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
             customer.setPhone(req.phone());
         }
@@ -156,10 +172,12 @@ public class CustomerAuthService {
             customer.setDisplayName(req.displayName());
         }
         if (req.newPassword() != null && !req.newPassword().isBlank()) {
-            if (req.newPassword().length() < 6) {
-                throw ValidationException.fromField("newPassword", "TOO_SHORT", "Mật khẩu phải có ít nhất 6 ký tự.");
+            if (req.newPassword().length() < 8) {
+                throw ValidationException.fromField("newPassword", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
             }
             customer.setPasswordHash(passwordService.hash(req.newPassword()));
+            // Revoke all other sessions so stolen sessions can't be used after password change.
+            sessionService.revokeAllSessions(customerId);
         }
         if (req.gender() != null) {
             customer.setGender(req.gender().isBlank() ? null : req.gender().trim());
@@ -167,7 +185,9 @@ public class CustomerAuthService {
         if (req.dob() != null && !req.dob().isBlank()) {
             try {
                 customer.setDob(LocalDate.parse(req.dob()));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                throw ValidationException.fromField("dob", "INVALID", "Ngày sinh không hợp lệ. Định dạng: YYYY-MM-DD.");
+            }
         }
         customer.setUpdatedAt(Instant.now());
         return toSummary(customerRepo.save(customer));

@@ -54,7 +54,6 @@ Infrastructure (via `docker-compose.yaml`):
 | Service | Image | Port |
 |---------|-------|------|
 | PostgreSQL | postgres:16-alpine | 5432 |
-| Redis | redis:7-alpine | 6379 |
 | MinIO | minio/minio:latest | 9000 (API), 9001 (console) |
 
 ---
@@ -414,7 +413,7 @@ Test / package:
 Start infrastructure services only (recommended for local dev):
 
 ```bash
-docker compose up postgres redis minio -d
+docker compose up postgres minio -d
 ```
 
 Start full stack (all services including apps):
@@ -437,7 +436,6 @@ Port summary when using Docker:
 | `bigbike-web` | 3000 |
 | `bigbike-admin` | 4000 |
 | PostgreSQL | 5432 |
-| Redis | 6379 |
 | MinIO API | 9000 |
 | MinIO console | 9001 |
 
@@ -460,7 +458,6 @@ cp bigbike-backend/.env.example bigbike-backend/.env
 
 ```text
 POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD
-REDIS_HOST / REDIS_PORT
 MINIO_ROOT_USER / MINIO_ROOT_PASSWORD / MINIO_BUCKET / MINIO_ENDPOINT
 BIGBIKE_DB_URL / BIGBIKE_DB_USERNAME / BIGBIKE_DB_PASSWORD
 BIGBIKE_JWT_SECRET          # must be >= 32 chars in production
@@ -476,7 +473,6 @@ BIGBIKE_API_BASE_URL=http://localhost:8080
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 BIGBIKE_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-BIGBIKE_REDIS_URL=                              # optional: redis://localhost:6379/0
 BIGBIKE_REDIRECT_CACHE_TTL_SECONDS=300
 BIGBIKE_LEGACY_UPLOADS_BASE=                    # MinIO proxy for /wp-content/uploads/*
 NEXT_PUBLIC_GTM_ID=GTM-5BKZL3K
@@ -497,8 +493,6 @@ SPRING_PROFILES_ACTIVE=dev
 BIGBIKE_DB_URL=jdbc:postgresql://localhost:5432/bigbike
 BIGBIKE_DB_USERNAME=bigbike
 BIGBIKE_DB_PASSWORD=bigbike
-REDIS_HOST=localhost
-REDIS_PORT=6379
 BIGBIKE_JWT_SECRET=dev-change-me-in-production-needs-32chars!!
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ROOT_USER=minio_admin

@@ -9,9 +9,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bigbike}
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - see .env.example}"
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bigbike} -d ${POSTGRES_DB:-bigbike}"]
       interval: 10s
@@ -19,23 +23,8 @@ services:
       retries: 5
       start_period: 15s
 
-  redis:
-    image: redis:7-alpine
-    container_name: bigbike-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: bigbike-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -43,10 +32,14 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set - see .env.example}"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 15s
@@ -63,25 +56,46 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       minio:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       BIGBIKE_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bigbike}
       BIGBIKE_DB_USERNAME: ${POSTGRES_USER:-bigbike}
       BIGBIKE_DB_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - see .env.example}"
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       BIGBIKE_JWT_SECRET: "${BIGBIKE_JWT_SECRET:?BIGBIKE_JWT_SECRET must be set - generate with openssl rand -base64 48}"
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set - see .env.example}"
       MINIO_BUCKET: ${MINIO_BUCKET:-bigbike-media}
-      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS must be set - e.g. https://bigbike.vn,https://www.bigbike.vn}"
+      # NOTE: backend application.properties reads ${CORS_ALLOWED_ORIGINS}, so inject under that exact name.
+      CORS_ALLOWED_ORIGINS: "${BIGBIKE_CORS_ALLOWED_ORIGINS:?BIGBIKE_CORS_ALLOWED_ORIGINS must be set - e.g. https://bigbike.vn,https://www.bigbike.vn}"
+      # Public-facing canonical URLs used in transactional email templates and admin links.
+      BIGBIKE_SITE_BASE_URL: "${BIGBIKE_SITE_BASE_URL:-https://bigbike.vn}"
+      BIGBIKE_ADMIN_BASE_URL: "${BIGBIKE_ADMIN_BASE_URL:-https://admin.bigbike.vn}"
+      # Media URL allowlist anchor (admin write paths).
+      # Must be the browser-accessible URL — NOT the Docker-internal minio:9000 hostname.
+      # Defaults to localhost:9000 (port-mapped MinIO). Override in production with a CDN URL.
+      BIGBIKE_MEDIA_PUBLIC_BASE_URL: "${BIGBIKE_MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/bigbike-media}"
+      WEB_REVALIDATE_URL: "http://bigbike-web:3000/api/revalidate"
+      WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-}"
+      # Transactional email (optional — empty BIGBIKE_MAIL_HOST disables sending).
+      BIGBIKE_MAIL_HOST: "${BIGBIKE_MAIL_HOST:-}"
+      BIGBIKE_MAIL_PORT: "${BIGBIKE_MAIL_PORT:-587}"
+      BIGBIKE_MAIL_USERNAME: "${BIGBIKE_MAIL_USERNAME:-}"
+      BIGBIKE_MAIL_PASSWORD: "${BIGBIKE_MAIL_PASSWORD:-}"
+      BIGBIKE_MAIL_SMTP_AUTH: "${BIGBIKE_MAIL_SMTP_AUTH:-true}"
+      BIGBIKE_MAIL_STARTTLS: "${BIGBIKE_MAIL_STARTTLS:-true}"
+      BIGBIKE_MAIL_FROM: "${BIGBIKE_MAIL_FROM:-no-reply@bigbike.vn}"
+      BIGBIKE_MAIL_ADMIN: "${BIGBIKE_MAIL_ADMIN:-info@bigbike.vn}"
+      BIGBIKE_MAIL_VERIFY_BASE_URL: "${BIGBIKE_MAIL_VERIFY_BASE_URL:-https://bigbike.vn/xac-nhan-email}"
+      BIGBIKE_MAIL_RESET_BASE_URL: "${BIGBIKE_MAIL_RESET_BASE_URL:-https://bigbike.vn/quen-mat-khau}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
       interval: 30s
@@ -100,6 +114,11 @@ services:
         # Server-side rewrite destination: Next.js server (inside Docker) must reach
         # MinIO via the internal Docker network name, not localhost.
         BIGBIKE_MEDIA_INTERNAL_URL: http://minio:9000/bigbike-media/wp-uploads
+        # NEXT_PUBLIC_ vars are baked into the client bundle at build time.
+        # For local dev localhost:8080 is correct (port-mapped backend).
+        # For production set NEXT_PUBLIC_API_BASE_URL=https://api.bigbike.vn in .env.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     container_name: bigbike-web
     restart: unless-stopped
     depends_on:
@@ -107,12 +126,26 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     environment:
       BIGBIKE_API_BASE_URL: http://bigbike-backend:8080
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
       BIGBIKE_SITE_URL: ${BIGBIKE_SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       BIGBIKE_DISABLE_DEV_FALLBACK: "true"
+      REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-}"
+      BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: "${BIGBIKE_REDIRECT_CACHE_TTL_SECONDS:-300}"
+      # Google Tag Manager — leave empty in staging to avoid GA4 pollution.
+      NEXT_PUBLIC_GTM_ID: "${NEXT_PUBLIC_GTM_ID:-}"
+      # Sentry — server-side DSN + source map upload credentials.
+      SENTRY_DSN: "${SENTRY_DSN:-}"
+      NEXT_PUBLIC_SENTRY_DSN: "${NEXT_PUBLIC_SENTRY_DSN:-}"
+      SENTRY_AUTH_TOKEN: "${SENTRY_AUTH_TOKEN:-}"
+      SENTRY_ORG: "${SENTRY_ORG:-}"
+      SENTRY_PROJECT: "${SENTRY_PROJECT:-}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
       interval: 30s
@@ -137,6 +170,10 @@ services:
         condition: service_healthy
     ports:
       - "4000:80"
+    deploy:
+      resources:
+        limits:
+          memory: 128m
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
       interval: 30s
@@ -144,11 +181,32 @@ services:
       retries: 3
       start_period: 10s
 
+  bigbike-web-init:
+    image: curlimages/curl:8.11.1
+    container_name: bigbike-web-init
+    restart: "no"
+    depends_on:
+      bigbike-web:
+        condition: service_healthy
+    # Docker Compose splits a folded `>-` string into a list of whitespace-separated args,
+    # which makes `/bin/sh -c <args>` execute only the first token. Pass the script as a
+    # single-item list so it stays one argument when handed to `sh -c`.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        curl -sf -L -X POST http://bigbike-web:3000/api/revalidate
+        -H "Content-Type: application/json"
+        -H "x-revalidate-secret: ${WEB_REVALIDATE_SECRET:-}"
+        -d '{"tags":["products","sliders","categories","articles","brands","settings","menus","pages"]}'
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+
 networks:
   default:
     name: bigbike-dev
 
 volumes:
   postgres_data:
-  redis_data:
   minio_data:

@@ -36,6 +36,17 @@ export function formatText(value, fallback = '—') {
   return normalized || fallback
 }
 
+export function stripHtml(value, fallback = '—') {
+  if (typeof value !== 'string' || !value.trim()) return fallback
+  try {
+    const doc = new DOMParser().parseFromString(value, 'text/html')
+    const text = (doc.body.textContent ?? '').trim()
+    return text || fallback
+  } catch {
+    return value.replace(/<[^>]*>/g, '').trim() || fallback
+  }
+}
+
 export function formatBoolean(value, trueLabel = 'Yes', falseLabel = 'No') {
   return value ? trueLabel : falseLabel
 }

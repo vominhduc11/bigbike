@@ -8,6 +8,10 @@ import java.util.UUID;
 public record AdminCustomerOrderSummaryResponse(
         int orderCount,
         BigDecimal totalSpent,
+        BigDecimal avgOrderValue,
+        String segment,
+        Instant firstOrderAt,
+        Instant lastOrderAt,
         List<LatestOrder> latestOrders
 ) {
     public record LatestOrder(

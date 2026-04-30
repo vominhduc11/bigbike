@@ -1,22 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { AdminTable } from '../components/AdminTable'
+import { DateRangePicker } from '../components/DateRangePicker'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchOrders } from '../lib/adminApi'
+import { exportOrdersCsv, fetchOrders } from '../lib/adminApi'
+import { ExportButton } from '../components/ExportButton'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
-
-const ORDER_STATUS_LABELS = {
-  PENDING: 'Chờ xác nhận',
-  ON_HOLD: 'Tạm giữ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã huỷ',
-  FAILED: 'Thất bại',
-  REFUNDED: 'Đã hoàn',
-  UNKNOWN: 'Không rõ',
-}
+import { useAdminList } from '../lib/useAdminList'
+import { useDebounce } from '../lib/useDebounce'
 
 const STATUS_TONES = {
   PENDING: 'warning',
@@ -29,54 +24,55 @@ const STATUS_TONES = {
   UNKNOWN: 'neutral',
 }
 
+const ORDER_STATUS_KEYS = ['PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED']
+
 function OrderStatusBadge({ value }) {
+  const { t } = useTranslation()
   const tone = STATUS_TONES[value] || 'neutral'
-  return <span className={`status-badge status-${tone}`}>{ORDER_STATUS_LABELS[value] || value}</span>
+  return <span className={`status-badge status-${tone}`}>{t(`status.order.${value}`, { defaultValue: value })}</span>
 }
 
 const INITIAL_QUERY = {
   search: '',
   orderStatus: 'ALL',
+  dateRange: undefined,
   sort: 'createdAt:desc',
   page: 1,
-  pageSize: 10,
+  pageSize: 20,
 }
 
 export function OrderListScreen({ navigate }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState(INITIAL_QUERY)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
-  // Incremented by WS events to trigger a silent background refetch
-  const [wsRevision, setWsRevision] = useState(0)
+  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const debouncedSearch = useDebounce(searchInput, 250)
+  const isFirstSearchRender = useRef(true)
   const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
 
-  useEffect(() => {
-    let active = true
-    fetchOrders(query)
-      .then((response) => {
-        if (!active) return
-        setState({ status: 'success', items: response.items, pagination: response.pagination, warning: response.mode === 'mock' ? response.warning : '' })
-      })
-      .catch((error) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, warning: '', error: error.message })
-      })
-    return () => { active = false }
-  }, [query, wsRevision])
+  const state = useAdminList(['orders', query], () => fetchOrders(query))
 
-  // Re-fetch silently when a new order or status change arrives — only on page 1 / no filters
-  // to avoid disrupting admins who are in the middle of filtering.
+  useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
+    setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
+
   useEffect(() => {
     if (!isFirstPage) return
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', () => {
-      setWsRevision((r) => r + 1)
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
     })
     return unsubscribe
-  }, [isFirstPage])
+  }, [isFirstPage, queryClient])
 
   const columns = useMemo(() => [
     {
       key: 'orderNumber',
-      label: 'Đơn hàng',
+      label: t('orders.colOrder'),
       render: (order) => (
         <div>
           <strong>{formatText(order.orderNumber)}</strong>
@@ -84,78 +80,119 @@ export function OrderListScreen({ navigate }) {
         </div>
       ),
     },
-    { key: 'customerName', label: 'Khách hàng', render: (order) => formatText(order.customerName) },
-    { key: 'orderStatus', label: 'Trạng thái', render: (order) => <OrderStatusBadge value={order.orderStatus} /> },
-    { key: 'total', label: 'Tổng tiền', render: (order) => formatCurrencyVnd(order.total) },
-    { key: 'createdAt', label: 'Ngày đặt', render: (order) => formatDateTime(order.createdAt) },
+    { key: 'customerName', label: t('orders.colCustomer'), render: (order) => formatText(order.customerName) },
+    { key: 'orderStatus', label: t('orders.colStatus'), render: (order) => <OrderStatusBadge value={order.orderStatus} /> },
+    { key: 'total', label: t('orders.colTotal'), render: (order) => formatCurrencyVnd(order.total) },
+    { key: 'createdAt', label: t('orders.colDate'), render: (order) => formatDateTime(order.createdAt) },
     {
       key: 'actions', label: '', align: 'right',
       render: (order) => (
-        <button type="button" className="btn btn-secondary" onClick={() => navigate(`/admin/orders/${order.id}`)}>Chi tiết</button>
+        <button type="button" className="btn btn-secondary" onClick={() => navigate(`/admin/orders/${order.id}`)}>{t('orders.viewDetail')}</button>
       ),
     },
-  ], [navigate])
+  ], [navigate, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((prev) => ({ ...prev, status: 'loading' }))
-    setQuery((prev) => ({ ...prev, ...partial, page: options.resetPage ? 1 : prev.page }))
+    setQuery((prev) => {
+      const next = { ...prev, ...partial }
+      if (options.resetPage) next.page = 1
+      return next
+    })
+  }
+
+  function resetFilters() {
+    setSearchInput(INITIAL_QUERY.search)
+    setQuery(INITIAL_QUERY)
   }
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Commerce</p>
-          <h1>Đơn hàng</h1>
-          <p>Quản lý và xử lý đơn hàng từ khách hàng.</p>
+          <p className="eyebrow">{t('orders.eyebrow')}</p>
+          <h1>{t('orders.title')}</h1>
+          <p>{t('orders.description')}</p>
         </div>
+        <ExportButton
+          filename={`orders_${new Date().toISOString().slice(0, 10)}.csv`}
+          onExport={() => exportOrdersCsv({
+            status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
+            from: query.dateRange?.from?.toISOString().slice(0, 10),
+            to: query.dateRange?.to?.toISOString().slice(0, 10),
+          })}
+        />
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       <section className="filter-bar">
         <label>
-          Tìm kiếm
-          <input className="control-input" type="search" value={query.search}
-            onChange={(e) => updateQuery({ search: e.target.value }, { resetPage: true })}
-            placeholder="Số đơn, email khách hàng" />
+          {t('common.search')}
+          <input className="control-input" type="search" value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t('orders.searchPlaceholder')} />
         </label>
         <label>
-          Trạng thái
+          {t('orders.filterStatus')}
           <select className="control-select" value={query.orderStatus}
             onChange={(e) => updateQuery({ orderStatus: e.target.value }, { resetPage: true })}>
-            <option value="ALL">Tất cả</option>
-            {Object.entries(ORDER_STATUS_LABELS).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            <option value="ALL">{t('common.all')}</option>
+            {ORDER_STATUS_KEYS.map((k) => (
+              <option key={k} value={k}>{t(`status.order.${k}`)}</option>
             ))}
           </select>
         </label>
         <label>
-          Sắp xếp
+          {t('orders.filterDate', { defaultValue: 'Khoảng ngày' })}
+          <div style={{ marginTop: 5 }}>
+            <DateRangePicker
+              value={query.dateRange}
+              onChange={(range) => updateQuery({ dateRange: range }, { resetPage: true })}
+            />
+          </div>
+        </label>
+        <label>
+          {t('orders.filterSort')}
           <select className="control-select" value={query.sort}
             onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}>
-            <option value="createdAt:desc">Mới nhất</option>
-            <option value="createdAt:asc">Cũ nhất</option>
-            <option value="total:desc">Giá trị cao nhất</option>
+            <option value="createdAt:desc">{t('sort.newestOrder')}</option>
+            <option value="createdAt:asc">{t('sort.oldestOrder')}</option>
+            <option value="total:desc">{t('sort.highestValue')}</option>
+          </select>
+        </label>
+        <label>
+          {t('common.rowsPerPage')}
+          <select className="control-select" value={query.pageSize}
+            onChange={(e) => updateQuery({ pageSize: Number(e.target.value) }, { resetPage: true })}>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
           </select>
         </label>
       </section>
 
-      {state.status === 'loading' && <StatePanel tone="info" title="Đang tải đơn hàng" description="Vui lòng chờ..." />}
       {state.status === 'error' && (
-        <StatePanel tone="danger" title="Lỗi tải đơn hàng" description={state.error}
-          actionLabel="Thử lại" onAction={() => setQuery((p) => ({ ...p }))} />
+        <StatePanel tone="danger" title={t('orders.loadError')} description={state.error}
+          actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
       {state.status === 'success' && state.items.length === 0 && (
-        <StatePanel tone="neutral" title="Không có đơn hàng" description="Chưa có đơn hàng nào khớp với điều kiện lọc."
-          actionLabel="Xoá lọc" onAction={() => setQuery(INITIAL_QUERY)} />
+        <StatePanel tone="neutral" title={t('orders.empty')} description={t('orders.emptyDesc')}
+          actionLabel={t('orders.clearFilters')} onAction={resetFilters} />
       )}
-      {state.status === 'success' && state.items.length > 0 && (
+      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
-          <AdminTable caption="Danh sách đơn hàng" columns={columns} rows={state.items} />
-          <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />
+          <AdminTable
+            caption={t('orders.tableCaption')}
+            columns={columns}
+            rows={state.items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
+          />
+          {state.status === 'success' && (
+            <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />
+          )}
         </>
-      )}
+      ) : null}
     </section>
   )
 }

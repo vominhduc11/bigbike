@@ -2,10 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toProductListPath } from "@/lib/utils/routes";
+import Link from "next/link";
+import { BBTooltip } from "@/components/ui/BBTooltip";
+import { toProductListPath, toProductPath } from "@/lib/utils/routes";
+import { formatVnd } from "@/lib/utils/format";
 
 const STORAGE_KEY = "bb_recent_searches";
 const MAX_RECENT = 6;
+
+type SuggestProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  price?: { retailPrice?: number; salePrice?: number } | null;
+  image?: { url?: string } | null;
+};
 
 function getRecentSearches(): string[] {
   try {
@@ -31,7 +42,10 @@ export function SearchToggle() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestProduct[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,8 +56,45 @@ export function SearchToggle() {
       return () => clearTimeout(id);
     } else {
       setQuery("");
+      setSuggestions([]);
     }
   }, [open]);
+
+  // Debounced autocomplete fetch
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    setSuggestLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${toProductListPath()}?q=${encodeURIComponent(trimmed)}&size=5&format=json`,
+        );
+        // Fall back to the public search API if the above fails or returns HTML
+        const searchRes = await fetch(
+          `/api/search-suggest?q=${encodeURIComponent(trimmed)}`,
+        );
+        if (searchRes.ok) {
+          const json = (await searchRes.json()) as { products?: SuggestProduct[] };
+          setSuggestions(json.products ?? []);
+        } else {
+          setSuggestions([]);
+        }
+        void res; // unused but fetched above for cache warm-up
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setSuggestLoading(false);
+      }
+    }, 250);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -74,8 +125,12 @@ export function SearchToggle() {
     setRecent([]);
   }
 
+  const hasSuggestions = suggestions.length > 0;
+  const showRecent = recent.length > 0 && query.trim().length < 2;
+
   return (
     <>
+      <BBTooltip content="Tìm kiếm">
       <button
         className="wp-icon-btn"
         aria-label="Tìm kiếm"
@@ -97,6 +152,7 @@ export function SearchToggle() {
           <path d="m21 21-4.35-4.35" />
         </svg>
       </button>
+      </BBTooltip>
 
       {open && (
         <>
@@ -152,7 +208,11 @@ export function SearchToggle() {
                 autoComplete="off"
               />
 
-              {query && (
+              {suggestLoading && (
+                <span className="wp-search-spinner" aria-hidden="true" />
+              )}
+
+              {query && !suggestLoading && (
                 <button
                   type="button"
                   className="wp-search-clear"
@@ -164,7 +224,52 @@ export function SearchToggle() {
               )}
             </form>
 
-            {recent.length > 0 && (
+            {/* Instant suggestions */}
+            {hasSuggestions && (
+              <div className="wp-search-body">
+                <div className="wp-search-main" style={{ gridColumn: "1 / -1" }}>
+                  <div className="wp-search-block">
+                    <div className="wp-search-block-head">
+                      <span className="label">Sản phẩm gợi ý</span>
+                    </div>
+                    <ul className="wp-search-suggest-list">
+                      {suggestions.map((p) => {
+                        const price = p.price?.salePrice ?? p.price?.retailPrice;
+                        return (
+                          <li key={p.id}>
+                            <Link
+                              href={toProductPath(p.slug)}
+                              className="wp-search-suggest-item"
+                              onClick={() => {
+                                saveSearch(p.name);
+                                setOpen(false);
+                              }}
+                            >
+                              <span className="wp-search-suggest-name">{p.name}</span>
+                              {price != null && price > 0 && (
+                                <span className="wp-search-suggest-price">{formatVnd(price)}</span>
+                              )}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="wp-search-suggest-all">
+                      <button
+                        type="button"
+                        className="tiny"
+                        onClick={() => doSearch(query)}
+                      >
+                        Xem tất cả kết quả cho &ldquo;{query.trim()}&rdquo; →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recent searches (when no query yet) */}
+            {showRecent && (
               <div className="wp-search-body">
                 <div className="wp-search-main" style={{ gridColumn: "1 / -1" }}>
                   <div className="wp-search-block">

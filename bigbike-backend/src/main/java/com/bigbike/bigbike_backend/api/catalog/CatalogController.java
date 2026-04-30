@@ -1,12 +1,19 @@
 package com.bigbike.bigbike_backend.api.catalog;
 
+import com.bigbike.bigbike_backend.api.catalog.dto.ProductSnapshotResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Collections;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,6 +32,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+
+    private static final Map<ProductStockState, String> STOCK_LABELS = Map.of(
+            ProductStockState.IN_STOCK, "Còn hàng",
+            ProductStockState.LOW_STOCK, "Còn ít",
+            ProductStockState.OUT_OF_STOCK, "Hết hàng",
+            ProductStockState.PREORDER, "Đặt trước",
+            ProductStockState.CONTACT_FOR_STOCK, "Liên hệ"
+    );
 
     private final CatalogReadService catalogReadService;
     private final ApiResponseFactory apiResponseFactory;
@@ -71,6 +86,59 @@ public class CatalogController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(catalogReadService.getProductBySlug(slug), request);
+    }
+
+    /**
+     * Lightweight pricing/stock snapshot used by the storefront and mobile to refresh
+     * the buy-box without re-fetching the whole product. Accepts both slug and internal id.
+     */
+    @GetMapping("/products/{idOrSlug}/snapshot")
+    public ApiDataResponse<ProductSnapshotResponse> getProductSnapshot(
+            @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid product key.") String idOrSlug,
+            HttpServletRequest request
+    ) {
+        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug);
+        return apiResponseFactory.data(toSnapshot(product), request);
+    }
+
+    private static ProductSnapshotResponse toSnapshot(Product product) {
+        ProductPrice price = product.price();
+        BigDecimal retail = price != null && price.retailPrice() != null
+                ? price.retailPrice() : BigDecimal.ZERO;
+        BigDecimal compareAt = price != null ? price.compareAtPrice() : null;
+        BigDecimal sale = price != null ? price.salePrice() : null;
+        BigDecimal effective = sale != null ? sale : retail;
+
+        int discountPercent = 0;
+        if (compareAt != null && compareAt.signum() > 0 && compareAt.compareTo(effective) > 0) {
+            BigDecimal ratio = effective.divide(compareAt, 4, RoundingMode.HALF_UP);
+            discountPercent = BigDecimal.ONE.subtract(ratio)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(0, RoundingMode.HALF_UP)
+                    .intValue();
+        }
+
+        ProductStockState state = product.stockState() != null
+                ? product.stockState() : ProductStockState.IN_STOCK;
+
+        ProductSnapshotResponse.Pricing pricing = new ProductSnapshotResponse.Pricing(
+                retail,
+                compareAt,
+                sale,
+                discountPercent,
+                price != null && price.currency() != null ? price.currency() : "VND"
+        );
+        ProductSnapshotResponse.Stock stock = new ProductSnapshotResponse.Stock(
+                state.name(),
+                STOCK_LABELS.getOrDefault(state, state.name()),
+                Boolean.TRUE.equals(product.forceOutOfStock()),
+                product.stockQuantity()
+        );
+        return new ProductSnapshotResponse(
+                pricing,
+                stock,
+                product.variants() != null ? product.variants() : Collections.emptyList()
+        );
     }
 
     @GetMapping("/categories")

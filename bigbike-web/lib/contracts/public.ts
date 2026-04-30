@@ -104,6 +104,10 @@ export type ProductPrice = {
 export type ProductVariantOption = {
   name: string;
   value: string;
+  /** Hex colour from the term-level swatch metadata, e.g. "#a52a2a". */
+  colorHex?: string | null;
+  /** Term-level swatch thumbnail URL (resolved server-side from attachment id). */
+  swatchImageUrl?: string | null;
 };
 
 export type ProductVariant = {
@@ -113,7 +117,17 @@ export type ProductVariant = {
   options: ProductVariantOption[];
   price?: ProductPrice;
   stockState: ProductStockState;
+  /** On-hand count for this specific variant when tracked. */
+  stockQuantity?: number | null;
+  /** Cover image used in chip thumbnails / cart line items. */
   image?: ImageAsset | null;
+  /**
+   * Color-scoped variant gallery (mirrors WP `rtwpvg_images` but normalized
+   * so every size of the same color exposes the same gallery). The PDP only
+   * swaps to this list when Color changes; non-color options fall back to the
+   * current color gallery or product-level gallery.
+   */
+  gallery?: ImageAsset[];
   isAvailable: boolean;
 };
 
@@ -156,6 +170,9 @@ export type Product = {
   isFeatured?: boolean;
   showOnHomepage?: boolean;
   rating?: number | null;
+  ratingCount?: number | null;
+  /** Long-form rich-HTML SEO copy rendered at the bottom of the PDP. */
+  contentBottom?: string | null;
   seo?: SeoMeta;
   createdAt: string;
   updatedAt: string;
@@ -207,6 +224,7 @@ export type Article = {
   excerpt?: string;
   body: string;
   coverImage?: ImageAsset;
+  productImage?: ImageAsset;
   author?: AuthorSummary;
   category?: ContentCategorySummary;
   categories?: ContentCategorySummary[];
@@ -247,6 +265,17 @@ export type PublicMenu = {
   location: string;
   name: string;
   items: PublicMenuItem[];
+};
+
+export type HomeVideo = {
+  id: string;
+  sortOrder: number;
+  title: string;
+  videoUrl: string;
+  youtubeId: string | null;
+  embedUrl: string | null;
+  autoThumbnailUrl: string | null;
+  thumbnail: ImageAsset | null;
 };
 
 export type PublicSiteSetting = {

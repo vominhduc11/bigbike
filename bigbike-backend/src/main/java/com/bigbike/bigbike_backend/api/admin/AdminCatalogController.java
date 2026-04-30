@@ -68,6 +68,8 @@ public class AdminCatalogController {
             @RequestParam(required = false) @Size(max = 100) String search,
             @RequestParam(required = false) @Pattern(regexp = PUBLISH_STATUS_REGEX, message = "Invalid publishStatus.") String publishStatus,
             @RequestParam(required = false) @Pattern(regexp = STOCK_STATE_REGEX, message = "Invalid stockState.") String stockState,
+            @RequestParam(required = false) @Size(max = 100) String brandId,
+            @RequestParam(required = false) @Size(max = 100) String categoryId,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.read");
@@ -80,7 +82,9 @@ public class AdminCatalogController {
                         q,
                         search,
                         publishStatus,
-                        stockState
+                        stockState,
+                        brandId,
+                        categoryId
                 ),
                 request
         );

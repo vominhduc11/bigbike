@@ -1,7 +1,7 @@
 // Next.js 16 renamed the `middleware` file convention to `proxy`.
 // See node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md
-// This version keeps the redirect lookup logic but avoids a Redis dependency,
-// so production builds do not require `ioredis` to be installed.
+// This version keeps the redirect lookup logic but resolves rules through the
+// backend and a small in-process cache.
 
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -94,6 +94,17 @@ function isLoop(currentPath: string, target: string): boolean {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
+
+  // Auth protection: /tai-khoan/* requires bb_session cookie
+  if (pathname.startsWith("/tai-khoan")) {
+    const sessionCookie = request.cookies.get("bb_session");
+    if (!sessionCookie?.value) {
+      const loginUrl = new URL("/dang-nhap", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
 
   if (pathname === "/" && request.nextUrl.searchParams.has("s")) {
     const query = request.nextUrl.searchParams.get("s")?.trim() ?? "";

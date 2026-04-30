@@ -100,8 +100,8 @@ public class CustomerPasswordResetService {
         if (rawToken == null || rawToken.isBlank()) {
             throw ValidationException.fromField("token", "REQUIRED", "Reset token is required.");
         }
-        if (newPassword == null || newPassword.length() < 6) {
-            throw ValidationException.fromField("password", "TOO_SHORT", "Password must be at least 6 characters.");
+        if (newPassword == null || newPassword.length() < 8) {
+            throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
         }
 
         CustomerPasswordResetTokenEntity token = tokenRepo.findByTokenHash(sha256Hex(rawToken))
