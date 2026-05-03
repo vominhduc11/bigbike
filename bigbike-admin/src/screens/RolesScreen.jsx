@@ -68,24 +68,13 @@ const PERM_LABEL_KEY_MAP = Object.fromEntries(
   PERMISSION_CATALOG.flatMap(g => g.permissions.map(p => [p.key, p.labelKey]))
 )
 
-// Well-known role IDs → business-friendly Vietnamese display names
-const ROLE_DISPLAY_NAMES = {
-  SUPER_ADMIN:  'Chủ hệ thống',
-  ADMIN:        'Quản trị viên',
-  SHOP_MANAGER: 'Quản lý cửa hàng',
-  EDITOR:       'Biên tập viên',
-  AUTHOR:       'Tác giả',
-  CONTRIBUTOR:  'Cộng tác viên',
-  SEO_EDITOR:   'SEO chuyên gia',
-}
-
-function getRoleDisplayName(role) {
-  return ROLE_DISPLAY_NAMES[role.id] || role.name || formatRoleName(role.id)
-}
-
 function formatRoleName(id) {
   if (!id) return ''
   return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function getRoleDisplayName(role, t) {
+  return t(`roles.roleLabel_${role.id}`, { defaultValue: role.name || formatRoleName(role.id) })
 }
 
 function setsEqual(a, b) {
@@ -290,6 +279,7 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
   const [id, setId]   = useState('')
   const [desc, setDesc] = useState('')
   const [idManual, setIdManual] = useState(false)
+  const [showId, setShowId] = useState(false)
   const [error, setError] = useState('')
 
   function handleNameChange(v) {
@@ -344,23 +334,40 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
             />
           </div>
 
-          <div>
-            <label htmlFor="create-role-id" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
-              {t('roles.createRoleIdLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
-            </label>
-            <input
-              id="create-role-id"
-              type="text"
-              className="control-input"
-              value={id}
-              onChange={e => handleIdChange(e.target.value)}
-              placeholder={t('roles.createRoleIdPlaceholder')}
-              style={{ fontFamily: 'var(--admin-font-mono)' }}
-            />
-            <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
-              {t('roles.createRoleIdHint')}
+          {/* Technical ID — hidden by default, auto-generated from name */}
+          {!showId && id && (
+            <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>{t('roles.createRoleIdAutoLabel')}: </span>
+              <code style={{ fontFamily: 'var(--admin-font-mono)', color: 'var(--admin-color-text-secondary)' }}>{id}</code>
+              <button
+                type="button"
+                onClick={() => setShowId(true)}
+                style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                {t('roles.createRoleIdCustomize')}
+              </button>
             </div>
-          </div>
+          )}
+
+          {showId && (
+            <div>
+              <label htmlFor="create-role-id" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
+                {t('roles.createRoleIdLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
+              </label>
+              <input
+                id="create-role-id"
+                type="text"
+                className="control-input"
+                value={id}
+                onChange={e => handleIdChange(e.target.value)}
+                placeholder={t('roles.createRoleIdPlaceholder')}
+                style={{ fontFamily: 'var(--admin-font-mono)' }}
+              />
+              <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
+                {t('roles.createRoleIdHint')}
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="create-role-desc" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
@@ -425,7 +432,7 @@ function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
           fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-secondary)',
           margin: '0 0 20px', lineHeight: 1.65, whiteSpace: 'pre-line',
         }}>
-          {t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role) })}
+          {t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) })}
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
@@ -458,7 +465,7 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
     <div className="roles-sidebar">
       {roles.map(role => {
         const isActive = role.id === selectedId
-        const displayName = getRoleDisplayName(role)
+        const displayName = getRoleDisplayName(role, t)
         const descKey = `roles.roleDesc_${role.id}`
         const desc = t(descKey, { defaultValue: role.description || '' })
         const showDesc = desc && desc !== displayName
@@ -476,13 +483,6 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
                 {displayName}
               </span>
               <Badge isSystem={role.isSystem} />
-            </div>
-            {/* Technical ID — secondary info */}
-            <div style={{
-              fontSize: '0.68rem', color: 'var(--admin-color-text-muted)',
-              paddingLeft: 21, fontFamily: 'var(--admin-font-mono)', opacity: 0.65,
-            }}>
-              {role.id}
             </div>
             {showDesc && (
               <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', paddingLeft: 21, marginTop: 2 }}>
@@ -636,7 +636,7 @@ function RoleDetail({
   const activePerms = (editMode && draft) ? draft : new Set(role.permissions)
   const descKey = `roles.roleDesc_${role.id}`
   const desc = t(descKey, { defaultValue: role.description || '' })
-  const displayName = getRoleDisplayName(role)
+  const displayName = getRoleDisplayName(role, t)
   const showDesc = desc && desc !== displayName
 
   return (
@@ -652,13 +652,6 @@ function RoleDetail({
               {displayName}
             </h2>
             <Badge isSystem={role.isSystem} />
-          </div>
-          {/* Technical ID — small, secondary */}
-          <div style={{
-            fontSize: '0.68rem', color: 'var(--admin-color-text-muted)',
-            fontFamily: 'var(--admin-font-mono)', marginBottom: showDesc ? 4 : 0, opacity: 0.65,
-          }}>
-            ID: {role.id}
           </div>
           {showDesc && (
             <p style={{ margin: 0, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)' }}>
@@ -743,18 +736,14 @@ function RoleDetail({
       {/* Super admin — business-friendly explanation */}
       {isSuperAdmin && (
         <div style={{
-          padding: '12px 16px', marginBottom: 20, borderRadius: 'var(--admin-radius-xs)',
+          padding: '10px 14px', marginBottom: 20, borderRadius: 'var(--admin-radius-xs)',
           background: 'var(--admin-color-brand-red-muted)',
           border: '1px solid rgba(232,40,30,0.25)',
+          display: 'flex', alignItems: 'flex-start', gap: 8,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Shield size={15} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0 }} aria-hidden />
-            <strong style={{ fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-primary)' }}>
-              {t('roles.superAdminTitle')}
-            </strong>
-          </div>
+          <Shield size={14} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0, marginTop: 2 }} aria-hidden />
           <p style={{ margin: 0, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-secondary)', lineHeight: 1.6 }}>
-            {t('roles.superAdminNote')}
+            {t('roles.superAdminBanner')}
           </p>
         </div>
       )}
@@ -810,7 +799,11 @@ function RoleDetail({
       {/* Timestamp */}
       {role.updatedAt && (
         <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 8 }}>
-          {t('common.lastUpdated')} {new Date(role.updatedAt).toLocaleString('vi-VN')}
+          {t('common.lastUpdated')}{' '}
+          {new Date(role.updatedAt).toLocaleString(undefined, {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+          })}
         </div>
       )}
     </div>
@@ -875,7 +868,7 @@ export function RolesScreen({ canUpdate = false }) {
     permLabels[p.key] = t(p.labelKey)
   }))
 
-  const selectedDisplayName = selected ? getRoleDisplayName(selected) : ''
+  const selectedDisplayName = selected ? getRoleDisplayName(selected, t) : ''
 
   function handleSelectRole(id) {
     if (editMode && isDirty) {
@@ -967,7 +960,7 @@ export function RolesScreen({ canUpdate = false }) {
     setDeleteSaving(true)
     try {
       await deleteRole(deletingRole.id)
-      const deletedName = getRoleDisplayName(deletingRole)
+      const deletedName = getRoleDisplayName(deletingRole, t)
       const remaining = roles.filter(r => r.id !== deletingRole.id)
       setRoles(remaining)
       if (selectedId === deletingRole.id) {

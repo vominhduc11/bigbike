@@ -1605,8 +1605,8 @@ a {
   }
 }
 
-/* ── Mobile (≤768px): hamburger + sidebar drawer ── */
-@media (max-width: 768px) {
+/* ── Tablet + Mobile (≤900px): hamburger + sidebar drawer ── */
+@media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -1654,7 +1654,7 @@ a {
     gap: var(--admin-space-2);
   }
 
-  /* Hide lang switcher on very small screens */
+  /* Hide lang switcher on small screens */
   .lang-switcher {
     display: none;
   }
@@ -3900,20 +3900,9 @@ a {
   border-bottom: none;
 }
 
-/* Technical code chip — secondary info, always uses surface-muted so it works in dark mode */
+/* Technical code chip — hidden by default; visible only for developer/debug use */
 .roles-perm-code {
-  font-size: 0.7rem;
-  font-family: var(--admin-font-mono);
-  color: var(--admin-color-text-muted);
-  background: var(--admin-color-surface-muted);
-  border: 1px solid var(--admin-color-border-subtle);
-  padding: 1px 6px;
-  border-radius: var(--admin-radius-xs);
-  flex-shrink: 0;
-  white-space: nowrap;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none;
 }
 
 .roles-confirm-overlay {
@@ -3941,7 +3930,7 @@ a {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .roles-layout {
     grid-template-columns: 1fr;
     border: none;
@@ -3949,7 +3938,7 @@ a {
     border-radius: 0;
   }
 
-  /* Mobile master-detail: show only one panel at a time */
+  /* Tablet/mobile master-detail: show only one panel at a time */
   .roles-layout.detail-open .roles-sidebar {
     display: none;
   }

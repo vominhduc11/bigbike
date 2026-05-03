@@ -92,6 +92,10 @@ export function AdminShell({
 
   const isLive = authMode === 'live'
 
+  function formatRoles(roles) {
+    return roles.map(r => t(`roles.roleLabel_${r}`, { defaultValue: r.replace(/_/g, ' ') })).join(', ')
+  }
+
   return (
     <>
       <div className={`app-shell${sidebarOpen ? ' sidebar-open' : ''}`}>
@@ -143,7 +147,7 @@ export function AdminShell({
               {user.fullName}
             </div>
             <div style={{ fontSize: 'var(--admin-text-xs)', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-              {user.roles.join(', ')}
+              {formatRoles(user.roles)}
             </div>
           </div>
         </aside>
@@ -172,6 +176,7 @@ export function AdminShell({
               <span
                 className={`mode-pill ${isLive ? 'mode-pill-live' : 'mode-pill-mock'}`}
                 aria-live="polite"
+                title={!isLive ? t('auth.connectionOfflineTooltip') : undefined}
               >
                 {isLive ? t('auth.connectionLive') : t('auth.connectionOffline')}
               </span>
@@ -193,7 +198,7 @@ export function AdminShell({
                   </span>
                   <span className="topbar-user-info">
                     <strong>{user.fullName}</strong>
-                    <span>{user.roles.join(', ')}</span>
+                    <span>{formatRoles(user.roles)}</span>
                   </span>
                   <ChevronDown size={13} className={`topbar-chevron${userMenuOpen ? ' open' : ''}`} aria-hidden="true" />
                 </button>

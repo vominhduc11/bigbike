@@ -55,7 +55,8 @@
     "forgotPasswordNote": "Contact your system administrator to reset your password.",
     "supportContact": "Technical support",
     "connectionLive": "Connected",
-    "connectionOffline": "Offline mode"
+    "connectionOffline": "Demo data",
+    "connectionOfflineTooltip": "Using sample data — not connected to a live server"
   },
   "nav": {
     "dashboard": "Overview",
@@ -1065,7 +1066,7 @@
   },
   "roles": {
     "eyebrow": "System",
-    "title": "Roles & Access",
+    "title": "Permissions",
     "description": "Manage staff roles and permissions. All changes are recorded in the audit log.",
     "loading": "Loading roles...",
     "loadError": "Failed to load roles.",
@@ -1081,8 +1082,7 @@
     "saveSuccess": "Role permissions saved successfully.",
     "saveError": "Failed to save permissions. Please try again.",
     "discardChanges": "You have unsaved changes. Discard and switch roles?",
-    "superAdminTitle": "Owner (Super Admin) — read-only",
-    "superAdminNote": "This is the highest-level role. All permissions are granted automatically and cannot be changed through the UI.",
+    "superAdminBanner": "The Owner role has full access — all permissions are granted automatically and cannot be changed through the UI.",
     "noEditPermission": "View only. You need admin-users.write permission to edit role permissions.",
     "noEditSystem": "The Owner role cannot be edited.",
     "sensitivePermTitle": "Confirm sensitive permission change",
@@ -1108,9 +1108,11 @@
     "createRoleBtn": "Create role",
     "createRoleNameLabel": "Role name (display)",
     "createRoleNamePlaceholder": "E.g. Warehouse Staff",
-    "createRoleIdLabel": "Technical ID",
+    "createRoleIdLabel": "Role ID",
     "createRoleIdPlaceholder": "E.g. WAREHOUSE_STAFF",
     "createRoleIdHint": "Uppercase letters, numbers and underscores only. Cannot be changed after creation.",
+    "createRoleIdAutoLabel": "Auto ID",
+    "createRoleIdCustomize": "Customize",
     "createRoleDescLabel": "Description (optional)",
     "createRoleDescPlaceholder": "Short description of this role",
     "createRoleErrorName": "Role name is required.",
@@ -1161,7 +1163,14 @@
     "roleDesc_EDITOR": "Editor",
     "roleDesc_AUTHOR": "Author",
     "roleDesc_CONTRIBUTOR": "Contributor",
-    "roleDesc_SEO_EDITOR": "SEO specialist"
+    "roleDesc_SEO_EDITOR": "SEO specialist",
+    "roleLabel_SUPER_ADMIN": "System Owner",
+    "roleLabel_ADMIN": "Administrator",
+    "roleLabel_SHOP_MANAGER": "Shop Manager",
+    "roleLabel_EDITOR": "Editor",
+    "roleLabel_AUTHOR": "Author",
+    "roleLabel_CONTRIBUTOR": "Contributor",
+    "roleLabel_SEO_EDITOR": "SEO Specialist"
   },
   "export": {
     "exportCsv": "Export CSV",

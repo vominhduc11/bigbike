@@ -55,7 +55,8 @@
     "forgotPasswordNote": "Liên hệ quản trị viên hệ thống để đặt lại mật khẩu.",
     "supportContact": "Hỗ trợ kỹ thuật",
     "connectionLive": "Đang kết nối",
-    "connectionOffline": "Chế độ offline"
+    "connectionOffline": "Dữ liệu mẫu",
+    "connectionOfflineTooltip": "Đang dùng dữ liệu mẫu — chưa kết nối server thực"
   },
   "nav": {
     "dashboard": "Tổng quan",
@@ -1066,7 +1067,7 @@
   },
   "roles": {
     "eyebrow": "Hệ thống",
-    "title": "Vai trò & Quyền truy cập",
+    "title": "Phân quyền",
     "description": "Phân quyền nhân sự hệ thống. Mọi thay đổi được ghi vào nhật ký kiểm tra.",
     "loading": "Đang tải danh sách vai trò...",
     "loadError": "Không thể tải danh sách vai trò.",
@@ -1082,8 +1083,7 @@
     "saveSuccess": "Đã lưu quyền vai trò thành công.",
     "saveError": "Không thể lưu quyền. Vui lòng thử lại.",
     "discardChanges": "Bạn có thay đổi chưa lưu. Bỏ qua và chuyển vai trò?",
-    "superAdminTitle": "Vai trò Chủ hệ thống — không thể chỉnh sửa",
-    "superAdminNote": "Đây là vai trò cấp cao nhất. Mọi quyền hạn trong hệ thống đều được cấp tự động và không thể thay đổi qua giao diện.",
+    "superAdminBanner": "Chủ hệ thống có toàn quyền — mọi quyền hạn được cấp tự động và không thể thay đổi qua giao diện.",
     "noEditPermission": "Bạn chỉ có quyền xem. Cần quyền admin-users.write để chỉnh sửa phân quyền.",
     "noEditSystem": "Vai trò Chủ hệ thống không thể chỉnh sửa.",
     "sensitivePermTitle": "Xác nhận thay đổi quyền nhạy cảm",
@@ -1109,9 +1109,11 @@
     "createRoleBtn": "Tạo vai trò",
     "createRoleNameLabel": "Tên vai trò (hiển thị)",
     "createRoleNamePlaceholder": "VD: Nhân viên kho",
-    "createRoleIdLabel": "Mã định danh (ID kỹ thuật)",
+    "createRoleIdLabel": "Mã định danh",
     "createRoleIdPlaceholder": "VD: WAREHOUSE_STAFF",
     "createRoleIdHint": "Chỉ dùng chữ HOA, số và dấu gạch dưới. Không thể thay đổi sau khi tạo.",
+    "createRoleIdAutoLabel": "Mã tự tạo",
+    "createRoleIdCustomize": "Tuỳ chỉnh",
     "createRoleDescLabel": "Mô tả (tuỳ chọn)",
     "createRoleDescPlaceholder": "Mô tả ngắn về vai trò này",
     "createRoleErrorName": "Tên vai trò là bắt buộc.",
@@ -1162,7 +1164,14 @@
     "roleDesc_EDITOR": "Biên tập viên",
     "roleDesc_AUTHOR": "Tác giả",
     "roleDesc_CONTRIBUTOR": "Cộng tác viên",
-    "roleDesc_SEO_EDITOR": "Chuyên gia SEO"
+    "roleDesc_SEO_EDITOR": "Chuyên gia SEO",
+    "roleLabel_SUPER_ADMIN": "Chủ hệ thống",
+    "roleLabel_ADMIN": "Quản trị viên",
+    "roleLabel_SHOP_MANAGER": "Quản lý cửa hàng",
+    "roleLabel_EDITOR": "Biên tập viên",
+    "roleLabel_AUTHOR": "Tác giả",
+    "roleLabel_CONTRIBUTOR": "Cộng tác viên",
+    "roleLabel_SEO_EDITOR": "SEO chuyên gia"
   },
   "export": {
     "exportCsv": "Xuất CSV",

@@ -175,6 +175,10 @@ async function requestJson(endpoint, options = {}) {
 // ── Admin auth API ───────────────────────────────────────────────────────────
 
 export async function loginAdmin({ email, password }) {
+  if (FORCE_MOCK) {
+    writeTokens({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    return { user: buildMockAdminUser(DEFAULT_MOCK_ROLE) }
+  }
   // credentials: 'include' so the server can set the httpOnly refresh cookie
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
@@ -1744,7 +1748,33 @@ function normalizeRole(input) {
   }
 }
 
+function buildMockRoles() {
+  const ALL_PERMS = [
+    'orders.read','orders.write','customers.read','customers.write',
+    'coupons.read','coupons.write','shipping.read','shipping.write',
+    'reviews.read','reviews.write',
+    'products.read','products.update','catalog.read','catalog.update',
+    'content.read','content.update','media.read','media.write',
+    'menus.read','menus.write','sliders.read','sliders.write',
+    'home_videos.read','home_videos.write',
+    'settings.read','settings.write',
+    'admin-users.read','admin-users.write','audit-logs.read',
+  ]
+  return [
+    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Toàn quyền hệ thống', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'ADMIN', name: 'Admin', description: 'Quản lý toàn bộ shop', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SHOP_MANAGER', name: 'Shop Manager', description: 'Vận hành bán hàng', isSystem: true, permissions: ['orders.read','orders.write','customers.read','customers.write','coupons.read','coupons.write','shipping.read','reviews.read','reviews.write','products.read','products.update','catalog.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'EDITOR', name: 'Editor', description: 'Nội dung & sản phẩm', isSystem: true, permissions: ['products.read','catalog.read','content.read','content.update','media.read','media.write','menus.read','menus.write','sliders.read','sliders.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'AUTHOR', name: 'Author', description: 'Viết & upload ảnh', isSystem: true, permissions: ['content.read','content.update','media.read','media.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'CONTRIBUTOR', name: 'Contributor', description: 'Chỉ xem nội dung', isSystem: true, permissions: ['content.read','media.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SEO_EDITOR', name: 'SEO Editor', description: 'Tối ưu nội dung SEO', isSystem: true, permissions: ['content.read','content.update'], updatedAt: '2026-04-15T10:00:00Z' },
+  ]
+}
+
 export async function fetchRoles() {
+  if (FORCE_MOCK) {
+    return withMockFallback('Roles served from mock data.', { items: buildMockRoles() })
+  }
   try {
     const payload = await requestJson('/admin/roles')
     const list = Array.isArray(payload?.data) ? payload.data.map(normalizeRole) : []
@@ -1752,7 +1782,7 @@ export async function fetchRoles() {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, { items: [] })
+    return withMockFallback(e.message, { items: buildMockRoles() })
   }
 }
 
