@@ -936,7 +936,7 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
 
 export async function fetchSettings() {
   if (FORCE_MOCK) {
-    return withMockFallback('Settings served from mock.', queryMockSettings())
+    return withMockFallback('Đang hiển thị dữ liệu mẫu — chưa kết nối hệ thống thật. Mọi thay đổi sẽ không được lưu.', queryMockSettings())
   }
   try {
     const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })

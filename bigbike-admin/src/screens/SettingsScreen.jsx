@@ -35,7 +35,7 @@ function SettingGroup({ group, items, canUpdate, editing, saving, errors, onEdit
               <tr>
                 <th scope="col">{t('settings.colKey')}</th>
                 <th scope="col">{t('settings.colValue')}</th>
-                <th scope="col">{t('common.lastUpdated')}</th>
+                <th scope="col" className="settings-col-updated">{t('settings.colUpdated')}</th>
                 {canUpdate && <th scope="col" className="align-right">{t('settings.colActions')}</th>}
               </tr>
             </thead>
@@ -44,13 +44,13 @@ function SettingGroup({ group, items, canUpdate, editing, saving, errors, onEdit
                 const isEditing = setting.key in editing
                 return (
                   <tr key={setting.key}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
-                      {setting.key}
-                      {setting.description && (
-                        <p style={{ fontFamily: 'inherit', fontSize: '0.75rem', marginTop: 2, color: 'var(--admin-color-text-muted)' }}>
-                          {setting.description}
-                        </p>
-                      )}
+                    <td>
+                      <span style={{ fontWeight: 500, color: 'var(--admin-color-text-primary)' }}>
+                        {setting.description || setting.key}
+                      </span>
+                      <p style={{ fontFamily: 'monospace', fontSize: '0.72rem', marginTop: 2, color: 'var(--admin-color-text-muted)' }}>
+                        {setting.key}
+                      </p>
                     </td>
                     <td>
                       {isEditing ? (
@@ -69,7 +69,7 @@ function SettingGroup({ group, items, canUpdate, editing, saving, errors, onEdit
                         <p className="field-error" style={{ marginTop: 4 }}>{errors[setting.key]}</p>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
+                    <td className="settings-col-updated" style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
                       {formatDateTime(setting.updatedAt)}
                     </td>
                     {canUpdate && (

@@ -3005,6 +3005,16 @@ a {
   padding: 1px 8px;
 }
 
+.settings-group .admin-table {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .settings-col-updated {
+    display: none;
+  }
+}
+
 /* ─── Category tree view ─────────────────────────────────────────────────── */
 
 .cat-tree-wrap { margin-top: var(--admin-space-4); }
