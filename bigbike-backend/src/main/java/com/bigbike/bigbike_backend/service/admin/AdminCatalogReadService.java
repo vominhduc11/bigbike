@@ -4,8 +4,6 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
-import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
@@ -53,12 +51,8 @@ public class AdminCatalogReadService {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
 
-        List<Product> result = catalogReadRepository.findAllProducts().stream()
-                .filter(product -> matchesPublishStatus(product, publishStatus))
-                .filter(product -> matchesStockState(product, stockState))
-                .filter(product -> matchesProductQuery(product, query))
-                .filter(product -> matchesBrandId(product, brandId))
-                .filter(product -> matchesCategoryId(product, categoryId))
+        List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId)
+                .stream()
                 .sorted(productComparator(sortSpec))
                 .toList();
 
@@ -127,20 +121,6 @@ public class AdminCatalogReadService {
         return search;
     }
 
-    private static boolean matchesPublishStatus(Product product, String publishStatusRaw) {
-        if (publishStatusRaw == null || publishStatusRaw.isBlank()) {
-            return true;
-        }
-        return product.publishStatus() == PublishStatus.valueOf(publishStatusRaw);
-    }
-
-    private static boolean matchesStockState(Product product, String stockStateRaw) {
-        if (stockStateRaw == null || stockStateRaw.isBlank()) {
-            return true;
-        }
-        return product.stockState() == ProductStockState.valueOf(stockStateRaw);
-    }
-
     private static boolean matchesVisibility(boolean isVisible, String visibilityRaw) {
         if (visibilityRaw == null || visibilityRaw.isBlank()) {
             return true;
@@ -149,30 +129,6 @@ public class AdminCatalogReadService {
             return isVisible;
         }
         return !isVisible;
-    }
-
-    private static boolean matchesBrandId(Product product, String brandId) {
-        if (brandId == null || brandId.isBlank()) return true;
-        return product.brand() != null && brandId.equals(product.brand().id());
-    }
-
-    private static boolean matchesCategoryId(Product product, String categoryId) {
-        if (categoryId == null || categoryId.isBlank()) return true;
-        if (product.category() != null && categoryId.equals(product.category().id())) return true;
-        if (product.categories() != null) {
-            return product.categories().stream().anyMatch(c -> categoryId.equals(c.id()));
-        }
-        return false;
-    }
-
-    private static boolean matchesProductQuery(Product product, String query) {
-        if (query == null || query.isBlank()) {
-            return true;
-        }
-        String term = query.toLowerCase(Locale.ROOT);
-        return product.name().toLowerCase(Locale.ROOT).contains(term)
-                || product.slug().toLowerCase(Locale.ROOT).contains(term)
-                || (product.sku() != null && product.sku().toLowerCase(Locale.ROOT).contains(term));
     }
 
     private static boolean matchesCategoryQuery(Category category, String query) {

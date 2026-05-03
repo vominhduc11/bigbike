@@ -152,7 +152,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       <header className="screen-header">
         <div>
           <p className="eyebrow">{t('orders.detail.eyebrow')}</p>
-          <h1>{formatText(order.orderNumber, `#${orderId}`)}</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {formatText(order.orderNumber, `#${orderId}`)}
+            {order.source === 'pos' && <span className="badge-pos">POS</span>}
+          </h1>
           <p>{t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin/orders')}>

@@ -344,6 +344,23 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+        return products.stream()
+                .filter(p -> query == null || query.isBlank()
+                        || p.name().toLowerCase().contains(query.toLowerCase())
+                        || p.slug().toLowerCase().contains(query.toLowerCase()))
+                .filter(p -> publishStatus == null || publishStatus.isBlank()
+                        || p.publishStatus().name().equalsIgnoreCase(publishStatus))
+                .filter(p -> stockState == null || stockState.isBlank()
+                        || p.stockState().name().equalsIgnoreCase(stockState))
+                .filter(p -> brandId == null || brandId.isBlank()
+                        || (p.brand() != null && p.brand().id().equals(brandId)))
+                .filter(p -> categoryId == null || categoryId.isBlank()
+                        || (p.category() != null && p.category().id().equals(categoryId)))
+                .toList();
+    }
+
+    @Override
     public Optional<Product> findProductBySlug(String slug) {
         return products.stream().filter(product -> product.slug().equals(slug)).findFirst();
     }

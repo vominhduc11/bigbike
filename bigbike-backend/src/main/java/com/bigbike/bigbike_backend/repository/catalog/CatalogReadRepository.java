@@ -10,6 +10,8 @@ public interface CatalogReadRepository {
 
     List<Product> findAllProducts();
 
+    List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId);
+
     Optional<Product> findProductBySlug(String slug);
 
     Optional<Product> findProductById(String id);

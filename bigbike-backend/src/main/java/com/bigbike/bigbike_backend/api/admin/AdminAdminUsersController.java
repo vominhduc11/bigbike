@@ -11,15 +11,18 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -48,10 +51,12 @@ public class AdminAdminUsersController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.read");
-        return apiResponseFactory.list(adminAdminUsersService.listAdminUsers(page, size, q), request);
+        return apiResponseFactory.list(adminAdminUsersService.listAdminUsers(page, size, q, role, status), request);
     }
 
     @GetMapping("/{id}")
@@ -61,6 +66,25 @@ public class AdminAdminUsersController {
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.read");
         return apiResponseFactory.data(adminAdminUsersService.getAdminUser(id), request);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiDataResponse<Map<String, Object>> createAdminUser(
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "admin-users.write");
+        return apiResponseFactory.data(
+                adminAdminUsersService.createAdminUser(
+                        resolveAdminId(),
+                        body.get("email"),
+                        body.get("displayName"),
+                        body.get("role"),
+                        body.get("password")
+                ),
+                request
+        );
     }
 
     @PatchMapping("/{id}")

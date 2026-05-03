@@ -42,6 +42,7 @@ public class AdminAuditLogController {
             @RequestParam(required = false) String resourceType,
             @RequestParam(required = false) String resourceId,
             @RequestParam(required = false) String action,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             HttpServletRequest request
@@ -49,7 +50,7 @@ public class AdminAuditLogController {
         devAdminAuthService.requirePermission(request, "audit-logs.read");
         return apiResponseFactory.list(
                 adminAuditLogService.listAuditLogs(
-                        page, size, actorType, actorId, resourceType, resourceId, action, from, to
+                        page, size, actorType, actorId, resourceType, resourceId, action, q, from, to
                 ),
                 request
         );

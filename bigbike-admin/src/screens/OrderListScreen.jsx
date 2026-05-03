@@ -75,7 +75,10 @@ export function OrderListScreen({ navigate }) {
       label: t('orders.colOrder'),
       render: (order) => (
         <div>
-          <strong>{formatText(order.orderNumber)}</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <strong>{formatText(order.orderNumber)}</strong>
+            {order.source === 'pos' && <span className="badge-pos">POS</span>}
+          </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>{formatText(order.customerEmail)}</p>
         </div>
       ),

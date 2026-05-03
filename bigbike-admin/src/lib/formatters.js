@@ -50,3 +50,17 @@ export function stripHtml(value, fallback = '—') {
 export function formatBoolean(value, trueLabel = 'Yes', falseLabel = 'No') {
   return value ? trueLabel : falseLabel
 }
+
+export function formatDateTimeWithSeconds(value) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return parsed.toLocaleString('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}

@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -24,38 +26,53 @@ public class AdminAdminUsersService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    private static final Set<String> VALID_ROLES = Set.of(
+    private static final Set<String> BUILTIN_ROLES = Set.of(
             "SUPER_ADMIN", "ADMIN", "EDITOR", "SHOP_MANAGER", "AUTHOR", "CONTRIBUTOR", "SEO_EDITOR"
     );
 
+    private static final Set<String> VALID_STATUSES = Set.of("ACTIVE", "DISABLED", "SUSPENDED");
+
     private final AdminUserJpaRepository adminUserRepo;
+    private final AdminRoleJpaRepository adminRoleRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final PasswordService passwordService;
 
     public AdminAdminUsersService(
             AdminUserJpaRepository adminUserRepo,
+            AdminRoleJpaRepository adminRoleRepo,
             AuditLogJpaRepository auditLogRepo,
             PaginationService paginationService,
             PasswordService passwordService
     ) {
         this.adminUserRepo = adminUserRepo;
+        this.adminRoleRepo = adminRoleRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
         this.passwordService = passwordService;
     }
 
-    public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q) {
+    public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         List<AdminUserEntity> all = adminUserRepo.findAll();
+
         if (q != null && !q.isBlank()) {
             String qLower = q.toLowerCase(Locale.ROOT);
             all = all.stream()
                     .filter(u -> matches(u.getEmail(), qLower) || matches(u.getDisplayName(), qLower))
                     .toList();
         }
+        if (roleFilter != null && !roleFilter.isBlank()) {
+            String rf = roleFilter.trim().toUpperCase(Locale.ROOT);
+            all = all.stream().filter(u -> rf.equals(u.getRole())).toList();
+        }
+        if (statusFilter != null && !statusFilter.isBlank()) {
+            String sf = statusFilter.trim().toUpperCase(Locale.ROOT);
+            all = all.stream().filter(u -> sf.equals(u.getStatus())).toList();
+        }
+
         List<Map<String, Object>> mapped = all.stream().map(this::toMap).toList();
         return paginationService.paginate(mapped, normalizedPage, normalizedSize);
     }
@@ -65,9 +82,55 @@ public class AdminAdminUsersService {
                 .orElseThrow(() -> new NotFoundException("Admin user not found.")));
     }
 
-    /**
-     * @param actorId the ID of the admin performing the update (for audit log and self-demotion guard)
-     */
+    @Transactional
+    public Map<String, Object> createAdminUser(UUID actorId, String email, String displayName, String role, String password) {
+        if (email == null || email.isBlank()) {
+            throw new ConflictException("Email is required.");
+        }
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        if (!normalizedEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new ConflictException("Invalid email format.");
+        }
+        if (adminUserRepo.findByEmail(normalizedEmail).isPresent()) {
+            throw new ConflictException("Email already exists: " + normalizedEmail);
+        }
+        if (displayName == null || displayName.isBlank()) {
+            throw new ConflictException("Display name is required.");
+        }
+        String normalizedRole = (role != null) ? role.trim().toUpperCase(Locale.ROOT) : "";
+        if (normalizedRole.isBlank()) {
+            throw new ConflictException("Role is required.");
+        }
+        if (!isValidRole(normalizedRole)) {
+            throw new ConflictException("Invalid role: " + normalizedRole);
+        }
+        if (password == null || password.isBlank()) {
+            throw new ConflictException("Password is required.");
+        }
+        if (password.length() < 8) {
+            throw new ConflictException("Password must be at least 8 characters.");
+        }
+
+        Instant now = Instant.now();
+        AdminUserEntity entity = new AdminUserEntity();
+        entity.setEmail(normalizedEmail);
+        entity.setDisplayName(displayName.trim());
+        entity.setRole(normalizedRole);
+        entity.setStatus("ACTIVE");
+        entity.setPasswordHash(passwordService.hash(password));
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+
+        AdminUserEntity saved = adminUserRepo.save(entity);
+
+        String afterData = "{\"email\":\"" + escapeJson(saved.getEmail())
+                + "\",\"role\":\"" + saved.getRole()
+                + "\",\"status\":\"ACTIVE\"}";
+        auditLogRepo.save(buildAudit(actorId, "ADMIN_USER_CREATED", saved.getId(), null, afterData, now));
+
+        return toMap(saved);
+    }
+
     @Transactional
     public Map<String, Object> updateAdminUser(UUID actorId, UUID id, String displayName, String status, String newPassword, String role) {
         AdminUserEntity entity = adminUserRepo.findById(id)
@@ -75,22 +138,26 @@ public class AdminAdminUsersService {
 
         String beforeRole = entity.getRole();
         String beforeStatus = entity.getStatus();
+        String beforeDisplayName = entity.getDisplayName();
 
-        if (displayName != null && !displayName.isBlank()) entity.setDisplayName(displayName.trim());
-        if (status != null && !status.isBlank()) entity.setStatus(status.toUpperCase(Locale.ROOT));
-        if (newPassword != null && !newPassword.isBlank()) {
-            entity.setPasswordHash(passwordService.hash(newPassword));
+        // --- Guards: validate BEFORE applying changes ---
+        if (status != null && !status.isBlank()) {
+            String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
+            if (!VALID_STATUSES.contains(normalizedStatus)) {
+                throw new ConflictException("Invalid status: " + normalizedStatus + ". Must be ACTIVE, DISABLED or SUSPENDED.");
+            }
+            if (id.equals(actorId) && !"ACTIVE".equals(normalizedStatus)) {
+                throw new ConflictException("Admin cannot deactivate their own account.");
+            }
         }
         if (role != null && !role.isBlank()) {
             String normalizedRole = role.trim().toUpperCase(Locale.ROOT);
-            if (!VALID_ROLES.contains(normalizedRole)) {
+            if (!isValidRole(normalizedRole)) {
                 throw new ConflictException("Invalid role: " + normalizedRole);
             }
-            // Prevent self-demotion from SUPER_ADMIN
             if (id.equals(actorId) && "SUPER_ADMIN".equals(entity.getRole()) && !"SUPER_ADMIN".equals(normalizedRole)) {
                 throw new ConflictException("SUPER_ADMIN cannot demote themselves.");
             }
-            // Prevent removing the last SUPER_ADMIN
             if ("SUPER_ADMIN".equals(entity.getRole()) && !"SUPER_ADMIN".equals(normalizedRole)) {
                 long superAdminCount = adminUserRepo.findAll().stream()
                         .filter(u -> "SUPER_ADMIN".equals(u.getRole()) && "ACTIVE".equals(u.getStatus()))
@@ -99,26 +166,59 @@ public class AdminAdminUsersService {
                     throw new ConflictException("Cannot demote the last active SUPER_ADMIN.");
                 }
             }
-            entity.setRole(normalizedRole);
         }
-        // Prevent self-deactivation
-        if (id.equals(actorId) && status != null && !"ACTIVE".equalsIgnoreCase(status)) {
-            throw new ConflictException("Admin cannot deactivate their own account.");
+
+        // --- Apply changes ---
+        boolean passwordChanged = false;
+        if (displayName != null && !displayName.isBlank()) entity.setDisplayName(displayName.trim());
+        if (status != null && !status.isBlank()) entity.setStatus(status.trim().toUpperCase(Locale.ROOT));
+        if (newPassword != null && !newPassword.isBlank()) {
+            entity.setPasswordHash(passwordService.hash(newPassword));
+            passwordChanged = true;
+        }
+        if (role != null && !role.isBlank()) {
+            entity.setRole(role.trim().toUpperCase(Locale.ROOT));
         }
 
         Instant now = Instant.now();
         entity.setUpdatedAt(now);
         AdminUserEntity saved = adminUserRepo.save(entity);
 
+        // --- Audit: record which fields changed; never log raw password ---
+        StringBuilder beforeSb = new StringBuilder("{");
+        StringBuilder afterSb = new StringBuilder("{");
+        beforeSb.append("\"role\":\"").append(escapeJson(beforeRole)).append("\"");
+        beforeSb.append(",\"status\":\"").append(escapeJson(beforeStatus)).append("\"");
+        afterSb.append("\"role\":\"").append(escapeJson(saved.getRole())).append("\"");
+        afterSb.append(",\"status\":\"").append(escapeJson(saved.getStatus())).append("\"");
+
+        if (!Objects.equals(beforeDisplayName, saved.getDisplayName())) {
+            beforeSb.append(",\"displayName\":\"").append(escapeJson(beforeDisplayName)).append("\"");
+            afterSb.append(",\"displayName\":\"").append(escapeJson(saved.getDisplayName())).append("\"");
+        }
+        if (passwordChanged) {
+            afterSb.append(",\"passwordChanged\":true");
+        }
+        beforeSb.append("}");
+        afterSb.append("}");
+
         auditLogRepo.save(buildAudit(actorId, "ADMIN_USER_UPDATED", id,
-                "{\"role\":\"" + beforeRole + "\",\"status\":\"" + beforeStatus + "\"}",
-                "{\"role\":\"" + saved.getRole() + "\",\"status\":\"" + saved.getStatus() + "\"}", now));
+                beforeSb.toString(), afterSb.toString(), now));
 
         return toMap(saved);
     }
 
+    private boolean isValidRole(String normalizedRole) {
+        return BUILTIN_ROLES.contains(normalizedRole) || adminRoleRepo.existsById(normalizedRole);
+    }
+
     private boolean matches(String field, String q) {
         return field != null && field.toLowerCase(Locale.ROOT).contains(q);
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private Map<String, Object> toMap(AdminUserEntity u) {

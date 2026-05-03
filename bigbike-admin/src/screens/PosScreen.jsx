@@ -347,7 +347,7 @@ export function PosScreen({ canUpdate, userId }) {
   }, [cart, userId])
 
   useEffect(() => {
-    if (!dq.trim()) { setResults([]); return }
+    if (!dq.trim()) return
     let cancelled = false
     setSearching(true)
     posSearchProducts(dq)
@@ -355,6 +355,11 @@ export function PosScreen({ canUpdate, userId }) {
       .catch(() => { if (!cancelled) setResults([]) })
       .finally(() => { if (!cancelled) setSearching(false) })
     return () => { cancelled = true }
+  }, [dq])
+
+  // Clear results when query is cleared (kept outside the search effect to avoid lint violation)
+  useEffect(() => {
+    if (!dq.trim()) setResults([])
   }, [dq])
 
   function addToCart(variant, product) {

@@ -26,7 +26,6 @@
     { "name": "Admin Orders", "description": "Admin order list, detail, status update and notes — requires Admin JWT" },
     { "name": "Admin Customers", "description": "Admin customer list, detail, update and status — requires Admin JWT" },
     { "name": "Admin Media", "description": "Admin media list, detail, metadata update and logical delete — requires Admin JWT" },
-    { "name": "Admin Redirects", "description": "Admin URL redirect CRUD — requires Admin JWT" },
     { "name": "Admin Settings", "description": "Admin site settings read/update — requires Admin JWT" },
     { "name": "Admin Menus", "description": "Admin menu and menu item CRUD + reorder — requires Admin JWT" },
     { "name": "Admin Coupons", "description": "Admin coupon CRUD and status management — requires Admin JWT" }
@@ -534,6 +533,100 @@
         }
       }
     },
+    "/api/v1/admin/admin-users": {
+      "get": {
+        "tags": ["Admin Users"],
+        "summary": "List admin users",
+        "operationId": "adminListAdminUsers",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "role", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "DISABLED", "SUSPENDED"] } }
+        ],
+        "responses": {
+          "200": { "description": "Admin user list" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Admin Users"],
+        "summary": "Create admin user",
+        "operationId": "adminCreateAdminUser",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "displayName", "role", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "displayName": { "type": "string" },
+                  "role": { "type": "string" },
+                  "password": { "type": "string", "minLength": 8 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Admin user created" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/admin-users/{id}": {
+      "get": {
+        "tags": ["Admin Users"],
+        "summary": "Get admin user by ID",
+        "operationId": "adminGetAdminUser",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Admin user detail" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Users"],
+        "summary": "Update admin user",
+        "operationId": "adminUpdateAdminUser",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": { "type": "string" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "DISABLED", "SUSPENDED"] },
+                  "role": { "type": "string" },
+                  "newPassword": { "type": "string", "minLength": 8 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Admin user updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
     "/api/v1/admin/orders": {
       "get": {
         "tags": ["Admin Orders"],
@@ -761,100 +854,6 @@
         ],
         "responses": {
           "204": { "description": "Media deleted (logical, no physical file removed)" }
-        }
-      }
-    },
-    "/api/v1/admin/redirects": {
-      "get": {
-        "tags": ["Admin Redirects"],
-        "summary": "List URL redirects (admin)",
-        "operationId": "adminListRedirects",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
-          { "name": "enabled", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "statusCode", "in": "query", "schema": { "type": "integer" } }
-        ],
-        "responses": {
-          "200": { "description": "Redirect list" },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
-      },
-      "post": {
-        "tags": ["Admin Redirects"],
-        "summary": "Create URL redirect",
-        "operationId": "adminCreateRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRedirectRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Redirect created" },
-          "400": { "$ref": "#/components/responses/ValidationError" },
-          "409": { "$ref": "#/components/responses/Conflict" }
-        }
-      }
-    },
-    "/api/v1/admin/redirects/{redirectId}": {
-      "get": {
-        "tags": ["Admin Redirects"],
-        "summary": "Get redirect detail",
-        "operationId": "adminGetRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "responses": {
-          "200": { "description": "Redirect detail" },
-          "404": { "$ref": "#/components/responses/NotFound" }
-        }
-      },
-      "patch": {
-        "tags": ["Admin Redirects"],
-        "summary": "Update redirect",
-        "operationId": "adminUpdateRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Redirect updated" }
-        }
-      },
-      "delete": {
-        "tags": ["Admin Redirects"],
-        "summary": "Delete redirect (logical: sets enabled=false)",
-        "operationId": "adminDeleteRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "responses": {
-          "204": { "description": "Redirect disabled" }
-        }
-      }
-    },
-    "/api/v1/admin/redirects/{redirectId}/enabled": {
-      "patch": {
-        "tags": ["Admin Redirects"],
-        "summary": "Toggle redirect enabled state",
-        "operationId": "adminToggleRedirectEnabled",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectEnabledRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Enabled state updated" }
         }
       }
     },
@@ -1136,6 +1135,49 @@
         },
         "responses": {
           "200": { "description": "Status updated" }
+        }
+      }
+    }
+    ,"/api/v1/admin/pos/products/search": {
+      "get": {
+        "tags": ["Admin POS"],
+        "summary": "Search products for POS bar",
+        "description": "Returns published products matching name or SKU. Requires orders.write permission.",
+        "operationId": "posSearchProducts",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Search query (product name or SKU)" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Product list matching query" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/pos/orders": {
+      "post": {
+        "tags": ["Admin POS"],
+        "summary": "Create a POS in-store order",
+        "description": "Creates an order for walk-in customers. Immediately decrements stock. Requires orders.write permission.",
+        "operationId": "posCreateOrder",
+        "security": [{ "AdminBearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PosCreateOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "POS order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PosOrderResponse" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
         }
       }
     }
@@ -1465,36 +1507,6 @@
           "status": { "type": "string" }
         }
       },
-      "CreateRedirectRequest": {
-        "type": "object",
-        "required": ["sourcePattern", "targetUrl"],
-        "properties": {
-          "sourcePattern": { "type": "string" },
-          "targetUrl": { "type": "string" },
-          "redirectType": { "type": "string", "enum": ["EXACT", "PREFIX", "REGEX"] },
-          "statusCode": { "type": "integer", "enum": [301, 302, 307, 308], "default": 301 },
-          "enabled": { "type": "boolean", "default": true },
-          "notes": { "type": "string" }
-        }
-      },
-      "UpdateRedirectRequest": {
-        "type": "object",
-        "properties": {
-          "sourcePattern": { "type": "string" },
-          "targetUrl": { "type": "string" },
-          "redirectType": { "type": "string" },
-          "statusCode": { "type": "integer" },
-          "enabled": { "type": "boolean" },
-          "notes": { "type": "string" }
-        }
-      },
-      "UpdateRedirectEnabledRequest": {
-        "type": "object",
-        "required": ["enabled"],
-        "properties": {
-          "enabled": { "type": "boolean" }
-        }
-      },
       "UpdateSiteSettingRequest": {
         "type": "object",
         "properties": {
@@ -1794,6 +1806,49 @@
           "data": { "type": "array", "items": { "$ref": "#/components/schemas/ArticleResponse" } },
           "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
           "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "PosLineItemRequest": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "string", "description": "Product ID (required)" },
+          "productVariantId": { "type": "string", "nullable": true, "description": "Variant ID (required if product has variants)" },
+          "quantity": { "type": "integer", "minimum": 1, "description": "Quantity to sell (must be >= 1)" },
+          "unitPriceOverride": { "type": "number", "nullable": true, "description": "Override unit price (must be >= 0 if provided; null = use DB price)" }
+        }
+      },
+      "PosCreateOrderRequest": {
+        "type": "object",
+        "required": ["items", "paymentMethod"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PosLineItemRequest" }, "minItems": 1 },
+          "customerName": { "type": "string", "nullable": true },
+          "customerPhone": { "type": "string", "nullable": true },
+          "customerNote": { "type": "string", "nullable": true },
+          "paymentMethod": { "type": "string", "enum": ["CASH", "CARD_TERMINAL", "BANK_TRANSFER"] },
+          "tenderedAmount": { "type": "integer", "nullable": true, "description": "Cash tendered by customer (VND, must be >= totalAmount if provided)" },
+          "cardReferenceNumber": { "type": "string", "nullable": true, "description": "Card/terminal transaction reference" },
+          "staffNote": { "type": "string", "nullable": true },
+          "posIdempotencyKey": { "type": "string", "nullable": true, "description": "Client-generated UUID to prevent duplicate submissions" }
+        }
+      },
+      "PosOrderResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "orderNumber": { "type": "string" },
+          "status": { "type": "string", "description": "COMPLETED for CASH/CARD_TERMINAL; ON_HOLD for BANK_TRANSFER" },
+          "paymentStatus": { "type": "string", "description": "PAID for CASH/CARD_TERMINAL; UNPAID for BANK_TRANSFER" },
+          "paymentMethod": { "type": "string" },
+          "totalAmount": { "type": "number" },
+          "tenderedAmount": { "type": "integer", "nullable": true },
+          "changeAmount": { "type": "integer", "nullable": true, "description": "Change to return to customer (CASH only)" },
+          "qrVietQrUrl": { "type": "string", "nullable": true, "description": "VietQR image URL (BANK_TRANSFER only)" },
+          "transferContent": { "type": "string", "nullable": true, "description": "Bank transfer content/reference (BANK_TRANSFER only)" },
+          "bankName": { "type": "string", "nullable": true },
+          "accountNumber": { "type": "string", "nullable": true },
+          "accountHolder": { "type": "string", "nullable": true }
         }
       }
     }

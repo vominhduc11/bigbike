@@ -147,6 +147,16 @@ public class PosOrderService {
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (PosLineItemRequest item : req.items()) {
+            if (item.productId() == null || item.productId().isBlank()) {
+                throw new ConflictException("productId là bắt buộc cho mỗi dòng hàng.");
+            }
+            if (item.quantity() <= 0) {
+                throw new ConflictException("Số lượng phải là số nguyên dương (>= 1).");
+            }
+            if (item.unitPriceOverride() != null && item.unitPriceOverride().compareTo(java.math.BigDecimal.ZERO) < 0) {
+                throw new ConflictException("unitPriceOverride không được âm.");
+            }
+
             ProductEntity product = productRepo.findByIdForUpdate(item.productId())
                     .orElseThrow(() -> new NotFoundException("Product not found: " + item.productId()));
 
@@ -154,6 +164,11 @@ public class PosOrderService {
             if (item.productVariantId() != null && !item.productVariantId().isBlank()) {
                 variant = variantRepo.findByIdForUpdate(item.productVariantId())
                         .orElseThrow(() -> new NotFoundException("Variant not found: " + item.productVariantId()));
+                // Validate variant belongs to the specified product
+                if (variant.getProduct() != null && !variant.getProduct().getId().equals(product.getId())) {
+                    throw new ConflictException("Variant '" + item.productVariantId()
+                            + "' không thuộc sản phẩm '" + product.getName() + "'.");
+                }
                 if (variant.getQuantityOnHand() < item.quantity()) {
                     throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                             + variant.getQuantityOnHand() + " trong kho.");
@@ -184,6 +199,15 @@ public class PosOrderService {
             li.setCreatedAt(now);
             li.setUpdatedAt(now);
             lineItems.add(li);
+        }
+
+        // Validate tiền mặt đủ nếu được gửi lên
+        if ("CASH".equals(req.paymentMethod()) && req.tenderedAmount() != null) {
+            long totalLong = subtotal.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+            if (req.tenderedAmount() < totalLong) {
+                throw new ConflictException("Tiền khách đưa (" + req.tenderedAmount()
+                        + ") nhỏ hơn tổng đơn hàng (" + totalLong + ").");
+            }
         }
 
         // POS: không có phí ship, trả tiền ngay

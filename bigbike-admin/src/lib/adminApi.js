@@ -1299,7 +1299,13 @@ export async function fetchAdminUsers(query) {
   }
   try {
     const payload = await requestJson('/admin/admin-users', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search },
+      query: {
+        page: query?.page,
+        size: query?.pageSize,
+        q: query?.search,
+        role: query?.role || undefined,
+        status: query?.status || undefined,
+      },
     })
     return withLiveData(parseListPayload(payload, normalizeAdminUser, 20))
   } catch (error) {
@@ -1307,6 +1313,12 @@ export async function fetchAdminUsers(query) {
     if (!shouldFallbackToMockOnLiveError()) throw e
     return withMockFallback(e.message, queryMockAdminUsers(query))
   }
+}
+
+export async function createAdminUser(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/admin-users', { method: 'POST', body: input })
+  return { item: normalizeAdminUser(payload?.data || {}) }
 }
 
 export async function updateAdminUser(userId, input) {
@@ -1370,9 +1382,13 @@ function normalizeAuditLog(input) {
     id: s.id || '',
     actorType: s.actorType || '',
     actorId: s.actorId || null,
+    actorDisplayName: s.actorDisplayName || null,
+    actorEmail: s.actorEmail || null,
     action: s.action || '',
     resourceType: s.resourceType || '',
     resourceId: s.resourceId || null,
+    resourceDisplayName: s.resourceDisplayName || null,
+    resourceCode: s.resourceCode || null,
     beforeData: s.beforeData || null,
     afterData: s.afterData || null,
     ipAddress: s.ipAddress || null,
@@ -1386,11 +1402,12 @@ export async function fetchAuditLogs(query) {
       query: {
         page: query?.page,
         size: query?.pageSize,
-        actorType: query?.actorType === 'ALL' ? undefined : query?.actorType,
+        actorType:    query?.actorType    === 'ALL' ? undefined : query?.actorType,
         resourceType: query?.resourceType === 'ALL' ? undefined : query?.resourceType,
-        action: query?.action || undefined,
+        action:       query?.action       === 'ALL' ? undefined : query?.action,
+        q:    query?.q    || undefined,
         from: query?.from || undefined,
-        to: query?.to || undefined,
+        to:   query?.to   || undefined,
       },
     })
     return withLiveData(parseListPayload(payload, normalizeAuditLog, Number(query?.pageSize) || 20))
@@ -1689,5 +1706,73 @@ export async function fetchDashboardSummary(period = '30d') {
     if (!shouldFallbackToMockOnLiveError()) throw e
     return withMockFallback(e.message, getMockDashboardSummary(period))
   }
+}
+
+// ── POS (Point of Sale) ───────────────────────────────────────────────────────
+
+export async function posSearchProducts(q, page = 1, size = 20) {
+  if (FORCE_MOCK) {
+    throw new ApiClientError('POS product search requires live API.', 501, 'MOCK_NOT_SUPPORTED')
+  }
+  const payload = await requestJson('/admin/pos/products/search', {
+    query: { q, page, size },
+  })
+  return withLiveData(parseListPayload(payload, normalizeProduct, size))
+}
+
+export async function posCreateOrder(body) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/pos/orders', {
+    method: 'POST',
+    body,
+  })
+  return payload?.data ?? null
+}
+
+// ── Roles & Permissions ───────────────────────────────────────────────────────
+
+function normalizeRole(input) {
+  const r = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(r.id || ''),
+    name: String(r.name || ''),
+    description: String(r.description || ''),
+    isSystem: r.isSystem === true,
+    permissions: Array.isArray(r.permissions) ? r.permissions : [],
+    createdAt: r.createdAt || null,
+    updatedAt: r.updatedAt || null,
+  }
+}
+
+export async function fetchRoles() {
+  try {
+    const payload = await requestJson('/admin/roles')
+    const list = Array.isArray(payload?.data) ? payload.data.map(normalizeRole) : []
+    return withLiveData({ items: list })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [] })
+  }
+}
+
+export async function updateRolePermissions(roleId, permissions) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/roles/${encodeURIComponent(roleId)}/permissions`, {
+    method: 'PUT',
+    body: { permissions: Array.isArray(permissions) ? permissions : Array.from(permissions) },
+  })
+  return { item: normalizeRole(payload?.data || {}) }
+}
+
+export async function createRole(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/roles', { method: 'POST', body: input })
+  return { item: normalizeRole(payload?.data || {}) }
+}
+
+export async function deleteRole(roleId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' })
 }
 

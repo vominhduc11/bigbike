@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
-  Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Tag, Ticket,
+  Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -45,6 +45,7 @@ const ReportsScreen      = lazyScreen(() => import('./screens/ReportsScreen'),  
 const InventoryScreen    = lazyScreen(() => import('./screens/InventoryScreen'),    'InventoryScreen')
 const ReturnListScreen   = lazyScreen(() => import('./screens/ReturnListScreen'),   'ReturnListScreen')
 const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),        'RolesScreen')
+const PosScreen          = lazyScreen(() => import('./screens/PosScreen'),          'PosScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -54,6 +55,7 @@ const NAV_GROUP_DEFS = [
     items: [
       { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard },
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
+      { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'orders.write',   icon: Store },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
       { path: '/admin/returns',    labelKey: 'nav.returns',    permission: 'orders.read',    icon: RotateCcw },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
@@ -156,6 +158,7 @@ function parseRoute(pathname) {
   if (module === 'inventory')   return { kind: 'screen', name: 'inventory' }
   if (module === 'returns')     return { kind: 'screen', name: 'returns' }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
+  if (module === 'pos')         return { kind: 'screen', name: 'pos' }
 
   return { kind: 'not-found' }
 }
@@ -193,6 +196,7 @@ function routePermission(routeName) {
     case 'inventory':                    return 'products.read'
     case 'returns':                      return 'orders.read'
     case 'roles':                        return 'admin-users.read'
+    case 'pos':                          return 'orders.write'
     default:                             return ''
   }
 }
@@ -372,7 +376,9 @@ function AdminApp() {
     case 'returns':
       screen = <ReturnListScreen canUpdate={hasPermission('orders.write')} />; break
     case 'roles':
-      screen = <RolesScreen />; break
+      screen = <RolesScreen canUpdate={hasPermission('admin-users.write')} />; break
+    case 'pos':
+      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('orders.write')} userId={authState.user?.id} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

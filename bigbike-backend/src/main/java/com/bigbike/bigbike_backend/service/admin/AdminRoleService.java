@@ -69,12 +69,15 @@ public class AdminRoleService {
 
     @Transactional
     public Map<String, Object> createRole(String id, String name, String description, Set<String> permissions, UUID actorId) {
+        if (id == null || id.isBlank()) {
+            throw new ConflictException("Role ID must not be blank.");
+        }
+        if (name == null || name.isBlank()) {
+            throw new ConflictException("Role name must not be blank.");
+        }
         String normalizedId = id.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", "_");
         if (roleRepo.existsById(normalizedId)) {
             throw new ConflictException("Role already exists: " + normalizedId);
-        }
-        if (normalizedId.isBlank()) {
-            throw new ConflictException("Role ID must not be blank.");
         }
 
         Instant now = Instant.now();

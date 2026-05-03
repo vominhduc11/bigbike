@@ -5,6 +5,7 @@ export function AdminTable({
   loading = false, pageSize = 8,
   onSortChange, sortKey, sortDir,
   selectable = false, selectedIds = [], onSelectionChange,
+  onRowClick, rowClassName,
 }) {
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
   const someSelected = !allSelected && rows.some((r) => selectedIds.includes(r.id))
@@ -94,28 +95,39 @@ export function AdminTable({
                   ))}
                 </tr>
               ))
-            : rows.map((row) => (
-                <tr key={row.id}>
-                  {selectable && (
-                    <td className="select-col">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(row.id)}
-                        onChange={() => toggleOne(row.id)}
-                        aria-label="Chọn hàng"
-                      />
-                    </td>
-                  )}
-                  {columns.map((column) => (
-                    <td
-                      key={`${row.id}:${column.key}`}
-                      className={column.align ? `align-${column.align}` : undefined}
-                    >
-                      {column.render ? column.render(row) : (row[column.key] ?? '—')}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+            : rows.map((row) => {
+                const extraClass = typeof rowClassName === 'function' ? rowClassName(row) : rowClassName
+                const clickable = typeof onRowClick === 'function'
+                return (
+                  <tr
+                    key={row.id}
+                    className={[extraClass, clickable ? 'table-row-clickable' : undefined].filter(Boolean).join(' ') || undefined}
+                    onClick={clickable ? () => onRowClick(row) : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(row) } } : undefined}
+                    role={clickable ? 'button' : undefined}
+                  >
+                    {selectable && (
+                      <td className="select-col">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(row.id)}
+                          onChange={() => toggleOne(row.id)}
+                          aria-label="Chọn hàng"
+                        />
+                      </td>
+                    )}
+                    {columns.map((column) => (
+                      <td
+                        key={`${row.id}:${column.key}`}
+                        className={column.align ? `align-${column.align}` : undefined}
+                      >
+                        {column.render ? column.render(row) : (row[column.key] ?? '—')}
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })}
         </tbody>
       </table>
     </div>

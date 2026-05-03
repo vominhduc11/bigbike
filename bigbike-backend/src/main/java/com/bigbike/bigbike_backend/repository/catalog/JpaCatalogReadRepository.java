@@ -30,7 +30,12 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,6 +91,97 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     @Override
     public List<Product> findAllProducts() {
         return productJpaRepository.findAll().stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
+        return productJpaRepository.findAll(spec).stream()
+                .map(this::toDomainListItem)
+                .toList();
+    }
+
+    private Product toDomainListItem(ProductEntity entity) {
+        CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
+        List<CategorySummary> categories = entity.getCategories() == null
+                ? List.of()
+                : entity.getCategories().stream()
+                        .map(this::toCategorySummary)
+                        .sorted(Comparator.comparing(CategorySummary::name, String.CASE_INSENSITIVE_ORDER))
+                        .toList();
+        if (categories.isEmpty() && primaryCategory != null) {
+            categories = List.of(primaryCategory);
+        }
+        return new Product(
+                entity.getId(),
+                entity.getSku(),
+                entity.getSlug(),
+                entity.getName(),
+                null,
+                null,
+                toBrandSummary(entity.getBrand()),
+                primaryCategory,
+                categories,
+                toImageAsset(
+                        entity.getImageId(),
+                        entity.getImageUrl(),
+                        entity.getImageAlt(),
+                        entity.getImageWidth(),
+                        entity.getImageHeight(),
+                        entity.getImageMimeType()
+                ),
+                List.of(),
+                List.of(),
+                new ProductPrice(
+                        entity.getRetailPrice(),
+                        entity.getCompareAtPrice(),
+                        entity.getSalePrice(),
+                        entity.getCurrency()
+                ),
+                List.of(),
+                List.of(),
+                entity.getStockState(),
+                entity.getStockQuantity(),
+                entity.getForceOutOfStock(),
+                entity.getPublishStatus(),
+                entity.getFeatured(),
+                entity.getShowOnHomepage(),
+                entity.getRating(),
+                entity.getRatingCount(),
+                null,
+                null,
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+
+    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+        return (root, criteriaQuery, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (publishStatus != null && !publishStatus.isBlank()) {
+                predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.valueOf(publishStatus)));
+            }
+            if (stockState != null && !stockState.isBlank()) {
+                predicates.add(cb.equal(root.get("stockState"), ProductStockState.valueOf(stockState)));
+            }
+            if (query != null && !query.isBlank()) {
+                String term = "%" + query.toLowerCase(Locale.ROOT) + "%";
+                Predicate nameLike = cb.like(cb.lower(root.get("name")), term);
+                Predicate slugLike = cb.like(cb.lower(root.get("slug")), term);
+                Predicate skuLike = cb.like(cb.lower(cb.coalesce(root.get("sku"), "")), term);
+                predicates.add(cb.or(nameLike, slugLike, skuLike));
+            }
+            if (brandId != null && !brandId.isBlank()) {
+                predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
+            }
+            if (categoryId != null && !categoryId.isBlank()) {
+                Predicate primaryMatch = cb.equal(root.get("category").get("id"), categoryId);
+                Predicate m2mMatch = cb.equal(root.join("categories", JoinType.LEFT).get("id"), categoryId);
+                predicates.add(cb.or(primaryMatch, m2mMatch));
+                criteriaQuery.distinct(true);
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     @Override

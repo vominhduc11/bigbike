@@ -21,6 +21,7 @@ com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$GuestSession.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressVariationMapperRtwpvgTest.class
 com\bigbike\bigbike_backend\BigbikeBackendApplicationTests.class
 com\bigbike\bigbike_backend\service\admin\VariantGalleryRoundtripTest.class
+com\bigbike\bigbike_backend\api\Phase1KInventorySerialApiTest.class
 com\bigbike\bigbike_backend\api\Phase1KOpenApiContractTest.class
 com\bigbike\bigbike_backend\api\Phase2D2ProductVariationImporterTest.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$GuestOrderResult.class
@@ -28,6 +29,7 @@ com\bigbike\bigbike_backend\api\AuthProfileGuardTest.class
 com\bigbike\bigbike_backend\api\Phase1ECartApiTest.class
 com\bigbike\bigbike_backend\api\Phase2EProductGalleryBackfillTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest$GuestSession.class
+com\bigbike\bigbike_backend\api\Phase1MPosApiTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2D3ProductNormalizationTest.class
 com\bigbike\bigbike_backend\schema\SliderRepositoryTest.class
@@ -42,6 +44,7 @@ com\bigbike\bigbike_backend\api\PublicReadApiTest.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase1K1ContractHardeningTest.class
+com\bigbike\bigbike_backend\api\Phase1MPosApiTest$TestVariant.class
 com\bigbike\bigbike_backend\api\Phase2D4RedirectMappingTest.class
 com\bigbike\bigbike_backend\api\Phase2CWordPressCustomerOrderCouponDryRunImporterTest.class
 com\bigbike\bigbike_backend\service\admin\AdminMutationValidatorsTest.class
