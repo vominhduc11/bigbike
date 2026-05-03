@@ -2950,68 +2950,247 @@ a {
   background: var(--admin-color-surface-base);
 }
 
-/* ─── Settings groups ────────────────────────────────────────────────────────*/
-.settings-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-4);
+/* ─── Settings v2 ────────────────────────────────────────────────────────────*/
+
+.sv2-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--admin-space-5);
+  align-items: start;
 }
 
-.settings-group {
+/* Tab sidebar */
+.sv2-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--admin-color-surface-base);
   border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-md);
-  background: var(--admin-color-surface-base);
-  overflow: hidden;
+  padding: var(--admin-space-2);
   box-shadow: var(--admin-shadow-xs);
 }
 
-.settings-group .table-wrap {
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.settings-group-header {
+.sv2-tab-btn {
   display: flex;
   align-items: center;
   gap: var(--admin-space-2);
   width: 100%;
-  padding: var(--admin-space-3) var(--admin-space-4);
-  background: var(--admin-color-surface-raised);
+  padding: 10px var(--admin-space-3);
   border: none;
-  border-bottom: 1px solid var(--admin-color-border-subtle);
-  cursor: pointer;
-  color: var(--admin-color-text-primary);
-  font-weight: 600;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  background: transparent;
+  color: var(--admin-color-text-secondary);
+  font-size: var(--admin-text-sm);
+  font-weight: 500;
   text-align: left;
+  cursor: pointer;
+  transition: background var(--admin-transition-fast), color var(--admin-transition-fast);
+  min-height: 44px;
 }
 
-.settings-group-header:hover {
+.sv2-tab-btn:hover {
   background: var(--admin-color-surface-hover);
+  color: var(--admin-color-text-primary);
 }
 
-.settings-group-label {
+.sv2-tab-btn.active {
+  background: var(--admin-color-brand-red-muted);
+  color: var(--admin-color-brand-red);
+  font-weight: 600;
+}
+
+.sv2-tab-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.sv2-tab-btn.active .sv2-tab-icon {
+  opacity: 1;
+}
+
+.sv2-tab-label {
   flex: 1;
 }
 
-.settings-group-count {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--admin-color-text-muted);
-  background: var(--admin-color-surface-base);
-  border: 1px solid var(--admin-color-border-subtle);
+.sv2-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--admin-color-brand-red);
+  color: #fff;
   border-radius: var(--admin-radius-full);
-  padding: 1px 8px;
 }
 
-.settings-group .admin-table {
+/* Content panel */
+.sv2-content {
+  position: relative;
   min-width: 0;
 }
 
-@media (max-width: 640px) {
-  .settings-col-updated {
-    display: none;
+.sv2-panel {
+  background: var(--admin-color-surface-base);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-xs);
+  overflow: hidden;
+}
+
+/* Fields */
+.sv2-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sv2-field {
+  padding: var(--admin-space-4) var(--admin-space-5);
+  border-bottom: 1px solid var(--admin-color-border-subtle);
+  transition: background var(--admin-transition-fast);
+}
+
+.sv2-field:last-child {
+  border-bottom: none;
+}
+
+.sv2-field--dirty {
+  background: var(--admin-color-surface-raised);
+}
+
+.sv2-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-text-sm);
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+  margin-bottom: var(--admin-space-2);
+}
+
+.sv2-field-dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--admin-radius-full);
+  background: var(--admin-color-brand-red);
+  flex-shrink: 0;
+}
+
+.sv2-field-input {
+  max-width: 480px;
+}
+
+.sv2-field-input--error {
+  border-color: var(--admin-color-status-danger-text);
+}
+
+.sv2-field-input--error:focus {
+  border-color: var(--admin-color-status-danger-text);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.sv2-field-readonly {
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-primary);
+  padding: 8px 0;
+}
+
+.sv2-empty {
+  color: var(--admin-color-text-muted);
+  font-style: normal;
+}
+
+.sv2-field-error {
+  margin-top: var(--admin-space-1);
+  max-width: 480px;
+}
+
+/* Footer bar */
+.sv2-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3) var(--admin-space-5);
+  border-top: 1px solid var(--admin-color-border-subtle);
+  background: var(--admin-color-surface-raised);
+}
+
+.sv2-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-muted);
+}
+
+.sv2-footer-actions {
+  display: flex;
+  gap: var(--admin-space-2);
+}
+
+/* Success toast */
+.sv2-toast {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--admin-space-2) var(--admin-space-4);
+  margin-bottom: var(--admin-space-3);
+  background: var(--admin-color-status-success-bg, #f0fdf4);
+  color: var(--admin-color-status-success-text, #15803d);
+  border: 1px solid var(--admin-color-status-success-border, #bbf7d0);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-text-sm);
+  font-weight: 500;
+}
+
+/* Responsive: stack on tablet/mobile */
+@media (max-width: 900px) {
+  .sv2-layout {
+    grid-template-columns: 1fr;
+    gap: var(--admin-space-4);
+  }
+
+  .sv2-tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--admin-space-1);
+  }
+
+  .sv2-tab-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    justify-content: center;
+  }
+
+  .sv2-tab-label {
+    flex: initial;
+  }
+}
+
+@media (max-width: 480px) {
+  .sv2-field {
+    padding: var(--admin-space-3) var(--admin-space-4);
+  }
+
+  .sv2-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-2);
+  }
+
+  .sv2-footer-actions {
+    justify-content: flex-end;
+  }
+
+  .sv2-tab-btn {
+    min-width: 0;
+    padding: 8px var(--admin-space-2);
+    font-size: 0.75rem;
   }
 }
 

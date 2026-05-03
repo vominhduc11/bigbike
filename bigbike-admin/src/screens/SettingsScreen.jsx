@@ -1,129 +1,215 @@
-import { useMemo, useEffect, useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useMemo, useEffect, useState, useCallback } from 'react'
+import {
+  Store, Phone, CreditCard, Truck, Tag, Globe, Settings,
+  Shield, Home, Building2,
+  CheckCircle2, AlertCircle,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchSettings, updateSetting } from '../lib/adminApi'
-import { formatDateTime } from '../lib/formatters'
 
-function groupLabel(group, t) {
-  const key = `settings.group_${group?.toLowerCase?.() ?? 'general'}`
-  const translated = t(key)
-  return translated === key ? (group ?? t('settings.groupGeneral')) : translated
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function displayValue(val) {
+  if (typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
+    return val.slice(1, -1)
+  }
+  return val ?? ''
 }
 
-function SettingGroup({ group, items, canUpdate, editing, saving, errors, onEdit, onSave, onCancel, t }) {
-  const [open, setOpen] = useState(true)
+const INPUT_TYPE_MAP = {
+  email: 'email',
+  url: 'url',
+  href: 'url',
+  phone: 'tel',
+  hotline: 'tel',
+  threshold: 'number',
+  price: 'number',
+  amount: 'number',
+}
+
+function inputTypeFor(key) {
+  const k = key.toLowerCase()
+  for (const [seg, type] of Object.entries(INPUT_TYPE_MAP)) {
+    if (k.includes(seg)) return type
+  }
+  return 'text'
+}
+
+const PLACEHOLDER_MAP = {
+  email: 'vd: contact@bigbike.vn',
+  url: 'vd: https://bigbike.vn/...',
+  href: 'vd: https://bigbike.vn/...',
+  phone: 'vd: 0901 234 567',
+  hotline: 'vd: 0901 234 567',
+  name: 'vd: BigBike Store',
+  threshold: 'vd: 2000000',
+  price: 'vd: 500000',
+}
+
+function placeholderFor(key) {
+  const k = key.toLowerCase()
+  for (const [seg, ph] of Object.entries(PLACEHOLDER_MAP)) {
+    if (k.includes(seg)) return ph
+  }
+  return ''
+}
+
+function validateValue(key, value) {
+  if (!value) return null
+  const k = key.toLowerCase()
+  if (k.includes('email')) {
+    if (!value.includes('@')) return 'Nhập đúng định dạng email, vd: ten@bigbike.vn'
+  }
+  if (k.includes('url') || k.includes('href')) {
+    if (!value.startsWith('http://') && !value.startsWith('https://') && !value.startsWith('/')) {
+      return 'Nhập đường dẫn web đầy đủ, vd: https://bigbike.vn/khuyen-mai'
+    }
+  }
+  if (k.includes('hotline') || k.includes('phone')) {
+    if (!/^[\d\s+\-]+$/.test(value)) return 'Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch'
+  }
+  return null
+}
+
+// ── Tab config ────────────────────────────────────────────────────────────────
+
+const TAB_ORDER = [
+  'GENERAL', 'CONTACT', 'PAYMENT', 'COMMERCE', 'SHIPPING', 'PROMO', 'SOCIAL', 'SEO',
+  'PUBLIC_HOME', 'STORE', 'TAX', 'SECURITY',
+]
+
+const HIDDEN_GROUPS = new Set(['PAYMENT_SEPAY'])
+
+const TAB_META = {
+  GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
+  CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
+  PAYMENT:     { icon: CreditCard, labelKey: 'settings.group_payment' },
+  COMMERCE:    { icon: CreditCard, labelKey: 'settings.group_commerce' },
+  SHIPPING:    { icon: Truck,      labelKey: 'settings.group_shipping' },
+  PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
+  SOCIAL:      { icon: Globe,      labelKey: 'settings.group_social' },
+  SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
+  PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
+  STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
+  TAX:         { icon: Tag,        labelKey: 'settings.group_tax' },
+  SECURITY:    { icon: Shield,     labelKey: 'settings.group_security' },
+}
+
+const FALLBACK_META = { icon: Settings, labelKey: null }
+
+function tabLabel(group, t) {
+  const meta = TAB_META[group?.toUpperCase()] || FALLBACK_META
+  if (!meta.labelKey) return group ?? t('settings.groupGeneral')
+  const translated = t(meta.labelKey)
+  return translated === meta.labelKey ? (group ?? t('settings.groupGeneral')) : translated
+}
+
+// ── SettingField ──────────────────────────────────────────────────────────────
+
+function SettingField({ setting, canUpdate, draft, error, onChange }) {
+  const rawValue = displayValue(setting.value)
+  const currentValue = draft !== undefined ? draft : rawValue
+  const isDirty = draft !== undefined && draft !== rawValue
+  const type = inputTypeFor(setting.key)
+  const placeholder = placeholderFor(setting.key)
 
   return (
-    <div className="settings-group">
-      <button
-        type="button"
-        className="settings-group-header"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <span className="settings-group-label">{groupLabel(group, t)}</span>
-        <span className="settings-group-count">{items.length}</span>
-        {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-      </button>
+    <div className={`sv2-field${isDirty ? ' sv2-field--dirty' : ''}`}>
+      <div className="sv2-field-label">
+        {setting.description || setting.key}
+        {isDirty && <span className="sv2-field-dirty-dot" aria-label="Chưa lưu" />}
+      </div>
 
-      {open && (
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">{t('settings.colKey')}</th>
-                <th scope="col">{t('settings.colValue')}</th>
-                <th scope="col" className="settings-col-updated">{t('settings.colUpdated')}</th>
-                {canUpdate && <th scope="col" className="align-right">{t('settings.colActions')}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((setting) => {
-                const isEditing = setting.key in editing
-                return (
-                  <tr key={setting.key}>
-                    <td>
-                      <span style={{ fontWeight: 500, color: 'var(--admin-color-text-primary)' }}>
-                        {setting.description || setting.key}
-                      </span>
-                      <p style={{ fontFamily: 'monospace', fontSize: '0.72rem', marginTop: 2, color: 'var(--admin-color-text-muted)' }}>
-                        {setting.key}
-                      </p>
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          className="control-input"
-                          style={{ width: '100%' }}
-                          value={editing[setting.key]}
-                          onChange={(e) => onEdit(setting.key, e.target.value)}
-                        />
-                      ) : (
-                        <span>
-                          {setting.value || <em style={{ color: 'var(--admin-color-text-muted)' }}>{t('settings.empty')}</em>}
-                        </span>
-                      )}
-                      {errors[setting.key] && (
-                        <p className="field-error" style={{ marginTop: 4 }}>{errors[setting.key]}</p>
-                      )}
-                    </td>
-                    <td className="settings-col-updated" style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
-                      {formatDateTime(setting.updatedAt)}
-                    </td>
-                    {canUpdate && (
-                      <td className="align-right">
-                        {isEditing ? (
-                          <div className="row-actions">
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              style={{ fontSize: '0.8rem' }}
-                              onClick={() => onSave(setting.key)}
-                              disabled={saving[setting.key]}
-                            >
-                              {saving[setting.key] ? t('common.saving') : t('common.save')}
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              style={{ fontSize: '0.8rem' }}
-                              onClick={() => onCancel(setting.key)}
-                            >
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.8rem' }}
-                            onClick={() => onEdit(setting.key, setting.value || '')}
-                          >
-                            {t('common.edit')}
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+      {canUpdate ? (
+        <input
+          className={`control-input sv2-field-input${error ? ' sv2-field-input--error' : ''}`}
+          type={type}
+          inputMode={type === 'number' ? 'numeric' : undefined}
+          value={currentValue}
+          placeholder={placeholder || (rawValue ? '' : 'Bấm để nhập...')}
+          onChange={(e) => onChange(setting.key, e.target.value)}
+          aria-describedby={error ? `err-${setting.key}` : undefined}
+        />
+      ) : (
+        <div className="sv2-field-readonly">
+          {rawValue || <em className="sv2-empty">Chưa có giá trị</em>}
+        </div>
+      )}
+
+      {error && (
+        <p id={`err-${setting.key}`} className="field-error sv2-field-error">{error}</p>
+      )}
+    </div>
+  )
+}
+
+// ── SettingTabPanel ───────────────────────────────────────────────────────────
+
+function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSave, onDiscard, saving }) {
+  const dirtyCount = Object.keys(drafts).filter(
+    (k) => items.some((s) => s.key === k)
+  ).length
+
+  const hasError = items.some((s) => errors[s.key])
+
+  return (
+    <div className="sv2-panel">
+      <div className="sv2-fields">
+        {items.map((setting) => (
+          <SettingField
+            key={setting.key}
+            setting={setting}
+            canUpdate={canUpdate}
+            draft={drafts[setting.key]}
+            error={errors[setting.key]}
+            onChange={onDraftChange}
+          />
+        ))}
+      </div>
+
+      {canUpdate && dirtyCount > 0 && (
+        <div className="sv2-footer">
+          <span className="sv2-footer-info">
+            <AlertCircle size={14} />
+            {dirtyCount === 1 ? '1 thay đổi chưa lưu' : `${dirtyCount} thay đổi chưa lưu`}
+          </span>
+          <div className="sv2-footer-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onDiscard}
+              disabled={saving}
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onSave}
+              disabled={saving || hasError}
+            >
+              {saving ? 'Đang lưu...' : `Lưu (${dirtyCount})`}
+            </button>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
+// ── SettingsScreen ────────────────────────────────────────────────────────────
+
 export function SettingsScreen({ canUpdate }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
-  const [editing, setEditing] = useState({})
-  const [saving, setSaving] = useState({})
-  const [errors, setErrors] = useState({})
   const [fetchKey, setFetchKey] = useState(0)
+  const [activeTabOverride, setActiveTabOverride] = useState(null)
+  const [drafts, setDrafts] = useState({})
+  const [errors, setErrors] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -143,36 +229,95 @@ export function SettingsScreen({ canUpdate }) {
   const groups = useMemo(() => {
     const map = new Map()
     for (const s of state.items) {
-      const g = s.settingGroup || 'GENERAL'
+      const g = (s.settingGroup || 'GENERAL').toUpperCase()
+      if (HIDDEN_GROUPS.has(g)) continue
       if (!map.has(g)) map.set(g, [])
       map.get(g).push(s)
     }
-    return [...map.entries()]
+    // Sort tabs by defined order, unknown groups go last
+    const sorted = new Map()
+    for (const key of TAB_ORDER) {
+      if (map.has(key)) sorted.set(key, map.get(key))
+    }
+    for (const [key, val] of map) {
+      if (!sorted.has(key)) sorted.set(key, val)
+    }
+    return sorted
   }, [state.items])
 
-  function handleEdit(key, value) {
-    setEditing((p) => ({ ...p, [key]: value }))
-  }
+  // Derive active tab: user pick takes priority, else first available tab
+  const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
+  const activeTab = (activeTabOverride && groups.has(activeTabOverride)) ? activeTabOverride : firstTab
 
-  function handleCancel(key) {
-    setEditing((p) => { const n = { ...p }; delete n[key]; return n })
-    setErrors((p) => { const n = { ...p }; delete n[key]; return n })
-  }
+  const activeItems = activeTab ? (groups.get(activeTab) || []) : []
 
-  async function handleSave(key) {
-    const value = editing[key]
-    setSaving((p) => ({ ...p, [key]: true }))
-    setErrors((p) => ({ ...p, [key]: '' }))
-    try {
-      const r = await updateSetting(key, value)
-      setState((p) => ({ ...p, items: p.items.map((s) => s.key === key ? r.item : s) }))
-      handleCancel(key)
-    } catch (e) {
-      setErrors((p) => ({ ...p, [key]: e.message || t('settings.saveError') }))
-    } finally {
-      setSaving((p) => ({ ...p, [key]: false }))
+  const handleDraftChange = useCallback((key, value) => {
+    setDrafts((p) => ({ ...p, [key]: value }))
+    // Validate inline
+    const err = validateValue(key, value)
+    setErrors((p) => ({ ...p, [key]: err || '' }))
+  }, [])
+
+  const handleDiscard = useCallback(() => {
+    const keys = activeItems.map((s) => s.key)
+    setDrafts((p) => {
+      const n = { ...p }
+      keys.forEach((k) => delete n[k])
+      return n
+    })
+    setErrors((p) => {
+      const n = { ...p }
+      keys.forEach((k) => delete n[k])
+      return n
+    })
+  }, [activeItems])
+
+  const handleSave = useCallback(async () => {
+    // Validate all dirty fields in this tab
+    const dirty = activeItems.filter((s) => drafts[s.key] !== undefined)
+    const newErrors = {}
+    for (const s of dirty) {
+      const err = validateValue(s.key, drafts[s.key])
+      if (err) newErrors[s.key] = err
     }
-  }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors((p) => ({ ...p, ...newErrors }))
+      return
+    }
+
+    setSaving(true)
+    setSaveSuccess(false)
+    try {
+      const results = await Promise.all(
+        dirty.map((s) => updateSetting(s.key, drafts[s.key]))
+      )
+      // Update state with fresh items from server
+      setState((p) => {
+        const updated = new Map(results.map((r) => [r.item.key, r.item]))
+        return { ...p, items: p.items.map((s) => updated.get(s.key) || s) }
+      })
+      // Clear drafts for saved keys
+      const savedKeys = dirty.map((s) => s.key)
+      setDrafts((p) => {
+        const n = { ...p }
+        savedKeys.forEach((k) => delete n[k])
+        return n
+      })
+      setErrors((p) => {
+        const n = { ...p }
+        savedKeys.forEach((k) => delete n[k])
+        return n
+      })
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (e) {
+      // Show error on all dirty fields
+      const errMsg = e.message || t('settings.saveError')
+      setErrors((p) => ({ ...p, ...Object.fromEntries(dirty.map((s) => [s.key, errMsg])) }))
+    } finally {
+      setSaving(false)
+    }
+  }, [activeItems, drafts, t])
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -204,22 +349,56 @@ export function SettingsScreen({ canUpdate }) {
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <div className="settings-groups">
-          {groups.map(([group, items]) => (
-            <SettingGroup
-              key={group}
-              group={group}
-              items={items}
-              canUpdate={canUpdate}
-              editing={editing}
-              saving={saving}
-              errors={errors}
-              onEdit={handleEdit}
-              onSave={handleSave}
-              onCancel={handleCancel}
-              t={t}
-            />
-          ))}
+        <div className="sv2-layout">
+          {/* Tab sidebar */}
+          <nav className="sv2-tabs" aria-label="Nhóm cài đặt">
+            {[...groups.entries()].map(([group, items]) => {
+              const meta = TAB_META[group] || FALLBACK_META
+              const Icon = meta.icon
+              const label = tabLabel(group, t)
+              const isActive = activeTab === group
+              const dirtyInGroup = items.filter((s) => drafts[s.key] !== undefined).length
+
+              return (
+                <button
+                  key={group}
+                  type="button"
+                  className={`sv2-tab-btn${isActive ? ' active' : ''}`}
+                  onClick={() => setActiveTabOverride(group)}
+                  aria-current={isActive ? 'true' : undefined}
+                >
+                  <Icon size={16} className="sv2-tab-icon" />
+                  <span className="sv2-tab-label">{label}</span>
+                  {dirtyInGroup > 0 && (
+                    <span className="sv2-tab-badge" aria-label={`${dirtyInGroup} thay đổi`}>{dirtyInGroup}</span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+          {/* Content panel */}
+          <div className="sv2-content">
+            {saveSuccess && (
+              <div className="sv2-toast" role="status">
+                <CheckCircle2 size={15} />
+                Đã lưu thành công
+              </div>
+            )}
+
+            {activeTab && (
+              <SettingTabPanel
+                items={activeItems}
+                canUpdate={canUpdate}
+                drafts={drafts}
+                errors={errors}
+                onDraftChange={handleDraftChange}
+                onSave={handleSave}
+                onDiscard={handleDiscard}
+                saving={saving}
+              />
+            )}
+          </div>
         </div>
       )}
     </section>

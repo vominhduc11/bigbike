@@ -1,6 +1,6 @@
 """
 BigBike Admin API - Full flow test
-Tests: Products+Variants, Inventory, Categories, Brands, Content, Sliders, Videos, Menus, Redirects, Reports, SePay
+Tests: Products+Variants, Inventory, Categories, Brands, Content, Sliders, Videos, Menus, Redirects, Reports
 """
 import sys, json, time, random
 import urllib.request, urllib.error
@@ -320,18 +320,6 @@ if admin_users:
     uid = admin_users[0].get("id")
     s, r = req("GET", f"/admin/admin-users/{uid}", TOKEN)
     check("GET /admin/admin-users/{id}", s == 200, r.get("error"))
-
-# ─── SEPAY SETTINGS ───────────────────────────────────────────────────
-print("\n=== GROUP J: SEPAY ===")
-s, r = req("GET", "/admin/settings/sepay", TOKEN)
-check("GET /admin/settings/sepay", s == 200, r.get("error"))
-if s == 200:
-    orig = r
-    s, r = req("PUT", "/admin/settings/sepay", TOKEN, {
-        "enabled": orig.get("data", {}).get("enabled", False),
-        "bankName": orig.get("data", {}).get("bankName", ""),
-    })
-    check("PUT /admin/settings/sepay (no-op update)", s == 200, r.get("error"))
 
 # ─── REPORTS ──────────────────────────────────────────────────────────
 print("\n=== GROUP D: REPORTS ===")

@@ -529,7 +529,7 @@ export function normalizeSetting(input) {
   const s = input && typeof input === 'object' ? input : {}
   return {
     key: toTrimmedStringLocal(s.key) || toTrimmedStringLocal(s.settingKey) || 'unknown',
-    value: toTrimmedStringLocal(s.value) || undefined,
+    value: toTrimmedStringLocal(s.value) || toTrimmedStringLocal(s.settingValue) || undefined,
     description: toTrimmedStringLocal(s.description) || undefined,
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,

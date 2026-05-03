@@ -81,7 +81,6 @@ public class PosOrderService {
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final AdminOrderWsService wsService;
-    private final com.bigbike.bigbike_backend.service.payment.sepay.PaymentInfoService paymentInfoService;
     private final InventoryPolicyService inventoryPolicyService;
 
     public PosOrderService(
@@ -95,7 +94,6 @@ public class PosOrderService {
             OrderNumberGenerator orderNumberGenerator,
             OrderKeyGenerator orderKeyGenerator,
             AdminOrderWsService wsService,
-            com.bigbike.bigbike_backend.service.payment.sepay.PaymentInfoService paymentInfoService,
             InventoryPolicyService inventoryPolicyService
     ) {
         this.productRepo = productRepo;
@@ -108,7 +106,6 @@ public class PosOrderService {
         this.orderNumberGenerator = orderNumberGenerator;
         this.orderKeyGenerator = orderKeyGenerator;
         this.wsService = wsService;
-        this.paymentInfoService = paymentInfoService;
         this.inventoryPolicyService = inventoryPolicyService;
     }
 
@@ -128,17 +125,10 @@ public class PosOrderService {
                 if ("CASH".equals(found.getPaymentMethod()) && req.tenderedAmount() != null) {
                     changeAmt = req.tenderedAmount() - found.getTotalAmount().setScale(0, RoundingMode.HALF_UP).longValue();
                 }
-                String qrUrl = null; String transferContent = null;
-                String bankName = null; String accountNumber = null; String accountHolder = null;
-                if ("BANK_TRANSFER".equals(found.getPaymentMethod())) {
-                    var info = paymentInfoService.getPaymentInfo(found.getId());
-                    qrUrl = info.qrVietQrUrl(); transferContent = info.transferContent();
-                    bankName = info.bankName(); accountNumber = info.accountNumber(); accountHolder = info.accountHolder();
-                }
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
-                        qrUrl, transferContent, bankName, accountNumber, accountHolder);
+                        null, null, null, null, null);
             }
         }
 
@@ -292,26 +282,13 @@ public class PosOrderService {
             changeAmount = req.tenderedAmount() - subtotal.setScale(0, RoundingMode.HALF_UP).longValue();
         }
 
-        String qrVietQrUrl = null;
-        String transferContent = null;
-        String bankName = null;
-        String accountNumber = null;
-        String accountHolder = null;
-        if ("BANK_TRANSFER".equals(req.paymentMethod())) {
-            var info = paymentInfoService.getPaymentInfo(savedOrder.getId());
-            qrVietQrUrl = info.qrVietQrUrl();
-            transferContent = info.transferContent();
-            bankName = info.bankName();
-            accountNumber = info.accountNumber();
-            accountHolder = info.accountHolder();
-        }
 
         return new PosOrderResponse(
                 savedOrder.getId(), savedOrder.getOrderNumber(),
                 savedOrder.getStatus(), savedOrder.getPaymentStatus(),
                 req.paymentMethod(), subtotal,
                 req.tenderedAmount(), changeAmount,
-                qrVietQrUrl, transferContent, bankName, accountNumber, accountHolder
+                null, null, null, null, null
         );
     }
 

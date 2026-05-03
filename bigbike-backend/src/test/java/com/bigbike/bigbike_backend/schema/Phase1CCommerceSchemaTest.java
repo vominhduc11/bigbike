@@ -281,7 +281,7 @@ class Phase1CCommerceSchemaTest {
         String eventId = "evt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
         PaymentEventEntity event = new PaymentEventEntity();
-        event.setProvider("sepay");
+        event.setProvider("manual");
         event.setEventType("payment.received");
         event.setEventId(eventId);
         event.setStatus("PENDING");
@@ -290,7 +290,7 @@ class Phase1CCommerceSchemaTest {
 
         Optional<PaymentEventEntity> found = paymentEventRepo.findByEventId(eventId);
         assertThat(found).isPresent();
-        assertThat(found.get().getProvider()).isEqualTo("sepay");
+        assertThat(found.get().getProvider()).isEqualTo("manual");
     }
 
     // ── guest + snapshot design ───────────────────────────────────────────────

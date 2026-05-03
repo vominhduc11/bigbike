@@ -34,10 +34,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     List<OrderEntity> findByCustomerEmail(String customerEmail);
 
-    // ── POS / SePay background jobs ───────────────────────────────────────────
-
-    @Query("SELECT o FROM OrderEntity o WHERE o.status = 'ON_HOLD' AND o.paymentMethod = 'BANK_TRANSFER' AND o.channel <> 'IN_STORE' AND o.placedAt < :cutoff")
-    List<OrderEntity> findStaleBankTransferOrdersBefore(@Param("cutoff") Instant cutoff);
+    // ── POS background jobs ───────────────────────────────────────────────────
 
     @Query("SELECT o FROM OrderEntity o WHERE o.channel = 'IN_STORE' AND o.status = 'ON_HOLD' AND o.paymentMethod = 'BANK_TRANSFER' AND o.pendingPaymentExpiresAt IS NOT NULL AND o.pendingPaymentExpiresAt < :now")
     List<OrderEntity> findExpiredPosOrders(@Param("now") Instant now);

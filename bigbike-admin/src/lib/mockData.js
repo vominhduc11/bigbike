@@ -618,10 +618,47 @@ export function queryMockCoupons(query) {
 // ── Mock Settings ─────────────────────────────────────────────────────────────
 
 const SETTINGS_DATA = [
-  { key: 'store_name', value: 'BigBike Store', description: 'Tên cửa hàng hiển thị trên website', updatedAt: ISO_NOW },
-  { key: 'store_email', value: 'contact@bigbike.local', description: 'Email liên hệ', updatedAt: ISO_NOW },
-  { key: 'store_phone', value: '0901234567', description: 'Số điện thoại liên hệ', updatedAt: ISO_NOW },
-  { key: 'free_shipping_threshold', value: '2000000', description: 'Giá trị đơn hàng miễn phí ship (VND)', updatedAt: ISO_NOW },
+  // general
+  { settingKey: 'site_name',         settingValue: 'BigBike',              settingGroup: 'general',      description: 'Public site name displayed in the header/footer.' },
+  { settingKey: 'footer_tagline',    settingValue: 'BIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN', settingGroup: 'general', description: 'Tagline displayed as the heading in the footer brand column.' },
+  { settingKey: 'footer_description',settingValue: 'BigBike chuyên cung cấp gear moto chính hãng.', settingGroup: 'general', description: 'Short description paragraph in the footer brand column.' },
+  { settingKey: 'bct_url',           settingValue: 'https://online.gov.vn', settingGroup: 'general',     description: 'URL linking to the online.gov.vn registration page for the BCT trust badge.' },
+  // contact
+  { settingKey: 'hotline',           settingValue: '0906.90.2404',          settingGroup: 'contact',     description: 'Main hotline number displayed in the header and footer.' },
+  { settingKey: 'hotline_2',         settingValue: '0764.640.679',          settingGroup: 'contact',     description: 'Secondary hotline number displayed in the footer.' },
+  { settingKey: 'contact_email',     settingValue: 'info@bigbike.vn',       settingGroup: 'contact',     description: 'Public contact email displayed in the footer.' },
+  { settingKey: 'contact_address',   settingValue: '79/30/52 Âu Cơ, Phường 14, Quận 11, TP.HCM', settingGroup: 'contact', description: 'Public store address displayed in the footer.' },
+  { settingKey: 'facebook_url',      settingValue: '',                      settingGroup: 'contact',     description: 'Facebook page URL displayed in the footer.' },
+  { settingKey: 'messenger_url',     settingValue: '',                      settingGroup: 'contact',     description: 'Facebook Messenger deep link displayed in the floating chat popup.' },
+  { settingKey: 'google_maps_url',   settingValue: '',                      settingGroup: 'contact',     description: 'URL nhúng bản đồ Google Maps hiển thị trên trang Liên hệ.' },
+  // seo
+  { settingKey: 'seo_home_title',    settingValue: 'BigBike - Đồ bảo hộ moto chính hãng', settingGroup: 'seo', description: 'Homepage SEO title.' },
+  { settingKey: 'seo_home_description', settingValue: 'BigBike - shop đồ bảo hộ moto uy tín tại TP.HCM.', settingGroup: 'seo', description: 'Homepage SEO description.' },
+  { settingKey: 'og_image_url',      settingValue: '',                      settingGroup: 'seo',         description: 'Default Open Graph image URL.' },
+  { settingKey: 'seo_home_h1',       settingValue: '',                      settingGroup: 'seo',         description: 'Tiêu đề H1 chính trên trang chủ.' },
+  // public_home
+  { settingKey: 'promo_title',       settingValue: 'LS2 DUAL SPORT MX436 PIONEER', settingGroup: 'public_home', description: 'Homepage promotional banner title.' },
+  { settingKey: 'promo_off',         settingValue: '20% OFF',               settingGroup: 'public_home', description: 'Homepage promotional discount label.' },
+  { settingKey: 'promo_href',        settingValue: '/san-pham',             settingGroup: 'public_home', description: 'Homepage promotional banner target URL.' },
+  { settingKey: 'promo_image_url',   settingValue: '',                      settingGroup: 'public_home', description: 'Homepage promotional banner image URL.' },
+  { settingKey: 'home_exp_subtitle', settingValue: 'GÓC TRẢI NGHIỆM CÙNG BIGBIKE', settingGroup: 'public_home', description: 'Homepage experience section kicker/subtitle text.' },
+  { settingKey: 'home_exp_title',    settingValue: 'PHỤ KIỆN ĐI PHƯỢT MOTO CAO CẤP', settingGroup: 'public_home', description: 'Homepage experience section heading title.' },
+  { settingKey: 'home_exp_desc',     settingValue: '',                      settingGroup: 'public_home', description: 'Homepage experience section description paragraph.' },
+  { settingKey: 'zalo_url',         settingValue: '',                      settingGroup: 'public_home', description: 'Homepage floating contact Zalo URL.' },
+  // store
+  { settingKey: 'store_currency',    settingValue: 'VND',                   settingGroup: 'STORE',       description: 'Default currency code used for all orders and displays.' },
+  { settingKey: 'store_timezone',    settingValue: 'Asia/Ho_Chi_Minh',      settingGroup: 'STORE',       description: 'Timezone used for order timestamps and scheduled jobs.' },
+  { settingKey: 'order_min_amount',  settingValue: '0',                     settingGroup: 'STORE',       description: 'Minimum order total required to check out (in base currency units).' },
+  { settingKey: 'low_stock_threshold', settingValue: '5',                   settingGroup: 'STORE',       description: 'Quantity at which a variant is flagged as low-stock in the admin dashboard.' },
+  // tax
+  { settingKey: 'tax_enabled',       settingValue: 'false',                 settingGroup: 'TAX',         description: 'Enable automatic tax calculation on orders. Set to true to activate.' },
+  { settingKey: 'tax_rate',          settingValue: '0.10',                  settingGroup: 'TAX',         description: 'Default VAT rate as a decimal (e.g. 0.10 = 10%). Applied when tax_enabled = true.' },
+  { settingKey: 'tax_label',         settingValue: 'VAT',                   settingGroup: 'TAX',         description: 'Display label shown on invoices and order summaries.' },
+  { settingKey: 'tax_inclusive',     settingValue: 'false',                 settingGroup: 'TAX',         description: 'Whether product prices already include tax.' },
+  { settingKey: 'tax_registration_number', settingValue: '',                settingGroup: 'TAX',         description: 'Business tax registration / MST number shown on invoices.' },
+  // security
+  { settingKey: 'login_max_attempts',   settingValue: '5',                  settingGroup: 'SECURITY',    description: 'Maximum consecutive failed login attempts before account is temporarily locked.' },
+  { settingKey: 'session_timeout_minutes', settingValue: '60',              settingGroup: 'SECURITY',    description: 'Admin session idle timeout in minutes.' },
 ].map(normalizeSetting)
 
 export function queryMockSettings() {
