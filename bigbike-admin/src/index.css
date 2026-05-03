@@ -3991,6 +3991,26 @@ a {
   padding: var(--admin-space-2) 0;
 }
 
+/* ── 2-row filter bar layout (#3) ─────────────────────────────────────── */
+.audit-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-3);
+}
+.audit-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-3);
+}
+.audit-filter-search-group {
+  flex: 1 1 260px;
+}
+.audit-filter-row--dates {
+  padding-top: var(--admin-space-2);
+  border-top: 1px solid var(--admin-color-border-subtle);
+}
+
 /* ── Preset date chips ────────────────────────────────────────────────── */
 .audit-preset-chips {
   display: flex;
@@ -4276,6 +4296,10 @@ a {
   color: var(--admin-color-status-success-text);
   font-weight: 600;
 }
+.audit-diff-after--danger {
+  color: var(--admin-color-status-danger-text) !important;
+  font-weight: 600;
+}
 
 /* ── Collapsible tech data ────────────────────────────────────────────── */
 .audit-tech-toggle {
@@ -4446,7 +4470,8 @@ a {
 }
 
 /* ── Responsive: show cards, hide table on mobile ────────────────────── */
-@media (max-width: 640px) {
+@media (max-width: 900px) {
+  /* #10: hide desktop filter bar, show mobile toggle */
   .audit-filter-bar { display: none; }
   .audit-mobile-filter-toggle {
     display: flex;
@@ -4455,6 +4480,8 @@ a {
     flex-wrap: wrap;
     padding: var(--admin-space-2) 0;
   }
+}
+@media (max-width: 640px) {
   .audit-table-wrapper { display: none; }
   .audit-card-list {
     display: flex;
