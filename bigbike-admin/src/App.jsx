@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
-  LogIn, Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Tag, Ticket,
+  Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Tag, Ticket,
   Truck, Users,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -34,8 +34,6 @@ const OrderDetailScreen  = lazyScreen(() => import('./screens/OrderDetailScreen'
 const OrderListScreen    = lazyScreen(() => import('./screens/OrderListScreen'),    'OrderListScreen')
 const ProductDetailScreen = lazyScreen(() => import('./screens/ProductDetailScreen'), 'ProductDetailScreen')
 const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'),  'ProductListScreen')
-const RedirectListScreen   = lazyScreen(() => import('./screens/RedirectListScreen'),   'RedirectListScreen')
-const RedirectDetailScreen = lazyScreen(() => import('./screens/RedirectDetailScreen'), 'RedirectDetailScreen')
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
 const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'),     'SettingsScreen')
 const ShippingScreen     = lazyScreen(() => import('./screens/ShippingScreen'),     'ShippingScreen')
@@ -81,7 +79,6 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/home-videos',  labelKey: 'nav.homeVideos',   permission: 'home_videos.read',  icon: BarChart2 },
       { path: '/admin/menus',      labelKey: 'nav.menus',      permission: 'menus.read',     icon: AlignLeft },
       { path: '/admin/media',      labelKey: 'nav.media',      permission: 'media.read',     icon: Image },
-      { path: '/admin/redirects',  labelKey: 'nav.redirects',  permission: 'redirects.read', icon: LogIn },
     ],
   },
   {
@@ -147,8 +144,6 @@ function parseRoute(pathname) {
 
   if (module === 'media')       return { kind: 'screen', name: 'media-library' }
   if (module === 'coupons')     return { kind: 'screen', name: 'coupons-list' }
-  if (module === 'redirects' && !id) return { kind: 'screen', name: 'redirects-list' }
-  if (module === 'redirects' && id)  return { kind: 'screen', name: 'redirect-detail', redirectId: id }
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
   if (module === 'sliders')      return { kind: 'screen', name: 'sliders' }
   if (module === 'home-videos')  return { kind: 'screen', name: 'home-videos' }
@@ -186,8 +181,6 @@ function routePermission(routeName) {
     case 'customer-detail':              return 'customers.read'
     case 'media-library':                return 'media.read'
     case 'coupons-list':                 return 'coupons.read'
-    case 'redirects-list':
-    case 'redirect-detail':               return 'redirects.read'
     case 'menus':                        return 'menus.read'
     case 'sliders':                      return 'sliders.read'
     case 'home-videos':                  return 'home_videos.read'
@@ -356,10 +349,6 @@ function AdminApp() {
       screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} />; break
     case 'coupons-list':
       screen = <CouponListScreen canUpdate={hasPermission('coupons.write')} />; break
-    case 'redirects-list':
-      screen = <RedirectListScreen navigate={navigate} canUpdate={hasPermission('redirects.write')} />; break
-    case 'redirect-detail':
-      screen = <RedirectDetailScreen key={route.redirectId} redirectId={route.redirectId} navigate={navigate} canUpdate={hasPermission('redirects.write')} />; break
     case 'menus':
       screen = <MenuScreen canUpdate={hasPermission('menus.write')} />; break
     case 'sliders':

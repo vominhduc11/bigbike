@@ -736,16 +736,7 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                 .andExpect(jsonPath("$.data").isArray());
     }
 
-    // 32. Admin redirects still work
-    @Test
-    void adminRedirects_stillWork() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/redirects")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray());
-    }
-
-    // 33. Customer orders still protected
+    // 32. Customer orders still protected
     @Test
     void customerOrders_stillProtected() throws Exception {
         mockMvc.perform(get("/api/v1/customer/orders"))

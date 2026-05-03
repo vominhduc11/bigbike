@@ -15,13 +15,11 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
-import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -52,7 +50,6 @@ class Phase1IAdminManagementApiTest {
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired CustomerJpaRepository customerRepo;
     @Autowired MediaJpaRepository mediaRepo;
-    @Autowired RedirectJpaRepository redirectRepo;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired PasswordService passwordService;
@@ -311,159 +308,7 @@ class Phase1IAdminManagementApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // REDIRECT TESTS (16–25)
-    // ══════════════════════════════════════════════════════════════════════════
-
-    // 16. No auth → 401
-    @Test
-    void adminRedirects_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/redirects"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    // 17. Authenticated → list works
-    @Test
-    void adminRedirects_listWorks() throws Exception {
-        createTestRedirect("/old-list-" + UUID.randomUUID(), "/new-target/", 301, true);
-
-        mockMvc.perform(get("/api/v1/admin/redirects")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination.page").value(1));
-    }
-
-    // 18. Create redirect — valid request
-    @Test
-    void createRedirect_validRequest_succeeds() throws Exception {
-        String source = "/sp/old-product-" + UUID.randomUUID() + ".html";
-
-        mockMvc.perform(post("/api/v1/admin/redirects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourcePattern\":\"" + source + "\"," +
-                                 "\"targetUrl\":\"/product/new-product/\"," +
-                                 "\"statusCode\":301,\"enabled\":true," +
-                                 "\"notes\":\"Imported from RankMath\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.sourcePattern").value(source))
-                .andExpect(jsonPath("$.data.statusCode").value(301))
-                .andExpect(jsonPath("$.data.enabled").value(true));
-    }
-
-    // 19. Create redirect — invalid statusCode → 400
-    @Test
-    void createRedirect_invalidStatusCode_returns400() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/redirects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourcePattern\":\"/old\",\"targetUrl\":\"/new\",\"statusCode\":200}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-    }
-
-    // 20. Create redirect — self-loop → 400
-    @Test
-    void createRedirect_selfLoop_returns400() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/redirects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourcePattern\":\"/same-path\",\"targetUrl\":\"/same-path\",\"statusCode\":301}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-    }
-
-    // 21. Create redirect — duplicate enabled source → 409
-    @Test
-    void createRedirect_duplicateEnabledSource_returns409() throws Exception {
-        String source = "/dup-source-" + UUID.randomUUID();
-        createTestRedirect(source, "/target-1/", 301, true);
-
-        mockMvc.perform(post("/api/v1/admin/redirects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourcePattern\":\"" + source + "\"," +
-                                 "\"targetUrl\":\"/different-target/\"," +
-                                 "\"statusCode\":301,\"enabled\":true}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
-    }
-
-    // 22. Update redirect — updates target
-    @Test
-    void updateRedirect_updatesTarget() throws Exception {
-        UUID redirectId = createTestRedirect("/upd-src-" + UUID.randomUUID(), "/original/", 301, true);
-
-        mockMvc.perform(patch("/api/v1/admin/redirects/" + redirectId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"targetUrl\":\"/updated-target/\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.targetUrl").value("/updated-target/"));
-    }
-
-    // 23. Disable redirect — sets enabled=false
-    @Test
-    void disableRedirect_setsEnabledFalse() throws Exception {
-        UUID redirectId = createTestRedirect("/dis-src-" + UUID.randomUUID(), "/target/", 301, true);
-
-        mockMvc.perform(patch("/api/v1/admin/redirects/" + redirectId + "/enabled")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"enabled\":false}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enabled").value(false));
-    }
-
-    // 24. Delete redirect — logical delete (enabled=false or removed)
-    @Test
-    void deleteRedirect_disablesOrDeletes() throws Exception {
-        UUID redirectId = createTestRedirect("/del-src-" + UUID.randomUUID(), "/target/", 301, true);
-
-        mockMvc.perform(delete("/api/v1/admin/redirects/" + redirectId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isNoContent());
-
-        // After logical delete, it should be disabled
-        mockMvc.perform(get("/api/v1/admin/redirects/" + redirectId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enabled").value(false));
-    }
-
-    // 25. Redirect mutations write audit log
-    @Test
-    void redirectMutation_writesAuditLog() throws Exception {
-        String source = "/audit-src-" + UUID.randomUUID();
-
-        // Create
-        MvcResult result = mockMvc.perform(post("/api/v1/admin/redirects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourcePattern\":\"" + source + "\",\"targetUrl\":\"/target/\",\"statusCode\":301}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andReturn();
-        String redirectId = extractJsonValue(result.getResponse().getContentAsString(), "id");
-
-        // Update
-        mockMvc.perform(patch("/api/v1/admin/redirects/" + redirectId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"notes\":\"Updated note\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Toggle enabled
-        mockMvc.perform(patch("/api/v1/admin/redirects/" + redirectId + "/enabled")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"enabled\":false}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
-
-        // Delete
-        mockMvc.perform(delete("/api/v1/admin/redirects/" + redirectId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isNoContent());
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // REGRESSION TESTS (26–32)
+    // REGRESSION TESTS (16–22)
     // ══════════════════════════════════════════════════════════════════════════
 
     // 26. Admin orders still work
@@ -608,20 +453,6 @@ class Phase1IAdminManagementApiTest {
         m.setCreatedAt(now);
         m.setUpdatedAt(now);
         return mediaRepo.save(m).getId();
-    }
-
-    /** Create a RedirectEntity directly in the DB and return its UUID. */
-    private UUID createTestRedirect(String source, String target, int statusCode, boolean enabled) {
-        RedirectEntity r = new RedirectEntity();
-        r.setSourcePattern(source);
-        r.setTargetUrl(target);
-        r.setRedirectType("EXACT");
-        r.setStatusCode(statusCode);
-        r.setEnabled(enabled);
-        Instant now = Instant.now();
-        r.setCreatedAt(now);
-        r.setUpdatedAt(now);
-        return redirectRepo.save(r).getId();
     }
 
     private ProductEntity createTestProduct(String name, int price) {

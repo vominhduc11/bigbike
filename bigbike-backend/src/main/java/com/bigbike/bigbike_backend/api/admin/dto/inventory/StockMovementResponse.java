@@ -11,5 +11,6 @@ public record StockMovementResponse(
         int quantityAfter,
         String referenceType,
         String note,
-        Instant createdAt
+        Instant createdAt,
+        long serialCount
 ) {}

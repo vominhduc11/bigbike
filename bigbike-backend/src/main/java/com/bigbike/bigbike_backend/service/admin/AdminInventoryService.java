@@ -9,8 +9,10 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementSerialEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementSerialJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -18,6 +20,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -36,17 +40,20 @@ public class AdminInventoryService {
 
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository movementRepo;
+    private final StockMovementSerialJpaRepository serialRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
 
     public AdminInventoryService(
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository movementRepo,
+            StockMovementSerialJpaRepository serialRepo,
             InventoryPolicyService inventoryPolicyService,
             WebRevalidationService webRevalidationService
     ) {
         this.variantRepo = variantRepo;
         this.movementRepo = movementRepo;
+        this.serialRepo = serialRepo;
         this.inventoryPolicyService = inventoryPolicyService;
         this.webRevalidationService = webRevalidationService;
     }
@@ -175,6 +182,39 @@ public class AdminInventoryService {
                     "Resulting quantity would be negative. Current: " + before + ", delta: " + req.quantityDelta());
         }
 
+        // ── Serial validation ─────────────────────────────────────────────────
+        List<String> serials = parseSerials(req.serialNumbers());
+
+        if ("IN".equals(type)) {
+            // Stock-in: serials are REQUIRED and count must match quantityDelta exactly.
+            if (serials.isEmpty()) {
+                throw ValidationException.fromField("serialNumbers", "REQUIRED_FOR_STOCK_IN",
+                        "Serial numbers are required for stock-in movements.");
+            }
+            int qty = req.quantityDelta();
+            if (serials.size() != qty) {
+                throw ValidationException.fromField("serialNumbers", "COUNT_MISMATCH",
+                        "Serial count (" + serials.size() + ") must equal quantity (" + qty + ").");
+            }
+        } else if (!serials.isEmpty()) {
+            // Other movement types: serial optional, count must not exceed quantity.
+            int qty = Math.abs(req.quantityDelta());
+            if (serials.size() > qty) {
+                throw ValidationException.fromField("serialNumbers", "COUNT_EXCEEDS_QUANTITY",
+                        "Serial count (" + serials.size() + ") exceeds quantity (" + qty + ").");
+            }
+        }
+
+        // No duplicates in DB (applies to all movement types when serials present).
+        if (!serials.isEmpty()) {
+            List<String> existing = serialRepo.findExistingSerialNumbers(serials);
+            if (!existing.isEmpty()) {
+                throw ValidationException.fromField("serialNumbers", "ALREADY_EXISTS",
+                        "Serial numbers already registered: " + existing);
+            }
+        }
+
+        // ── Persist stock change + movement (same transaction) ────────────────
         variant.setQuantityOnHand(after);
         inventoryPolicyService.recomputeStockState(variant);
         variantRepo.save(variant);
@@ -191,6 +231,18 @@ public class AdminInventoryService {
         movement.setCreatedAt(Instant.now());
         movementRepo.save(movement);
 
+        // ── Persist serials (same transaction — rollback if this fails) ────────
+        if (!serials.isEmpty()) {
+            Instant now = Instant.now();
+            for (String s : serials) {
+                StockMovementSerialEntity serial = new StockMovementSerialEntity();
+                serial.setMovement(movement);
+                serial.setSerialNumber(s);
+                serial.setCreatedAt(now);
+                serialRepo.save(serial);
+            }
+        }
+
         String slug = variant.getProduct() != null ? variant.getProduct().getSlug() : null;
         if (slug != null && !slug.isBlank()) {
             webRevalidationService.revalidate("product:" + slug, "products");
@@ -201,11 +253,35 @@ public class AdminInventoryService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Trim, de-blank, and de-duplicate serial numbers from the request.
+     * Throws ValidationException if duplicates are found within the list.
+     */
+    private List<String> parseSerials(List<String> raw) {
+        if (raw == null || raw.isEmpty()) return List.of();
+
+        List<String> result = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+
+        for (String entry : raw) {
+            if (entry == null) continue;
+            String trimmed = entry.strip();
+            if (trimmed.isEmpty()) continue;
+            if (!seen.add(trimmed)) {
+                throw ValidationException.fromField("serialNumbers", "DUPLICATE_IN_REQUEST",
+                        "Duplicate serial number in request: " + trimmed);
+            }
+            result.add(trimmed);
+        }
+        return result;
+    }
+
     private AdminStockItemResponse toStockItem(ProductVariantEntity v) {
         return new AdminStockItemResponse(
                 v.getProduct().getId(),
                 v.getProduct().getName(),
                 v.getProduct().getSku(),
+                imageRef(v),
                 v.getId(),
                 v.getName(),
                 v.getSku(),
@@ -215,7 +291,41 @@ public class AdminInventoryService {
         );
     }
 
+    private AdminStockItemResponse.ImageRef imageRef(ProductVariantEntity v) {
+        String variantUrl = trimToNull(v.getImageUrl());
+        if (variantUrl != null) {
+            return new AdminStockItemResponse.ImageRef(
+                    trimToNull(v.getImageId()),
+                    variantUrl,
+                    trimToNull(v.getImageAlt()),
+                    v.getImageWidth(),
+                    v.getImageHeight(),
+                    trimToNull(v.getImageMimeType())
+            );
+        }
+
+        var product = v.getProduct();
+        if (product == null) {
+            return null;
+        }
+
+        String productUrl = trimToNull(product.getImageUrl());
+        if (productUrl == null) {
+            return null;
+        }
+
+        return new AdminStockItemResponse.ImageRef(
+                trimToNull(product.getImageId()),
+                productUrl,
+                trimToNull(product.getImageAlt()),
+                product.getImageWidth(),
+                product.getImageHeight(),
+                trimToNull(product.getImageMimeType())
+        );
+    }
+
     private StockMovementResponse toMovementResponse(StockMovementEntity m) {
+        long serialCount = serialRepo.countByMovementId(m.getId());
         return new StockMovementResponse(
                 m.getId(),
                 m.getMovementType(),
@@ -224,8 +334,15 @@ public class AdminInventoryService {
                 m.getQuantityAfter(),
                 m.getReferenceType(),
                 m.getNote(),
-                m.getCreatedAt()
+                m.getCreatedAt(),
+                serialCount
         );
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static String csvEscape(String value) {

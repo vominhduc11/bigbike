@@ -21,7 +21,6 @@ public final class AdminRolePermissions {
                     "orders.read", "orders.write",
                     "customers.read", "customers.write",
                     "media.read", "media.write",
-                    "redirects.read", "redirects.write",
                     "settings.read", "settings.write",
                     "menus.read", "menus.write",
                     "sliders.read", "sliders.write",
@@ -46,8 +45,7 @@ public final class AdminRolePermissions {
                     "content.read", "content.update",
                     "media.read", "media.write",
                     "menus.read", "menus.write",
-                    "sliders.read", "sliders.write",
-                    "redirects.read", "redirects.write"
+                    "sliders.read", "sliders.write"
             ),
             "AUTHOR", List.of(
                     "content.read", "content.update",
@@ -57,8 +55,7 @@ public final class AdminRolePermissions {
                     "content.read", "media.read"
             ),
             "SEO_EDITOR", List.of(
-                    "content.read", "content.update",
-                    "redirects.read", "redirects.write"
+                    "content.read", "content.update"
             )
     );
 

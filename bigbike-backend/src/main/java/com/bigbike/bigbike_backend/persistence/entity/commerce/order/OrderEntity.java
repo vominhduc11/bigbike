@@ -81,6 +81,18 @@ public class OrderEntity {
     @Column(name = "refunded_at")
     private Instant refundedAt;
 
+    @Column(nullable = false, length = 20)
+    private String channel = "WEB";
+
+    @Column(name = "fulfillment_type", nullable = false, length = 20)
+    private String fulfillmentType = "DELIVERY";
+
+    @Column(name = "payment_method", length = 100)
+    private String paymentMethod;
+
+    @Column(name = "pending_payment_expires_at")
+    private Instant pendingPaymentExpiresAt;
+
     @Column(length = 100)
     private String source;
 
@@ -173,6 +185,18 @@ public class OrderEntity {
 
     public Instant getRefundedAt() { return refundedAt; }
     public void setRefundedAt(Instant refundedAt) { this.refundedAt = refundedAt; }
+
+    public String getChannel() { return channel; }
+    public void setChannel(String channel) { this.channel = channel; }
+
+    public String getFulfillmentType() { return fulfillmentType; }
+    public void setFulfillmentType(String fulfillmentType) { this.fulfillmentType = fulfillmentType; }
+
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public Instant getPendingPaymentExpiresAt() { return pendingPaymentExpiresAt; }
+    public void setPendingPaymentExpiresAt(Instant pendingPaymentExpiresAt) { this.pendingPaymentExpiresAt = pendingPaymentExpiresAt; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }

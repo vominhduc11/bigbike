@@ -26,7 +26,6 @@
     { "name": "Admin Orders", "description": "Admin order list, detail, status update and notes — requires Admin JWT" },
     { "name": "Admin Customers", "description": "Admin customer list, detail, update and status — requires Admin JWT" },
     { "name": "Admin Media", "description": "Admin media list, detail, metadata update and logical delete — requires Admin JWT" },
-    { "name": "Admin Redirects", "description": "Admin URL redirect CRUD — requires Admin JWT" },
     { "name": "Admin Settings", "description": "Admin site settings read/update — requires Admin JWT" },
     { "name": "Admin Menus", "description": "Admin menu and menu item CRUD + reorder — requires Admin JWT" },
     { "name": "Admin Coupons", "description": "Admin coupon CRUD and status management — requires Admin JWT" }
@@ -764,100 +763,6 @@
         }
       }
     },
-    "/api/v1/admin/redirects": {
-      "get": {
-        "tags": ["Admin Redirects"],
-        "summary": "List URL redirects (admin)",
-        "operationId": "adminListRedirects",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
-          { "name": "enabled", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "statusCode", "in": "query", "schema": { "type": "integer" } }
-        ],
-        "responses": {
-          "200": { "description": "Redirect list" },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
-      },
-      "post": {
-        "tags": ["Admin Redirects"],
-        "summary": "Create URL redirect",
-        "operationId": "adminCreateRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRedirectRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Redirect created" },
-          "400": { "$ref": "#/components/responses/ValidationError" },
-          "409": { "$ref": "#/components/responses/Conflict" }
-        }
-      }
-    },
-    "/api/v1/admin/redirects/{redirectId}": {
-      "get": {
-        "tags": ["Admin Redirects"],
-        "summary": "Get redirect detail",
-        "operationId": "adminGetRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "responses": {
-          "200": { "description": "Redirect detail" },
-          "404": { "$ref": "#/components/responses/NotFound" }
-        }
-      },
-      "patch": {
-        "tags": ["Admin Redirects"],
-        "summary": "Update redirect",
-        "operationId": "adminUpdateRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Redirect updated" }
-        }
-      },
-      "delete": {
-        "tags": ["Admin Redirects"],
-        "summary": "Delete redirect (logical: sets enabled=false)",
-        "operationId": "adminDeleteRedirect",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "responses": {
-          "204": { "description": "Redirect disabled" }
-        }
-      }
-    },
-    "/api/v1/admin/redirects/{redirectId}/enabled": {
-      "patch": {
-        "tags": ["Admin Redirects"],
-        "summary": "Toggle redirect enabled state",
-        "operationId": "adminToggleRedirectEnabled",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "redirectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRedirectEnabledRequest" } } }
-        },
-        "responses": {
-          "200": { "description": "Enabled state updated" }
-        }
-      }
-    },
     "/api/v1/admin/settings": {
       "get": {
         "tags": ["Admin Settings"],
@@ -1463,36 +1368,6 @@
           "title": { "type": "string" },
           "caption": { "type": "string" },
           "status": { "type": "string" }
-        }
-      },
-      "CreateRedirectRequest": {
-        "type": "object",
-        "required": ["sourcePattern", "targetUrl"],
-        "properties": {
-          "sourcePattern": { "type": "string" },
-          "targetUrl": { "type": "string" },
-          "redirectType": { "type": "string", "enum": ["EXACT", "PREFIX", "REGEX"] },
-          "statusCode": { "type": "integer", "enum": [301, 302, 307, 308], "default": 301 },
-          "enabled": { "type": "boolean", "default": true },
-          "notes": { "type": "string" }
-        }
-      },
-      "UpdateRedirectRequest": {
-        "type": "object",
-        "properties": {
-          "sourcePattern": { "type": "string" },
-          "targetUrl": { "type": "string" },
-          "redirectType": { "type": "string" },
-          "statusCode": { "type": "integer" },
-          "enabled": { "type": "boolean" },
-          "notes": { "type": "string" }
-        }
-      },
-      "UpdateRedirectEnabledRequest": {
-        "type": "object",
-        "required": ["enabled"],
-        "properties": {
-          "enabled": { "type": "boolean" }
         }
       },
       "UpdateSiteSettingRequest": {

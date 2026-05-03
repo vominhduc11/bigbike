@@ -1,6 +1,17 @@
 # Legacy reference data
 bigbike_vn__2026_04_17/
 
+# Design assets (large binary/zip files, not for git)
+*.zip
+Bigbike Design System-web/
+BigBike Design System-admin.zip
+
+# Java build output
+bigbike-backend/target/
+
+# Test/screenshot output
+output/
+
 # Local agent/tooling state
 .claude/
 

@@ -8,7 +8,6 @@ import {
   normalizeOrder,
   normalizePagination,
   normalizeProduct,
-  normalizeRedirect,
   normalizeSetting,
 } from './contracts'
 
@@ -428,7 +427,6 @@ export const ROLE_PERMISSION_MAP = {
     'media.read', 'media.update',
     'settings.read', 'settings.update',
     'coupons.read', 'coupons.update',
-    'redirects.read', 'redirects.update',
     'menus.read', 'menus.write',
   ],
   MANAGER: [
@@ -720,38 +718,6 @@ export function getMockDashboardSummary(period = '30d') {
       { productId: 'prod-cardo-spirit',     name: 'Cardo Spirit Intercom',          units: 19, revenue: 47310000  },
       { productId: 'prod-ls2-rapid',        name: 'Mũ bảo hiểm LS2 Rapid White',   units: 15, revenue: 27750000  },
     ],
-  }
-}
-
-// ── Mock Redirects ────────────────────────────────────────────────────────────
-
-const REDIRECTS_DATA = [
-  { id: 'rdr-001', sourcePattern: '/san-pham/mu-agv-old', targetUrl: '/product/mu-agv-k1/', redirectType: 'EXACT', statusCode: 301, enabled: true, hitCount: 142, lastHitAt: ISO_NOW, createdAt: '2025-12-01T00:00:00Z', updatedAt: ISO_NOW },
-  { id: 'rdr-002', sourcePattern: '/tin-tuc/chuyen-muc-cu', targetUrl: '/tin-tuc/', redirectType: 'EXACT', statusCode: 302, enabled: true, hitCount: 7, lastHitAt: '2026-03-15T08:00:00Z', createdAt: '2026-01-10T00:00:00Z', updatedAt: ISO_NOW },
-  { id: 'rdr-003', sourcePattern: '/old-homepage', targetUrl: '/', redirectType: 'EXACT', statusCode: 301, enabled: false, hitCount: 0, lastHitAt: null, notes: 'Disabled — homepage slug changed', createdAt: '2026-02-20T00:00:00Z', updatedAt: ISO_NOW },
-  { id: 'rdr-004', sourcePattern: '/mu-bao-hiem-cu', targetUrl: '/danh-muc-san-pham/non-bao-hiem-moto/', redirectType: 'EXACT', statusCode: 301, enabled: true, hitCount: 55, lastHitAt: '2026-04-01T12:00:00Z', createdAt: '2026-03-01T00:00:00Z', updatedAt: ISO_NOW },
-].map(normalizeRedirect)
-
-export function queryMockRedirects(query) {
-  let items = REDIRECTS_DATA
-  if (query?.search) {
-    const q = query.search.toLowerCase()
-    items = items.filter((r) => r.sourcePattern.toLowerCase().includes(q) || r.targetUrl.toLowerCase().includes(q))
-  }
-  if (query?.enabled != null) {
-    const wantEnabled = query.enabled === true || query.enabled === 'true'
-    items = items.filter((r) => r.isEnabled === wantEnabled)
-  }
-  if (query?.statusCode != null) {
-    const code = Number(query.statusCode)
-    items = items.filter((r) => r.statusCode === code)
-  }
-  const pageSize = Number(query?.pageSize) || 20
-  const page = Number(query?.page) || 1
-  const start = (page - 1) * pageSize
-  return {
-    items: items.slice(start, start + pageSize),
-    pagination: normalizePagination({ page, pageSize, totalItems: items.length, totalPages: Math.ceil(items.length / pageSize) }),
   }
 }
 

@@ -3360,3 +3360,143 @@ a {
   vertical-align: middle;
 }
 .mpicker-hint--selected { color: var(--admin-color-primary); font-weight: 500; }
+
+/* ─── Modal scrollable layout (header fixed / body scrolls / footer fixed) ──*/
+.modal-box--flex {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+}
+
+.modal-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--admin-space-4) var(--admin-space-5);
+  border-bottom: 1px solid var(--admin-color-border-subtle);
+}
+
+.modal-header .modal-title {
+  margin: 0;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--admin-space-4) var(--admin-space-5);
+  overscroll-behavior: contain;
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  padding: var(--admin-space-3) var(--admin-space-5);
+  border-top: 1px solid var(--admin-color-border-subtle);
+}
+
+/* ─── Variant picker (inside stock-in modal) ─────────────────────────────────*/
+.variant-picker-list {
+  margin-top: var(--admin-space-2);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.variant-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-3);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--admin-color-border-subtle);
+  background: var(--admin-color-surface-base);
+  color: var(--admin-color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--admin-transition-fast);
+}
+
+.variant-picker-item:last-child {
+  border-bottom: 0;
+}
+
+.variant-picker-item:hover:not(:disabled) {
+  background: var(--admin-color-surface-raised);
+}
+
+.variant-picker-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.variant-picker-item__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: var(--admin-text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-picker-item__meta {
+  display: block;
+  font-size: var(--admin-text-xs);
+  font-weight: 400;
+  color: var(--admin-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-picker-item__qty {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: var(--admin-text-sm);
+}
+
+/* ─── Selected variant summary block ─────────────────────────────────────────*/
+.variant-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-3);
+  margin-bottom: var(--admin-space-4);
+  padding: var(--admin-space-3);
+  background: var(--admin-color-surface-muted);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-text-sm);
+  line-height: 1.6;
+}
+
+.variant-summary__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.variant-summary__product-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Serial list scroll area ────────────────────────────────────────────────*/
+.serial-list-scroll {
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 2px;
+  margin-bottom: var(--admin-space-2);
+}
+
+/* ─── Modal responsive (mobile) ──────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .modal-box--flex {
+    max-height: calc(100dvh - 32px);
+  }
+}

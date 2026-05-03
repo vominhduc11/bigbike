@@ -36,8 +36,6 @@ const PERMISSION_GROUPS = [
       { key: 'sliders.write',   labelKey: 'roles.permSlidersWrite' },
       { key: 'home_videos.read',  labelKey: 'roles.permHomeVideosRead' },
       { key: 'home_videos.write', labelKey: 'roles.permHomeVideosWrite' },
-      { key: 'redirects.read',  labelKey: 'roles.permRedirectsRead' },
-      { key: 'redirects.write', labelKey: 'roles.permRedirectsWrite' },
     ],
   },
   {
@@ -72,7 +70,6 @@ const ROLE_PERMISSIONS = {
     'orders.read', 'orders.write', 'customers.read', 'customers.write',
     'media.read', 'media.write', 'menus.read', 'menus.write',
     'sliders.read', 'sliders.write', 'home_videos.read', 'home_videos.write',
-    'redirects.read', 'redirects.write',
     'coupons.read', 'coupons.write', 'shipping.read', 'shipping.write',
     'reviews.read', 'reviews.write',
     'settings.read', 'settings.write',
@@ -88,11 +85,11 @@ const ROLE_PERMISSIONS = {
     'products.read', 'catalog.read',
     'content.read', 'content.update',
     'media.read', 'media.write', 'menus.read', 'menus.write',
-    'sliders.read', 'sliders.write', 'redirects.read', 'redirects.write',
+    'sliders.read', 'sliders.write',
   ]),
   AUTHOR: new Set(['content.read', 'content.update', 'media.read', 'media.write']),
   CONTRIBUTOR: new Set(['content.read', 'media.read']),
-  SEO_EDITOR: new Set(['content.read', 'content.update', 'redirects.read', 'redirects.write']),
+  SEO_EDITOR: new Set(['content.read', 'content.update']),
 }
 
 function hasPermission(role, perm) {

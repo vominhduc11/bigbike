@@ -4,12 +4,12 @@ import {
   normalizeContentItem,
   normalizeCoupon,
   normalizeCustomer,
+  normalizeImageAsset,
   normalizeMediaItem,
   normalizeMenu,
   normalizeOrder,
   normalizePagination,
   normalizeProduct,
-  normalizeRedirect,
   normalizeSetting,
 } from './contracts'
 import {
@@ -29,7 +29,6 @@ import {
   queryMockMedia,
   queryMockOrders,
   queryMockProducts,
-  queryMockRedirects,
   queryMockReviews,
   queryMockSettings,
   queryMockShippingMethods,
@@ -310,22 +309,36 @@ function buildContentQuery(query) {
 }
 
 function parseListPayload(payload, normalizeItem, fallbackPageSize = 10) {
-  const list = Array.isArray(payload?.data) ? payload.data : []
+  const dataPage =
+    payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+      ? payload.data
+      : null
+  const pageSource = Array.isArray(dataPage?.items)
+    ? dataPage
+    : Array.isArray(payload?.items)
+      ? payload
+      : null
+  const list = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(pageSource?.items)
+      ? pageSource.items
+      : []
   const items = list.map(normalizeItem)
-  const pageSize = Number(payload?.pagination?.pageSize) || fallbackPageSize
+  const pagination = payload?.pagination || pageSource || {}
+  const pageSize = Number(pagination?.pageSize) || fallbackPageSize
 
   return {
     items,
     pagination: normalizePagination(
       {
-        page: payload?.pagination?.page || 1,
+        page: pagination?.page || 1,
         pageSize,
-        totalItems: payload?.pagination?.totalItems || items.length,
+        totalItems: pagination?.totalItems ?? items.length,
         totalPages:
-          payload?.pagination?.totalPages ||
+          pagination?.totalPages ||
           Math.max(1, Math.ceil(items.length / pageSize)),
-        hasNext: payload?.pagination?.hasNext,
-        hasPrevious: payload?.pagination?.hasPrevious,
+        hasNext: pagination?.hasNext,
+        hasPrevious: pagination?.hasPrevious,
       },
       fallbackPageSize,
     ),
@@ -983,73 +996,6 @@ export async function updateCoupon(couponId, input) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
-// ── Redirects ─────────────────────────────────────────────────────────────────
-
-export async function fetchRedirects(query) {
-  if (FORCE_MOCK) {
-    return withMockFallback('Redirect list served from mock.', queryMockRedirects(query))
-  }
-  try {
-    const q = {
-      page: query?.page,
-      size: query?.pageSize,
-      q: query?.search || undefined,
-      enabled: query?.enabled != null ? query.enabled : undefined,
-      statusCode: query?.statusCode || undefined,
-    }
-    const payload = await requestJson('/admin/redirects', { query: q })
-    return withLiveData(parseListPayload(payload, normalizeRedirect, Number(query?.pageSize) || 20))
-  } catch (error) {
-    const e = normalizeError(error)
-    if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, queryMockRedirects(query))
-  }
-}
-
-export async function fetchRedirectDetail(redirectId) {
-  if (FORCE_MOCK) {
-    const mock = queryMockRedirects({}).items.find((r) => r.id === redirectId)
-    if (mock) return withMockFallback('Redirect detail served from mock.', { item: mock })
-    throw new Error('Redirect not found')
-  }
-  try {
-    const payload = await requestJson(`/admin/redirects/${redirectId}`)
-    return withLiveData(parseDetailPayload(payload, normalizeRedirect))
-  } catch (error) {
-    const e = normalizeError(error)
-    if (!shouldFallbackToMockOnLiveError()) throw e
-    const mock = queryMockRedirects({}).items.find((r) => r.id === redirectId)
-    if (mock) return withMockFallback(e.message, { item: mock })
-    throw e
-  }
-}
-
-export async function createRedirect(input) {
-  assertMutationEnabled()
-  const payload = await requestJson('/admin/redirects', { method: 'POST', body: input })
-  return parseDetailPayload(payload, normalizeRedirect)
-}
-
-export async function updateRedirect(redirectId, input) {
-  assertMutationEnabled()
-  const payload = await requestJson(`/admin/redirects/${redirectId}`, { method: 'PATCH', body: input })
-  return parseDetailPayload(payload, normalizeRedirect)
-}
-
-export async function toggleRedirect(redirectId, isEnabled) {
-  assertMutationEnabled()
-  const payload = await requestJson(`/admin/redirects/${redirectId}/enabled`, {
-    method: 'PATCH',
-    body: { enabled: isEnabled },
-  })
-  return parseDetailPayload(payload, normalizeRedirect)
-}
-
-export async function deleteRedirect(redirectId) {
-  assertMutationEnabled()
-  await requestJson(`/admin/redirects/${redirectId}`, { method: 'DELETE' })
-}
-
 // ── Menus ──────────────────────────────────────────────────────────────────────
 
 export async function fetchMenus() {
@@ -1573,6 +1519,7 @@ function normalizeStockItem(input) {
     productId: s.productId || '',
     productName: s.productName || '',
     productSku: s.productSku || undefined,
+    productImage: normalizeImageAsset(s.productImage || s.image || s.product?.image),
     variantId: s.variantId || '',
     variantName: s.variantName || '',
     variantSku: s.variantSku || undefined,
@@ -1582,11 +1529,15 @@ function normalizeStockItem(input) {
   }
 }
 
-export async function adjustStock(variantId, quantityDelta, movementType, note) {
+export async function adjustStock(variantId, quantityDelta, movementType, note, serialNumbers) {
   assertMutationEnabled()
+  const body = { quantityDelta, movementType: movementType || 'ADJUSTMENT', note }
+  if (Array.isArray(serialNumbers) && serialNumbers.length > 0) {
+    body.serialNumbers = serialNumbers
+  }
   const payload = await requestJson(`/admin/inventory/variants/${variantId}/adjust`, {
     method: 'POST',
-    body: { quantityDelta, movementType: movementType || 'ADJUSTMENT', note },
+    body,
   })
   return { item: normalizeStockItem(payload?.data || payload || {}) }
 }
@@ -1635,6 +1586,7 @@ function normalizeMovement(input) {
     referenceType: m.referenceType || '',
     note: m.note || '',
     createdAt: m.createdAt || null,
+    serialCount: typeof m.serialCount === 'number' ? m.serialCount : 0,
   }
 }
 

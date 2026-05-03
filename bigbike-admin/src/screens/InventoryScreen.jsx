@@ -10,34 +10,82 @@ import {
   fetchAllMovements,
   fetchInventory,
   fetchInventorySummary,
-  fetchVariantMovements,
   inventoryExportCsvUrl,
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 
-const STOCK_STATES = ['ALL', 'IN_STOCK', 'OUT_OF_STOCK', 'LOW_STOCK', 'ON_BACKORDER']
-const MOVEMENT_TYPES = ['ADJUSTMENT', 'IN', 'OUT', 'RETURN']
+const STOCK_STATES = ['ALL', 'IN_STOCK', 'OUT_OF_STOCK', 'LOW_STOCK']
 
 const STOCK_STATE_COLORS = {
   IN_STOCK: '#16a34a',
   LOW_STOCK: '#d97706',
   OUT_OF_STOCK: '#dc2626',
-  ON_BACKORDER: '#6b7280',
-  UNKNOWN: '#9ca3af',
+}
+
+const STOCK_STATE_LABELS = {
+  IN_STOCK: 'Còn hàng',
+  LOW_STOCK: 'Sắp hết',
+  OUT_OF_STOCK: 'Hết hàng',
+}
+
+// ── Components ─────────────────────────────────────────────────────────────────
+
+function ProductThumbnail({ image, alt, size = 40 }) {
+  const [errored, setErrored] = useState(false)
+  const src = image?.url
+  const label = image?.alt || alt || ''
+
+  if (!src || errored) {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: size, height: size, flexShrink: 0,
+          borderRadius: 'var(--admin-radius-sm, 4px)',
+          background: 'var(--admin-color-surface-alt, #f3f4f6)',
+          border: '1px solid var(--admin-color-border, #e5e7eb)',
+          color: 'var(--admin-color-text-muted, #9ca3af)',
+          fontSize: size * 0.45,
+        }}
+      >
+        ◻
+      </span>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={label}
+      width={size}
+      height={size}
+      onError={() => setErrored(true)}
+      style={{
+        width: size, height: size, flexShrink: 0,
+        objectFit: 'cover',
+        borderRadius: 'var(--admin-radius-sm, 4px)',
+        border: '1px solid var(--admin-color-border, #e5e7eb)',
+        display: 'block',
+      }}
+    />
+  )
 }
 
 function StockBadge({ state }) {
-  const color = STOCK_STATE_COLORS[state] ?? '#9ca3af'
+  const label = STOCK_STATE_LABELS[state]
+  if (!label) return null
+  const color = STOCK_STATE_COLORS[state]
   return (
     <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>
-      {state?.replace(/_/g, ' ') ?? 'UNKNOWN'}
+      {label}
     </span>
   )
 }
 
 function MovementTypeBadge({ type }) {
-  const colors = { IN: '#16a34a', OUT: '#dc2626', ADJUSTMENT: '#2563eb', RETURN: '#7c3aed' }
+  const colors = { IN: '#16a34a', OUT: '#dc2626', RETURN: '#7c3aed' }
   return (
     <span style={{ color: colors[type] ?? '#6b7280', fontWeight: 600, fontSize: '0.78rem' }}>
       {type}
@@ -69,149 +117,694 @@ function SummaryBanner({ summary }) {
   )
 }
 
-function AdjustModal({ item, onClose, onSuccess }) {
-  const [delta, setDelta] = useState('')
-  const [type, setType] = useState('ADJUSTMENT')
-  const [note, setNote] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+// ── Serial batch helpers ──────────────────────────────────────────────────────
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    const d = parseInt(delta, 10)
-    if (isNaN(d) || d === 0) { setError('Nhập số khác 0.'); return }
-    setSaving(true)
-    setError('')
+const SERIAL_PREVIEW_LIMIT = 30
+
+function parseSerialBatch(text) {
+  if (!text) return { raw: [], unique: [], blank: 0, dupeCount: 0, dupeList: [] }
+  const lines = text.split('\n')
+  let blank = 0
+  const raw = []
+  for (const line of lines) {
+    const t = line.trim()
+    if (!t) { blank++; continue }
+    raw.push(t)
+  }
+  const seen = new Set()
+  const dupes = new Set()
+  const unique = []
+  for (const s of raw) {
+    if (seen.has(s)) { dupes.add(s) }
+    else { seen.add(s); unique.push(s) }
+  }
+  return { raw, unique, blank, dupeCount: dupes.size, dupeList: Array.from(dupes) }
+}
+
+// ── Serial file import helpers ────────────────────────────────────────────────
+
+const SERIAL_HEADER_NAMES = new Set(['serial', 'serial_number', 'serial number', 's/n', 'imei', 'sn'])
+const FILE_IMPORT_SIZE_LIMIT_MB = 5
+const FILE_IMPORT_SIZE_LIMIT_BYTES = FILE_IMPORT_SIZE_LIMIT_MB * 1024 * 1024
+
+function detectSerialColumnIndex(firstRow) {
+  const idx = firstRow.findIndex(
+    (cell) => cell != null && SERIAL_HEADER_NAMES.has(String(cell).trim().toLowerCase()),
+  )
+  return idx >= 0 ? idx : 0
+}
+
+function extractSerialsFromRows(rows) {
+  if (rows.length === 0) return []
+  const firstRow = rows[0].map((c) => (c == null ? '' : String(c).trim()))
+  const colIdx = detectSerialColumnIndex(firstRow)
+  const hasHeader = firstRow.some((cell) => SERIAL_HEADER_NAMES.has(cell.toLowerCase()))
+  const startRow = hasHeader ? 1 : 0
+  const serials = []
+  for (let i = startRow; i < rows.length; i++) {
+    const cell = rows[i][colIdx]
+    if (cell == null) continue
+    const val = String(cell).trim()
+    if (val) serials.push(val)
+  }
+  return serials
+}
+
+function detectCsvDelimiter(firstLine) {
+  const tabs = (firstLine.match(/\t/g) || []).length
+  const semis = (firstLine.match(/;/g) || []).length
+  const commas = (firstLine.match(/,/g) || []).length
+  if (tabs > semis && tabs > commas) return '\t'
+  if (semis > commas) return ';'
+  return ','
+}
+
+function parseSerialFromCsvText(text) {
+  const lines = text.split(/\r?\n/)
+  const delimiter = detectCsvDelimiter(lines[0] || '')
+  const rows = lines.map((line) => line.split(delimiter).map((cell) => cell.trim()))
+  return extractSerialsFromRows(rows)
+}
+
+async function parseSerialFromExcelBuffer(buffer) {
+  const xlsxModule = await import('xlsx')
+  const XLSX = xlsxModule.default ?? xlsxModule
+  const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' })
+  const sheet = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
+  return extractSerialsFromRows(rows)
+}
+
+async function parseSerialFromFile(file) {
+  if (file.size > FILE_IMPORT_SIZE_LIMIT_BYTES) {
+    const err = new Error('FILE_TOO_BIG')
+    err.limitMb = FILE_IMPORT_SIZE_LIMIT_MB
+    throw err
+  }
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (ext === 'csv' || ext === 'txt') {
+    return parseSerialFromCsvText(await file.text())
+  }
+  if (ext === 'xlsx' || ext === 'xls') {
+    return parseSerialFromExcelBuffer(await file.arrayBuffer())
+  }
+  const err = new Error('FILE_UNSUPPORTED')
+  throw err
+}
+
+// ── SerialListInput ───────────────────────────────────────────────────────────
+
+function SerialListInput({ onChange, disabled, maxCount }) {
+  const { t } = useTranslation()
+  const [batchText, setBatchText] = useState('')
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const textareaRef = useRef(null)
+  const fileInputRef = useRef(null)
+
+  const parsed = useMemo(() => parseSerialBatch(batchText), [batchText])
+
+  function handleTextChange(e) {
+    const val = e.target.value
+    setBatchText(val)
+    if (importError) setImportError('')
+    onChange(parseSerialBatch(val).unique)
+  }
+
+  function handleClearAll() {
+    setBatchText('')
+    setImportError('')
+    onChange([])
+  }
+
+  async function handleFileImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    setImportError('')
     try {
-      const r = await adjustStock(item.variantId, d, type, note)
-      toast.success('Đã cập nhật tồn kho')
-      onSuccess(r.item)
-      onClose()
+      const rawSerials = await parseSerialFromFile(file)
+      const newText = rawSerials.join('\n')
+      setBatchText(newText)
+      onChange(parseSerialBatch(newText).unique)
+      if (!panelOpen) setPanelOpen(true)
     } catch (err) {
-      setError(err.message || 'Lỗi khi điều chỉnh tồn kho.')
+      if (err.message === 'FILE_TOO_BIG') {
+        setImportError(t('inventory.stockIn.errorFileTooBig', { mb: err.limitMb ?? FILE_IMPORT_SIZE_LIMIT_MB }))
+      } else if (err.message === 'FILE_UNSUPPORTED') {
+        setImportError(t('inventory.stockIn.errorFileUnsupported'))
+      } else {
+        setImportError(t('inventory.stockIn.errorFileParseFailed'))
+      }
     } finally {
-      setSaving(false)
+      setImporting(false)
     }
   }
 
+  function handleRemoveSerial(idx) {
+    const next = parsed.unique.filter((_, i) => i !== idx)
+    setBatchText(next.join('\n'))
+    onChange(next)
+  }
+
+  function handleCopyErrors() {
+    if (parsed.dupeList.length === 0) return
+    navigator.clipboard?.writeText(parsed.dupeList.join('\n')).catch(() => {})
+  }
+
+  function handleDownloadErrors() {
+    if (parsed.dupeList.length === 0) return
+    const blob = new Blob([parsed.dupeList.join('\n')], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'serial-duplicates.txt'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleTogglePanel() {
+    const next = !panelOpen
+    setPanelOpen(next)
+    if (next) setTimeout(() => textareaRef.current?.focus(), 60)
+  }
+
+  const hasContent = parsed.unique.length > 0 || batchText.trim().length > 0
+  const safeMax = Number.isFinite(maxCount) && maxCount > 0 ? maxCount : 0
+  const exceeds = safeMax > 0 && parsed.unique.length > safeMax
+  const underfill = safeMax > 0 && parsed.unique.length < safeMax
+  const previewList = parsed.unique.slice(0, SERIAL_PREVIEW_LIMIT)
+  const hiddenCount = parsed.unique.length - previewList.length
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Điều chỉnh tồn kho</h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div style={{ padding: '0 24px 8px' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: 4 }}>
-            {item.productName} · <em>{item.variantName}</em>
-          </p>
-          <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>
-            Tồn hiện tại: <strong>{item.quantityOnHand}</strong>
-          </p>
-        </div>
-        <form className="modal-body" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label className="field-label">Số lượng thay đổi *</label>
-            <input
-              type="number"
-              className="control-input"
-              placeholder="Dương = thêm, âm = bớt"
-              value={delta}
-              onChange={(e) => setDelta(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-field">
-            <label className="field-label">Loại điều chỉnh</label>
-            <select className="control-select" value={type} onChange={(e) => setType(e.target.value)}>
-              {MOVEMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className="form-field">
-            <label className="field-label">Ghi chú</label>
-            <textarea className="control-input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-          </div>
-          {error && <p className="field-error">{error}</p>}
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Huỷ</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Đang lưu…' : 'Xác nhận'}
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: 6 }}>
+        <label className="form-label" style={{ margin: 0 }}>
+          {t('inventory.stockIn.labelSerials')}{' '}
+          <span aria-hidden="true" style={{ color: 'var(--admin-color-brand-red)' }}>*</span>
+        </label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {hasContent && (
+            <button type="button" className="btn btn-secondary btn-sm"
+              onClick={handleClearAll} disabled={disabled || importing}>
+              {t('inventory.stockIn.serialsClearAll')}
             </button>
-          </div>
-        </form>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || importing}
+          >
+            {importing
+              ? t('inventory.stockIn.serialsImportFileParsing')
+              : t('inventory.stockIn.serialsImportFile')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,.txt"
+            aria-label={t('inventory.stockIn.serialsImportFileLabel')}
+            style={{ display: 'none' }}
+            onChange={handleFileImport}
+          />
+          <button type="button" className="btn btn-secondary btn-sm"
+            onClick={handleTogglePanel} disabled={disabled || importing}>
+            {panelOpen
+              ? t('inventory.stockIn.serialsBatchClose')
+              : t('inventory.stockIn.serialsBatchTitle')}
+          </button>
+        </div>
       </div>
+
+      {/* File import error */}
+      {importError && (
+        <p role="alert" style={{ color: 'var(--admin-color-danger, #dc2626)', fontSize: '0.8rem', margin: '0 0 0.4rem' }}>
+          {importError}
+        </p>
+      )}
+
+      {/* Batch textarea panel */}
+      {panelOpen && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label htmlFor="serial-batch-input" style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+            {t('inventory.stockIn.serialsBatchPanelLabel')}
+          </label>
+          <textarea
+            id="serial-batch-input"
+            ref={textareaRef}
+            className="control-input"
+            rows={8}
+            value={batchText}
+            onChange={handleTextChange}
+            disabled={disabled}
+            placeholder={t('inventory.stockIn.serialsBulkPlaceholder')}
+            style={{ fontFamily: 'monospace', fontSize: '0.82rem', resize: 'vertical', width: '100%', maxHeight: 320 }}
+            aria-label={t('inventory.stockIn.serialsBatchPanelLabel')}
+          />
+        </div>
+      )}
+
+      {/* Summary strip */}
+      {hasContent && (
+        <div style={{
+          background: 'var(--admin-color-surface)',
+          border: '1px solid var(--admin-color-border)',
+          borderRadius: 4, padding: '0.4rem 0.75rem', marginBottom: '0.5rem',
+          fontSize: '0.78rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem', alignItems: 'center',
+        }}>
+          {safeMax > 0 && (
+            <span style={{
+              fontWeight: 700,
+              color: exceeds
+                ? 'var(--admin-color-danger, #dc2626)'
+                : underfill
+                  ? 'var(--admin-color-state-warning, #d97706)'
+                  : 'var(--admin-color-state-success, #16a34a)',
+            }}>
+              {parsed.unique.length} / {safeMax} serial
+            </span>
+          )}
+          <span>
+            <strong>{parsed.raw.length}</strong>{' '}
+            {t('inventory.stockIn.serialsSummaryTotal')}
+          </span>
+          {parsed.blank > 0 && (
+            <span style={{ color: 'var(--admin-color-text-muted)' }}>
+              <strong>{parsed.blank}</strong>{' '}
+              {t('inventory.stockIn.serialsSummaryBlank')}
+            </span>
+          )}
+          {parsed.dupeCount > 0 && (
+            <span style={{ color: 'var(--admin-color-state-warning, #d97706)' }}>
+              <strong>{parsed.dupeCount}</strong>{' '}
+              {t('inventory.stockIn.serialsSummaryDupes')}
+            </span>
+          )}
+          {exceeds && (
+            <span style={{ color: 'var(--admin-color-danger, #dc2626)' }}>
+              <strong>{parsed.unique.length - safeMax}</strong>{' '}
+              {t('inventory.stockIn.serialsSummaryExceeds')}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Duplicate warning + copy/download actions */}
+      {parsed.dupeCount > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--admin-color-state-warning, #d97706)', flex: 1 }}>
+            {t('inventory.stockIn.warnSerialDuplicateAutoRemoved', { count: parsed.dupeCount })}
+          </span>
+          <button type="button" className="btn btn-secondary btn-sm"
+            onClick={handleCopyErrors} disabled={disabled}>
+            {t('inventory.stockIn.serialsCopyErrors')}
+          </button>
+          <button type="button" className="btn btn-secondary btn-sm"
+            onClick={handleDownloadErrors} disabled={disabled}>
+            {t('inventory.stockIn.serialsDownloadErrors')}
+          </button>
+        </div>
+      )}
+
+      {/* Exceed-quantity error */}
+      {exceeds && (
+        <p role="alert" style={{ color: 'var(--admin-color-danger, #dc2626)', fontSize: '0.8rem', marginBottom: '0.4rem', marginTop: 0 }}>
+          {t('inventory.stockIn.errorSerialCount', { serials: parsed.unique.length, qty: safeMax })}
+        </p>
+      )}
+
+      {/* Underfill error */}
+      {hasContent && underfill && (
+        <p role="alert" style={{ color: 'var(--admin-color-state-warning, #d97706)', fontSize: '0.8rem', marginBottom: '0.4rem', marginTop: 0 }}>
+          {t('inventory.stockIn.errorSerialCountTooFew', { serials: parsed.unique.length, qty: safeMax })}
+        </p>
+      )}
+
+      {/* Serial preview list (max SERIAL_PREVIEW_LIMIT rows + overflow indicator) */}
+      {parsed.unique.length > 0 && (
+        <div
+          role="list"
+          aria-label={t('inventory.stockIn.labelSerials')}
+          style={{
+            border: '1px solid var(--admin-color-border)',
+            borderRadius: 4, maxHeight: 240, overflowY: 'auto',
+          }}
+        >
+          {previewList.map((s, idx) => (
+            <div key={idx} role="listitem" style={{
+              display: 'flex', alignItems: 'center',
+              padding: '3px 8px',
+              borderBottom: idx < previewList.length - 1 || hiddenCount > 0
+                ? '1px solid var(--admin-color-border-subtle)' : 'none',
+              fontSize: '0.78rem',
+            }}>
+              <span style={{ color: 'var(--admin-color-text-muted)', minWidth: 32, fontSize: '0.7rem', flexShrink: 0 }}>
+                {idx + 1}.
+              </span>
+              <span style={{ fontFamily: 'monospace', flex: 1, wordBreak: 'break-all' }}>{s}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveSerial(idx)}
+                disabled={disabled}
+                aria-label={`${t('inventory.stockIn.removeSerial')} ${s}`}
+                style={{
+                  background: 'none', border: 'none',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  color: 'var(--admin-color-text-muted)',
+                  padding: '0 4px', fontSize: '0.85rem', flexShrink: 0,
+                  opacity: disabled ? 0.5 : 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {hiddenCount > 0 && (
+            <div style={{
+              padding: '4px 8px', fontSize: '0.75rem',
+              color: 'var(--admin-color-text-muted)', textAlign: 'center',
+              background: 'var(--admin-color-surface)',
+            }}>
+              + {hiddenCount} {t('inventory.stockIn.serialsPreviewMore')}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-function MovementsModal({ item, onClose }) {
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
-  const [page, setPage] = useState(1)
-  const PAGE_SIZE = 15
+// ── StockInModal ──────────────────────────────────────────────────────────────
+
+function StockInModal({ item, onSuccess, onClose }) {
+  const { t } = useTranslation()
+  const [selectedItem, setSelectedItem] = useState(item || null)
+  const [showPicker, setShowPicker] = useState(!item)
+  const [pickerSearch, setPickerSearch] = useState('')
+  const debouncedPickerSearch = useDebounce(pickerSearch, 250)
+  const [pickerState, setPickerState] = useState({ status: item ? 'idle' : 'loading', items: [] })
+  const [quantity, setQuantity] = useState('')
+  const [note, setNote] = useState('')
+  const [serials, setSerials] = useState([])
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+  const searchRef = useRef(null)
+  const qtyRef = useRef(null)
 
   useEffect(() => {
+    const id = setTimeout(() => {
+      if (item) qtyRef.current?.focus()
+      else searchRef.current?.focus()
+    }, 60)
+    return () => clearTimeout(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (item) return undefined
+
     let active = true
-    setState((s) => ({ ...s, status: 'loading' }))
-    fetchVariantMovements(item.variantId, { page, pageSize: PAGE_SIZE })
-      .then((r) => { if (active) setState({ status: 'success', items: r.items, pagination: r.pagination }) })
-      .catch((e) => { if (active) setState({ status: 'error', items: [], pagination: null, error: e.message }) })
+    Promise.resolve().then(() => {
+      if (active) setPickerState((s) => ({ ...s, status: 'loading' }))
+    })
+
+    fetchInventory({
+      q: debouncedPickerSearch,
+      stockState: 'ALL',
+      page: 1,
+      pageSize: 8,
+    })
+      .then((r) => {
+        if (!active) return
+        setPickerState({ status: 'success', items: r.items || [] })
+      })
+      .catch((e) => {
+        if (!active) return
+        setPickerState({ status: 'error', items: [], error: e.message })
+      })
+
     return () => { active = false }
-  }, [item.variantId, page])
+  }, [item, debouncedPickerSearch])
+
+  function handleSelectVariant(candidate) {
+    setSelectedItem(candidate)
+    setShowPicker(false)
+    setFormError('')
+    setTimeout(() => qtyRef.current?.focus(), 60)
+  }
+
+  function handleChangeVariant() {
+    setSelectedItem(null)
+    setShowPicker(true)
+    setFormError('')
+    setTimeout(() => searchRef.current?.focus(), 60)
+  }
+
+  function validate() {
+    const qty = parseInt(quantity, 10)
+    if (!selectedItem?.variantId) {
+      return t('inventory.stockIn.errorVariantRequired', { defaultValue: 'Vui lòng chọn variant cần nhập hàng.' })
+    }
+    if (!quantity || isNaN(qty) || qty < 1) {
+      return t('inventory.stockIn.errorQtyRequired')
+    }
+    if (serials.length < qty) {
+      return t('inventory.stockIn.errorSerialCountTooFew', { serials: serials.length, qty })
+    }
+    if (serials.length > qty) {
+      return t('inventory.stockIn.errorSerialCount', { serials: serials.length, qty })
+    }
+    return ''
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const validationError = validate()
+    if (validationError) { setFormError(validationError); return }
+    setFormError('')
+    setSubmitting(true)
+    try {
+      const qty = parseInt(quantity, 10)
+      await adjustStock(
+        selectedItem.variantId,
+        qty,
+        'IN',
+        note.trim() || undefined,
+        serials,
+      )
+      toast.success(t('inventory.stockIn.success', { qty }))
+      onSuccess()
+    } catch (err) {
+      setFormError(err.message || t('inventory.stockIn.errorGeneric'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const variantLabel = selectedItem
+    ? [selectedItem.variantName, selectedItem.variantSku].filter(Boolean).join(' · ') || '—'
+    : '—'
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 720, width: '95vw' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Lịch sử biến động</h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div style={{ padding: '0 24px 8px' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
-            {item.productName} · <em>{item.variantName}</em>
-            {item.variantSku && <span style={{ fontFamily: 'monospace', marginLeft: 6 }}>({item.variantSku})</span>}
-          </p>
-        </div>
-        <div style={{ padding: '0 24px 24px', overflowX: 'auto' }}>
-          {state.status === 'error' && <p style={{ color: '#dc2626' }}>{state.error}</p>}
-          {state.status === 'success' && state.items.length === 0 && (
-            <p style={{ color: 'var(--admin-color-text-muted)' }}>Chưa có biến động nào.</p>
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stock-in-title"
+    >
+      <div className="modal-box modal-box--wide modal-box--flex">
+
+        {/* ── Fixed header ── */}
+        <header className="modal-header">
+          <h2 id="stock-in-title" className="modal-title">
+            {t('inventory.stockIn.title')}
+          </h2>
+          <button
+            type="button"
+            className="btn-icon btn-secondary-ghost"
+            onClick={onClose}
+            disabled={submitting}
+            aria-label={t('common.close')}
+          >
+            ✕
+          </button>
+        </header>
+
+        {/* ── Scrollable body ── */}
+        <div className="modal-body">
+
+          {/* Variant picker — shown when no pre-selected item and user hasn't chosen yet */}
+          {!item && showPicker && (
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label" htmlFor="stock-in-variant-search">
+                {t('inventory.stockIn.selectVariant', { defaultValue: 'Chọn variant' })}
+              </label>
+              <input
+                id="stock-in-variant-search"
+                ref={searchRef}
+                type="search"
+                className="control-input"
+                value={pickerSearch}
+                onChange={(e) => { setPickerSearch(e.target.value); setFormError('') }}
+                placeholder={t('inventory.stockIn.searchPlaceholder', { defaultValue: 'Tìm tên sản phẩm, SKU...' })}
+                disabled={submitting}
+              />
+              <div className="variant-picker-list">
+                {pickerState.status === 'loading' && (
+                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+                    {t('common.loading')}
+                  </div>
+                )}
+                {pickerState.status === 'error' && (
+                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-status-danger-text)' }}>
+                    {pickerState.error}
+                  </div>
+                )}
+                {pickerState.status === 'success' && pickerState.items.length === 0 && (
+                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+                    {t('inventory.stockIn.noVariantResults', { defaultValue: 'Không tìm thấy variant phù hợp.' })}
+                  </div>
+                )}
+                {pickerState.status === 'success' && pickerState.items.map((candidate) => {
+                  const isSelected = selectedItem?.variantId === candidate.variantId
+                  return (
+                    <button
+                      key={candidate.variantId || candidate.id}
+                      type="button"
+                      className="variant-picker-item"
+                      onClick={() => handleSelectVariant(candidate)}
+                      disabled={submitting}
+                      style={isSelected ? { background: 'var(--admin-color-surface-active, rgba(249,6,6,0.10))' } : undefined}
+                    >
+                      <span className="variant-picker-item__name">
+                        {candidate.productName || '—'}
+                        <span className="variant-picker-item__meta">
+                          {[candidate.variantName, candidate.variantSku].filter(Boolean).join(' · ') || '—'}
+                        </span>
+                      </span>
+                      <span className="variant-picker-item__qty">
+                        {candidate.quantityOnHand ?? 0}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           )}
-          {(state.status === 'loading' || state.items.length > 0) && (
-            <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                  {['Loại', 'Delta', 'Trước', 'Sau', 'Nguồn', 'Ghi chú', 'Thời gian'].map((h) => (
-                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {state.status === 'loading'
-                  ? Array.from({ length: 5 }, (_, i) => (
-                    <tr key={i}><td colSpan={7} style={{ padding: '8px' }}>
-                      <div className="skeleton" style={{ height: 14, width: '100%' }} />
-                    </td></tr>
-                  ))
-                  : state.items.map((m) => (
-                    <tr key={m.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                      <td style={{ padding: '6px 8px' }}><MovementTypeBadge type={m.movementType} /></td>
-                      <td style={{ padding: '6px 8px', fontWeight: 700, color: m.quantityDelta > 0 ? '#16a34a' : '#dc2626' }}>
-                        {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
-                      </td>
-                      <td style={{ padding: '6px 8px' }}>{m.quantityBefore}</td>
-                      <td style={{ padding: '6px 8px' }}>{m.quantityAfter}</td>
-                      <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.referenceType || '—'}</td>
-                      <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.note || '—'}</td>
-                      <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)', whiteSpace: 'nowrap' }}>{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+
+          {/* Selected variant summary */}
+          {selectedItem && (
+            <div className="variant-summary">
+              <div className="variant-summary__info">
+                <div>
+                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                    {t('inventory.colProduct')}:{' '}
+                  </span>
+                  <strong className="variant-summary__product-name">
+                    {selectedItem.productName || '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                    {t('inventory.colVariant')}:{' '}
+                  </span>
+                  <strong>{variantLabel}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                    {t('inventory.stockIn.currentQty')}:{' '}
+                  </span>
+                  <strong>{selectedItem.quantityOnHand ?? '—'}</strong>
+                </div>
+              </div>
+              {!item && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleChangeVariant}
+                  disabled={submitting}
+                >
+                  {t('inventory.stockIn.changeVariant', { defaultValue: 'Đổi variant' })}
+                </button>
+              )}
+            </div>
           )}
-          {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
-            <PaginationControls pagination={state.pagination} onPageChange={setPage} />
-          )}
+
+          {/* Form fields — id links to submit button in footer */}
+          <form id="stock-in-form" onSubmit={handleSubmit}>
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label" htmlFor="stock-in-qty">
+                {t('inventory.stockIn.labelQty')}{' '}
+                <span aria-hidden="true" style={{ color: 'var(--admin-color-brand-red)' }}>*</span>
+              </label>
+              <input
+                id="stock-in-qty"
+                ref={qtyRef}
+                type="number"
+                className="control-input"
+                min="1"
+                step="1"
+                value={quantity}
+                onChange={(e) => { setQuantity(e.target.value); setFormError('') }}
+                disabled={submitting}
+                placeholder="1"
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label" htmlFor="stock-in-note">
+                {t('inventory.stockIn.labelNote')}
+              </label>
+              <input
+                id="stock-in-note"
+                type="text"
+                className="control-input"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                disabled={submitting}
+                placeholder={t('inventory.stockIn.notePlaceholder')}
+              />
+            </div>
+
+            <div className="form-group">
+              <SerialListInput
+                onChange={(next) => { setSerials(next); setFormError('') }}
+                disabled={submitting}
+                maxCount={parseInt(quantity, 10) || 0}
+              />
+            </div>
+          </form>
         </div>
+
+        {/* ── Fixed footer ── */}
+        <footer className="modal-footer">
+          {formError && (
+            <p className="field-error" style={{ marginBottom: '0.5rem' }}>{formError}</p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--admin-space-2)' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="submit"
+              form="stock-in-form"
+              className="btn btn-primary"
+              disabled={submitting}
+            >
+              {submitting ? t('inventory.stockIn.submitting') : t('inventory.stockIn.submit')}
+            </button>
+          </div>
+        </footer>
+
       </div>
     </div>
   )
@@ -221,20 +814,22 @@ function MovementsModal({ item, onClose }) {
 
 const INITIAL_MV_QUERY = { page: 1, pageSize: 20, movementType: '', referenceType: '' }
 
-function AllMovementsTab() {
+function AllMovementsTab({ refreshKey = 0 }) {
   const [query, setQuery] = useState(INITIAL_MV_QUERY)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
 
   useEffect(() => {
     let active = true
-    setState((s) => ({ ...s, status: 'loading' }))
+    Promise.resolve().then(() => {
+      if (active) setState((s) => ({ ...s, status: 'loading' }))
+    })
     fetchAllMovements(query)
       .then((r) => { if (active) setState({ status: 'success', items: r.items, pagination: r.pagination }) })
       .catch((e) => { if (active) setState({ status: 'error', items: [], pagination: null, error: e.message }) })
     return () => { active = false }
-  }, [query])
+  }, [query, refreshKey])
 
-  const MV_TYPE_OPTIONS = ['', 'IN', 'OUT', 'ADJUSTMENT', 'RETURN']
+  const MV_TYPE_OPTIONS = ['', 'IN', 'OUT', 'RETURN']
   const REF_TYPE_OPTIONS = ['', 'ORDER', 'ORDER_CANCEL', 'RETURN', 'MANUAL']
 
   return (
@@ -269,7 +864,7 @@ function AllMovementsTab() {
           <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                {['Loại', 'Sản phẩm / Variant', 'Delta', 'Sau', 'Nguồn', 'Ghi chú', 'Thời gian'].map((h) => (
+                {['Loại', 'Sản phẩm / Variant', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
                   <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
@@ -277,7 +872,7 @@ function AllMovementsTab() {
             <tbody>
               {state.status === 'loading'
                 ? Array.from({ length: 8 }, (_, i) => (
-                  <tr key={i}><td colSpan={7} style={{ padding: '8px' }}>
+                  <tr key={i}><td colSpan={8} style={{ padding: '8px' }}>
                     <div className="skeleton" style={{ height: 14, width: '100%' }} />
                   </td></tr>
                 ))
@@ -293,6 +888,11 @@ function AllMovementsTab() {
                     </td>
                     <td style={{ padding: '6px 8px' }}>{m.quantityAfter}</td>
                     <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.referenceType || '—'}</td>
+                    <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
+                      {m.serialCount > 0
+                        ? <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{m.serialCount} S/N</span>
+                        : '—'}
+                    </td>
                     <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.note || '—'}</td>
                     <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
                   </tr>
@@ -313,7 +913,7 @@ function AllMovementsTab() {
 
 const INITIAL_QUERY = { q: '', stockState: 'ALL', page: 1, pageSize: 20 }
 
-export function InventoryScreen({ canUpdate }) {
+export function InventoryScreen({ canUpdate = false }) {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('stock') // 'stock' | 'movements'
   const [query, setQuery] = useState(INITIAL_QUERY)
@@ -321,9 +921,11 @@ export function InventoryScreen({ canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirst = useRef(true)
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
-  const [adjustItem, setAdjustItem] = useState(null)
-  const [movementsItem, setMovementsItem] = useState(null)
   const [summary, setSummary] = useState(null)
+  const [stockInTarget, setStockInTarget] = useState(null)
+  const [isStockInOpen, setIsStockInOpen] = useState(false)
+  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
+  const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
 
   useEffect(() => {
     fetchInventorySummary().then(setSummary)
@@ -337,7 +939,9 @@ export function InventoryScreen({ canUpdate }) {
   useEffect(() => {
     if (activeTab !== 'stock') return
     let active = true
-    setState((s) => ({ ...s, status: 'loading' }))
+    Promise.resolve().then(() => {
+      if (active) setState((s) => ({ ...s, status: 'loading' }))
+    })
     fetchInventory(query)
       .then((r) => {
         if (!active) return
@@ -348,23 +952,36 @@ export function InventoryScreen({ canUpdate }) {
         setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [query, activeTab])
+  }, [query, activeTab, inventoryRefreshKey])
 
-  function handleAdjustSuccess(updated) {
-    setState((s) => ({
-      ...s,
-      items: s.items.map((i) => i.variantId === updated.variantId ? updated : i),
-    }))
+  function handleStockInSuccess() {
+    setIsStockInOpen(false)
+    setStockInTarget(null)
+    setInventoryRefreshKey((k) => k + 1)
+    setMovementsRefreshKey((k) => k + 1)
     fetchInventorySummary().then(setSummary)
+  }
+
+  function openStockIn(item = null) {
+    setStockInTarget(item)
+    setIsStockInOpen(true)
+  }
+
+  function closeStockIn() {
+    setIsStockInOpen(false)
+    setStockInTarget(null)
   }
 
   const columns = useMemo(() => [
     {
       key: 'product', label: t('inventory.colProduct'), skeletonWidth: '80%',
       render: (item) => (
-        <span>
-          <p style={{ fontWeight: 500 }}>{item.productName}</p>
-          {item.productSku && <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.productSku}</p>}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ProductThumbnail image={item.productImage} alt={item.productName} size={40} />
+          <span>
+            <p style={{ fontWeight: 500 }}>{item.productName}</p>
+            {item.productSku && <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.productSku}</p>}
+          </span>
         </span>
       ),
     },
@@ -389,24 +1006,20 @@ export function InventoryScreen({ canUpdate }) {
       key: 'quantityOnHand', label: t('inventory.colQty'), align: 'right', skeletonWidth: '30%',
       render: (item) => <strong style={{ fontSize: '1rem' }}>{item.quantityOnHand}</strong>,
     },
-    {
-      key: 'actions', label: '', align: 'right', skeletonWidth: '60%',
+    canUpdate ? {
+      key: 'actions', label: t('common.actions'), skeletonWidth: '40%',
       render: (item) => (
-        <span style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-          <button type="button" className="btn btn-ghost" style={{ fontSize: '0.75rem' }}
-            onClick={() => setMovementsItem(item)}>
-            Lịch sử
-          </button>
-          {canUpdate && (
-            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.78rem' }}
-              onClick={() => setAdjustItem(item)}>
-              {t('inventory.adjustBtn')}
-            </button>
-          )}
-        </span>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ fontSize: '0.8rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+          onClick={() => openStockIn(item)}
+        >
+          {t('inventory.stockIn.btnLabel')}
+        </button>
       ),
-    },
-  ].filter(Boolean), [canUpdate, t])
+    } : null,
+  ].filter(Boolean), [t, canUpdate])
 
   return (
     <section className="screen">
@@ -416,7 +1029,12 @@ export function InventoryScreen({ canUpdate }) {
           <h1>{t('inventory.title')}</h1>
           <p>{t('inventory.description')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="screen-actions">
+          {canUpdate && (
+            <button type="button" className="btn btn-primary" onClick={() => openStockIn()}>
+              {t('inventory.stockIn.btnLabel')}
+            </button>
+          )}
           <a href={inventoryExportCsvUrl()} className="btn btn-secondary" download>
             Xuất CSV
           </a>
@@ -440,7 +1058,7 @@ export function InventoryScreen({ canUpdate }) {
         ))}
       </div>
 
-      {activeTab === 'movements' && <AllMovementsTab />}
+      {activeTab === 'movements' && <AllMovementsTab refreshKey={movementsRefreshKey} />}
 
       {activeTab === 'stock' && (
         <>
@@ -490,17 +1108,11 @@ export function InventoryScreen({ canUpdate }) {
         </>
       )}
 
-      {adjustItem && (
-        <AdjustModal
-          item={adjustItem}
-          onClose={() => setAdjustItem(null)}
-          onSuccess={handleAdjustSuccess}
-        />
-      )}
-      {movementsItem && (
-        <MovementsModal
-          item={movementsItem}
-          onClose={() => setMovementsItem(null)}
+      {isStockInOpen && (
+        <StockInModal
+          item={stockInTarget}
+          onSuccess={handleStockInSuccess}
+          onClose={closeStockIn}
         />
       )}
     </section>

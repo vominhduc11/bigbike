@@ -566,26 +566,6 @@ export function normalizeCoupon(input) {
   }
 }
 
-// ── Redirects ────────────────────────────────────────────────────────────────
-
-export function normalizeRedirect(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  return {
-    id: toTrimmedStringLocal(s.id) || 'unknown-redirect',
-    sourcePattern: toTrimmedStringLocal(s.sourcePattern) || '/',
-    targetUrl: toTrimmedStringLocal(s.targetUrl) || '/',
-    redirectType: toTrimmedStringLocal(s.redirectType) || 'EXACT',
-    statusCode: toIntegerLocal(s.statusCode, 301),
-    isEnabled: s.enabled !== false,
-    hitCount: toIntegerLocal(s.hitCount, 0),
-    lastHitAt: toTrimmedStringLocal(s.lastHitAt) || undefined,
-    notes: toTrimmedStringLocal(s.notes) || undefined,
-    legacyId: s.legacyId != null ? s.legacyId : undefined,
-    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
-    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
-  }
-}
-
 // ── Menus ─────────────────────────────────────────────────────────────────────
 
 function normalizeMenuItem(input) {

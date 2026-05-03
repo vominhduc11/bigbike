@@ -88,11 +88,10 @@ class Phase1KOpenApiContractTest {
     }
 
     @Test
-    void openApi_containsAdminCustomerMediaRedirectEndpoints() throws Exception {
+    void openApi_containsAdminCustomerMediaEndpoints() throws Exception {
         String body = fetchApiDocs();
         assertThat(body).contains("/api/v1/admin/customers");
         assertThat(body).contains("/api/v1/admin/media");
-        assertThat(body).contains("/api/v1/admin/redirects");
     }
 
     @Test

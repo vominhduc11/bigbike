@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface StockMovementJpaRepository extends JpaRepository<StockMovementEntity, UUID> {
 
+    boolean existsByReferenceTypeAndReferenceId(String referenceType, UUID referenceId);
+
     List<StockMovementEntity> findByVariantIdOrderByCreatedAtDesc(String variantId, Pageable pageable);
 
     long countByVariantId(String variantId);
