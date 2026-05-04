@@ -1,4 +1,4 @@
-import {
+﻿import {
   normalizeBrand,
   normalizeCategory,
   normalizeContentItem,
@@ -10,6 +10,7 @@ import {
   normalizeOrder,
   normalizePagination,
   normalizeProduct,
+  normalizeRedirect,
   normalizeSetting,
 } from './contracts'
 import {
@@ -17,6 +18,7 @@ import {
   getMockBrandById,
   getMockCategoryById,
   getMockContentById,
+  getMockRedirectById,
   getMockDashboardSummary,
   getMockProductById,
   queryMockAdminUsers,
@@ -30,6 +32,7 @@ import {
   queryMockOrders,
   queryMockProducts,
   queryMockReviews,
+  queryMockRedirects,
   queryMockSettings,
   queryMockShippingMethods,
   queryMockShippingZones,
@@ -52,7 +55,7 @@ export class ApiClientError extends Error {
   }
 }
 
-// ── Auth interceptor state ───────────────────────────────────────────────────
+// â”€â”€ Auth interceptor state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // We don't pull in axios just for an auth header. The same interceptor pattern
 // is implemented around fetch: every request reads the latest accessToken from
 // localStorage and, on 401, the request is retried once after a refresh.
@@ -144,7 +147,7 @@ async function requestJson(endpoint, options = {}) {
   const { accessToken } = skipAuth ? { accessToken: null } : readTokens()
   let { response, payload } = await dispatch(method, url, body, accessToken)
 
-  // 401 → refresh once, retry once. The refresh endpoint itself is called with
+  // 401 â†’ refresh once, retry once. The refresh endpoint itself is called with
   // skipAuth so we never recurse here.
   if (response.status === 401 && !skipAuth && accessToken) {
     const newAccess = await performTokenRefresh()
@@ -152,7 +155,7 @@ async function requestJson(endpoint, options = {}) {
       ({ response, payload } = await dispatch(method, url, body, newAccess))
     }
     if (response.status === 401) {
-      // Refresh failed or replay still 401 — surface to AuthProvider so it can
+      // Refresh failed or replay still 401 â€” surface to AuthProvider so it can
       // clear state and show the login screen.
       clearTokens()
       if (authErrorListener) authErrorListener()
@@ -172,7 +175,7 @@ async function requestJson(endpoint, options = {}) {
   return payload
 }
 
-// ── Admin auth API ───────────────────────────────────────────────────────────
+// â”€â”€ Admin auth API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function loginAdmin({ email, password }) {
   if (FORCE_MOCK) {
@@ -216,7 +219,7 @@ export async function logoutAdmin() {
       body: JSON.stringify({ refreshToken }),
     })
   } catch {
-    // Ignore network errors — still clear local tokens below.
+    // Ignore network errors â€” still clear local tokens below.
   }
   clearTokens()
 }
@@ -312,6 +315,16 @@ function buildContentQuery(query) {
   }
 }
 
+function buildRedirectQuery(query) {
+  return {
+    page: query?.page,
+    size: query?.pageSize,
+    q: query?.search,
+    enabled: query?.enabled,
+    statusCode: query?.statusCode,
+  }
+}
+
 function parseListPayload(payload, normalizeItem, fallbackPageSize = 10) {
   const dataPage =
     payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
@@ -383,7 +396,7 @@ export function mapValidationErrors(error) {
       return acc
     }
     const rawField = typeof detail.field === 'string' ? detail.field : '_form'
-    // Normalize bracket notation variants[0].field → variants.0.field
+    // Normalize bracket notation variants[0].field â†’ variants.0.field
     const field = rawField.replace(/\[(\d+)\]/g, '.$1')
     const message =
       typeof detail.message === 'string'
@@ -711,7 +724,60 @@ export async function deleteContent(contentType, contentId) {
   return parseDetailPayload(payload, normalizeContentItem)
 }
 
-// ── Orders ───────────────────────────────────────────────────────────────────
+export async function fetchRedirects(query) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Redirect list served from mock.', queryMockRedirects(query))
+  }
+
+  try {
+    const payload = await requestJson('/admin/redirects', { query: buildRedirectQuery(query) })
+    return withLiveData(parseListPayload(payload, normalizeRedirect, Number(query?.pageSize) || 20))
+  } catch (error) {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw normalizedError
+    return withMockFallback(normalizedError.message, queryMockRedirects(query))
+  }
+}
+
+export async function fetchRedirectDetail(redirectId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Redirect detail served from mock.', { item: getMockRedirectById(redirectId) })
+  }
+
+  try {
+    const payload = await requestJson(`/admin/redirects/${redirectId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeRedirect))
+  } catch (error) {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw normalizedError
+    return withMockFallback(normalizedError.message, { item: getMockRedirectById(redirectId) })
+  }
+}
+
+export async function createRedirect(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/redirects', {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeRedirect)
+}
+
+export async function updateRedirect(redirectId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/redirects/${redirectId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeRedirect)
+}
+
+export async function deleteRedirect(redirectId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/redirects/${redirectId}`, { method: 'DELETE' })
+}
+
+// â”€â”€ Orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchOrders(query) {
   if (FORCE_MOCK) {
@@ -795,7 +861,7 @@ export async function addOrderNote(orderId, { content, customerVisible = false }
   return payload?.data ?? null
 }
 
-// ── Customers ────────────────────────────────────────────────────────────────
+// â”€â”€ Customers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchCustomers(query) {
   if (FORCE_MOCK) {
@@ -845,7 +911,7 @@ export async function updateCustomer(customerId, data) {
   return parseDetailPayload(payload, normalizeCustomer)
 }
 
-// ── Media ────────────────────────────────────────────────────────────────────
+// â”€â”€ Media â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchMedia(query) {
   if (FORCE_MOCK) {
@@ -932,11 +998,11 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
   })
 }
 
-// ── Settings ─────────────────────────────────────────────────────────────────
+// â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchSettings() {
   if (FORCE_MOCK) {
-    return withMockFallback('Đang hiển thị dữ liệu mẫu — chưa kết nối hệ thống thật. Mọi thay đổi sẽ không được lưu.', queryMockSettings())
+    return withMockFallback('Äang hiá»ƒn thá»‹ dá»¯ liá»‡u máº«u â€” chÆ°a káº¿t ná»‘i há»‡ thá»‘ng tháº­t. Má»i thay Ä‘á»•i sáº½ khĂ´ng Ä‘Æ°á»£c lÆ°u.', queryMockSettings())
   }
   try {
     const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })
@@ -958,7 +1024,7 @@ export async function updateSetting(key, value) {
   return { item: normalizeSetting(payload?.data || {}) }
 }
 
-// ── Coupons ───────────────────────────────────────────────────────────────────
+// â”€â”€ Coupons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchCoupons(query) {
   if (FORCE_MOCK) {
@@ -1000,7 +1066,7 @@ export async function updateCoupon(couponId, input) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
-// ── Menus ──────────────────────────────────────────────────────────────────────
+// â”€â”€ Menus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchMenus() {
   if (FORCE_MOCK) {
@@ -1074,7 +1140,7 @@ export async function reorderMenuItems(menuId, items) {
   return withLiveData(parseDetailPayload(payload, normalizeMenu))
 }
 
-// ── Sliders ───────────────────────────────────────────────────────────────────
+// â”€â”€ Sliders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeSlider(input) {
   const s = input && typeof input === 'object' ? input : {}
@@ -1132,7 +1198,7 @@ export async function deleteSlider(sliderId) {
   await requestJson(`/admin/sliders/${sliderId}`, { method: 'DELETE' })
 }
 
-// ── Home Videos ──────────────────────────────────────────────────────────────
+// â”€â”€ Home Videos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeHomeVideo(input) {
   return {
@@ -1186,7 +1252,7 @@ export async function deleteHomeVideo(id) {
   await requestJson(`/admin/home-videos/${id}`, { method: 'DELETE' })
 }
 
-// ── Shipping ──────────────────────────────────────────────────────────────────
+// â”€â”€ Shipping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeShippingZone(input) {
   const s = input && typeof input === 'object' ? input : {}
@@ -1281,7 +1347,7 @@ export async function deleteShippingMethod(zoneId, methodId) {
   await requestJson(`/admin/shipping/zones/${zoneId}/methods/${methodId}`, { method: 'DELETE' })
 }
 
-// ── Admin Users ───────────────────────────────────────────────────────────────
+// â”€â”€ Admin Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeAdminUser(input) {
   const s = input && typeof input === 'object' ? input : {}
@@ -1331,7 +1397,7 @@ export async function updateAdminUser(userId, input) {
   return { item: normalizeAdminUser(payload?.data || {}) }
 }
 
-// ── Reviews ───────────────────────────────────────────────────────────────────
+// â”€â”€ Reviews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeReview(input) {
   const s = input && typeof input === 'object' ? input : {}
@@ -1378,7 +1444,7 @@ export async function deleteReview(reviewId) {
   await requestJson(`/admin/reviews/${reviewId}`, { method: 'DELETE' })
 }
 
-// ── Audit Logs ────────────────────────────────────────────────────────────────
+// â”€â”€ Audit Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeAuditLog(input) {
   const s = input && typeof input === 'object' ? input : {}
@@ -1422,7 +1488,7 @@ export async function fetchAuditLogs(query) {
   }
 }
 
-// ── Refund ────────────────────────────────────────────────────────────────────
+// â”€â”€ Refund â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function createRefund(orderId, input) {
   assertMutationEnabled()
@@ -1433,7 +1499,7 @@ export async function createRefund(orderId, input) {
   return parseDetailPayload(payload, normalizeOrder)
 }
 
-// ── Reports / Analytics ───────────────────────────────────────────────────────
+// â”€â”€ Reports / Analytics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchAnalytics(from, to) {
   try {
@@ -1480,7 +1546,7 @@ function normalizeAnalytics(payload) {
   }
 }
 
-// ── Reports / Export ──────────────────────────────────────────────────────────
+// â”€â”€ Reports / Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function fetchCsvBlob(path, params = {}) {
   const { accessToken } = readTokens()
@@ -1513,7 +1579,7 @@ export async function exportProductsCsv(filters = {}) {
   return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus })
 }
 
-// ── Inventory ─────────────────────────────────────────────────────────────────
+// â”€â”€ Inventory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchInventory(query = {}) {
   try {
@@ -1615,7 +1681,7 @@ export function inventoryExportCsvUrl() {
   return `${API_BASE}/admin/inventory/export.csv`
 }
 
-// ── Returns / RMA ─────────────────────────────────────────────────────────────
+// â”€â”€ Returns / RMA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeReturn(s) {
   if (!s || typeof s !== 'object') return {}
@@ -1649,8 +1715,8 @@ function buildReturnQuery(query = {}) {
 
 function mockReturns(query = {}) {
   const all = [
-    { id: 'r1', returnNumber: 'RMA-001001', orderId: 'ord-aaa-1', customerId: 'c1', status: 'PENDING', reason: 'DEFECTIVE', customerNote: 'Sản phẩm bị lỗi', adminNote: '', refundAmount: 0, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
-    { id: 'r2', returnNumber: 'RMA-001002', orderId: 'ord-bbb-2', customerId: 'c2', status: 'APPROVED', reason: 'WRONG_ITEM', customerNote: '', adminNote: 'Đã xác nhận', refundAmount: 0, createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r1', returnNumber: 'RMA-001001', orderId: 'ord-aaa-1', customerId: 'c1', status: 'PENDING', reason: 'DEFECTIVE', customerNote: 'Sáº£n pháº©m bá»‹ lá»—i', adminNote: '', refundAmount: 0, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r2', returnNumber: 'RMA-001002', orderId: 'ord-bbb-2', customerId: 'c2', status: 'APPROVED', reason: 'WRONG_ITEM', customerNote: '', adminNote: 'ÄĂ£ xĂ¡c nháº­n', refundAmount: 0, createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
     { id: 'r3', returnNumber: 'RMA-001003', orderId: 'ord-ccc-3', customerId: 'c1', status: 'COMPLETED', reason: 'CHANGED_MIND', customerNote: '', adminNote: '', refundAmount: 350000, createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
   ]
   let filtered = all
@@ -1695,7 +1761,7 @@ export async function updateReturnStatus(returnId, body) {
   return normalizeReturn(payload?.data || payload || {})
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+// â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchDashboardSummary(period = '30d') {
   if (FORCE_MOCK) {
@@ -1712,7 +1778,7 @@ export async function fetchDashboardSummary(period = '30d') {
   }
 }
 
-// ── POS (Point of Sale) ───────────────────────────────────────────────────────
+// â”€â”€ POS (Point of Sale) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function posSearchProducts(q, page = 1, size = 20) {
   if (FORCE_MOCK) {
@@ -1733,7 +1799,7 @@ export async function posCreateOrder(body) {
   return payload?.data ?? null
 }
 
-// ── Roles & Permissions ───────────────────────────────────────────────────────
+// â”€â”€ Roles & Permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeRole(input) {
   const r = input && typeof input === 'object' ? input : {}
@@ -1757,17 +1823,18 @@ function buildMockRoles() {
     'content.read','content.update','media.read','media.write',
     'menus.read','menus.write','sliders.read','sliders.write',
     'home_videos.read','home_videos.write',
+    'redirects.read','redirects.write',
     'settings.read','settings.write',
     'admin-users.read','admin-users.write','audit-logs.read',
   ]
   return [
-    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Toàn quyền hệ thống', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'ADMIN', name: 'Admin', description: 'Quản lý toàn bộ shop', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'SHOP_MANAGER', name: 'Shop Manager', description: 'Vận hành bán hàng', isSystem: true, permissions: ['orders.read','orders.write','customers.read','customers.write','coupons.read','coupons.write','shipping.read','reviews.read','reviews.write','products.read','products.update','catalog.read'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'EDITOR', name: 'Editor', description: 'Nội dung & sản phẩm', isSystem: true, permissions: ['products.read','catalog.read','content.read','content.update','media.read','media.write','menus.read','menus.write','sliders.read','sliders.write'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'AUTHOR', name: 'Author', description: 'Viết & upload ảnh', isSystem: true, permissions: ['content.read','content.update','media.read','media.write'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'CONTRIBUTOR', name: 'Contributor', description: 'Chỉ xem nội dung', isSystem: true, permissions: ['content.read','media.read'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'SEO_EDITOR', name: 'SEO Editor', description: 'Tối ưu nội dung SEO', isSystem: true, permissions: ['content.read','content.update'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'ToĂ n quyá»n há»‡ thá»‘ng', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'ADMIN', name: 'Admin', description: 'Quáº£n lĂ½ toĂ n bá»™ shop', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SHOP_MANAGER', name: 'Shop Manager', description: 'Váº­n hĂ nh bĂ¡n hĂ ng', isSystem: true, permissions: ['orders.read','orders.write','customers.read','customers.write','coupons.read','coupons.write','shipping.read','reviews.read','reviews.write','products.read','products.update','catalog.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'EDITOR', name: 'Editor', description: 'Ná»™i dung & sáº£n pháº©m', isSystem: true, permissions: ['products.read','catalog.read','content.read','content.update','media.read','media.write','menus.read','menus.write','sliders.read','sliders.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'AUTHOR', name: 'Author', description: 'Viáº¿t & upload áº£nh', isSystem: true, permissions: ['content.read','content.update','media.read','media.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'CONTRIBUTOR', name: 'Contributor', description: 'Chá»‰ xem ná»™i dung', isSystem: true, permissions: ['content.read','media.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SEO_EDITOR', name: 'SEO Editor', description: 'Tá»‘i Æ°u ná»™i dung SEO', isSystem: true, permissions: ['content.read','content.update','redirects.read','redirects.write'], updatedAt: '2026-04-15T10:00:00Z' },
   ]
 }
 
@@ -1805,4 +1872,5 @@ export async function deleteRole(roleId) {
   assertMutationEnabled()
   await requestJson(`/admin/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' })
 }
+
 

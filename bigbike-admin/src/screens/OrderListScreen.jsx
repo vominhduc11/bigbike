@@ -58,7 +58,6 @@ export function OrderListScreen({ navigate }) {
       return
     }
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
   useEffect(() => {

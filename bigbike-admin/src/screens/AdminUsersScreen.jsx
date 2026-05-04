@@ -138,7 +138,6 @@ export function AdminUsersScreen({ canUpdate }) {
   // ── Load list ───────────────────────────────────────────────────────────
   useEffect(() => {
     let active = true
-    setListState((p) => ({ ...p, status: 'loading' }))
     fetchAdminUsers(query)
       .then((r) => {
         if (!active) return

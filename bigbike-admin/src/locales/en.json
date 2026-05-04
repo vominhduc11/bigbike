@@ -79,6 +79,7 @@
     "reports": "Reports",
     "inventory": "Inventory",
     "returns": "Returns",
+    "redirects": "Redirects",
     "roles": "Roles",
     "pos": "In-store Sales",
     "group": {
@@ -998,6 +999,7 @@
       "CONTENT": "Content",
       "ROLE": "Permissions",
       "ADMIN_USER": "Admin users",
+      "REDIRECT": "Redirects",
       "OTHER": "Other"
     },
     "action": {
@@ -1036,6 +1038,9 @@
       "BRAND_CREATED": "Brand created",
       "BRAND_UPDATED": "Brand updated",
       "BRAND_DELETED": "Brand deleted",
+      "REDIRECT_CREATED": "Redirect created",
+      "REDIRECT_UPDATED": "Redirect updated",
+      "REDIRECT_DELETED": "Redirect deleted",
       "MEDIA_UPLOADED": "File uploaded",
       "MEDIA_DELETED": "File deleted",
       "MEDIA_UPDATED": "File updated",
@@ -1300,6 +1305,8 @@
     "permSlidersWrite": "Create & edit banners",
     "permHomeVideosRead": "View homepage videos",
     "permHomeVideosWrite": "Edit homepage videos",
+    "permRedirectsRead": "View redirects",
+    "permRedirectsWrite": "Create & manage redirects",
     "permSettingsRead": "View website settings",
     "permSettingsWrite": "Edit website settings",
     "permAdminUsersRead": "View admin user list",

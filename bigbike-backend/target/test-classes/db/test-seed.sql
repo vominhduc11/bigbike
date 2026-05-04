@@ -179,3 +179,5 @@ WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_2');
 INSERT INTO articles (id, slug, title, body, category_id, publish_status, published_at, created_at, updated_at)
 SELECT 'article_blog_3', 'blog-tin-tuc-xe-may-3', 'Blog tin tuc xe may 3', '<p>Blog 3.</p>', 'cc_blog', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_3');
+
+CREATE SEQUENCE IF NOT EXISTS return_number_seq START WITH 1000 INCREMENT BY 1;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
@@ -33,26 +33,25 @@ export function ReviewListScreen({ canUpdate }) {
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
-    setState((prev) => ({ ...prev, status: 'loading' }))
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  async function handleStatusChange(review, newStatus) {
+  const handleStatusChange = useCallback(async (review, newStatus) => {
     setActionError('')
     try {
       const r = await updateReviewStatus(review.id, newStatus)
       setState((p) => ({ ...p, items: p.items.map((rv) => rv.id === review.id ? r.item : rv) }))
     } catch (e) { setActionError(e.message || t('reviews.approveError')) }
-  }
+  }, [t])
 
-  async function handleDelete(reviewId) {
+  const handleDelete = useCallback(async (reviewId) => {
     const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
     if (!confirmed) return
     try {
       await deleteReview(reviewId)
       setState((p) => ({ ...p, items: p.items.filter((rv) => rv.id !== reviewId) }))
     } catch (e) { setActionError(e.message || t('reviews.deleteError')) }
-  }
+  }, [t])
 
   const columns = useMemo(() => [
     { key: 'author', label: t('reviews.colAuthor'), render: (r) => r.authorName || '(—)' },
@@ -71,10 +70,9 @@ export function ReviewListScreen({ canUpdate }) {
         </div>
       ),
     } : null,
-  ].filter(Boolean), [canUpdate, t])
+  ].filter(Boolean), [canUpdate, handleDelete, handleStatusChange, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((p) => ({ ...p, status: 'loading' }))
     setQuery((p) => {
       const next = { ...p, ...partial }
       if (options.resetPage) next.page = 1

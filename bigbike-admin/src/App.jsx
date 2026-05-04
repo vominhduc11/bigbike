@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Activity, AlignLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
+  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
   Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users,
 } from 'lucide-react'
@@ -39,6 +39,7 @@ const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'), 
 const ShippingScreen     = lazyScreen(() => import('./screens/ShippingScreen'),     'ShippingScreen')
 const SliderListScreen      = lazyScreen(() => import('./screens/SliderListScreen'),      'SliderListScreen')
 const HomeVideoListScreen   = lazyScreen(() => import('./screens/HomeVideoListScreen'),   'HomeVideoListScreen')
+const RedirectListScreen    = lazyScreen(() => import('./screens/RedirectListScreen'),    'RedirectListScreen')
 const AdminUsersScreen   = lazyScreen(() => import('./screens/AdminUsersScreen'),   'AdminUsersScreen')
 const AuditLogListScreen = lazyScreen(() => import('./screens/AuditLogListScreen'), 'AuditLogListScreen')
 const ReportsScreen      = lazyScreen(() => import('./screens/ReportsScreen'),      'ReportsScreen')
@@ -79,6 +80,7 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
       { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
       { path: '/admin/home-videos',  labelKey: 'nav.homeVideos',   permission: 'home_videos.read',  icon: BarChart2 },
+      { path: '/admin/redirects',   labelKey: 'nav.redirects',   permission: 'redirects.read',   icon: ArrowRightLeft },
       { path: '/admin/menus',      labelKey: 'nav.menus',      permission: 'menus.read',     icon: AlignLeft },
       { path: '/admin/media',      labelKey: 'nav.media',      permission: 'media.read',     icon: Image },
     ],
@@ -149,6 +151,7 @@ function parseRoute(pathname) {
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
   if (module === 'sliders')      return { kind: 'screen', name: 'sliders' }
   if (module === 'home-videos')  return { kind: 'screen', name: 'home-videos' }
+  if (module === 'redirects')    return { kind: 'screen', name: 'redirects' }
   if (module === 'shipping')    return { kind: 'screen', name: 'shipping' }
   if (module === 'reviews')     return { kind: 'screen', name: 'reviews' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
@@ -187,6 +190,7 @@ function routePermission(routeName) {
     case 'menus':                        return 'menus.read'
     case 'sliders':                      return 'sliders.read'
     case 'home-videos':                  return 'home_videos.read'
+    case 'redirects':                    return 'redirects.read'
     case 'shipping':                     return 'shipping.read'
     case 'reviews':                      return 'reviews.read'
     case 'admin-users':                  return 'admin-users.read'
@@ -359,6 +363,8 @@ function AdminApp() {
       screen = <SliderListScreen canUpdate={hasPermission('sliders.write')} />; break
     case 'home-videos':
       screen = <HomeVideoListScreen canUpdate={hasPermission('home_videos.write')} />; break
+    case 'redirects':
+      screen = <RedirectListScreen canUpdate={hasPermission('redirects.write')} />; break
     case 'shipping':
       screen = <ShippingScreen canUpdate={hasPermission('shipping.write')} />; break
     case 'reviews':

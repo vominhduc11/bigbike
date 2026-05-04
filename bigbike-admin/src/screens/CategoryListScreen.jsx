@@ -20,6 +20,7 @@ const INITIAL_QUERY = {
 }
 
 const ALL_CATS_KEY = { page: 1, pageSize: 100, sort: 'sortOrder:asc' }
+const EMPTY_ITEMS = []
 
 // Build map: id → full breadcrumb path (e.g. "Mũ Bảo Hiểm / Mũ Fullface")
 function buildBreadcrumbMap(items) {
@@ -92,7 +93,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     queryFn: () => fetchCategories(ALL_CATS_KEY),
   })
 
-  const allItems = allCatsResult?.items ?? []
+  const allItems = useMemo(() => allCatsResult?.items ?? EMPTY_ITEMS, [allCatsResult?.items])
 
   const breadcrumbMap = useMemo(() => buildBreadcrumbMap(allItems), [allItems])
 

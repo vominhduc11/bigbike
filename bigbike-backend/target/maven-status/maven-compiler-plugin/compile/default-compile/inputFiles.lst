@@ -11,11 +11,11 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMenuController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminOrderController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminPosController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminRedirectController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminReportController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminReturnController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminReviewController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminRolesController.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminSepaySettingsController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminSettingsController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminShippingController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminSliderController.java
@@ -99,7 +99,6 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\catalog\CatalogController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\catalog\dto\ProductSnapshotResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\checkout\CheckoutController.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\checkout\CheckoutPaymentController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\checkout\dto\CheckoutAddressRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\checkout\dto\CheckoutOptionsResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\checkout\dto\CheckoutRequest.java
@@ -440,6 +439,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMenuService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMutationValidators.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminOrderService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminRedirectService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminReportService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminReturnService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminReviewService.java
@@ -479,10 +479,6 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\inventory\InventoryPolicyService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\order\CustomerReturnService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\order\OrderReadService.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\payment\sepay\PaymentInfoService.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\payment\sepay\PendingOrderTimeoutJob.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\payment\sepay\SepayQrService.java
-S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\payment\sepay\SepayRuntimeSettingsResolver.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\pos\PosExpiredOrderCleanupJob.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\pos\PosOrderService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\public_\PublicReviewService.java

@@ -145,11 +145,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   useEffect(() => {
     if (!fetchResult) return
-    const item = fetchResult.item || null
-    const nextForm = buildFormFromItem(item)
-    setForm(nextForm)
-    setInitialSnapshot(JSON.stringify(nextForm))
-    setSlugManuallyEdited(true)
+    let cancelled = false
+    Promise.resolve().then(() => {
+      if (cancelled) return
+      const item = fetchResult.item || null
+      const nextForm = buildFormFromItem(item)
+      setForm(nextForm)
+      setInitialSnapshot(JSON.stringify(nextForm))
+      setSlugManuallyEdited(true)
+    })
+    return () => { cancelled = true }
   }, [fetchResult])
 
   const state = {

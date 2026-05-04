@@ -53,7 +53,7 @@ function StatusBadge({ status }) {
 function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   const { t } = useTranslation()
   const [detail, setDetail] = useState(ret)
-  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(true)
   const [showUpdateForm, setShowUpdateForm] = useState(false)
   const [newStatus, setNewStatus] = useState('')
   const [note, setNote] = useState('')
@@ -64,7 +64,6 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   const next = NEXT_STATUSES[detail.status] || []
 
   useEffect(() => {
-    setLoadingDetail(true)
     fetchReturnDetail(ret.id)
       .then((d) => { if (d) setDetail(d) })
       .finally(() => setLoadingDetail(false))
@@ -270,7 +269,6 @@ export function ReturnListScreen({ canUpdate }) {
 
   useEffect(() => {
     let active = true
-    setState((s) => ({ ...s, status: 'loading' }))
     fetchReturns(query)
       .then((r) => {
         if (!active) return
@@ -389,6 +387,7 @@ export function ReturnListScreen({ canUpdate }) {
 
       {detailRet && (
         <ReturnDetailModal
+          key={detailRet.id}
           ret={detailRet}
           onClose={() => setDetailRet(null)}
           onUpdate={handleUpdateSuccess}

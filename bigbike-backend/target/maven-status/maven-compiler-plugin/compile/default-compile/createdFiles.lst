@@ -1,6 +1,7 @@
 com\bigbike\bigbike_backend\persistence\repository\slider\SliderJpaRepository.class
 com\bigbike\bigbike_backend\service\content\ContentReadService.class
 com\bigbike\bigbike_backend\api\admin\dto\menu\PublicMenuItemResponse.class
+com\bigbike\bigbike_backend\api\admin\dto\inventory\AdminStockItemResponse$ImageRef.class
 com\bigbike\bigbike_backend\api\internal\InternalRedirectController$ActiveRedirectItem.class
 com\bigbike\bigbike_backend\domain\catalog\ProductStockState.class
 com\bigbike\bigbike_backend\api\auth\dto\LogoutRequest.class
@@ -17,6 +18,7 @@ com\bigbike\bigbike_backend\migration\wordpress\redirect\FgRedirectAnalyzer.clas
 com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponse.class
 com\bigbike\bigbike_backend\api\checkout\dto\OrderSummaryResponse$PriceChange.class
 com\bigbike\bigbike_backend\service\search\GlobalSearchService.class
+com\bigbike\bigbike_backend\api\admin\AdminRolesController.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RankMathRedirectImporter$ImportResult.class
 com\bigbike\bigbike_backend\api\order\dto\OrderShippingItemResponse.class
 com\bigbike\bigbike_backend\api\order\CustomerOrderController.class
@@ -26,6 +28,7 @@ com\bigbike\bigbike_backend\service\auth\DevAdminAuthService.class
 com\bigbike\bigbike_backend\domain\catalog\SeoMeta.class
 com\bigbike\bigbike_backend\persistence\repository\catalog\StockMovementJpaRepository.class
 com\bigbike\bigbike_backend\migration\wordpress\parser\WordPressCsvRedirectReader$RedirectCsvRow.class
+com\bigbike\bigbike_backend\service\admin\AdminRoleService.class
 com\bigbike\bigbike_backend\api\admin\dto\UpsertHomeVideoRequest.class
 com\bigbike\bigbike_backend\migration\wordpress\report\MigrationDryRunReport.class
 com\bigbike\bigbike_backend\api\admin\dto\report\AdminAnalyticsResponse$TopCustomerItem.class
@@ -54,6 +57,7 @@ com\bigbike\bigbike_backend\config\RestAccessDeniedHandler.class
 com\bigbike\bigbike_backend\api\admin\dto\settings\PublicSiteSettingResponse.class
 com\bigbike\bigbike_backend\config\WebSocketConfig$1.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\ProductVideoEntity.class
+com\bigbike\bigbike_backend\api\admin\AdminRedirectController$CreateRedirectRequest.class
 com\bigbike\bigbike_backend\migration\wordpress\writeplan\WordPressMigrationWritePlanService$1.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressVariationMapper.class
 com\bigbike\bigbike_backend\api\openapi\OpenApiStaticController.class
@@ -108,6 +112,7 @@ com\bigbike\bigbike_backend\api\admin\dto\customer\AdminCustomerDetailResponse.c
 com\bigbike\bigbike_backend\repository\catalog\CatalogReadRepository.class
 com\bigbike\bigbike_backend\domain\commerce\FulfillmentStatus.class
 com\bigbike\bigbike_backend\domain\auth\AdminUserProfile.class
+com\bigbike\bigbike_backend\service\pos\PosOrderService.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\BrandImporter.class
 com\bigbike\bigbike_backend\persistence\entity\redirect\RedirectEntity.class
 com\bigbike\bigbike_backend\api\cart\dto\ApplyCouponRequest.class
@@ -197,6 +202,7 @@ com\bigbike\bigbike_backend\domain\content\ContentCategorySummary.class
 com\bigbike\bigbike_backend\service\auth\AdminRolePermissions.class
 com\bigbike\bigbike_backend\service\common\SortParser.class
 com\bigbike\bigbike_backend\migration\wordpress\report\MigrationDryRunReport$DomainStats.class
+com\bigbike\bigbike_backend\service\pos\PosOrderService$PosLineItemRequest.class
 com\bigbike\bigbike_backend\api\cart\CartController.class
 com\bigbike\bigbike_backend\api\admin\dto\customer\AdminCustomerOrderSummaryResponse.class
 com\bigbike\bigbike_backend\api\admin\dto\VideoRequest.class
@@ -270,6 +276,7 @@ com\bigbike\bigbike_backend\migration\wordpress\importer\AttributeImporter$Mappe
 com\bigbike\bigbike_backend\service\admin\AdminSliderService.class
 com\bigbike\bigbike_backend\service\common\SortSpec.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressOrderMapper$MappedOrderPayment.class
+com\bigbike\bigbike_backend\service\admin\AdminRedirectService$CreateRedirectRequest.class
 com\bigbike\bigbike_backend\service\admin\AdminMutationValidators.class
 com\bigbike\bigbike_backend\config\MinioConfig.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressPageMapper.class
@@ -313,6 +320,7 @@ com\bigbike\bigbike_backend\service\customer\EmailVerificationService.class
 com\bigbike\bigbike_backend\migration\wordpress\model\WpTermRelationship.class
 com\bigbike\bigbike_backend\persistence\repository\media\MediaJpaRepository.class
 com\bigbike\bigbike_backend\api\admin\dto\VariantOptionRequest.class
+com\bigbike\bigbike_backend\service\admin\AdminRedirectService$AdminRedirectResponse.class
 com\bigbike\bigbike_backend\api\customer\dto\CustomerLoginRequest.class
 com\bigbike\bigbike_backend\domain\content\Article.class
 com\bigbike\bigbike_backend\api\public_\dto\VnAddressItem.class
@@ -338,7 +346,9 @@ com\bigbike\bigbike_backend\api\admin\dto\media\AdminMediaDetailResponse.class
 com\bigbike\bigbike_backend\api\order\OrderLookupController.class
 com\bigbike\bigbike_backend\api\admin\dto\dashboard\AdminDashboardSummaryResponse$OrderStatusBreakdownItem.class
 com\bigbike\bigbike_backend\api\admin\dto\media\UpdateMediaRequest.class
+com\bigbike\bigbike_backend\service\admin\AdminRedirectService.class
 com\bigbike\bigbike_backend\config\RequestIdFilter.class
+com\bigbike\bigbike_backend\service\pos\PosOrderService$PosCreateOrderRequest.class
 com\bigbike\bigbike_backend\service\video\YouTubeUrlParser.class
 com\bigbike\bigbike_backend\api\admin\dto\UpsertSliderRequest.class
 com\bigbike\bigbike_backend\api\admin\dto\PatchSliderRequest.class
@@ -350,8 +360,10 @@ com\bigbike\bigbike_backend\api\admin\dto\menu\ReorderMenuItemsRequest.class
 com\bigbike\bigbike_backend\persistence\repository\menu\MenuItemJpaRepository.class
 com\bigbike\bigbike_backend\api\error\ApiException.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressWooCommerceOrderItemMapper$MappedLineItem.class
+com\bigbike\bigbike_backend\api\admin\AdminRedirectController.class
 com\bigbike\bigbike_backend\persistence\repository\redirect\RedirectJpaRepository.class
 com\bigbike\bigbike_backend\api\catalog\dto\ProductSnapshotResponse$Pricing.class
+com\bigbike\bigbike_backend\persistence\repository\auth\AdminRoleJpaRepository.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\StockMovementSerialEntity.class
 com\bigbike\bigbike_backend\persistence\entity\shipping\ShippingMethodEntity.class
 com\bigbike\bigbike_backend\api\checkout\dto\PaymentMethodOptionResponse.class
@@ -421,7 +433,9 @@ com\bigbike\bigbike_backend\migration\wordpress\report\CustomerOrderCouponDryRun
 com\bigbike\bigbike_backend\migration\wordpress\importer\WordPressMigrationImportService.class
 com\bigbike\bigbike_backend\api\admin\dto\coupon\CreateCouponRequest.class
 com\bigbike\bigbike_backend\api\admin\AdminMenuController.class
+com\bigbike\bigbike_backend\api\admin\AdminRedirectController$UpdateRedirectRequest.class
 com\bigbike\bigbike_backend\migration\wordpress\media\MinioMediaStorageAdapter.class
+com\bigbike\bigbike_backend\persistence\entity\auth\AdminRoleEntity.class
 com\bigbike\bigbike_backend\service\address\VnAddressService$RawProvince.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressCategoryMapper$MappedCategory.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\ProductTagImporter$MappedProductTag.class
@@ -483,6 +497,7 @@ com\bigbike\bigbike_backend\persistence\entity\menu\MenuEntity.class
 com\bigbike\bigbike_backend\persistence\entity\auth\AdminUserEntity.class
 com\bigbike\bigbike_backend\api\common\ApiError.class
 com\bigbike\bigbike_backend\api\error\GlobalExceptionHandler.class
+com\bigbike\bigbike_backend\service\admin\AdminRedirectService$UpdateRedirectRequest.class
 com\bigbike\bigbike_backend\api\error\NotFoundException.class
 com\bigbike\bigbike_backend\api\admin\dto\report\AdminAnalyticsResponse$DailyRevenueItem.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressMediaMapper.class
@@ -494,6 +509,7 @@ com\bigbike\bigbike_backend\migration\wordpress\redirect\RedirectResolverService
 com\bigbike\bigbike_backend\migration\wordpress\mapper\CapabilityMapper$Mapped.class
 com\bigbike\bigbike_backend\api\content\ContentController.class
 com\bigbike\bigbike_backend\persistence\repository\coupon\CouponSpecification.class
+com\bigbike\bigbike_backend\service\pos\PosOrderService$PosOrderResponse.class
 com\bigbike\bigbike_backend\domain\commerce\AddressType.class
 com\bigbike\bigbike_backend\api\auth\AuthController.class
 com\bigbike\bigbike_backend\migration\wordpress\media\MediaPathResolver.class
@@ -530,6 +546,7 @@ com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderFeeItemEntity
 com\bigbike\bigbike_backend\api\order\dto\CreateReturnRequest.class
 com\bigbike\bigbike_backend\service\admin\AdminHomeVideoService.class
 com\bigbike\bigbike_backend\api\customer\dto\CustomerForgotPasswordRequest.class
+com\bigbike\bigbike_backend\service\pos\PosExpiredOrderCleanupJob.class
 com\bigbike\bigbike_backend\api\internal\InternalRedirectController$RedirectLookupResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\ReviewImporter.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressWooCommerceOrderItemMapper$MappedCouponItem.class
@@ -537,6 +554,7 @@ com\bigbike\bigbike_backend\domain\catalog\Category.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressCategoryMapper.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressWooCommerceOrderItemMapper.class
 com\bigbike\bigbike_backend\api\admin\AdminHomeVideoController.class
+com\bigbike\bigbike_backend\api\admin\AdminPosController.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressMenuMapper.class
 com\bigbike\bigbike_backend\api\admin\AdminOrderController.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\MigrationExecutionReport.class

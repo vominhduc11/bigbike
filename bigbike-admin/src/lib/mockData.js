@@ -8,6 +8,7 @@ import {
   normalizeOrder,
   normalizePagination,
   normalizeProduct,
+  normalizeRedirect,
   normalizeSetting,
 } from './contracts'
 
@@ -262,6 +263,51 @@ const CONTENT_DATA = [
   },
 ].map(normalizeContentItem)
 
+const REDIRECT_DATA = [
+  {
+    id: 'redir-old-ls2',
+    sourcePattern: '/old-ls2-ff800',
+    targetUrl: '/san-pham/ls2-ff800-black',
+    redirectType: 'PERMANENT',
+    statusCode: 301,
+    enabled: true,
+    hitCount: 42,
+    lastHitAt: '2026-05-01T10:15:00Z',
+    notes: 'WordPress permalink migration',
+    legacyId: 9001,
+    createdAt: '2026-04-18T03:00:00Z',
+    updatedAt: ISO_NOW,
+  },
+  {
+    id: 'redir-old-blog',
+    sourcePattern: '/huong-dan-chon-size-mu-cu',
+    targetUrl: '/tin-tuc/huong-dan-chon-size-mu',
+    redirectType: 'TEMPORARY',
+    statusCode: 302,
+    enabled: false,
+    hitCount: 8,
+    lastHitAt: '2026-04-27T08:30:00Z',
+    notes: 'Disabled after content merge',
+    legacyId: 9002,
+    createdAt: '2026-04-20T03:00:00Z',
+    updatedAt: ISO_NOW,
+  },
+  {
+    id: 'redir-old-brand',
+    sourcePattern: '/brand/ls2-helmet',
+    targetUrl: '/brands/ls2',
+    redirectType: 'PERMANENT',
+    statusCode: 308,
+    enabled: true,
+    hitCount: 15,
+    lastHitAt: '2026-04-30T09:00:00Z',
+    notes: 'Legacy brand slug',
+    legacyId: 9003,
+    createdAt: '2026-04-22T03:00:00Z',
+    updatedAt: ISO_NOW,
+  },
+].map(normalizeRedirect)
+
 function normalizeSearch(value) {
   return (value || '').toString().trim().toLowerCase()
 }
@@ -398,6 +444,37 @@ export function queryMockContent(query) {
   return paginate(items, query)
 }
 
+export function queryMockRedirects(query) {
+  const search = normalizeSearch(query?.q || query?.search)
+  const statusCode = query?.statusCode !== undefined && query?.statusCode !== null && query?.statusCode !== '' && query?.statusCode !== 'ALL'
+    ? Number(query.statusCode)
+    : null
+  const enabled = query?.enabled === 'ALL' ? undefined : query?.enabled
+
+  let items = REDIRECT_DATA.filter((item) => {
+    const matchesSearch =
+      !search ||
+      item.sourcePattern.toLowerCase().includes(search) ||
+      item.targetUrl.toLowerCase().includes(search) ||
+      (item.notes || '').toLowerCase().includes(search) ||
+      String(item.legacyId || '').includes(search)
+
+    const matchesEnabled =
+      enabled === undefined ||
+      enabled === null ||
+      enabled === '' ||
+      String(item.enabled) === String(enabled)
+
+    const matchesStatusCode =
+      statusCode === null || Number(item.statusCode) === statusCode
+
+    return matchesSearch && matchesEnabled && matchesStatusCode
+  })
+
+  items = sortByRule(items, query?.sort || 'updatedAt:desc')
+  return paginate(items, query)
+}
+
 export function getMockProductById(productId) {
   return PRODUCTS_DATA.find((item) => item.id === productId)
 }
@@ -416,6 +493,10 @@ export function getMockContentById(contentType, contentId) {
   )
 }
 
+export function getMockRedirectById(redirectId) {
+  return REDIRECT_DATA.find((item) => item.id === redirectId)
+}
+
 export const ROLE_PERMISSION_MAP = {
   SUPER_ADMIN: ['*'],
   ADMIN: [
@@ -428,12 +509,20 @@ export const ROLE_PERMISSION_MAP = {
     'settings.read', 'settings.update',
     'coupons.read', 'coupons.update',
     'menus.read', 'menus.write',
+    'sliders.read', 'sliders.write',
+    'shipping.read', 'shipping.write',
+    'reviews.read', 'reviews.write',
+    'admin-users.read', 'admin-users.write',
+    'audit-logs.read',
+    'home_videos.read', 'home_videos.write',
+    'redirects.read', 'redirects.write',
   ],
   MANAGER: [
     'products.read', 'catalog.read', 'content.read',
     'orders.read', 'customers.read', 'media.read',
   ],
   CONTENT_EDITOR: ['content.read', 'content.update', 'media.read'],
+  SEO_EDITOR: ['content.read', 'content.update', 'redirects.read', 'redirects.write'],
   VIEWER: ['products.read', 'catalog.read', 'content.read'],
 }
 

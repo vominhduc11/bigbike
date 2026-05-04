@@ -60,17 +60,50 @@ def check(label, cond, detail=""):
     results.append((tag, label))
     return cond
 
+def extract_items(body):
+    data = body.get("data")
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict) and isinstance(data.get("items"), list):
+        return data["items"]
+    if isinstance(body.get("items"), list):
+        return body["items"]
+    return []
+
+def resolve_catalog_reference(list_path, create_path, create_body, label):
+    status, body = req("GET", list_path, TOKEN)
+    items = extract_items(body)
+    if items:
+        return items[0].get("id", ""), False
+
+    status, body = req("POST", create_path, TOKEN, create_body)
+    item_id = body.get("data", {}).get("id", "")
+    check(f"fallback create {label}", bool(item_id), body.get("error") or body)
+    return item_id, True
+
 TOKEN = login()
 print(f"Logged in OK  [run suffix: {RND}]\n")
 
 # ─── PRODUCTS WITH VARIANTS ───────────────────────────────────────────
 print("=== GROUP B: PRODUCTS ADVANCED ===")
 print("--- Variants ---")
+CAT_REF_ID, TEMP_CAT_CREATED = resolve_catalog_reference(
+    "/admin/categories?size=1",
+    "/admin/categories",
+    {"name": f"Flow Cat {RND}", "slug": f"flow-cat-{RND}-auto", "isVisible": True},
+    "category",
+)
+BRAND_REF_ID, TEMP_BRAND_CREATED = resolve_catalog_reference(
+    "/admin/brands?size=1",
+    "/admin/brands",
+    {"name": f"Flow Brand {RND}", "slug": f"flow-brand-{RND}-auto", "isVisible": True},
+    "brand",
+)
 s, r = req("POST", "/admin/products", TOKEN, {
     "name": f"Variant Test Product {RND}", "slug": f"variant-test-{RND}",
     "sku": f"VAR-TEST-{RND}", "retailPrice": 500000, "currency": "VND",
     "publishStatus": "DRAFT", "stockState": "IN_STOCK",
-    "categoryId": "wp-cat-6291", "brandId": "wp-brand-5657",
+    "categoryId": CAT_REF_ID, "brandId": BRAND_REF_ID,
     "variants": [
         {"sku": f"VAR-S-BLK-{RND}", "options": [{"optionName": "Size", "optionValue": "S"}, {"optionName": "Mau", "optionValue": "Den"}], "retailPrice": 500000, "stockState": "IN_STOCK"},
         {"sku": f"VAR-L-WHT-{RND}", "options": [{"optionName": "Size", "optionValue": "L"}, {"optionName": "Mau", "optionValue": "Trang"}], "retailPrice": 550000, "stockState": "IN_STOCK"}
@@ -145,6 +178,12 @@ if BRID:
 # Cleanup variant product
 req("DELETE", f"/admin/products/{VPID}", TOKEN)
 print("  [INFO] Variant product cleaned up")
+if TEMP_CAT_CREATED and CAT_REF_ID:
+    req("DELETE", f"/admin/categories/{CAT_REF_ID}", TOKEN)
+    print("  [INFO] Fallback category cleaned up")
+if TEMP_BRAND_CREATED and BRAND_REF_ID:
+    req("DELETE", f"/admin/brands/{BRAND_REF_ID}", TOKEN)
+    print("  [INFO] Fallback brand cleaned up")
 
 # ─── CONTENT ──────────────────────────────────────────────────────────
 print("\n=== GROUP C: CONTENT ===")

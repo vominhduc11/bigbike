@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.AdminAuthApiTest
 -------------------------------------------------------------------------------
-Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.07 s -- in com.bigbike.bigbike_backend.api.AdminAuthApiTest
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.53 s -- in com.bigbike.bigbike_backend.api.AdminAuthApiTest

@@ -12,7 +12,7 @@ const DANGEROUS_ACTIONS = new Set([
   'ORDER_CANCELLED', 'ORDER_REFUNDED', 'ORDER_REFUND_CREATED',
   'PRODUCT_DELETED', 'COUPON_DELETED', 'CUSTOMER_DELETED',
   'CATEGORY_DELETED', 'BRAND_DELETED', 'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
-  'MENU_ITEM_DELETED', 'ROLE_DELETED',
+  'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
@@ -83,7 +83,7 @@ function exportToCsv(items, t) {
 
 // ── Filter constants ───────────────────────────────────────────────────────────
 const ACTOR_OPTIONS    = ['ALL', 'ADMIN', 'CUSTOMER', 'SYSTEM']
-const RESOURCE_OPTIONS = ['ALL', 'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY', 'COUPON', 'CUSTOMER', 'SETTING', 'MEDIA', 'MENU', 'CONTENT', 'ROLE', 'ADMIN_USER']
+const RESOURCE_OPTIONS = ['ALL', 'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY', 'COUPON', 'CUSTOMER', 'SETTING', 'MEDIA', 'MENU', 'CONTENT', 'ROLE', 'ADMIN_USER', 'REDIRECT']
 const PRESET_KEYS      = ['today', '7d', '30d', 'month']
 
 function readQueryFromUrl() {
@@ -136,7 +136,7 @@ function ModuleBadge({ resourceType }) {
   const TONE_MAP = {
     ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
     INVENTORY: 'warning', COUPON: 'warning', CUSTOMER: 'neutral', SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral',
+    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
   }
   const tone = TONE_MAP[resourceType] || 'neutral'
   const label = t(`auditLog.module.${resourceType}`, { defaultValue: resourceType || t('auditLog.module.OTHER') })
@@ -211,7 +211,7 @@ function AuditDetailDrawer({ log, onClose }) {
   const TONE_MAP = {
     ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
     INVENTORY: 'warning', COUPON: 'warning', CUSTOMER: 'neutral', SETTING: 'danger',
-    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral',
+    MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
   }
   const moduleTone = TONE_MAP[log.resourceType] || 'neutral'
   const moduleLabel = t(`auditLog.module.${log.resourceType}`, { defaultValue: log.resourceType || t('auditLog.module.OTHER') })
@@ -559,7 +559,7 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
 
 export function AuditLogListScreen() {
   const { t } = useTranslation()
-  const initialQuery = useMemo(buildInitialQuery, [])
+  const initialQuery = useMemo(() => buildInitialQuery(), [])
   const [query, setQuery]             = useState(initialQuery)
   const [searchInput, setSearchInput] = useState(() => initialQuery.q)
   const [state, setState]             = useState({ status: 'loading', items: [], pagination: null, warning: '' })
@@ -580,7 +580,6 @@ export function AuditLogListScreen() {
   useEffect(() => {
     pushQueryToUrl(query)
     let active = true
-    setState((p) => ({ ...p, status: 'loading' }))
     fetchAuditLogs(query)
       .then((r) => {
         if (!active) return
@@ -596,7 +595,7 @@ export function AuditLogListScreen() {
         setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [query]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query])
 
   const columns = useMemo(() => [
     {
@@ -627,6 +626,7 @@ export function AuditLogListScreen() {
   ], [t])
 
   const updateQuery = useCallback((partial, options = { resetPage: false }) => {
+    setState((p) => ({ ...p, status: 'loading' }))
     setQuery((p) => {
       const next = { ...p, ...partial }
       if (options.resetPage) next.page = 1
@@ -635,12 +635,14 @@ export function AuditLogListScreen() {
   }, [])
 
   function handleSearch() {
+    setState((p) => ({ ...p, status: 'loading' }))
     updateQuery({ q: searchInput }, { resetPage: true })
   }
 
   function handleReset() {
     setSearchInput('')
     setActivePreset(null)
+    setState((p) => ({ ...p, status: 'loading' }))
     setQuery({ ...INITIAL_QUERY })
   }
 

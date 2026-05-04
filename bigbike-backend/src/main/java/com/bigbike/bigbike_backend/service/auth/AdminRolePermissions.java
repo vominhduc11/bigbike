@@ -29,7 +29,8 @@ public final class AdminRolePermissions {
                     "reviews.read", "reviews.write",
                     "admin-users.read", "admin-users.write",
                     "audit-logs.read",
-                    "home_videos.read", "home_videos.write"
+                    "home_videos.read", "home_videos.write",
+                    "redirects.read", "redirects.write"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
@@ -55,7 +56,8 @@ public final class AdminRolePermissions {
                     "content.read", "media.read"
             ),
             "SEO_EDITOR", List.of(
-                    "content.read", "content.update"
+                    "content.read", "content.update",
+                    "redirects.read", "redirects.write"
             )
     );
 

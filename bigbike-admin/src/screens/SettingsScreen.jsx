@@ -68,7 +68,7 @@ function validateValue(key, value) {
     }
   }
   if (k.includes('hotline') || k.includes('phone')) {
-    if (!/^[\d\s+\-]+$/.test(value)) return 'Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch'
+    if (!/^[\d\s+-]+$/.test(value)) return 'Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch'
   }
   return null
 }
@@ -256,7 +256,6 @@ export function SettingsScreen({ canUpdate }) {
 
   useEffect(() => {
     let active = true
-    setState((p) => ({ ...p, status: 'loading' }))
     fetchSettings()
       .then((r) => {
         if (!active) return
@@ -293,7 +292,10 @@ export function SettingsScreen({ canUpdate }) {
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
   const activeTab = (activeTabOverride && groups.has(activeTabOverride)) ? activeTabOverride : firstTab
 
-  const activeItems = activeTab ? (groups.get(activeTab) || []) : []
+  const activeItems = useMemo(() => {
+    if (!activeTab) return []
+    return groups.get(activeTab) || []
+  }, [activeTab, groups])
 
   const handleDraftChange = useCallback((key, value) => {
     setDrafts((p) => ({ ...p, [key]: value }))

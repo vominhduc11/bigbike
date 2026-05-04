@@ -9,12 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.UUID;
@@ -34,28 +37,41 @@ import org.springframework.web.context.WebApplicationContext;
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class Phase1LReturnsApiTest {
 
+    private static final String ADMIN_EMAIL = "1l-admin-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String ADMIN_PASS = "Admin@1234567890";
+    private static final String EDITOR_EMAIL = "1l-editor-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String EDITOR_PASS = "Editor@1234567890";
+
     private static final String VALID_BILLING = """
             {"fullName":"Test User","phone":"0909123456","email":"test@example.com",
              "addressLine1":"123 Test St","province":"HCM","country":"VN"}
             """;
 
     @Autowired WebApplicationContext webApplicationContext;
+    @Autowired AdminUserJpaRepository adminUserRepo;
+    @Autowired PasswordService passwordService;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
 
     private MockMvc mockMvc;
+    private String adminToken;
+    private String editorToken;
     private static String testCategoryId;
 
     @BeforeEach
-    void setup() {
+    void setup() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+        ensureAdminUser(ADMIN_EMAIL, ADMIN_PASS, "ADMIN", "Phase1L Test Admin");
+        adminToken = loginAdmin(ADMIN_EMAIL, ADMIN_PASS);
+        ensureAdminUser(EDITOR_EMAIL, EDITOR_PASS, "EDITOR", "Phase1L Test Editor");
+        editorToken = loginAdmin(EDITOR_EMAIL, EDITOR_PASS);
         ensureTestCategory();
     }
 
-    // ── 1. Unauthenticated returns list → 401 ────────────────────────────────
+    // â”€â”€ 1. Unauthenticated returns list â†’ 401 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void listReturns_withoutSession_returns401() throws Exception {
@@ -63,7 +79,7 @@ class Phase1LReturnsApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ── 2. Empty returns list for new customer ────────────────────────────────
+    // â”€â”€ 2. Empty returns list for new customer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void listReturns_newCustomer_returnsEmptyArray() throws Exception {
@@ -73,21 +89,21 @@ class Phase1LReturnsApiTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        // Endpoint returns List<CustomerReturnResponse> directly — expect empty JSON array
+        // Endpoint returns List<CustomerReturnResponse> directly â€” expect empty JSON array
         assertThat(result.getResponse().getContentAsString()).contains("[]");
     }
 
-    // ── 3. Create return — unauthenticated → 401 ─────────────────────────────
+    // â”€â”€ 3. Create return â€” unauthenticated â†’ 401 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
-    void createReturn_withoutSession_returns401() throws Exception {
+    void createReturn_withoutSession_returns403() throws Exception {
         mockMvc.perform(post("/api/v1/customer/orders/" + UUID.randomUUID() + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\"}"))
-                .andExpect(status().isUnauthorized());
+                        .content(buildReturnRequest("DEFECTIVE", null)))
+                .andExpect(status().isForbidden());
     }
 
-    // ── 4. Create return on non-existent order → 404 ─────────────────────────
+    // â”€â”€ 4. Create return on non-existent order â†’ 404 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void createReturn_nonExistentOrder_returns404() throws Exception {
@@ -96,12 +112,12 @@ class Phase1LReturnsApiTest {
 
         mockMvc.perform(post("/api/v1/customer/orders/" + UUID.randomUUID() + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\"}")
+                        .content(buildReturnRequest("DEFECTIVE", null))
                         .cookie(cookies).header("X-CSRF-Token", csrf))
                 .andExpect(status().isNotFound());
     }
 
-    // ── 5. Create return — another customer's order → 404 ────────────────────
+    // â”€â”€ 5. Create return â€” another customer's order â†’ 404 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void createReturn_otherCustomerOrder_returns404() throws Exception {
@@ -111,12 +127,12 @@ class Phase1LReturnsApiTest {
 
         mockMvc.perform(post("/api/v1/customer/orders/" + sessionA.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\"}")
+                        .content(buildReturnRequest("DEFECTIVE", null))
                         .cookie(cookiesB).header("X-CSRF-Token", csrfB))
                 .andExpect(status().isNotFound());
     }
 
-    // ── 6. Create return — valid COMPLETED order → 201 ───────────────────────
+    // â”€â”€ 6. Create return â€” valid COMPLETED order â†’ 201 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void createReturn_completedOrder_returns201WithReturnNumber() throws Exception {
@@ -124,7 +140,7 @@ class Phase1LReturnsApiTest {
 
         MvcResult result = mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\",\"customerNote\":\"Product is broken\"}")
+                        .content(buildReturnRequest("DEFECTIVE", "Product is broken"))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 // CustomerReturnResponse returned directly (not wrapped in {data:})
@@ -137,7 +153,7 @@ class Phase1LReturnsApiTest {
         assertThat(returnNumber).startsWith("RMA-");
     }
 
-    // ── 7. Return appears in list after creation ──────────────────────────────
+    // â”€â”€ 7. Return appears in list after creation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void listReturns_afterCreation_containsReturn() throws Exception {
@@ -145,7 +161,7 @@ class Phase1LReturnsApiTest {
 
         mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"WRONG_ITEM\"}")
+                        .content(buildReturnRequest("WRONG_ITEM", null))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated());
 
@@ -156,7 +172,7 @@ class Phase1LReturnsApiTest {
         assertThat(listResult.getResponse().getContentAsString()).contains("WRONG_ITEM");
     }
 
-    // ── 8. Fetch return detail by ID ──────────────────────────────────────────
+    // â”€â”€ 8. Fetch return detail by ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void getReturn_ownReturn_returnsFullDetail() throws Exception {
@@ -165,7 +181,7 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + session.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"NOT_AS_DESCRIBED\",\"customerNote\":\"Looks different\"}")
+                                .content(buildReturnRequest("NOT_AS_DESCRIBED", "Looks different"))
                                 .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -182,7 +198,7 @@ class Phase1LReturnsApiTest {
                 .andExpect(jsonPath("$.history").isArray());
     }
 
-    // ── 9. Another customer cannot fetch return by ID ─────────────────────────
+    // â”€â”€ 9. Another customer cannot fetch return by ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void getReturn_otherCustomer_returns404() throws Exception {
@@ -191,7 +207,7 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + sessionA.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"DEFECTIVE\"}")
+                                .content(buildReturnRequest("DEFECTIVE", null))
                                 .cookie(sessionA.cookies).header("X-CSRF-Token", sessionA.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -203,28 +219,28 @@ class Phase1LReturnsApiTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ── 10. Duplicate return on same order → 400 ─────────────────────────────
+    // â”€â”€ 10. Duplicate return on same order â†’ 400 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void createReturn_duplicate_returns400() throws Exception {
         AuthSession session = placeCompletedOrder("ret-dup-" + UUID.randomUUID() + "@bigbike.vn");
 
-        // First return — 201 CREATED
+        // First return â€” 201 CREATED
         mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\"}")
+                        .content(buildReturnRequest("DEFECTIVE", null))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated());
 
-        // Second return on same order with active PENDING return → 400 (ValidationException)
+        // Second return on same order with active PENDING return â†’ 400 (ValidationException)
         mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"CHANGED_MIND\"}")
+                        .content(buildReturnRequest("CHANGED_MIND", null))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isBadRequest());
     }
 
-    // ── 11. Admin: list returns — no auth → 401 ───────────────────────────────
+    // â”€â”€ 11. Admin: list returns â€” no auth â†’ 401 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminListReturns_noAuth_returns401() throws Exception {
@@ -232,19 +248,19 @@ class Phase1LReturnsApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ── 12. Admin: list returns — authenticated → 200 with items + pagination ─
+    // â”€â”€ 12. Admin: list returns â€” authenticated â†’ 200 with items + pagination â”€
 
     @Test
     void adminListReturns_authenticated_returnsPaginatedResult() throws Exception {
         // PageResult serializes as {items:[...], page:N, pageSize:N, totalItems:N, totalPages:N}
         mockMvc.perform(get("/api/v1/admin/returns")
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.totalPages").isNumber());
     }
 
-    // ── 13. Admin: get return detail → 200 ───────────────────────────────────
+    // â”€â”€ 13. Admin: get return detail â†’ 200 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminGetReturn_existingReturn_returnsDetail() throws Exception {
@@ -253,7 +269,7 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + session.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"DEFECTIVE\"}")
+                                .content(buildReturnRequest("DEFECTIVE", null))
                                 .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -262,14 +278,14 @@ class Phase1LReturnsApiTest {
 
         // AdminReturnDetailResponse returned directly (not wrapped in {data:})
         mockMvc.perform(get("/api/v1/admin/returns/" + returnId)
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(returnId))
                 .andExpect(jsonPath("$.orderNumber").isString())
                 .andExpect(jsonPath("$.status").value("PENDING"));
     }
 
-    // ── 14. Admin: update return status → APPROVED ───────────────────────────
+    // â”€â”€ 14. Admin: update return status â†’ APPROVED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminUpdateReturnStatus_toApproved_succeeds() throws Exception {
@@ -278,7 +294,7 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + session.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"DEFECTIVE\"}")
+                                .content(buildReturnRequest("DEFECTIVE", null))
                                 .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -289,12 +305,12 @@ class Phase1LReturnsApiTest {
         mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"APPROVED\",\"adminNote\":\"OK to return\"}")
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
 
-    // ── 15. Admin: update return status — VIEWER role → 403 ──────────────────
+    // â”€â”€ 15. Admin: update return status â€” VIEWER role â†’ 403 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminUpdateReturnStatus_viewerRole_returns403() throws Exception {
@@ -303,22 +319,22 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + session.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"DEFECTIVE\"}")
+                                .content(buildReturnRequest("DEFECTIVE", null))
                                 .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
 
-        // VIEWER has only read permissions — write → 403
+        // VIEWER has only read permissions â€” write â†’ 403
         mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"APPROVED\"}")
-                        .header("X-Admin-Role", "VIEWER"))
+                        .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
     }
 
-    // ── 16. Admin: search returns by order number prefix ─────────────────────
+    // â”€â”€ 16. Admin: search returns by order number prefix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminListReturns_searchByOrderNumber_filtersResults() throws Exception {
@@ -326,19 +342,19 @@ class Phase1LReturnsApiTest {
 
         mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"DEFECTIVE\"}")
+                        .content(buildReturnRequest("DEFECTIVE", null))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated());
 
         // Search with "BB-" prefix (all order numbers start with BB-)
         mockMvc.perform(get("/api/v1/admin/returns")
                         .param("q", "BB-")
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
     }
 
-    // ── 17. Admin: filter by status ───────────────────────────────────────────
+    // â”€â”€ 17. Admin: filter by status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminListReturns_filterByStatus_returnsPendingOnly() throws Exception {
@@ -346,24 +362,24 @@ class Phase1LReturnsApiTest {
 
         mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"OTHER\"}")
+                        .content(buildReturnRequest("OTHER", null))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated());
 
         MvcResult result = mockMvc.perform(get("/api/v1/admin/returns")
                         .param("status", "PENDING")
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
                 .andReturn();
 
         String body = result.getResponse().getContentAsString();
-        // All items must have PENDING status — no APPROVED or REJECTED in filtered result
+        // All items must have PENDING status â€” no APPROVED or REJECTED in filtered result
         assertThat(body).doesNotContain("\"status\":\"APPROVED\"");
         assertThat(body).doesNotContain("\"status\":\"REJECTED\"");
     }
 
-    // ── 18. Admin: detail includes orderNumber + customerEmail ────────────────
+    // â”€â”€ 18. Admin: detail includes orderNumber + customerEmail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void adminGetReturn_includesOrderNumberAndCustomerEmail() throws Exception {
@@ -373,7 +389,7 @@ class Phase1LReturnsApiTest {
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/customer/orders/" + session.orderId + "/returns")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"reason\":\"DEFECTIVE\"}")
+                                .content(buildReturnRequest("DEFECTIVE", null))
                                 .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -381,21 +397,56 @@ class Phase1LReturnsApiTest {
         String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
 
         MvcResult detailResult = mockMvc.perform(get("/api/v1/admin/returns/" + returnId)
-                        .header("X-Admin-Role", "ADMIN"))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String body = detailResult.getResponse().getContentAsString();
         assertThat(body).contains("orderNumber");
         assertThat(body).contains("customerEmail");
-        assertThat(body).contains(email);
+        assertThat(body).contains("test@example.com");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
-     * Register → login → checkout → promote order to COMPLETED in DB so it is returnable.
+     * Register â†’ login â†’ checkout â†’ promote order to COMPLETED in DB so it is returnable.
      */
+    private String buildReturnRequest(String reason, String customerNote) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"reason\":\"").append(reason).append("\"");
+        if (customerNote != null) {
+            json.append(",\"customerNote\":\"").append(customerNote).append("\"");
+        }
+        json.append(",\"items\":[{\"productName\":\"Returned item\",\"quantity\":1,")
+                .append("\"unitPrice\":1000000,\"reason\":\"").append(reason).append("\"}]}");
+        return json.toString();
+    }
+
+    private void ensureAdminUser(String email, String password, String role, String displayName) {
+        adminUserRepo.findByEmail(email).orElseGet(() -> {
+            AdminUserEntity admin = new AdminUserEntity();
+            admin.setEmail(email);
+            admin.setPasswordHash(passwordService.hash(password));
+            admin.setDisplayName(displayName);
+            admin.setRole(role);
+            admin.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            admin.setCreatedAt(now);
+            admin.setUpdatedAt(now);
+            return adminUserRepo.save(admin);
+        });
+    }
+
+    private String loginAdmin(String email, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonValue(result.getResponse().getContentAsString(), "accessToken");
+    }
+
     private AuthSession placeCompletedOrder(String email) throws Exception {
         Cookie[] cookies = registerAndLogin(email);
         String csrf = findCsrf(cookies);
@@ -416,7 +467,7 @@ class Phase1LReturnsApiTest {
 
         String orderId = extractJsonValue(result.getResponse().getContentAsString(), "id");
 
-        // Promote to COMPLETED directly in DB — bypasses business rules intentionally for test setup
+        // Promote to COMPLETED directly in DB â€” bypasses business rules intentionally for test setup
         orderRepo.findById(UUID.fromString(orderId)).ifPresent(order -> {
             order.setStatus("COMPLETED");
             order.setUpdatedAt(Instant.now());
@@ -488,3 +539,5 @@ class Phase1LReturnsApiTest {
 
     private record AuthSession(Cookie[] cookies, String csrf, String orderId) {}
 }
+
+

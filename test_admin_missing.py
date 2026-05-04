@@ -61,6 +61,27 @@ def check(label, cond, detail=""):
     results.append((tag, label))
     return cond
 
+def extract_items(body):
+    data = body.get("data")
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict) and isinstance(data.get("items"), list):
+        return data["items"]
+    if isinstance(body.get("items"), list):
+        return body["items"]
+    return []
+
+def resolve_catalog_reference(list_path, create_path, create_body, label):
+    status, body = req("GET", list_path, TOKEN)
+    items = extract_items(body)
+    if items:
+        return items[0].get("id", ""), False
+
+    status, body = req("POST", create_path, TOKEN, create_body)
+    item_id = body.get("data", {}).get("id", "")
+    check(f"fallback create {label}", bool(item_id), body.get("error") or body)
+    return item_id, True
+
 TOKEN = login()
 print(f"Logged in OK  [run suffix: {RND}]\n")
 
@@ -232,11 +253,23 @@ if admin_users:
 # ─── PRODUCTS: PATCH publish ──────────────────────────────────────────
 print("\n=== PRODUCTS (publish) ===")
 # Create a DRAFT product to test publish
+PUBLISH_CAT_ID, TEMP_PUBLISH_CAT = resolve_catalog_reference(
+    "/admin/categories?size=1",
+    "/admin/categories",
+    {"name": f"Publish Cat {RND}", "slug": f"publish-cat-{RND}-auto", "isVisible": True},
+    "category",
+)
+PUBLISH_BRAND_ID, TEMP_PUBLISH_BRAND = resolve_catalog_reference(
+    "/admin/brands?size=1",
+    "/admin/brands",
+    {"name": f"Publish Brand {RND}", "slug": f"publish-brand-{RND}-auto", "isVisible": True},
+    "brand",
+)
 s, r = req("POST", "/admin/products", TOKEN, {
     "name": f"Publish Test {RND}", "slug": f"publish-test-{RND}",
     "sku": f"PUB-TEST-{RND}", "retailPrice": 100000, "currency": "VND",
     "publishStatus": "DRAFT", "stockState": "IN_STOCK",
-    "categoryId": "wp-cat-6291", "brandId": "wp-brand-5657"
+    "categoryId": PUBLISH_CAT_ID, "brandId": PUBLISH_BRAND_ID
 })
 PUB_PID = r.get("data", {}).get("id", "")
 if PUB_PID:
@@ -244,6 +277,10 @@ if PUB_PID:
     check("PATCH /admin/products/{id}/publish DRAFT→PUBLISHED", s == 200, r.get("error"))
     req("DELETE", f"/admin/products/{PUB_PID}", TOKEN)
     print("  [INFO] Publish test product cleaned up")
+if TEMP_PUBLISH_CAT and PUBLISH_CAT_ID:
+    req("DELETE", f"/admin/categories/{PUBLISH_CAT_ID}", TOKEN)
+if TEMP_PUBLISH_BRAND and PUBLISH_BRAND_ID:
+    req("DELETE", f"/admin/brands/{PUBLISH_BRAND_ID}", TOKEN)
 
 # ─── INVENTORY: variant movements & export ────────────────────────────
 print("\n=== INVENTORY (additional) ===")

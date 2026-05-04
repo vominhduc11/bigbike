@@ -43,6 +43,8 @@ const PERMISSION_CATALOG = [
       { key: 'sliders.write',     labelKey: 'roles.permSlidersWrite' },
       { key: 'home_videos.read',  labelKey: 'roles.permHomeVideosRead' },
       { key: 'home_videos.write', labelKey: 'roles.permHomeVideosWrite' },
+      { key: 'redirects.read',    labelKey: 'roles.permRedirectsRead' },
+      { key: 'redirects.write',   labelKey: 'roles.permRedirectsWrite' },
     ],
   },
   {

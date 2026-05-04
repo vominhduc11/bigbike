@@ -8,7 +8,6 @@ import {
   fetchCategories,
   fetchProductDetail,
   mapValidationErrors,
-  publishProduct,
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -393,14 +392,6 @@ function buildFormFromItem(item) {
   }
 }
 
-function toIntegerOrUndefined(value) {
-  const normalized = String(value || '').trim()
-  if (!normalized) return undefined
-  const parsed = Number(normalized)
-  if (!Number.isInteger(parsed)) return Number.NaN
-  return parsed
-}
-
 // Like toIntegerOrUndefined but sends null for empty so the backend can
 // distinguish "user cleared this field" from "field not sent at all".
 function toIntegerOrNull(value) {
@@ -513,22 +504,10 @@ function IconChevronUp() {
   )
 }
 
-
 function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [thumbState, setThumbState] = useState('empty')
   const trimmed = item.url.trim()
-
-  useEffect(() => {
-    if (!trimmed) { setThumbState('empty'); return }
-    setThumbState('loading')
-    const img = new Image()
-    img.loading = 'eager'
-    img.onload = () => setThumbState('ok')
-    img.onerror = () => setThumbState('error')
-    img.src = trimmed
-    return () => { img.onload = null; img.onerror = null }
-  }, [trimmed])
+  const thumbState = trimmed ? 'ok' : 'empty'
 
   return (
     <div className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}>
@@ -1552,11 +1531,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     if (!isCreate && item?.updatedAt) {
       const draft = loadFormFromStorage(autosaveKey)
       if (draft?.form && draft.ts > new Date(item.updatedAt).getTime()) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDraftRecovery(draft)
       }
     }
-  }, [fetchResult]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autosaveKey, fetchResult, isCreate])
 
   // Check autosave on mount for create mode; also handle product duplicate payload
   useEffect(() => {
@@ -1580,6 +1558,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           // Clear variants IDs so they create as new
           variants: base.variants.map((v) => ({ ...v, _key: crypto.randomUUID(), id: '' })),
         }
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(duplicated)
         setIsDirty(true)
         slugEditedByUser.current = false
@@ -1590,8 +1569,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
     const draft = loadFormFromStorage(autosaveKey)
     if (draft?.form) setDraftRecovery(draft)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [autosaveKey, isCreate])
 
   // Autosave when dirty
   useEffect(() => {
@@ -1671,25 +1649,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     onError: (error) => {
       setValidationErrors(mapValidationErrors(error))
       toast.error(error.message || t('products.detail.errSaveFailed'))
-      setIsSubmitting(false)
-    },
-  })
-
-  const publishMutation = useMutation({
-    mutationFn: (id) => publishProduct(id, 'PUBLISHED'),
-    onSuccess: (response) => {
-      const savedItem = response.item || null
-      const nextForm = buildFormFromItem(savedItem)
-      setForm(nextForm)
-      setIsDirty(false)
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.setQueryData(['product', productId], response)
-      toast.success(t('products.detail.successPublish'))
-      setIsSubmitting(false)
-    },
-    onError: (error) => {
-      setValidationErrors(mapValidationErrors(error))
-      toast.error(error.message || t('products.detail.errPublishFailed'))
       setIsSubmitting(false)
     },
   })

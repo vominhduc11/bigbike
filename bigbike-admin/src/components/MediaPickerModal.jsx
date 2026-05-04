@@ -70,13 +70,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const fileInputRef = useRef(null)
   const PAGE_SIZE = 30
 
-  // Reset page on new search
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // Reset page on new search.
   useEffect(() => { setPage(1) }, [debouncedSearch])
 
   useEffect(() => {
     let active = true
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((p) => ({ ...p, status: 'loading' }))
     fetchMedia({ search: debouncedSearch, mimeType: 'image/', page, pageSize: PAGE_SIZE })
       .then((r) => {

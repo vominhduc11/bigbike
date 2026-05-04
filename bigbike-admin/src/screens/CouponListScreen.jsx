@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
@@ -56,11 +56,10 @@ export function CouponListScreen({ canUpdate }) {
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
-    setState((prev) => ({ ...prev, status: 'loading' }))
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  async function handleToggleStatus(coupon) {
+  const handleToggleStatus = useCallback(async (coupon) => {
     const newStatus = coupon.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     setActionError('')
     try {
@@ -69,7 +68,7 @@ export function CouponListScreen({ canUpdate }) {
     } catch (e) {
       setActionError(e.message || t('common.error'))
     }
-  }
+  }, [t])
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -154,10 +153,9 @@ export function CouponListScreen({ canUpdate }) {
         </div>
       ),
     } : null,
-  ].filter(Boolean), [canUpdate, t])
+  ].filter(Boolean), [canUpdate, handleToggleStatus, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((p) => ({ ...p, status: 'loading' }))
     setQuery((p) => {
       const next = { ...p, ...partial }
       if (options.resetPage) next.page = 1

@@ -27,7 +27,9 @@ function loadFromStorage() {
 function saveToStorage(items) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-  } catch {}
+  } catch {
+    // Ignore storage write failures in private mode or when quota is exhausted.
+  }
 }
 
 function formatTime(iso) {

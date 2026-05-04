@@ -1,5 +1,6 @@
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest.class
 com\bigbike\bigbike_backend\api\SliderApiTest.class
+com\bigbike\bigbike_backend\api\AdminUsersApiTest.class
 com\bigbike\bigbike_backend\api\Phase1I1CustomerStatusLoginTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest.class
 com\bigbike\bigbike_backend\service\web\WebRevalidationServiceTest.class
@@ -12,6 +13,7 @@ com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest.class
 com\bigbike\bigbike_backend\api\Phase1DCustomerAuthTest.class
 com\bigbike\bigbike_backend\api\HomepagePublicApiTest.class
 com\bigbike\bigbike_backend\api\Phase2BWordPressCatalogDryRunImporterTest.class
+com\bigbike\bigbike_backend\api\AdminRedirectApiTest.class
 com\bigbike\bigbike_backend\api\Phase2D1StagingImportRehearsalTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$GuestSession.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$AuthSession.class

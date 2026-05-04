@@ -346,6 +346,29 @@ export function normalizeContentItem(input) {
 
 // ── Orders ──────────────────────────────────────────────────────────────────
 
+export function normalizeRedirect(input) {
+  const source = input && typeof input === 'object' ? input : {}
+  const id = toTrimmedString(source.id) || 'unknown-redirect'
+  const statusCode = Number(source.statusCode)
+  const hitCount = Number(source.hitCount)
+  const legacyId = Number(source.legacyId)
+
+  return {
+    id,
+    sourcePattern: toTrimmedString(source.sourcePattern) || '',
+    targetUrl: toTrimmedString(source.targetUrl) || '',
+    redirectType: toTrimmedString(source.redirectType) || 'PERMANENT',
+    statusCode: Number.isFinite(statusCode) ? statusCode : 301,
+    enabled: source.enabled !== false,
+    hitCount: Number.isFinite(hitCount) ? hitCount : 0,
+    lastHitAt: toTrimmedString(source.lastHitAt) || undefined,
+    notes: toTrimmedString(source.notes) || undefined,
+    legacyId: Number.isFinite(legacyId) ? legacyId : undefined,
+    createdAt: toTrimmedString(source.createdAt) || undefined,
+    updatedAt: toTrimmedString(source.updatedAt) || undefined,
+  }
+}
+
 export const ORDER_STATUS_VALUES = [
   'PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED',
 ]

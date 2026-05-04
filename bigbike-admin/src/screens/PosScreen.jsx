@@ -349,7 +349,6 @@ export function PosScreen({ canUpdate, userId }) {
   useEffect(() => {
     if (!dq.trim()) return
     let cancelled = false
-    setSearching(true)
     posSearchProducts(dq)
       .then((r) => { if (!cancelled) setResults(r.items || []) })
       .catch(() => { if (!cancelled) setResults([]) })
@@ -357,10 +356,15 @@ export function PosScreen({ canUpdate, userId }) {
     return () => { cancelled = true }
   }, [dq])
 
-  // Clear results when query is cleared (kept outside the search effect to avoid lint violation)
-  useEffect(() => {
-    if (!dq.trim()) setResults([])
-  }, [dq])
+  function handleSearchChange(value) {
+    setQ(value)
+    if (!value.trim()) {
+      setSearching(false)
+      setResults([])
+      return
+    }
+    setSearching(true)
+  }
 
   function addToCart(variant, product) {
     const unitPrice = priceOf(variant.price ?? product.price)
@@ -418,7 +422,7 @@ export function PosScreen({ canUpdate, userId }) {
               className="control-input pos-search-input"
               placeholder={t('pos.searchPlaceholder')}
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               autoFocus
             />
           </div>
