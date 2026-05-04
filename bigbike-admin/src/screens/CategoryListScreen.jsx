@@ -19,7 +19,7 @@ const INITIAL_QUERY = {
   pageSize: 20,
 }
 
-const ALL_CATS_KEY = { page: 1, pageSize: 200, sort: 'sortOrder:asc' }
+const ALL_CATS_KEY = { page: 1, pageSize: 100, sort: 'sortOrder:asc' }
 
 // Build map: id → full breadcrumb path (e.g. "Mũ Bảo Hiểm / Mũ Fullface")
 function buildBreadcrumbMap(items) {
@@ -237,9 +237,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </span>
         </td>
 
-        {/* Sort order */}
-        <td className="align-right">{category.sortOrder ?? '—'}</td>
-
         {/* Updated */}
         <td>{formatDateTime(category.updatedAt)}</td>
 
@@ -368,7 +365,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                     <th>{t('categories.colCategory')}</th>
                     <th>{t('categories.colDescription')}</th>
                     <th>{t('categories.colVisibility')}</th>
-                    <th className="align-right">{t('categories.colSortOrder')}</th>
                     <th>{t('categories.colUpdated')}</th>
                     <th className="align-right">{t('categories.colActions')}</th>
                   </tr>

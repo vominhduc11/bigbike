@@ -201,11 +201,8 @@ export function createCategorySchema(t) {
     .object({
       slug: z.string(),
       name: z.string().min(1, t('categories.detail.errNameRequired')),
-      sortOrder: z.string().optional(),
       imageUrl: z.string().optional(),
       iconUrl: z.string().optional(),
-      seoCanonicalUrl: z.string().optional(),
-      seoOgImageUrl: z.string().optional(),
     })
     .superRefine((data, ctx) => {
       const s = String(data.slug || '').trim()
@@ -214,23 +211,11 @@ export function createCategorySchema(t) {
       } else if (!SLUG_REGEX.test(s)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugFormat'), path: ['slug'] })
       }
-      if (data.sortOrder) {
-        const n = Number(data.sortOrder)
-        if (!Number.isInteger(n)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSortOrder'), path: ['sortOrder'] })
-        }
-      }
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageUrl'), path: ['imageUrl'] })
       }
       if (data.iconUrl?.trim() && !MEDIA_URL_REGEX.test(data.iconUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconUrl'), path: ['iconUrl'] })
-      }
-      if (data.seoCanonicalUrl?.trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
-      }
-      if (data.seoOgImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })
       }
     })
 }

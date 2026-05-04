@@ -161,6 +161,11 @@ final class AdminMutationValidators {
             return;
         }
 
+        // Relative /media/... paths are served via the internal proxy — always allowed
+        if (normalized.toLowerCase().startsWith("/media/")) {
+            return;
+        }
+
         int initialErrorCount = errors.size();
         validatePublicUrl(normalized, field, errors);
         if (errors.size() > initialErrorCount) {

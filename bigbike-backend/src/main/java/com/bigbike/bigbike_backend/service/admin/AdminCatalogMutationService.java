@@ -978,13 +978,21 @@ public class AdminCatalogMutationService {
         }
 
         if (request.getImage() != null) {
-            applyImage(entity, request.getImage());
+            if (AdminMutationValidators.trimToNull(request.getImage().getUrl()) != null) {
+                applyImage(entity, request.getImage());
+            } else {
+                clearImage(entity);
+            }
         } else if (create) {
             clearImage(entity);
         }
 
         if (request.getIcon() != null) {
-            applyIcon(entity, request.getIcon());
+            if (AdminMutationValidators.trimToNull(request.getIcon().getUrl()) != null) {
+                applyIcon(entity, request.getIcon());
+            } else {
+                clearIcon(entity);
+            }
         } else if (create) {
             clearIcon(entity);
         }
