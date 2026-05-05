@@ -124,22 +124,55 @@ Canonical source: backend `ProductEntity` persistence shape + domain `Product` r
 
 ## 6. Category / Brand Data Contract
 
-### Category
+### Category — response shape (GET)
+
+Canonical source: backend domain `Category.java` record → serialized by Spring to JSON. Public and admin endpoints both use the same `Category` domain type.
 
 | Field | Type / Shape | Required | Public Web | Admin | Mobile | Notes | Status | Evidence |
 |---|---|---:|---:|---:|---:|---|---|---|
-| `id` | string | Yes | Yes | Yes | Unknown | Identifier | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `slug` | string | Yes | Yes | Yes | Unknown | Route/filter key | `CONFIRMED_FROM_CODE` | `Category.java`, `public.ts` |
-| `name` | string | Yes | Yes | Yes | Unknown | Display name | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `description` | string nullable | No | Yes | Yes | Unknown | Optional copy | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `parentId` | string nullable | No | Yes | Yes | Unknown | Hierarchical category | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `image` | `ImageAsset` nullable | No | Yes | Yes | Unknown | Category image | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `icon` | `ImageAsset` nullable | No | Yes | Yes | Unknown | Icon category UI | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `seo` | `SeoMeta` nullable | No | Yes | Yes | Unknown | SEO metadata | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `isVisible` | boolean | Yes | Yes | Yes | Unknown | Visibility flag | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `showOnHomepage` | boolean nullable | No | Yes | Yes | Unknown | Homepage category flag | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `sortOrder` | integer nullable | No | Yes | Yes | Unknown | Ordering | `CONFIRMED_FROM_CODE` | `Category.java` |
-| `createdAt`, `updatedAt` | instant/string | Yes | Yes | Yes | Unknown | Timestamps | `CONFIRMED_FROM_CODE` | `Category.java` |
+| `id` | string | Yes | Yes | Yes | Yes | Identifier | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `slug` | string | Yes | Yes | Yes | Yes | Route/filter key | `CONFIRMED_FROM_CODE` | `Category.java`, `public.ts`, `category.dart` |
+| `name` | string | Yes | Yes | Yes | Yes | Display name | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `description` | string nullable | No | Yes | Yes | Yes | Optional copy | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `parentId` | string nullable | No | Yes | Yes | Yes | Hierarchical category | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `image` | `ImageAsset` nullable | No | Yes | Yes | Yes | Category image | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `icon` | `ImageAsset` nullable | No | Yes | Yes | Yes | Icon category UI | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `seo` | `SeoMeta` nullable | No | Yes | Yes | No | SEO metadata; mobile `Category.fromJson` does not read this field | `CONFIRMED_FROM_CODE` (web/admin); `NOT_FOUND_IN_REPO` (mobile) | `Category.java`, `public.ts`, `contracts.js`; absent from `category.dart` |
+| `isVisible` | boolean | Yes | Yes | Yes | Yes | Visibility flag; public endpoint only returns visible categories | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `showOnHomepage` | boolean nullable | No | Yes | Yes | Yes | Homepage category flag | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `sortOrder` | integer nullable | No | Yes | Yes | Yes | Ordering; null categories sort after non-null ones | `CONFIRMED_FROM_CODE` | `Category.java`, `category.dart` |
+| `createdAt`, `updatedAt` | ISO 8601 string | Yes | Yes | Yes | No | Timestamps; mobile `Category.fromJson` does not read these fields | `CONFIRMED_FROM_CODE` (web/admin); `NOT_FOUND_IN_REPO` (mobile) | `Category.java`, `public.ts`; absent from `category.dart` |
+| `productCount` | — | — | No | No | `MOBILE_ONLY` | Mobile model declares this field but backend `Category` domain does not emit it; always null/zero from API | `MOBILE_ONLY` | `category.dart` field vs absence in `Category.java` |
+
+**`ImageAsset` shape** (shared by `image`, `icon`, `seo.ogImage`): `{ id?: string, url: string, alt?: string, width?: integer, height?: integer, mimeType?: string }`. Mobile `ImageAsset` omits `id` but that field is optional.
+
+**`SeoMeta` shape**: `{ title?: string, description?: string, canonicalUrl?: string, ogImage?: ImageAsset, noIndex?: boolean }`. OG image follows the same `ImageAsset` shape — notably `seo.ogImage`, not flat `seo.ogImageUrl/ogImageAlt`.
+
+### Category — write contract (POST / PATCH UpsertCategoryRequest)
+
+Admin `POST /api/v1/admin/categories` (create) and `PATCH /api/v1/admin/categories/{id}` (update).
+
+PATCH semantics: each field is optional. If omitted (null at JSON level), the field is left unchanged, **except** `sortOrder` and `showOnHomepage` which follow standard nullable-present logic. See notes below.
+
+| Request Field | Type | Constraints | PATCH behavior if omitted | Notes |
+|---|---|---|---|---|
+| `slug` | string | regex `^[a-z0-9]+(?:-[a-z0-9]+)*$` | unchanged | Required on POST; optional on PATCH |
+| `name` | string | max 255 | unchanged | Required on POST |
+| `description` | string | max 5000 | unchanged | |
+| `parentId` | string | max 64 | unchanged | Send `""` (empty string) to clear parent; omit to leave unchanged; `trimToNull("")` → null → clears parent |
+| `image` | `ImageAssetRequest {url, alt?, width?, height?, mimeType?}` | — | unchanged | Send `{url: null}` to clear image; omit to leave image unchanged |
+| `icon` | same as `image` | — | unchanged | Same clear semantics as `image` |
+| `seo` | `SeoMetaRequest` | see sub-fields | unchanged | **Omitting `seo` in PATCH leaves all SEO fields unchanged.** This differs from Product which tracks `isSeoPresent()`. Send `seo: {ogImage: null, title: "", ...}` to clear all SEO fields via `applySeo`. |
+| `seo.title` | string | max 255 | — | `trimToNull` → null clears |
+| `seo.description` | string | max 5000 | — | |
+| `seo.canonicalUrl` | string | max 2048 | — | |
+| `seo.ogImage` | `ImageAssetRequest` or `null` | — | — | `null` clears OG image columns; `{url, alt?}` sets them |
+| `seo.noIndex` | boolean | — | — | |
+| `visible` | boolean | — | unchanged | **Note: request field is `visible`, response field is `isVisible` (asymmetric naming)** |
+| `showOnHomepage` | boolean | — | unchanged | |
+| `sortOrder` | integer | — | unchanged | |
+
+**Visibility guard (Phase 1 business rule):** Both `DELETE /categories/{id}` and `PATCH /categories/{id}` with `visible: false` check for visible children. If any visible child exists, backend returns **HTTP 409 `CONFLICT`** with `error.code: "CONFLICT"`. FE must display this explicitly.
 
 ### Brand
 
@@ -363,6 +396,10 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 
 | Domain | Drift | Current Consumers | Risk | Recommendation | Status | Evidence |
 |---|---|---|---|---|---|---|
+| Category mobile: missing seo/timestamps | Mobile `Category.fromJson` does not deserialize `seo`, `createdAt`, `updatedAt` fields even though backend emits them | Mobile | Category SEO cannot be used for mobile meta-tags; timestamps not available for cache/display | Update `category.dart` to add `SeoMeta` model and read `seo`, `createdAt`, `updatedAt` | `NOT_FOUND_IN_REPO` (mobile) | `category.dart`, `Category.java` |
+| Category mobile: ghost `productCount` field | Mobile `Category` model declares `productCount` field but backend `Category` domain never emits it; always null from API | Mobile | Field always null; dead code risk | Remove `productCount` from `category.dart` or keep it as reserved-for-future field with explicit comment | `MOBILE_ONLY` | `category.dart`, `Category.java` |
+| Category request/response `visible` naming asymmetry | Admin POST/PATCH sends `visible: boolean` (UpsertCategoryRequest), but GET response returns `isVisible: boolean` (Category domain). These are different field names. | Admin | Form building and payload construction must use different keys; easy source of bugs when mapping form ↔ payload | Document this asymmetry. Admin FE already handles it correctly in `CategoryDetailScreen.jsx`. Do not rename either side without a migration plan. | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java`, `Category.java`, `CategoryDetailScreen.jsx` |
+| Category PATCH seo null does not clear SEO (unlike Product) | For Category PATCH, omitting `seo` leaves SEO unchanged. Product uses `isSeoPresent()` field-tracking so `seo: null` explicitly clears. Category does not have this — to clear Category SEO, send `seo: { title: "", ogImage: null, ... }` (each field explicitly empty). | Admin | Admin FE that omits `seo` when all fields are blank cannot clear category SEO; must always send `seo` object on update | FE `toPayload` should always send `seo` object (Phase 2 fix already does this). Future: add `isSeoPresent()` tracking to `UpsertCategoryRequest` for full parity with Product. | `CONFIRMED_FROM_CODE` | `AdminCatalogMutationService.java:1081-1085`, `UpsertCategoryRequest.java` vs `UpsertProductRequest.java` |
 | Product publish status | Backend enum has `PENDING`, `PRIVATE`, `TRASH`; web type only has `DRAFT`, `PUBLISHED`, `HIDDEN`, `ARCHIVED`; admin has `TRASH` but misses `PENDING`, `PRIVATE` | Web/admin | Unknown status may render as invalid/UNKNOWN or break filters | Generate shared enum package or update FE/admin contracts to backend enum | `CONFLICTING_EVIDENCE` | `PublishStatus.java`, `public.ts`, `contracts.js` |
 | Product stock quantity | Backend domain `Product` has product-level `stockQuantity`; public web `Product` type omits it | Public web | Product pages cannot reliably render product-level quantity if needed | Add optional `stockQuantity?: number | null` to public contract if API returns it | `CONFLICTING_EVIDENCE` | `Product.java`, `public.ts` |
 | Product force out of stock | Backend domain has `forceOutOfStock`; public web type omits it | Public web/admin | Public UI may not understand forced-out-of-stock state beyond `stockState` | Keep backend as authority; expose only if UX needs explicit flag | `CONFLICTING_EVIDENCE` | `Product.java`, `public.ts` |
@@ -379,6 +416,15 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 
 | Domain | Field / Rule | Backend Validation | Frontend Validation | Status | Evidence |
 |---|---|---|---|---|---|
+| Category | `slug` regex `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `@Pattern` | Admin `createCategorySchema` Zod validates slug format | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java`, `schemas.js` |
+| Category | `name` max 255 | `@Size(max=255)` | Admin Zod schema validates min 1 | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java`, `schemas.js` |
+| Category | `description` max 5000 | `@Size(max=5000)` | No FE length limit currently | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java` |
+| Category | `parentId` max 64 | `@Size(max=64)` | FE sends ID from select or `""` to clear | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java` |
+| Category | `seo.title` max 255 | `@Size(max=255)` | Admin Zod validates | `CONFIRMED_FROM_CODE` | `SeoMetaRequest.java`, `schemas.js` |
+| Category | `seo.description` max 5000 | `@Size(max=5000)` | Admin Zod validates | `CONFIRMED_FROM_CODE` | `SeoMetaRequest.java`, `schemas.js` |
+| Category | `seo.canonicalUrl` max 2048 | `@Size(max=2048)` | Admin Zod validates URL format | `CONFIRMED_FROM_CODE` | `SeoMetaRequest.java`, `schemas.js` |
+| Category | hide / soft-delete visibility guard | 409 CONFLICT if visible children exist | Admin displays toast on `error.code === 'CONFLICT'` | `CONFIRMED_FROM_CODE` | `AdminCatalogMutationService.java`, `CategoryDetailScreen.jsx` |
+| Category | `sortOrder` integer | none on BE | Admin Zod validates non-negative integer | `CONFIRMED_FROM_CODE` | `UpsertCategoryRequest.java`, `schemas.js` |
 | Product | `sku` max 100 | `@Size(max=100)` | Admin normalizer trims/normalizes | `CONFIRMED_FROM_CODE` | `UpsertProductRequest.java`, `contracts.js` |
 | Product | `slug` max 200 and regex `^[a-z0-9]+(?:-[a-z0-9]+)*$` | `@Size`, `@Pattern` | FE should mirror for UX only | `CONFIRMED_FROM_CODE` | `UpsertProductRequest.java` |
 | Product | `name` max 255 | `@Size(max=255)` | Admin should validate | `CONFIRMED_FROM_CODE` | `UpsertProductRequest.java` |

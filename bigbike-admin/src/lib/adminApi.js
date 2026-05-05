@@ -155,7 +155,7 @@ async function requestJson(endpoint, options = {}) {
       ({ response, payload } = await dispatch(method, url, body, newAccess))
     }
     if (response.status === 401) {
-      // Refresh failed or replay still 401 â€” surface to AuthProvider so it can
+      // Refresh failed or replay still 401 — surface to AuthProvider so it can
       // clear state and show the login screen.
       clearTokens()
       if (authErrorListener) authErrorListener()
@@ -219,7 +219,7 @@ export async function logoutAdmin() {
       body: JSON.stringify({ refreshToken }),
     })
   } catch {
-    // Ignore network errors â€” still clear local tokens below.
+    // Ignore network errors — still clear local tokens below.
   }
   clearTokens()
 }
@@ -1016,7 +1016,7 @@ export async function uploadMedia(file, altText = '', onProgress = null) {
 
 export async function fetchSettings() {
   if (FORCE_MOCK) {
-    return withMockFallback('Äang hiá»ƒn thá»‹ dá»¯ liá»‡u máº«u â€” chÆ°a káº¿t ná»‘i há»‡ thá»‘ng tháº­t. Má»i thay Ä‘á»•i sáº½ khĂ´ng Ä‘Æ°á»£c lÆ°u.', queryMockSettings())
+    return withMockFallback('Đang hiển thị dữ liệu mẫu — chưa kết nối hệ thống thật. Mọi thay đổi sẽ không được lưu.', queryMockSettings())
   }
   try {
     const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })
@@ -1729,8 +1729,8 @@ function buildReturnQuery(query = {}) {
 
 function mockReturns(query = {}) {
   const all = [
-    { id: 'r1', returnNumber: 'RMA-001001', orderId: 'ord-aaa-1', customerId: 'c1', status: 'PENDING', reason: 'DEFECTIVE', customerNote: 'Sáº£n pháº©m bá»‹ lá»—i', adminNote: '', refundAmount: 0, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
-    { id: 'r2', returnNumber: 'RMA-001002', orderId: 'ord-bbb-2', customerId: 'c2', status: 'APPROVED', reason: 'WRONG_ITEM', customerNote: '', adminNote: 'ÄĂ£ xĂ¡c nháº­n', refundAmount: 0, createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r1', returnNumber: 'RMA-001001', orderId: 'ord-aaa-1', customerId: 'c1', status: 'PENDING', reason: 'DEFECTIVE', customerNote: 'Sản phẩm bị lỗi', adminNote: '', refundAmount: 0, createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
+    { id: 'r2', returnNumber: 'RMA-001002', orderId: 'ord-bbb-2', customerId: 'c2', status: 'APPROVED', reason: 'WRONG_ITEM', customerNote: '', adminNote: 'Đã xác nhận', refundAmount: 0, createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
     { id: 'r3', returnNumber: 'RMA-001003', orderId: 'ord-ccc-3', customerId: 'c1', status: 'COMPLETED', reason: 'CHANGED_MIND', customerNote: '', adminNote: '', refundAmount: 350000, createdAt: new Date(Date.now() - 604800000).toISOString(), updatedAt: new Date().toISOString(), items: [], history: [] },
   ]
   let filtered = all
@@ -1842,13 +1842,13 @@ function buildMockRoles() {
     'admin-users.read','admin-users.write','audit-logs.read',
   ]
   return [
-    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'ToĂ n quyá»n há»‡ thá»‘ng', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'ADMIN', name: 'Admin', description: 'Quáº£n lĂ½ toĂ n bá»™ shop', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'SHOP_MANAGER', name: 'Shop Manager', description: 'Váº­n hĂ nh bĂ¡n hĂ ng', isSystem: true, permissions: ['orders.read','orders.write','customers.read','customers.write','coupons.read','coupons.write','shipping.read','reviews.read','reviews.write','products.read','products.update','catalog.read'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'EDITOR', name: 'Editor', description: 'Ná»™i dung & sáº£n pháº©m', isSystem: true, permissions: ['products.read','catalog.read','content.read','content.update','media.read','media.write','menus.read','menus.write','sliders.read','sliders.write'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'AUTHOR', name: 'Author', description: 'Viáº¿t & upload áº£nh', isSystem: true, permissions: ['content.read','content.update','media.read','media.write'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'CONTRIBUTOR', name: 'Contributor', description: 'Chá»‰ xem ná»™i dung', isSystem: true, permissions: ['content.read','media.read'], updatedAt: '2026-04-15T10:00:00Z' },
-    { id: 'SEO_EDITOR', name: 'SEO Editor', description: 'Tá»‘i Æ°u ná»™i dung SEO', isSystem: true, permissions: ['content.read','content.update','redirects.read','redirects.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Toàn quyền hệ thống', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'ADMIN', name: 'Admin', description: 'Quản lý toàn bộ shop', isSystem: true, permissions: [...ALL_PERMS], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SHOP_MANAGER', name: 'Shop Manager', description: 'Vận hành bán hàng', isSystem: true, permissions: ['orders.read','orders.write','customers.read','customers.write','coupons.read','coupons.write','shipping.read','reviews.read','reviews.write','products.read','products.update','catalog.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'EDITOR', name: 'Editor', description: 'Nội dung & sản phẩm', isSystem: true, permissions: ['products.read','catalog.read','content.read','content.update','media.read','media.write','menus.read','menus.write','sliders.read','sliders.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'AUTHOR', name: 'Author', description: 'Viết & upload ảnh', isSystem: true, permissions: ['content.read','content.update','media.read','media.write'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'CONTRIBUTOR', name: 'Contributor', description: 'Chỉ xem nội dung', isSystem: true, permissions: ['content.read','media.read'], updatedAt: '2026-04-15T10:00:00Z' },
+    { id: 'SEO_EDITOR', name: 'SEO Editor', description: 'Tối ưu nội dung SEO', isSystem: true, permissions: ['content.read','content.update','redirects.read','redirects.write'], updatedAt: '2026-04-15T10:00:00Z' },
   ]
 }
 

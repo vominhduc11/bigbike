@@ -352,6 +352,10 @@ public class AdminCatalogMutationService {
         requireJpaPersistenceEnabled();
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+        if (!entity.isVisible()) {
+            return catalogReadRepository.findBrandById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Brand not found."));
+        }
         entity.setVisible(false);
         entity.setUpdatedAt(Instant.now());
         brandJpaRepository.save(entity);

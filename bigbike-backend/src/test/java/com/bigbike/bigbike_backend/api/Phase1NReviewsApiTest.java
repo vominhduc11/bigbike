@@ -69,13 +69,15 @@ class Phase1NReviewsApiTest {
 
     @Test
     void publicGetReviews_returnsOnlyApproved() throws Exception {
+        // Check by ID: the fresh pendingReviewId / spamReviewId just inserted are PENDING/SPAM and must NOT appear.
+        // The fresh approvedReviewId is APPROVED and MUST appear.
+        // (Cannot rely on authorName since prior tests may have flipped an old "Reviewer PENDING" row to APPROVED.)
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.reviews").isArray())
-                // All returned reviews must be APPROVED — check authorName not PENDING/SPAM
-                .andExpect(jsonPath("$.data.reviews[?(@.authorName == 'Reviewer PENDING')]").isEmpty())
-                .andExpect(jsonPath("$.data.reviews[?(@.authorName == 'Spam Bot')]").isEmpty())
-                .andExpect(jsonPath("$.data.reviews[?(@.authorName == 'Reviewer APPROVED')]").isNotEmpty());
+                .andExpect(jsonPath("$.data.reviews[?(@.id == " + pendingReviewId + ")]").isEmpty())
+                .andExpect(jsonPath("$.data.reviews[?(@.id == " + spamReviewId + ")]").isEmpty())
+                .andExpect(jsonPath("$.data.reviews[?(@.id == " + approvedReviewId + ")]").isNotEmpty());
     }
 
     @Test

@@ -29,6 +29,7 @@ import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaReposit
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -924,6 +925,207 @@ class AdminMutationApiTest {
         assertThat(cleared.getSeoOgImageUrl()).isNull();
         assertThat(cleared.getSeoOgImageAlt()).isNull();
         assertThat(cleared.getSeoNoIndex()).isNull();
+    }
+
+    // ── Brand hardening tests ─────────────────────────────────────────────────
+
+    @Test
+    void shouldRejectBrandValidationErrors() throws Exception {
+        // missing slug → REQUIRED
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"name":"No Slug Brand"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("slug"))
+                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+
+        // invalid slug format (uppercase + space)
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"Invalid Slug!!!","name":"Bad Slug Brand"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("slug"));
+
+        // missing name → REQUIRED
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"brand-no-name-test"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("name"))
+                .andExpect(jsonPath("$.error.details[0].code").value("REQUIRED"));
+    }
+
+    @Test
+    void shouldRejectBrandDuplicateSlug() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-dup-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Dup Brand First %s"}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Dup Brand Second %s"}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("slug"))
+                .andExpect(jsonPath("$.error.details[0].code").value("DUPLICATE"));
+    }
+
+    @Test
+    void shouldSoftDeleteBrandAndExcludeFromPublicList() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-softdel-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Soft Del Brand %s","visible":true}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created brand."));
+
+        // public list sees brand before delete
+        mockMvc.perform(get("/api/v1/brands"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '%s')]".formatted(slug)).exists());
+
+        // admin DELETE → soft-hides brand
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        // public list no longer contains this brand
+        mockMvc.perform(get("/api/v1/brands"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '%s')]".formatted(slug)).doesNotExist());
+
+        // public detail returns 404
+        mockMvc.perform(get("/api/v1/brands/{slug}", slug))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+
+        // admin visibility=HIDDEN shows the hidden brand
+        mockMvc.perform(get("/api/v1/admin/brands")
+                        .param("visibility", "HIDDEN")
+                        .param("q", slug)
+                        .header("X-Admin-Permissions", "catalog.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].isVisible").value(false));
+    }
+
+    @Test
+    void shouldDeleteBrandIdempotently() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "brand-idempotent-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Idempotent Brand %s","visible":true}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created brand."));
+
+        // first DELETE hides the brand
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        Instant firstUpdatedAt = brandJpaRepository.findById(brand.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected brand."))
+                .getUpdatedAt();
+
+        // second DELETE → no-op; updatedAt must not change
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        Instant secondUpdatedAt = brandJpaRepository.findById(brand.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected brand."))
+                .getUpdatedAt();
+
+        assertThat(secondUpdatedAt).isEqualTo(firstUpdatedAt);
+    }
+
+    @Test
+    void shouldFilterAdminBrandsByVisibility() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String visibleSlug = "brand-filter-vis-" + suffix;
+        String hiddenSlug = "brand-filter-hid-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Filter Brand Visible %s","visible":true}
+                                """.formatted(visibleSlug, suffix)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Filter Brand Hidden %s","visible":false}
+                                """.formatted(hiddenSlug, suffix)))
+                .andExpect(status().isOk());
+
+        // VISIBLE filter → only visible brand in results
+        // q=suffix matches both brand names ("Filter Brand Visible {s}" and "Filter Brand Hidden {s}")
+        // but visibility=VISIBLE narrows it to 1
+        mockMvc.perform(get("/api/v1/admin/brands")
+                        .param("visibility", "VISIBLE")
+                        .param("q", suffix)
+                        .header("X-Admin-Permissions", "catalog.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].slug").value(visibleSlug));
+
+        // HIDDEN filter → only hidden brand in results
+        mockMvc.perform(get("/api/v1/admin/brands")
+                        .param("visibility", "HIDDEN")
+                        .param("q", suffix)
+                        .header("X-Admin-Permissions", "catalog.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].slug").value(hiddenSlug));
+
+        // no filter → both brands appear
+        mockMvc.perform(get("/api/v1/admin/brands")
+                        .param("q", suffix)
+                        .header("X-Admin-Permissions", "catalog.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2));
     }
 
     private static VariantOptionRequest variantOption(String optionName, String optionValue) {
