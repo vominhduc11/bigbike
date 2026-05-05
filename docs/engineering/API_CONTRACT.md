@@ -142,7 +142,7 @@ Giới hạn có chủ ý:
 | Method | Path | Purpose | Request High-level | Response High-level | Auth | Status | Evidence |
 |---|---|---|---|---|---|---|---|
 | POST | `/api/v1/contact` | Submit contact form | `ContactRequest` | `ApiDataResponse<Void>` with HTTP 201 | Public `permitAll` | `CONFIRMED_FROM_CODE` | `ContactController.java`, `SecurityConfig.java` |
-| GET | `/api/v1/products/{productId}/reviews` | Get product reviews | product id path | `ApiDataResponse<Map<String,Object>>` | Public | `CONFIRMED_FROM_CODE` | `PublicReviewController.java` |
+| GET | `/api/v1/products/{productId}/reviews` | Get approved product reviews | `productId` path; optional `page` (default 1, min 1), optional `size` (default 10, min 1, max 50) | `ApiDataResponse<{avgRating,totalReviews,reviews[],pagination}>`; aggregate values cover **all APPROVED reviews**, `reviews[]` is current page only | Public | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `PublicReviewService.java`, `ReviewJpaRepository.java` |
 | POST | `/api/v1/products/{productId}/reviews` | Submit product review | `authorName`, `rating`, `comment` | `ApiDataResponse<{success:true}>` with HTTP 201 | Public `permitAll` | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `SecurityConfig.java` |
 | GET | `/api/v1/orders/lookup` | Guest order lookup | `orderNumber`, `orderKey` required | `ApiDataResponse<OrderDetailResponse>` | Public `permitAll` | `CONFIRMED_FROM_CODE` | `OrderLookupController.java`, `public-api.ts` |
 
@@ -270,6 +270,7 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 | Public categories | `page`, `size`, max 100 | `showOnHomepage` or `filterHome` (both accepted; homepage filter only); no visibility filter (always returns visible only) | default `sortOrder:asc`; allowed: `name`, `createdAt`, `sortOrder` | `CONFIRMED_FROM_CODE` | `CatalogController.java`, `CatalogReadService.java` |
 | Public brands | `page`, `size`, max 100 | none audited | free string | `CONFIRMED_FROM_CODE` | `CatalogController.java` |
 | Public articles | `page`, `size`, max 100 | category, q | free string; web uses article sort values | `CONFIRMED_FROM_CODE` | `ContentController.java`, `public-api.ts` |
+| Public reviews | `page`, `size`, default `1/10`, max 50 | approved reviews only (status filter is backend-owned, not client-controlled) | default `createdAt:desc` | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `PublicReviewService.java`, `ReviewJpaRepository.java` |
 | Search | no pagination; `limit` max 50 | type | none | `CONFIRMED_FROM_CODE` | `PublicSearchController.java` |
 | Customer orders | `page`, `size` | status, paymentStatus | none audited | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | Admin catalog | `page`, `size` or `pageSize`, max 100 | q/search, publishStatus, stockState, brandId, categoryId, visibility | free string | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java` |

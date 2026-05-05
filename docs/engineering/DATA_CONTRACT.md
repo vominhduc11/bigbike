@@ -56,7 +56,7 @@ Nguyên tắc audit:
 | Settings | Backend setting DTOs | Public web, admin | `CONFIRMED_FROM_CODE` | `AdminSiteSettingResponse.java`, `PublicSiteSettingResponse.java`, `bigbike-admin/src/lib/contracts.js` |
 | Menu | Backend menu DTOs | Public web, admin | `CONFIRMED_FROM_CODE` | `AdminMenuResponse.java`, `AdminMenuItemResponse.java`, `bigbike-web/lib/contracts/public.ts` |
 | Coupon | Backend coupon DTOs/cart coupon flow | Cart, checkout, admin | `CONFIRMED_FROM_CODE` | `AdminCouponDetailResponse.java`, `CartResponse.java`, `bigbike-admin/src/lib/contracts.js` |
-| Review | Backend public review request, admin/public review controllers | Product/review UI/admin moderation | `NEEDS_VERIFICATION` | `SubmitReviewRequest.java`, backend compile list references `AdminReviewController`/`PublicReviewController` |
+| Review | Backend `ReviewEntity`, public review list DTO, aggregate query + admin/public review controllers | Product/review UI/admin moderation | `CONFIRMED_FROM_CODE` for public read contract; admin moderation detail remains partial | `ReviewEntity.java`, `PublicReviewController.java`, `PublicReviewService.java`, `ReviewJpaRepository.java`, `SubmitReviewRequest.java` |
 | Report | Backend dashboard/report DTO/controllers | Admin | `CONFIRMED_FROM_CODE`; metric semantics `NEEDS_VERIFICATION` | `AdminDashboardSummaryResponse.java` path in compile list, `AdminReportController` path in architecture docs |
 | Notification | Backend notification hooks/service; no persisted notification data contract verified | Admin/customer email/ws maybe | `NEEDS_VERIFICATION` | `docs/engineering/ARCHITECTURE.md` references notification hooks; no canonical notification entity audited |
 
@@ -74,6 +74,7 @@ Nguyên tắc audit:
 | Customer | `CustomerSummary`, `CustomerAddressResponse`, `AdminCustomerDetailResponse` | Account/admin customer UI | Account screens `NEEDS_VERIFICATION` | `CONFIRMED_FROM_CODE` | customer DTO paths |
 | Media | `AdminMediaDetailResponse`, `ImageAsset` | Admin media normalizer, public image fields | `NEEDS_VERIFICATION` | `CONFIRMED_FROM_CODE` | media DTO/admin contract paths |
 | Content | `Article`, `Page` | `Article`, `Page` type in public web | Content route screens `NEEDS_VERIFICATION` | `CONFIRMED_FROM_CODE` | content domain/public web paths |
+| Review | `ReviewEntity`, public review list/aggregate response | `ReviewsSection.tsx` consumes `avgRating`, `totalReviews`, `reviews[]`, `pagination`; mobile `ProductReview` consumes item fields only | Mobile ignores pagination and keeps item-level compatibility | `CONFIRMED_FROM_CODE` for public payload | `ReviewEntity.java`, `PublicReviewController.java`, `PublicReviewService.java`, `bigbike-web/components/catalog/ReviewsSection.tsx`, `bigbike_mobile/lib/core/models/product.dart` |
 | Settings/Menu/Coupon | DTOs in admin/public packages | Admin normalizers, public web contracts | `NEEDS_VERIFICATION` | `CONFIRMED_FROM_CODE` | setting/menu/coupon paths |
 
 ## 5. Product Data Contract
@@ -442,7 +443,7 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 - ~~`PaymentRecordStatus` enum values~~: confirmed in `PaymentRecordStatus.java` (`PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`) — initially listed as 4 values in 2026-05-04 audit; `REFUNDED` was missing and added during 2026-05-05 re-verification.
 - Return status enum/allowed transitions: return DTOs use string; direct status enum or transition service needs audit.
 - Full role/permission entity/request/response contracts: admin profile confirmed, role CRUD field shape needs deeper audit.
-- Review response/admin moderation contract: submit request confirmed, review entity/response shape not fully audited.
+- Admin review moderation exact response shape still needs deeper audit; public review pagination + aggregate response is confirmed.
 - Report metric semantics: report/dashboard controllers exist, but metric formula/data contract needs service audit.
 - Notification data contract: notification hooks exist in architecture, but persisted notification entity or public/admin notification DTO not confirmed.
 - External payment provider/webhook shape: not found in audited evidence.
@@ -541,7 +542,7 @@ Product, Category, Brand, Cart, Checkout, Order, Payment, Shipping/Fulfillment, 
 - Return status values.
 - (`CartStatus` and `PaymentRecordStatus` were resolved to `CONFIRMED_FROM_CODE` in 2026-05-05 re-verification — see Section 18.)
 - Full role/permission CRUD data shape.
-- Review response/admin moderation shape.
+- Admin review moderation detailed shape.
 - Report metric semantics.
 - Persisted notification data contract.
 - External payment provider/webhook data.

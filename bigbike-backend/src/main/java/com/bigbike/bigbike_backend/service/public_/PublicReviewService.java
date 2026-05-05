@@ -1,19 +1,26 @@
 package com.bigbike.bigbike_backend.service.public_;
 
+import com.bigbike.bigbike_backend.api.common.PaginationMeta;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
-import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PublicReviewService {
+
+    private static final String APPROVED_STATUS = "APPROVED";
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 10;
+    private static final int MAX_SIZE = 50;
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
@@ -23,26 +30,41 @@ public class PublicReviewService {
         this.productRepo = productRepo;
     }
 
-    public Map<String, Object> getProductReviews(String productId) {
-        List<ReviewEntity> approved = reviewRepo.findByProductIdAndStatusOrderByCreatedAtDesc(productId, "APPROVED");
+    public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
+        int normalizedPage = Math.max(DEFAULT_PAGE, page);
+        int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        double avg = approved.isEmpty() ? 0.0
-                : approved.stream().mapToInt(r -> r.getRating()).average().orElse(0.0);
-        double avgRounded = Math.round(avg * 10.0) / 10.0;
+        PageRequest pageRequest = PageRequest.of(
+                normalizedPage - 1,
+                normalizedSize,
+                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+        Page<ReviewEntity> approvedPage = reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
+        ReviewJpaRepository.ReviewAggregate aggregate = reviewRepo.findAggregateByProductIdAndStatus(
+                productId,
+                APPROVED_STATUS);
 
-        List<Map<String, Object>> reviews = approved.stream().map(this::toPublicMap).toList();
+        double avgRating = roundAverage(aggregate.getAvgRating());
+        long totalReviews = aggregate.getTotalReviews() != null ? aggregate.getTotalReviews() : 0L;
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("avgRating", avgRounded);
-        result.put("totalReviews", approved.size());
-        result.put("reviews", reviews);
-        return result;
+        List<PublicProductReviewsResponse.ReviewItem> reviews = approvedPage.getContent().stream()
+                .map(this::toPublicReviewItem)
+                .toList();
+
+        PaginationMeta pagination = new PaginationMeta(
+                normalizedPage,
+                normalizedSize,
+                totalReviews,
+                approvedPage.getTotalPages(),
+                approvedPage.hasNext(),
+                approvedPage.hasPrevious());
+
+        return new PublicProductReviewsResponse(avgRating, totalReviews, reviews, pagination);
     }
 
     @Transactional
     public void submitReview(String productId, String authorName, int rating, String comment) {
         productRepo.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Sản phẩm không tồn tại."));
+                .orElseThrow(() -> new NotFoundException("Sáº£n pháº©m khĂ´ng tá»“n táº¡i."));
 
         ReviewEntity entity = new ReviewEntity();
         entity.setProductId(productId);
@@ -57,13 +79,19 @@ public class PublicReviewService {
         reviewRepo.save(entity);
     }
 
-    private Map<String, Object> toPublicMap(ReviewEntity r) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", r.getId());
-        m.put("authorName", r.getAuthorName() != null ? r.getAuthorName() : "Ẩn danh");
-        m.put("rating", (int) r.getRating());
-        m.put("comment", r.getBody() != null ? r.getBody() : "");
-        m.put("createdAt", r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
-        return m;
+    private double roundAverage(Double avgRating) {
+        if (avgRating == null) {
+            return 0.0;
+        }
+        return Math.round(avgRating * 10.0) / 10.0;
+    }
+
+    private PublicProductReviewsResponse.ReviewItem toPublicReviewItem(ReviewEntity review) {
+        return new PublicProductReviewsResponse.ReviewItem(
+                review.getId(),
+                review.getAuthorName() != null ? review.getAuthorName() : "áº¨n danh",
+                review.getRating(),
+                review.getBody() != null ? review.getBody() : "",
+                review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
     }
 }

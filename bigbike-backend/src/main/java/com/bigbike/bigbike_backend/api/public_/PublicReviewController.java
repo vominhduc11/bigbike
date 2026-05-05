@@ -3,9 +3,12 @@ package com.bigbike.bigbike_backend.api.public_;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.api.public_.dto.SubmitReviewRequest;
 import com.bigbike.bigbike_backend.service.public_.PublicReviewService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,11 +35,13 @@ public class PublicReviewController {
     }
 
     @GetMapping
-    public ApiDataResponse<Map<String, Object>> getReviews(
+    public ApiDataResponse<PublicProductReviewsResponse> getReviews(
             @PathVariable String productId,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(publicReviewService.getProductReviews(productId), request);
+        return apiResponseFactory.data(publicReviewService.getProductReviews(productId, page, size), request);
     }
 
     @PostMapping

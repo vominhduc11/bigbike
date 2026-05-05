@@ -1128,6 +1128,73 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.data.length()").value(2));
     }
 
+    @Test
+    void shouldHideBrandSummaryOnPublicWhenBrandIsHidden() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String brandSlug = "brand-hidden-product-" + suffix;
+        String productSlug = "product-hidden-brand-" + suffix;
+
+        // Create a brand (visible)
+        mockMvc.perform(post("/api/v1/admin/brands")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hidden Brand Product %s","visible":true}
+                                """.formatted(brandSlug, suffix)))
+                .andExpect(status().isOk());
+
+        BrandEntity brand = brandJpaRepository.findBySlug(brandSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected brand."));
+
+        // Create a published product assigned to that brand
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Product Hidden Brand %s",
+                                  "categoryId":"cat_helmet",
+                                  "brandId":"%s",
+                                  "retailPrice":1500000,
+                                  "stockState":"IN_STOCK",
+                                  "publishStatus":"PUBLISHED"
+                                }
+                                """.formatted(productSlug, suffix, brand.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.brand.slug").value(brandSlug));
+
+        // Soft-delete (hide) the brand
+        mockMvc.perform(delete("/api/v1/admin/brands/{id}", brand.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isOk());
+
+        // Public product list: product still appears but brand must be null
+        // q matches the name ("Product Hidden Brand {suffix}"), not the slug
+        mockMvc.perform(get("/api/v1/products")
+                        .param("q", suffix))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].slug").value(productSlug))
+                .andExpect(jsonPath("$.data[0].brand").doesNotExist());
+
+        // Public product detail: product accessible but brand must be null
+        mockMvc.perform(get("/api/v1/products/{slug}", productSlug))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(productSlug))
+                .andExpect(jsonPath("$.data.brand").doesNotExist());
+
+        // Admin product detail: brand still visible for management
+        BrandEntity brandEntity = brandJpaRepository.findBySlug(brandSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected brand."));
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("q", productSlug)
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].brand.slug").value(brandSlug));
+    }
+
     private static VariantOptionRequest variantOption(String optionName, String optionValue) {
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(optionName);

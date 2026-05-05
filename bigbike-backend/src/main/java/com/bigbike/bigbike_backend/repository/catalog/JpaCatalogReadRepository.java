@@ -188,12 +188,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Product> findProductBySlug(String slug) {
-        return productJpaRepository.findBySlug(slug).map(this::toDomain);
+        return productJpaRepository.findBySlug(slug).map(this::toDomainPublicView);
     }
 
     @Override
     public Optional<Product> findProductById(String id) {
         return productJpaRepository.findById(id).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Product> findProductByIdPublicView(String id) {
+        return productJpaRepository.findById(id).map(this::toDomainPublicView);
     }
 
     @Override
@@ -226,7 +231,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return brandJpaRepository.findById(id).map(this::toDomain);
     }
 
+    private Product toDomainPublicView(ProductEntity entity) {
+        return toDomain(entity, true);
+    }
+
     private Product toDomain(ProductEntity entity) {
+        return toDomain(entity, false);
+    }
+
+    private Product toDomain(ProductEntity entity, boolean publicView) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
         List<CategorySummary> categories = entity.getCategories() == null
                 ? List.of()
@@ -246,7 +259,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getName(),
                 entity.getShortDescription(),
                 entity.getDescription(),
-                toBrandSummary(entity.getBrand()),
+                toBrandSummary(entity.getBrand(), publicView),
                 primaryCategory,
                 categories,
                 toImageAsset(
@@ -644,7 +657,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     private BrandSummary toBrandSummary(BrandEntity entity) {
+        return toBrandSummary(entity, false);
+    }
+
+    private BrandSummary toBrandSummary(BrandEntity entity, boolean publicView) {
         if (entity == null) {
+            return null;
+        }
+        if (publicView && !entity.isVisible()) {
             return null;
         }
         return new BrandSummary(entity.getId(), entity.getSlug(), entity.getName());

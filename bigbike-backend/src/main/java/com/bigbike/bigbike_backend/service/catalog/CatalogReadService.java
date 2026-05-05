@@ -86,7 +86,7 @@ public class CatalogReadService {
      */
     public Product getProductByIdOrSlug(String key) {
         return catalogReadRepository.findProductBySlug(key)
-                .or(() -> catalogReadRepository.findProductById(key))
+                .or(() -> catalogReadRepository.findProductByIdPublicView(key))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }

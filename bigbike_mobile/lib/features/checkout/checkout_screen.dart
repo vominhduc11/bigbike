@@ -15,8 +15,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  ConsumerState<CheckoutScreen> createState() =>
-      _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
@@ -35,8 +34,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _provinceCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
-  String? _shippingCode;
-  String? _paymentCode;
+  String? _shippingMethodId;
+  String? _paymentMethodCode;
 
   @override
   void initState() {
@@ -47,8 +46,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void dispose() {
     for (final c in [
-      _nameCtrl, _phoneCtrl, _emailCtrl, _addressCtrl,
-      _wardCtrl, _districtCtrl, _provinceCtrl, _noteCtrl,
+      _nameCtrl,
+      _phoneCtrl,
+      _emailCtrl,
+      _addressCtrl,
+      _wardCtrl,
+      _districtCtrl,
+      _provinceCtrl,
+      _noteCtrl,
     ]) {
       c.dispose();
     }
@@ -58,14 +63,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _loadOptions() async {
     try {
       final data = await ApiClient().get<Map<String, dynamic>>(
-          ApiEndpoints.checkoutOptions);
+        ApiEndpoints.checkoutOptions,
+      );
       setState(() {
         _options = CheckoutOptions.fromJson(data);
         if (_options!.shippingMethods.isNotEmpty) {
-          _shippingCode = _options!.shippingMethods.first.code;
+          _shippingMethodId = _options!.shippingMethods.first.id;
         }
         if (_options!.paymentMethods.isNotEmpty) {
-          _paymentCode = _options!.paymentMethods.first.code;
+          _paymentMethodCode = _options!.paymentMethods.first.code;
         }
       });
     } catch (_) {}
@@ -77,13 +83,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(['Địa chỉ', 'Giao hàng & Thanh toán',
-            'Xác nhận'][_step]),
+        title: Text(['Địa chỉ', 'Giao hàng & Thanh toán', 'Xác nhận'][_step]),
       ),
       body: cartAsync.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(
-                color: AppColors.primary)),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
         error: (e, _) => ErrorView(message: e.toString()),
         data: (cart) => Column(
           children: [
@@ -103,35 +108,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         provinceCtrl: _provinceCtrl,
                       )
                     : _step == 1
-                        ? _ShippingPaymentStep(
-                            options: _options,
-                            shippingCode: _shippingCode,
-                            paymentCode: _paymentCode,
-                            noteCtrl: _noteCtrl,
-                            onShippingChanged: (v) =>
-                                setState(() => _shippingCode = v),
-                            onPaymentChanged: (v) =>
-                                setState(() => _paymentCode = v),
-                          )
-                        : _ReviewStep(
-                            cart: cart,
-                            name: _nameCtrl.text,
-                            phone: _phoneCtrl.text,
-                            address: _addressCtrl.text,
-                            district: _districtCtrl.text,
-                            province: _provinceCtrl.text,
-                            shippingCode: _shippingCode,
-                            paymentCode: _paymentCode,
-                            options: _options,
-                          ),
+                    ? _ShippingPaymentStep(
+                        options: _options,
+                        shippingMethodId: _shippingMethodId,
+                        paymentMethodCode: _paymentMethodCode,
+                        noteCtrl: _noteCtrl,
+                        onShippingChanged: (v) =>
+                            setState(() => _shippingMethodId = v),
+                        onPaymentChanged: (v) =>
+                            setState(() => _paymentMethodCode = v),
+                      )
+                    : _ReviewStep(
+                        cart: cart,
+                        name: _nameCtrl.text,
+                        phone: _phoneCtrl.text,
+                        address: _addressCtrl.text,
+                        district: _districtCtrl.text,
+                        province: _provinceCtrl.text,
+                        shippingMethodId: _shippingMethodId,
+                        paymentMethodCode: _paymentMethodCode,
+                        options: _options,
+                      ),
               ),
             ),
             _StepActions(
               step: _step,
               loading: _loading,
-              onBack: _step > 0
-                  ? () => setState(() => _step--)
-                  : null,
+              onBack: _step > 0 ? () => setState(() => _step--) : null,
               onNext: () => _handleNext(context, cart),
             ),
           ],
@@ -145,11 +148,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!_formKey.currentState!.validate()) return;
       setState(() => _step = 1);
     } else if (_step == 1) {
-      if (_shippingCode == null || _paymentCode == null) {
+      if (_shippingMethodId == null || _paymentMethodCode == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  'Vui lòng chọn phương thức giao hàng và thanh toán')),
+            content: Text('Vui lòng chọn phương thức giao hàng và thanh toán'),
+          ),
         );
         return;
       }
@@ -173,9 +176,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
       final payload = CheckoutPayload(
         shippingAddress: address,
-        shippingMethodCode: _shippingCode!,
-        paymentMethodCode: _paymentCode!,
-        notes: _noteCtrl.text.trim().isEmpty
+        shippingMethodId: _shippingMethodId!,
+        paymentMethod: _paymentMethodCode!,
+        customerNote: _noteCtrl.text.trim().isEmpty
             ? null
             : _noteCtrl.text.trim(),
       );
@@ -185,18 +188,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
       final confirmation = OrderConfirmation.fromJson(data);
       await ref.read(cartProvider.notifier).refresh();
-      if (mounted) {
-        context.go(
-            '/don-hang/xac-nhan?orderNumber=${confirmation.orderNumber}&orderKey=${confirmation.orderKey}');
-      }
+      if (!context.mounted) return;
+      context.go(
+        '/don-hang/xac-nhan?orderNumber=${confirmation.orderNumber}&orderKey=${confirmation.orderKey}',
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Lỗi đặt hàng: $e'),
-              backgroundColor: AppColors.error),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi đặt hàng: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -223,9 +226,7 @@ class _StepIndicator extends StatelessWidget {
                   Expanded(
                     child: Container(
                       height: 1,
-                      color: done
-                          ? AppColors.primary
-                          : AppColors.borderSubtle,
+                      color: done ? AppColors.primary : AppColors.borderSubtle,
                     ),
                   ),
                 Container(
@@ -244,16 +245,17 @@ class _StepIndicator extends StatelessWidget {
                   ),
                   child: Center(
                     child: done
-                        ? const Icon(Icons.check, size: 14,
-                            color: Colors.white)
-                        : Text('${i + 1}',
+                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        : Text(
+                            '${i + 1}',
                             style: TextStyle(
                               color: active
                                   ? Colors.white
                                   : AppColors.textMuted,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                            )),
+                            ),
+                          ),
                   ),
                 ),
                 if (i < 2)
@@ -276,8 +278,13 @@ class _StepIndicator extends StatelessWidget {
 
 class _AddressStep extends StatelessWidget {
   final GlobalKey<FormState> formKey;
-  final TextEditingController nameCtrl, phoneCtrl, emailCtrl,
-      addressCtrl, wardCtrl, districtCtrl, provinceCtrl;
+  final TextEditingController nameCtrl,
+      phoneCtrl,
+      emailCtrl,
+      addressCtrl,
+      wardCtrl,
+      districtCtrl,
+      provinceCtrl;
 
   const _AddressStep({
     required this.formKey,
@@ -296,19 +303,49 @@ class _AddressStep extends StatelessWidget {
       key: formKey,
       child: Column(
         children: [
-          _Field(ctrl: nameCtrl, label: 'Họ tên', validator: (v) => Validators.required(v, 'Họ tên')),
+          _Field(
+            ctrl: nameCtrl,
+            label: 'Họ tên',
+            validator: (v) => Validators.required(v, 'Họ tên'),
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: phoneCtrl, label: 'Số điện thoại', validator: Validators.phone, keyboardType: TextInputType.phone),
+          _Field(
+            ctrl: phoneCtrl,
+            label: 'Số điện thoại',
+            validator: Validators.phone,
+            keyboardType: TextInputType.phone,
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: emailCtrl, label: 'Email', validator: Validators.email, keyboardType: TextInputType.emailAddress),
+          _Field(
+            ctrl: emailCtrl,
+            label: 'Email',
+            validator: Validators.email,
+            keyboardType: TextInputType.emailAddress,
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: provinceCtrl, label: 'Tỉnh / Thành phố', validator: (v) => Validators.required(v, 'Tỉnh/Thành')),
+          _Field(
+            ctrl: provinceCtrl,
+            label: 'Tỉnh / Thành phố',
+            validator: (v) => Validators.required(v, 'Tỉnh/Thành'),
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: districtCtrl, label: 'Quận / Huyện', validator: (v) => Validators.required(v, 'Quận/Huyện')),
+          _Field(
+            ctrl: districtCtrl,
+            label: 'Quận / Huyện',
+            validator: (v) => Validators.required(v, 'Quận/Huyện'),
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: wardCtrl, label: 'Phường / Xã', validator: (v) => Validators.required(v, 'Phường/Xã')),
+          _Field(
+            ctrl: wardCtrl,
+            label: 'Phường / Xã',
+            validator: (v) => Validators.required(v, 'Phường/Xã'),
+          ),
           const SizedBox(height: 12),
-          _Field(ctrl: addressCtrl, label: 'Địa chỉ chi tiết', validator: (v) => Validators.required(v, 'Địa chỉ')),
+          _Field(
+            ctrl: addressCtrl,
+            label: 'Địa chỉ chi tiết',
+            validator: (v) => Validators.required(v, 'Địa chỉ'),
+          ),
         ],
       ),
     );
@@ -321,30 +358,35 @@ class _Field extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
 
-  const _Field({required this.ctrl, required this.label, this.validator, this.keyboardType});
+  const _Field({
+    required this.ctrl,
+    required this.label,
+    this.validator,
+    this.keyboardType,
+  });
 
   @override
   Widget build(BuildContext context) => TextFormField(
-        controller: ctrl,
-        validator: validator,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: AppColors.textPrimary),
-        decoration: InputDecoration(labelText: label),
-      );
+    controller: ctrl,
+    validator: validator,
+    keyboardType: keyboardType,
+    style: const TextStyle(color: AppColors.textPrimary),
+    decoration: InputDecoration(labelText: label),
+  );
 }
 
 class _ShippingPaymentStep extends StatelessWidget {
   final CheckoutOptions? options;
-  final String? shippingCode;
-  final String? paymentCode;
+  final String? shippingMethodId;
+  final String? paymentMethodCode;
   final TextEditingController noteCtrl;
   final void Function(String?) onShippingChanged;
   final void Function(String?) onPaymentChanged;
 
   const _ShippingPaymentStep({
     required this.options,
-    required this.shippingCode,
-    required this.paymentCode,
+    required this.shippingMethodId,
+    required this.paymentMethodCode,
     required this.noteCtrl,
     required this.onShippingChanged,
     required this.onPaymentChanged,
@@ -355,62 +397,84 @@ class _ShippingPaymentStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Phương thức giao hàng',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 15)),
+        const Text(
+          'Phương thức giao hàng',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
         const SizedBox(height: 8),
         if (options == null)
           const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.primary))
+            child: CircularProgressIndicator(color: AppColors.primary),
+          )
         else
-          ...options!.shippingMethods.map((m) => RadioListTile<String>(
-                value: m.code,
-                groupValue: shippingCode,
-                onChanged: onShippingChanged,
-                activeColor: AppColors.primary,
-                contentPadding: EdgeInsets.zero,
-                title: Text(m.title,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14)),
-                subtitle: m.cost > 0
-                    ? Text(formatVnd(m.cost),
-                        style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13))
-                    : const Text('Miễn phí',
-                        style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 13)),
-              )),
+          ...options!.shippingMethods.map(
+            (m) => RadioListTile<String>(
+              value: m.id,
+              groupValue: shippingMethodId,
+              onChanged: onShippingChanged,
+              activeColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                m.title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              subtitle: m.cost > 0
+                  ? Text(
+                      formatVnd(m.cost),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    )
+                  : const Text(
+                      'Miễn phí',
+                      style: TextStyle(color: AppColors.success, fontSize: 13),
+                    ),
+            ),
+          ),
         const SizedBox(height: 16),
-        const Text('Phương thức thanh toán',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 15)),
+        const Text(
+          'Phương thức thanh toán',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
         const SizedBox(height: 8),
         if (options != null)
-          ...options!.paymentMethods.map((m) => RadioListTile<String>(
-                value: m.code,
-                groupValue: paymentCode,
-                onChanged: onPaymentChanged,
-                activeColor: AppColors.primary,
-                contentPadding: EdgeInsets.zero,
-                title: Text(m.title,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14)),
-                subtitle: m.description != null
-                    ? Text(m.description!,
-                        style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12))
-                    : null,
-              )),
+          ...options!.paymentMethods.map(
+            (m) => RadioListTile<String>(
+              value: m.code,
+              groupValue: paymentMethodCode,
+              onChanged: onPaymentChanged,
+              activeColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                m.title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              subtitle: m.description != null
+                  ? Text(
+                      m.description!,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
         const SizedBox(height: 16),
         TextField(
           controller: noteCtrl,
@@ -429,7 +493,7 @@ class _ShippingPaymentStep extends StatelessWidget {
 class _ReviewStep extends StatelessWidget {
   final Cart cart;
   final String name, phone, address, district, province;
-  final String? shippingCode, paymentCode;
+  final String? shippingMethodId, paymentMethodCode;
   final CheckoutOptions? options;
 
   const _ReviewStep({
@@ -439,18 +503,18 @@ class _ReviewStep extends StatelessWidget {
     required this.address,
     required this.district,
     required this.province,
-    required this.shippingCode,
-    required this.paymentCode,
+    required this.shippingMethodId,
+    required this.paymentMethodCode,
     required this.options,
   });
 
   @override
   Widget build(BuildContext context) {
     final shipping = options?.shippingMethods
-        .where((m) => m.code == shippingCode)
+        .where((m) => m.id == shippingMethodId)
         .firstOrNull;
     final payment = options?.paymentMethods
-        .where((m) => m.code == paymentCode)
+        .where((m) => m.code == paymentMethodCode)
         .firstOrNull;
 
     return Column(
@@ -466,45 +530,60 @@ class _ReviewStep extends StatelessWidget {
           'Thanh toán: ${payment?.title ?? '—'}',
         ]),
         const SizedBox(height: 12),
-        const Text('Sản phẩm',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700)),
+        const Text(
+          'Sản phẩm',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
-        ...cart.items.map((item) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${item.productName}${item.variantName != null ? ' (${item.variantName})' : ''} x${item.quantity}',
-                      style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13),
+        ...cart.items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${item.productName}${item.variantName != null ? ' (${item.variantName})' : ''} x${item.quantity}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
                     ),
                   ),
-                  Text(formatVnd(item.lineTotal),
-                      style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            )),
+                ),
+                Text(
+                  formatVnd(item.lineTotal),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         const Divider(color: AppColors.divider, height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Tổng cộng',
-                style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16)),
-            Text(formatVnd(cart.totals.totalAmount),
-                style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18)),
+            const Text(
+              'Tổng cộng',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              formatVnd(cart.totals.totalAmount),
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
           ],
         ),
       ],
@@ -523,15 +602,24 @@ class _ReviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 4),
-          ...lines.map((l) => Text(l,
+          ...lines.map(
+            (l) => Text(
+              l,
               style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 14))),
+                color: AppColors.textPrimary,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -557,16 +645,12 @@ class _StepActions extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       decoration: const BoxDecoration(
         color: AppColors.bgSection,
-        border:
-            Border(top: BorderSide(color: AppColors.borderSubtle)),
+        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Row(
         children: [
           if (onBack != null) ...[
-            OutlinedButton(
-              onPressed: onBack,
-              child: const Text('Quay lại'),
-            ),
+            OutlinedButton(onPressed: onBack, child: const Text('Quay lại')),
             const SizedBox(width: 12),
           ],
           Expanded(
@@ -577,7 +661,10 @@ class _StepActions extends StatelessWidget {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : Text(step < 2 ? 'Tiếp tục' : 'Đặt hàng'),
             ),
           ),

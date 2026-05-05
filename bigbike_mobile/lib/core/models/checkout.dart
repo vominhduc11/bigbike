@@ -12,11 +12,11 @@ class ShippingMethod {
   });
 
   factory ShippingMethod.fromJson(Map<String, dynamic> j) => ShippingMethod(
-        id: j['id'].toString(),
-        code: j['code'] as String? ?? '',
-        title: j['title'] as String? ?? '',
-        cost: (j['cost'] as num?)?.toDouble() ?? 0,
-      );
+    id: j['id'].toString(),
+    code: j['code'] as String? ?? '',
+    title: j['title'] as String? ?? '',
+    cost: (j['cost'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 class PaymentMethod {
@@ -33,11 +33,11 @@ class PaymentMethod {
   });
 
   factory PaymentMethod.fromJson(Map<String, dynamic> j) => PaymentMethod(
-        id: j['id']?.toString() ?? (j['code'] as String? ?? ''),
-        code: j['code'] as String? ?? '',
-        title: j['title'] as String? ?? '',
-        description: j['description'] as String?,
-      );
+    id: j['id']?.toString() ?? (j['code'] as String? ?? ''),
+    code: j['code'] as String? ?? '',
+    title: j['title'] as String? ?? '',
+    description: j['description'] as String?,
+  );
 }
 
 class CheckoutOptions {
@@ -50,15 +50,15 @@ class CheckoutOptions {
   });
 
   factory CheckoutOptions.fromJson(Map<String, dynamic> j) => CheckoutOptions(
-        shippingMethods: (j['shippingMethods'] as List? ?? [])
-            .cast<Map<String, dynamic>>()
-            .map(ShippingMethod.fromJson)
-            .toList(),
-        paymentMethods: (j['paymentMethods'] as List? ?? [])
-            .cast<Map<String, dynamic>>()
-            .map(PaymentMethod.fromJson)
-            .toList(),
-      );
+    shippingMethods: (j['shippingMethods'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(ShippingMethod.fromJson)
+        .toList(),
+    paymentMethods: (j['paymentMethods'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(PaymentMethod.fromJson)
+        .toList(),
+  );
 }
 
 class CheckoutAddress {
@@ -81,15 +81,15 @@ class CheckoutAddress {
   });
 
   Map<String, dynamic> toJson() => {
-        'fullName': fullName,
-        'phone': phone,
-        'email': email,
-        'province': province,
-        'district': district,
-        'ward': ward,
-        'addressLine1': addressLine1,
-        'country': 'VN',
-      };
+    'fullName': fullName,
+    'phone': phone,
+    'email': email,
+    'province': province,
+    'district': district,
+    'ward': ward,
+    'addressLine1': addressLine1,
+    'country': 'VN',
+  };
 }
 
 class CheckoutPayload {
@@ -108,13 +108,13 @@ class CheckoutPayload {
   });
 
   Map<String, dynamic> toJson() => {
-        'shippingAddress': shippingAddress.toJson(),
-        'billingAddress': (billingAddress ?? shippingAddress).toJson(),
-        'shippingMethodId': shippingMethodId,
-        'paymentMethod': paymentMethod,
-        if (customerNote != null && customerNote!.isNotEmpty)
-          'customerNote': customerNote,
-      };
+    'shippingAddress': shippingAddress.toJson(),
+    'billingAddress': (billingAddress ?? shippingAddress).toJson(),
+    'shippingMethodId': shippingMethodId,
+    'paymentMethod': paymentMethod,
+    if (customerNote != null && customerNote!.isNotEmpty)
+      'customerNote': customerNote,
+  };
 }
 
 class OrderConfirmation {
