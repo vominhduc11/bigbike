@@ -10,7 +10,7 @@ Tài liệu này trả lời câu hỏi: **frontend/admin/mobile gọi backend n
 
 Giới hạn có chủ ý:
 
-- Không nhồi full JSON schema. Data shape chi tiết nằm ở `docs/DATA_CONTRACT.md`.
+- Không nhồi full JSON schema. Data shape chi tiết nằm ở `docs/engineering/DATA_CONTRACT.md`.
 - Không tự bịa endpoint. Endpoint nào không có evidence thì đánh dấu rõ.
 - Không ghi secret/token/password/private key/env value.
 - Không thay thế OpenAPI, controller source hay permission matrix. Đây là contract đọc được cho developer/tester/AI agent, không phải một bản sao máy móc của Swagger, vì thế giới đã đủ khổ rồi.
@@ -156,7 +156,7 @@ Giới hạn có chủ ý:
 | POST | `/api/v1/customer/auth/logout` | Logout customer | session cookie if present | `ApiDataResponse<Void>` + cleared cookies | Public but session-aware | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | POST | `/api/v1/customer/auth/password/forgot` | Request password reset | `CustomerForgotPasswordRequest` | `ApiDataResponse<Void>` | Public | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | POST | `/api/v1/customer/auth/password/reset` | Reset password | `CustomerResetPasswordRequest` | `ApiDataResponse<Void>` | Public | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
-| POST | `/api/v1/customer/auth/verify-email?token=...` | Verify email token | token query | `ApiDataResponse<{verified:true}>` | Public by controller; SecurityConfig currently lists GET permitAll, see drift | `CONFLICTING_EVIDENCE` | `CustomerAuthController.java`, `SecurityConfig.java` |
+| POST | `/api/v1/customer/auth/verify-email?token=...` | Verify email token | token query | `ApiDataResponse<{verified:true}>` | Public — `SecurityConfig` permitAll for both POST (controller path) and GET (legacy compat). BUG-001 fixed 2026-05-05. | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java:65`, `SecurityConfig.java:63-64` |
 | GET | `/api/v1/customer/me` | Get profile | none | `ApiDataResponse<CustomerSummary>` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `SecurityConfig.java` |
 | PATCH | `/api/v1/customer/me` | Update profile | `UpdateCustomerProfileRequest` | `ApiDataResponse<CustomerSummary>` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 | GET | `/api/v1/customer/addresses` | List addresses | none | `ApiDataResponse<List<CustomerAddressResponse>>` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
@@ -255,7 +255,7 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 | `bigbike-admin` | `bigbike-admin/src/lib/adminApi.js` | `/api/v1/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | `CONFIRMED_FROM_CODE` | `adminApi.js`, `AuthController.java` |
 | `bigbike-admin` | `adminApi.js` | `/api/v1/admin/products`, `/categories`, `/brands`, `/content`, `/redirects`, `/orders`, `/customers` | `CONFIRMED_FROM_CODE` | `adminApi.js`, admin controllers |
 | `bigbike-admin` | `adminApi.js` | Additional admin modules: media/settings/coupons/menus/shipping/reviews/reports/sliders/home-videos/admin-users/roles likely exist in same client; detailed lines partially truncated by fetch output | `NEEDS_VERIFICATION` | `adminApi.js`, respective controllers |
-| `bigbike_mobile` | Dart API client not found by repository search in current audit; route/screens exist and status badge consumes backend enum values | Customer/product/cart/order APIs likely intended | `NEEDS_VERIFICATION` | `bigbike_mobile/lib/core/widgets/status_badge.dart`, mobile router path from architecture docs |
+| `bigbike_mobile` | `bigbike_mobile/lib/core/api/api_client.dart`, `api_endpoints.dart`, `api_exception.dart` exist; per-endpoint mapping/payload not yet field-by-field audited | Customer/product/cart/order APIs likely intended | `NEEDS_VERIFICATION` for endpoint-level mapping | `bigbike_mobile/lib/core/api/api_client.dart`, `bigbike_mobile/lib/core/api/api_endpoints.dart`, `bigbike_mobile/lib/core/api/api_exception.dart`, `bigbike_mobile/lib/core/widgets/status_badge.dart` |
 
 ## 10. Pagination / Filtering / Sorting Contract
 
@@ -297,7 +297,7 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 
 | Area | Issue | Risk | Evidence |
 |---|---|---|---|
-| Customer email verify | `SecurityConfig` permits `GET /api/v1/customer/auth/verify-email`, but `CustomerAuthController` implements `POST /verify-email` with token query. | Email verify route may be blocked by auth or docs/client may call wrong method. | `SecurityConfig.java`, `CustomerAuthController.java` |
+| Customer email verify (RESOLVED 2026-05-05) | `SecurityConfig` now permits both `POST` (controller) and `GET` (legacy) for `/api/v1/customer/auth/verify-email`. BUG-001 fixed. | None — POST flow works. | `SecurityConfig.java:63-64`, `CustomerAuthController.java:65` |
 | Response envelope consistency | Most APIs use `ApiDataResponse`/`ApiListResponse`, but customer returns, admin inventory/returns/reports/internal redirects return raw DTO/PageResult/CSV. | Client parsing must handle multiple shapes; API contract is not uniform. | `CustomerOrderController.java`, `AdminInventoryController.java`, `AdminReturnController.java`, `AdminReportController.java`, `InternalRedirectController.java` |
 | Admin content type path | Admin client detail path uses singular `article/page`; mutation path uses plural `articles/pages`; backend intentionally supports singular in `/{type}/{id}` and plural in create/update. | Easy to call wrong route from new clients. | `AdminContentController.java`, `adminApi.js` |
 
@@ -315,7 +315,7 @@ No hard `FRONTEND_ONLY` API was confirmed from the audited `bigbike-web` and vis
 
 ### NEEDS_VERIFICATION
 
-- Full `bigbike_mobile` network layer/API caller mapping.
+- `bigbike_mobile` per-endpoint mapping (network layer file `bigbike_mobile/lib/core/api/api_client.dart` and constants in `api_endpoints.dart` exist; field-by-field caller mapping not yet audited).
 - Full `adminApi.js` lower-section mapping for media/settings/coupons/menus/shipping/reviews/reports/sliders/home-videos/admin-users/roles because fetched file output was truncated after the order/customer section.
 - Detailed `AdminAuditLogController` and `AdminPosController` endpoint tables.
 - Exact payload shapes for Map-based admin endpoints: shipping, roles, admin-users, reviews, redirects.
@@ -327,7 +327,7 @@ No hard `FRONTEND_ONLY` API was confirmed from the audited `bigbike-web` and vis
 
 | Area | Evidence Path | What It Proves | Confidence |
 |---|---|---|---|
-| Existing docs | `docs/ARCHITECTURE.md`, `docs/DATA_CONTRACT.md`, `docs/business/*` | Architecture/data context and module boundaries | High |
+| Existing docs | `docs/engineering/ARCHITECTURE.md`, `docs/engineering/DATA_CONTRACT.md`, `docs/business/*` | Architecture/data context and module boundaries | High |
 | OpenAPI | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` | Published API tags/paths/response envelope intent | Medium; still cross-checked with controllers |
 | Security | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java` | Public/admin/customer auth boundaries, CSRF comments, WebSocket/internal route posture | High |
 | Response wrappers | `api/common/ApiDataResponse.java`, `ApiListResponse.java`, `PaginationMeta.java`, `ApiErrorResponse.java`, `ApiError.java`, `ApiErrorDetail.java` | Standard success/list/error envelope shapes | High |
@@ -342,7 +342,7 @@ No hard `FRONTEND_ONLY` API was confirmed from the audited `bigbike-web` and vis
 | Admin governance/reporting | `AdminDashboardController.java`, `AdminReportController.java`, `AdminAdminUsersController.java`, `AdminRolesController.java`, `AdminReviewController.java`, `AdminRedirectController.java`, `InternalRedirectController.java` | Dashboard/report/user/role/review/redirect/internal APIs | High |
 | Web client mapping | `bigbike-web/lib/api/public-api.ts` | Public web API calls and query params | High |
 | Admin client mapping | `bigbike-admin/src/lib/adminApi.js` | Admin auth/catalog/content/redirect/order/customer API calls and normalization; lower sections truncated | Medium |
-| Mobile mapping | `bigbike_mobile/lib/core/widgets/status_badge.dart`, router evidence from architecture | Mobile consumes status enums; full network layer not found in current search | Low/Needs verification |
+| Mobile mapping | `bigbike_mobile/lib/core/api/api_client.dart`, `api_endpoints.dart`, `api_exception.dart`, `lib/core/widgets/status_badge.dart`, router evidence from architecture | Mobile network layer file confirmed (Dio-based client, endpoint constants); field-by-field per-endpoint mapping not yet audited | Medium / per-endpoint mapping needs verification |
 
 ## 14. Relationship With Other Docs
 
@@ -369,7 +369,7 @@ No hard `FRONTEND_ONLY` API was confirmed from the audited `bigbike-web` and vis
 
 | File | Action |
 |---|---|
-| `docs/API_CONTRACT.md` | Created |
+| `docs/engineering/API_CONTRACT.md` | Created |
 
 ### API groups documented
 

@@ -19,7 +19,6 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
-import com.bigbike.bigbike_backend.service.pos.PosExpiredOrderCleanupJob;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -49,7 +48,6 @@ class Phase1MPosApiTest {
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired OrderJpaRepository orderRepo;
     @Autowired PasswordService passwordService;
-    @Autowired PosExpiredOrderCleanupJob cleanupJob;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -174,85 +172,6 @@ class Phase1MPosApiTest {
         int qtyAfterRetry = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
         assertThat(qtyAfterRetry).isEqualTo(7); // still 7, not 4
     }
-
-    // ── 8. POS BANK_TRANSFER — ON_HOLD, expires → job cancels and restores stock
-
-    @Test
-    void posExpiredCleanup_cancelsOrderAndRestoresStock() throws Exception {
-        TestVariant tv = createProductWithVariant(10, 400000);
-
-        // Create bank transfer POS order
-        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(posOrderBodyWithQty("BANK_TRANSFER", tv.productId, tv.variantId, 2,
-                                UUID.randomUUID().toString())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
-                .andReturn();
-
-        UUID orderId = UUID.fromString(extractJsonUuid(result.getResponse().getContentAsString(), "orderId"));
-
-        // Verify stock was decremented
-        assertThat(variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand()).isEqualTo(8);
-
-        // Simulate expiry: set pendingPaymentExpiresAt to past
-        var order = orderRepo.findById(orderId).orElseThrow();
-        order.setPendingPaymentExpiresAt(Instant.now().minusSeconds(120));
-        orderRepo.save(order);
-
-        // Run cleanup job
-        cleanupJob.cancelExpiredPosOrders();
-
-        // Order should be CANCELLED
-        var cancelled = orderRepo.findById(orderId).orElseThrow();
-        assertThat(cancelled.getStatus()).isEqualTo("CANCELLED");
-        assertThat(cancelled.getPaymentStatus()).isEqualTo("CANCELLED");
-
-        // Stock should be restored
-        assertThat(variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand()).isEqualTo(10);
-    }
-
-    // ── 9. POS BANK_TRANSFER confirmed PAID → COMPLETED, not cancelled by job ─
-
-    @Test
-    void posExpiredCleanup_confirmedPaidOrder_notCancelledByJob() throws Exception {
-        TestVariant tv = createProductWithVariant(10, 600000);
-
-        // Create bank transfer POS order
-        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(posOrderBodyWithQty("BANK_TRANSFER", tv.productId, tv.variantId, 1,
-                                UUID.randomUUID().toString())))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        UUID orderId = UUID.fromString(extractJsonUuid(result.getResponse().getContentAsString(), "orderId"));
-
-        // Confirm payment → order should auto-complete
-        mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\"}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
-
-        // Simulate expiry
-        var order = orderRepo.findById(orderId).orElseThrow();
-        order.setPendingPaymentExpiresAt(Instant.now().minusSeconds(120));
-        orderRepo.save(order);
-
-        // Run cleanup job — order is COMPLETED, not ON_HOLD, so job should skip it
-        cleanupJob.cancelExpiredPosOrders();
-
-        // Order should still be COMPLETED
-        var after = orderRepo.findById(orderId).orElseThrow();
-        assertThat(after.getStatus()).isEqualTo("COMPLETED");
-    }
-
-    // ── 10. POS create — no auth → 401 ───────────────────────────────────────
 
     @Test
     void createPosOrder_noAuth_returns401() throws Exception {

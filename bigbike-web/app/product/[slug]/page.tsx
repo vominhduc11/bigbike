@@ -17,6 +17,7 @@ import {
 } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeArray, safeText } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import {
   toCanonicalUrl,
   toCategoryPath,
@@ -262,7 +263,7 @@ export default async function ProductDetailPage({
         {product.contentBottom && product.contentBottom.trim() && (
           <section
             className="wp-pdp-content-bottom wp-content"
-            dangerouslySetInnerHTML={{ __html: product.contentBottom }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.contentBottom) }}
           />
         )}
       </div>

@@ -6374,8 +6374,7 @@
             "type": "string",
             "enum": [
               "CASH",
-              "CARD_TERMINAL",
-              "BANK_TRANSFER"
+              "CARD_TERMINAL"
             ]
           },
           "tenderedAmount": {
@@ -6411,11 +6410,11 @@
           },
           "status": {
             "type": "string",
-            "description": "COMPLETED for CASH/CARD_TERMINAL; ON_HOLD for BANK_TRANSFER"
+            "description": "COMPLETED for CASH/CARD_TERMINAL"
           },
           "paymentStatus": {
             "type": "string",
-            "description": "PAID for CASH/CARD_TERMINAL; UNPAID for BANK_TRANSFER"
+            "description": "PAID for CASH/CARD_TERMINAL"
           },
           "paymentMethod": {
             "type": "string"
@@ -6431,28 +6430,6 @@
             "type": "integer",
             "nullable": true,
             "description": "Change to return to customer (CASH only)"
-          },
-          "qrVietQrUrl": {
-            "type": "string",
-            "nullable": true,
-            "description": "VietQR image URL (BANK_TRANSFER only)"
-          },
-          "transferContent": {
-            "type": "string",
-            "nullable": true,
-            "description": "Bank transfer content/reference (BANK_TRANSFER only)"
-          },
-          "bankName": {
-            "type": "string",
-            "nullable": true
-          },
-          "accountNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "accountHolder": {
-            "type": "string",
-            "nullable": true
           }
         }
       }

@@ -39,4 +39,13 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(output).toContain("[gallery]");
     expect(output).not.toContain("[[gallery]]");
   });
+
+  it("strips inline event handlers from rich html", () => {
+    const input = '<p><img src=x onerror=alert(1)>Safe</p>';
+    const output = sanitizeRichHtml(input);
+    expect(output).not.toContain("onerror");
+    expect(output).not.toContain("alert(1)");
+    expect(output).toContain("<img");
+    expect(output).toContain("Safe");
+  });
 });

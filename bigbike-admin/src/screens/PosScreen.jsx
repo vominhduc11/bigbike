@@ -3,10 +3,10 @@ import { Minus, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
-import { posCreateOrder, posSearchProducts, updateOrderPaymentStatus } from '../lib/adminApi'
+import { posCreateOrder, posSearchProducts } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 
-const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'BANK_TRANSFER']
+const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL']
 
 function priceOf(priceObj) {
   if (priceObj == null) return 0
@@ -19,96 +19,6 @@ function summarizeOptions(options) {
   return options.map((o) => o.value ?? o.name ?? '').filter(Boolean).join(' / ')
 }
 
-function QrConfirmModal({ orderId, orderNumber, amountVnd, qrUrl, transferContent, bankName, accountNumber, accountHolder, onClose }) {
-  const [confirming, setConfirming] = useState(false)
-  const [confirmError, setConfirmError] = useState('')
-  const [paid, setPaid] = useState(false)
-
-  async function handleConfirmPaid() {
-    setConfirming(true)
-    setConfirmError('')
-    try {
-      await updateOrderPaymentStatus(orderId, 'PAID', amountVnd)
-      setPaid(true)
-    } catch (err) {
-      setConfirmError(err.message || 'Không thể xác nhận thanh toán.')
-    } finally {
-      setConfirming(false)
-    }
-  }
-
-  return (
-    <div className="pos-modal-overlay" onClick={onClose}>
-      <div className="pos-modal" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="pos-modal-close btn btn-secondary btn-icon" onClick={onClose}>
-          <X size={16} />
-        </button>
-
-        {paid ? (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--admin-color-success,#22c55e)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" />
-            </svg>
-            <h3 style={{ marginTop: 12 }}>Đã xác nhận thanh toán!</h3>
-            <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.9rem' }}>Đơn {orderNumber} đã được cập nhật.</p>
-            <button type="button" className="btn btn-primary" style={{ marginTop: 20 }} onClick={onClose}>Đóng</button>
-          </div>
-        ) : (
-          <>
-            <h3 style={{ marginTop: 0, marginBottom: 4 }}>Quét QR thanh toán</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: 16 }}>
-              Đơn <strong>{orderNumber}</strong> — {formatCurrencyVnd(amountVnd)}
-            </p>
-
-            {qrUrl ? (
-              <img
-                src={qrUrl}
-                alt="QR thanh toán"
-                width={260}
-                height={260}
-                style={{ borderRadius: 8, background: '#fff', padding: 8, display: 'block', margin: '0 auto 16px' }}
-              />
-            ) : (
-              <div className="state-panel" style={{ padding: '32px 0' }}>Đang tải QR...</div>
-            )}
-
-            {(transferContent || accountNumber) && (
-              <div style={{ background: 'var(--admin-color-surface-raised)', borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem', marginBottom: 12 }}>
-                {bankName && <div style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.75rem', marginBottom: 2 }}>{bankName}</div>}
-                {accountNumber && (
-                  <div><strong>{accountNumber}</strong>{accountHolder ? ` — ${accountHolder}` : ''}</div>
-                )}
-                {transferContent && (
-                  <div style={{ marginTop: 6 }}>
-                    <span style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.75rem' }}>Nội dung CK: </span>
-                    <strong>{transferContent}</strong>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <p style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
-              Sau khi khách chuyển khoản và bạn đã thấy tiền về tài khoản, bấm nút bên dưới để xác nhận đơn.
-            </p>
-
-            {confirmError && <p className="field-error" style={{ marginBottom: 8 }}>{confirmError}</p>}
-
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              onClick={handleConfirmPaid}
-              disabled={confirming}
-            >
-              {confirming ? 'Đang xác nhận...' : 'Đã nhận tiền — Xác nhận thanh toán'}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function PaymentModal({ cart, total, onClose, onSuccess }) {
   const { t } = useTranslation()
   const [method, setMethod] = useState('CASH')
@@ -119,7 +29,6 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
   const [cardRef, setCardRef] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [posResult, setPosResult] = useState(null)
   const [idempotencyKey] = useState(() =>
     typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
   )
@@ -148,32 +57,12 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
           quantity: item.qty,
         })),
       })
-      if (method === 'BANK_TRANSFER') {
-        setPosResult(result)
-      } else {
-        onSuccess(result)
-      }
+      onSuccess(result)
     } catch (err) {
       setError(err.message || 'Lỗi khi tạo đơn hàng.')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (posResult && method === 'BANK_TRANSFER') {
-    return (
-      <QrConfirmModal
-        orderId={posResult.orderId ?? posResult.id}
-        orderNumber={posResult.orderNumber}
-        amountVnd={total}
-        qrUrl={posResult.qrVietQrUrl}
-        transferContent={posResult.transferContent}
-        bankName={posResult.bankName}
-        accountNumber={posResult.accountNumber}
-        accountHolder={posResult.accountHolder}
-        onClose={() => onSuccess(posResult)}
-      />
-    )
   }
 
   return (

@@ -36,9 +36,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     // ── POS background jobs ───────────────────────────────────────────────────
 
-    @Query("SELECT o FROM OrderEntity o WHERE o.channel = 'IN_STORE' AND o.status = 'ON_HOLD' AND o.paymentMethod = 'BANK_TRANSFER' AND o.pendingPaymentExpiresAt IS NOT NULL AND o.pendingPaymentExpiresAt < :now")
-    List<OrderEntity> findExpiredPosOrders(@Param("now") Instant now);
-
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o WHERE o.placedAt >= :from")

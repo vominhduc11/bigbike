@@ -57,8 +57,8 @@ Scope:
 | Product Management Process | Products, Categories, Brands, Media, Inventory | Admin, Staff, Shop Manager | `CONFIRMED` for admin/backend; tests partial | `docs/business/BUSINESS_PROCESS.md`, `docs/business/MODULE_CATALOG.md`, `AdminCatalogController.java`, `bigbike-admin/src/App.jsx`, `bigbike-admin/src/lib/adminApi.js` |
 | Product Publishing Process | Products, SEO, Public Catalog | Admin, System, Guest | `PARTIAL` | `AdminCatalogController.java`, `AdminCatalogMutationService.java`, `CatalogController.java`, `docs/business/STATE_MACHINES.md` |
 | Customer Product Browsing Process | Homepage, Product Listing, PDP, Category, Brand, Search, Content | Guest, Customer | `CONFIRMED`; runtime smoke missing | `bigbike-web/lib/utils/routes.ts`, `bigbike-web/lib/api/public-api.ts`, `bigbike_mobile/lib/core/router/app_router.dart`, `SecurityConfig.java` |
-| Cart / Checkout Process | Cart, Checkout, Orders, Payment, Shipping, Inventory, Coupons, Notification | Guest, Customer, System | `CONFIRMED` backend flow; tests partial | `CartController.java`, `CheckoutController.java`, `CheckoutService.java`, `client-api.ts`, `docs/API_FLOW_MAP.md` |
-| Order Management Process | Orders, Payment, Audit, Notification, WebSocket, Inventory | Admin, Staff, System | `CONFIRMED`; transition tests partial | `AdminOrderController.java`, `AdminOrderService.java`, `adminApi.js`, `docs/API_FLOW_MAP.md` |
+| Cart / Checkout Process | Cart, Checkout, Orders, Payment, Shipping, Inventory, Coupons, Notification | Guest, Customer, System | `CONFIRMED` backend flow; tests partial | `CartController.java`, `CheckoutController.java`, `CheckoutService.java`, `client-api.ts`, `docs/engineering/API_FLOW_MAP.md` |
+| Order Management Process | Orders, Payment, Audit, Notification, WebSocket, Inventory | Admin, Staff, System | `CONFIRMED`; transition tests partial | `AdminOrderController.java`, `AdminOrderService.java`, `adminApi.js`, `docs/engineering/API_FLOW_MAP.md` |
 | Payment Handling Process | Payment, Orders, Refunds | Customer, Admin, System | `PARTIAL` | `CheckoutService.java`, `AdminOrderService.java`; external provider not found |
 | Shipping / Fulfillment Process | Shipping, Checkout, Orders | Admin, Customer, System | `PARTIAL` | `AdminShippingController`, `CheckoutService.java`; carrier not found |
 | Inventory Management Process | Inventory, Products, Orders, Returns | Admin, Staff, System | `CONFIRMED`; concurrency tests missing | `AdminInventoryController.java`, `CheckoutService.java`, `AdminOrderService.java`, `AdminReturnService.java` |
@@ -135,7 +135,7 @@ Scope:
 
 ## 8. API / Action → Permission Matrix
 
-`/docs/PERMISSION_MATRIX.md` was not found. This table uses `SecurityConfig`, admin route guard, controllers and role docs.
+`/docs/engineering/PERMISSION_MATRIX.md` was not found. This table uses `SecurityConfig`, admin route guard, controllers and role docs.
 
 | Action | API / Route | Required Role | Required Permission | Backend Enforced | Frontend Guard | Status | Evidence |
 |---|---|---|---|---|---|---|---|
@@ -236,7 +236,7 @@ Scope:
 
 ## 13. Deployment / Release Traceability
 
-`docs/DEPLOYMENT_GUIDE.md` was not found. Deployment trace is derived from CI and Docker Compose.
+`docs/engineering/DEPLOYMENT_GUIDE.md` was not found. Deployment trace is derived from CI and Docker Compose.
 
 | Component | Build Command | Runtime Config | Health Check | Test Gate | Status | Evidence |
 |---|---|---|---|---|---|---|
@@ -316,14 +316,14 @@ Scope:
 | Business rules | `docs/business/BUSINESS_RULES.md` | Rule IDs, enforcement and test gaps. | High |
 | State machines | `docs/business/STATE_MACHINES.md` | Entity transitions and forbidden transitions. | High |
 | Acceptance criteria | `docs/business/ACCEPTANCE_CRITERIA.md` | Done/pass/partial/missing criteria. | High |
-| Architecture | `docs/ARCHITECTURE.md` | Component boundaries and architecture context. | Medium-High |
-| Data contract | `docs/DATA_CONTRACT.md` | Canonical data ownership and drift. | High |
-| API contract | `docs/API_CONTRACT.md` | Endpoint inventory and API behavior expectations. | High |
-| Permission matrix | `docs/PERMISSION_MATRIX.md` | Not found at requested path. | N/A |
-| API flow map | `docs/API_FLOW_MAP.md` | Workflow to API/service/data/security chain. | High |
-| Integration guide | `docs/INTEGRATION_GUIDE.md` | Not found at requested path. | N/A |
-| Testing guide | `docs/TESTING_GUIDE.md` | Scripts, CI gates, historical evidence and missing coverage. | High |
-| Deployment guide | `docs/DEPLOYMENT_GUIDE.md` | Not found at requested path. | N/A |
+| Architecture | `docs/engineering/ARCHITECTURE.md` | Component boundaries and architecture context. | Medium-High |
+| Data contract | `docs/engineering/DATA_CONTRACT.md` | Canonical data ownership and drift. | High |
+| API contract | `docs/engineering/API_CONTRACT.md` | Endpoint inventory and API behavior expectations. | High |
+| Permission matrix | `docs/engineering/PERMISSION_MATRIX.md` | Not found at requested path. | N/A |
+| API flow map | `docs/engineering/API_FLOW_MAP.md` | Workflow to API/service/data/security chain. | High |
+| Integration guide | `docs/engineering/INTEGRATION_GUIDE.md` | Not found at requested path. | N/A |
+| Testing guide | `docs/engineering/TESTING_GUIDE.md` | Scripts, CI gates, historical evidence and missing coverage. | High |
+| Deployment guide | `docs/engineering/DEPLOYMENT_GUIDE.md` | Not found at requested path. | N/A |
 | Public web | `bigbike-web/lib/utils/routes.ts`, `bigbike-web/lib/api/public-api.ts`, `bigbike-web/lib/api/client-api.ts` | Public/customer routes and API clients. | High |
 | Admin | `bigbike-admin/src/App.jsx`, `bigbike-admin/src/lib/adminApi.js` | Admin routes, permissions and API client. | High |
 | Mobile | `bigbike_mobile/lib/core/router/app_router.dart`, `bigbike_mobile/lib/core/api/api_endpoints.dart` | Mobile routes/endpoints. | High |

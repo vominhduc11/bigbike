@@ -546,7 +546,6 @@ com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderFeeItemEntity
 com\bigbike\bigbike_backend\api\order\dto\CreateReturnRequest.class
 com\bigbike\bigbike_backend\service\admin\AdminHomeVideoService.class
 com\bigbike\bigbike_backend\api\customer\dto\CustomerForgotPasswordRequest.class
-com\bigbike\bigbike_backend\service\pos\PosExpiredOrderCleanupJob.class
 com\bigbike\bigbike_backend\api\internal\InternalRedirectController$RedirectLookupResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\ReviewImporter.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressWooCommerceOrderItemMapper$MappedCouponItem.class

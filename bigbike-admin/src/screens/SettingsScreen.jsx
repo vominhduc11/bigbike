@@ -80,9 +80,8 @@ const TAB_ORDER = [
 ]
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
-// - PAYMENT_SEPAY: cổng thanh toán đã gỡ
 // - SECURITY: thiết lập kỹ thuật (login attempts, session timeout) — devops set, không phải admin shop
-const HIDDEN_GROUPS = new Set(['PAYMENT_SEPAY', 'SECURITY'])
+const HIDDEN_GROUPS = new Set(['SECURITY'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND

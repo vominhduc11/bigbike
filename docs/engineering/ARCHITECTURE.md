@@ -107,7 +107,7 @@ Evidence:
 | `bigbike_mobile/` | Mobile companion boundary. | Mobile routes for home/products/cart/checkout/auth/account/orders/returns/search/articles/contact/content. | Backend rule enforcement, admin operations unless explicitly implemented later. | `CONFIRMED_FROM_CODE`; production scope `NEEDS_VERIFICATION` | `bigbike_mobile/pubspec.yaml`, `bigbike_mobile/lib/core/router/app_router.dart` |
 | `Bigbike Design System/` | Brand/design source-of-truth boundary. | Brand context, colors, typography, logos, icons, UI kit/prototype references. | Runtime business behavior, API contracts, production data contracts. | `CONFIRMED_FROM_CODE` | `Bigbike Design System/README.md`, `Bigbike Design System/colors_and_type.css` |
 | `docs/business/` | Business documentation boundary. | Project overview, business process, module catalog, roles, workflows, rules, state machines, acceptance criteria. | Technical runtime architecture detail. | `CONFIRMED_FROM_CODE` for existing files found; some requested docs may need verification. | `docs/business/PROJECT_OVERVIEW.md`, `BUSINESS_PROCESS.md`, `MODULE_CATALOG.md`, `WORKFLOW_OVERVIEW.md` |
-| `docs/ARCHITECTURE.md` | Technical architecture boundary. | This file. Explains app/service/layer/runtime/integration/deployment shape. | API request/response detail, full DB schema, deep business rules. | `CONFIRMED_FROM_CODE` after creation. | `docs/ARCHITECTURE.md` |
+| `docs/engineering/ARCHITECTURE.md` | Technical architecture boundary. | This file. Explains app/service/layer/runtime/integration/deployment shape. | API request/response detail, full DB schema, deep business rules. | `CONFIRMED_FROM_CODE` after creation. | `docs/engineering/ARCHITECTURE.md` |
 
 ## 6. Frontend Architecture
 

@@ -45,8 +45,8 @@ public class PosOrderService {
             String customerName,
             String customerPhone,
             String customerNote,
-            String paymentMethod,        // CASH | CARD_TERMINAL | BANK_TRANSFER
-            Long tenderedAmount,         // Tiền khách đưa (cho CASH), null cho BANK_TRANSFER/CARD
+            String paymentMethod,        // CASH | CARD_TERMINAL
+            Long tenderedAmount,         // Tiền khách đưa (cho CASH), null cho CARD
             String staffNote,
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
             String cardReferenceNumber   // Optional: mã giao dịch thẻ / terminal ref
@@ -60,12 +60,7 @@ public class PosOrderService {
             String paymentMethod,
             BigDecimal totalAmount,
             Long tenderedAmount,
-            Long changeAmount,
-            String qrVietQrUrl,       // null nếu không phải BANK_TRANSFER
-            String transferContent,   // nội dung chuyển khoản (= order number)
-            String bankName,
-            String accountNumber,
-            String accountHolder
+            Long changeAmount
     ) {}
 
     private static final String CHANNEL_IN_STORE = "IN_STORE";
@@ -127,8 +122,7 @@ public class PosOrderService {
                 }
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
-                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
-                        null, null, null, null, null);
+                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt);
             }
         }
 
@@ -201,8 +195,6 @@ public class PosOrderService {
         }
 
         // POS: không có phí ship, trả tiền ngay
-        boolean isPaidImmediately = "CASH".equals(req.paymentMethod()) || "CARD_TERMINAL".equals(req.paymentMethod());
-
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
         order.setOrderKey(req.posIdempotencyKey() != null && !req.posIdempotencyKey().isBlank()
@@ -211,8 +203,8 @@ public class PosOrderService {
         order.setChannel(CHANNEL_IN_STORE);
         order.setFulfillmentType(FULFILLMENT_IN_STORE);
         order.setPaymentMethod(req.paymentMethod());
-        order.setStatus(isPaidImmediately ? "COMPLETED" : "ON_HOLD");
-        order.setPaymentStatus(isPaidImmediately ? "PAID" : "UNPAID");
+        order.setStatus("COMPLETED");
+        order.setPaymentStatus("PAID");
         order.setCustomerPhone(req.customerPhone());
         order.setCustomerNote(req.customerNote());
         order.setCurrency("VND");
@@ -222,15 +214,10 @@ public class PosOrderService {
         order.setFeeAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTaxAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTotalAmount(subtotal);
-        order.setPaidAmount(isPaidImmediately ? subtotal : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+        order.setPaidAmount(subtotal);
         order.setSource("pos");
-        if (isPaidImmediately) {
-            order.setPaidAt(now);
-            order.setCompletedAt(now);
-        } else {
-            // BANK_TRANSFER at POS: expires in 30 minutes (tại quầy, không chờ 48h)
-            order.setPendingPaymentExpiresAt(now.plusSeconds(30 * 60));
-        }
+        order.setPaidAt(now);
+        order.setCompletedAt(now);
         order.setPlacedAt(now);
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
@@ -249,11 +236,11 @@ public class PosOrderService {
         PaymentEntity payment = new PaymentEntity();
         payment.setOrder(savedOrder);
         payment.setPaymentMethod(req.paymentMethod());
-        payment.setProvider(isPaidImmediately ? "POS" : "MANUAL");
-        payment.setStatus(isPaidImmediately ? "PAID" : "PENDING");
+        payment.setProvider("POS");
+        payment.setStatus("PAID");
         payment.setAmount(subtotal);
         payment.setCurrency("VND");
-        if (isPaidImmediately) payment.setPaidAt(now);
+        payment.setPaidAt(now);
         payment.setCreatedAt(now);
         payment.setUpdatedAt(now);
         paymentRepo.save(payment);
@@ -287,8 +274,7 @@ public class PosOrderService {
                 savedOrder.getId(), savedOrder.getOrderNumber(),
                 savedOrder.getStatus(), savedOrder.getPaymentStatus(),
                 req.paymentMethod(), subtotal,
-                req.tenderedAmount(), changeAmount,
-                null, null, null, null, null
+                req.tenderedAmount(), changeAmount
         );
     }
 
@@ -331,8 +317,8 @@ public class PosOrderService {
     }
 
     private void validatePaymentMethod(String method) {
-        if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method) && !"BANK_TRANSFER".equals(method)) {
-            throw new ConflictException("POS payment method must be CASH, CARD_TERMINAL, or BANK_TRANSFER.");
+        if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method)) {
+            throw new ConflictException("POS payment method must be CASH or CARD_TERMINAL.");
         }
     }
 

@@ -386,10 +386,25 @@ public class AdminCatalogMutationService {
                 errors
         );
 
-        BigDecimal mergedRetail = request.getRetailPrice() != null ? request.getRetailPrice() : (current == null ? null : current.getRetailPrice());
-        BigDecimal mergedCompareAt = request.getCompareAtPrice() != null ? request.getCompareAtPrice() : (current == null ? null : current.getCompareAtPrice());
-        BigDecimal mergedSale = request.getSalePrice() != null ? request.getSalePrice() : (current == null ? null : current.getSalePrice());
+        BigDecimal mergedRetail = request.isRetailPricePresent()
+                ? request.getRetailPrice()
+                : (current == null ? null : current.getRetailPrice());
+        BigDecimal mergedCompareAt = request.isCompareAtPricePresent()
+                ? request.getCompareAtPrice()
+                : (current == null ? null : current.getCompareAtPrice());
+        BigDecimal mergedSale = request.isSalePricePresent()
+                ? request.getSalePrice()
+                : (current == null ? null : current.getSalePrice());
         AdminMutationValidators.validateSalePriceRule(mergedRetail, mergedCompareAt, mergedSale, "salePrice", errors);
+
+        Map<String, ProductVariantEntity> currentVariantsById = new HashMap<>();
+        if (current != null && current.getVariants() != null) {
+            for (ProductVariantEntity existingVariant : current.getVariants()) {
+                if (existingVariant.getId() != null) {
+                    currentVariantsById.put(existingVariant.getId(), existingVariant);
+                }
+            }
+        }
 
         if (request.getVariants() != null) {
             for (int i = 0; i < request.getVariants().size(); i++) {
@@ -397,7 +412,23 @@ public class AdminCatalogMutationService {
                 AdminMutationValidators.validateNonNegativeDecimal(v.getRetailPrice(), "variants[" + i + "].retailPrice", "retailPrice", errors);
                 AdminMutationValidators.validateNonNegativeDecimal(v.getCompareAtPrice(), "variants[" + i + "].compareAtPrice", "compareAtPrice", errors);
                 AdminMutationValidators.validateNonNegativeDecimal(v.getSalePrice(), "variants[" + i + "].salePrice", "salePrice", errors);
-                AdminMutationValidators.validateSalePriceRule(v.getRetailPrice(), v.getCompareAtPrice(), v.getSalePrice(), "variants[" + i + "].salePrice", errors);
+                ProductVariantEntity currentVariant = currentVariantsById.get(AdminMutationValidators.trimToNull(v.getId()));
+                BigDecimal mergedVariantRetail = v.isRetailPricePresent()
+                        ? v.getRetailPrice()
+                        : (currentVariant == null ? null : currentVariant.getRetailPrice());
+                BigDecimal mergedVariantCompareAt = v.isCompareAtPricePresent()
+                        ? v.getCompareAtPrice()
+                        : (currentVariant == null ? null : currentVariant.getCompareAtPrice());
+                BigDecimal mergedVariantSale = v.isSalePricePresent()
+                        ? v.getSalePrice()
+                        : (currentVariant == null ? null : currentVariant.getSalePrice());
+                validateVariantSalePriceRule(
+                        mergedVariantRetail,
+                        mergedVariantCompareAt,
+                        mergedVariantSale,
+                        "variants[" + i + "].salePrice",
+                        errors
+                );
                 if (hasGalleryRequests(v.getGallery()) && variantColorKey(v) == null) {
                     errors.add(new ApiErrorDetail(
                             "variants[" + i + "].gallery",
@@ -423,6 +454,23 @@ public class AdminCatalogMutationService {
         }
 
         return slug;
+    }
+
+    private static void validateVariantSalePriceRule(
+            BigDecimal retailPrice,
+            BigDecimal compareAtPrice,
+            BigDecimal salePrice,
+            String field,
+            List<ApiErrorDetail> errors
+    ) {
+        if (salePrice == null || retailPrice == null) {
+            return;
+        }
+
+        BigDecimal reference = compareAtPrice != null ? compareAtPrice : retailPrice;
+        if (salePrice.compareTo(reference) >= 0) {
+            errors.add(new ApiErrorDetail(field, "INVALID_VALUE", "salePrice must be lower than compareAtPrice or retailPrice."));
+        }
     }
 
     private CategoryEntity validateAndResolveCategory(String categoryIdRaw, boolean create, List<ApiErrorDetail> errors) {
@@ -846,7 +894,8 @@ public class AdminCatalogMutationService {
 
             String reqId = AdminMutationValidators.trimToNull(req.getId());
             ProductVariantEntity variant = (reqId != null) ? existingById.get(reqId) : null;
-            if (variant == null) {
+            boolean createVariant = variant == null;
+            if (createVariant) {
                 variant = new ProductVariantEntity();
                 variant.setId(generateId("var"));
             }
@@ -855,9 +904,15 @@ public class AdminCatalogMutationService {
             variant.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
             variant.setSku(AdminMutationValidators.trimToNull(req.getSku()));
             variant.setName(name);
-            variant.setRetailPrice(req.getRetailPrice());
-            variant.setCompareAtPrice(req.getCompareAtPrice());
-            variant.setSalePrice(req.getSalePrice());
+            if (createVariant || req.isRetailPricePresent()) {
+                variant.setRetailPrice(req.getRetailPrice());
+            }
+            if (createVariant || req.isCompareAtPricePresent()) {
+                variant.setCompareAtPrice(req.getCompareAtPrice());
+            }
+            if (createVariant || req.isSalePricePresent()) {
+                variant.setSalePrice(req.getSalePrice());
+            }
             variant.setCurrency("VND");
             variant.setStockState(req.getStockState() != null ? req.getStockState() : com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK);
             variant.setImageUrl(colorKey != null ? imageByColor.getOrDefault(colorKey, null) : null);

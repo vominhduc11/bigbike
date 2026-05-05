@@ -5,17 +5,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +63,12 @@ class AdminMutationApiTest {
 
     @Autowired
     private PageJpaRepository pageJpaRepository;
+
+    @Autowired
+    private AdminCatalogMutationService adminCatalogMutationService;
+
+    @Autowired
+    private ProductVariantJpaRepository productVariantJpaRepository;
 
     @BeforeEach
     void setup() {
@@ -167,6 +185,81 @@ class AdminMutationApiTest {
                         .content(invalidMediaPayload))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void updateProductShouldNotWipeVariantPricesWhenVariantPriceFieldsAreAbsent() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("phase1-variant-price-" + suffix);
+        create.setName("Phase 1 Variant Price Product " + suffix);
+        create.setCategoryId("cat_helmet");
+        create.setRetailPrice(new BigDecimal("2500000"));
+        create.setCompareAtPrice(new BigDecimal("2900000"));
+        create.setSalePrice(new BigDecimal("2300000"));
+        create.setCurrency("VND");
+        create.setStockState(ProductStockState.IN_STOCK);
+        create.setPublishStatus(PublishStatus.DRAFT);
+
+        VariantRequest variant = new VariantRequest();
+        variant.setSku("VAR-" + suffix);
+        variant.setName("Black / M");
+        variant.setRetailPrice(new BigDecimal("1800000"));
+        variant.setCompareAtPrice(new BigDecimal("2100000"));
+        variant.setSalePrice(new BigDecimal("1700000"));
+        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setIsAvailable(true);
+        variant.setSortOrder(0);
+        variant.setOptions(List.of(variantOption("Size", "M")));
+        variant.setGallery(List.of());
+        create.setVariants(List.of(variant));
+
+        var saved = adminCatalogMutationService.createProduct(create);
+        String productId = saved.id();
+        String variantId = saved.variants().get(0).id();
+
+        String updatePayload = """
+                {
+                  "name": "Phase 1 Variant Price Product Updated %s",
+                  "categoryId": "cat_helmet",
+                  "retailPrice": 2500000,
+                  "compareAtPrice": 2900000,
+                  "salePrice": 2300000,
+                  "currency": "VND",
+                  "stockState": "IN_STOCK",
+                  "publishStatus": "DRAFT",
+                  "variants": [
+                    {
+                      "id": "%s",
+                      "sku": "VAR-%s",
+                      "name": "Black / M Updated",
+                      "stockState": "IN_STOCK",
+                      "imageUrl": "",
+                      "isAvailable": true,
+                      "sortOrder": 0,
+                      "options": [
+                        { "optionName": "Size", "optionValue": "M" }
+                      ],
+                      "gallery": []
+                    }
+                  ]
+                }
+                """.formatted(suffix, variantId, suffix);
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(updatePayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Phase 1 Variant Price Product Updated " + suffix));
+
+        ProductVariantEntity updatedVariant = productVariantJpaRepository.findById(variantId)
+                .orElseThrow(() -> new IllegalStateException("Expected updated variant."));
+        assertThat(updatedVariant.getRetailPrice()).isEqualByComparingTo("1800000");
+        assertThat(updatedVariant.getCompareAtPrice()).isEqualByComparingTo("2100000");
+        assertThat(updatedVariant.getSalePrice()).isEqualByComparingTo("1700000");
     }
 
     @Test
@@ -315,5 +408,12 @@ class AdminMutationApiTest {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+    }
+
+    private static VariantOptionRequest variantOption(String optionName, String optionValue) {
+        VariantOptionRequest option = new VariantOptionRequest();
+        option.setOptionName(optionName);
+        option.setOptionValue(optionValue);
+        return option;
     }
 }

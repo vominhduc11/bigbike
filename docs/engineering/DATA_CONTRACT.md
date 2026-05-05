@@ -58,7 +58,7 @@ Nguyên tắc audit:
 | Coupon | Backend coupon DTOs/cart coupon flow | Cart, checkout, admin | `CONFIRMED_FROM_CODE` | `AdminCouponDetailResponse.java`, `CartResponse.java`, `bigbike-admin/src/lib/contracts.js` |
 | Review | Backend public review request, admin/public review controllers | Product/review UI/admin moderation | `NEEDS_VERIFICATION` | `SubmitReviewRequest.java`, backend compile list references `AdminReviewController`/`PublicReviewController` |
 | Report | Backend dashboard/report DTO/controllers | Admin | `CONFIRMED_FROM_CODE`; metric semantics `NEEDS_VERIFICATION` | `AdminDashboardSummaryResponse.java` path in compile list, `AdminReportController` path in architecture docs |
-| Notification | Backend notification hooks/service; no persisted notification data contract verified | Admin/customer email/ws maybe | `NEEDS_VERIFICATION` | `docs/ARCHITECTURE.md` references notification hooks; no canonical notification entity audited |
+| Notification | Backend notification hooks/service; no persisted notification data contract verified | Admin/customer email/ws maybe | `NEEDS_VERIFICATION` | `docs/engineering/ARCHITECTURE.md` references notification hooks; no canonical notification entity audited |
 
 ## 4. Entity / DTO Summary
 
@@ -159,7 +159,7 @@ Canonical source: backend `ProductEntity` persistence shape + domain `Product` r
 | Field | Type / Shape | Required | Public Web | Admin | Mobile | Notes | Status | Evidence |
 |---|---|---:|---:|---:|---:|---|---|---|
 | `id` | UUID | Yes | Yes | No | Likely | Cart id | `CONFIRMED_FROM_CODE` | `CartResponse.java` |
-| `status` | string / `CartStatus` | Yes | Yes | No | Likely | Enum exists in backend compile list; values need direct file verification | `NEEDS_VERIFICATION` | `CartResponse.java`, backend compile list |
+| `status` | string / `CartStatus` | Yes | Yes | No | Likely | Enum values: `ACTIVE`, `MERGED`, `ABANDONED`, `CONVERTED`, `EXPIRED` (verified 2026-05-05) | `CONFIRMED_FROM_CODE` | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/commerce/CartStatus.java`, `CartResponse.java` |
 | `currency` | string | Yes | Yes | No | Likely | VND expected by commerce flows | `CONFIRMED_FROM_CODE` | `CartResponse.java` |
 | `items` | `CartItemResponse[]` | Yes | Yes | No | Likely | Cart line items | `CONFIRMED_FROM_CODE` | `CartItemResponse.java` |
 | `totals` | `CartTotalsResponse` | Yes | Yes | No | Likely | subtotal/discount/shipping/fee/total | `CONFIRMED_FROM_CODE` | `CartTotalsResponse.java` |
@@ -209,7 +209,6 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 | `refundReason`, `refundedAt` | text/instant nullable | No | Yes | Yes | Unknown | Refund metadata | `CONFIRMED_FROM_CODE` | `OrderEntity.java`, `OrderDetailResponse.java` |
 | `channel`, `fulfillmentType`, `source`, `ipAddress`, `userAgent` | string/text | Mixed | No | Internal/admin unclear | No | Internal provenance. `ipAddress`/`userAgent` should not be public | `BACKEND_ONLY` | `OrderEntity.java` |
 | `paymentMethod` | string nullable | Yes after selection | Yes | Yes | Likely | Also appears in payment record | `CONFIRMED_FROM_CODE` | `OrderEntity.java`, `OrderSummaryResponse.java` |
-| `pendingPaymentExpiresAt` | instant nullable | No | Possibly | Admin/internal | Unknown | Pending payment expiry | `BACKEND_ONLY` | `OrderEntity.java` |
 | `placedAt`, `paidAt`, `completedAt`, `cancelledAt`, `createdAt`, `updatedAt` | instant nullable/required | Mixed | Yes | Yes | Likely | Customer detail response includes `placedAt`; admin normalizer maps `placedAt` to `createdAt` | `CONFLICTING_EVIDENCE` | `OrderEntity.java`, `OrderDetailResponse.java`, `contracts.js` |
 | `lineItems` | `OrderLineItemResponse[]` | Yes | Yes | Yes | Likely | Admin normalizes backend `lineItems` to `items` | `CONFLICTING_EVIDENCE` | `OrderLineItemResponse.java`, `contracts.js` |
 | `addresses` | `OrderAddressResponse[]` | Yes | Yes | Yes | Likely | Type-based billing/shipping | `CONFIRMED_FROM_CODE` | `OrderAddressResponse.java` |
@@ -224,10 +223,10 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 | Order-level `paymentStatus` | `PaymentStatus` string | Yes | Yes | Yes | Aggregate payment state | `CONFIRMED_FROM_CODE` | `OrderEntity.java`, `PaymentStatus.java` |
 | Order-level `paymentMethod` | string | No | Yes | Yes | Selected method (`cod`, `bacs`, etc. values need service-level verification) | `CONFIRMED_FROM_CODE` | `OrderEntity.java`, `OrderSummaryResponse.java` |
 | Payment record `id` | UUID | Yes | Yes | Yes | Payment row id | `CONFIRMED_FROM_CODE` | `OrderPaymentResponse.java` |
-| Payment record `status` | string / `PaymentRecordStatus` | Yes | Yes | Yes | Payment record status enum exists in compile list but direct values need verification | `NEEDS_VERIFICATION` | `OrderPaymentResponse.java`, backend compile list |
+| Payment record `status` | string / `PaymentRecordStatus` | Yes | Yes | Yes | Enum values: `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED` (verified 2026-05-05) | `CONFIRMED_FROM_CODE` | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/commerce/PaymentRecordStatus.java`, `OrderPaymentResponse.java` |
 | Payment record `amount`, `currency`, `paidAt` | decimal/string/instant | Yes/mixed | Yes | Yes | Payment amount snapshot | `CONFIRMED_FROM_CODE` | `OrderPaymentResponse.java` |
 | Refund amount/status | `refundAmount`, `refundReason`, `refundedAt`, `paymentStatus=REFUNDED/PARTIALLY_REFUNDED` | Mixed | Yes | Yes | Refund tracked on order and returns | `CONFIRMED_FROM_CODE` | `OrderEntity.java`, `PaymentStatus.java`, `AdminReturnDetailResponse.java` |
-| External provider payload/webhook | provider transaction id, bank account id, QR payload, webhook signature | Unknown | No | Internal | No direct canonical provider DTO/entity verified in this audit | `NOT_FOUND_IN_REPO` | No confirmed provider DTO/entity audited |
+| External provider payload/webhook | provider transaction id, bank account id, QR payload, webhook signature | Unknown | No | Internal | SePay/VietQR-specific provider DTO/entity removed from the active system | `NOT_FOUND_IN_REPO` | No confirmed provider DTO/entity audited |
 
 ## 10. Shipping / Fulfillment Data Contract
 
@@ -346,8 +345,8 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 | `CouponStatus` | `ACTIVE`, `INACTIVE`, `EXPIRED`, `ARCHIVED` | Admin coupon UI | Confirmed in admin contract; backend enum file not audited | `NEEDS_VERIFICATION` | `contracts.js`, `AdminCouponDetailResponse.java` |
 | `DiscountType` | `PERCENT`, `FIXED`; legacy `FIXED_AMOUNT` fallback | Coupon | Admin normalizer | `LEGACY_FALLBACK` | `contracts.js` |
 | `CustomerStatus` | `ACTIVE`, `DISABLED`, `BLOCKED` | Admin customer UI | Admin normalizer; backend enum not directly audited | `NEEDS_VERIFICATION` | `contracts.js`, `CustomerSummary.java` |
-| `CartStatus` | unknown | Cart | Backend compile list indicates enum but values not directly audited | `NEEDS_VERIFICATION` | backend compile list, `CartResponse.java` |
-| `PaymentRecordStatus` | unknown | Payment record | Backend compile list indicates enum but values not directly audited | `NEEDS_VERIFICATION` | backend compile list, `OrderPaymentResponse.java` |
+| `CartStatus` | `ACTIVE`, `MERGED`, `ABANDONED`, `CONVERTED`, `EXPIRED` | Cart | Backend enum file confirmed (5 values; `EXPIRED` was missed in 2026-05-04 audit, corrected 2026-05-05) | `CONFIRMED_FROM_CODE` | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/commerce/CartStatus.java`, `CartResponse.java` |
+| `PaymentRecordStatus` | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED` | Payment record | Backend enum file confirmed (5 values; `REFUNDED` was missed in 2026-05-04 audit, corrected 2026-05-05) | `CONFIRMED_FROM_CODE` | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/commerce/PaymentRecordStatus.java`, `OrderPaymentResponse.java` |
 
 ## 19. Public vs Admin vs Internal Fields
 
@@ -393,8 +392,8 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 
 ## 22. Missing / Needs Verification Data Contracts
 
-- `CartStatus` enum values: enum file exists per backend compile list, direct values not audited in this pass.
-- `PaymentRecordStatus` enum values: enum file exists per backend compile list, direct values not audited in this pass.
+- ~~`CartStatus` enum values~~: confirmed in `CartStatus.java` (`ACTIVE`, `MERGED`, `ABANDONED`, `CONVERTED`, `EXPIRED`) — initially listed as 4 values in 2026-05-04 audit; `EXPIRED` was missing and added during 2026-05-05 re-verification.
+- ~~`PaymentRecordStatus` enum values~~: confirmed in `PaymentRecordStatus.java` (`PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `REFUNDED`) — initially listed as 4 values in 2026-05-04 audit; `REFUNDED` was missing and added during 2026-05-05 re-verification.
 - Return status enum/allowed transitions: return DTOs use string; direct status enum or transition service needs audit.
 - Full role/permission entity/request/response contracts: admin profile confirmed, role CRUD field shape needs deeper audit.
 - Review response/admin moderation contract: submit request confirmed, review entity/response shape not fully audited.
@@ -409,7 +408,7 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 
 | Area | Evidence Path | What It Proves | Confidence |
 |---|---|---|---|
-| Architecture | `docs/ARCHITECTURE.md` | Repo boundaries, apps/services/data layers, source-of-truth expectations | High |
+| Architecture | `docs/engineering/ARCHITECTURE.md` | Repo boundaries, apps/services/data layers, source-of-truth expectations | High |
 | Product persistence | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductEntity.java` | Product DB/entity fields and nullable hints | High |
 | Product domain | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/Product.java` | Public/application product shape | High |
 | Product admin request | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/dto/UpsertProductRequest.java` | Admin writable fields and validation limits | High |
@@ -455,7 +454,7 @@ Canonical source: `OrderEntity` for persistence, customer/admin DTOs for respons
 
 | File | Action |
 |---|---|
-| `docs/DATA_CONTRACT.md` | Created |
+| `docs/engineering/DATA_CONTRACT.md` | Created |
 
 ### Domain data contracts documented
 
@@ -478,7 +477,7 @@ Product, Category, Brand, Cart, Checkout, Order, Payment, Shipping/Fulfillment, 
 
 | Label | Items |
 |---|---|
-| `BACKEND_ONLY` | Product `legacyId`, `tags`, `manageStock`, `backorders`, dimensions, order `ipAddress`, `userAgent`, `source`, `channel`, `fulfillmentType`, `pendingPaymentExpiresAt` |
+| `BACKEND_ONLY` | Product `legacyId`, `tags`, `manageStock`, `backorders`, dimensions, order `ipAddress`, `userAgent`, `source`, `channel`, `fulfillmentType` |
 | `FRONTEND_ONLY` | Admin derived `customerName`, admin view-model fields `items/subtotal/shippingFee/discount/total`, admin `filename` fallback from `filePath` |
 | `MOBILE_ONLY` | No mobile-only canonical field confirmed. Mobile status badge consumes backend order/stock enum values. |
 
@@ -493,7 +492,8 @@ Product, Category, Brand, Cart, Checkout, Order, Payment, Shipping/Fulfillment, 
 
 ### NEEDS_VERIFICATION
 
-- `CartStatus`, `PaymentRecordStatus`, return status values.
+- Return status values.
+- (`CartStatus` and `PaymentRecordStatus` were resolved to `CONFIRMED_FROM_CODE` in 2026-05-05 re-verification — see Section 18.)
 - Full role/permission CRUD data shape.
 - Review response/admin moderation shape.
 - Report metric semantics.

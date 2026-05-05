@@ -5,9 +5,11 @@
 > This file is the first document an AI agent should read before modifying code, configs, or tests.
 >
 > Repository scope:
-> - `bigbike-web`: public website / SEO commerce website for end customers
-> - `bigbike-admin`: internal admin dashboard
-> - `bigbike-backend`: Spring Boot backend
+> - `bigbike-web`: public website / SEO commerce website for end customers (Next.js)
+> - `bigbike-admin`: internal admin dashboard (Vite + React)
+> - `bigbike-backend`: Spring Boot backend (Java 17)
+> - `bigbike_mobile`: Flutter mobile companion app (production scope: `NEEDS_VERIFICATION` — see [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md))
+> - `docs/`: business + engineering documentation (source of truth — see Docs-First Contract below)
 
 ---
 
@@ -36,19 +38,24 @@ The project includes:
 
 ```text
 bigbike/
-├── AGENTS.md                  # This file — AI agent operating instructions
-├── BIGBIKE_BRANDGUIDELINE.pdf # Brand identity reference (PDF)
-├── README.md                  # Project overview
-├── docker-compose.yaml        # Full stack infrastructure
-├── docs/                      # Architecture decision records
-│   └── DECISIONS.md           # Recorded architecture / product decisions
-├── bigbike-web/               # Public SEO + sales website (Next.js)
-├── bigbike-admin/             # Internal admin dashboard (Vite + React)
-├── bigbike-backend/           # Spring Boot backend
-├── Bigbike Design System/     # Brand assets, CSS tokens, fonts, UI kit
-│   ├── ui_kits/website/       # Click-through prototype — design reference cho bigbike-web
-│   └── preview/               # Design system visual previews (brand, tokens, components)
-└── bigbike_vn__2026_04_17/    # Local-only legacy WordPress export (do not commit)
+├── AGENTS.md                       # This file — AI agent operating instructions
+├── CLAUDE.md                       # Claude Code auto-loaded summary; mirrors Docs-First Contract
+├── BIGBIKE_BRANDGUIDELINE.pdf      # Brand identity reference (PDF)
+├── README.md                       # Project overview
+├── docker-compose.yaml             # Full stack infrastructure
+├── docs/                           # ⚡ Source of truth (see Docs-First Contract)
+│   ├── DOCS_VERIFICATION_REPORT.md # Latest docs↔code audit + flagged risks
+│   ├── business/                   # 9 files — overview, modules, roles, processes, rules, workflows, states, AC, glossary
+│   └── engineering/                # 9 files — architecture, API, data, flow, permission, testing, deployment, integration, traceability
+│   # NOTE: docs/DECISIONS.md is referenced by older sections but presence is NEEDS_VERIFICATION
+├── bigbike-web/                    # Public SEO + sales website (Next.js)
+├── bigbike-admin/                  # Internal admin dashboard (Vite + React)
+├── bigbike-backend/                # Spring Boot backend
+├── bigbike_mobile/                 # Flutter mobile companion app
+├── Bigbike Design System/          # Brand assets, CSS tokens, fonts, UI kit
+│   ├── ui_kits/website/            # Click-through prototype — design reference cho bigbike-web
+│   └── preview/                    # Design system visual previews (brand, tokens, components)
+└── bigbike_vn__2026_04_17/         # Local-only legacy WordPress export (do not commit)
 ```
 
 Primary product domain:
@@ -77,6 +84,45 @@ Brand direction:
 
 ---
 
+## ⚠️ Docs-First Contract — READ THIS BEFORE ANY CODE CHANGE
+
+> Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/engineering/) là **source of truth** của BigBike. Code được dựng lên từ những docs này, không phải ngược lại.
+
+### Bắt buộc
+
+1. **Đọc docs liên quan trước khi sửa code.** Trước khi đụng vào bất kỳ file source nào trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/) hoặc [bigbike_mobile/](bigbike_mobile/), agent phải đọc trước các docs liên quan trong [docs/](docs/) và xác định doc nào đang quy định behavior bạn sắp sửa. Xem mapping ở dưới.
+2. **Cite evidence khi mô tả thay đổi.** Trong PR summary / final response, phải cite path docs cụ thể (ví dụ `docs/business/BUSINESS_RULES.md` rule `ORDER_RULE_003`, hoặc `docs/engineering/API_CONTRACT.md` Section 8.3) làm căn cứ cho thay đổi.
+3. **Không bịa rule.** Nếu rule / contract / permission / state cần thiết không có trong docs hoặc đang `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE`, **dừng và hỏi user** thay vì tự suy diễn rồi viết code.
+4. **Docs đi trước code khi có lệch.** Nếu thay đổi ảnh hưởng business rule, API contract, data shape, permission, state machine, workflow hoặc deployment env:
+   - **Update docs trước** (file business / engineering tương ứng).
+   - **Rồi mới sửa code** để khớp docs.
+   - Cùng một PR phải có cả docs change và code change; không tách rời để "fix docs sau".
+5. **Bug fix vẫn phải cite docs.** Bug = code đang lệch docs. Trong PR ghi rõ docs/spec nào bị code làm sai, sau đó fix code về đúng docs. Nếu docs cũng sai, xem điều 4.
+6. **Audit report là gate.** Báo cáo verification mới nhất ở [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md). Đọc Section 3 (Critical Mismatches) và Section 6 (Security / Permission Risks) trước khi đụng code ở vùng liên quan để không vô tình "fix" cái đã được flag là code bug cần task riêng.
+
+### Mapping docs ↔ scope
+
+| Bạn đang sửa | Phải đọc trước |
+|---|---|
+| Backend controller / service / entity / migration | [docs/engineering/API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md), [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) (mục liên quan) |
+| Frontend route / component / API call | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md) |
+| Permission / role / auth | [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [USER_ROLES.md](docs/business/USER_ROLES.md) |
+| Order / payment / refund / inventory / return logic | [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md) |
+| Deployment / Dockerfile / env / CI | [DEPLOYMENT_GUIDE.md](docs/engineering/DEPLOYMENT_GUIDE.md), [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) |
+| Test / quality gate | [TESTING_GUIDE.md](docs/engineering/TESTING_GUIDE.md), [ACCEPTANCE_CRITERIA.md](docs/business/ACCEPTANCE_CRITERIA.md) |
+| Architecture / module ownership | [ARCHITECTURE.md](docs/engineering/ARCHITECTURE.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md), [PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) |
+| Cross-trace requirement → API → test | [TRACEABILITY_MATRIX.md](docs/engineering/TRACEABILITY_MATRIX.md) |
+
+### Cấm
+
+- ❌ Sửa code mà không đọc docs liên quan.
+- ❌ Đẩy code mà docs không phản ánh thay đổi (trừ refactor nội tại không ảnh hưởng API / contract / data / permission / state / deployment).
+- ❌ Tự suy diễn rule khi docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE`.
+- ❌ "Code-first, doc-fix-later" trừ khi user explicitly cho phép.
+- ❌ "Fix" cái đã được [DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md) Section 3 flag là code bug — đó là task riêng có ngữ cảnh riêng.
+
+---
+
 ## 3. Required Reading Order
 
 Before modifying anything, read the relevant resources.
@@ -85,6 +131,9 @@ Before modifying anything, read the relevant resources.
 
 ```text
 AGENTS.md
+docs/DOCS_VERIFICATION_REPORT.md         # Latest docs↔code audit; flags critical mismatches and risks
+docs/business/PROJECT_OVERVIEW.md        # Business + system overview; actor map
+docs/engineering/ARCHITECTURE.md         # Tech stack / layers / runtime / boundaries
 Bigbike Design System/README.md          # Brand context, copy rules, visual foundations — đọc được bằng tool
 Bigbike Design System/colors_and_type.css  # CSS token source of truth
 BIGBIKE_BRANDGUIDELINE.pdf               # PDF gốc 23 trang — không đọc trực tiếp bằng tool
@@ -93,8 +142,13 @@ BIGBIKE_BRANDGUIDELINE.pdf               # PDF gốc 23 trang — không đọc 
 ### 3.2 For `bigbike-web` changes
 
 ```text
+docs/engineering/API_CONTRACT.md         # ⚡ Backend endpoint contract bạn đang gọi
+docs/engineering/API_FLOW_MAP.md         # ⚡ Flow screen → API end-to-end
+docs/engineering/DATA_CONTRACT.md        # ⚡ Public field shape, drift, legacy fallback
+docs/business/WORKFLOW_OVERVIEW.md       # ⚡ End-to-end customer workflow
+docs/business/MODULE_CATALOG.md          # ⚡ Module/feature ownership
 bigbike-web/AGENTS.md                    # Next.js version-specific agent rules — read before any code change
-bigbike-web/STYLEGUIDE.md               # Condensed brand + UI rules for bigbike-web
+bigbike-web/STYLEGUIDE.md                # Condensed brand + UI rules for bigbike-web
 Bigbike Design System/README.md          # Brand rules, copy, visual foundations
 Bigbike Design System/colors_and_type.css
 Bigbike Design System/ui_kits/website/   # Click-through prototype — design reference cho public website
@@ -116,10 +170,16 @@ Use these for:
 ### 3.3 For `bigbike-admin` changes
 
 ```text
-Bigbike Design System/README.md                                                       # Brand context và token guidance
+docs/engineering/API_CONTRACT.md                                                     # ⚡ Admin endpoint contract
+docs/engineering/PERMISSION_MATRIX.md                                                # ⚡ Role/permission per route + endpoint
+docs/engineering/DATA_CONTRACT.md                                                    # ⚡ Admin field shape + normalizer drift
+docs/business/USER_ROLES.md                                                          # ⚡ Role definitions
+docs/business/MODULE_CATALOG.md                                                      # ⚡ Admin module catalog
+docs/business/STATE_MACHINES.md                                                      # ⚡ Allowed transitions (orders/returns/products)
+Bigbike Design System/README.md                                                      # Brand context và token guidance
 Bigbike Design System/colors_and_type.css
-bigbike-backend/src/main/resources/openapi/bigbike-openapi.json                      # API contract
-bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json                      # Raw OpenAPI (machine-readable companion)
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md                # Historical phase report
 ```
 
 Use these for:
@@ -137,10 +197,17 @@ Use these for:
 ### 3.4 For backend changes
 
 ```text
-bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
-bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
-bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
-bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
+docs/engineering/API_CONTRACT.md                                                     # ⚡ Endpoint contract per controller
+docs/engineering/DATA_CONTRACT.md                                                    # ⚡ Entity/DTO/enum shape + drift
+docs/engineering/PERMISSION_MATRIX.md                                                # ⚡ ROLE_ADMIN/CUSTOMER + permission strings
+docs/engineering/INTEGRATION_GUIDE.md                                                # ⚡ Postgres/MinIO/Mail/WS/migration integration
+docs/business/BUSINESS_RULES.md                                                      # ⚡ Backend-enforced rules (price/stock/transition)
+docs/business/STATE_MACHINES.md                                                      # ⚡ Allowed state transitions
+docs/business/WORKFLOW_OVERVIEW.md                                                   # ⚡ End-to-end workflow context
+bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md                                # Historical phase report (auth)
+bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md                                 # Historical phase report (checkout)
+bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md                # Historical phase report (settings/menu/coupon)
+bigbike-backend/src/main/resources/openapi/bigbike-openapi.json                      # Raw OpenAPI (machine-readable companion)
 ```
 
 Use these for:
@@ -170,18 +237,25 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 
 | Concern | Source of truth |
 |---|---|
+| **Business overview / actors / modules / workflows / rules / states** | [docs/business/](docs/business/) — `PROJECT_OVERVIEW.md`, `MODULE_CATALOG.md`, `USER_ROLES.md`, `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md`, `GLOSSARY.md` |
+| **Technical architecture / API contract / data contract / permission / deployment** | [docs/engineering/](docs/engineering/) — `ARCHITECTURE.md`, `API_CONTRACT.md`, `DATA_CONTRACT.md`, `API_FLOW_MAP.md`, `PERMISSION_MATRIX.md`, `TESTING_GUIDE.md`, `DEPLOYMENT_GUIDE.md`, `INTEGRATION_GUIDE.md`, `TRACEABILITY_MATRIX.md` |
+| **Latest docs↔code audit / known mismatches** | [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md) |
 | Brand identity, logo, colors, typography, copy | `Bigbike Design System/README.md` + `Bigbike Design System/colors_and_type.css` |
 | Brand assets (logos, icons, fonts, favicons) | `Bigbike Design System/assets/` + `Bigbike Design System/fonts/` |
 | Web UI design reference | `Bigbike Design System/ui_kits/website/` |
 | Visual design previews | `Bigbike Design System/preview/` |
 | bigbike-web UI rules (condensed) | `bigbike-web/STYLEGUIDE.md` |
-| Backend API contract | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
-| Backend phase implementation reports | `bigbike-backend/docs/` |
-| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` |
+| Backend OpenAPI raw schema (machine-readable companion to `docs/engineering/API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
+| Backend phase implementation reports (historical) | `bigbike-backend/docs/` |
+| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` (verify presence; some references may be planned) |
 | SEO redirect map | `bigbike-web/docs/` |
 | Legacy WordPress data and migration reference | `bigbike_vn__2026_04_17/` (local-only) |
 
-Do not move responsibility between files unless explicitly asked.
+Quy tắc:
+
+- Khi docs nghiệp vụ trong `docs/business/` và docs kỹ thuật trong `docs/engineering/` mâu thuẫn nhau → **business docs thắng**, engineering docs cần được sửa lại để khớp.
+- Khi `docs/engineering/*` và code mâu thuẫn nhau → **xem [DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md)** trước; nếu chưa có verdict, mặc định docs là source of truth và code cần sửa, trừ khi user nói khác.
+- Không di chuyển trách nhiệm giữa các file trừ khi được yêu cầu rõ.
 
 ---
 
@@ -898,6 +972,13 @@ Do not claim imaginary test results. The CI gods are petty and they keep receipt
 
 ```text
 AGENTS.md
+CLAUDE.md
+docs/DOCS_VERIFICATION_REPORT.md
+docs/engineering/API_CONTRACT.md
+docs/engineering/API_FLOW_MAP.md
+docs/engineering/DATA_CONTRACT.md
+docs/business/WORKFLOW_OVERVIEW.md
+docs/business/MODULE_CATALOG.md
 bigbike-web/AGENTS.md
 bigbike-web/STYLEGUIDE.md
 Bigbike Design System/README.md
@@ -905,29 +986,75 @@ Bigbike Design System/colors_and_type.css
 Bigbike Design System/ui_kits/website/
 Bigbike Design System/preview/
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
-bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
-docs/DECISIONS.md
 ```
 
 ### Admin change
 
 ```text
 AGENTS.md
+CLAUDE.md
+docs/DOCS_VERIFICATION_REPORT.md
+docs/engineering/API_CONTRACT.md
+docs/engineering/PERMISSION_MATRIX.md
+docs/engineering/DATA_CONTRACT.md
+docs/business/USER_ROLES.md
+docs/business/MODULE_CATALOG.md
+docs/business/STATE_MACHINES.md
 Bigbike Design System/README.md
 Bigbike Design System/colors_and_type.css
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
-bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 ```
 
 ### Backend change
 
 ```text
 AGENTS.md
+CLAUDE.md
+docs/DOCS_VERIFICATION_REPORT.md
+docs/engineering/API_CONTRACT.md
+docs/engineering/DATA_CONTRACT.md
+docs/engineering/PERMISSION_MATRIX.md
+docs/engineering/INTEGRATION_GUIDE.md
+docs/business/BUSINESS_RULES.md
+docs/business/STATE_MACHINES.md
+docs/business/WORKFLOW_OVERVIEW.md
 bigbike-backend/docs/PHASE_1D_CUSTOMER_AUTH_REPORT.md
 bigbike-backend/docs/PHASE_1F_CHECKOUT_API_REPORT.md
 bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
-docs/DECISIONS.md
+```
+
+### Mobile change
+
+```text
+AGENTS.md
+CLAUDE.md
+docs/DOCS_VERIFICATION_REPORT.md
+docs/engineering/API_CONTRACT.md
+docs/engineering/API_FLOW_MAP.md
+docs/business/WORKFLOW_OVERVIEW.md
+bigbike_mobile/lib/core/api/api_endpoints.dart
+bigbike_mobile/lib/core/router/app_router.dart
+```
+
+### Deployment / Docker / env change
+
+```text
+AGENTS.md
+docs/engineering/DEPLOYMENT_GUIDE.md
+docs/engineering/INTEGRATION_GUIDE.md
+.env.example
+docker-compose.yaml
+.github/workflows/ci.yml
+```
+
+### Test / CI change
+
+```text
+AGENTS.md
+docs/engineering/TESTING_GUIDE.md
+docs/business/ACCEPTANCE_CRITERIA.md
+.github/workflows/ci.yml
 ```
 
 ### Legacy migration change
@@ -938,7 +1065,7 @@ bigbike_vn__2026_04_17/
 
 ### Contract change
 
-Document the change in PR summary. Update all affected layers (frontend + backend).
+Update docs first (see Docs-First Contract above), then PR summary, then code in all affected layers (frontend + backend + mobile if applicable).
 
 ---
 

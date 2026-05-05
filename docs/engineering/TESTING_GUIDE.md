@@ -530,8 +530,8 @@ Source: `docs/business/ACCEPTANCE_CRITERIA.md` plus repo test evidence.
 | Acceptance requirements | `docs/business/ACCEPTANCE_CRITERIA.md` | Module/workflow completion criteria and missing test expectations. | High |
 | Business rules | `docs/business/BUSINESS_RULES.md` | Rule areas and expected positive/negative coverage. | High |
 | State machines | `docs/business/STATE_MACHINES.md` | Entities/transitions that require transition tests. | High |
-| API contract | `docs/API_CONTRACT.md` | API areas and auth/validation/response expectations for test planning. | High |
-| API flow map | `docs/API_FLOW_MAP.md` | Workflow-to-API/service/data mapping for E2E smoke planning. | High |
+| API contract | `docs/engineering/API_CONTRACT.md` | API areas and auth/validation/response expectations for test planning. | High |
+| API flow map | `docs/engineering/API_FLOW_MAP.md` | Workflow-to-API/service/data mapping for E2E smoke planning. | High |
 
 ## 18. Relationship With Other Docs
 
@@ -540,10 +540,10 @@ Source: `docs/business/ACCEPTANCE_CRITERIA.md` plus repo test evidence.
 | `docs/business/ACCEPTANCE_CRITERIA.md` | Defines what must be true before a module/workflow can be accepted. This testing guide converts those criteria into gates/checklists/test requirements. |
 | `docs/business/BUSINESS_RULES.md` | Defines business rules that need positive/negative tests. Backend-enforced rules should have service/controller tests. |
 | `docs/business/STATE_MACHINES.md` | Defines transitions and forbidden transitions that must be covered by state-machine tests. |
-| `docs/API_CONTRACT.md` | Defines endpoint/auth/response/error contract that API tests must verify. |
-| `docs/API_FLOW_MAP.md` | Defines workflow-to-API/service/data chains that should become E2E/smoke scenarios. |
-| `docs/DATA_CONTRACT.md` | Defines canonical entity fields/status/data ownership that should be used in fixtures/assertions. |
-| `docs/TRACEABILITY_MATRIX.md` | Should link rule → API → data → tests → acceptance result. If it does not exist yet, generate it after this guide. |
+| `docs/engineering/API_CONTRACT.md` | Defines endpoint/auth/response/error contract that API tests must verify. |
+| `docs/engineering/API_FLOW_MAP.md` | Defines workflow-to-API/service/data chains that should become E2E/smoke scenarios. |
+| `docs/engineering/DATA_CONTRACT.md` | Defines canonical entity fields/status/data ownership that should be used in fixtures/assertions. |
+| `docs/engineering/TRACEABILITY_MATRIX.md` | Should link rule → API → data → tests → acceptance result. If it does not exist yet, generate it after this guide. |
 | `.github/workflows/ci.yml` | Owns actual CI commands. This guide should not contradict it. |
 
 ## Audit Notes
@@ -553,6 +553,6 @@ Source: `docs/business/ACCEPTANCE_CRITERIA.md` plus repo test evidence.
 - Không sửa code.
 - Không implement test mới.
 - Không refactor.
-- Chỉ tạo tài liệu `docs/TESTING_GUIDE.md` dựa trên repo evidence.
+- Chỉ tạo tài liệu `docs/engineering/TESTING_GUIDE.md` dựa trên repo evidence.
 - Historical surefire reports trong `target/` chỉ được dùng như `HISTORICAL_EVIDENCE`.
 - Secret/env sensitive values không được đưa vào file này; CI/env evidence được mô tả theo tên biến/gate, không copy secret-like values.

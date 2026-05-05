@@ -329,15 +329,6 @@ public class AdminOrderService {
                     p.setPaidAt(now);
                     paymentRepo.save(p);
                 });
-                // Auto-complete POS IN_STORE orders when payment is confirmed
-                if ("ON_HOLD".equals(order.getStatus())
-                        && "IN_STORE".equals(order.getChannel())
-                        && "pos".equals(order.getSource())) {
-                    order.setStatus("COMPLETED");
-                    order.setCompletedAt(now);
-                    noteRepo.save(buildNote(order, adminId, "SYSTEM",
-                            "Đơn POS chuyển khoản đã được xác nhận thanh toán — tự động hoàn thành.", false, now));
-                }
             }
             case "PARTIALLY_PAID" -> {
                 if (req.paidAmount() == null || req.paidAmount().compareTo(BigDecimal.ZERO) <= 0

@@ -18,8 +18,11 @@ public class VariantRequest {
     private String name;
 
     private BigDecimal retailPrice;
+    private boolean retailPricePresent = false;
     private BigDecimal compareAtPrice;
+    private boolean compareAtPricePresent = false;
     private BigDecimal salePrice;
+    private boolean salePricePresent = false;
 
     private ProductStockState stockState;
 
@@ -54,13 +57,28 @@ public class VariantRequest {
     public void setName(String name) { this.name = name; }
 
     public BigDecimal getRetailPrice() { return retailPrice; }
-    public void setRetailPrice(BigDecimal retailPrice) { this.retailPrice = retailPrice; }
+    public void setRetailPrice(BigDecimal retailPrice) {
+        this.retailPrice = retailPrice;
+        this.retailPricePresent = true;
+    }
+
+    public boolean isRetailPricePresent() { return retailPricePresent; }
 
     public BigDecimal getCompareAtPrice() { return compareAtPrice; }
-    public void setCompareAtPrice(BigDecimal compareAtPrice) { this.compareAtPrice = compareAtPrice; }
+    public void setCompareAtPrice(BigDecimal compareAtPrice) {
+        this.compareAtPrice = compareAtPrice;
+        this.compareAtPricePresent = true;
+    }
+
+    public boolean isCompareAtPricePresent() { return compareAtPricePresent; }
 
     public BigDecimal getSalePrice() { return salePrice; }
-    public void setSalePrice(BigDecimal salePrice) { this.salePrice = salePrice; }
+    public void setSalePrice(BigDecimal salePrice) {
+        this.salePrice = salePrice;
+        this.salePricePresent = true;
+    }
+
+    public boolean isSalePricePresent() { return salePricePresent; }
 
     public ProductStockState getStockState() { return stockState; }
     public void setStockState(ProductStockState stockState) { this.stockState = stockState; }

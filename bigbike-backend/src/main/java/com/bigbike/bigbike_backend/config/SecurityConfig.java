@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/forgot").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/verify-email").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // Public review submission — no auth required, status defaults to PENDING

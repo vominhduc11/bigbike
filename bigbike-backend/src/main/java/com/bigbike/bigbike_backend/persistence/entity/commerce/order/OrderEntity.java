@@ -90,9 +90,6 @@ public class OrderEntity {
     @Column(name = "payment_method", length = 100)
     private String paymentMethod;
 
-    @Column(name = "pending_payment_expires_at")
-    private Instant pendingPaymentExpiresAt;
-
     @Column(length = 100)
     private String source;
 
@@ -194,9 +191,6 @@ public class OrderEntity {
 
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
-
-    public Instant getPendingPaymentExpiresAt() { return pendingPaymentExpiresAt; }
-    public void setPendingPaymentExpiresAt(Instant pendingPaymentExpiresAt) { this.pendingPaymentExpiresAt = pendingPaymentExpiresAt; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
