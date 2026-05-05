@@ -227,6 +227,8 @@
     "loadError": "Error loading products",
     "empty": "No products",
     "emptyDesc": "Try changing the filter conditions or create a new product.",
+    "emptyTrash": "No trashed products",
+    "emptyTrashDesc": "Try clearing filters or switch back to another publish status.",
     "colProduct": "Product",
     "colPrice": "Price",
     "colPublish": "Publish",

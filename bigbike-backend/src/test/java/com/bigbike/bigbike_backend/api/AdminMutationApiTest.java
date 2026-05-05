@@ -312,6 +312,49 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void restoreProductShouldRequireProductsUpdatePermission() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase2-restore-permission-" + suffix;
+
+        String createPayload = """
+                  {
+                    "slug": "%s",
+                    "name": "Phase 2 Restore Permission Product %s",
+                    "categoryId": "cat_helmet",
+                    "retailPrice": 1250000,
+                    "stockState": "IN_STOCK",
+                    "publishStatus": "DRAFT",
+                    "image": {
+                      "url": "%s/wp-uploads/products/%s.jpg",
+                      "alt": "Phase 2 Restore Permission Product"
+                    }
+                  }
+                  """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(slug))
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"));
+
+        ProductEntity created = productJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created product."));
+
+        mockMvc.perform(delete("/api/v1/admin/products/{id}", created.getId())
+                        .header("X-Admin-Permissions", "products.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("TRASH"));
+
+        mockMvc.perform(post("/api/v1/admin/products/{id}/restore", created.getId())
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+    }
+
+    @Test
     void shouldCreateAndUpdateCategoryBrandAndContent() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
 

@@ -121,6 +121,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
     }
   }, [queryClient, t])
 
+  const emptyState = query.publishStatus === 'TRASH'
+    ? {
+        title: t('products.emptyTrash', { defaultValue: 'No trashed products' }),
+        description: t('products.emptyTrashDesc', { defaultValue: 'Try clearing filters or switch back to another publish status.' }),
+      }
+    : {
+        title: t('products.empty'),
+        description: t('products.emptyDesc'),
+      }
+
   const columns = useMemo(
     () => [
       {
@@ -390,8 +400,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
       {state.status === 'success' && state.items.length === 0 ? (
         <StatePanel
           tone="neutral"
-          title={t('products.empty')}
-          description={t('products.emptyDesc')}
+          title={emptyState.title}
+          description={emptyState.description}
           actionLabel={t('common.resetFilters')}
           onAction={resetFilters}
         />
