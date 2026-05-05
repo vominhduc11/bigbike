@@ -637,6 +637,230 @@ class AdminMutationApiTest {
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
     }
 
+    // ── Category hide-guard tests ─────────────────────────────────────────────
+
+    @Test
+    void deleteCategoryWithVisibleChildShouldReturnConflict() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "hide-guard-del-parent-" + suffix;
+        String childSlug = "hide-guard-del-child-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Del Parent %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Del Child %s","parentId":"%s","visible":true}
+                                """.formatted(childSlug, suffix, parent.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/v1/admin/categories/{id}", parent.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        CategoryEntity stillVisible = categoryJpaRepository.findById(parent.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+        assertThat(stillVisible.isVisible()).isTrue();
+    }
+
+    @Test
+    void patchCategoryVisibleFalseWithVisibleChildShouldReturnConflict() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "hide-guard-patch-parent-" + suffix;
+        String childSlug = "hide-guard-patch-child-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Patch Parent %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Patch Child %s","parentId":"%s","visible":true}
+                                """.formatted(childSlug, suffix, parent.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"visible":false}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        CategoryEntity stillVisible = categoryJpaRepository.findById(parent.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+        assertThat(stillVisible.isVisible()).isTrue();
+    }
+
+    @Test
+    void patchCategoryVisibleFalseWithNoVisibleChildShouldSucceed() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "hide-guard-no-child-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard No Child %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"visible":false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        CategoryEntity hidden = categoryJpaRepository.findById(parent.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+        assertThat(hidden.isVisible()).isFalse();
+    }
+
+    @Test
+    void patchHiddenCategoryVisibleTrueShouldRestoreCategory() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "hide-guard-restore-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Restore %s","visible":true}
+                                """.formatted(slug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity category = categoryJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected category."));
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", category.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"visible":false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", category.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"visible":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(true));
+
+        CategoryEntity restored = categoryJpaRepository.findById(category.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected category."));
+        assertThat(restored.isVisible()).isTrue();
+    }
+
+    @Test
+    void patchCategoryVisibleFalseWithHiddenChildShouldSucceed() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "hide-guard-hidden-child-parent-" + suffix;
+        String childSlug = "hide-guard-hidden-child-child-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Hidden Child Parent %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Hidden Child %s","parentId":"%s","visible":false}
+                                """.formatted(childSlug, suffix, parent.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"visible":false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(false));
+
+        CategoryEntity hidden = categoryJpaRepository.findById(parent.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+        assertThat(hidden.isVisible()).isFalse();
+    }
+
+    @Test
+    void patchCategoryNameOnlyWithVisibleChildShouldNotTriggerHideGuard() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "hide-guard-name-only-parent-" + suffix;
+        String childSlug = "hide-guard-name-only-child-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Name Only Parent %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"Hide Guard Name Only Child %s","parentId":"%s","visible":true}
+                                """.formatted(childSlug, suffix, parent.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", parent.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"name":"Hide Guard Name Only Parent Updated %s"}
+                                """.formatted(suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isVisible").value(true));
+
+        CategoryEntity updated = categoryJpaRepository.findById(parent.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+        assertThat(updated.isVisible()).isTrue();
+        assertThat(updated.getName()).isEqualTo("Hide Guard Name Only Parent Updated " + suffix);
+    }
+
     private static VariantOptionRequest variantOption(String optionName, String optionValue) {
         VariantOptionRequest option = new VariantOptionRequest();
         option.setOptionName(optionName);

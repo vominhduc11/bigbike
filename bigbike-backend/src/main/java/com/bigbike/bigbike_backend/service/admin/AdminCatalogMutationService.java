@@ -246,16 +246,7 @@ public class AdminCatalogMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
-        long visibleChildCount = categoryJpaRepository.findAll().stream()
-                .filter(c -> categoryId.equals(c.getParentId()) && c.isVisible())
-                .count();
-        if (visibleChildCount > 0) {
-            throw new ConflictException(
-                    "Cannot hide category: it has " + visibleChildCount +
-                    " visible child categor" + (visibleChildCount == 1 ? "y" : "ies") +
-                    ". Hide or re-parent them first."
-            );
-        }
+        assertNoVisibleChildren(categoryId);
 
         entity.setVisible(false);
         entity.setUpdatedAt(Instant.now());
@@ -300,6 +291,10 @@ public class AdminCatalogMutationService {
         String slug = validateCategoryRequest(request, entity, false, errors);
         CategoryEntity parent = validateAndResolveParentCategory(request.getParentId(), categoryId, false, errors);
         AdminMutationValidators.throwIfErrors(errors);
+
+        if (Boolean.FALSE.equals(request.getVisible()) && entity.isVisible()) {
+            assertNoVisibleChildren(categoryId);
+        }
 
         entity.setUpdatedAt(Instant.now());
         applyCategoryPatch(entity, request, slug, parent, false);
@@ -1364,5 +1359,18 @@ public class AdminCatalogMutationService {
 
     private static String generateId(String prefix) {
         return prefix + "_" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private void assertNoVisibleChildren(String categoryId) {
+        long visibleChildCount = categoryJpaRepository.findAll().stream()
+                .filter(c -> categoryId.equals(c.getParentId()) && c.isVisible())
+                .count();
+        if (visibleChildCount > 0) {
+            throw new ConflictException(
+                    "Cannot hide category: it has " + visibleChildCount +
+                    " visible child categor" + (visibleChildCount == 1 ? "y" : "ies") +
+                    ". Hide or re-parent them first."
+            );
+        }
     }
 }
