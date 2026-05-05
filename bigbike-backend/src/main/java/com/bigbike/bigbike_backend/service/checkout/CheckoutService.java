@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.api.checkout.dto.ShippingMethodOptionResponse
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.CheckoutIdempotencyKeyEntity;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -31,6 +32,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariant
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.CheckoutIdempotencyKeyJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
@@ -44,13 +46,21 @@ import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,9 +74,13 @@ public class CheckoutService {
     private static final String PAYMENT_STATUS_UNPAID = "UNPAID";
     private static final String PAYMENT_RECORD_STATUS_PENDING = "PENDING";
     private static final String CURRENCY_VND = "VND";
+    private static final String FLOW_CHECKOUT = "CHECKOUT";
+    private static final String FLOW_QUICK_BUY = "QUICK_BUY";
+    private static final String ANONYMOUS_SCOPE = "anonymous";
 
     private final CartJpaRepository cartRepo;
     private final CartCouponJpaRepository cartCouponRepo;
+    private final CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
@@ -85,10 +99,13 @@ public class CheckoutService {
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final InventoryPolicyService inventoryPolicyService;
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     public CheckoutService(
             CartJpaRepository cartRepo,
             CartCouponJpaRepository cartCouponRepo,
+            CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo,
             OrderJpaRepository orderRepo,
             OrderLineItemJpaRepository lineItemRepo,
             OrderAddressJpaRepository addressRepo,
@@ -106,10 +123,13 @@ public class CheckoutService {
             CartCalculator cartCalculator,
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
-            InventoryPolicyService inventoryPolicyService
+            InventoryPolicyService inventoryPolicyService,
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper
     ) {
         this.cartRepo = cartRepo;
         this.cartCouponRepo = cartCouponRepo;
+        this.checkoutIdempotencyKeyRepo = checkoutIdempotencyKeyRepo;
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
         this.addressRepo = addressRepo;
@@ -128,6 +148,8 @@ public class CheckoutService {
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
     }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
@@ -138,9 +160,16 @@ public class CheckoutService {
             List<CartItemEntity> items,
             CheckoutRequest req,
             UUID customerId,
+            String guestSessionId,
+            String idempotencyKey,
             String clientIp,
             String userAgent
     ) {
+        IdempotencyReservation idempotency = reserveIdempotency(
+                FLOW_CHECKOUT, customerId, guestSessionId, idempotencyKey, req);
+        if (idempotency.existingSummary() != null) {
+            return idempotency.existingSummary();
+        }
         if (items.isEmpty()) {
             throw ValidationException.fromField("cart", "EMPTY_CART", "Cart has no items.");
         }
@@ -238,6 +267,7 @@ public class CheckoutService {
         orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
+        attachOrderToReservation(idempotency, savedOrder.getId(), now);
         return toSummary(savedOrder, req.paymentMethod(), priceChanges);
     }
 
@@ -247,9 +277,16 @@ public class CheckoutService {
     public OrderSummaryResponse quickBuy(
             QuickBuyRequest req,
             UUID customerId,
+            String guestSessionId,
+            String idempotencyKey,
             String clientIp,
             String userAgent
     ) {
+        IdempotencyReservation idempotency = reserveIdempotency(
+                FLOW_QUICK_BUY, customerId, guestSessionId, idempotencyKey, req);
+        if (idempotency.existingSummary() != null) {
+            return idempotency.existingSummary();
+        }
         validateAddress(req.billingAddress());
         validatePaymentMethod(req.paymentMethod());
 
@@ -349,6 +386,7 @@ public class CheckoutService {
         orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
+        attachOrderToReservation(idempotency, savedOrder.getId(), now);
         return toSummary(savedOrder, req.paymentMethod(), List.of());
     }
 
@@ -409,6 +447,124 @@ public class CheckoutService {
         if (!ALLOWED_PAYMENT_METHODS.contains(method)) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
                     "Payment method must be COD or BACS.");
+        }
+    }
+
+    private <T> IdempotencyReservation reserveIdempotency(
+            String flowType,
+            UUID customerId,
+            String guestSessionId,
+            String rawIdempotencyKey,
+            T requestBody
+    ) {
+        String idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
+        if (idempotencyKey == null) {
+            return IdempotencyReservation.none();
+        }
+
+        String scopeKey = buildScopeKey(customerId, guestSessionId);
+        String requestHash = hashRequest(requestBody);
+        Instant now = Instant.now();
+        UUID reservationId = UUID.randomUUID();
+
+        try {
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO checkout_idempotency_keys
+                        (id, flow_type, scope_key, customer_id, guest_session_id,
+                         idempotency_key, request_hash, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    reservationId,
+                    flowType,
+                    scopeKey,
+                    customerId,
+                    guestSessionId,
+                    idempotencyKey,
+                    requestHash,
+                    now,
+                    now
+            );
+            return new IdempotencyReservation(reservationId, null);
+        } catch (DataIntegrityViolationException ex) {
+            CheckoutIdempotencyKeyEntity existing = checkoutIdempotencyKeyRepo
+                    .findByFlowTypeAndScopeKeyAndIdempotencyKey(flowType, scopeKey, idempotencyKey)
+                    .orElseThrow(() -> new ConflictException(
+                            "Idempotency key is already in use. Please retry with a new key."));
+            if (!existing.getRequestHash().equals(requestHash)) {
+                throw new ConflictException(
+                        "Idempotency key was already used for a different request payload.");
+            }
+            return new IdempotencyReservation(null, loadExistingSummary(existing));
+        }
+    }
+
+    private void attachOrderToReservation(IdempotencyReservation reservation, UUID orderId, Instant now) {
+        if (reservation.reservationId() == null) {
+            return;
+        }
+        checkoutIdempotencyKeyRepo.attachOrder(reservation.reservationId(), orderId, now);
+    }
+
+    private OrderSummaryResponse loadExistingSummary(CheckoutIdempotencyKeyEntity existing) {
+        if (existing.getOrderId() == null) {
+            throw new ConflictException(
+                    "A request with this Idempotency-Key is already being processed. Please retry shortly.");
+        }
+        OrderEntity order = orderRepo.findById(existing.getOrderId())
+                .orElseThrow(() -> new ConflictException(
+                        "Existing order for this Idempotency-Key could not be loaded."));
+        return toSummary(order, resolveSummaryPaymentMethod(order), List.of());
+    }
+
+    private String resolveSummaryPaymentMethod(OrderEntity order) {
+        if (order.getPaymentMethod() != null && !order.getPaymentMethod().isBlank()) {
+            return order.getPaymentMethod();
+        }
+        return paymentRepo.findByOrderId(order.getId()).stream()
+                .map(PaymentEntity::getPaymentMethod)
+                .filter(method -> method != null && !method.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String normalizeIdempotencyKey(String rawIdempotencyKey) {
+        if (rawIdempotencyKey == null) {
+            return null;
+        }
+        String idempotencyKey = rawIdempotencyKey.trim();
+        if (idempotencyKey.isEmpty()) {
+            return null;
+        }
+        if (idempotencyKey.length() > 255) {
+            throw ValidationException.fromField(
+                    "Idempotency-Key",
+                    "INVALID",
+                    "Idempotency-Key must be 255 characters or less."
+            );
+        }
+        return idempotencyKey;
+    }
+
+    private String buildScopeKey(UUID customerId, String guestSessionId) {
+        if (customerId != null) {
+            return "customer:" + customerId;
+        }
+        if (guestSessionId != null && !guestSessionId.isBlank()) {
+            return "guest:" + guestSessionId;
+        }
+        return ANONYMOUS_SCOPE;
+    }
+
+    private String hashRequest(Object requestBody) {
+        try {
+            byte[] payload = objectMapper.writeValueAsBytes(requestBody);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(payload));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize checkout request for idempotency.", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available.", e);
         }
     }
 
@@ -735,6 +891,12 @@ public class CheckoutService {
         movement.setReferenceId(orderId);
         movement.setCreatedAt(now);
         stockMovementRepo.save(movement);
+    }
+
+    private record IdempotencyReservation(UUID reservationId, OrderSummaryResponse existingSummary) {
+        private static IdempotencyReservation none() {
+            return new IdempotencyReservation(null, null);
+        }
     }
 
     /**

@@ -134,8 +134,8 @@ Giới hạn có chủ ý:
 | POST | `/api/v1/cart/coupons` | Apply coupon | `ApplyCouponRequest` | `ApiDataResponse<CartResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CartController.java` |
 | DELETE | `/api/v1/cart/coupons/{code}` | Remove coupon | coupon code path | `ApiDataResponse<CartResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CartController.java` |
 | GET | `/api/v1/checkout/options` | Get payment/shipping options | none | `ApiDataResponse<CheckoutOptionsResponse>` | Public `permitAll` | `CONFIRMED_FROM_CODE` | `CheckoutController.java` |
-| POST | `/api/v1/checkout` | Submit cart checkout | `CheckoutRequest` | `ApiDataResponse<OrderSummaryResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CheckoutController.java` |
-| POST | `/api/v1/orders/quick-buy` | Single item direct purchase | `QuickBuyRequest` | `ApiDataResponse<OrderSummaryResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CheckoutController.java` |
+| POST | `/api/v1/checkout` | Submit cart checkout | `CheckoutRequest`; optional header `Idempotency-Key` to safely retry the same submission | `ApiDataResponse<OrderSummaryResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CheckoutController.java` |
+| POST | `/api/v1/orders/quick-buy` | Single item direct purchase | `QuickBuyRequest`; optional header `Idempotency-Key` to safely retry the same submission | `ApiDataResponse<OrderSummaryResponse>` | Public + CSRF on mutation | `CONFIRMED_FROM_CODE` | `CheckoutController.java` |
 
 ### 6.6 Contact / Review / Order Lookup
 
@@ -285,7 +285,7 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 | Mutation Area | Backend Validation | Permission | Side Effects | Status | Evidence |
 |---|---|---|---|---|---|
 | Cart mutations | `@Valid` request DTOs + service validation | Public, CSRF mutation filter | Set/consume guest cart and CSRF cookies, recalc totals/coupons | `CONFIRMED_FROM_CODE` | `CartController.java`, `SecurityConfig.java` |
-| Checkout/quick-buy | `@Valid` DTO + checkout service validation | Public, CSRF mutation filter | Create order, capture contact/totals, decrement stock, record client IP/user-agent, notifications | `CONFIRMED_FROM_CODE` | `CheckoutController.java`, `DATA_CONTRACT.md` |
+| Checkout/quick-buy | `@Valid` DTO + checkout service validation; optional `Idempotency-Key` header for duplicate-submit protection | Public, CSRF mutation filter | Create order, capture contact/totals, decrement stock, record client IP/user-agent, notifications | `CONFIRMED_FROM_CODE` | `CheckoutController.java`, `DATA_CONTRACT.md` |
 | Product/catalog mutations | `@Valid`, regex/size constraints | `products.update`, `catalog.update` | Persist catalog, soft-delete/restore product/category semantics | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `UpsertProductRequest.java` |
 | Order mutations | `@Valid` status/payment/refund/note requests | `orders.write` | Status transition, payment status, refund, notes, audit/admin id | `CONFIRMED_FROM_CODE` | `AdminOrderController.java` |
 | Customer mutations | `@Valid` requests | `customers.write` | Update profile/status and audit admin id | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
