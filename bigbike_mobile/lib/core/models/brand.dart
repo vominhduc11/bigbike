@@ -11,11 +11,18 @@ class BrandSummary {
     this.logo,
   });
 
+  static String? _parseLogoUrl(dynamic logo) {
+    if (logo == null) return null;
+    if (logo is String) return logo.isEmpty ? null : logo;
+    if (logo is Map) return logo['url'] as String?;
+    return null;
+  }
+
   factory BrandSummary.fromJson(Map<String, dynamic> j) => BrandSummary(
         id: j['id'].toString(),
         slug: j['slug'] as String? ?? '',
         name: j['name'] as String? ?? '',
-        logo: j['logo'] as String?,
+        logo: _parseLogoUrl(j['logo']),
       );
 }
 

@@ -35,7 +35,7 @@ class ProductListParams {
         'page': page,
         'size': 20,
         if (categorySlug != null) 'category': categorySlug,
-        if (brandSlug != null) 'brand': brandSlug,
+        if (brandSlug != null) 'pwb-brand': brandSlug,
         if (keyword != null && keyword!.isNotEmpty) 'q': keyword,
         if (sort != null) 'sort': sort,
         if (minPrice != null) 'min_price': minPrice!.toInt(),
