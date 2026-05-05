@@ -374,6 +374,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public Optional<Product> findProductByIdPublicView(String id) {
+        return products.stream().filter(product -> product.id().equals(id)).findFirst();
+    }
+
+    @Override
     public List<Category> findAllCategories() {
         return categories;
     }

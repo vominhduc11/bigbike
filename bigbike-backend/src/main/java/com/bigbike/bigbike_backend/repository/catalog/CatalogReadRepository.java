@@ -16,6 +16,8 @@ public interface CatalogReadRepository {
 
     Optional<Product> findProductById(String id);
 
+    Optional<Product> findProductByIdPublicView(String id);
+
     List<Category> findAllCategories();
 
     Optional<Category> findCategoryBySlug(String slug);

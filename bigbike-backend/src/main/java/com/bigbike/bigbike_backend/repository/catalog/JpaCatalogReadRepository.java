@@ -90,7 +90,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findAllProducts() {
-        return productJpaRepository.findAll().stream().map(this::toDomain).toList();
+        return productJpaRepository.findAll().stream().map(this::toDomainPublicView).toList();
     }
 
     @Override

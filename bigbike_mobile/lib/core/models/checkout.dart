@@ -33,7 +33,7 @@ class PaymentMethod {
   });
 
   factory PaymentMethod.fromJson(Map<String, dynamic> j) => PaymentMethod(
-        id: j['id'].toString(),
+        id: j['id']?.toString() ?? (j['code'] as String? ?? ''),
         code: j['code'] as String? ?? '',
         title: j['title'] as String? ?? '',
         description: j['description'] as String?,
@@ -95,25 +95,25 @@ class CheckoutAddress {
 class CheckoutPayload {
   final CheckoutAddress shippingAddress;
   final CheckoutAddress? billingAddress;
-  final String shippingMethodCode;
-  final String paymentMethodCode;
-  final String? notes;
+  final String shippingMethodId;
+  final String paymentMethod;
+  final String? customerNote;
 
   const CheckoutPayload({
     required this.shippingAddress,
     this.billingAddress,
-    required this.shippingMethodCode,
-    required this.paymentMethodCode,
-    this.notes,
+    required this.shippingMethodId,
+    required this.paymentMethod,
+    this.customerNote,
   });
 
   Map<String, dynamic> toJson() => {
         'shippingAddress': shippingAddress.toJson(),
-        'billingAddress':
-            (billingAddress ?? shippingAddress).toJson(),
-        'shippingMethodCode': shippingMethodCode,
-        'paymentMethodCode': paymentMethodCode,
-        if (notes != null && notes!.isNotEmpty) 'notes': notes,
+        'billingAddress': (billingAddress ?? shippingAddress).toJson(),
+        'shippingMethodId': shippingMethodId,
+        'paymentMethod': paymentMethod,
+        if (customerNote != null && customerNote!.isNotEmpty)
+          'customerNote': customerNote,
       };
 }
 
