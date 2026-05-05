@@ -334,6 +334,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\cart\CartCouponEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\cart\CartEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\cart\CartItemEntity.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\order\CheckoutIdempotencyKeyEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderAddressEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderAppliedCouponEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderEntity.java
@@ -383,6 +384,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\cart\CartCouponJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\cart\CartItemJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\cart\CartJpaRepository.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\order\CheckoutIdempotencyKeyJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\order\OrderAddressJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\order\OrderAppliedCouponJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\order\OrderFeeItemJpaRepository.java

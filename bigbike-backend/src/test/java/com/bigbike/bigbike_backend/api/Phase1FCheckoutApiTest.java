@@ -430,6 +430,97 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice() throws Exception {
+        ProductEntity product = createTrackedProduct("Idempotent Checkout Product", 2500000, 5);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 2);
+        long ordersBefore = orderRepo.count();
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+        String idempotencyKey = "checkout-" + UUID.randomUUID();
+
+        MvcResult first = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult second = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
+                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
+        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderKey"))
+                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderKey"));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
+        ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(refreshed.getStockQuantity()).isEqualTo(3);
+    }
+
+    @Test
+    void checkout_sameIdempotencyKey_withDifferentPayload_returns409() throws Exception {
+        ProductEntity product = createTrackedProduct("Idempotent Checkout Conflict", 1800000, 4);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 1);
+        String idempotencyKey = "checkout-conflict-" + UUID.randomUUID();
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"BACS\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice() throws Exception {
+        ProductEntity product = createTrackedProduct("Idempotent Quick Buy Product", 3200000, 6);
+        GuestSession session = newGuestSession();
+        long ordersBefore = orderRepo.count();
+        String payload = "{\"productId\":\"" + product.getId() + "\",\"quantity\":2," +
+                "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+        String idempotencyKey = "quick-buy-" + UUID.randomUUID();
+
+        MvcResult first = mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult second = mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
+                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
+        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderKey"))
+                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderKey"));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
+        ProductEntity refreshed = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(refreshed.getStockQuantity()).isEqualTo(4);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     /** Create a new guest session (GET /api/v1/cart) and capture cookies. */
@@ -449,11 +540,7 @@ class Phase1FCheckoutApiTest {
     private GuestSession newGuestSessionWithItem(int retailPrice, int qty) throws Exception {
         ProductEntity product = createTestProduct("Checkout Product " + retailPrice, retailPrice, null, PublishStatus.PUBLISHED);
         GuestSession session = newGuestSession();
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":" + qty + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk());
+        addProductToGuestCart(session, product.getId(), qty);
         return session;
     }
 
@@ -500,6 +587,24 @@ class Phase1FCheckoutApiTest {
                 .orElseThrow(() -> new IllegalStateException("Test category not found"));
         product.setCategory(cat);
         return productRepo.save(product);
+    }
+
+    private ProductEntity createTrackedProduct(String name, int retailPrice, int stockQuantity) {
+        ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
+        product.setManageStock(true);
+        product.setStockQuantity(stockQuantity);
+        product.setForceOutOfStock(false);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setUpdatedAt(Instant.now());
+        return productRepo.save(product);
+    }
+
+    private void addProductToGuestCart(GuestSession session, String productId, int qty) throws Exception {
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + productId + "\",\"quantity\":" + qty + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk());
     }
 
     private String getCookieValue(MockHttpServletResponse response, String name) {

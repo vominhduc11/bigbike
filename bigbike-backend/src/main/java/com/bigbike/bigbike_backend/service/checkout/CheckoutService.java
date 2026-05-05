@@ -46,8 +46,6 @@ import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -100,7 +98,6 @@ public class CheckoutService {
     private final AdminOrderWsService adminOrderWsService;
     private final InventoryPolicyService inventoryPolicyService;
     private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
 
     public CheckoutService(
             CartJpaRepository cartRepo,
@@ -124,8 +121,7 @@ public class CheckoutService {
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
             InventoryPolicyService inventoryPolicyService,
-            JdbcTemplate jdbcTemplate,
-            ObjectMapper objectMapper
+            JdbcTemplate jdbcTemplate
     ) {
         this.cartRepo = cartRepo;
         this.cartCouponRepo = cartCouponRepo;
@@ -149,7 +145,6 @@ public class CheckoutService {
         this.adminOrderWsService = adminOrderWsService;
         this.inventoryPolicyService = inventoryPolicyService;
         this.jdbcTemplate = jdbcTemplate;
-        this.objectMapper = objectMapper;
     }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
@@ -558,11 +553,9 @@ public class CheckoutService {
 
     private String hashRequest(Object requestBody) {
         try {
-            byte[] payload = objectMapper.writeValueAsBytes(requestBody);
+            byte[] payload = String.valueOf(requestBody).getBytes(StandardCharsets.UTF_8);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(payload));
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Could not serialize checkout request for idempotency.", e);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available.", e);
         }
