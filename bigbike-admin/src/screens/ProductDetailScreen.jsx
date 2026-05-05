@@ -419,6 +419,14 @@ function toIntegerOrNull(value) {
 }
 
 function toPayload(form) {
+  const hasSeo =
+    form.seoTitle.trim() ||
+    form.seoDescription.trim() ||
+    form.seoCanonicalUrl.trim() ||
+    form.seoOgImageUrl.trim() ||
+    form.seoOgImageAlt.trim() ||
+    form.seoNoIndex
+
   const payload = {
     sku: form.sku.trim() || null,
     slug: form.slug.trim(),
@@ -439,15 +447,17 @@ function toPayload(form) {
     publishStatus: form.publishStatus,
     featured: Boolean(form.isFeatured),
     showOnHomepage: Boolean(form.showOnHomepage),
-    seo: {
-      title: form.seoTitle.trim() || null,
-      description: form.seoDescription.trim() || null,
-      canonicalUrl: form.seoCanonicalUrl.trim() || null,
-      ogImage: form.seoOgImageUrl.trim()
-        ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
-        : null,
-      noIndex: Boolean(form.seoNoIndex),
-    },
+    seo: hasSeo
+      ? {
+          title: form.seoTitle.trim() || null,
+          description: form.seoDescription.trim() || null,
+          canonicalUrl: form.seoCanonicalUrl.trim() || null,
+          ogImage: form.seoOgImageUrl.trim()
+            ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+            : null,
+          noIndex: Boolean(form.seoNoIndex),
+        }
+      : null,
     // Always include image — null signals "clear the primary image".
     image: form.imageUrl.trim()
       ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }

@@ -189,7 +189,7 @@ class AdminMutationApiTest {
     }
 
     @Test
-    void shouldPersistProductSeoAndContentBottomAndAllowExplicitNullClear() throws Exception {
+    void shouldClearSeoFieldsWhenSeoPayloadIsNull() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
         String slug = "phase3-seo-content-" + suffix;
         String canonicalUrl = "https://bigbike.vn/products/" + slug;
@@ -307,15 +307,20 @@ class AdminMutationApiTest {
                         .header("X-Admin-Permissions", "products.update")
                         .content("""
                                 {
-                                  "contentBottom": null
+                                  "seo": null
                                 }
                                 """))
                 .andExpect(status().isOk());
 
-        ProductEntity cleared = productJpaRepository.findById(created.getId())
-                .orElseThrow(() -> new IllegalStateException("Expected cleared product."));
-        assertThat(cleared.getContentBottom()).isNull();
-        assertThat(cleared.getSeoTitle()).isEqualTo("Phase 3 SEO title updated " + suffix);
+        ProductEntity seoCleared = productJpaRepository.findById(created.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected SEO-cleared product."));
+        assertThat(seoCleared.getContentBottom()).isEqualTo("<p>Phase 3 SEO content updated " + suffix + "</p>");
+        assertThat(seoCleared.getSeoTitle()).isNull();
+        assertThat(seoCleared.getSeoDescription()).isNull();
+        assertThat(seoCleared.getSeoCanonicalUrl()).isNull();
+        assertThat(seoCleared.getSeoOgImageUrl()).isNull();
+        assertThat(seoCleared.getSeoOgImageAlt()).isNull();
+        assertThat(seoCleared.getSeoNoIndex()).isNull();
     }
 
     @Test
