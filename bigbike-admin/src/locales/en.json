@@ -434,6 +434,7 @@
       "parentId": "Parent category",
       "parentIdNone": "— None (top-level) —",
       "sortOrder": "Sort order",
+      "sortOrderHint": "Lower number displays first. Leave blank for no order.",
       "isVisible": "Visible",
       "showOnHomepage": "Show on homepage",
       "description": "Description",
@@ -445,7 +446,8 @@
       "seoDescription": "SEO description",
       "seoCanonicalUrl": "SEO canonical URL",
       "seoOgImageUrl": "SEO OG image URL",
-      "seoNoIndex": "SEO noIndex",
+      "seoOgImageAlt": "SEO OG image alt",
+      "seoNoIndex": "Do not index this page (noIndex)",
       "createBtn": "Create category",
       "saveBtn": "Save changes",
       "successCreate": "Category created successfully.",
@@ -461,11 +463,16 @@
       "errSortOrder": "Sort order must be an integer.",
       "errImageUrl": "Image URL is invalid. Use a path from the media library or a URL starting with http:// or https://.",
       "errIconUrl": "Icon URL is invalid. Use a path from the media library or a URL starting with http:// or https://.",
+      "errSeoTitleTooLong": "SEO title must not exceed 255 characters.",
+      "errSeoDescriptionTooLong": "SEO description must not exceed 5,000 characters.",
       "errSeoCanonicalUrl": "Canonical URL must start with http:// or https://.",
       "errSeoOgImageUrl": "SEO OG image URL is invalid. Use a path from the media library or a URL starting with http:// or https://.",
+      "errSeoOgImageAltTooLong": "SEO OG image alt must not exceed 255 characters.",
       "menuNoticeTitle": "Note: Mega-menu does not auto-update",
       "menuNoticeDesc": "Category changes (name, slug, image) are not automatically synced to the navigation menu. If this category appears in the mega-menu, go to Menu Management to update it manually.",
-      "menuNoticeAction": "Go to Menu Management"
+      "menuNoticeAction": "Go to Menu Management",
+      "seoSection": "SEO",
+      "conflictHideError": "Cannot hide this category: it still has visible child categories. Hide or re-parent them first."
     }
   },
   "brands": {

@@ -433,10 +433,20 @@
       "parentId": "Danh má»¥c cha",
       "parentIdNone": "â€” KhĂ´ng cĂ³ (danh má»¥c gá»‘c) â€”",
       "isVisible": "Hiá»ƒn thá»‹ trĂªn website",
+      "sortOrder": "Thứ tự hiển thị",
+      "sortOrderHint": "Số nhỏ hiển thị trước. Để trống = không đặt thứ tự.",
       "showOnHomepage": "Hiá»ƒn thá»‹ trĂªn trang chá»§",
       "description": "MĂ´ táº£",
       "imageUrl": "áº¢nh Ä‘áº¡i diá»‡n",
       "iconUrl": "Icon",
+      "imageAlt": "Alt ảnh đại diện",
+      "iconAlt": "Alt icon",
+      "seoTitle": "SEO title",
+      "seoDescription": "SEO description",
+      "seoCanonicalUrl": "SEO canonical URL",
+      "seoOgImageUrl": "SEO OG image URL",
+      "seoOgImageAlt": "Alt SEO OG image",
+      "seoNoIndex": "Không index trang này (noIndex)",
       "createBtn": "Táº¡o danh má»¥c",
       "saveBtn": "LÆ°u thay Ä‘á»•i",
       "successCreate": "Táº¡o danh má»¥c thĂ nh cĂ´ng.",
@@ -451,9 +461,17 @@
       "errNameRequired": "TĂªn danh má»¥c lĂ  báº¯t buá»™c.",
       "errImageUrl": "áº¢nh Ä‘áº¡i diá»‡n khĂ´ng há»£p lá»‡. DĂ¹ng Ä‘Æ°á»ng dáº«n tá»« thÆ° viá»‡n hoáº·c URL báº¯t Ä‘áº§u báº±ng http:// hoáº·c https://.",
       "errIconUrl": "Icon khĂ´ng há»£p lá»‡. DĂ¹ng Ä‘Æ°á»ng dáº«n tá»« thÆ° viá»‡n hoáº·c URL báº¯t Ä‘áº§u báº±ng http:// hoáº·c https://.",
+      "errSortOrder": "Thứ tự hiển thị phải là số nguyên không âm.",
+      "errSeoTitleTooLong": "SEO title không được vượt quá 255 ký tự.",
+      "errSeoDescriptionTooLong": "SEO description không được vượt quá 5.000 ký tự.",
+      "errSeoCanonicalUrl": "Canonical URL phải bắt đầu bằng http:// hoặc https://.",
+      "errSeoOgImageUrl": "SEO OG image URL không hợp lệ. Dùng đường dẫn thư viện hoặc URL bắt đầu bằng http:// hoặc https://.",
+      "errSeoOgImageAltTooLong": "SEO OG image alt không được vượt quá 255 ký tự.",
       "menuNoticeTitle": "LÆ°u Ă½: Menu Ä‘iá»u hÆ°á»›ng khĂ´ng tá»± cáº­p nháº­t",
       "menuNoticeDesc": "Náº¿u danh má»¥c nĂ y Ä‘ang hiá»ƒn thá»‹ trong menu cá»§a website, báº¡n cáº§n vĂ o Quáº£n lĂ½ Menu Ä‘á»ƒ cáº­p nháº­t thá»§ cĂ´ng sau khi lÆ°u.",
-      "menuNoticeAction": "Äáº¿n Quáº£n lĂ½ Menu"
+      "menuNoticeAction": "Äáº¿n Quáº£n lĂ½ Menu",
+      "seoSection": "SEO",
+      "conflictHideError": "Không thể ẩn danh mục: vẫn còn danh mục con đang hiển thị. Hãy ẩn hoặc di chuyển chúng trước."
     }
   },
   "brands": {
@@ -1368,4 +1386,3 @@
     "newSale": "BĂ¡n hĂ ng má»›i"
   }
 }
-

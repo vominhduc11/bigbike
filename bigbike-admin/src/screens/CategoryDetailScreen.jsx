@@ -37,8 +37,17 @@ function buildEmptyForm() {
     parentId: '',
     visible: true,
     showOnHomepage: false,
+    sortOrder: '',
     imageUrl: '',
+    imageAlt: '',
     iconUrl: '',
+    iconAlt: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoOgImageAlt: '',
+    seoNoIndex: false,
   }
 }
 
@@ -51,23 +60,52 @@ function buildFormFromItem(item) {
     parentId: item.parentId || '',
     visible: item.isVisible !== false,
     showOnHomepage: Boolean(item.showOnHomepage),
+    sortOrder: item.sortOrder != null ? String(item.sortOrder) : '',
     imageUrl: item.image?.url || '',
+    imageAlt: item.image?.alt || '',
     iconUrl: item.icon?.url || '',
+    iconAlt: item.icon?.alt || '',
+    seoTitle: item.seo?.title || '',
+    seoDescription: item.seo?.description || '',
+    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImageUrl || '',
+    seoOgImageAlt: item.seo?.ogImageAlt || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
   }
 }
 
 function toPayload(form) {
+  const sortStr = form.sortOrder.trim()
   const payload = {
     slug: form.slug.trim(),
     name: form.name.trim(),
     description: form.description.trim() || undefined,
-    parentId: form.parentId.trim() || undefined,
+    parentId: form.parentId.trim(),
     visible: Boolean(form.visible),
     showOnHomepage: Boolean(form.showOnHomepage),
+    sortOrder: sortStr !== '' ? parseInt(sortStr, 10) : null,
   }
 
-  payload.image = form.imageUrl.trim() ? { url: form.imageUrl.trim() } : { url: null }
-  payload.icon = form.iconUrl.trim() ? { url: form.iconUrl.trim() } : { url: null }
+  const imageUrl = form.imageUrl.trim()
+  payload.image = imageUrl ? { url: imageUrl, alt: form.imageAlt.trim() || undefined } : { url: null }
+
+  const iconUrl = form.iconUrl.trim()
+  payload.icon = iconUrl ? { url: iconUrl, alt: form.iconAlt.trim() || undefined } : { url: null }
+
+  const seoTitle = form.seoTitle.trim()
+  const seoDescription = form.seoDescription.trim()
+  const seoCanonicalUrl = form.seoCanonicalUrl.trim()
+  const seoOgImageUrl = form.seoOgImageUrl.trim()
+  const seoOgImageAlt = form.seoOgImageAlt.trim()
+  const hasAnySeo = seoTitle || seoDescription || seoCanonicalUrl || seoOgImageUrl || seoOgImageAlt || form.seoNoIndex
+  payload.seo = hasAnySeo ? {
+    title: seoTitle || undefined,
+    description: seoDescription || undefined,
+    canonicalUrl: seoCanonicalUrl || undefined,
+    ogImageUrl: seoOgImageUrl || undefined,
+    ogImageAlt: seoOgImageAlt || undefined,
+    noIndex: form.seoNoIndex || undefined,
+  } : undefined
 
   return payload
 }
@@ -203,7 +241,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       navigate('/admin/categories')
     },
     onError: (error) => {
-      toast.error(error.message || t('common.error'))
+      const msg = error.code === 'CONFLICT'
+        ? (error.message || t('categories.detail.conflictHideError'))
+        : (error.message || t('common.error'))
+      toast.error(msg)
       setIsSubmitting(false)
     },
   })
@@ -387,11 +428,31 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               ) : null}
             </label>
 
+            <label className="form-field">
+              <span>{t('categories.detail.sortOrder')}</span>
+              <input
+                className="control-input"
+                type="number"
+                min="0"
+                step="1"
+                value={form.sortOrder}
+                onChange={(event) => updateField('sortOrder', event.target.value)}
+                disabled={isReadOnly}
+                placeholder="0"
+              />
+              <small className="field-hint">{t('categories.detail.sortOrderHint')}</small>
+              {validationErrors.sortOrder ? (
+                <small className="field-error">{validationErrors.sortOrder}</small>
+              ) : null}
+            </label>
+
             <div className="form-field form-field-wide">
               <span>{t('categories.detail.imageUrl')}</span>
               <ImageUrlInput
                 value={form.imageUrl}
                 onChange={(url) => updateField('imageUrl', url)}
+                alt={form.imageAlt}
+                onAltChange={(alt) => updateField('imageAlt', alt)}
                 disabled={isReadOnly}
                 error={validationErrors.imageUrl}
               />
@@ -402,6 +463,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <ImageUrlInput
                 value={form.iconUrl}
                 onChange={(url) => updateField('iconUrl', url)}
+                alt={form.iconAlt}
+                onAltChange={(alt) => updateField('iconAlt', alt)}
                 disabled={isReadOnly}
                 error={validationErrors.iconUrl}
               />
@@ -436,6 +499,78 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 disabled={isReadOnly}
               />
               <span>{t('categories.detail.showOnHomepage')}</span>
+            </label>
+
+          </div>
+        </section>
+
+        <section className="detail-section">
+          <h2 className="detail-section-title">{t('categories.detail.seoSection')}</h2>
+          <div className="detail-section-content form-grid">
+
+            <label className="form-field">
+              <span>{t('categories.detail.seoTitle')}</span>
+              <input
+                className="control-input"
+                value={form.seoTitle}
+                onChange={(event) => updateField('seoTitle', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoTitle ? (
+                <small className="field-error">{validationErrors.seoTitle}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field">
+              <span>{t('categories.detail.seoCanonicalUrl')}</span>
+              <input
+                className="control-input"
+                value={form.seoCanonicalUrl}
+                onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoCanonicalUrl ? (
+                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>{t('categories.detail.seoDescription')}</span>
+              <textarea
+                className="control-input"
+                rows={3}
+                value={form.seoDescription}
+                onChange={(event) => updateField('seoDescription', event.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoDescription ? (
+                <small className="field-error">{validationErrors.seoDescription}</small>
+              ) : null}
+            </label>
+
+            <div className="form-field form-field-wide">
+              <span>{t('categories.detail.seoOgImageUrl')}</span>
+              <ImageUrlInput
+                value={form.seoOgImageUrl}
+                onChange={(url) => updateField('seoOgImageUrl', url)}
+                alt={form.seoOgImageAlt}
+                onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                disabled={isReadOnly}
+                error={validationErrors.seoOgImageUrl}
+              />
+              {validationErrors.seoOgImageAlt ? (
+                <small className="field-error">{validationErrors.seoOgImageAlt}</small>
+              ) : null}
+            </div>
+
+            <label className="form-checkbox">
+              <input
+                type="checkbox"
+                checked={form.seoNoIndex}
+                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                disabled={isReadOnly}
+              />
+              <span>{t('categories.detail.seoNoIndex')}</span>
             </label>
 
           </div>

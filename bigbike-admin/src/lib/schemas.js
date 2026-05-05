@@ -252,6 +252,13 @@ export function createCategorySchema(t) {
       name: z.string().min(1, t('categories.detail.errNameRequired')),
       imageUrl: z.string().optional(),
       iconUrl: z.string().optional(),
+      sortOrder: z.string().optional(),
+      seoTitle: z.string().optional(),
+      seoDescription: z.string().optional(),
+      seoCanonicalUrl: z.string().optional(),
+      seoOgImageUrl: z.string().optional(),
+      seoOgImageAlt: z.string().optional(),
+      seoNoIndex: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
       const s = String(data.slug || '').trim()
@@ -265,6 +272,28 @@ export function createCategorySchema(t) {
       }
       if (data.iconUrl?.trim() && !MEDIA_URL_REGEX.test(data.iconUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconUrl'), path: ['iconUrl'] })
+      }
+      const sortStr = (data.sortOrder ?? '').trim()
+      if (sortStr !== '') {
+        const n = Number(sortStr)
+        if (!Number.isInteger(n) || n < 0) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSortOrder'), path: ['sortOrder'] })
+        }
+      }
+      if ((data.seoTitle ?? '').trim().length > 255) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoTitleTooLong'), path: ['seoTitle'] })
+      }
+      if ((data.seoDescription ?? '').trim().length > 5000) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoDescriptionTooLong'), path: ['seoDescription'] })
+      }
+      if ((data.seoCanonicalUrl ?? '').trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoCanonicalUrl'), path: ['seoCanonicalUrl'] })
+      }
+      if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageUrl'), path: ['seoOgImageUrl'] })
+      }
+      if ((data.seoOgImageAlt ?? '').trim().length > 255) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoOgImageAltTooLong'), path: ['seoOgImageAlt'] })
       }
     })
 }

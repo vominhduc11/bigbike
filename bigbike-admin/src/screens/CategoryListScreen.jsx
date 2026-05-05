@@ -238,6 +238,11 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           </span>
         </td>
 
+        {/* Sort order — flat mode only */}
+        {!useTreeMode && (
+          <td className="align-right">{category.sortOrder ?? '—'}</td>
+        )}
+
         {/* Updated */}
         <td>{formatDateTime(category.updatedAt)}</td>
 
