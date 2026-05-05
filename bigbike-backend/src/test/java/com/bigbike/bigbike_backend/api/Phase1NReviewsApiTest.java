@@ -160,6 +160,12 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void publicGetReviews_unknownProduct_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/products/" + UNKNOWN_PRODUCT_ID + "/reviews"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void publicPostReview_success_createsPendingReview() throws Exception {
         long countBefore = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "PENDING", PageRequest.of(0, 500))
                 .getTotalElements();

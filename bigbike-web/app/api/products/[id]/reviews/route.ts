@@ -16,6 +16,15 @@ type Pagination = {
   hasPrevious: boolean;
 };
 
+type BackendErrorPayload =
+  | {
+      error?: {
+        message?: string;
+      };
+      message?: string;
+    }
+  | null;
+
 const EMPTY = {
   avgRating: 0,
   totalReviews: 0,
@@ -29,6 +38,11 @@ const EMPTY = {
     hasPrevious: false,
   } satisfies Pagination,
 };
+
+async function readBackendError(res: Response) {
+  const payload = (await res.json().catch(() => null)) as BackendErrorPayload;
+  return payload?.error?.message ?? payload?.message ?? null;
+}
 
 export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
@@ -48,8 +62,24 @@ export async function GET(req: Request, { params }: Params) {
       headers: { Accept: "application/json" },
     });
 
-    if (res.status === 404 || !res.ok) {
+    if (res.status === 404) {
+      // PDP should stay stable when the product lookup behind reviews returns not found.
       return NextResponse.json(EMPTY);
+    }
+
+    if (res.status >= 400 && res.status < 500) {
+      const error = await readBackendError(res);
+      return NextResponse.json(
+        { error: error ?? "Không thể tải đánh giá." },
+        { status: res.status },
+      );
+    }
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Không thể tải đánh giá." },
+        { status: res.status || 503 },
+      );
     }
 
     const json = (await res.json()) as {
@@ -79,7 +109,10 @@ export async function GET(req: Request, { params }: Params) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
-    return NextResponse.json(EMPTY);
+    return NextResponse.json(
+      { error: "Không thể tải đánh giá." },
+      { status: 503 },
+    );
   }
 }
 
@@ -111,9 +144,9 @@ export async function POST(req: Request, { params }: Params) {
     });
 
     if (!res.ok) {
-      const errJson = (await res.json().catch(() => null)) as { message?: string } | null;
+      const error = await readBackendError(res);
       return NextResponse.json(
-        { error: errJson?.message ?? "Không thể gửi đánh giá." },
+        { error: error ?? "Không thể gửi đánh giá." },
         { status: res.status },
       );
     }

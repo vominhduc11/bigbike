@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 type Review = {
-  id: string;
+  id: number | string;
   authorName: string;
   rating: number;
   comment?: string;
@@ -29,6 +33,8 @@ type ReviewsSectionProps = {
   productId: string;
   initialRating: number | null;
 };
+
+const PAGE_SIZE = 10;
 
 function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   const rounded = Math.round(rating);
@@ -188,34 +194,81 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   );
 }
 
-export function ReviewsSection(props: ReviewsSectionProps) {
-  return <ReviewsSectionContent key={props.productId} {...props} />;
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (payload && typeof payload === "object" && "error" in payload) {
+    const error = (payload as { error?: unknown }).error;
+    if (typeof error === "string" && error.trim()) {
+      return error;
+    }
+  }
+  return fallback;
 }
 
-function ReviewsSectionContent({ productId, initialRating }: ReviewsSectionProps) {
-  const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
+async function fetchReviewsPage(productId: string, page: number) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(PAGE_SIZE),
+  });
+  const res = await fetch(`/api/products/${productId}/reviews/?${params.toString()}`);
+  const payload = (await res.json().catch(() => null)) as ReviewsData | { error?: string } | null;
 
-  const { data, isLoading } = useQuery<ReviewsData>({
-    queryKey: ["product-reviews", productId, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        page: String(page),
-        size: "10",
-      });
-      const res = await fetch(`/api/products/${productId}/reviews/?${params.toString()}`);
-      if (!res.ok) throw new Error("Không tải được đánh giá");
-      return res.json() as Promise<ReviewsData>;
-    },
+  if (!res.ok) {
+    throw new Error(getErrorMessage(payload, "Không thể tải đánh giá."));
+  }
+
+  return payload as ReviewsData;
+}
+
+export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps) {
+  const queryClient = useQueryClient();
+  const queryKey = ["product-reviews", productId] as const;
+
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useInfiniteQuery({
+    queryKey,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => fetchReviewsPage(productId, pageParam),
+    getNextPageParam: (lastPage) => (
+      lastPage.pagination.hasNext
+        ? lastPage.pagination.page + 1
+        : undefined
+    ),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  if (isLoading && !initialRating) return null;
-  if (!data && !initialRating) return null;
+  const firstPage = data?.pages[0];
+  const reviews = data?.pages.flatMap((page) => page.reviews) ?? [];
+  const rating = firstPage?.avgRating || initialRating || 0;
+  const total = firstPage?.totalReviews ?? 0;
 
-  const rating = data?.avgRating || initialRating || 0;
-  const total = data?.totalReviews ?? 0;
+  const resetToFirstPage = () => {
+    queryClient.setQueryData<InfiniteData<ReviewsData>>(queryKey, (current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        pages: current.pages.slice(0, 1),
+        pageParams: current.pageParams.slice(0, 1),
+      };
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey,
+      exact: true,
+      refetchType: "active",
+    });
+  };
+
+  if (isLoading && !initialRating) return null;
+  if (!firstPage && !initialRating) return null;
 
   return (
     <section className="wp-pdp-reviews">
@@ -234,14 +287,12 @@ function ReviewsSectionContent({ productId, initialRating }: ReviewsSectionProps
 
       <WriteReviewForm
         productId={productId}
-        onSuccess={() => {
-          void queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
-        }}
+        onSuccess={resetToFirstPage}
       />
 
-      {data && data.reviews.length > 0 && (
+      {!!reviews.length && (
         <ul className="wp-pdp-review-list">
-          {data.reviews.map((review) => (
+          {reviews.map((review) => (
             <li key={review.id} className="wp-pdp-review-item">
               <div className="wp-pdp-review-meta">
                 <span className="wp-pdp-review-author">{review.authorName}</span>
@@ -261,31 +312,23 @@ function ReviewsSectionContent({ productId, initialRating }: ReviewsSectionProps
         </ul>
       )}
 
-      {data && !data.reviews.length && rating > 0 && (
+      {firstPage && !reviews.length && rating > 0 && (
         <p className="wp-pdp-reviews-empty">Chưa có đánh giá chi tiết.</p>
       )}
 
-      {data && data.pagination.totalPages > 1 && (
+      {hasNextPage && (
         <div className="wp-review-pagination">
           <button
             type="button"
             className="wp-btn-secondary"
-            disabled={!data.pagination.hasPrevious}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
           >
-            Trang trước
+            {isFetchingNextPage ? "Đang tải thêm..." : "Xem thêm đánh giá"}
           </button>
-          <span className="wp-review-pagination-label">
-            Trang {data.pagination.page}/{data.pagination.totalPages}
-          </span>
-          <button
-            type="button"
-            className="wp-btn-secondary"
-            disabled={!data.pagination.hasNext}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            Trang sau
-          </button>
+          {isFetchNextPageError && (
+            <p className="wp-field-error">Không thể tải thêm đánh giá.</p>
+          )}
         </div>
       )}
     </section>

@@ -29,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class CheckoutController {
 
+    private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
+
     private final CheckoutService checkoutService;
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
@@ -52,10 +54,12 @@ public class CheckoutController {
         CartEntity cart = resolveCart(cp, request);
         List<CartItemEntity> items = cartService.getItems(cart);
         UUID customerId = cp != null ? cp.customerId() : null;
+        String guestSessionId = cp == null ? cart.getSessionId() : null;
+        String idempotencyKey = request.getHeader(IDEMPOTENCY_HEADER);
         String clientIp = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
         OrderSummaryResponse result = checkoutService.checkoutFromCart(
-                cart, items, req, customerId, clientIp, userAgent);
+                cart, items, req, customerId, guestSessionId, idempotencyKey, clientIp, userAgent);
         return apiResponseFactory.data(result, request);
     }
 
@@ -66,9 +70,12 @@ public class CheckoutController {
     ) {
         CustomerPrincipal cp = resolveCustomerPrincipal();
         UUID customerId = cp != null ? cp.customerId() : null;
+        String guestSessionId = cp == null ? CustomerSessionFilter.extractCookie(request, CartController.GUEST_COOKIE) : null;
+        String idempotencyKey = request.getHeader(IDEMPOTENCY_HEADER);
         String clientIp = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
-        OrderSummaryResponse result = checkoutService.quickBuy(req, customerId, clientIp, userAgent);
+        OrderSummaryResponse result = checkoutService.quickBuy(
+                req, customerId, guestSessionId, idempotencyKey, clientIp, userAgent);
         return apiResponseFactory.data(result, request);
     }
 

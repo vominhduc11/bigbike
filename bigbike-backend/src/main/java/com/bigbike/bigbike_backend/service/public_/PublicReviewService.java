@@ -31,6 +31,10 @@ public class PublicReviewService {
     }
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
+        if (!productRepo.existsById(productId)) {
+            throw new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i.");
+        }
+
         int normalizedPage = Math.max(DEFAULT_PAGE, page);
         int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
