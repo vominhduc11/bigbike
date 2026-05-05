@@ -200,6 +200,37 @@ public class AdminCatalogMutationService {
     }
 
     /**
+     * Restore a product from TRASH back to DRAFT.
+     * Restore is intentionally separate from publish mutation so trash cannot
+     * jump back to PUBLISHED without an explicit publish action.
+     */
+    @Transactional
+    public Product restoreProduct(String productId) {
+        requireJpaPersistenceEnabled();
+
+        ProductEntity entity = productJpaRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        if (entity.getPublishStatus() != PublishStatus.TRASH) {
+            errors.add(new ApiErrorDetail(
+                    "publishStatus",
+                    "INVALID_STATE_TRANSITION",
+                    "Only trashed products can be restored."
+            ));
+        }
+        AdminMutationValidators.throwIfErrors(errors);
+
+        entity.setPublishStatus(PublishStatus.DRAFT);
+        entity.setUpdatedAt(Instant.now());
+        productJpaRepository.save(entity);
+        revalidateProduct(entity, null);
+
+        return catalogReadRepository.findProductById(entity.getId())
+                .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
      * Soft-delete a category. Categories have no publishStatus column; the
      * closest equivalent to TRASH is is_visible=false. Restoration is just a
      * normal PATCH that flips visible back to true.

@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -260,6 +261,54 @@ class AdminMutationApiTest {
         assertThat(updatedVariant.getRetailPrice()).isEqualByComparingTo("1800000");
         assertThat(updatedVariant.getCompareAtPrice()).isEqualByComparingTo("2100000");
         assertThat(updatedVariant.getSalePrice()).isEqualByComparingTo("1700000");
+    }
+
+    @Test
+    void shouldSoftDeleteProductIdempotentlyAndRestoreTrashToDraft() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase2-trash-product-" + suffix;
+
+        String createPayload = """
+                  {
+                    "slug": "%s",
+                    "name": "Phase 2 Trash Product %s",
+                    "categoryId": "cat_helmet",
+                    "retailPrice": 1250000,
+                    "stockState": "IN_STOCK",
+                    "publishStatus": "DRAFT",
+                    "image": {
+                      "url": "%s/wp-uploads/products/%s.jpg",
+                      "alt": "Phase 2 Trash Product"
+                    }
+                  }
+                  """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(slug))
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"));
+
+        ProductEntity created = productJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created product."));
+
+        mockMvc.perform(delete("/api/v1/admin/products/{id}", created.getId())
+                        .header("X-Admin-Permissions", "products.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("TRASH"));
+
+        mockMvc.perform(delete("/api/v1/admin/products/{id}", created.getId())
+                        .header("X-Admin-Permissions", "products.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("TRASH"));
+
+        mockMvc.perform(post("/api/v1/admin/products/{id}/restore", created.getId())
+                        .header("X-Admin-Permissions", "products.update"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"));
     }
 
     @Test

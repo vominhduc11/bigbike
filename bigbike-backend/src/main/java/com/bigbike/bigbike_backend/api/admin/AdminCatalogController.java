@@ -134,7 +134,7 @@ public class AdminCatalogController {
     /**
      * Soft-delete: marks the product as TRASH instead of physical removal so it
      * can be restored from the admin trash view. Idempotent: deleting a product
-     * that's already TRASH returns 204 without touching the row.
+     * that's already TRASH returns the current product without touching the row.
      */
     @DeleteMapping("/products/{id}")
     public ApiDataResponse<Product> softDeleteProduct(
@@ -143,6 +143,19 @@ public class AdminCatalogController {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return apiResponseFactory.data(adminCatalogMutationService.softDeleteProduct(id), request);
+    }
+
+    /**
+     * Restore a trashed product back to DRAFT. Product is not published by
+     * this command; admins must publish explicitly afterwards.
+     */
+    @PostMapping("/products/{id}/restore")
+    public ApiDataResponse<Product> restoreProduct(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id), request);
     }
 
     @GetMapping("/categories")

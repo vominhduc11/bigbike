@@ -4,6 +4,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
+import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +16,8 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
+import java.math.BigDecimal;
 
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
@@ -21,6 +27,9 @@ class AdminReadApiTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;
+
+    @Autowired
+    private AdminCatalogMutationService adminCatalogMutationService;
 
     @BeforeEach
     void setup() {
@@ -60,6 +69,38 @@ class AdminReadApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("prod_ls2_ff800"))
                 .andExpect(jsonPath("$.data.slug").value("mu-bao-hiem-ls2-ff800"));
+    }
+
+    @Test
+    void shouldExcludeTrashFromDefaultProductListAndAllowTrashFilter() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase2-trash-list-" + suffix;
+
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug(slug);
+        create.setName("Trash List Product " + suffix);
+        create.setCategoryId("cat_helmet");
+        create.setRetailPrice(new BigDecimal("1250000"));
+        create.setStockState(ProductStockState.IN_STOCK);
+        create.setPublishStatus(PublishStatus.DRAFT);
+
+        Product created = adminCatalogMutationService.createProduct(create);
+        adminCatalogMutationService.softDeleteProduct(created.id());
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("q", slug)
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("q", slug)
+                        .param("publishStatus", "TRASH")
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(created.id()))
+                .andExpect(jsonPath("$.data[0].publishStatus").value("TRASH"));
     }
 
     @Test

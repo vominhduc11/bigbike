@@ -355,7 +355,8 @@ function paginate(items, query) {
 }
 
 export function queryMockProducts(query) {
-  const search = normalizeSearch(query.search)
+  const search = normalizeSearch(query?.search)
+  const publishStatus = query?.publishStatus
 
   let items = PRODUCTS_DATA.filter((item) => {
     const matchesSearch =
@@ -364,21 +365,22 @@ export function queryMockProducts(query) {
       (item.sku || '').toLowerCase().includes(search) ||
       item.slug.toLowerCase().includes(search)
 
-    const matchesPublish =
-      !query.publishStatus ||
-      query.publishStatus === 'ALL' ||
-      item.publishStatus === query.publishStatus
+    const matchesPublish = publishStatus === 'TRASH'
+      ? item.publishStatus === 'TRASH'
+      : !publishStatus || publishStatus === 'ALL'
+        ? item.publishStatus !== 'TRASH'
+        : item.publishStatus === publishStatus
 
     const matchesStock =
-      !query.stockState ||
+      !query?.stockState ||
       query.stockState === 'ALL' ||
       item.stockState === query.stockState
 
     return matchesSearch && matchesPublish && matchesStock
   })
 
-  items = sortByRule(items, query.sort || 'updatedAt:desc')
-  return paginate(items, query)
+  items = sortByRule(items, query?.sort || 'updatedAt:desc')
+  return paginate(items, query || {})
 }
 
 export function queryMockCategories(query) {

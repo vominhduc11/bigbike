@@ -345,12 +345,15 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+        boolean trashFilter = publishStatus != null && publishStatus.equalsIgnoreCase("TRASH");
+        boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");
         return products.stream()
                 .filter(p -> query == null || query.isBlank()
                         || p.name().toLowerCase().contains(query.toLowerCase())
                         || p.slug().toLowerCase().contains(query.toLowerCase()))
-                .filter(p -> publishStatus == null || publishStatus.isBlank()
-                        || p.publishStatus().name().equalsIgnoreCase(publishStatus))
+                .filter(p -> trashFilter ? p.publishStatus() == PublishStatus.TRASH
+                        : defaultList ? p.publishStatus() != PublishStatus.TRASH
+                        : p.publishStatus().name().equalsIgnoreCase(publishStatus))
                 .filter(p -> stockState == null || stockState.isBlank()
                         || p.stockState().name().equalsIgnoreCase(stockState))
                 .filter(p -> brandId == null || brandId.isBlank()

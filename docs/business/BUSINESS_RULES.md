@@ -58,7 +58,7 @@ File này dùng làm nền cho:
 | PRODUCT_RULE_003 | Product | Product create bắt buộc có slug, name, retailPrice, stockState, publishStatus và categoryId. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
 | PRODUCT_RULE_004 | Product | Product/category/brand slug không được trùng. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
 | PRODUCT_RULE_005 | Product | Product price fields phải không âm; sale price phải hợp lệ theo retail/compare-at rule. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
-| PRODUCT_RULE_006 | Product | Product soft-delete chuyển publishStatus sang `TRASH`. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
+| PRODUCT_RULE_006 | Product | Product soft-delete chuyển publishStatus sang `TRASH`; restore từ `TRASH` về `DRAFT`; re-delete `TRASH` là no-op. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
 | CATEGORY_RULE_001 | Category/Brand | Public category/brand chỉ trả visible item. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `CatalogReadService` | `MISSING_TEST_COVERAGE` |
 | CATEGORY_RULE_002 | Category | Không được ẩn category nếu còn visible child categories. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |
 | CATEGORY_RULE_003 | Category | Category không được là parent của chính nó hoặc tạo vòng lặp parent-child. | Backend | `CONFIRMED_BACKEND_ENFORCED` | `AdminCatalogMutationService` | `MISSING_TEST_COVERAGE` |

@@ -519,6 +519,12 @@ export async function softDeleteProduct(productId) {
   await requestJson(`/admin/products/${productId}`, { method: 'DELETE' })
 }
 
+export async function restoreProduct(productId) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/products/${productId}/restore`, { method: 'POST' })
+  return parseDetailPayload(payload, normalizeProduct)
+}
+
 export async function softDeleteCategory(categoryId) {
   assertMutationEnabled()
   await requestJson(`/admin/categories/${categoryId}`, { method: 'DELETE' })

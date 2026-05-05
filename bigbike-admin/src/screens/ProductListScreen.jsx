@@ -8,7 +8,7 @@ import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategories, fetchProductDetail, fetchProducts, softDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategories, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
 
 const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
 import { ExportButton } from '../components/ExportButton'
@@ -39,6 +39,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
   const [deletingId, setDeletingId] = useState(null)
+  const [restoringId, setRestoringId] = useState(null)
 
   const state = useAdminList(['products', query], () => fetchProducts(query))
 
@@ -85,6 +86,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
     try {
       await softDeleteProduct(product.id)
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
       toast.success(t('products.deleteSuccess', { defaultValue: 'Đã xoá sản phẩm' }))
     } catch (error) {
       const message = error instanceof ApiClientError
@@ -93,6 +95,29 @@ export function ProductListScreen({ navigate, canUpdate }) {
       toast.error(message)
     } finally {
       setDeletingId(null)
+    }
+  }, [queryClient, t])
+
+  const handleRestore = useCallback(async (product) => {
+    const confirmed = await showConfirm(
+      t('products.restoreConfirm', { defaultValue: `Khôi phục "${product.name}" từ thùng rác?` }),
+      t('products.restoreConfirmTitle', { defaultValue: 'Khôi phục sản phẩm' }),
+    )
+    if (!confirmed) return
+
+    setRestoringId(product.id)
+    try {
+      await restoreProduct(product.id)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
+      toast.success(t('products.restoreSuccess', { defaultValue: 'Đã khôi phục sản phẩm' }))
+    } catch (error) {
+      const message = error instanceof ApiClientError
+        ? error.message
+        : (error?.message || t('products.restoreError', { defaultValue: 'Không thể khôi phục sản phẩm' }))
+      toast.error(message)
+    } finally {
+      setRestoringId(null)
     }
   }, [queryClient, t])
 
@@ -144,15 +169,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
         label: t('products.colUpdated'),
         render: (product) => formatDateTime(product.updatedAt),
       },
-      {
-        key: 'actions',
-        label: t('common.actions'),
-        align: 'right',
-        render: (product) => {
-          const isDeleting = deletingId === product.id
-          const isTrashed = product.publishStatus === 'TRASH'
-          return (
-            <div className="row-actions">
+        {
+          key: 'actions',
+          label: t('common.actions'),
+          align: 'right',
+          render: (product) => {
+            const isDeleting = deletingId === product.id
+            const isRestoring = restoringId === product.id
+            const isTrashed = product.publishStatus === 'TRASH'
+            return (
+              <div className="row-actions">
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -160,31 +186,42 @@ export function ProductListScreen({ navigate, canUpdate }) {
               >
                 {t('common.edit')}
               </button>
-              {canUpdate && (
+                {canUpdate && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => handleDuplicate(product)}
+                    title="Sao chép sản phẩm này sang sản phẩm mới"
+                  >
+                    Sao chép
+                  </button>
+                )}
+                {canUpdate && isTrashed && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => handleRestore(product)}
+                    disabled={isDeleting || isRestoring}
+                    title={t('products.restoreConfirmTitle', { defaultValue: 'Khôi phục sản phẩm' })}
+                  >
+                    {isRestoring ? t('products.restoringLabel', { defaultValue: 'Đang khôi phục…' }) : t('products.restore', { defaultValue: 'Khôi phục' })}
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  onClick={() => handleDuplicate(product)}
-                  title="Sao chép sản phẩm này sang sản phẩm mới"
+                  className="btn btn-danger"
+                  onClick={() => handleDelete(product)}
+                  disabled={!canUpdate || isDeleting || isRestoring || isTrashed}
+                  title={isTrashed ? t('products.trashedTitle') : t('products.deleteConfirmTitle')}
                 >
-                  Sao chép
+                  {isDeleting ? t('products.deletingLabel') : t('common.delete')}
                 </button>
-              )}
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={() => handleDelete(product)}
-                disabled={!canUpdate || isDeleting || isTrashed}
-                title={isTrashed ? t('products.trashedTitle') : t('products.deleteConfirmTitle')}
-              >
-                {isDeleting ? t('products.deletingLabel') : t('common.delete')}
-              </button>
-            </div>
-          )
+              </div>
+            )
+          },
         },
-      },
-    ],
-    [navigate, handleDelete, handleDuplicate, deletingId, canUpdate, t],
+      ],
+    [navigate, handleDelete, handleDuplicate, handleRestore, deletingId, restoringId, canUpdate, t],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
@@ -249,14 +286,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
             onChange={(event) =>
               updateQuery({ publishStatus: event.target.value }, { resetPage: true })
             }
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-            <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-            <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-            <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
-          </select>
-        </label>
+            >
+              <option value="ALL">{t('common.all')}</option>
+              <option value="DRAFT">{t('status.publish.DRAFT')}</option>
+              <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
+              <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
+              <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
+              <option value="TRASH">{t('status.publish.TRASH')}</option>
+            </select>
+          </label>
 
         <label>
           {t('products.filterStock')}

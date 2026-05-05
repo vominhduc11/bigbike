@@ -186,12 +186,13 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 
 | Method | Path | Purpose | Required permission | Request high-level | Response high-level | Status | Evidence |
 |---|---|---|---|---|---|---|---|
-| GET | `/api/v1/admin/products` | List products | `products.read` | page/size/pageSize/sort/q/search/publishStatus/stockState/brandId/categoryId | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
+| GET | `/api/v1/admin/products` | List products | `products.read` | page/size/pageSize/sort/q/search/publishStatus (default excludes TRASH; TRASH returns trashed products only)/stockState/brandId/categoryId | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | GET | `/api/v1/admin/products/{id}` | Product detail | `products.read` | id path | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | POST | `/api/v1/admin/products` | Create product | `products.update` | `UpsertProductRequest` | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | PATCH | `/api/v1/admin/products/{id}` | Update product | `products.update` | `UpsertProductRequest` | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | PATCH | `/api/v1/admin/products/{id}/publish` | Update publish status | `products.update` | `ProductPublishRequest` | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | DELETE | `/api/v1/admin/products/{id}` | Soft-delete product to TRASH | `products.update` | id path | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
+| POST | `/api/v1/admin/products/{id}/restore` | Restore trashed product to DRAFT | `products.update` | id path | `ApiDataResponse<Product>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | GET/POST/PATCH/DELETE | `/api/v1/admin/categories[/{id}]` | Category list/detail/create/update/soft-delete | `catalog.read` / `catalog.update` | filters or `UpsertCategoryRequest` | `ApiListResponse` / `ApiDataResponse<Category>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 | GET/POST/PATCH/DELETE | `/api/v1/admin/brands[/{id}]` | Brand list/detail/create/update/delete | `catalog.read` / `catalog.update` | filters or `UpsertBrandRequest` | `ApiListResponse` / `ApiDataResponse<Brand>` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `adminApi.js` |
 
@@ -280,7 +281,7 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 |---|---|---|---|---|---|
 | Cart mutations | `@Valid` request DTOs + service validation | Public, CSRF mutation filter | Set/consume guest cart and CSRF cookies, recalc totals/coupons | `CONFIRMED_FROM_CODE` | `CartController.java`, `SecurityConfig.java` |
 | Checkout/quick-buy | `@Valid` DTO + checkout service validation | Public, CSRF mutation filter | Create order, capture contact/totals, decrement stock, record client IP/user-agent, notifications | `CONFIRMED_FROM_CODE` | `CheckoutController.java`, `DATA_CONTRACT.md` |
-| Product/catalog mutations | `@Valid`, regex/size constraints | `products.update`, `catalog.update` | Persist catalog, soft-delete product/category semantics | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `UpsertProductRequest.java` |
+| Product/catalog mutations | `@Valid`, regex/size constraints | `products.update`, `catalog.update` | Persist catalog, soft-delete/restore product/category semantics | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `UpsertProductRequest.java` |
 | Order mutations | `@Valid` status/payment/refund/note requests | `orders.write` | Status transition, payment status, refund, notes, audit/admin id | `CONFIRMED_FROM_CODE` | `AdminOrderController.java` |
 | Customer mutations | `@Valid` requests | `customers.write` | Update profile/status and audit admin id | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 | Inventory adjustment | `@Valid AdjustStockRequest` | `products.update` | Stock quantity/movement update | `CONFIRMED_FROM_CODE` | `AdminInventoryController.java` |

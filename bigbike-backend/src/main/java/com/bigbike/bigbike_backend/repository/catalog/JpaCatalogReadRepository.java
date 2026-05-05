@@ -158,7 +158,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (publishStatus != null && !publishStatus.isBlank()) {
+            if (publishStatus == null || publishStatus.isBlank() || "ALL".equalsIgnoreCase(publishStatus)) {
+                predicates.add(cb.notEqual(root.get("publishStatus"), PublishStatus.TRASH));
+            } else {
                 predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.valueOf(publishStatus)));
             }
             if (stockState != null && !stockState.isBlank()) {
