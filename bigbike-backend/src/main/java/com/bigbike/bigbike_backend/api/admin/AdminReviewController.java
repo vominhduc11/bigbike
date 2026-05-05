@@ -68,7 +68,7 @@ public class AdminReviewController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "reviews.write");
-        return apiResponseFactory.data(adminReviewService.updateStatus(id, body.getOrDefault("status", "PENDING")), request);
+        return apiResponseFactory.data(adminReviewService.updateStatus(id, body.get("status")), request);
     }
 
     @DeleteMapping("/{id}")

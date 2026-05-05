@@ -68,8 +68,8 @@ function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImageUrl || '',
-    seoOgImageAlt: item.seo?.ogImageAlt || '',
+    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
   }
 }
@@ -97,15 +97,15 @@ function toPayload(form) {
   const seoCanonicalUrl = form.seoCanonicalUrl.trim()
   const seoOgImageUrl = form.seoOgImageUrl.trim()
   const seoOgImageAlt = form.seoOgImageAlt.trim()
-  const hasAnySeo = seoTitle || seoDescription || seoCanonicalUrl || seoOgImageUrl || seoOgImageAlt || form.seoNoIndex
-  payload.seo = hasAnySeo ? {
+  payload.seo = {
     title: seoTitle || undefined,
     description: seoDescription || undefined,
     canonicalUrl: seoCanonicalUrl || undefined,
-    ogImageUrl: seoOgImageUrl || undefined,
-    ogImageAlt: seoOgImageAlt || undefined,
+    ogImage: seoOgImageUrl
+      ? { url: seoOgImageUrl, alt: seoOgImageAlt || undefined }
+      : null,
     noIndex: form.seoNoIndex || undefined,
-  } : undefined
+  }
 
   return payload
 }

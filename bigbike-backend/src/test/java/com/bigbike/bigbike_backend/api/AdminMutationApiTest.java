@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -859,6 +860,70 @@ class AdminMutationApiTest {
                 .orElseThrow(() -> new IllegalStateException("Expected parent category."));
         assertThat(updated.isVisible()).isTrue();
         assertThat(updated.getName()).isEqualTo("Hide Guard Name Only Parent Updated " + suffix);
+    }
+
+    @Test
+    void categorySeoOgImageShouldRoundTripAndClearViaEmptyFields() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "category-seo-og-" + suffix;
+        String ogUrl = MEDIA_PUBLIC_BASE_URL + "/wp-uploads/categories/" + slug + "-og.jpg";
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {
+                                  "slug":"%s",
+                                  "name":"Category SEO OG %s",
+                                  "visible":true,
+                                  "seo":{
+                                    "title":"Cat SEO title %s",
+                                    "description":"Cat SEO desc %s",
+                                    "canonicalUrl":"https://bigbike.vn/danh-muc/%s",
+                                    "ogImage":{"url":"%s","alt":"Cat OG alt %s"},
+                                    "noIndex":true
+                                  }
+                                }
+                                """.formatted(slug, suffix, suffix, suffix, slug, ogUrl, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.seo.title").value("Cat SEO title " + suffix))
+                .andExpect(jsonPath("$.data.seo.ogImage.url").value(ogUrl))
+                .andExpect(jsonPath("$.data.seo.ogImage.alt").value("Cat OG alt " + suffix))
+                .andExpect(jsonPath("$.data.seo.noIndex").value(true));
+
+        CategoryEntity created = categoryJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created category."));
+        assertThat(created.getSeoTitle()).isEqualTo("Cat SEO title " + suffix);
+        assertThat(created.getSeoOgImageUrl()).isEqualTo(ogUrl);
+        assertThat(created.getSeoOgImageAlt()).isEqualTo("Cat OG alt " + suffix);
+        assertThat(created.getSeoNoIndex()).isTrue();
+
+        // Reload via GET — verify the same shape comes back
+        mockMvc.perform(get("/api/v1/admin/categories/{id}", created.getId())
+                        .header("X-Admin-Permissions", "catalog.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.seo.ogImage.url").value(ogUrl))
+                .andExpect(jsonPath("$.data.seo.ogImage.alt").value("Cat OG alt " + suffix));
+
+        // Clear SEO via empty fields + ogImage:null (Category PATCH supports field-level clear via applySeo)
+        mockMvc.perform(patch("/api/v1/admin/categories/{id}", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"seo":{"ogImage":null}}
+                                """))
+                .andExpect(status().isOk());
+
+        CategoryEntity cleared = categoryJpaRepository.findById(created.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected SEO-cleared category."));
+        assertThat(cleared.getSeoTitle()).isNull();
+        assertThat(cleared.getSeoDescription()).isNull();
+        assertThat(cleared.getSeoCanonicalUrl()).isNull();
+        assertThat(cleared.getSeoOgImageUrl()).isNull();
+        assertThat(cleared.getSeoOgImageAlt()).isNull();
+        assertThat(cleared.getSeoNoIndex()).isNull();
     }
 
     private static VariantOptionRequest variantOption(String optionName, String optionValue) {

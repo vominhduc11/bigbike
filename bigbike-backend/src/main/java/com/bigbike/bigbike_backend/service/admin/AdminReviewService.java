@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,6 +23,7 @@ public class AdminReviewService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final Set<String> ALLOWED_STATUSES = Set.of("APPROVED", "PENDING", "SPAM", "TRASH");
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
@@ -59,9 +62,17 @@ public class AdminReviewService {
 
     @Transactional
     public Map<String, Object> updateStatus(Long id, String status) {
+        if (status == null || status.isBlank()) {
+            throw ValidationException.fromField("status", "REQUIRED", "Trạng thái không được để trống.");
+        }
+        String normalized = status.toUpperCase(Locale.ROOT);
+        if (!ALLOWED_STATUSES.contains(normalized)) {
+            throw ValidationException.fromField("status", "INVALID",
+                    "Trạng thái không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH.");
+        }
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
-        entity.setStatus(status.toUpperCase(Locale.ROOT));
+        entity.setStatus(normalized);
         entity.setUpdatedAt(Instant.now());
         Map<String, Object> result = toMap(reviewRepo.save(entity));
         revalidateProduct(entity.getProductId());

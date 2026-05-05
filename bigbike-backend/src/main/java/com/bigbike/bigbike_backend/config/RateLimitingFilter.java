@@ -34,13 +34,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   checkout / quick-buy    → 5 req/min
  *   order lookup (GET)      → 20 req/min
  *   search (GET)            → 60 req/min
+ *   public review submit    → 5 req/min
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -65,6 +66,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> checkoutBuckets      = new ConcurrentHashMap<>();
     private final Map<String, Bucket> orderLookupBuckets   = new ConcurrentHashMap<>();
     private final Map<String, Bucket> searchBuckets        = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> reviewBuckets        = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(
@@ -112,6 +114,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/checkout".equals(path) || "/api/v1/orders/quick-buy".equals(path)) {
                 return LimitTier.CHECKOUT;
             }
+            // Public review submit: POST /api/v1/products/{productId}/reviews
+            if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews")) {
+                return LimitTier.REVIEW;
+            }
         }
         if (path.startsWith("/api/v1/cart") && ("POST".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method))) {
             return LimitTier.CART;
@@ -147,6 +153,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     ip -> newBucket(20, Duration.ofMinutes(1)));
             case SEARCH        -> searchBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(60, Duration.ofMinutes(1)));
+            case REVIEW        -> reviewBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(5, Duration.ofMinutes(1)));
         };
     }
 
