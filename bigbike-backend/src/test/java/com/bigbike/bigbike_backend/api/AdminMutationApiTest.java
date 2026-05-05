@@ -189,6 +189,136 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldPersistProductSeoAndContentBottomAndAllowExplicitNullClear() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase3-seo-content-" + suffix;
+        String canonicalUrl = "https://bigbike.vn/products/" + slug;
+        String imageUrl = MEDIA_PUBLIC_BASE_URL + "/wp-uploads/products/" + slug + "-seo.jpg";
+
+        String createPayload = """
+                {
+                  "slug": "%s",
+                  "name": "Phase 3 SEO Content Product %s",
+                  "categoryId": "cat_helmet",
+                  "retailPrice": 2500000,
+                  "stockState": "IN_STOCK",
+                  "publishStatus": "DRAFT",
+                  "contentBottom": "<p>Phase 3 SEO content %s</p>",
+                  "seo": {
+                    "title": "Phase 3 SEO title %s",
+                    "description": "Phase 3 SEO description %s",
+                    "canonicalUrl": "%s",
+                    "ogImage": {
+                      "url": "%s",
+                      "alt": "Phase 3 SEO OG image %s"
+                    },
+                    "noIndex": true
+                  },
+                  "image": {
+                    "url": "%s/wp-uploads/products/%s.jpg",
+                    "alt": "Phase 3 SEO Content Product"
+                  }
+                }
+                """.formatted(
+                slug,
+                suffix,
+                suffix,
+                suffix,
+                suffix,
+                canonicalUrl,
+                imageUrl,
+                suffix,
+                MEDIA_PUBLIC_BASE_URL,
+                slug
+        );
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(slug))
+                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 SEO content " + suffix + "</p>"))
+                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title " + suffix))
+                .andExpect(jsonPath("$.data.seo.noIndex").value(true));
+
+        ProductEntity created = productJpaRepository.findBySlug(slug)
+                .orElseThrow(() -> new IllegalStateException("Expected created product."));
+
+        assertThat(created.getContentBottom()).isEqualTo("<p>Phase 3 SEO content " + suffix + "</p>");
+        assertThat(created.getSeoTitle()).isEqualTo("Phase 3 SEO title " + suffix);
+        assertThat(created.getSeoDescription()).isEqualTo("Phase 3 SEO description " + suffix);
+        assertThat(created.getSeoCanonicalUrl()).isEqualTo(canonicalUrl);
+        assertThat(created.getSeoOgImageUrl()).isEqualTo(imageUrl);
+        assertThat(created.getSeoOgImageAlt()).isEqualTo("Phase 3 SEO OG image " + suffix);
+        assertThat(created.getSeoNoIndex()).isTrue();
+
+        String updatePayload = """
+                {
+                  "name": "Phase 3 SEO Content Product Updated %s",
+                  "contentBottom": "<p>Phase 3 SEO content updated %s</p>",
+                  "seo": {
+                    "title": "Phase 3 SEO title updated %s",
+                    "description": "Phase 3 SEO description updated %s",
+                    "canonicalUrl": "https://bigbike.vn/products/%s-updated",
+                    "ogImage": {
+                      "url": "%s/wp-uploads/products/%s-seo-updated.jpg",
+                      "alt": "Phase 3 SEO OG image updated %s"
+                    },
+                    "noIndex": false
+                  }
+                }
+                """.formatted(
+                suffix,
+                suffix,
+                suffix,
+                suffix,
+                slug,
+                MEDIA_PUBLIC_BASE_URL,
+                slug,
+                suffix
+        );
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(updatePayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Phase 3 SEO Content Product Updated " + suffix))
+                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 SEO content updated " + suffix + "</p>"))
+                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title updated " + suffix))
+                .andExpect(jsonPath("$.data.seo.noIndex").value(false));
+
+        ProductEntity updated = productJpaRepository.findById(created.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected updated product."));
+        assertThat(updated.getContentBottom()).isEqualTo("<p>Phase 3 SEO content updated " + suffix + "</p>");
+        assertThat(updated.getSeoTitle()).isEqualTo("Phase 3 SEO title updated " + suffix);
+        assertThat(updated.getSeoDescription()).isEqualTo("Phase 3 SEO description updated " + suffix);
+        assertThat(updated.getSeoCanonicalUrl()).isEqualTo("https://bigbike.vn/products/" + slug + "-updated");
+        assertThat(updated.getSeoOgImageUrl()).isEqualTo(MEDIA_PUBLIC_BASE_URL + "/wp-uploads/products/" + slug + "-seo-updated.jpg");
+        assertThat(updated.getSeoOgImageAlt()).isEqualTo("Phase 3 SEO OG image updated " + suffix);
+        assertThat(updated.getSeoNoIndex()).isFalse();
+
+        mockMvc.perform(patch("/api/v1/admin/products/{id}", created.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "contentBottom": null
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        ProductEntity cleared = productJpaRepository.findById(created.getId())
+                .orElseThrow(() -> new IllegalStateException("Expected cleared product."));
+        assertThat(cleared.getContentBottom()).isNull();
+        assertThat(cleared.getSeoTitle()).isEqualTo("Phase 3 SEO title updated " + suffix);
+    }
+
+    @Test
     void updateProductShouldNotWipeVariantPricesWhenVariantPriceFieldsAreAbsent() throws Exception {
         String suffix = String.valueOf(System.currentTimeMillis());
 

@@ -731,7 +731,7 @@ public class AdminCatalogMutationService {
         if (create || request.getRatingCount() != null) {
             entity.setRatingCount(request.getRatingCount());
         }
-        if (create || request.getContentBottom() != null) {
+        if (create || request.isContentBottomPresent()) {
             entity.setContentBottom(AdminMutationValidators.trimToNull(request.getContentBottom()));
         }
 

@@ -60,6 +60,7 @@ public class UpsertProductRequest {
 
     @Size(max = 50000, message = "Content bottom is too long.")
     private String contentBottom;
+    private boolean contentBottomPresent = false;
 
     @Valid
     private SeoMetaRequest seo;
@@ -264,6 +265,11 @@ public class UpsertProductRequest {
 
     public void setContentBottom(String contentBottom) {
         this.contentBottom = contentBottom;
+        this.contentBottomPresent = true;
+    }
+
+    public boolean isContentBottomPresent() {
+        return contentBottomPresent;
     }
 
     public SeoMetaRequest getSeo() {

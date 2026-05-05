@@ -234,6 +234,7 @@ export function normalizeProduct(input) {
     name: toTrimmedString(source.name) || 'Untitled product',
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
+    contentBottom: toTrimmedString(source.contentBottom) || undefined,
     brand: normalizeBrandSummary(source.brand),
     category,
     categories: Array.isArray(source.categories)

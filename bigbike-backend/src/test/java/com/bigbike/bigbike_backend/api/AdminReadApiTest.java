@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
@@ -69,6 +71,47 @@ class AdminReadApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("prod_ls2_ff800"))
                 .andExpect(jsonPath("$.data.slug").value("mu-bao-hiem-ls2-ff800"));
+    }
+
+    @Test
+    void shouldReturnProductSeoAndContentBottomInAdminDetail() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "phase3-read-seo-" + suffix;
+        String canonicalUrl = "https://bigbike.vn/products/" + slug;
+        String ogImageUrl = "http://localhost:9000/bigbike-media/wp-uploads/products/" + slug + "-seo.jpg";
+
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug(slug);
+        create.setName("Phase 3 Read SEO Product " + suffix);
+        create.setCategoryId("cat_helmet");
+        create.setRetailPrice(new BigDecimal("2500000"));
+        create.setStockState(ProductStockState.IN_STOCK);
+        create.setPublishStatus(PublishStatus.DRAFT);
+        create.setContentBottom("<p>Phase 3 read content " + suffix + "</p>");
+
+        SeoMetaRequest seo = new SeoMetaRequest();
+        seo.setTitle("Phase 3 read SEO title " + suffix);
+        seo.setDescription("Phase 3 read SEO description " + suffix);
+        seo.setCanonicalUrl(canonicalUrl);
+        seo.setNoIndex(Boolean.TRUE);
+        ImageAssetRequest ogImage = new ImageAssetRequest();
+        ogImage.setUrl(ogImageUrl);
+        ogImage.setAlt("Phase 3 read OG image " + suffix);
+        seo.setOgImage(ogImage);
+        create.setSeo(seo);
+
+        Product created = adminCatalogMutationService.createProduct(create);
+
+        mockMvc.perform(get("/api/v1/admin/products/{id}", created.id())
+                        .header("X-Admin-Permissions", "products.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(created.id()))
+                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 read content " + suffix + "</p>"))
+                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 read SEO title " + suffix))
+                .andExpect(jsonPath("$.data.seo.description").value("Phase 3 read SEO description " + suffix))
+                .andExpect(jsonPath("$.data.seo.canonicalUrl").value(canonicalUrl))
+                .andExpect(jsonPath("$.data.seo.ogImage.url").value(ogImageUrl))
+                .andExpect(jsonPath("$.data.seo.noIndex").value(true));
     }
 
     @Test

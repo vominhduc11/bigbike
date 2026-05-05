@@ -77,6 +77,8 @@ const SECTION_ITEMS = [
   { id: 'section-basic', label: 'Cơ bản' },
   { id: 'section-pricing', label: 'Giá' },
   { id: 'section-media', label: 'Ảnh' },
+  { id: 'section-seo', label: 'SEO' },
+  { id: 'section-content-bottom', label: 'Nội dung SEO' },
   { id: 'section-gallery', label: 'Gallery' },
   { id: 'section-videos', label: 'Video' },
   { id: 'section-specs', label: 'Thông số' },
@@ -315,6 +317,7 @@ function buildEmptyForm() {
     name: '',
     shortDescription: '',
     description: '',
+    contentBottom: '',
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -325,6 +328,12 @@ function buildEmptyForm() {
     publishStatus: 'DRAFT',
     imageUrl: '',
     imageAlt: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoOgImageAlt: '',
+    seoNoIndex: false,
     isFeatured: false,
     showOnHomepage: false,
     gallery: [],
@@ -355,6 +364,7 @@ function buildFormFromItem(item) {
     name: item.name || '',
     shortDescription: item.shortDescription || '',
     description: item.description || '',
+    contentBottom: item.contentBottom || '',
     brandId: item.brand?.id || '',
     categoryId: item.category?.id || '',
     retailPrice:
@@ -374,6 +384,12 @@ function buildFormFromItem(item) {
     publishStatus: item.publishStatus,
     imageUrl: item.image?.url || '',
     imageAlt: item.image?.alt || '',
+    seoTitle: item.seo?.title || '',
+    seoDescription: item.seo?.description || '',
+    seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoOgImageAlt: item.seo?.ogImage?.alt || '',
+    seoNoIndex: Boolean(item.seo?.noIndex),
     isFeatured: Boolean(item.isFeatured),
     showOnHomepage: Boolean(item.showOnHomepage),
     gallery: (item.gallery || []).map((img) => ({ url: img.url || '' })),
@@ -409,6 +425,7 @@ function toPayload(form) {
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
     description: form.description.trim() || undefined,
+    contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -422,6 +439,15 @@ function toPayload(form) {
     publishStatus: form.publishStatus,
     featured: Boolean(form.isFeatured),
     showOnHomepage: Boolean(form.showOnHomepage),
+    seo: {
+      title: form.seoTitle.trim() || null,
+      description: form.seoDescription.trim() || null,
+      canonicalUrl: form.seoCanonicalUrl.trim() || null,
+      ogImage: form.seoOgImageUrl.trim()
+        ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+        : null,
+      noIndex: Boolean(form.seoNoIndex),
+    },
     // Always include image — null signals "clear the primary image".
     image: form.imageUrl.trim()
       ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }
@@ -2179,6 +2205,124 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 disabled={isReadOnly}
                 error={validationErrors.imageUrl}
               />
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── SEO ── */}
+        <CollapsibleSection id="section-seo" title={t('products.detail.sectionSeo')}>
+          <div className="detail-section-content form-grid">
+            <label className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.seoTitle')}</span>
+                <span className={`char-counter${form.seoTitle.length > 220 ? ' char-counter-warn' : ''}`}>
+                  {form.seoTitle.length} / 255
+                </span>
+              </div>
+              <input
+                className={`control-input${validationErrors.seoTitle ? ' input-error' : ''}`}
+                type="text"
+                maxLength={255}
+                value={form.seoTitle}
+                onChange={(e) => updateField('seoTitle', e.target.value)}
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoTitle ? (
+                <small className="field-error">{validationErrors.seoTitle}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.seoDescription')}</span>
+                <span className={`char-counter${form.seoDescription.length > 4500 ? ' char-counter-warn' : ''}`}>
+                  {form.seoDescription.length.toLocaleString()} / 5 000
+                </span>
+              </div>
+              <textarea
+                className={`control-input control-textarea${validationErrors.seoDescription ? ' input-error' : ''}`}
+                value={form.seoDescription}
+                onChange={(e) => updateField('seoDescription', e.target.value)}
+                maxLength={5000}
+                placeholder="Nhập mô tả SEO ngắn gọn cho kết quả tìm kiếm..."
+                disabled={isReadOnly}
+              />
+              {validationErrors.seoDescription ? (
+                <small className="field-error">{validationErrors.seoDescription}</small>
+              ) : null}
+            </label>
+
+            <label className="form-field form-field-wide">
+              <span>{t('products.detail.seoCanonicalUrl')}</span>
+              <input
+                className={`control-input${validationErrors.seoCanonicalUrl ? ' input-error' : ''}`}
+                type="url"
+                maxLength={2048}
+                placeholder="https://bigbike.vn/san-pham/..."
+                value={form.seoCanonicalUrl}
+                onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                disabled={isReadOnly}
+              />
+              <small className="detail-section-desc" style={{ marginTop: 4 }}>
+                URL chuẩn để search engine index đúng trang sản phẩm.
+              </small>
+              {validationErrors.seoCanonicalUrl ? (
+                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
+              ) : null}
+            </label>
+
+            <div className="form-field form-field-wide">
+              <span className="form-field-label">{t('products.detail.seoOgImageUrl')}</span>
+              <ImageUrlInput
+                value={form.seoOgImageUrl}
+                onChange={(url) => updateField('seoOgImageUrl', url)}
+                alt={form.seoOgImageAlt}
+                onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                disabled={isReadOnly}
+                error={validationErrors.seoOgImageUrl}
+              />
+              {validationErrors.seoOgImageAlt ? (
+                <small className="field-error">{validationErrors.seoOgImageAlt}</small>
+              ) : null}
+            </div>
+
+            <div className="form-field form-checkboxes-row form-field-wide">
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.seoNoIndex}
+                  onChange={(e) => updateField('seoNoIndex', e.target.checked)}
+                  disabled={isReadOnly}
+                />
+                <span>{t('products.detail.seoNoIndex')}</span>
+              </label>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── Nội dung SEO dài ── */}
+        <CollapsibleSection id="section-content-bottom" title={t('products.detail.sectionContentBottom')}>
+          <div className="detail-section-content">
+            <div className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.contentBottom')}</span>
+                {form.contentBottom.length > 15000 && (
+                  <span className={`char-counter${form.contentBottom.length > 45000 ? ' char-counter-warn' : ''}`}>
+                    {form.contentBottom.length.toLocaleString()} / 50 000
+                  </span>
+                )}
+              </div>
+              <RichTextEditor
+                value={form.contentBottom}
+                onChange={(html) => updateField('contentBottom', html)}
+                placeholder="Nhập nội dung SEO dài hiển thị dưới phần mô tả sản phẩm..."
+                disabled={isReadOnly}
+                hasError={Boolean(validationErrors.contentBottom)}
+                enableImagePicker
+              />
+              {validationErrors.contentBottom ? (
+                <small className="field-error">{validationErrors.contentBottom}</small>
+              ) : null}
             </div>
           </div>
         </CollapsibleSection>

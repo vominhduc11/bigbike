@@ -50,12 +50,19 @@ export function createProductSchema(t, isCreate = false) {
       // to actually describe the product — placeholder strings like
       // "abcde" / "test" leak into production otherwise.
       shortDescription: z.string().optional(),
+      contentBottom: z.string().optional(),
       retailPrice: z.string().optional(),
       compareAtPrice: z.string().optional(),
       salePrice: z.string().optional(),
       stockState: z.string().min(1, t('products.detail.errStockRequired')),
       publishStatus: z.string().min(1, t('products.detail.errPublishRequired')),
       imageUrl: z.string().optional(),
+      seoTitle: z.string().optional(),
+      seoDescription: z.string().optional(),
+      seoCanonicalUrl: z.string().optional(),
+      seoOgImageUrl: z.string().optional(),
+      seoOgImageAlt: z.string().optional(),
+      seoNoIndex: z.boolean().optional(),
       gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       videos: z.array(z.object({
         url: z.string(),
@@ -108,6 +115,48 @@ export function createProductSchema(t, isCreate = false) {
           code: z.ZodIssueCode.custom,
           message: t('products.detail.errShortDescriptionTooShort'),
           path: ['shortDescription'],
+        })
+      }
+      if (String(data.contentBottom ?? '').length > 50000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errContentBottomTooLong'),
+          path: ['contentBottom'],
+        })
+      }
+      if ((data.seoTitle ?? '').trim().length > 255) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errSeoTitleTooLong'),
+          path: ['seoTitle'],
+        })
+      }
+      if ((data.seoDescription ?? '').trim().length > 5000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errSeoDescriptionTooLong'),
+          path: ['seoDescription'],
+        })
+      }
+      if ((data.seoCanonicalUrl ?? '').trim() && !URL_REGEX.test(data.seoCanonicalUrl.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errSeoCanonicalUrl'),
+          path: ['seoCanonicalUrl'],
+        })
+      }
+      if ((data.seoOgImageUrl ?? '').trim() && !MEDIA_URL_REGEX.test(data.seoOgImageUrl.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errSeoOgImageUrl'),
+          path: ['seoOgImageUrl'],
+        })
+      }
+      if ((data.seoOgImageAlt ?? '').trim().length > 255) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('products.detail.errSeoOgImageAltTooLong'),
+          path: ['seoOgImageAlt'],
         })
       }
 

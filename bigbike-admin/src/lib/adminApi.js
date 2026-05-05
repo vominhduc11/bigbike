@@ -391,13 +391,21 @@ export function mapValidationErrors(error) {
     return {}
   }
 
+  const FIELD_ALIASES = {
+    'seo.title': 'seoTitle',
+    'seo.description': 'seoDescription',
+    'seo.canonicalUrl': 'seoCanonicalUrl',
+    'seo.ogImage.url': 'seoOgImageUrl',
+    'seo.ogImage.alt': 'seoOgImageAlt',
+  }
+
   return error.details.reduce((acc, detail) => {
     if (!detail || typeof detail !== 'object') {
       return acc
     }
     const rawField = typeof detail.field === 'string' ? detail.field : '_form'
     // Normalize bracket notation variants[0].field â†’ variants.0.field
-    const field = rawField.replace(/\[(\d+)\]/g, '.$1')
+    const field = (FIELD_ALIASES[rawField] || rawField).replace(/\[(\d+)\]/g, '.$1')
     const message =
       typeof detail.message === 'string'
         ? detail.message
