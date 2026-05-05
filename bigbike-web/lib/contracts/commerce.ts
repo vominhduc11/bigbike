@@ -122,17 +122,17 @@ export type OrderAddress = {
 
 export type OrderShippingItem = {
   id: string
-  code: string | null
-  title: string
-  cost: number
+  methodCode: string | null
+  methodTitle: string
+  amount: number
 }
 
 export type OrderPayment = {
   id: string
+  paymentMethod: string
   status: string
-  method: string
   amount: number
-  transactionId: string | null
+  currency: string
   paidAt: string | null
 }
 

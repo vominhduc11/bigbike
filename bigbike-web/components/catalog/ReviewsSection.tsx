@@ -15,6 +15,14 @@ type ReviewsData = {
   avgRating: number;
   totalReviews: number;
   reviews: Review[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
 };
 
 type ReviewsSectionProps = {
@@ -180,12 +188,22 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   );
 }
 
-export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps) {
+export function ReviewsSection(props: ReviewsSectionProps) {
+  return <ReviewsSectionContent key={props.productId} {...props} />;
+}
+
+function ReviewsSectionContent({ productId, initialRating }: ReviewsSectionProps) {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+
   const { data, isLoading } = useQuery<ReviewsData>({
-    queryKey: ["product-reviews", productId],
+    queryKey: ["product-reviews", productId, page],
     queryFn: async () => {
-      const res = await fetch(`/api/products/${productId}/reviews/`);
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "10",
+      });
+      const res = await fetch(`/api/products/${productId}/reviews/?${params.toString()}`);
       if (!res.ok) throw new Error("Không tải được đánh giá");
       return res.json() as Promise<ReviewsData>;
     },
@@ -245,6 +263,30 @@ export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps
 
       {data && !data.reviews.length && rating > 0 && (
         <p className="wp-pdp-reviews-empty">Chưa có đánh giá chi tiết.</p>
+      )}
+
+      {data && data.pagination.totalPages > 1 && (
+        <div className="wp-review-pagination">
+          <button
+            type="button"
+            className="wp-btn-secondary"
+            disabled={!data.pagination.hasPrevious}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Trang trước
+          </button>
+          <span className="wp-review-pagination-label">
+            Trang {data.pagination.page}/{data.pagination.totalPages}
+          </span>
+          <button
+            type="button"
+            className="wp-btn-secondary"
+            disabled={!data.pagination.hasNext}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Trang sau
+          </button>
+        </div>
       )}
     </section>
   );

@@ -155,6 +155,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\ContactController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\ContactRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\PublicProductReviewsResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\PublicSliderResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\SubmitReviewRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\VnAddressItem.java

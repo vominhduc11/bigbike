@@ -453,11 +453,14 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
 
   Future<void> _load() async {
     try {
-      final data = await ApiClient().get<Map<String, dynamic>>(
+      final response = await ApiClient().get<Map<String, dynamic>>(
         ApiEndpoints.productReviews(widget.productId),
       );
+      final payload = response['data'] is Map<String, dynamic>
+          ? response['data'] as Map<String, dynamic>
+          : response;
       setState(() {
-        _reviews = (data['reviews'] as List? ?? [])
+        _reviews = (payload['reviews'] as List? ?? [])
             .cast<Map<String, dynamic>>()
             .map(ProductReview.fromJson)
             .toList();

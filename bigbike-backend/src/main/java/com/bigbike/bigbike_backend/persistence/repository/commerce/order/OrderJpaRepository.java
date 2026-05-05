@@ -55,7 +55,7 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     // ── Dashboard: revenue series (native, VN timezone, avoids full entity load) ─
 
     @Query(value =
-        "SELECT CAST(placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE) AS day, " +
+        "SELECT CAST(placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE) AS report_day, " +
         "       COALESCE(SUM(total_amount), 0) AS revenue, " +
         "       COUNT(*) AS cnt " +
         "FROM orders " +
@@ -99,14 +99,14 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses);
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.status = 'REFUNDED'")
+    @Query("SELECT COALESCE(SUM(o.refundAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.refundAmount > 0")
     BigDecimal sumRefundAmountInRange(@Param("from") Instant from, @Param("to") Instant to);
 
     // ── Reports: daily revenue series with range + status filter ─────────────
 
     @Query(value =
-        "SELECT CAST(placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE) AS day, " +
+        "SELECT CAST(placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE) AS report_day, " +
         "       COALESCE(SUM(total_amount), 0) AS revenue, " +
         "       COUNT(*) AS cnt " +
         "FROM orders " +

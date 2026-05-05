@@ -39,9 +39,8 @@ public class PublicReviewService {
                 normalizedSize,
                 Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
         Page<ReviewEntity> approvedPage = reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
-        ReviewJpaRepository.ReviewAggregate aggregate = reviewRepo.findAggregateByProductIdAndStatus(
-                productId,
-                APPROVED_STATUS);
+        ReviewJpaRepository.ReviewAggregate aggregate =
+                reviewRepo.findAggregateByProductIdAndStatus(productId, APPROVED_STATUS);
 
         double avgRating = roundAverage(aggregate.getAvgRating());
         long totalReviews = aggregate.getTotalReviews() != null ? aggregate.getTotalReviews() : 0L;
@@ -64,7 +63,7 @@ public class PublicReviewService {
     @Transactional
     public void submitReview(String productId, String authorName, int rating, String comment) {
         productRepo.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Sáº£n pháº©m khĂ´ng tá»“n táº¡i."));
+                .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
 
         ReviewEntity entity = new ReviewEntity();
         entity.setProductId(productId);
@@ -89,7 +88,7 @@ public class PublicReviewService {
     private PublicProductReviewsResponse.ReviewItem toPublicReviewItem(ReviewEntity review) {
         return new PublicProductReviewsResponse.ReviewItem(
                 review.getId(),
-                review.getAuthorName() != null ? review.getAuthorName() : "áº¨n danh",
+                review.getAuthorName() != null ? review.getAuthorName() : "\u1ea8n danh",
                 review.getRating(),
                 review.getBody() != null ? review.getBody() : "",
                 review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");

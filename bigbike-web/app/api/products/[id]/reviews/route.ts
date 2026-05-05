@@ -7,27 +7,58 @@ const BACKEND =
 
 type Params = { params: Promise<{ id: string }> };
 
-const EMPTY = { avgRating: 0, totalReviews: 0, reviews: [] };
+type Pagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+};
 
-export async function GET(_req: Request, { params }: Params) {
+const EMPTY = {
+  avgRating: 0,
+  totalReviews: 0,
+  reviews: [],
+  pagination: {
+    page: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrevious: false,
+  } satisfies Pagination,
+};
+
+export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const upstreamParams = new URLSearchParams();
+  const page = searchParams.get("page");
+  const size = searchParams.get("size");
+
+  if (page) upstreamParams.set("page", page);
+  if (size) upstreamParams.set("size", size);
+
+  const query = upstreamParams.size ? `?${upstreamParams.toString()}` : "";
 
   try {
-    const res = await fetch(`${BACKEND}/api/v1/products/${id}/reviews`, {
+    const res = await fetch(`${BACKEND}/api/v1/products/${id}/reviews${query}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
 
-    if (res.status === 404) {
-      return NextResponse.json(EMPTY);
-    }
-
-    if (!res.ok) {
+    if (res.status === 404 || !res.ok) {
       return NextResponse.json(EMPTY);
     }
 
     const json = (await res.json()) as {
-      data?: { avgRating?: number; totalReviews?: number; reviews?: unknown[] };
+      data?: {
+        avgRating?: number;
+        totalReviews?: number;
+        reviews?: unknown[];
+        pagination?: Partial<Pagination>;
+      };
     };
     const data = json.data ?? (json as typeof json["data"]);
 
@@ -36,6 +67,14 @@ export async function GET(_req: Request, { params }: Params) {
         avgRating: data?.avgRating ?? 0,
         totalReviews: data?.totalReviews ?? 0,
         reviews: data?.reviews ?? [],
+        pagination: {
+          page: data?.pagination?.page ?? Number(page ?? 1),
+          pageSize: data?.pagination?.pageSize ?? Number(size ?? 10),
+          totalItems: data?.pagination?.totalItems ?? 0,
+          totalPages: data?.pagination?.totalPages ?? 0,
+          hasNext: data?.pagination?.hasNext ?? false,
+          hasPrevious: data?.pagination?.hasPrevious ?? false,
+        },
       },
       { headers: { "Cache-Control": "no-store" } },
     );

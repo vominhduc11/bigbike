@@ -507,6 +507,134 @@ class Phase1HAdminOrderApiTest {
     // ── 28. Regression — existing APIs still work ─────────────────────────────
 
     @Test
+    void createRefund_unpaidOrder_returns409() throws Exception {
+        OrderInfo order = placeGuestOrder(7100000);
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":100000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void createRefund_partial_setsPartiallyRefunded() throws Exception {
+        OrderInfo order = placeGuestOrder(7200000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refundAmount":500000,"refundReason":"CUSTOMER_REQUEST",
+                                 "note":"Refund 500k","customerVisible":true}
+                                """)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_REFUNDED"))
+                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.refundAmount").value(500000.00))
+                .andExpect(jsonPath("$.data.refundReason").value("CUSTOMER_REQUEST"))
+                .andExpect(jsonPath("$.data.refundedAt").isNotEmpty());
+    }
+
+    @Test
+    void createRefund_full_setsRefundedStatus_andSyncsPaymentRecord() throws Exception {
+        OrderInfo order = placeGuestOrder(7300000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":1200000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refundAmount":1200000,"refundReason":"CUSTOMER_REQUEST",
+                                 "note":"Full refund","customerVisible":true}
+                                """)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"))
+                .andExpect(jsonPath("$.data.refundAmount").value(1200000.00))
+                .andExpect(jsonPath("$.data.refundedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.payments[0].status").value("REFUNDED"))
+                .andExpect(jsonPath("$.data.payments[0].paymentMethod").value("COD"));
+    }
+
+    @Test
+    void createRefund_exceedsRefundable_returns400() throws Exception {
+        OrderInfo order = placeGuestOrder(7400000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":900000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":900001,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void refundReport_partial_includesPartialRefundAmount() throws Exception {
+        Instant from = Instant.now().minusSeconds(1);
+
+        OrderInfo partialRefundOrder = placeGuestOrder(7500000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":900000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":300000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        OrderInfo fullRefundOrder = placeGuestOrder(7600000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":1200000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":1200000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        Instant to = Instant.now().plusSeconds(1);
+        mockMvc.perform(get("/api/v1/admin/reports/analytics")
+                        .param("from", from.toString())
+                        .param("to", to.toString())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.refundAmount").value(1500000.00));
+    }
+
+    @Test
     void regression_existingApisStillWork() throws Exception {
         // Public catalog still accessible
         mockMvc.perform(get("/api/v1/products").param("page", "1").param("size", "2"))

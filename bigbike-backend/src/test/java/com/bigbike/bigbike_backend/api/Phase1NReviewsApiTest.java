@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.jdbc.Sql;
@@ -44,9 +45,9 @@ class Phase1NReviewsApiTest {
     @Autowired ReviewJpaRepository reviewRepo;
     @Autowired JwtService jwtService;
 
-    // Plain MockMvc (no Spring Security) — for functional behavior tests
+    // Plain MockMvc (no Spring Security) â€” for functional behavior tests
     private MockMvc mockMvc;
-    // Security-aware MockMvc — for auth/permission tests
+    // Security-aware MockMvc â€” for auth/permission tests
     private MockMvc secMvc;
 
     private Long approvedReviewId;
@@ -60,18 +61,13 @@ class Phase1NReviewsApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
 
-        approvedReviewId = insertReview(PRODUCT_ID, "Reviewer APPROVED", 5, "Tuyệt vời!", "APPROVED");
-        pendingReviewId  = insertReview(PRODUCT_ID, "Reviewer PENDING",  3, "Bình thường",  "PENDING");
-        spamReviewId     = insertReview(PRODUCT_ID, "Spam Bot",          1, "Buy cheap!",    "SPAM");
+        approvedReviewId = insertReview(PRODUCT_ID, "Reviewer APPROVED", 5, "Tuyá»‡t vá»i!", "APPROVED");
+        pendingReviewId = insertReview(PRODUCT_ID, "Reviewer PENDING", 3, "BĂ¬nh thÆ°á»ng", "PENDING");
+        spamReviewId = insertReview(PRODUCT_ID, "Spam Bot", 1, "Buy cheap!", "SPAM");
     }
-
-    // ── Public GET ─────────────────────────────────────────────────────────────
 
     @Test
     void publicGetReviews_returnsOnlyApproved() throws Exception {
-        // Check by ID: the fresh pendingReviewId / spamReviewId just inserted are PENDING/SPAM and must NOT appear.
-        // The fresh approvedReviewId is APPROVED and MUST appear.
-        // (Cannot rely on authorName since prior tests may have flipped an old "Reviewer PENDING" row to APPROVED.)
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.reviews").isArray())
@@ -82,21 +78,91 @@ class Phase1NReviewsApiTest {
 
     @Test
     void publicGetReviews_avgRatingAndTotalCountOnlyApproved() throws Exception {
-        // Insert one more APPROVED for this test to have predictable data
-        insertReview(PRODUCT_ID, "Reviewer APPROVED 2", 3, "Tạm ổn", "APPROVED");
+        insertReview(PRODUCT_ID, "Reviewer APPROVED 2", 3, "Táº¡m á»•n", "APPROVED");
 
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.avgRating").isNumber())
-                .andExpect(jsonPath("$.data.totalReviews").isNumber());
-        // totalReviews must not include PENDING/SPAM rows — asserted by checking only APPROVED are in list
+                .andExpect(jsonPath("$.data.totalReviews").isNumber())
+                .andExpect(jsonPath("$.data.pagination.page").value(1))
+                .andExpect(jsonPath("$.data.pagination.pageSize").value(10));
     }
 
-    // ── Public POST ────────────────────────────────────────────────────────────
+    @Test
+    void publicGetReviews_defaultPagination_returnsFirstPageMetadata() throws Exception {
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pagination.page").value(1))
+                .andExpect(jsonPath("$.data.pagination.pageSize").value(10))
+                .andExpect(jsonPath("$.data.pagination.totalItems").isNumber())
+                .andExpect(jsonPath("$.data.pagination.totalPages").isNumber())
+                .andExpect(jsonPath("$.data.pagination.hasNext").isBoolean())
+                .andExpect(jsonPath("$.data.pagination.hasPrevious").value(false));
+    }
+
+    @Test
+    void publicGetReviews_requestedPageAndSize_returnsExpectedWindow() throws Exception {
+        Long newestId = insertReview(PRODUCT_ID, "Page Review 1", 5, "Newest", "APPROVED", Instant.parse("2030-01-01T00:00:03Z"));
+        Long middleId = insertReview(PRODUCT_ID, "Page Review 2", 4, "Middle", "APPROVED", Instant.parse("2030-01-01T00:00:02Z"));
+        Long oldestId = insertReview(PRODUCT_ID, "Page Review 3", 3, "Oldest", "APPROVED", Instant.parse("2030-01-01T00:00:01Z"));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pagination.page").value(1))
+                .andExpect(jsonPath("$.data.pagination.pageSize").value(2))
+                .andExpect(jsonPath("$.data.reviews[0].id").value(newestId))
+                .andExpect(jsonPath("$.data.reviews[1].id").value(middleId))
+                .andExpect(jsonPath("$.data.reviews[?(@.id == " + oldestId + ")]").isEmpty())
+                .andExpect(jsonPath("$.data.pagination.hasNext").value(true))
+                .andExpect(jsonPath("$.data.pagination.hasPrevious").value(false));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("page", "2")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pagination.page").value(2))
+                .andExpect(jsonPath("$.data.pagination.pageSize").value(2))
+                .andExpect(jsonPath("$.data.reviews[?(@.id == " + oldestId + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.data.pagination.hasPrevious").value(true));
+    }
+
+    @Test
+    void publicGetReviews_totalReviewsCountsAllApprovedNotJustCurrentPage() throws Exception {
+        long approvedBefore = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "APPROVED", PageRequest.of(0, 500))
+                .getTotalElements();
+
+        insertReview(PRODUCT_ID, "Aggregate Approved 1", 5, "A1", "APPROVED", Instant.parse("2031-01-01T00:00:01Z"));
+        insertReview(PRODUCT_ID, "Aggregate Approved 2", 4, "A2", "APPROVED", Instant.parse("2031-01-01T00:00:02Z"));
+        insertReview(PRODUCT_ID, "Aggregate Pending", 1, "Ignored", "PENDING", Instant.parse("2031-01-01T00:00:03Z"));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("page", "1")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviews.length()").value(1))
+                .andExpect(jsonPath("$.data.totalReviews").value(approvedBefore + 2))
+                .andExpect(jsonPath("$.data.pagination.totalItems").value(approvedBefore + 2));
+    }
+
+    @Test
+    void publicGetReviews_invalidPagination_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("page", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
 
     @Test
     void publicPostReview_success_createsPendingReview() throws Exception {
-        long countBefore = reviewRepo.findByProductIdAndStatusOrderByCreatedAtDesc(PRODUCT_ID, "PENDING").size();
+        long countBefore = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "PENDING", PageRequest.of(0, 500))
+                .getTotalElements();
 
         mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +172,8 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.success").value(true));
 
-        long countAfter = reviewRepo.findByProductIdAndStatusOrderByCreatedAtDesc(PRODUCT_ID, "PENDING").size();
+        long countAfter = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "PENDING", PageRequest.of(0, 500))
+                .getTotalElements();
         org.assertj.core.api.Assertions.assertThat(countAfter).isEqualTo(countBefore + 1);
     }
 
@@ -184,8 +251,6 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ── Admin PATCH status ─────────────────────────────────────────────────────
-
     @Test
     void adminPatchStatus_approve_returns200WithApprovedStatus() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
@@ -246,8 +311,6 @@ class Phase1NReviewsApiTest {
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
-    // ── Admin DELETE ───────────────────────────────────────────────────────────
-
     @Test
     void adminDeleteReview_returns204() throws Exception {
         Long toDelete = insertReview(PRODUCT_ID, "To Delete", 2, "Will be deleted", "PENDING");
@@ -258,8 +321,6 @@ class Phase1NReviewsApiTest {
 
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(toDelete)).isEmpty();
     }
-
-    // ── Admin list filter by status ────────────────────────────────────────────
 
     @Test
     void adminListReviews_filterByStatus_returnsOnlyMatchingStatus() throws Exception {
@@ -298,8 +359,6 @@ class Phase1NReviewsApiTest {
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 
-    // ── Permission / auth ──────────────────────────────────────────────────────
-
     @Test
     void adminListReviews_noAuth_returns401() throws Exception {
         secMvc.perform(get("/api/v1/admin/reviews"))
@@ -322,7 +381,6 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminListReviews_missingReviewsReadPermission_returns403() throws Exception {
-        // EDITOR role has no reviews.read
         String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
 
         secMvc.perform(get("/api/v1/admin/reviews")
@@ -332,7 +390,6 @@ class Phase1NReviewsApiTest {
 
     @Test
     void adminPatchStatus_missingReviewsWritePermission_returns403() throws Exception {
-        // EDITOR role has no reviews.write
         String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
 
         secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
@@ -351,18 +408,26 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
     private Long insertReview(String productId, String authorName, int rating, String body, String status) {
-        ReviewEntity r = new ReviewEntity();
-        r.setProductId(productId);
-        r.setAuthorName(authorName);
-        r.setRating((short) rating);
-        r.setBody(body);
-        r.setStatus(status);
-        Instant now = Instant.now();
-        r.setCreatedAt(now);
-        r.setUpdatedAt(now);
-        return reviewRepo.save(r).getId();
+        return insertReview(productId, authorName, rating, body, status, Instant.now());
+    }
+
+    private Long insertReview(
+            String productId,
+            String authorName,
+            int rating,
+            String body,
+            String status,
+            Instant createdAt
+    ) {
+        ReviewEntity review = new ReviewEntity();
+        review.setProductId(productId);
+        review.setAuthorName(authorName);
+        review.setRating((short) rating);
+        review.setBody(body);
+        review.setStatus(status);
+        review.setCreatedAt(createdAt);
+        review.setUpdatedAt(createdAt);
+        return reviewRepo.save(review).getId();
     }
 }

@@ -159,6 +159,7 @@ com\bigbike\bigbike_backend\api\admin\AdminReviewController.class
 com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderShippingItemEntity.class
 com\bigbike\bigbike_backend\service\admin\AdminReviewService.class
 com\bigbike\bigbike_backend\migration\wordpress\normalizer\ProductSlugGenerator.class
+com\bigbike\bigbike_backend\api\public_\dto\PublicProductReviewsResponse.class
 com\bigbike\bigbike_backend\api\admin\dto\SeoMetaRequest.class
 com\bigbike\bigbike_backend\api\order\dto\OrderDetailResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\runner\WordPressCatalogContentDryRunRunner.class
@@ -250,6 +251,7 @@ com\bigbike\bigbike_backend\migration\wordpress\model\WpUser.class
 com\bigbike\bigbike_backend\migration\wordpress\config\WordPressMigrationProperties.class
 com\bigbike\bigbike_backend\migration\wordpress\report\MigrationDryRunReport$ReportSummary.class
 com\bigbike\bigbike_backend\persistence\entity\commerce\cart\CartEntity.class
+com\bigbike\bigbike_backend\api\public_\dto\PublicProductReviewsResponse$ReviewItem.class
 com\bigbike\bigbike_backend\persistence\repository\coupon\CouponJpaRepository.class
 com\bigbike\bigbike_backend\api\admin\dto\order\UpdatePaymentStatusRequest.class
 com\bigbike\bigbike_backend\api\admin\dto\dashboard\AdminDashboardSummaryResponse.class
@@ -319,6 +321,7 @@ com\bigbike\bigbike_backend\persistence\repository\audit\AuditLogJpaRepository.c
 com\bigbike\bigbike_backend\service\customer\EmailVerificationService.class
 com\bigbike\bigbike_backend\migration\wordpress\model\WpTermRelationship.class
 com\bigbike\bigbike_backend\persistence\repository\media\MediaJpaRepository.class
+com\bigbike\bigbike_backend\persistence\repository\catalog\ReviewJpaRepository$ReviewAggregate.class
 com\bigbike\bigbike_backend\api\admin\dto\VariantOptionRequest.class
 com\bigbike\bigbike_backend\service\admin\AdminRedirectService$AdminRedirectResponse.class
 com\bigbike\bigbike_backend\api\customer\dto\CustomerLoginRequest.class

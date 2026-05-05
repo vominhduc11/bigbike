@@ -314,7 +314,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             <div className="wp-detail-grid">
               <div>
                 <p className="wp-detail-label">Phương thức</p>
-                <p className="wp-detail-val">{safeText(order.payments[0]?.method ?? order.paymentStatus, "—")}</p>
+                <p className="wp-detail-val">{safeText(order.payments[0]?.paymentMethod ?? order.paymentStatus, "—")}</p>
               </div>
               <div>
                 <p className="wp-detail-label">Đã thanh toán</p>
@@ -324,7 +324,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                 <div>
                   <p className="wp-detail-label">Vận chuyển</p>
                   {order.shippingItems.map((item) => (
-                    <p key={item.id} className="wp-detail-val">{safeText(item.title, "—")} · {formatVnd(item.cost)}</p>
+                    <p key={item.id} className="wp-detail-val">{safeText(item.methodTitle, "—")} · {formatVnd(item.amount)}</p>
                   ))}
                 </div>
               )}

@@ -58,16 +58,22 @@ public class PublicReviewController {
 
     private void validate(SubmitReviewRequest body) {
         if (body.authorName() == null || body.authorName().isBlank()) {
-            throw ValidationException.fromField("authorName", "REQUIRED", "Vui lòng nhập tên.");
+            throw ValidationException.fromField("authorName", "REQUIRED", "Vui l\u00f2ng nh\u1eadp t\u00ean.");
         }
         if (body.authorName().trim().length() > 80) {
-            throw ValidationException.fromField("authorName", "TOO_LONG", "Tên không được vượt quá 80 ký tự.");
+            throw ValidationException.fromField(
+                    "authorName",
+                    "TOO_LONG",
+                    "T\u00ean kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 80 k\u00fd t\u1ef1.");
         }
         if (body.rating() == null || body.rating() < 1 || body.rating() > 5) {
-            throw ValidationException.fromField("rating", "INVALID", "Đánh giá phải từ 1 đến 5 sao.");
+            throw ValidationException.fromField("rating", "INVALID", "\u0110\u00e1nh gi\u00e1 ph\u1ea3i t\u1eeb 1 \u0111\u1ebfn 5 sao.");
         }
         if (body.comment() != null && body.comment().length() > 1000) {
-            throw ValidationException.fromField("comment", "TOO_LONG", "Nhận xét không được vượt quá 1000 ký tự.");
+            throw ValidationException.fromField(
+                    "comment",
+                    "TOO_LONG",
+                    "Nh\u1eadn x\u00e9t kh\u00f4ng \u0111\u01b0\u1ee3c v\u01b0\u1ee3t qu\u00e1 1000 k\u00fd t\u1ef1.");
         }
     }
 }

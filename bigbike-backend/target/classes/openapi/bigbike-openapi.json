@@ -288,6 +288,95 @@
         }
       }
     },
+    "/api/v1/products/{productId}/reviews": {
+      "get": {
+        "tags": [
+          "Public Catalog"
+        ],
+        "summary": "Get approved product reviews",
+        "operationId": "getProductReviews",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved reviews for the requested product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProductReviewsDataResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Public Catalog"
+        ],
+        "summary": "Submit product review",
+        "operationId": "submitProductReview",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitReviewDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/categories": {
       "get": {
         "tags": [
@@ -5462,6 +5551,96 @@
           }
         }
       },
+      "PublicReviewItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PublicProductReviewsResponse": {
+        "type": "object",
+        "properties": {
+          "avgRating": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalReviews": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReviewItem"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        }
+      },
+      "PublicProductReviewsDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicProductReviewsResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "SubmitReviewRequest": {
+        "type": "object",
+        "properties": {
+          "authorName": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "SubmitReviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SubmitReviewDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmitReviewResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
       "UpdateOrderStatusRequest": {
         "type": "object",
         "required": [
@@ -6374,8 +6553,7 @@
             "type": "string",
             "enum": [
               "CASH",
-              "CARD_TERMINAL",
-              "BANK_TRANSFER"
+              "CARD_TERMINAL"
             ]
           },
           "tenderedAmount": {
@@ -6411,11 +6589,11 @@
           },
           "status": {
             "type": "string",
-            "description": "COMPLETED for CASH/CARD_TERMINAL; ON_HOLD for BANK_TRANSFER"
+            "description": "COMPLETED for CASH/CARD_TERMINAL"
           },
           "paymentStatus": {
             "type": "string",
-            "description": "PAID for CASH/CARD_TERMINAL; UNPAID for BANK_TRANSFER"
+            "description": "PAID for CASH/CARD_TERMINAL"
           },
           "paymentMethod": {
             "type": "string"
@@ -6431,28 +6609,6 @@
             "type": "integer",
             "nullable": true,
             "description": "Change to return to customer (CASH only)"
-          },
-          "qrVietQrUrl": {
-            "type": "string",
-            "nullable": true,
-            "description": "VietQR image URL (BANK_TRANSFER only)"
-          },
-          "transferContent": {
-            "type": "string",
-            "nullable": true,
-            "description": "Bank transfer content/reference (BANK_TRANSFER only)"
-          },
-          "bankName": {
-            "type": "string",
-            "nullable": true
-          },
-          "accountNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "accountHolder": {
-            "type": "string",
-            "nullable": true
           }
         }
       }
