@@ -11,7 +11,7 @@ const _reasonOptions = [
   ('OTHER', 'Khác'),
 ];
 
-const _returnableStatuses = {'COMPLETED', 'DELIVERED'};
+const _returnableStatuses = {'COMPLETED'};
 
 class CreateReturnScreen extends StatefulWidget {
   /// When opened from order detail, pre-select this orderId.
@@ -28,6 +28,12 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
   bool _ordersLoading = true;
   String? _selectedOrderId;
 
+  // Line items
+  List<Map<String, dynamic>> _lineItems = [];
+  bool _lineItemsLoading = false;
+  Map<String, bool> _itemSelected = {};
+  Map<String, int> _itemQuantity = {};
+
   // Form
   String? _selectedReason;
   final _noteController = TextEditingController();
@@ -41,6 +47,9 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
     super.initState();
     _selectedOrderId = widget.preselectedOrderId;
     _loadOrders();
+    if (widget.preselectedOrderId != null) {
+      _handleOrderChanged(widget.preselectedOrderId!);
+    }
   }
 
   @override
@@ -68,6 +77,41 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
     }
   }
 
+  Future<void> _handleOrderChanged(String orderId) async {
+    setState(() {
+      _selectedOrderId = orderId;
+      _lineItems = [];
+      _itemSelected = {};
+      _itemQuantity = {};
+      _lineItemsLoading = true;
+    });
+    try {
+      final data = await ApiClient().get<dynamic>(ApiEndpoints.myOrder(orderId));
+      final orderMap = data is Map
+          ? ((data['data'] as Map<String, dynamic>?) ?? Map<String, dynamic>.from(data))
+          : <String, dynamic>{};
+      final rawItems = (orderMap['lineItems'] as List?) ?? [];
+      final items = rawItems.cast<Map<String, dynamic>>();
+      final selected = <String, bool>{};
+      final qty = <String, int>{};
+      for (final item in items) {
+        final id = item['id'] as String? ?? '';
+        if (id.isNotEmpty) {
+          selected[id] = false;
+          qty[id] = 1;
+        }
+      }
+      setState(() {
+        _lineItems = items;
+        _itemSelected = selected;
+        _itemQuantity = qty;
+        _lineItemsLoading = false;
+      });
+    } catch (_) {
+      setState(() { _lineItemsLoading = false; });
+    }
+  }
+
   Future<void> _submit() async {
     final orderId = _selectedOrderId;
     final reason = _selectedReason;
@@ -81,6 +125,23 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
       return;
     }
 
+    final items = _lineItems
+        .where((item) => _itemSelected[item['id'] as String? ?? ''] == true)
+        .map((item) {
+          final id = item['id'] as String? ?? '';
+          return {
+            'orderLineItemId': id,
+            'quantity': _itemQuantity[id] ?? 1,
+            'reason': reason,
+          };
+        })
+        .toList();
+
+    if (items.isEmpty) {
+      setState(() => _error = 'Vui lòng chọn ít nhất một sản phẩm cần đổi trả.');
+      return;
+    }
+
     setState(() { _submitting = true; _error = null; });
 
     try {
@@ -90,6 +151,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
           'reason': reason,
           if (_noteController.text.trim().isNotEmpty)
             'customerNote': _noteController.text.trim(),
+          'items': items,
         },
       );
       if (mounted) Navigator.pop(context, true);
@@ -100,6 +162,9 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool canSubmit = !_submitting && !_ordersLoading && !_lineItemsLoading
+        && _selectedOrderId != null && _selectedReason != null;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Tạo yêu cầu đổi trả')),
       body: SingleChildScrollView(
@@ -139,7 +204,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
                         ),
                       )
                     : DropdownButtonFormField<String>(
-                        value: _selectedOrderId,
+                        value: _orders.any((o) => o['id'] == _selectedOrderId) ? _selectedOrderId : null,
                         decoration: _inputDecoration('Chọn đơn hàng'),
                         items: _orders.map((o) {
                           return DropdownMenuItem<String>(
@@ -147,8 +212,98 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
                             child: Text('Đơn #${o['orderNumber'] ?? o['id']}'),
                           );
                         }).toList(),
-                        onChanged: (v) => setState(() => _selectedOrderId = v),
+                        onChanged: (v) { if (v != null) _handleOrderChanged(v); },
                       ),
+
+            // Line items picker
+            if (_selectedOrderId != null) ...[
+              const SizedBox(height: 20),
+              const Text('Sản phẩm cần đổi trả', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              if (_lineItemsLoading)
+                const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)))
+              else if (_lineItems.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.borderSubtle),
+                  ),
+                  child: const Text('Không tải được sản phẩm.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.borderSubtle),
+                  ),
+                  child: Column(
+                    children: _lineItems.asMap().entries.map((entry) {
+                      final item = entry.value;
+                      final id = item['id'] as String? ?? '';
+                      final productName = item['productName'] as String? ?? '';
+                      final variantName = item['variantName'] as String?;
+                      final maxQty = (item['quantity'] as int?) ?? 1;
+                      final isSelected = _itemSelected[id] ?? false;
+                      final qty = _itemQuantity[id] ?? 1;
+                      final isLast = entry.key == _lineItems.length - 1;
+
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: isSelected,
+                                  activeColor: AppColors.primary,
+                                  onChanged: (v) => setState(() => _itemSelected[id] = v ?? false),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(productName, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                      if (variantName != null)
+                                        Text(variantName, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                                      Text('Đã mua: $maxQty', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove, size: 16),
+                                        onPressed: qty > 1 ? () => setState(() => _itemQuantity[id] = qty - 1) : null,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                      ),
+                                      SizedBox(
+                                        width: 28,
+                                        child: Text('$qty', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add, size: 16),
+                                        onPressed: qty < maxQty ? () => setState(() => _itemQuantity[id] = qty + 1) : null,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (!isLast) const Divider(height: 1, color: AppColors.borderSubtle),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+            ],
 
             const SizedBox(height: 20),
 
@@ -184,7 +339,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _submitting || _ordersLoading || _orders.isEmpty ? null : _submit,
+                onPressed: canSubmit ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primary.withOpacity(0.4),

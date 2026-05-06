@@ -1,13 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest
 -------------------------------------------------------------------------------
-Tests run: 20, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 17.52 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest
-com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest.login_withPhone_succeeds -- Time elapsed: 0.033 s <<< FAILURE!
-java.lang.AssertionError: Status expected:<200> but was:<400>
-	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
-	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
-	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
-	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
-	at com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest.registerCustomer(Phase1DCustomerAuthTest.java:291)
-	at com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest.login_withPhone_succeeds(Phase1DCustomerAuthTest.java:123)
-
+Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.21 s -- in com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest

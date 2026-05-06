@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="1.062" tests="8" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="1.073" tests="8" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -16,7 +16,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="A:\jdk17\bin"/>
-    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire14280657779672104925\surefirebooter-20260506092146895_3.jar C:\Users\vomin\AppData\Local\Temp\surefire14280657779672104925 2026-05-06T09-21-46_742-jvmRun1 surefire-20260506092146895_1tmp surefire_0-20260506092146895_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire11621306898205641288\surefirebooter-20260506092521540_3.jar C:\Users\vomin\AppData\Local\Temp\surefire11621306898205641288 2026-05-06T09-25-21_387-jvmRun1 surefire-20260506092521540_1tmp surefire_0-20260506092521540_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="test" value="Phase1DCustomerAuthTest,Phase1I1CustomerStatusLoginTest,Phase1IAdminManagementApiTest,PasswordServiceTest"/>
     <property name="surefire.excludes" value="**/Phase1LReturnsApiTest.java"/>
@@ -35,7 +35,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire14280657779672104925\surefirebooter-20260506092146895_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire11621306898205641288\surefirebooter-20260506092521540_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.12+8-LTS-286"/>
@@ -54,7 +54,7 @@
     <property name="user.dir" value="S:\project\bigbike\bigbike-backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="28388"/>
+    <property name="PID" value="26408"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="windows-1258"/>
     <property name="native.encoding" value="Cp1258"/>
@@ -65,151 +65,151 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="adminCanDisableCustomer_thenCustomerLoginRejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.347">
-    <system-out><![CDATA[09:22:05.573 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest]: Phase1I1CustomerStatusLoginTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-09:22:05.574 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
-09:22:05.576 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest]: Phase1I1CustomerStatusLoginTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-09:22:05.576 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
-09:22:05.580 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:05.580 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:05.582 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-09:22:05.614 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:05.614 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.615 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:05.727 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:05.728 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.728 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:05.759 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer fe22a4f8-7685-4ae2-b653-fa735de0ba38
-09:22:05.763 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:05.763 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.763 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-09:22:05.792 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
-09:22:05.830 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
-09:22:05.867 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/customers/fe22a4f8-7685-4ae2-b653-fa735de0ba38/status
-09:22:05.868 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/customers/fe22a4f8-7685-4ae2-b653-fa735de0ba38/status
-09:22:05.896 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:05.896 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.896 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="adminCanDisableCustomer_thenCustomerLoginRejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.36">
+    <system-out><![CDATA[09:25:37.558 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest]: Phase1I1CustomerStatusLoginTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+09:25:37.560 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
+09:25:37.561 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest]: Phase1I1CustomerStatusLoginTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+09:25:37.562 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
+09:25:37.567 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:37.567 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:37.568 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:37.598 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:37.598 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.599 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:37.724 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:37.725 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.725 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:37.749 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer b664e253-8a6b-450e-ab45-4a0a9f1253a5
+09:25:37.753 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:37.754 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.754 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+09:25:37.782 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
+09:25:37.818 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
+09:25:37.857 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/customers/b664e253-8a6b-450e-ab45-4a0a9f1253a5/status
+09:25:37.859 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/customers/b664e253-8a6b-450e-ab45-4a0a9f1253a5/status
+09:25:37.892 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:37.892 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.892 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="login_disabledCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.099">
-    <system-out><![CDATA[09:22:05.928 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:05.928 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:05.930 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-09:22:05.931 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:05.933 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.933 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:05.961 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:05.962 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.962 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:05.989 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer fd67ac4e-98cc-47a5-8426-665aea7b8f3e
-09:22:05.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:05.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:05.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_disabledCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.096">
+    <system-out><![CDATA[09:25:37.929 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:37.929 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:37.930 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:37.933 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:37.933 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.933 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:37.961 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:37.962 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.962 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:37.989 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 886501a1-58bf-45ba-99b3-4abc53671851
+09:25:37.996 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:37.996 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:37.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="login_activeCustomer_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.104">
-    <system-out><![CDATA[09:22:06.027 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.027 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.029 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-09:22:06.031 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.031 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.031 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.062 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.062 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.062 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.093 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer f96aafee-63b0-4276-bdb4-915d9f41d9e1
-09:22:06.097 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.097 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.097 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_activeCustomer_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.091">
+    <system-out><![CDATA[09:25:38.025 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.025 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.027 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+09:25:38.029 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.029 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.029 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.058 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.058 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.059 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.083 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 2bf60c19-3883-4389-8310-d283bd373220
+09:25:38.086 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.087 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.087 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="adminDisable_existingSessionCookie_isRejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.13">
-    <system-out><![CDATA[09:22:06.133 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.133 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.134 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-09:22:06.137 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.137 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.137 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.168 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.169 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.169 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.196 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 09a8e6af-2e60-4359-b64a-bcf40bc31e54
-09:22:06.199 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.200 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.200 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-09:22:06.229 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/me
-09:22:06.233 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/me
-09:22:06.235 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
-09:22:06.236 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
-09:22:06.244 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/customers/09a8e6af-2e60-4359-b64a-bcf40bc31e54/status
-09:22:06.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/customers/09a8e6af-2e60-4359-b64a-bcf40bc31e54/status
-09:22:06.254 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/me
-09:22:06.255 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+  <testcase name="adminDisable_existingSessionCookie_isRejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.121">
+    <system-out><![CDATA[09:25:38.118 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.118 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.119 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:38.121 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.121 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.121 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.150 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.150 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.151 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.174 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 94360a54-faf1-4710-bbee-0f70a73ef94d
+09:25:38.177 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.177 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.177 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+09:25:38.207 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/me
+09:25:38.211 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/me
+09:25:38.212 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
+09:25:38.213 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
+09:25:38.219 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/customers/94360a54-faf1-4710-bbee-0f70a73ef94d/status
+09:25:38.220 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/customers/94360a54-faf1-4710-bbee-0f70a73ef94d/status
+09:25:38.228 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/me
+09:25:38.230 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
 ]]></system-out>
   </testcase>
-  <testcase name="login_disabledCustomer_errorResponseDoesNotLeakStatus" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.094">
-    <system-out><![CDATA[09:22:06.264 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.264 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.265 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-09:22:06.267 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.268 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.268 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.296 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.322 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 5ef780e9-cfa5-4fc4-be20-47fccfa8f2df
-09:22:06.328 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.328 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.328 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_disabledCustomer_errorResponseDoesNotLeakStatus" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.097">
+    <system-out><![CDATA[09:25:38.241 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.241 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.242 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:38.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.275 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.275 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.275 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.303 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer da163d8c-5d14-4ff9-b84f-41df0d8b6a81
+09:25:38.309 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.310 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.310 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="login_disabledCustomer_doesNotCreateSession" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.1">
-    <system-out><![CDATA[09:22:06.359 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.359 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.360 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-09:22:06.362 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.363 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.363 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.392 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.393 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.393 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.418 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 601add6d-2602-4202-9e23-b9dfdccdf4f7
-09:22:06.426 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_disabledCustomer_doesNotCreateSession" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.102">
+    <system-out><![CDATA[09:25:38.338 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.338 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.340 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+09:25:38.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.371 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.371 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.371 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.398 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer b7e154df-85e6-49f5-83c0-0fd7a20c8106
+09:25:38.406 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.407 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.407 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="login_blockedCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.086">
-    <system-out><![CDATA[09:22:06.459 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.459 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.461 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-09:22:06.462 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.462 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.463 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.489 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.513 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer fd2c8d15-2153-4588-b28c-c3168f1f761f
-09:22:06.519 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.520 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.520 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_blockedCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.097">
+    <system-out><![CDATA[09:25:38.441 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.441 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.442 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:38.444 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.445 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.445 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.473 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.473 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.473 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.498 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 75319610-3154-4a12-b859-cd66b441794d
+09:25:38.504 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.504 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.504 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
-  <testcase name="login_pendingCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.088">
-    <system-out><![CDATA[09:22:06.546 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-09:22:06.547 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-09:22:06.548 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-09:22:06.550 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-09:22:06.550 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.550 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-09:22:06.578 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-09:22:06.578 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.579 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-09:22:06.602 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer ca98926d-a749-4843-90da-7a12aaab6e4b
-09:22:06.607 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-09:22:06.608 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-09:22:06.608 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
+  <testcase name="login_pendingCustomer_rejected" classname="com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest" time="0.092">
+    <system-out><![CDATA[09:25:38.539 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+09:25:38.539 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+09:25:38.540 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+09:25:38.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+09:25:38.544 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.544 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+09:25:38.570 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
+09:25:38.571 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.571 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
+09:25:38.595 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 2a413282-de46-4be8-892c-7785c5fbc6ff
+09:25:38.600 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
+09:25:38.600 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+09:25:38.602 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
 ]]></system-out>
   </testcase>
 </testsuite>

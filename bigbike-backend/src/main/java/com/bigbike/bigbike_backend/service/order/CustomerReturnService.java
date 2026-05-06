@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -90,6 +91,15 @@ public class CustomerReturnService {
         if (alreadyActive) {
             throw ValidationException.fromField("orderId", "RETURN_IN_PROGRESS",
                     "A return request for this order is already in progress.");
+        }
+
+        // Reject duplicate orderLineItemId in the same payload
+        Set<UUID> seen = new HashSet<>();
+        for (CreateReturnRequest.ReturnItemRequest item : req.items()) {
+            if (!seen.add(item.orderLineItemId())) {
+                throw ValidationException.fromField("items[].orderLineItemId", "DUPLICATE",
+                        "Duplicate orderLineItemId in request: " + item.orderLineItemId());
+            }
         }
 
         // Build a lookup map of line items that belong to this order

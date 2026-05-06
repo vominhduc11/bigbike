@@ -4,6 +4,19 @@
 > Branch: `main` @ 73adcef
 > Audit scope: backend, admin SPA, web Next.js, Flutter mobile, migrations, tests, docs.
 > Tham chiếu canonical: [docs/business/STATE_MACHINES.md](../business/STATE_MACHINES.md), [docs/business/BUSINESS_RULES.md](../business/BUSINESS_RULES.md), [docs/engineering/API_CONTRACT.md](../engineering/API_CONTRACT.md).
+>
+> **Fix log (post-audit, 2026-05-06)**:
+> - P0-1 FIXED: Web forms now send `items` array (checkbox+qty picker added to both `doi-tra/page.tsx` and `don-hang/[id]/page.tsx`; `CreateReturnPayload.items` required).
+> - P0-2 FIXED: Mobile `create_return_screen.dart` rewritten — fetches order line items, renders checkbox+qty picker, sends `items` array; `DELIVERED` removed from `_returnableStatuses`.
+> - P0-3 FIXED: Mobile `returns_screen.dart` `_load()` now uses `get<dynamic>` + normalizes raw `List` or `{data:[...]}` safely.
+> - P0-4 FIXED: `CustomerReturnService.createReturn` validates each item's `orderLineItemId` belongs to order, derives all product fields from `OrderLineItemEntity`, validates `quantity ≤ remaining returnable`. Duplicate `orderLineItemId` in same payload now rejected with `DUPLICATE` (400). Migration V65 extends partial unique index to cover `RECEIVED`.
+> - P0-5 FIXED: Unified `RefundService.applyRefund` created; both `AdminOrderService.createRefund` and `AdminReturnService.updateStatus→REFUNDED` delegate to it. RMA refund now syncs `orders.payment_status`, `orders.refunded_at`, `payments.*`, creates audit log, order note, WS event.
+> - P1-1 FIXED: `AdminReturnService.updateStatus` validates `refundAmount > 0` before `REFUNDED` transition.
+> - P1-2 FIXED: V65 migration drops and recreates `idx_returns_order_active` to include `RECEIVED`. App-level duplicate guard updated to match.
+> - Tests: `Phase1LReturnsApiTest` tests 19-23 added (non-COMPLETED order, invalid reason, item not in order, quantity exceeds remaining, productName derived from DB). Test 24 added (duplicate `orderLineItemId` → 400 `DUPLICATE`).
+> - Stock restore: confirmed `RECEIVED → REFUNDED` does NOT restore return-item stock (correct per `STATE_MACHINES.md`). `RefundService.applyRefund` may set `order.status = REFUNDED` on full refund but does not call `restoreStockForOrder` — pre-existing gap documented below (P1-new), out of current scope.
+> - **Mobile tests not yet verified** (no widget/unit tests for returns screens). Module is NOT marked COMPLETE.
+> - Remaining open items: P1-new (RefundService full-refund does not restore order-level stock), P1-6 (test coverage gaps for full lifecycle, stock restore on COMPLETED, invalid transition), P2 items unchanged.
 
 ---
 
@@ -315,6 +328,13 @@ Xem §10 — bắt buộc bổ sung trước khi release: invalid transition, it
 #### P1-7. Customer return form không có "Tôi đã hiểu chính sách đổi trả" / không link policy
 - Minor UX nhưng nên thêm link `/chinh-sach/doi-tra` trước khi submit.
 
+#### P1-new. `RefundService.applyRefund` full-refund không restore order-level stock
+- **Added**: 2026-05-06 post-fix review.
+- **Evidence**: `RefundService.applyRefund` sets `order.setStatus("REFUNDED")` when `order.status == COMPLETED` and `newRefundAmount >= paidAmount`. However, `AdminOrderService.updateOrderStatus(→ REFUNDED)` at line 269-270 also calls `restoreStockForOrder(orderId)` — this is NOT called from `RefundService`. Result: if admin marks order REFUNDED directly via the orders UI, stock is restored; if REFUNDED arrives via RMA path (return → REFUNDED), stock is NOT restored at order level.
+- **Scope**: The return-item stock restore (`RECEIVED → COMPLETED` via `restoreStockForReturn`) is correct and unaffected. This gap only affects order-level stock when `refundService.applyRefund` triggers the `order.status = REFUNDED` side-effect.
+- **Decision needed**: confirm with business whether goods from a `RECEIVED → REFUNDED` RMA have actually been physically returned (in which case restore is correct to do once at COMPLETED) or not. If REFUNDED = items NOT returned, no order-level stock restore is correct. Document decision in `STATE_MACHINES.md` §10.
+- **Fix**: if stock restore is required for this path, add `restoreStockForOrder(order.getId())` in `RefundService.applyRefund` after setting `order.status = REFUNDED`, gated on `wasOrderCompleted`.
+
 ### P2 — Improvement
 
 - **P2-1**. Tách permission `returns.read` / `returns.write` riêng để phép giao dịch nhân viên RMA mà không cho sửa order.
@@ -379,6 +399,11 @@ Xem §10 — bắt buộc bổ sung trước khi release: invalid transition, it
 
 ## 13. Final Verdict
 
-- **Module đã hoàn thiện chưa? Không.** Trạng thái: PARTIAL — có khung, nhưng customer flow tạo return broken trên cả web và mobile, admin refund qua RMA không sync sang payment, và backend tin client cho dữ liệu item.
-- **AI agent có thể bắt đầu implement/fix không? Có**, theo plan §12. Mỗi bước là một PR, có test gate rõ ràng.
-- **Phải fix gì trước nhất?** P0-1 → P0-4 (backend item validation + web/mobile gửi items + mobile cast bug + RMA refund unify). Trong đó P0-4 và P0-5 phải đi cùng nhau vì một là input integrity, một là output integrity của cùng business flow. Sau khi P0 xong, chạy `./mvnw test` (Backend) + Vitest (Web) + `flutter test` (Mobile) trước khi mở khoá module cho production.
+- **Module đã hoàn thiện chưa? Chưa.** Trạng thái: PARTIAL-FIXED — tất cả P0 và P1-1/P1-2 đã được fix. Customer flow tạo return hoạt động đầy đủ trên backend + web + mobile (code). Admin RMA refund giờ sync đầy đủ sang payment/audit.
+- **Còn lại để production-ready**:
+  1. **P1-new**: `RefundService.applyRefund` khi full refund set `order.status = REFUNDED` nhưng KHÔNG gọi `restoreStockForOrder(orderId)` — đây là gap pre-existing trong `AdminOrderService.updateOrderStatus` (line 269-270). Khác với `restoreStockForReturn` (dành cho return items, chạy đúng ở `RECEIVED → COMPLETED`). Cần task riêng để quyết định: liệu `REFUNDED` qua RMA có nên restore order-level stock không.
+  2. **P1-6**: Test cho full lifecycle (PENDING → APPROVED → RECEIVED → COMPLETED), stock restore on COMPLETED (verify `stock_movements` row), invalid status transition (PENDING → COMPLETED nên reject 400), RMA → REFUNDED sync payment (verify `payments.status` đổi thành `PARTIALLY_REFUNDED`/`REFUNDED`).
+  3. **Mobile**: Không có widget/unit test cho `returns_screen.dart` và `create_return_screen.dart`. Backend + web tests hiện đã cover contract.
+  4. **P2 items**: Còn nguyên (xem §11 P2 list).
+- **Phải làm gì trước khi bật cho khách thật?** Chạy `./mvnw test` (Backend — cần Postgres) + `flutter analyze` (clean trên mobile). Sau đó ít nhất thêm test P1-6 lifecycle. Mobile widget test là P2.
+- **`flutter analyze` status (post-fix)**: 1 lỗi pre-existing trong `test/widget_test.dart` (không liên quan đến returns). Tất cả warnings từ changes mới là `deprecated_member_use` (withOpacity, value) — info-level, không block build.

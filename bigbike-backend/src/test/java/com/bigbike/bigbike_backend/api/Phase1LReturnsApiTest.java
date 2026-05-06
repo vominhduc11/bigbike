@@ -536,6 +536,25 @@ class Phase1LReturnsApiTest {
      * @param lineItemId the actual orderLineItemId from the order; pass null to use a random UUID
      *                   (for tests that are expected to fail before item validation is reached)
      */
+    // ── 24. Create return — duplicate orderLineItemId in payload → 400 ───────
+
+    @Test
+    void createReturn_duplicateLineItemId_returns400() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-dup-item-" + UUID.randomUUID() + "@bigbike.vn");
+
+        String body = "{\"reason\":\"DEFECTIVE\",\"items\":[" +
+                "{\"orderLineItemId\":\"" + session.lineItemId + "\",\"quantity\":1,\"reason\":\"DEFECTIVE\"}," +
+                "{\"orderLineItemId\":\"" + session.lineItemId + "\",\"quantity\":1,\"reason\":\"DEFECTIVE\"}" +
+                "]}";
+
+        mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("DUPLICATE"));
+    }
+
     private String buildReturnRequest(String reason, String customerNote, String lineItemId) {
         String itemId = lineItemId != null ? lineItemId : UUID.randomUUID().toString();
         StringBuilder json = new StringBuilder();
