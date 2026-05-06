@@ -12,6 +12,8 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
+import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
+import com.bigbike.bigbike_backend.service.security.SafePublicLinkPolicy;
 import com.bigbike.bigbike_backend.service.slider.SliderReadService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -32,17 +34,20 @@ public class AdminSliderService {
     private final ProductJpaRepository productJpaRepository;
     private final SliderReadService sliderReadService;
     private final WebRevalidationService webRevalidationService;
+    private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
 
     public AdminSliderService(
             SliderJpaRepository sliderJpaRepository,
             ProductJpaRepository productJpaRepository,
             SliderReadService sliderReadService,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy
     ) {
         this.sliderJpaRepository = sliderJpaRepository;
         this.productJpaRepository = productJpaRepository;
         this.sliderReadService = sliderReadService;
         this.webRevalidationService = webRevalidationService;
+        this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
     }
 
     @Transactional(readOnly = true)
@@ -65,8 +70,9 @@ public class AdminSliderService {
 
     @Transactional
     public String create(UpsertSliderRequest request) {
-        if ((request.getProductId() == null || request.getProductId().isBlank())
-                && (request.getExternalLink() == null || request.getExternalLink().isBlank())) {
+        String productId = blankToNull(request.getProductId());
+        String externalLink = blankToNull(request.getExternalLink());
+        if (productId == null && externalLink == null) {
             throw ValidationException.fromField(
                     "link",
                     "REQUIRED",
@@ -81,9 +87,16 @@ public class AdminSliderService {
                                     + request.getLocation() + "'. Use PATCH to update or pick a different order.");
                 });
 
+        validateImageAssets(request.getDesktopImage(), "desktopImage");
+        validateImageAssets(request.getMobileImage(), "mobileImage");
+
+        if (externalLink != null) {
+            externalLink = SafePublicLinkPolicy.validateOrThrow(externalLink, "externalLink");
+        }
+
         ProductEntity product = null;
-        if (request.getProductId() != null && !request.getProductId().isBlank()) {
-            product = productJpaRepository.findById(request.getProductId())
+        if (productId != null) {
+            product = productJpaRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Product not found."));
         }
 
@@ -96,7 +109,7 @@ public class AdminSliderService {
         entity.setDesktopImage(toImageAsset(request.getDesktopImage()));
         entity.setMobileImage(toImageAsset(request.getMobileImage()));
         entity.setProduct(product);
-        entity.setExternalLink(blankToNull(request.getExternalLink()));
+        entity.setExternalLink(externalLink);
         entity.setActive(request.getIsActive() == null || request.getIsActive());
         entity.setUpdatedAt(now);
 
@@ -178,23 +191,29 @@ public class AdminSliderService {
         if (request.getIsActive() != null) entity.setActive(request.getIsActive());
 
         if (request.isFullEdit()) {
+            String productId = blankToNull(request.getProductId());
+            String externalLink = blankToNull(request.getExternalLink());
+            if (productId == null && externalLink == null) {
+                throw ValidationException.fromField("link", "REQUIRED",
+                        "Either productId or externalLink is required.");
+            }
+            validateImageAssets(request.getDesktopImage(), "desktopImage");
+            validateImageAssets(request.getMobileImage(), "mobileImage");
+            if (externalLink != null) {
+                externalLink = SafePublicLinkPolicy.validateOrThrow(externalLink, "externalLink");
+            }
+
             entity.setLocation(request.getLocation());
             entity.setDesktopImage(toImageAsset(request.getDesktopImage()));
             entity.setMobileImage(toImageAsset(request.getMobileImage()));
-            entity.setExternalLink(blankToNull(request.getExternalLink()));
+            entity.setExternalLink(externalLink);
 
-            if (request.getProductId() != null && !request.getProductId().isBlank()) {
-                ProductEntity product = productJpaRepository.findById(request.getProductId())
+            if (productId != null) {
+                ProductEntity product = productJpaRepository.findById(productId)
                         .orElseThrow(() -> new NotFoundException("Product not found."));
                 entity.setProduct(product);
             } else {
                 entity.setProduct(null);
-            }
-
-            if ((request.getProductId() == null || request.getProductId().isBlank())
-                    && (request.getExternalLink() == null || request.getExternalLink().isBlank())) {
-                throw ValidationException.fromField("link", "REQUIRED",
-                        "Either productId or externalLink is required.");
             }
         }
 
@@ -208,6 +227,19 @@ public class AdminSliderService {
             return new ImageAsset(null, null, null, null, null, null);
         }
         return new ImageAsset(null, request.getUrl(), request.getAlt(), request.getWidth(), request.getHeight(), request.getMimeType());
+    }
+
+    private void validateImageAssets(ImageAssetRequest request, String fieldPrefix) {
+        if (request == null) {
+            return;
+        }
+        safeMediaAssetUrlPolicy.validateImageUrlOrThrow(request.getUrl(), fieldPrefix + ".url");
+        if (request.getWidth() != null && request.getWidth() < 0) {
+            throw ValidationException.fromField(fieldPrefix + ".width", "INVALID_VALUE", "Image width must be >= 0.");
+        }
+        if (request.getHeight() != null && request.getHeight() < 0) {
+            throw ValidationException.fromField(fieldPrefix + ".height", "INVALID_VALUE", "Image height must be >= 0.");
+        }
     }
 
     private static String blankToNull(String value) {

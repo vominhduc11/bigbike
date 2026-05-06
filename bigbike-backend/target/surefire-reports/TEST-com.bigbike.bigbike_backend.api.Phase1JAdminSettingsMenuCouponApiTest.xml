@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="4.222" tests="52" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="14.448" tests="55" errors="0" skipped="0" failures="2" flakes="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -16,9 +16,10 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="A:\jdk17\bin"/>
-    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire6841276362672789100\surefirebooter-20260506184201483_3.jar C:\Users\vomin\AppData\Local\Temp\surefire6841276362672789100 2026-05-06T18-42-01_085-jvmRun1 surefire-20260506184201483_1tmp surefire_0-20260506184201483_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire2981777463355999141\surefirebooter-20260506194723755_3.jar C:\Users\vomin\AppData\Local\Temp\surefire2981777463355999141 2026-05-06T19-47-23_613-jvmRun1 surefire-20260506194723755_1tmp surefire_0-20260506194723755_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="S:\project\bigbike\bigbike-backend\target\test-classes;S:\project\bigbike\bigbike-backend\target\classes;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.5\spring-boot-starter-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.5\spring-boot-starter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.5\spring-boot-starter-logging-4.0.5.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\vomin\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.5\spring-boot-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\vomin\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.5\spring-boot-starter-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.5\spring-boot-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.5\spring-boot-micrometer-observation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.5\spring-boot-actuator-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.5\spring-boot-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-health\4.0.5\spring-boot-health-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot\4.0.5\spring-boot-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context\7.0.6\spring-context-7.0.6.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation\1.16.4\micrometer-observation-1.16.4.jar;C:\Users\vomin\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-commons\1.16.4\micrometer-commons-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.4\micrometer-jakarta9-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-core\1.16.4\micrometer-core-1.16.4.jar;C:\Users\vomin\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\vomin\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.5\spring-boot-starter-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.5\spring-boot-starter-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.5\spring-boot-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.5\spring-boot-data-commons-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.5\spring-boot-persistence-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-commons\4.0.4\spring-data-commons-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.5\spring-boot-hibernate-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.5\spring-boot-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\vomin\.m2\repository\org\hibernate\orm\hibernate-core\7.2.7.Final\hibernate-core-7.2.7.Final.jar;C:\Users\vomin\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\vomin\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\vomin\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-orm\7.0.6\spring-orm-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-jpa\4.0.4\spring-data-jpa-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-tx\7.0.6\spring-tx-7.0.6.jar;C:\Users\vomin\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aspects\7.0.6\spring-aspects-7.0.6.jar;C:\Users\vomin\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.5\spring-boot-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.5\spring-boot-sql-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.5\spring-boot-transaction-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-jdbc\7.0.6\spring-jdbc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.5\spring-boot-starter-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.5\spring-boot-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail\4.0.5\spring-boot-starter-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-mail\4.0.5\spring-boot-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context-support\7.0.6\spring-context-support-7.0.6.jar;C:\Users\vomin\.m2\repository\jakarta\mail\jakarta.mail-api\2.1.5\jakarta.mail-api-2.1.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-mail\2.0.5\angus-mail-2.0.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.5\spring-boot-starter-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security\4.0.5\spring-boot-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-config\7.0.4\spring-security-config-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-core\7.0.4\spring-security-core-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-crypto\7.0.4\spring-security-crypto-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-web\7.0.4\spring-security-web-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-expression\7.0.6\spring-expression-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aop\7.0.6\spring-aop-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-beans\7.0.6\spring-beans-7.0.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.6\jjwt-api-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.6\jjwt-impl-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.6\jjwt-jackson-0.12.6.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\vomin\.m2\repository\org\bouncycastle\bcprov-jdk18on\1.80\bcprov-jdk18on-1.80.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf\4.0.5\spring-boot-starter-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-thymeleaf\4.0.5\spring-boot-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-web\7.0.6\spring-web-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.5\spring-boot-starter-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.5\spring-boot-starter-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.5\spring-boot-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-databind\3.1.0\jackson-databind-3.1.0.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-core\3.1.0\jackson-core-3.1.0.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.5\spring-boot-starter-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.5\spring-boot-starter-tomcat-runtime-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.20\tomcat-embed-core-11.0.20.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.20\tomcat-embed-websocket-11.0.20.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.5\spring-boot-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.5\spring-boot-http-converter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.5\spring-boot-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.5\spring-boot-servlet-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-webmvc\7.0.6\spring-webmvc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.5\spring-boot-starter-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.5\spring-boot-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.20\tomcat-embed-el-11.0.20.jar;C:\Users\vomin\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\vomin\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\vomin\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\vomin\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket\4.0.5\spring-boot-starter-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-websocket\4.0.5\spring-boot-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-messaging\7.0.6\spring-messaging-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-websocket\7.0.6\spring-websocket-7.0.6.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\extras\thymeleaf-extras-springsecurity6\3.1.3.RELEASE\thymeleaf-extras-springsecurity6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf-spring6\3.1.3.RELEASE\thymeleaf-spring6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf\3.1.3.RELEASE\thymeleaf-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\attoparser\attoparser\2.0.7.RELEASE\attoparser-2.0.7.RELEASE.jar;C:\Users\vomin\.m2\repository\org\unbescape\unbescape\1.1.6.RELEASE\unbescape-1.1.6.RELEASE.jar;C:\Users\vomin\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\vomin\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\vomin\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\vomin\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\vomin\.m2\repository\io\minio\minio\8.5.17\minio-8.5.17.jar;C:\Users\vomin\.m2\repository\com\carrotsearch\thirdparty\simple-xml-safe\2.7.1\simple-xml-safe-2.7.1.jar;C:\Users\vomin\.m2\repository\com\google\guava\guava\33.3.1-jre\guava-33.3.1-jre.jar;C:\Users\vomin\.m2\repository\com\google\guava\failureaccess\1.0.2\failureaccess-1.0.2.jar;C:\Users\vomin\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\vomin\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\vomin\.m2\repository\com\google\errorprone\error_prone_annotations\2.28.0\error_prone_annotations-2.28.0.jar;C:\Users\vomin\.m2\repository\com\google\j2objc\j2objc-annotations\3.0.0\j2objc-annotations-3.0.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okhttp3\okhttp\4.12.0\okhttp-4.12.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio\3.6.0\okio-3.6.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio-jvm\3.6.0\okio-jvm-3.6.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-common\1.9.10\kotlin-stdlib-common-1.9.10.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk8\2.2.21\kotlin-stdlib-jdk8-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib\2.2.21\kotlin-stdlib-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\annotations\13.0\annotations-13.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk7\2.2.21\kotlin-stdlib-jdk7-2.2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-compress\1.27.1\commons-compress-1.27.1.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-lang3\3.19.0\commons-lang3-3.19.0.jar;C:\Users\vomin\.m2\repository\commons-codec\commons-codec\1.19.0\commons-codec-1.19.0.jar;C:\Users\vomin\.m2\repository\org\xerial\snappy\snappy-java\1.1.10.7\snappy-java-1.1.10.7.jar;C:\Users\vomin\.m2\repository\org\apache\tika\tika-core\2.9.2\tika-core-2.9.2.jar;C:\Users\vomin\.m2\repository\commons-io\commons-io\2.15.1\commons-io-2.15.1.jar;C:\Users\vomin\.m2\repository\com\bucket4j\bucket4j-core\8.10.1\bucket4j-core-8.10.1.jar;C:\Users\vomin\.m2\repository\net\logstash\logback\logstash-logback-encoder\8.0\logstash-logback-encoder-8.0.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\vomin\.m2\repository\org\projectlombok\lombok\1.18.44\lombok-1.18.44.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator-test\4.0.5\spring-boot-starter-actuator-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics-test\4.0.5\spring-boot-starter-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics-test\4.0.5\spring-boot-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation-test\1.16.4\micrometer-observation-test-1.16.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-configuration-processor\4.0.5\spring-boot-configuration-processor-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.5\spring-boot-starter-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test\4.0.5\spring-boot-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.5\spring-boot-test-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\vomin\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\vomin\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\vomin\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\vomin\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\vomin\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\vomin\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\vomin\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\vomin\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\vomin\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\vomin\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\vomin\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-core\7.0.6\spring-core-7.0.6.jar;C:\Users\vomin\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-test\7.0.6\spring-test-7.0.6.jar;C:\Users\vomin\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.5\spring-boot-starter-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.5\spring-boot-starter-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.5\spring-boot-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.5\spring-boot-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.5\spring-boot-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway-test\4.0.5\spring-boot-starter-flyway-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail-test\4.0.5\spring-boot-starter-mail-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.5\spring-boot-starter-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.5\spring-boot-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-test\7.0.4\spring-security-test-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf-test\4.0.5\spring-boot-starter-thymeleaf-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.5\spring-boot-starter-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.5\spring-boot-starter-jackson-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.5\spring-boot-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.5\spring-boot-web-server-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.5\spring-boot-resttestclient-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket-test\4.0.5\spring-boot-starter-websocket-test-4.0.5.jar;"/>
+    <property name="test" value="Phase1JAdminSettingsMenuCouponApiTest"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\vomin"/>
     <property name="user.language" value="en"/>
@@ -33,7 +34,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire6841276362672789100\surefirebooter-20260506184201483_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire2981777463355999141\surefirebooter-20260506194723755_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.12+8-LTS-286"/>
@@ -46,12 +47,12 @@
     <property name="localRepository" value="C:\Users\vomin\.m2\repository"/>
     <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
     <property name="java.io.tmpdir" value="C:\Users\vomin\AppData\Local\Temp\"/>
-    <property name="com.zaxxer.hikari.pool_number" value="3"/>
+    <property name="com.zaxxer.hikari.pool_number" value="1"/>
     <property name="java.version" value="17.0.12"/>
     <property name="user.dir" value="S:\project\bigbike\bigbike-backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="33692"/>
+    <property name="PID" value="6744"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="windows-1258"/>
     <property name="native.encoding" value="Cp1258"/>
@@ -62,56 +63,1260 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="publicMenu_inactiveMenu_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.143"/>
-  <testcase name="adminMenus_deleteMenu_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.09"/>
-  <testcase name="adminMenus_update_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.072"/>
-  <testcase name="createMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
-  <testcase name="adminSettings_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
-  <testcase name="adminSettings_getByKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.1"/>
-  <testcase name="adminCoupons_createPercent_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.106"/>
-  <testcase name="adminCoupons_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.098"/>
-  <testcase name="updateSetting_apiKeyCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.093"/>
-  <testcase name="adminCoupons_invalidDiscountType_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
-  <testcase name="adminMenus_deleteItem_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068"/>
-  <testcase name="reorderMenuItems_parentFromOtherMenu_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.083"/>
-  <testcase name="updateMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.079"/>
-  <testcase name="updateMenuItem_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.085"/>
-  <testcase name="publicMenu_byLocation_returnsActiveItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
-  <testcase name="customerOrders_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
-  <testcase name="adminSettings_filterByGroup" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
-  <testcase name="adminCustomers_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.07"/>
-  <testcase name="updateMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
-  <testcase name="adminMenus_createDuplicateLocation_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.073"/>
-  <testcase name="reorderMenuItems_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
-  <testcase name="adminMenus_getById_returnsMenuWithItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066"/>
-  <testcase name="updateSetting_clientSecretCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.09"/>
-  <testcase name="adminSettings_sensitiveKey_cannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.079"/>
-  <testcase name="adminMenus_create_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
-  <testcase name="adminSettings_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.102"/>
-  <testcase name="adminCoupons_percentOver100_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059"/>
-  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.107"/>
-  <testcase name="publicSettings_returnsOnlyPublicSettings" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.083"/>
-  <testcase name="adminMenus_reorderItems_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.083"/>
-  <testcase name="adminCoupons_duplicateCode_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
-  <testcase name="adminOrders_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.075"/>
-  <testcase name="adminSettings_updateValue_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
-  <testcase name="reorderMenuItems_selfParent_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.077"/>
-  <testcase name="adminCoupons_getById_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
-  <testcase name="adminMedia_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
-  <testcase name="checkoutOptions_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
-  <testcase name="createCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
-  <testcase name="adminCoupons_updateName_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
-  <testcase name="updateCouponStatus_archived_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.086"/>
-  <testcase name="updateCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.137"/>
-  <testcase name="adminCoupons_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.085"/>
-  <testcase name="adminMenus_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058"/>
-  <testcase name="adminMenus_createItem_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
-  <testcase name="adminCoupons_updateStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
-  <testcase name="createCoupon_archivedStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.07"/>
-  <testcase name="publicMenu_isAccessibleWithoutAuth" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.073"/>
-  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
-  <testcase name="adminCoupons_createFixed_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
-  <testcase name="createMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.08"/>
-  <testcase name="adminMenus_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.089"/>
-  <testcase name="guestOrderLookup_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
+  <testcase name="publicMenu_inactiveMenu_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.753">
+    <system-out><![CDATA[19:47:24.813 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest]: Phase1JAdminSettingsMenuCouponApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:47:24.956 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
+19:47:25.039 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest]: Phase1JAdminSettingsMenuCouponApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:47:25.041 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.5)
+
+19:47:25.407 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Starting Phase1JAdminSettingsMenuCouponApiTest using Java 17.0.12 with PID 6744 (started by vomin in S:\project\bigbike\bigbike-backend)
+19:47:25.408 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Running with Spring Boot v4.0.5, Spring v7.0.6
+19:47:25.408 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - No active profile set, falling back to 1 default profile: "default"
+19:47:25.817 &amp#27;[34mINFO &amp#27;[0;39m [background-preinit] &amp#27;[36mo.h.validator.internal.util.Version&amp#27;[0;39m - HV000001: Hibernate Validator 9.0.1.Final
+19:47:26.733 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.r.c.RepositoryConfigurationDelegate&amp#27;[0;39m - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+19:47:26.925 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.r.c.RepositoryConfigurationDelegate&amp#27;[0;39m - Finished Spring Data repository scanning in 173 ms. Found 50 JPA repository interfaces.
+19:47:27.867 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jpa&amp#27;[0;39m - HHH008540: Processing PersistenceUnitInfo [name: default]
+19:47:27.978 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.core&amp#27;[0;39m - HHH000001: Hibernate ORM core version 7.2.7.Final
+19:47:28.393 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.o.j.p.SpringPersistenceUnitInfo&amp#27;[0;39m - No LoadTimeWeaver setup: ignoring JPA class transformer
+19:47:28.420 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.HikariDataSource&amp#27;[0;39m - HikariPool-1 - Starting...
+19:47:28.562 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.pool.HikariPool&amp#27;[0;39m - HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:bigbike user=SA
+19:47:28.564 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.HikariDataSource&amp#27;[0;39m - HikariPool-1 - Start completed.
+19:47:28.611 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.hibernate.orm.connections.pooling&amp#27;[0;39m - HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:bigbike]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: bigbike/public
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+19:47:30.217 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.core&amp#27;[0;39m - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+19:47:30.335 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.o.j.LocalContainerEntityManagerFactoryBean&amp#27;[0;39m - Initialized JPA EntityManagerFactory for persistence unit 'default'
+19:47:30.455 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.j.r.q.QueryEnhancerFactories&amp#27;[0;39m - Hibernate is in classpath; If applicable, HQL parser will be used.
+19:47:31.985 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.web.WebRevalidationService&amp#27;[0;39m - WebRevalidationService enabled=false url=
+19:47:34.368 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36mc.b.b.config.MinioConfig&amp#27;[0;39m - Could not ensure MinIO bucket 'bigbike-media': Failed to connect to localhost/[0:0:0:0:0:0:0:1]:9000
+19:47:34.513 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36mo.s.b.s.a.UserDetailsServiceAutoConfiguration&amp#27;[0;39m - 
+
+Using generated security password: 91caed2c-694c-40fb-be56-14020cf8549f
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+19:47:34.520 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer&amp#27;[0;39m - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+19:47:34.669 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.web.DefaultSecurityFilterChain&amp#27;[0;39m - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, SecurityHeadersFilter, CustomerSessionFilter, RateLimitingFilter, JwtAuthFilter, CustomerCsrfFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+19:47:35.362 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.a.e.web.EndpointLinksResolver&amp#27;[0;39m - Exposing 1 endpoint beneath base path '/actuator'
+19:47:35.427 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - Starting...
+19:47:35.427 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@45dd36e0]]
+19:47:35.428 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - Started.
+19:47:35.438 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Started Phase1JAdminSettingsMenuCouponApiTest in 10.301 seconds (process running for 11.512)
+19:47:35.706 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36mc.b.b.config.DataInitializer&amp#27;[0;39m - Seeded default admin user: admin@bigbike.vn — change the password immediately!
+19:47:36.108 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.109 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.110 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.216 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.232 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.236 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.471 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/inactive-pub-d71cf2ee
+19:47:36.472 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.472 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/inactive-pub-d71cf2ee
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_deleteMenu_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.131">
+    <failure message="Status expected:&lt;204&gt; but was:&lt;500&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<204> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminMenus_deleteMenu_returns204(Phase1JAdminSettingsMenuCouponApiTest.java:302)
+]]></failure>
+    <system-out><![CDATA[19:47:36.502 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.502 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.503 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.505 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.506 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.506 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.545 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/b38c20e4-b7bd-4761-85b5-00bf31ac7888
+19:47:36.586 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/b38c20e4-b7bd-4761-85b5-00bf31ac7888
+19:47:36.609 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jdbc.error&amp#27;[0;39m - HHH000247: ErrorCode: 23503, SQLState: 23503
+19:47:36.609 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jdbc.error&amp#27;[0;39m - Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID 'b38c20e4-b7bd-4761-85b5-00bf31ac7888')"; SQL statement:
+delete from menus where id=? [23503-240]
+19:47:36.616 &amp#27;[1;31mERROR&amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.error.GlobalExceptionHandler&amp#27;[0;39m - Unhandled exception
+org.springframework.dao.DataIntegrityViolationException: could not execute statement [Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID 'b38c20e4-b7bd-4761-85b5-00bf31ac7888')"; SQL statement:
+delete from menus where id=? [23503-240]] [delete from menus where id=?]; SQL [delete from menus where id=?]; constraint [fk6fwmu1a0d0hysfd3c00jxyl2c]
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException(HibernateExceptionTranslator.java:169)
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException(HibernateExceptionTranslator.java:131)
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.translateExceptionIfPossible(HibernateExceptionTranslator.java:105)
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:223)
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:557)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:794)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:757)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:687)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:408)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.bigbike.bigbike_backend.service.admin.AdminMenuService$$SpringCGLIB$$0.deleteMenu(<generated>)
+	at com.bigbike.bigbike_backend.api.admin.AdminMenuController.deleteMenu(AdminMenuController.java:106)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.validation.beanvalidation.MethodValidationInterceptor.invoke(MethodValidationInterceptor.java:172)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.bigbike.bigbike_backend.api.admin.AdminMenuController$$SpringCGLIB$$0.deleteMenu(<generated>)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doDelete(FrameworkServlet.java:925)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:651)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at org.springframework.test.web.servlet.TestDispatcherServlet.service(TestDispatcherServlet.java:72)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.springframework.mock.web.MockFilterChain$ServletFilterProxy.doFilter(MockFilterChain.java:160)
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:127)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:235)
+	at org.springframework.security.web.ObservationFilterChainDecorator$FilterObservation$SimpleFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:493)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:354)
+	at org.springframework.security.web.ObservationFilterChainDecorator.lambda$wrapSecured$0(ObservationFilterChainDecorator.java:86)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:132)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.CustomerCsrfFilter.doFilterInternal(CustomerCsrfFilter.java:66)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.JwtAuthFilter.doFilterInternal(JwtAuthFilter.java:58)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.RateLimitingFilter.doFilterInternal(RateLimitingFilter.java:80)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.CustomerSessionFilter.doFilterInternal(CustomerSessionFilter.java:64)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.SecurityHeadersFilter.doFilterInternal(SecurityHeadersFilter.java:36)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:337)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurer$DelegateFilter.doFilter(SecurityMockMvcConfigurer.java:135)
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:127)
+	at org.springframework.test.web.servlet.MockMvc.perform(MockMvc.java:199)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminMenus_deleteMenu_returns204(Phase1JAdminSettingsMenuCouponApiTest.java:300)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+Caused by: org.hibernate.exception.ConstraintViolationException: could not execute statement [Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID 'b38c20e4-b7bd-4761-85b5-00bf31ac7888')"; SQL statement:
+delete from menus where id=? [23503-240]] [delete from menus where id=?]
+	at org.hibernate.dialect.H2Dialect.lambda$buildSQLExceptionConversionDelegate$0(H2Dialect.java:840)
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:34)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:115)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:184)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.performNonBatchedMutation(AbstractMutationExecutor.java:145)
+	at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations(MutationExecutorSingleNonBatched.java:53)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute(AbstractMutationExecutor.java:66)
+	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.doStaticDelete(AbstractDeleteCoordinator.java:268)
+	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.delete(AbstractDeleteCoordinator.java:79)
+	at org.hibernate.action.internal.EntityDeleteAction.execute(EntityDeleteAction.java:119)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:634)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:505)
+	at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:381)
+	at org.hibernate.event.internal.DefaultFlushEventListener.onFlush(DefaultFlushEventListener.java:40)
+	at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:138)
+	at org.hibernate.internal.SessionImpl.fireFlush(SessionImpl.java:1484)
+	at org.hibernate.internal.SessionImpl.managedFlush(SessionImpl.java:481)
+	at org.hibernate.internal.SessionImpl.flushBeforeTransactionCompletion(SessionImpl.java:2111)
+	at org.hibernate.internal.SessionImpl.beforeTransactionCompletion(SessionImpl.java:2033)
+	at org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl.beforeTransactionCompletion(JdbcCoordinatorImpl.java:410)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl.beforeCompletionCallback(JdbcResourceLocalTransactionCoordinatorImpl.java:166)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commitNoRollbackOnly(JdbcResourceLocalTransactionCoordinatorImpl.java:248)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commit(JdbcResourceLocalTransactionCoordinatorImpl.java:242)
+	at org.hibernate.engine.transaction.internal.TransactionImpl.commit(TransactionImpl.java:89)
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:553)
+	... 225 common frames omitted
+Caused by: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID 'b38c20e4-b7bd-4761-85b5-00bf31ac7888')"; SQL statement:
+delete from menus where id=? [23503-240]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:520)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.constraint.ConstraintReferential.checkRow(ConstraintReferential.java:363)
+	at org.h2.constraint.ConstraintReferential.checkRowRefTable(ConstraintReferential.java:380)
+	at org.h2.constraint.ConstraintReferential.checkRow(ConstraintReferential.java:254)
+	at org.h2.table.Table.fireConstraints(Table.java:1208)
+	at org.h2.table.Table.fireAfterRow(Table.java:1226)
+	at org.h2.command.dml.Delete.update(Delete.java:81)
+	at org.h2.command.dml.DataChangeStatement.update(DataChangeStatement.java:77)
+	at org.h2.command.CommandContainer.update(CommandContainer.java:139)
+	at org.h2.command.Command.executeUpdate(Command.java:306)
+	at org.h2.command.Command.executeUpdate(Command.java:250)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdateInternal(JdbcPreparedStatement.java:213)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdate(JdbcPreparedStatement.java:172)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:181)
+	... 246 common frames omitted
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_update_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.12">
+    <system-out><![CDATA[19:47:36.635 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.636 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.637 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.640 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.641 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.642 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.692 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/bec1e4fc-cfd2-40a5-a448-af6aab9a1520
+19:47:36.693 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/bec1e4fc-cfd2-40a5-a448-af6aab9a1520
+]]></system-out>
+  </testcase>
+  <testcase name="updateMenuItem_clearParentId_movesToRoot" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.116">
+    <system-out><![CDATA[19:47:36.758 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.758 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.759 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.762 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.762 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.763 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.803 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/8a68871e-457a-468e-b7e4-a4ae4f090075/items/0a5d7805-3e1b-4f4b-b1c7-ea5ef5d32b27
+19:47:36.804 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/8a68871e-457a-468e-b7e4-a4ae4f090075/items/0a5d7805-3e1b-4f4b-b1c7-ea5ef5d32b27
+]]></system-out>
+  </testcase>
+  <testcase name="createMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067">
+    <system-out><![CDATA[19:47:36.875 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.875 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.876 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.878 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.879 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.879 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.919 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
+19:47:36.920 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.048">
+    <system-out><![CDATA[19:47:36.942 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.943 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.944 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.946 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:36.981 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
+19:47:36.981 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_getByKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.05">
+    <system-out><![CDATA[19:47:36.991 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:36.991 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:36.992 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:36.994 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:36.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:36.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.030 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings/key-1ff5bef0
+19:47:37.032 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings/key-1ff5bef0
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_createPercent_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058">
+    <system-out><![CDATA[19:47:37.042 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.042 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.043 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.045 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.045 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.046 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.075 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:37.076 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.084">
+    <system-out><![CDATA[19:47:37.100 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.100 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.102 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.104 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.104 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.104 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.135 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons
+19:47:37.136 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="updateSetting_apiKeyCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055">
+    <system-out><![CDATA[19:47:37.186 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.187 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.188 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.191 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.191 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.191 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.224 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/stripe.api_key.bb66cd
+19:47:37.226 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/stripe.api_key.bb66cd
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_invalidDiscountType_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.043">
+    <system-out><![CDATA[19:47:37.241 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.241 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.243 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.246 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.277 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:37.278 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_deleteItem_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.049">
+    <system-out><![CDATA[19:47:37.285 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.285 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.287 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.289 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.289 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.289 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.320 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/e5fb2a48-108f-4ea3-8989-64b50eadfb37/items/9592ede7-7fd0-48bc-a8c0-ca4d857f0448
+19:47:37.322 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/e5fb2a48-108f-4ea3-8989-64b50eadfb37/items/9592ede7-7fd0-48bc-a8c0-ca4d857f0448
+]]></system-out>
+  </testcase>
+  <testcase name="reorderMenuItems_parentFromOtherMenu_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.052">
+    <system-out><![CDATA[19:47:37.335 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.335 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.336 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.338 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.339 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.339 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.373 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/485ef3a2-79da-4e15-8c7c-2c7bd1f99510/items/reorder
+19:47:37.374 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/485ef3a2-79da-4e15-8c7c-2c7bd1f99510/items/reorder
+]]></system-out>
+  </testcase>
+  <testcase name="updateMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.042">
+    <system-out><![CDATA[19:47:37.388 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.388 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.390 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.391 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.392 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.392 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.424 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/8020a14f-130d-49ae-8eef-2a742a4e7655/items/d7f66a9a-7489-4ded-aa88-86bda17f2d1f
+19:47:37.425 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/8020a14f-130d-49ae-8eef-2a742a4e7655/items/d7f66a9a-7489-4ded-aa88-86bda17f2d1f
+]]></system-out>
+  </testcase>
+  <testcase name="updateMenuItem_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.044">
+    <system-out><![CDATA[19:47:37.432 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.432 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.433 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.434 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.435 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.435 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.468 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/fdba7bf0-32ec-4e1c-8010-ca53f86993e7/items/9cde2df1-fdfb-43a2-92ce-f499de68ed8c
+19:47:37.469 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/fdba7bf0-32ec-4e1c-8010-ca53f86993e7/items/9cde2df1-fdfb-43a2-92ce-f499de68ed8c
+]]></system-out>
+  </testcase>
+  <testcase name="publicMenu_byLocation_returnsActiveItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.048">
+    <system-out><![CDATA[19:47:37.477 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.477 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.478 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.480 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.480 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.480 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.511 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/pub-menu-bd27427a
+19:47:37.511 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.512 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/pub-menu-bd27427a
+]]></system-out>
+  </testcase>
+  <testcase name="customerOrders_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.034">
+    <system-out><![CDATA[19:47:37.525 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.525 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.526 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.528 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.529 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.529 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.555 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
+19:47:37.556 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_filterByGroup" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.052">
+    <system-out><![CDATA[19:47:37.560 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.560 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.562 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.563 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.564 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.564 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.591 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
+19:47:37.592 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings
+]]></system-out>
+  </testcase>
+  <testcase name="adminCustomers_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.04">
+    <system-out><![CDATA[19:47:37.614 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.614 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.615 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.617 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.617 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.617 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.643 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
+19:47:37.644 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
+]]></system-out>
+  </testcase>
+  <testcase name="updateMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.037">
+    <system-out><![CDATA[19:47:37.654 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.655 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.656 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.658 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.658 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.658 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.685 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/2b9a6279-bc3c-42ae-ac6b-5a806734ec3a
+19:47:37.686 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/2b9a6279-bc3c-42ae-ac6b-5a806734ec3a
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_createDuplicateLocation_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.037">
+    <system-out><![CDATA[19:47:37.693 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.693 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.694 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.696 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.696 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.697 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.723 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
+19:47:37.724 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
+]]></system-out>
+  </testcase>
+  <testcase name="reorderMenuItems_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:37.730 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.731 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.732 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.733 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.733 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.762 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/2f81770d-b8a1-4556-8cb7-7d6a57f3cb33/items/reorder
+19:47:37.763 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/2f81770d-b8a1-4556-8cb7-7d6a57f3cb33/items/reorder
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_getById_returnsMenuWithItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.043">
+    <system-out><![CDATA[19:47:37.771 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.771 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.773 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:37.774 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.775 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.775 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.802 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus/b051ed74-50b0-47f5-bba9-a51ddbc4b8dd
+19:47:37.803 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/menus/b051ed74-50b0-47f5-bba9-a51ddbc4b8dd
+]]></system-out>
+  </testcase>
+  <testcase name="updateSetting_clientSecretCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.036">
+    <system-out><![CDATA[19:47:37.815 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.815 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.816 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.818 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.818 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.818 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/oauth.client_secret.135399
+19:47:37.845 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/oauth.client_secret.135399
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_sensitiveKey_cannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.035">
+    <system-out><![CDATA[19:47:37.851 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.851 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.852 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.854 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.855 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.855 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.881 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/app.secret.key.0abfab32
+19:47:37.882 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/app.secret.key.0abfab32
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_create_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.035">
+    <system-out><![CDATA[19:47:37.888 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.888 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.889 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.890 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.891 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.891 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.914 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
+19:47:37.915 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:37.923 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.924 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.925 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.926 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.927 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.927 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.954 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
+19:47:37.955 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_percentOver100_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:37.963 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:37.963 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:37.964 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:37.965 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:37.966 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:37.966 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:37.994 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:37.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.044">
+    <system-out><![CDATA[19:47:38.002 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.002 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.003 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.005 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.006 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.006 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.030 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/products
+19:47:38.030 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.030 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/products
+]]></system-out>
+  </testcase>
+  <testcase name="publicSettings_returnsOnlyPublicSettings" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.044">
+    <system-out><![CDATA[19:47:38.047 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.047 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.049 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.050 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.050 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.050 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.084 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/settings/public
+19:47:38.084 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.084 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/settings/public
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_reorderItems_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.044">
+    <system-out><![CDATA[19:47:38.092 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.092 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.093 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.095 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.095 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.095 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.125 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/fc5b5ded-2cb2-4ff2-8721-44eb3fcebd63/items/reorder
+19:47:38.126 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/fc5b5ded-2cb2-4ff2-8721-44eb3fcebd63/items/reorder
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_duplicateCode_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.036">
+    <system-out><![CDATA[19:47:38.137 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.137 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.138 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.139 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.140 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.140 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.167 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:38.168 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="adminOrders_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.04">
+    <system-out><![CDATA[19:47:38.173 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.174 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.175 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.176 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.176 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.177 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.201 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/orders
+19:47:38.201 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/orders
+]]></system-out>
+  </testcase>
+  <testcase name="adminSettings_updateValue_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:38.214 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.214 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.216 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.217 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.218 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.218 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.244 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/upd-1bded24d
+19:47:38.245 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/upd-1bded24d
+]]></system-out>
+  </testcase>
+  <testcase name="deleteMenu_deepHierarchy_returns204AndCleansDb" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <failure message="Status expected:&lt;204&gt; but was:&lt;500&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<204> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.deleteMenu_deepHierarchy_returns204AndCleansDb(Phase1JAdminSettingsMenuCouponApiTest.java:729)
+]]></failure>
+    <system-out><![CDATA[19:47:38.254 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.254 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.255 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.257 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.257 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.257 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.285 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/02c85f2f-9105-4c02-b83b-bfdd4265c10f
+19:47:38.286 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/02c85f2f-9105-4c02-b83b-bfdd4265c10f
+19:47:38.288 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jdbc.error&amp#27;[0;39m - HHH000247: ErrorCode: 23503, SQLState: 23503
+19:47:38.288 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jdbc.error&amp#27;[0;39m - Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID '02c85f2f-9105-4c02-b83b-bfdd4265c10f')"; SQL statement:
+delete from menus where id=? [23503-240]
+19:47:38.289 &amp#27;[1;31mERROR&amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.error.GlobalExceptionHandler&amp#27;[0;39m - Unhandled exception
+org.springframework.dao.DataIntegrityViolationException: could not execute statement [Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID '02c85f2f-9105-4c02-b83b-bfdd4265c10f')"; SQL statement:
+delete from menus where id=? [23503-240]] [delete from menus where id=?]; SQL [delete from menus where id=?]; constraint [fk6fwmu1a0d0hysfd3c00jxyl2c]
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException(HibernateExceptionTranslator.java:169)
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException(HibernateExceptionTranslator.java:131)
+	at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.translateExceptionIfPossible(HibernateExceptionTranslator.java:105)
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:223)
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:557)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:794)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:757)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:687)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:408)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.bigbike.bigbike_backend.service.admin.AdminMenuService$$SpringCGLIB$$0.deleteMenu(<generated>)
+	at com.bigbike.bigbike_backend.api.admin.AdminMenuController.deleteMenu(AdminMenuController.java:106)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.validation.beanvalidation.MethodValidationInterceptor.invoke(MethodValidationInterceptor.java:172)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.bigbike.bigbike_backend.api.admin.AdminMenuController$$SpringCGLIB$$0.deleteMenu(<generated>)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doDelete(FrameworkServlet.java:925)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:651)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at org.springframework.test.web.servlet.TestDispatcherServlet.service(TestDispatcherServlet.java:72)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.springframework.mock.web.MockFilterChain$ServletFilterProxy.doFilter(MockFilterChain.java:160)
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:127)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:235)
+	at org.springframework.security.web.ObservationFilterChainDecorator$FilterObservation$SimpleFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:493)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:354)
+	at org.springframework.security.web.ObservationFilterChainDecorator.lambda$wrapSecured$0(ObservationFilterChainDecorator.java:86)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:132)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.CustomerCsrfFilter.doFilterInternal(CustomerCsrfFilter.java:66)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.JwtAuthFilter.doFilterInternal(JwtAuthFilter.java:58)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.RateLimitingFilter.doFilterInternal(RateLimitingFilter.java:80)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.CustomerSessionFilter.doFilterInternal(CustomerSessionFilter.java:64)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at com.bigbike.bigbike_backend.config.SecurityHeadersFilter.doFilterInternal(SecurityHeadersFilter.java:36)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:244)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:337)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:141)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurer$DelegateFilter.doFilter(SecurityMockMvcConfigurer.java:135)
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:127)
+	at org.springframework.test.web.servlet.MockMvc.perform(MockMvc.java:199)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.deleteMenu_deepHierarchy_returns204AndCleansDb(Phase1JAdminSettingsMenuCouponApiTest.java:727)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68)
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168)
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495)
+Caused by: org.hibernate.exception.ConstraintViolationException: could not execute statement [Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID '02c85f2f-9105-4c02-b83b-bfdd4265c10f')"; SQL statement:
+delete from menus where id=? [23503-240]] [delete from menus where id=?]
+	at org.hibernate.dialect.H2Dialect.lambda$buildSQLExceptionConversionDelegate$0(H2Dialect.java:840)
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:34)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:115)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:184)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.performNonBatchedMutation(AbstractMutationExecutor.java:145)
+	at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations(MutationExecutorSingleNonBatched.java:53)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute(AbstractMutationExecutor.java:66)
+	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.doStaticDelete(AbstractDeleteCoordinator.java:268)
+	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.delete(AbstractDeleteCoordinator.java:79)
+	at org.hibernate.action.internal.EntityDeleteAction.execute(EntityDeleteAction.java:119)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:634)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:505)
+	at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:381)
+	at org.hibernate.event.internal.DefaultFlushEventListener.onFlush(DefaultFlushEventListener.java:40)
+	at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:138)
+	at org.hibernate.internal.SessionImpl.fireFlush(SessionImpl.java:1484)
+	at org.hibernate.internal.SessionImpl.managedFlush(SessionImpl.java:481)
+	at org.hibernate.internal.SessionImpl.flushBeforeTransactionCompletion(SessionImpl.java:2111)
+	at org.hibernate.internal.SessionImpl.beforeTransactionCompletion(SessionImpl.java:2033)
+	at org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl.beforeTransactionCompletion(JdbcCoordinatorImpl.java:410)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl.beforeCompletionCallback(JdbcResourceLocalTransactionCoordinatorImpl.java:166)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commitNoRollbackOnly(JdbcResourceLocalTransactionCoordinatorImpl.java:248)
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commit(JdbcResourceLocalTransactionCoordinatorImpl.java:242)
+	at org.hibernate.engine.transaction.internal.TransactionImpl.commit(TransactionImpl.java:89)
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:553)
+	... 225 common frames omitted
+Caused by: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Referential integrity constraint violation: "fk6fwmu1a0d0hysfd3c00jxyl2c: public.menu_items FOREIGN KEY(menu_id) REFERENCES public.menus(id) (UUID '02c85f2f-9105-4c02-b83b-bfdd4265c10f')"; SQL statement:
+delete from menus where id=? [23503-240]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:520)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.constraint.ConstraintReferential.checkRow(ConstraintReferential.java:363)
+	at org.h2.constraint.ConstraintReferential.checkRowRefTable(ConstraintReferential.java:380)
+	at org.h2.constraint.ConstraintReferential.checkRow(ConstraintReferential.java:254)
+	at org.h2.table.Table.fireConstraints(Table.java:1208)
+	at org.h2.table.Table.fireAfterRow(Table.java:1226)
+	at org.h2.command.dml.Delete.update(Delete.java:81)
+	at org.h2.command.dml.DataChangeStatement.update(DataChangeStatement.java:77)
+	at org.h2.command.CommandContainer.update(CommandContainer.java:139)
+	at org.h2.command.Command.executeUpdate(Command.java:306)
+	at org.h2.command.Command.executeUpdate(Command.java:250)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdateInternal(JdbcPreparedStatement.java:213)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdate(JdbcPreparedStatement.java:172)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:181)
+	... 246 common frames omitted
+]]></system-out>
+  </testcase>
+  <testcase name="reorderMenuItems_selfParent_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:38.294 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.294 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.295 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.325 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/3be8497a-5d9b-4ac9-b497-31bd53967d8b/items/reorder
+19:47:38.326 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/3be8497a-5d9b-4ac9-b497-31bd53967d8b/items/reorder
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_getById_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.048">
+    <system-out><![CDATA[19:47:38.334 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.334 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.335 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.336 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.337 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.337 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.375 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons/0c894a5e-8061-49dc-a1ac-84c4944068de
+19:47:38.376 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/coupons/0c894a5e-8061-49dc-a1ac-84c4944068de
+]]></system-out>
+  </testcase>
+  <testcase name="adminMedia_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.041">
+    <system-out><![CDATA[19:47:38.382 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.382 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.384 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.385 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.385 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.386 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.410 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/media
+19:47:38.411 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/media
+]]></system-out>
+  </testcase>
+  <testcase name="checkoutOptions_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.037">
+    <system-out><![CDATA[19:47:38.424 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.424 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.426 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.450 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/checkout/options
+19:47:38.451 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.451 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/checkout/options
+]]></system-out>
+  </testcase>
+  <testcase name="createCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.033">
+    <system-out><![CDATA[19:47:38.462 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.462 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.463 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.464 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.465 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.465 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.489 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:38.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_updateName_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.038">
+    <system-out><![CDATA[19:47:38.497 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.497 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.498 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.499 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.500 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.500 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.526 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/f3c40d83-bea7-4c6c-be3a-8d7d2770391c
+19:47:38.526 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/f3c40d83-bea7-4c6c-be3a-8d7d2770391c
+]]></system-out>
+  </testcase>
+  <testcase name="updateCouponStatus_archived_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.038">
+    <system-out><![CDATA[19:47:38.535 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.535 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.536 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.537 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.538 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.538 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.564 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/e71c115e-822b-43de-a4a3-e269af38c0e9/status
+19:47:38.565 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/e71c115e-822b-43de-a4a3-e269af38c0e9/status
+]]></system-out>
+  </testcase>
+  <testcase name="updateCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.037">
+    <system-out><![CDATA[19:47:38.574 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.574 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.575 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.577 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.577 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.578 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.605 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/5371995a-3ad2-4769-8a40-90a2faffc7d9
+19:47:38.606 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/5371995a-3ad2-4769-8a40-90a2faffc7d9
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.033">
+    <system-out><![CDATA[19:47:38.613 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.613 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.614 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.616 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.616 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.616 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.642 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons
+19:47:38.642 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+]]></system-out>
+  </testcase>
+  <testcase name="deleteMenuItem_withChildren_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.038">
+    <system-out><![CDATA[19:47:38.646 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.646 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.647 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.649 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.649 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.649 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.678 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/2799a8e5-85cf-4505-a079-560bc7113c1e/items/9ffc3427-9c94-4a20-9d3e-82348dd11868
+19:47:38.678 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/2799a8e5-85cf-4505-a079-560bc7113c1e/items/9ffc3427-9c94-4a20-9d3e-82348dd11868
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.039">
+    <system-out><![CDATA[19:47:38.685 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.685 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.687 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.688 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.689 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.689 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.721 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus
+19:47:38.721 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_createItem_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.043">
+    <system-out><![CDATA[19:47:38.724 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.725 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.726 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.727 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.727 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.727 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.756 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/000b6768-41b6-46dc-99ce-ff187f7efe4c/items
+19:47:38.757 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/000b6768-41b6-46dc-99ce-ff187f7efe4c/items
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_updateStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.036">
+    <system-out><![CDATA[19:47:38.769 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.769 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.769 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
+19:47:38.772 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.772 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.772 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.797 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/fa365351-3b1e-4434-8e62-a80054867f9a/status
+19:47:38.798 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/fa365351-3b1e-4434-8e62-a80054867f9a/status
+]]></system-out>
+  </testcase>
+  <testcase name="createCoupon_archivedStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.035">
+    <system-out><![CDATA[19:47:38.805 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.805 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.806 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.808 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.808 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.808 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.833 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:38.834 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="publicMenu_isAccessibleWithoutAuth" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.037">
+    <system-out><![CDATA[19:47:38.841 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.841 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.842 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.872 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/pub-reg-9d745bf4
+19:47:38.873 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.873 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/pub-reg-9d745bf4
+]]></system-out>
+  </testcase>
+  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.046">
+    <system-out><![CDATA[19:47:38.879 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.879 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.880 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.881 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.881 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.881 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.905 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
+19:47:38.905 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.905 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
+]]></system-out>
+  </testcase>
+  <testcase name="adminCoupons_createFixed_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.034">
+    <system-out><![CDATA[19:47:38.925 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.925 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.926 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.927 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.928 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.928 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.952 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
+19:47:38.953 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
+]]></system-out>
+  </testcase>
+  <testcase name="createMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.033">
+    <system-out><![CDATA[19:47:38.960 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.960 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.962 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
+19:47:38.963 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.963 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.963 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:38.987 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/46a8460b-49c6-4b0e-bad7-50bb9e73a51c/items
+19:47:38.988 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/46a8460b-49c6-4b0e-bad7-50bb9e73a51c/items
+]]></system-out>
+  </testcase>
+  <testcase name="adminMenus_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.049">
+    <system-out><![CDATA[19:47:38.994 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:38.994 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:38.995 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:38.996 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:38.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:38.997 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:39.022 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus
+19:47:39.023 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/menus
+]]></system-out>
+  </testcase>
+  <testcase name="guestOrderLookup_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.034">
+    <system-out><![CDATA[19:47:39.044 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
+19:47:39.044 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
+19:47:39.045 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
+19:47:39.047 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
+19:47:39.047 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:39.047 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
+19:47:39.071 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
+19:47:39.071 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
+19:47:39.072 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
+]]></system-out>
+  </testcase>
 </testsuite>

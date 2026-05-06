@@ -676,7 +676,66 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // HARDENING TESTS — Settings sensitive keys (42–43)
+    // P0 FIX TESTS — Menu hierarchy (42–44)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 42. PATCH item with clearParentId:true → item moves to root
+    @Test
+    void updateMenuItem_clearParentId_movesToRoot() throws Exception {
+        String location = "clear-parent-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Clear Parent Menu");
+        MenuItemEntity parent = createTestMenuItem(menu, "Parent", "/parent", null, 0);
+        MenuItemEntity child = createTestMenuItem(menu, "Child", "/child", parent.getId(), 1);
+
+        mockMvc.perform(patch("/api/v1/admin/menus/" + menu.getId() + "/items/" + child.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clearParentId\":true}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        assertThat(menuItemRepo.findById(child.getId()))
+                .get()
+                .extracting(MenuItemEntity::getParentId)
+                .isNull();
+    }
+
+    // 43. DELETE parent item that has children → 409
+    @Test
+    void deleteMenuItem_withChildren_returns409() throws Exception {
+        String location = "del-with-child-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Delete With Child");
+        MenuItemEntity parent = createTestMenuItem(menu, "Parent", "/parent", null, 0);
+        createTestMenuItem(menu, "Child", "/child", parent.getId(), 1);
+
+        mockMvc.perform(delete("/api/v1/admin/menus/" + menu.getId() + "/items/" + parent.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        // parent must still exist
+        assertThat(menuItemRepo.findById(parent.getId())).isPresent();
+    }
+
+    // 44. DELETE menu with 3-level hierarchy → 204 and all items removed
+    @Test
+    void deleteMenu_deepHierarchy_returns204AndCleansDb() throws Exception {
+        String location = "del-deep-" + UUID.randomUUID().toString().substring(0, 8);
+        MenuEntity menu = createTestMenu(location, "Deep Hierarchy Menu");
+        MenuItemEntity root = createTestMenuItem(menu, "Root", "/root", null, 0);
+        MenuItemEntity level2 = createTestMenuItem(menu, "Level2", "/l2", root.getId(), 0);
+        MenuItemEntity level3 = createTestMenuItem(menu, "Level3", "/l3", level2.getId(), 0);
+
+        mockMvc.perform(delete("/api/v1/admin/menus/" + menu.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        assertThat(menuRepo.findById(menu.getId())).isEmpty();
+        assertThat(menuItemRepo.findById(root.getId())).isEmpty();
+        assertThat(menuItemRepo.findById(level2.getId())).isEmpty();
+        assertThat(menuItemRepo.findById(level3.getId())).isEmpty();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // HARDENING TESTS — Settings sensitive keys (45–46)
     // ══════════════════════════════════════════════════════════════════════════
 
     // 42. api_key cannot be made public

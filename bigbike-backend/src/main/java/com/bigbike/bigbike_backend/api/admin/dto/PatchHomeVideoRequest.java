@@ -2,19 +2,14 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.hibernate.validator.constraints.URL;
 
 public class PatchHomeVideoRequest {
 
     @Size(max = 255, message = "title is too long.")
     private String title;
 
-    @URL(message = "videoUrl must be a valid URL.")
     @Size(max = 2048, message = "videoUrl is too long.")
-    @Pattern(regexp = "^https?://.*", flags = Pattern.Flag.CASE_INSENSITIVE,
-            message = "videoUrl must use http or https scheme.")
     private String videoUrl;
 
     @Min(value = 0, message = "sortOrder must be >= 0.")

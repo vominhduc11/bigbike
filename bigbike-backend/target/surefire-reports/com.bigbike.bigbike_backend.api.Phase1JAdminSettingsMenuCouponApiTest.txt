@@ -1,4 +1,20 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
 -------------------------------------------------------------------------------
-Tests run: 52, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.222 s -- in com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
+Tests run: 55, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 14.45 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
+com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminMenus_deleteMenu_returns204 -- Time elapsed: 0.131 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<204> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminMenus_deleteMenu_returns204(Phase1JAdminSettingsMenuCouponApiTest.java:302)
+
+com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.deleteMenu_deepHierarchy_returns204AndCleansDb -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<204> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.deleteMenu_deepHierarchy_returns204AndCleansDb(Phase1JAdminSettingsMenuCouponApiTest.java:729)
+

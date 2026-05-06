@@ -172,8 +172,7 @@ public class AdminMenuService {
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
 
         String before = menuSnapshot(entity);
-        List<MenuItemEntity> items = menuItemRepo.findByMenuId(menuId);
-        menuItemRepo.deleteAll(items);
+        // DB ON DELETE CASCADE on menu_id handles item deletion (including deep hierarchies)
         menuRepo.delete(entity);
 
         webRevalidationService.revalidate("menus");
@@ -238,7 +237,9 @@ public class AdminMenuService {
 
         String before = itemSnapshot(item);
 
-        if (req.parentId() != null) {
+        if (Boolean.TRUE.equals(req.clearParentId())) {
+            item.setParentId(null);
+        } else if (req.parentId() != null) {
             List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
             validateParentBelongsToMenu(allItems, req.parentId(), menuId);
             validateNoDeepCycle(allItems, itemId, req.parentId());
@@ -296,6 +297,12 @@ public class AdminMenuService {
 
         if (!item.getMenu().getId().equals(menuId)) {
             throw new NotFoundException("Menu item not found.");
+        }
+
+        List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
+        boolean hasChildren = allItems.stream().anyMatch(i -> itemId.equals(i.getParentId()));
+        if (hasChildren) {
+            throw new ConflictException("Cannot delete menu item: it has child items (CHILD_ITEMS_EXIST).");
         }
 
         String before = itemSnapshot(item);

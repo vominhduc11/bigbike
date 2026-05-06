@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import { safeText } from "@/lib/utils/format";
 import { toAccountPath, toArticleListPath, toPagePath, toProductListPath } from "@/lib/utils/routes";
+import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { BctBadge } from "./BctBadge";
 
 const DEFAULT_SITE_NAME = "BigBike";
@@ -25,12 +26,6 @@ function normalizeSettingValue(value: string): string {
     return trimmed.slice(1, -1).trim();
   }
   return trimmed;
-}
-
-function normalizeMenuUrl(url: string): string {
-  const trimmed = url.trim();
-  if (trimmed.length === 0) return "/";
-  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function groupMenuItems(items: Array<{ id: string; parentId: string | null; label: string; url: string }>) {

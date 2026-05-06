@@ -1,6 +1,10 @@
+const DANGEROUS_SCHEMES = ["javascript:", "vbscript:", "data:"];
+
 export function normalizeMenuUrl(url: string): string {
   const trimmed = url.trim();
   if (trimmed.length === 0) return "/";
+  const lower = trimmed.toLowerCase();
+  if (DANGEROUS_SCHEMES.some((s) => lower.startsWith(s))) return "/";
   if (
     trimmed.startsWith("/") &&
     !trimmed.endsWith("/") &&

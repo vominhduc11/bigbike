@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record UpdateMenuItemRequest(
         UUID parentId,
+        Boolean clearParentId,
         String label,
         String url,
         String targetType,

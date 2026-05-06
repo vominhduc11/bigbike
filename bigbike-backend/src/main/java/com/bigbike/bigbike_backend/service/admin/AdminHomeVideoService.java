@@ -10,9 +10,12 @@ import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.video.HomeVideo;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
+import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
+import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
 import com.bigbike.bigbike_backend.service.video.HomeVideoReadService;
 import com.bigbike.bigbike_backend.service.video.YouTubeUrlParser;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -29,15 +32,21 @@ public class AdminHomeVideoService {
     private final HomeVideoJpaRepository homeVideoJpaRepository;
     private final HomeVideoReadService homeVideoReadService;
     private final WebRevalidationService webRevalidationService;
+    private final HomeVideoUrlPolicy homeVideoUrlPolicy;
+    private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
 
     public AdminHomeVideoService(
             HomeVideoJpaRepository homeVideoJpaRepository,
             HomeVideoReadService homeVideoReadService,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            HomeVideoUrlPolicy homeVideoUrlPolicy,
+            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy
     ) {
         this.homeVideoJpaRepository = homeVideoJpaRepository;
         this.homeVideoReadService = homeVideoReadService;
         this.webRevalidationService = webRevalidationService;
+        this.homeVideoUrlPolicy = homeVideoUrlPolicy;
+        this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
     }
 
     @Transactional(readOnly = true)
@@ -47,9 +56,12 @@ public class AdminHomeVideoService {
 
     @Transactional
     public HomeVideo create(UpsertHomeVideoRequest request) {
+        ensureSortOrderAvailable(request.getSortOrder(), null);
+        validateThumbnail(request.getThumbnail());
+
         Instant now = Instant.now();
         HomeVideoEntity entity = new HomeVideoEntity();
-        String videoUrl = request.getVideoUrl().trim();
+        String videoUrl = homeVideoUrlPolicy.validateOrThrow(request.getVideoUrl(), "videoUrl");
         entity.setId("hv_" + UUID.randomUUID());
         entity.setSortOrder(request.getSortOrder());
         entity.setTitle(request.getTitle().trim());
@@ -79,15 +91,19 @@ public class AdminHomeVideoService {
             if (request.getVideoUrl().isBlank()) {
                 throw ValidationException.fromField("videoUrl", "REQUIRED", "videoUrl must not be blank.");
             }
-            String videoUrl = request.getVideoUrl().trim();
+            String videoUrl = homeVideoUrlPolicy.validateOrThrow(request.getVideoUrl(), "videoUrl");
             entity.setVideoUrl(videoUrl);
             entity.setYoutubeId(YouTubeUrlParser.extractId(videoUrl));
         }
-        if (request.getSortOrder() != null) entity.setSortOrder(request.getSortOrder());
+        if (request.getSortOrder() != null) {
+            ensureSortOrderAvailable(request.getSortOrder(), entity.getId());
+            entity.setSortOrder(request.getSortOrder());
+        }
         if (request.getIsActive() != null) entity.setActive(request.getIsActive());
         if (request.isClearThumbnail()) {
             entity.setThumbnail(null);
         } else if (request.getThumbnail() != null) {
+            validateThumbnail(request.getThumbnail());
             entity.setThumbnail(toImageAsset(request.getThumbnail()));
         }
 
@@ -149,5 +165,27 @@ public class AdminHomeVideoService {
     private static ImageAsset toImageAsset(ImageAssetRequest req) {
         if (req == null) return null;
         return new ImageAsset(null, req.getUrl(), req.getAlt(), req.getWidth(), req.getHeight(), req.getMimeType());
+    }
+
+    private void ensureSortOrderAvailable(Integer sortOrder, String currentId) {
+        homeVideoJpaRepository.findBySortOrder(sortOrder)
+                .ifPresent(existing -> {
+                    if (currentId == null || !existing.getId().equals(currentId)) {
+                        throw new ConflictException("Sort order " + sortOrder + " is already occupied.");
+                    }
+                });
+    }
+
+    private void validateThumbnail(ImageAssetRequest req) {
+        if (req == null) {
+            return;
+        }
+        safeMediaAssetUrlPolicy.validateImageUrlOrThrow(req.getUrl(), "thumbnail.url");
+        if (req.getWidth() != null && req.getWidth() < 0) {
+            throw ValidationException.fromField("thumbnail.width", "INVALID_VALUE", "Thumbnail width must be >= 0.");
+        }
+        if (req.getHeight() != null && req.getHeight() < 0) {
+            throw ValidationException.fromField("thumbnail.height", "INVALID_VALUE", "Thumbnail height must be >= 0.");
+        }
     }
 }
