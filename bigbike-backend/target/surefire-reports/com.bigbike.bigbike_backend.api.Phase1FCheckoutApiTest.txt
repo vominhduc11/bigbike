@@ -1,4 +1,141 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
 -------------------------------------------------------------------------------
-Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.553 s -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
+Tests run: 34, Failures: 17, Errors: 0, Skipped: 0, Time elapsed: 0.887 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice -- Time elapsed: 0.081 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice(Phase1FCheckoutApiTest.java:453)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_withDifferentPayload_returns409 -- Time elapsed: 0.027 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_withDifferentPayload_returns409(Phase1FCheckoutApiTest.java:485)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestBACS_createsOrder_status_ON_HOLD -- Time elapsed: 0.027 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestBACS_createsOrder_status_ON_HOLD(Phase1FCheckoutApiTest.java:266)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestBACS_createsOrder_statusOnHold -- Time elapsed: 0.025 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestBACS_createsOrder_statusOnHold(Phase1FCheckoutApiTest.java:394)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestCOD_createsOrder -- Time elapsed: 0.011 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestCOD_createsOrder(Phase1FCheckoutApiTest.java:377)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_cartMarkedConverted_afterCheckout -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_cartMarkedConverted_afterCheckout(Phase1FCheckoutApiTest.java:309)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingAddress_sameAsBilling_accepted -- Time elapsed: 0.020 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingAddress_sameAsBilling_accepted(Phase1FCheckoutApiTest.java:361)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_createsOrder -- Time elapsed: 0.093 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_createsOrder(Phase1FCheckoutApiTest.java:328)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingMethodAutoSelected_whenOnlyOneEnabled -- Time elapsed: 0.020 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingMethodAutoSelected_whenOnlyOneEnabled(Phase1FCheckoutApiTest.java:213)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_paymentStatus_UNPAID -- Time elapsed: 0.020 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_paymentStatus_UNPAID(Phase1FCheckoutApiTest.java:278)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_totalMatchesCartItems -- Time elapsed: 0.021 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_totalMatchesCartItems(Phase1FCheckoutApiTest.java:289)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestCOD_createsOrder_status_PROCESSING -- Time elapsed: 0.019 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestCOD_createsOrder_status_PROCESSING(Phase1FCheckoutApiTest.java:252)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders(Phase1FCheckoutApiTest.java:543)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_orderInDB -- Time elapsed: 0.084 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_orderInDB(Phase1FCheckoutApiTest.java:342)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows(Phase1FCheckoutApiTest.java:572)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice -- Time elapsed: 0.017 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice(Phase1FCheckoutApiTest.java:510)
+
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.getOptions_returnsPaymentAndShippingMethods -- Time elapsed: 0.008 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.data.shippingMethods.length()" expected:<1> but was:<7>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.getOptions_returnsPaymentAndShippingMethods(Phase1FCheckoutApiTest.java:95)
+

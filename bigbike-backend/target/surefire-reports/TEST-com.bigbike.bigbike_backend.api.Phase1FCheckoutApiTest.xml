@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="1.553" tests="31" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.887" tests="34" errors="0" skipped="0" failures="17" flakes="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -16,7 +16,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="A:\jdk17\bin"/>
-    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130\surefirebooter-20260506090232128_3.jar C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130 2026-05-06T09-02-31_870-jvmRun1 surefire-20260506090232128_1tmp surefire_0-20260506090232128_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire3365531169877749709\surefirebooter-20260506154713178_3.jar C:\Users\vomin\AppData\Local\Temp\surefire3365531169877749709 2026-05-06T15-47-13_007-jvmRun1 surefire-20260506154713178_1tmp surefire_0-20260506154713178_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="S:\project\bigbike\bigbike-backend\target\test-classes;S:\project\bigbike\bigbike-backend\target\classes;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.5\spring-boot-starter-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.5\spring-boot-starter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.5\spring-boot-starter-logging-4.0.5.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\vomin\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.5\spring-boot-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\vomin\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.5\spring-boot-starter-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.5\spring-boot-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.5\spring-boot-micrometer-observation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.5\spring-boot-actuator-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.5\spring-boot-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-health\4.0.5\spring-boot-health-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot\4.0.5\spring-boot-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context\7.0.6\spring-context-7.0.6.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation\1.16.4\micrometer-observation-1.16.4.jar;C:\Users\vomin\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-commons\1.16.4\micrometer-commons-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.4\micrometer-jakarta9-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-core\1.16.4\micrometer-core-1.16.4.jar;C:\Users\vomin\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\vomin\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.5\spring-boot-starter-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.5\spring-boot-starter-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.5\spring-boot-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.5\spring-boot-data-commons-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.5\spring-boot-persistence-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-commons\4.0.4\spring-data-commons-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.5\spring-boot-hibernate-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.5\spring-boot-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\vomin\.m2\repository\org\hibernate\orm\hibernate-core\7.2.7.Final\hibernate-core-7.2.7.Final.jar;C:\Users\vomin\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\vomin\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\vomin\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-orm\7.0.6\spring-orm-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-jpa\4.0.4\spring-data-jpa-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-tx\7.0.6\spring-tx-7.0.6.jar;C:\Users\vomin\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aspects\7.0.6\spring-aspects-7.0.6.jar;C:\Users\vomin\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.5\spring-boot-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.5\spring-boot-sql-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.5\spring-boot-transaction-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-jdbc\7.0.6\spring-jdbc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.5\spring-boot-starter-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.5\spring-boot-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail\4.0.5\spring-boot-starter-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-mail\4.0.5\spring-boot-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context-support\7.0.6\spring-context-support-7.0.6.jar;C:\Users\vomin\.m2\repository\jakarta\mail\jakarta.mail-api\2.1.5\jakarta.mail-api-2.1.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-mail\2.0.5\angus-mail-2.0.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.5\spring-boot-starter-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security\4.0.5\spring-boot-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-config\7.0.4\spring-security-config-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-core\7.0.4\spring-security-core-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-crypto\7.0.4\spring-security-crypto-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-web\7.0.4\spring-security-web-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-expression\7.0.6\spring-expression-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aop\7.0.6\spring-aop-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-beans\7.0.6\spring-beans-7.0.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.6\jjwt-api-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.6\jjwt-impl-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.6\jjwt-jackson-0.12.6.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\vomin\.m2\repository\org\bouncycastle\bcprov-jdk18on\1.80\bcprov-jdk18on-1.80.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf\4.0.5\spring-boot-starter-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-thymeleaf\4.0.5\spring-boot-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-web\7.0.6\spring-web-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.5\spring-boot-starter-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.5\spring-boot-starter-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.5\spring-boot-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-databind\3.1.0\jackson-databind-3.1.0.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-core\3.1.0\jackson-core-3.1.0.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.5\spring-boot-starter-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.5\spring-boot-starter-tomcat-runtime-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.20\tomcat-embed-core-11.0.20.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.20\tomcat-embed-websocket-11.0.20.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.5\spring-boot-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.5\spring-boot-http-converter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.5\spring-boot-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.5\spring-boot-servlet-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-webmvc\7.0.6\spring-webmvc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.5\spring-boot-starter-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.5\spring-boot-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.20\tomcat-embed-el-11.0.20.jar;C:\Users\vomin\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\vomin\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\vomin\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\vomin\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket\4.0.5\spring-boot-starter-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-websocket\4.0.5\spring-boot-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-messaging\7.0.6\spring-messaging-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-websocket\7.0.6\spring-websocket-7.0.6.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\extras\thymeleaf-extras-springsecurity6\3.1.3.RELEASE\thymeleaf-extras-springsecurity6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf-spring6\3.1.3.RELEASE\thymeleaf-spring6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf\3.1.3.RELEASE\thymeleaf-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\attoparser\attoparser\2.0.7.RELEASE\attoparser-2.0.7.RELEASE.jar;C:\Users\vomin\.m2\repository\org\unbescape\unbescape\1.1.6.RELEASE\unbescape-1.1.6.RELEASE.jar;C:\Users\vomin\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\vomin\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\vomin\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\vomin\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\vomin\.m2\repository\io\minio\minio\8.5.17\minio-8.5.17.jar;C:\Users\vomin\.m2\repository\com\carrotsearch\thirdparty\simple-xml-safe\2.7.1\simple-xml-safe-2.7.1.jar;C:\Users\vomin\.m2\repository\com\google\guava\guava\33.3.1-jre\guava-33.3.1-jre.jar;C:\Users\vomin\.m2\repository\com\google\guava\failureaccess\1.0.2\failureaccess-1.0.2.jar;C:\Users\vomin\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\vomin\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\vomin\.m2\repository\com\google\errorprone\error_prone_annotations\2.28.0\error_prone_annotations-2.28.0.jar;C:\Users\vomin\.m2\repository\com\google\j2objc\j2objc-annotations\3.0.0\j2objc-annotations-3.0.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okhttp3\okhttp\4.12.0\okhttp-4.12.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio\3.6.0\okio-3.6.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio-jvm\3.6.0\okio-jvm-3.6.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-common\1.9.10\kotlin-stdlib-common-1.9.10.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk8\2.2.21\kotlin-stdlib-jdk8-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib\2.2.21\kotlin-stdlib-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\annotations\13.0\annotations-13.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk7\2.2.21\kotlin-stdlib-jdk7-2.2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-compress\1.27.1\commons-compress-1.27.1.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-lang3\3.19.0\commons-lang3-3.19.0.jar;C:\Users\vomin\.m2\repository\commons-codec\commons-codec\1.19.0\commons-codec-1.19.0.jar;C:\Users\vomin\.m2\repository\org\xerial\snappy\snappy-java\1.1.10.7\snappy-java-1.1.10.7.jar;C:\Users\vomin\.m2\repository\com\bucket4j\bucket4j-core\8.10.1\bucket4j-core-8.10.1.jar;C:\Users\vomin\.m2\repository\net\logstash\logback\logstash-logback-encoder\8.0\logstash-logback-encoder-8.0.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\vomin\.m2\repository\commons-io\commons-io\2.16.1\commons-io-2.16.1.jar;C:\Users\vomin\.m2\repository\org\projectlombok\lombok\1.18.44\lombok-1.18.44.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator-test\4.0.5\spring-boot-starter-actuator-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics-test\4.0.5\spring-boot-starter-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics-test\4.0.5\spring-boot-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation-test\1.16.4\micrometer-observation-test-1.16.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-configuration-processor\4.0.5\spring-boot-configuration-processor-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.5\spring-boot-starter-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test\4.0.5\spring-boot-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.5\spring-boot-test-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\vomin\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\vomin\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\vomin\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\vomin\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\vomin\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\vomin\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\vomin\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\vomin\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\vomin\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\vomin\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\vomin\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-core\7.0.6\spring-core-7.0.6.jar;C:\Users\vomin\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-test\7.0.6\spring-test-7.0.6.jar;C:\Users\vomin\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.5\spring-boot-starter-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.5\spring-boot-starter-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.5\spring-boot-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.5\spring-boot-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.5\spring-boot-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway-test\4.0.5\spring-boot-starter-flyway-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail-test\4.0.5\spring-boot-starter-mail-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.5\spring-boot-starter-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.5\spring-boot-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-test\7.0.4\spring-security-test-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf-test\4.0.5\spring-boot-starter-thymeleaf-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.5\spring-boot-starter-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.5\spring-boot-starter-jackson-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.5\spring-boot-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.5\spring-boot-web-server-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.5\spring-boot-resttestclient-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket-test\4.0.5\spring-boot-starter-websocket-test-4.0.5.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -33,7 +33,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130\surefirebooter-20260506090232128_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire3365531169877749709\surefirebooter-20260506154713178_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.12+8-LTS-286"/>
@@ -51,7 +51,7 @@
     <property name="user.dir" value="S:\project\bigbike\bigbike-backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="248"/>
+    <property name="PID" value="23312"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="windows-1258"/>
     <property name="native.encoding" value="Cp1258"/>
@@ -62,90 +62,188 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.246">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.3926058+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-4125E0.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-1","level":"INFO","level_value":20000}
+  <testcase name="checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.081">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice(Phase1FCheckoutApiTest.java:453)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_sameIdempotencyKey_withDifferentPayload_returns409" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.027">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_withDifferentPayload_returns409(Phase1FCheckoutApiTest.java:485)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_guestBACS_createsOrder_status_ON_HOLD" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.027">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestBACS_createsOrder_status_ON_HOLD(Phase1FCheckoutApiTest.java:266)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_emptyCart_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.013"/>
+  <testcase name="checkout_missingAddressLine1_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.021"/>
+  <testcase name="quickBuy_guestBACS_createsOrder_statusOnHold" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.025">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestBACS_createsOrder_statusOnHold(Phase1FCheckoutApiTest.java:394)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_freeShippingThreshold_appliesWhenSubtotalMeetsOrExceeds" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.06">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T15:47:37.0808432+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-DD40AA.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-1","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="checkout_sameIdempotencyKey_withDifferentPayload_returns409" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.059">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.5294878+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-73160A.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-3","level":"INFO","level_value":20000}
+  <testcase name="checkout_belowMinOrderAmount_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.026"/>
+  <testcase name="quickBuy_missingCsrf_returns403" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.004"/>
+  <testcase name="checkout_invalidPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.017"/>
+  <testcase name="quickBuy_guestCOD_createsOrder" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.011">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_guestCOD_createsOrder(Phase1FCheckoutApiTest.java:377)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_cartMarkedConverted_afterCheckout" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.018">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_cartMarkedConverted_afterCheckout(Phase1FCheckoutApiTest.java:309)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_shippingAddress_sameAsBilling_accepted" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.02">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingAddress_sameAsBilling_accepted(Phase1FCheckoutApiTest.java:361)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_missingFullName_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.019"/>
+  <testcase name="checkout_missingPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.018"/>
+  <testcase name="checkout_authenticatedCustomer_createsOrder" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.093">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_createsOrder(Phase1FCheckoutApiTest.java:328)
+]]></failure>
+    <system-out><![CDATA[{"timestamp":"2026-05-06T15:47:37.2777949+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 040379d8-cb94-40c3-b1c7-6fa6eaffae0d","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="checkout_guestBACS_createsOrder_status_ON_HOLD" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.04">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.5831623+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-BC34DE.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-5","level":"INFO","level_value":20000}
+  <testcase name="checkout_shippingMethodAutoSelected_whenOnlyOneEnabled" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.02">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_shippingMethodAutoSelected_whenOnlyOneEnabled(Phase1FCheckoutApiTest.java:213)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_guestOrder_paymentStatus_UNPAID" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.02">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_paymentStatus_UNPAID(Phase1FCheckoutApiTest.java:278)
+]]></failure>
+  </testcase>
+  <testcase name="quickBuy_invalidPaymentMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.013"/>
+  <testcase name="checkout_orderShippingItem_snapshotIsCorrect" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.026">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T15:47:37.4075187+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-84E3B7.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-3","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="checkout_emptyCart_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.017"/>
-  <testcase name="checkout_missingAddressLine1_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.028"/>
-  <testcase name="quickBuy_guestBACS_createsOrder_statusOnHold" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.039">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.6684461+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-36FB72.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-7","level":"INFO","level_value":20000}
+  <testcase name="checkout_guestOrder_totalMatchesCartItems" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.021">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestOrder_totalMatchesCartItems(Phase1FCheckoutApiTest.java:289)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_guestCOD_createsOrder_status_PROCESSING" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.019">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_guestCOD_createsOrder_status_PROCESSING(Phase1FCheckoutApiTest.java:252)
+]]></failure>
+  </testcase>
+  <testcase name="checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.039">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders(Phase1FCheckoutApiTest.java:543)
+]]></failure>
+  </testcase>
+  <testcase name="getOptions_doesNotRequireCsrf" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.012"/>
+  <testcase name="quickBuy_productNotFound_returns404" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.011"/>
+  <testcase name="checkout_invalidPaymentMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.016"/>
+  <testcase name="checkout_authenticatedCustomer_orderInDB" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.084">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_authenticatedCustomer_orderInDB(Phase1FCheckoutApiTest.java:342)
+]]></failure>
+    <system-out><![CDATA[{"timestamp":"2026-05-06T15:47:37.5713927+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 9f07045e-832b-45a2-b9ac-a5aec193fba4","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="quickBuy_missingCsrf_returns403" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.009"/>
-  <testcase name="checkout_invalidPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.037"/>
-  <testcase name="quickBuy_guestCOD_createsOrder" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.027">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.7469734+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-F5A2CE.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-9","level":"INFO","level_value":20000}
-]]></system-out>
+  <testcase name="checkout_disabledShippingMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.016"/>
+  <testcase name="checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.018">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows(Phase1FCheckoutApiTest.java:572)
+]]></failure>
   </testcase>
-  <testcase name="checkout_cartMarkedConverted_afterCheckout" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.048">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.7940373+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-CC4B91.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-11","level":"INFO","level_value":20000}
-]]></system-out>
+  <testcase name="quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.017">
+    <failure message="Status expected:&lt;200&gt; but was:&lt;400&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice(Phase1FCheckoutApiTest.java:510)
+]]></failure>
   </testcase>
-  <testcase name="checkout_shippingAddress_sameAsBilling_accepted" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.042">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.8384973+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-85EEC8.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-13","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_missingFullName_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.03"/>
-  <testcase name="checkout_missingPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.033"/>
-  <testcase name="checkout_authenticatedCustomer_createsOrder" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.154">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:13.9666298+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 02f6c373-faf8-4e1b-956e-a0d36215961e","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
-{"timestamp":"2026-05-06T09:03:14.0582835+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-3BC3F5.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-15","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_shippingMethodAutoSelected_whenOnlyOneEnabled" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.04">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.0989221+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-486C2A.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-17","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_guestOrder_paymentStatus_UNPAID" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.045">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.1444712+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-02A58C.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-19","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="quickBuy_invalidPaymentMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.026"/>
-  <testcase name="checkout_guestOrder_totalMatchesCartItems" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.047">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.2206258+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-02FCFF.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-21","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_guestCOD_createsOrder_status_PROCESSING" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.043">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.2654251+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-231414.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-23","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.074">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.3229823+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-4321A4.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-25","level":"INFO","level_value":20000}
-{"timestamp":"2026-05-06T09:03:14.3397467+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-A5F203.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-27","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="getOptions_doesNotRequireCsrf" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.017"/>
-  <testcase name="quickBuy_productNotFound_returns404" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.017"/>
-  <testcase name="checkout_invalidPaymentMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.032"/>
-  <testcase name="checkout_authenticatedCustomer_orderInDB" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.169">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.4880014+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer ba874f1e-2d31-4185-b43e-c9db353f938c","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
-{"timestamp":"2026-05-06T09:03:14.5734966+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-D7158B.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-29","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="checkout_disabledShippingMethod_returns400" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.027"/>
-  <testcase name="checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.053">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.6418656+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-F26060.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-31","level":"INFO","level_value":20000}
-{"timestamp":"2026-05-06T09:03:14.6609217+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-48D818.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-33","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="quickBuy_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.035">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.6898535+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-DF1695.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-35","level":"INFO","level_value":20000}
-]]></system-out>
-  </testcase>
-  <testcase name="quickBuy_unpublishedProduct_returns409" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.019"/>
+  <testcase name="quickBuy_unpublishedProduct_returns409" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.011"/>
   <testcase name="checkout_missingCsrf_returns403" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.005"/>
-  <testcase name="checkout_shippingMethodById_accepted" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.04">
-    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.7596247+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-4B5259.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-37","level":"INFO","level_value":20000}
+  <testcase name="checkout_shippingMethodById_accepted" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.019">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T15:47:37.7035375+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-033147.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-5","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="getOptions_returnsPaymentAndShippingMethods" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.009"/>
+  <testcase name="getOptions_returnsPaymentAndShippingMethods" classname="com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest" time="0.008">
+    <failure message="JSON path &quot;$.data.shippingMethods.length()&quot; expected:&lt;1&gt; but was:&lt;7&gt;" type="java.lang.AssertionError"><![CDATA[java.lang.AssertionError: JSON path "$.data.shippingMethods.length()" expected:<1> but was:<7>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.getOptions_returnsPaymentAndShippingMethods(Phase1FCheckoutApiTest.java:95)
+]]></failure>
+  </testcase>
 </testsuite>

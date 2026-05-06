@@ -1,4 +1,147 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest
 -------------------------------------------------------------------------------
-Tests run: 22, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.091 s -- in com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest
+Tests run: 22, Failures: 15, Errors: 0, Skipped: 0, Time elapsed: 0.881 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesAddresses -- Time elapsed: 0.094 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesAddresses(Phase1GOrderReadApiTest.java:196)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesPaymentSummary -- Time elapsed: 0.075 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesPaymentSummary(Phase1GOrderReadApiTest.java:224)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_otherCustomerOrder_returns404 -- Time elapsed: 0.064 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_otherCustomerOrder_returns404(Phase1GOrderReadApiTest.java:167)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_withSession_returnsOnlyOwnOrders -- Time elapsed: 0.068 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_withSession_returnsOnlyOwnOrders(Phase1GOrderReadApiTest.java:82)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_wrongKey_returns404 -- Time elapsed: 0.015 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeGuestOrder(Phase1GOrderReadApiTest.java:427)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_wrongKey_returns404(Phase1GOrderReadApiTest.java:269)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesLineItems -- Time elapsed: 0.066 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesLineItems(Phase1GOrderReadApiTest.java:181)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.quickBuyOrder_canLookupByOrderNumberAndKey -- Time elapsed: 0.009 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.quickBuyOrder_canLookupByOrderNumberAndKey(Phase1GOrderReadApiTest.java:338)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_filterByStatusWorks -- Time elapsed: 0.065 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_filterByStatusWorks(Phase1GOrderReadApiTest.java:130)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_paginationWorks -- Time elapsed: 0.063 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrders_paginationWorks(Phase1GOrderReadApiTest.java:112)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_doesNotExposeInternalNotes -- Time elapsed: 0.014 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeGuestOrder(Phase1GOrderReadApiTest.java:427)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_doesNotExposeInternalNotes(Phase1GOrderReadApiTest.java:297)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesShippingItems -- Time elapsed: 0.065 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_includesShippingItems(Phase1GOrderReadApiTest.java:210)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.orderReceivedFlow_afterCheckout_canLookupByOrderNumberAndKey -- Time elapsed: 0.013 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeGuestOrder(Phase1GOrderReadApiTest.java:427)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.orderReceivedFlow_afterCheckout_canLookupByOrderNumberAndKey(Phase1GOrderReadApiTest.java:314)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_ownOrder_returnsDetail -- Time elapsed: 0.066 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_ownOrder_returnsDetail(Phase1GOrderReadApiTest.java:152)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_validOrderNumberAndKey_returnsDetail -- Time elapsed: 0.014 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeGuestOrder(Phase1GOrderReadApiTest.java:427)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.guestLookup_validOrderNumberAndKey_returnsDetail(Phase1GOrderReadApiTest.java:255)
+
+com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_doesNotExposeIpOrUserAgent -- Time elapsed: 0.069 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.placeOrderWithCookies(Phase1GOrderReadApiTest.java:411)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.loginAndCheckout(Phase1GOrderReadApiTest.java:395)
+	at com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest.customerOrderDetail_doesNotExposeIpOrUserAgent(Phase1GOrderReadApiTest.java:239)
+

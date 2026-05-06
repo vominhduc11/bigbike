@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -251,7 +252,8 @@ class AdminShippingApiTest {
                         .content("{\"freeShippingThreshold\":null}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.freeShippingThreshold").doesNotExist());
+                // field is present but null in JSON — Jackson serializes null map entries by default
+                .andExpect(jsonPath("$.data.freeShippingThreshold").value(nullValue()));
     }
 
     // 16. Delete method

@@ -1,4 +1,319 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest
 -------------------------------------------------------------------------------
-Tests run: 36, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.654 s -- in com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest
+Tests run: 36, Failures: 29, Errors: 0, Skipped: 0, Time elapsed: 1.581 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_invalidTransition_returns409 -- Time elapsed: 0.042 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_invalidTransition_returns409(Phase1HAdminOrderApiTest.java:277)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_filterByStatus_returnsMatchingOrders -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_filterByStatus_returnsMatchingOrders(Phase1HAdminOrderApiTest.java:120)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.addNote_internalNote_savedWithCustomerVisibleFalse -- Time elapsed: 0.053 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.addNote_internalNote_savedWithCustomerVisibleFalse(Phase1HAdminOrderApiTest.java:532)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.addNote_customerVisibleNote_appearsInNotesList -- Time elapsed: 0.042 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.addNote_customerVisibleNote_appearsInNotesList(Phase1HAdminOrderApiTest.java:550)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_partiallyPaid_invalidAmount_returns400 -- Time elapsed: 0.045 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_partiallyPaid_invalidAmount_returns400(Phase1HAdminOrderApiTest.java:456)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.getOrderDetail_success_includesLineItems -- Time elapsed: 0.038 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.getOrderDetail_success_includesLineItems(Phase1HAdminOrderApiTest.java:211)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_filterByPaymentStatus_returnsMatchingOrders -- Time elapsed: 0.042 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_filterByPaymentStatus_returnsMatchingOrders(Phase1HAdminOrderApiTest.java:141)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_unpaidOrder_returns409 -- Time elapsed: 0.040 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_unpaidOrder_returns409(Phase1HAdminOrderApiTest.java:571)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_full_setsRefundedStatus_andSyncsPaymentRecord -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_full_setsRefundedStatus_andSyncsPaymentRecord(Phase1HAdminOrderApiTest.java:607)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_searchByQ_filtersResults -- Time elapsed: 0.037 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_searchByQ_filtersResults(Phase1HAdminOrderApiTest.java:157)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_sameStatus_idempotentReturns200 -- Time elapsed: 0.042 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_sameStatus_idempotentReturns200(Phase1HAdminOrderApiTest.java:298)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_paginationWorks -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_paginationWorks(Phase1HAdminOrderApiTest.java:179)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_includesCustomerFields -- Time elapsed: 0.040 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_includesCustomerFields(Phase1HAdminOrderApiTest.java:105)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.cancelOrder_restoresProductLevelStock -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.cancelOrder_restoresProductLevelStock(Phase1HAdminOrderApiTest.java:358)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_unpaid_clearsPaidAt -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_unpaid_clearsPaidAt(Phase1HAdminOrderApiTest.java:486)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_pendingToProcessing_succeeds -- Time elapsed: 0.036 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderBacs(Phase1HAdminOrderApiTest.java:737)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_pendingToProcessing_succeeds(Phase1HAdminOrderApiTest.java:314)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.refundReport_partial_includesPartialRefundAmount -- Time elapsed: 0.101 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.refundReport_partial_includesPartialRefundAmount(Phase1HAdminOrderApiTest.java:673)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_partial_setsPartiallyRefunded -- Time elapsed: 0.044 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_partial_setsPartiallyRefunded(Phase1HAdminOrderApiTest.java:582)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_withAdminToken_returns200 -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listOrders_withAdminToken_returns200(Phase1HAdminOrderApiTest.java:91)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_withNote_noteIsPersisted -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_withNote_noteIsPersisted(Phase1HAdminOrderApiTest.java:410)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.getOrderDetail_adminSeesAllNotes_includingInternal -- Time elapsed: 0.039 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.getOrderDetail_adminSeesAllNotes_includingInternal(Phase1HAdminOrderApiTest.java:228)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_toCancelled_setsCancelledAt -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_toCancelled_setsCancelledAt(Phase1HAdminOrderApiTest.java:344)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_paid_setsPaidAmountAndPaidAt -- Time elapsed: 0.044 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_paid_setsPaidAmountAndPaidAt(Phase1HAdminOrderApiTest.java:440)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listAllowedTransitions_returnsSortedCurrentOptions -- Time elapsed: 0.038 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.listAllowedTransitions_returnsSortedCurrentOptions(Phase1HAdminOrderApiTest.java:657)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.cancelOrder_writesOrderCancelStockMovement -- Time elapsed: 0.047 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.cancelOrder_writesOrderCancelStockMovement(Phase1HAdminOrderApiTest.java:379)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_invalidStatus_returns400 -- Time elapsed: 0.040 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_invalidStatus_returns400(Phase1HAdminOrderApiTest.java:263)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_invalidStatus_returns400 -- Time elapsed: 0.037 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updatePaymentStatus_invalidStatus_returns400(Phase1HAdminOrderApiTest.java:509)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_exceedsRefundable_returns400 -- Time elapsed: 0.041 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.createRefund_exceedsRefundable_returns400(Phase1HAdminOrderApiTest.java:640)
+
+com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_toCompleted_setsCompletedAt -- Time elapsed: 0.036 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<400>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderForItem(Phase1HAdminOrderApiTest.java:763)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrderWith(Phase1HAdminOrderApiTest.java:742)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.placeGuestOrder(Phase1HAdminOrderApiTest.java:733)
+	at com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest.updateOrderStatus_toCompleted_setsCompletedAt(Phase1HAdminOrderApiTest.java:329)
+

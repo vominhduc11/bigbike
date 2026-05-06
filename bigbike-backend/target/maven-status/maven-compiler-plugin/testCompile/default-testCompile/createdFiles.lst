@@ -14,6 +14,7 @@ com\bigbike\bigbike_backend\schema\Phase1BSchemaTest.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest.class
 com\bigbike\bigbike_backend\api\Phase1DCustomerAuthTest.class
 com\bigbike\bigbike_backend\api\HomepagePublicApiTest.class
+com\bigbike\bigbike_backend\api\Phase1KInventoryP0FixApiTest.class
 com\bigbike\bigbike_backend\api\Phase2BWordPressCatalogDryRunImporterTest.class
 com\bigbike\bigbike_backend\api\AdminRedirectApiTest.class
 com\bigbike\bigbike_backend\api\Phase2D1StagingImportRehearsalTest.class
@@ -46,6 +47,7 @@ com\bigbike\bigbike_backend\api\AdminReadApiTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest.class
 com\bigbike\bigbike_backend\api\Phase1IAdminManagementApiTest.class
 com\bigbike\bigbike_backend\api\PublicReadApiTest.class
+com\bigbike\bigbike_backend\api\AdminShippingApiTest.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase1K1ContractHardeningTest.class

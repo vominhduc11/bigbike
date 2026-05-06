@@ -286,6 +286,7 @@ com\bigbike\bigbike_backend\service\admin\AdminMutationValidators.class
 com\bigbike\bigbike_backend\config\MinioConfig.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressPageMapper.class
 com\bigbike\bigbike_backend\controller\HealthController.class
+com\bigbike\bigbike_backend\api\admin\dto\shipping\CreateShippingZoneRequest.class
 com\bigbike\bigbike_backend\api\order\dto\OrderLineItemResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\model\WpCommentMeta.class
 com\bigbike\bigbike_backend\service\address\VnAddressService$RawDistrict.class
@@ -497,6 +498,7 @@ com\bigbike\bigbike_backend\domain\content\Page.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressWooCommerceOrderItemMapper$MappedShippingItem.class
 com\bigbike\bigbike_backend\api\admin\AdminShippingController.class
 com\bigbike\bigbike_backend\api\common\ApiErrorDetail.class
+com\bigbike\bigbike_backend\api\admin\dto\shipping\CreateShippingMethodRequest.class
 com\bigbike\bigbike_backend\api\admin\AdminDashboardController.class
 com\bigbike\bigbike_backend\config\CustomerSessionFilter.class
 com\bigbike\bigbike_backend\api\order\dto\OrderListItemResponse.class
