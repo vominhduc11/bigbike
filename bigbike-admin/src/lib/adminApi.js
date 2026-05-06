@@ -1744,7 +1744,7 @@ function normalizeReturn(s) {
 function buildReturnQuery(query = {}) {
   const params = {}
   if (query.page) params.page = query.page
-  if (query.pageSize) params.pageSize = query.pageSize
+  if (query.pageSize) params.size = query.pageSize
   if (query.status && query.status !== 'ALL') params.status = query.status
   if (query.q) params.q = query.q
   return params
