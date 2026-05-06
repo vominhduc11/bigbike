@@ -161,7 +161,7 @@ public class AdminInventoryService {
 
     @Transactional
     public AdminStockItemResponse adjustStock(String variantId, UUID adminId, AdjustStockRequest req) {
-        ProductVariantEntity variant = variantRepo.findById(variantId)
+        ProductVariantEntity variant = variantRepo.findByIdForUpdate(variantId)
                 .orElseThrow(() -> new NotFoundException("Variant not found: " + variantId));
 
         if (req.quantityDelta() == null) {
@@ -326,6 +326,10 @@ public class AdminInventoryService {
 
     private StockMovementResponse toMovementResponse(StockMovementEntity m) {
         long serialCount = serialRepo.countByMovementId(m.getId());
+        var variant = m.getVariant();
+        String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName() : null;
+        String variantName = variant != null ? variant.getName() : null;
+        String variantSku  = variant != null ? variant.getSku()  : null;
         return new StockMovementResponse(
                 m.getId(),
                 m.getMovementType(),
@@ -335,7 +339,10 @@ public class AdminInventoryService {
                 m.getReferenceType(),
                 m.getNote(),
                 m.getCreatedAt(),
-                serialCount
+                serialCount,
+                productName,
+                variantName,
+                variantSku
         );
     }
 

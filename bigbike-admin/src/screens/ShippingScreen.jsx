@@ -68,7 +68,8 @@ export function ShippingScreen({ canUpdate }) {
     setZoneFormSaving(true)
     setZoneFormError('')
     try {
-      const payload = { name: zoneForm.name.trim(), regionCode: zoneForm.regionCode.trim() || undefined, sortOrder: Number(zoneForm.sortOrder), enabled: zoneForm.enabled }
+      // regionCode: null (not undefined) so PATCH can clear it on the server
+      const payload = { name: zoneForm.name.trim(), regionCode: zoneForm.regionCode.trim() || null, sortOrder: Number(zoneForm.sortOrder), enabled: zoneForm.enabled }
       if (editZoneId) {
         await updateShippingZone(editZoneId, payload)
         setShowZoneForm(false)
@@ -103,17 +104,26 @@ export function ShippingScreen({ canUpdate }) {
 
   async function handleMethodSubmit(e) {
     e.preventDefault()
+    const codePattern = /^[a-z0-9_-]+$/
     if (!methodForm.methodCode.trim() || !methodForm.title.trim()) { setMethodFormError(t('common.required')); return }
+    if (!codePattern.test(methodForm.methodCode.trim())) { setMethodFormError(t('shipping.invalidMethodCode', 'Method code must contain only lowercase letters, digits, underscores, or hyphens.')); return }
+    const costVal = Number(methodForm.cost)
+    const minOrderVal = Number(methodForm.minOrderAmount)
+    const thresholdRaw = methodForm.freeShippingThreshold
+    if (isNaN(costVal) || costVal < 0) { setMethodFormError(t('shipping.costNonNegative', 'Cost must be >= 0.')); return }
+    if (isNaN(minOrderVal) || minOrderVal < 0) { setMethodFormError(t('shipping.minOrderNonNegative', 'Min order amount must be >= 0.')); return }
+    if (thresholdRaw !== '' && (isNaN(Number(thresholdRaw)) || Number(thresholdRaw) < 0)) { setMethodFormError(t('shipping.thresholdNonNegative', 'Free shipping threshold must be >= 0.')); return }
     setMethodFormSaving(true)
     setMethodFormError('')
     try {
       const payload = {
         methodCode: methodForm.methodCode.trim(),
         title: methodForm.title.trim(),
-        description: methodForm.description.trim() || undefined,
-        cost: Number(methodForm.cost),
-        minOrderAmount: Number(methodForm.minOrderAmount),
-        freeShippingThreshold: methodForm.freeShippingThreshold !== '' ? Number(methodForm.freeShippingThreshold) : undefined,
+        // null (not undefined) so PATCH can clear description/freeShippingThreshold on the server
+        description: methodForm.description.trim() || null,
+        cost: costVal,
+        minOrderAmount: minOrderVal,
+        freeShippingThreshold: thresholdRaw !== '' ? Number(thresholdRaw) : null,
         sortOrder: Number(methodForm.sortOrder),
         enabled: methodForm.enabled,
       }

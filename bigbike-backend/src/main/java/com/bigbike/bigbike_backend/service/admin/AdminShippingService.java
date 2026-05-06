@@ -1,14 +1,20 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.shipping.CreateShippingMethodRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.shipping.CreateShippingZoneRequest;
+import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,26 +65,49 @@ public class AdminShippingService {
     }
 
     @Transactional
-    public Map<String, Object> createZone(String name, String regionCode, int sortOrder, boolean enabled) {
+    public Map<String, Object> createZone(CreateShippingZoneRequest req) {
         ShippingZoneEntity entity = new ShippingZoneEntity();
         Instant now = Instant.now();
-        entity.setName(name);
-        entity.setRegionCode(regionCode);
-        entity.setSortOrder(sortOrder);
-        entity.setEnabled(enabled);
+        entity.setName(req.name().trim());
+        entity.setRegionCode(req.regionCode() != null ? req.regionCode().trim() : null);
+        entity.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
+        entity.setEnabled(req.enabled() != null ? req.enabled() : true);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         return toZoneMap(zoneRepo.save(entity));
     }
 
     @Transactional
-    public Map<String, Object> updateZone(UUID id, String name, String regionCode, Integer sortOrder, Boolean enabled) {
+    public Map<String, Object> updateZone(UUID id, JsonNode body) {
         ShippingZoneEntity entity = zoneRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shipping zone not found."));
-        if (name != null) entity.setName(name);
-        if (regionCode != null) entity.setRegionCode(regionCode);
-        if (sortOrder != null) entity.setSortOrder(sortOrder);
-        if (enabled != null) entity.setEnabled(enabled);
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+
+        if (body.has("name")) {
+            String name = body.get("name").isNull() ? "" : body.get("name").asText().trim();
+            if (name.isBlank()) {
+                errors.add(new ApiErrorDetail("name", "NOT_BLANK", "Zone name must not be blank."));
+            } else if (name.length() > 255) {
+                errors.add(new ApiErrorDetail("name", "SIZE", "Zone name must not exceed 255 characters."));
+            } else {
+                entity.setName(name);
+            }
+        }
+        if (!errors.isEmpty()) throw new ValidationException("Validation failed.", errors);
+
+        if (body.has("regionCode")) {
+            // explicitly present — null or empty string clears the field
+            String rc = body.get("regionCode").isNull() ? null : body.get("regionCode").asText().trim();
+            entity.setRegionCode(rc != null && rc.isEmpty() ? null : rc);
+        }
+        if (body.has("sortOrder") && !body.get("sortOrder").isNull()) {
+            entity.setSortOrder(body.get("sortOrder").asInt());
+        }
+        if (body.has("enabled") && !body.get("enabled").isNull()) {
+            entity.setEnabled(body.get("enabled").asBoolean());
+        }
+
         entity.setUpdatedAt(Instant.now());
         return toZoneMap(zoneRepo.save(entity));
     }
@@ -100,44 +129,102 @@ public class AdminShippingService {
     }
 
     @Transactional
-    public Map<String, Object> createMethod(UUID zoneId, String methodCode, String title, String description,
-            BigDecimal cost, BigDecimal minOrderAmount, BigDecimal freeShippingThreshold,
-            int sortOrder, boolean enabled) {
+    public Map<String, Object> createMethod(UUID zoneId, CreateShippingMethodRequest req) {
         ShippingZoneEntity zone = zoneRepo.findById(zoneId)
                 .orElseThrow(() -> new NotFoundException("Shipping zone not found."));
         Instant now = Instant.now();
         ShippingMethodEntity entity = new ShippingMethodEntity();
         entity.setZone(zone);
-        entity.setMethodCode(methodCode);
-        entity.setTitle(title);
-        entity.setDescription(description);
-        entity.setCost(cost);
-        entity.setMinOrderAmount(minOrderAmount);
-        entity.setFreeShippingThreshold(freeShippingThreshold);
-        entity.setSortOrder(sortOrder);
-        entity.setEnabled(enabled);
+        entity.setMethodCode(req.methodCode().trim());
+        entity.setTitle(req.title().trim());
+        entity.setDescription(req.description() != null ? req.description().trim() : null);
+        entity.setCost(req.cost() != null ? req.cost() : BigDecimal.ZERO);
+        entity.setMinOrderAmount(req.minOrderAmount() != null ? req.minOrderAmount() : BigDecimal.ZERO);
+        entity.setFreeShippingThreshold(req.freeShippingThreshold());
+        entity.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
+        entity.setEnabled(req.enabled() != null ? req.enabled() : true);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         return toMethodMap(methodRepo.save(entity));
     }
 
     @Transactional
-    public Map<String, Object> updateMethod(UUID zoneId, UUID methodId, String methodCode, String title,
-            String description, BigDecimal cost, BigDecimal minOrderAmount, BigDecimal freeShippingThreshold,
-            Integer sortOrder, Boolean enabled) {
+    public Map<String, Object> updateMethod(UUID zoneId, UUID methodId, JsonNode body) {
         ShippingMethodEntity entity = methodRepo.findById(methodId)
                 .orElseThrow(() -> new NotFoundException("Shipping method not found."));
         if (!entity.getZone().getId().equals(zoneId)) {
             throw new NotFoundException("Shipping method not found in zone.");
         }
-        if (methodCode != null) entity.setMethodCode(methodCode);
-        if (title != null) entity.setTitle(title);
-        if (description != null) entity.setDescription(description);
-        if (cost != null) entity.setCost(cost);
-        if (minOrderAmount != null) entity.setMinOrderAmount(minOrderAmount);
-        if (freeShippingThreshold != null) entity.setFreeShippingThreshold(freeShippingThreshold);
-        if (sortOrder != null) entity.setSortOrder(sortOrder);
-        if (enabled != null) entity.setEnabled(enabled);
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+
+        if (body.has("methodCode")) {
+            String code = body.get("methodCode").isNull() ? "" : body.get("methodCode").asText().trim();
+            if (code.isBlank()) {
+                errors.add(new ApiErrorDetail("methodCode", "NOT_BLANK", "Method code must not be blank."));
+            } else if (!code.matches("[a-z0-9_-]+")) {
+                errors.add(new ApiErrorDetail("methodCode", "PATTERN",
+                        "methodCode must contain only lowercase letters, digits, underscores, or hyphens."));
+            } else {
+                entity.setMethodCode(code);
+            }
+        }
+        if (body.has("title")) {
+            String title = body.get("title").isNull() ? "" : body.get("title").asText().trim();
+            if (title.isBlank()) {
+                errors.add(new ApiErrorDetail("title", "NOT_BLANK", "Title must not be blank."));
+            } else {
+                entity.setTitle(title);
+            }
+        }
+        if (!errors.isEmpty()) throw new ValidationException("Validation failed.", errors);
+
+        if (body.has("description")) {
+            // null or empty clears description
+            String desc = body.get("description").isNull() ? null : body.get("description").asText().trim();
+            entity.setDescription(desc != null && desc.isEmpty() ? null : desc);
+        }
+        if (body.has("cost")) {
+            if (body.get("cost").isNull()) {
+                entity.setCost(BigDecimal.ZERO);
+            } else {
+                BigDecimal cost = new BigDecimal(body.get("cost").asText());
+                if (cost.compareTo(BigDecimal.ZERO) < 0) {
+                    throw ValidationException.fromField("cost", "MIN_VALUE", "cost must be >= 0.");
+                }
+                entity.setCost(cost);
+            }
+        }
+        if (body.has("minOrderAmount")) {
+            if (body.get("minOrderAmount").isNull()) {
+                entity.setMinOrderAmount(BigDecimal.ZERO);
+            } else {
+                BigDecimal min = new BigDecimal(body.get("minOrderAmount").asText());
+                if (min.compareTo(BigDecimal.ZERO) < 0) {
+                    throw ValidationException.fromField("minOrderAmount", "MIN_VALUE", "minOrderAmount must be >= 0.");
+                }
+                entity.setMinOrderAmount(min);
+            }
+        }
+        if (body.has("freeShippingThreshold")) {
+            if (body.get("freeShippingThreshold").isNull()) {
+                entity.setFreeShippingThreshold(null);
+            } else {
+                BigDecimal threshold = new BigDecimal(body.get("freeShippingThreshold").asText());
+                if (threshold.compareTo(BigDecimal.ZERO) < 0) {
+                    throw ValidationException.fromField("freeShippingThreshold", "MIN_VALUE",
+                            "freeShippingThreshold must be >= 0.");
+                }
+                entity.setFreeShippingThreshold(threshold);
+            }
+        }
+        if (body.has("sortOrder") && !body.get("sortOrder").isNull()) {
+            entity.setSortOrder(body.get("sortOrder").asInt());
+        }
+        if (body.has("enabled") && !body.get("enabled").isNull()) {
+            entity.setEnabled(body.get("enabled").asBoolean());
+        }
+
         entity.setUpdatedAt(Instant.now());
         return toMethodMap(methodRepo.save(entity));
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCheckoutOptions, submitQuickBuy } from "@/lib/api/client-api";
 import type { CheckoutAddress, CheckoutOptions } from "@/lib/contracts/commerce";
@@ -53,6 +53,7 @@ export function QuickBuyModal({
   onClose,
 }: QuickBuyModalProps) {
   const router = useRouter();
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
   const [address, setAddress] = useState<CheckoutAddress>(EMPTY_ADDRESS);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [shippingMethodId, setShippingMethodId] = useState("");
@@ -114,7 +115,7 @@ export function QuickBuyModal({
         shippingMethodId: shippingMethodId || null,
         paymentMethod,
         customerNote: customerNote.trim() || undefined,
-      });
+      }, idempotencyKey.current);
       setSuccess(`Đã tạo đơn #${order.orderNumber}. Đang chuyển hướng...`);
       router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
     } catch (err) {

@@ -555,15 +555,15 @@ export default function CheckoutPage() {
                   <b>−{formatVnd(cart.totals.discountAmount)}</b>
                 </div>
               )}
-              {cart.totals.shippingAmount > 0 && (
+              {selectedShipping && selectedShipping.cost > 0 && (
                 <div className="wp-summary-row">
                   <span>Vận chuyển</span>
-                  <b>{formatVnd(cart.totals.shippingAmount)}</b>
+                  <b>{formatVnd(selectedShipping.cost)}</b>
                 </div>
               )}
               <div className="wp-summary-total">
                 <span>Tổng thanh toán</span>
-                <b>{formatVnd(cart.totals.totalAmount)}</b>
+                <b>{formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}</b>
               </div>
             </>
           )}

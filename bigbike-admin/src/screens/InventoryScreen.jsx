@@ -10,7 +10,7 @@ import {
   fetchAllMovements,
   fetchInventory,
   fetchInventorySummary,
-  inventoryExportCsvUrl,
+  downloadInventoryCsv,
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
@@ -829,7 +829,7 @@ function AllMovementsTab({ refreshKey = 0 }) {
     return () => { active = false }
   }, [query, refreshKey])
 
-  const MV_TYPE_OPTIONS = ['', 'IN', 'OUT', 'RETURN']
+  const MV_TYPE_OPTIONS = ['', 'IN', 'OUT', 'ADJUSTMENT', 'RETURN']
   const REF_TYPE_OPTIONS = ['', 'ORDER', 'ORDER_CANCEL', 'RETURN', 'MANUAL']
 
   return (
@@ -1035,9 +1035,9 @@ export function InventoryScreen({ canUpdate = false }) {
               {t('inventory.stockIn.btnLabel')}
             </button>
           )}
-          <a href={inventoryExportCsvUrl()} className="btn btn-secondary" download>
+          <button type="button" className="btn btn-secondary" onClick={() => downloadInventoryCsv().catch(console.error)}>
             Xuất CSV
-          </a>
+          </button>
         </div>
       </header>
 

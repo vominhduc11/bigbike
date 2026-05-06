@@ -11,10 +11,14 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
+import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
+import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.Optional;
@@ -50,6 +54,8 @@ class Phase1FCheckoutApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
+    @Autowired ShippingMethodJpaRepository shippingMethodRepo;
+    @Autowired ShippingZoneJpaRepository shippingZoneRepo;
 
     private MockMvc mockMvc;
 
@@ -580,6 +586,63 @@ class Phase1FCheckoutApiTest {
         assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
     }
 
+    // ── Shipping enforcement tests (3) ───────────────────────────────────────
+
+    @Test
+    void checkout_belowMinOrderAmount_returns400() throws Exception {
+        // Create a method with minOrderAmount=5,000,000
+        ShippingMethodEntity highMin = createTestShippingMethod("high_min", "High Min Method",
+                java.math.BigDecimal.ZERO, new java.math.BigDecimal("5000000"), null);
+        GuestSession session = newGuestSessionWithItem(1000000); // subtotal < minOrderAmount
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + highMin.getId() +
+                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("shippingMethodId"))
+                .andExpect(jsonPath("$.error.details[0].code").value("MIN_ORDER_AMOUNT_NOT_MET"));
+    }
+
+    @Test
+    void checkout_freeShippingThreshold_appliesWhenSubtotalMeetsOrExceeds() throws Exception {
+        // Create a method with cost=30,000 and freeShippingThreshold=1,000,000
+        ShippingMethodEntity freeAbove = createTestShippingMethod("free_above_1m", "Free Above 1M",
+                new java.math.BigDecimal("30000"), java.math.BigDecimal.ZERO,
+                new java.math.BigDecimal("1000000"));
+        GuestSession session = newGuestSessionWithItem(1000000); // subtotal == threshold → free
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + freeAbove.getId() +
+                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.shippingAmount").value(0.00));
+    }
+
+    @Test
+    void checkout_orderShippingItem_snapshotIsCorrect() throws Exception {
+        ShippingMethodEntity paid = createTestShippingMethod("paid_ship", "Paid Shipping",
+                new java.math.BigDecimal("50000"), java.math.BigDecimal.ZERO, null);
+        GuestSession session = newGuestSessionWithItem(3000000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + paid.getId() +
+                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
+        var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
+        assertThat(order.getShippingAmount()).isEqualByComparingTo(new java.math.BigDecimal("50000"));
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(
+                order.getSubtotalAmount().add(new java.math.BigDecimal("50000")));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     /** Create a new guest session (GET /api/v1/cart) and capture cookies. */
@@ -691,6 +754,30 @@ class Phase1FCheckoutApiTest {
         start += marker.length();
         int end = json.indexOf("\"", start);
         return json.substring(start, end);
+    }
+
+    private ShippingMethodEntity createTestShippingMethod(
+            String methodCode, String title,
+            java.math.BigDecimal cost,
+            java.math.BigDecimal minOrderAmount,
+            java.math.BigDecimal freeShippingThreshold
+    ) {
+        ShippingZoneEntity zone = shippingZoneRepo.findById(
+                UUID.fromString("00000000-0000-0000-0000-000000000301")).orElseThrow();
+        ShippingMethodEntity m = new ShippingMethodEntity();
+        m.setZone(zone);
+        // Use unique code per invocation to avoid duplicate-key conflicts
+        m.setMethodCode(methodCode + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6));
+        m.setTitle(title);
+        m.setCost(cost);
+        m.setMinOrderAmount(minOrderAmount);
+        m.setFreeShippingThreshold(freeShippingThreshold);
+        m.setSortOrder(99);
+        m.setEnabled(true);
+        Instant now = Instant.now();
+        m.setCreatedAt(now);
+        m.setUpdatedAt(now);
+        return shippingMethodRepo.save(m);
     }
 
     // ── value types ───────────────────────────────────────────────────────────

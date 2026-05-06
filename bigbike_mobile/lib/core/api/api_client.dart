@@ -57,8 +57,12 @@ class ApiClient {
     String path, {
     dynamic data,
     T Function(dynamic)? fromJson,
+    Map<String, String>? extraHeaders,
   }) async {
-    final resp = await _dio.post(path, data: data);
+    final options = extraHeaders != null
+        ? Options(headers: extraHeaders)
+        : null;
+    final resp = await _dio.post(path, data: data, options: options);
     if (fromJson != null) return fromJson(resp.data);
     return resp.data as T;
   }

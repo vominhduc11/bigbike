@@ -408,6 +408,12 @@ public class CheckoutService {
     // ── Shipping cost helpers ─────────────────────────────────────────────────
 
     private BigDecimal resolveShippingCost(ShippingMethodEntity method, BigDecimal orderSubtotal) {
+        BigDecimal minOrder = method.getMinOrderAmount();
+        if (minOrder != null && minOrder.compareTo(BigDecimal.ZERO) > 0
+                && orderSubtotal.compareTo(minOrder) < 0) {
+            throw ValidationException.fromField("shippingMethodId", "MIN_ORDER_AMOUNT_NOT_MET",
+                    "Order subtotal does not meet the minimum order amount for this shipping method.");
+        }
         BigDecimal threshold = method.getFreeShippingThreshold();
         if (threshold != null && orderSubtotal.compareTo(threshold) >= 0) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);

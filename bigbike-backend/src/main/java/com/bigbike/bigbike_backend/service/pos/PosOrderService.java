@@ -371,7 +371,7 @@ public class PosOrderService {
 
             StockMovementEntity mv = new StockMovementEntity();
             mv.setVariant(v);
-            mv.setMovementType("SALE");
+            mv.setMovementType("OUT");
             mv.setQuantityDelta(-item.quantity());
             mv.setReferenceType("ORDER");
             mv.setReferenceId(orderId);

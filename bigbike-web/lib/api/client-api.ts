@@ -97,8 +97,9 @@ export function fetchCheckoutOptions(): Promise<CheckoutOptions> {
   return clientRequest("GET", "/api/v1/checkout/options");
 }
 
-export function submitQuickBuy(payload: QuickBuyPayload): Promise<OrderSummary> {
-  return clientRequest("POST", "/api/v1/orders/quick-buy", payload);
+export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {
+  const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
+  return clientRequest("POST", "/api/v1/orders/quick-buy", payload, extra);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

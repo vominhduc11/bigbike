@@ -1711,11 +1711,27 @@ function normalizeMovement(input) {
     note: m.note || '',
     createdAt: m.createdAt || null,
     serialCount: typeof m.serialCount === 'number' ? m.serialCount : 0,
+    productName: m.productName || null,
+    variantName: m.variantName || null,
+    variantSku: m.variantSku || null,
   }
 }
 
-export function inventoryExportCsvUrl() {
-  return `${API_BASE}/admin/inventory/export.csv`
+export async function downloadInventoryCsv() {
+  const { accessToken } = readTokens()
+  const response = await fetch(`${API_BASE}/admin/inventory/export.csv`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) throw new Error(`CSV export failed: ${response.status}`)
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 // â”€â”€ Returns / RMA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

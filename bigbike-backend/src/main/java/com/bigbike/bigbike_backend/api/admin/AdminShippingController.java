@@ -1,14 +1,17 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.shipping.CreateShippingMethodRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.shipping.CreateShippingZoneRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminShippingService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -67,29 +70,21 @@ public class AdminShippingController {
 
     @PostMapping("/zones")
     public ApiDataResponse<Map<String, Object>> createZone(
-            @RequestBody Map<String, Object> body,
+            @jakarta.validation.Valid @RequestBody CreateShippingZoneRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "shipping.write");
-        String name = (String) body.getOrDefault("name", "");
-        String regionCode = (String) body.get("regionCode");
-        int sortOrder = body.containsKey("sortOrder") ? ((Number) body.get("sortOrder")).intValue() : 0;
-        boolean enabled = body.containsKey("enabled") ? Boolean.TRUE.equals(body.get("enabled")) : true;
-        return apiResponseFactory.data(adminShippingService.createZone(name, regionCode, sortOrder, enabled), request);
+        return apiResponseFactory.data(adminShippingService.createZone(body), request);
     }
 
     @PatchMapping("/zones/{id}")
     public ApiDataResponse<Map<String, Object>> updateZone(
             @PathVariable UUID id,
-            @RequestBody Map<String, Object> body,
+            @RequestBody JsonNode body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "shipping.write");
-        String name = (String) body.get("name");
-        String regionCode = (String) body.get("regionCode");
-        Integer sortOrder = body.containsKey("sortOrder") ? ((Number) body.get("sortOrder")).intValue() : null;
-        Boolean enabled = (Boolean) body.get("enabled");
-        return apiResponseFactory.data(adminShippingService.updateZone(id, name, regionCode, sortOrder, enabled), request);
+        return apiResponseFactory.data(adminShippingService.updateZone(id, body), request);
     }
 
     @DeleteMapping("/zones/{id}")
@@ -105,7 +100,7 @@ public class AdminShippingController {
     // ── Methods ───────────────────────────────────────────────────────────────
 
     @GetMapping("/zones/{zoneId}/methods")
-    public ApiDataResponse<java.util.List<Map<String, Object>>> listMethods(
+    public ApiDataResponse<List<Map<String, Object>>> listMethods(
             @PathVariable UUID zoneId,
             HttpServletRequest request
     ) {
@@ -116,38 +111,22 @@ public class AdminShippingController {
     @PostMapping("/zones/{zoneId}/methods")
     public ApiDataResponse<Map<String, Object>> createMethod(
             @PathVariable UUID zoneId,
-            @RequestBody Map<String, Object> body,
+            @jakarta.validation.Valid @RequestBody CreateShippingMethodRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "shipping.write");
-        String methodCode = (String) body.getOrDefault("methodCode", "");
-        String title = (String) body.getOrDefault("title", "");
-        String description = (String) body.get("description");
-        BigDecimal cost = body.containsKey("cost") ? new BigDecimal(body.get("cost").toString()) : BigDecimal.ZERO;
-        BigDecimal minOrderAmount = body.containsKey("minOrderAmount") ? new BigDecimal(body.get("minOrderAmount").toString()) : BigDecimal.ZERO;
-        BigDecimal freeShippingThreshold = body.containsKey("freeShippingThreshold") ? new BigDecimal(body.get("freeShippingThreshold").toString()) : null;
-        int sortOrder = body.containsKey("sortOrder") ? ((Number) body.get("sortOrder")).intValue() : 0;
-        boolean enabled = body.containsKey("enabled") ? Boolean.TRUE.equals(body.get("enabled")) : true;
-        return apiResponseFactory.data(adminShippingService.createMethod(zoneId, methodCode, title, description, cost, minOrderAmount, freeShippingThreshold, sortOrder, enabled), request);
+        return apiResponseFactory.data(adminShippingService.createMethod(zoneId, body), request);
     }
 
     @PatchMapping("/zones/{zoneId}/methods/{methodId}")
     public ApiDataResponse<Map<String, Object>> updateMethod(
             @PathVariable UUID zoneId,
             @PathVariable UUID methodId,
-            @RequestBody Map<String, Object> body,
+            @RequestBody JsonNode body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "shipping.write");
-        String methodCode = (String) body.get("methodCode");
-        String title = (String) body.get("title");
-        String description = (String) body.get("description");
-        BigDecimal cost = body.containsKey("cost") ? new BigDecimal(body.get("cost").toString()) : null;
-        BigDecimal minOrderAmount = body.containsKey("minOrderAmount") ? new BigDecimal(body.get("minOrderAmount").toString()) : null;
-        BigDecimal freeShippingThreshold = body.containsKey("freeShippingThreshold") ? new BigDecimal(body.get("freeShippingThreshold").toString()) : null;
-        Integer sortOrder = body.containsKey("sortOrder") ? ((Number) body.get("sortOrder")).intValue() : null;
-        Boolean enabled = (Boolean) body.get("enabled");
-        return apiResponseFactory.data(adminShippingService.updateMethod(zoneId, methodId, methodCode, title, description, cost, minOrderAmount, freeShippingThreshold, sortOrder, enabled), request);
+        return apiResponseFactory.data(adminShippingService.updateMethod(zoneId, methodId, body), request);
     }
 
     @DeleteMapping("/zones/{zoneId}/methods/{methodId}")

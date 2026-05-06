@@ -13,7 +13,12 @@ public interface StockMovementJpaRepository extends JpaRepository<StockMovementE
 
     boolean existsByReferenceTypeAndReferenceId(String referenceType, UUID referenceId);
 
-    List<StockMovementEntity> findByVariantIdOrderByCreatedAtDesc(String variantId, Pageable pageable);
+    @Query("""
+        SELECT m FROM StockMovementEntity m JOIN FETCH m.variant v JOIN FETCH v.product
+        WHERE m.variant.id = :variantId
+        ORDER BY m.createdAt DESC
+        """)
+    List<StockMovementEntity> findByVariantIdOrderByCreatedAtDesc(@Param("variantId") String variantId, Pageable pageable);
 
     long countByVariantId(String variantId);
 
