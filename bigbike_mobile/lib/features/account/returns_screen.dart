@@ -59,10 +59,12 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // API returns {data: [...]} wrapper
-      final resp = await ApiClient().get<Map<String, dynamic>>(ApiEndpoints.myReturns);
+      final data = await ApiClient().get<dynamic>(ApiEndpoints.myReturns);
+      final rawList = data is List
+          ? data
+          : (data is Map ? (data['data'] as List? ?? []) : <dynamic>[]);
       setState(() {
-        _returns = ((resp['data'] as List?) ?? []).cast<Map<String, dynamic>>();
+        _returns = rawList.whereType<Map<String, dynamic>>().toList();
         _loading = false;
       });
     } catch (e) {

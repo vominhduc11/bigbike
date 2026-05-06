@@ -99,6 +99,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor
                         .requestMatchers("/ws/**").permitAll()
+                        // POS endpoints are accessible to SHOP_MANAGER as well as ADMIN
+                        .requestMatchers("/api/v1/admin/pos/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
                         // Admin endpoints require ROLE_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // Shipping admin — covered by /api/v1/admin/** above but listed for clarity

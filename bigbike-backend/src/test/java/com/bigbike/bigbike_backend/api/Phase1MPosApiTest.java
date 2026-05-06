@@ -44,8 +44,8 @@ class Phase1MPosApiTest {
     private static final String ADMIN_EMAIL = "1m-pos-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ADMIN_PASS  = "Admin@1M2345678";
 
-    private static final String CASHIER_EMAIL = "1m-cashier-" + UUID.randomUUID() + "@bigbike.test";
-    private static final String CASHIER_PASS  = "Cashier@1M2345678";
+    private static final String SHOP_MGR_EMAIL = "1m-shopmgr-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String SHOP_MGR_PASS  = "ShopMgr@1M2345678";
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
@@ -67,7 +67,7 @@ class Phase1MPosApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureAdminUser();
-        ensureCashierUser();
+        ensureShopManagerUser();
         adminToken = loginAdmin();
     }
 
@@ -301,7 +301,7 @@ class Phase1MPosApiTest {
 
     @Test
     void createPosOrder_priceOverride_withoutPermission_returns409() throws Exception {
-        String cashierToken = loginCashier();
+        String cashierToken = loginShopManager();
         TestVariant tv = createProductWithVariant(5, 100000);
 
         mockMvc.perform(post("/api/v1/admin/pos/orders")
@@ -485,18 +485,18 @@ class Phase1MPosApiTest {
         });
     }
 
-    private void ensureCashierUser() {
-        adminUserRepo.findByEmail(CASHIER_EMAIL).orElseGet(() -> {
-            AdminUserEntity cashier = new AdminUserEntity();
-            cashier.setEmail(CASHIER_EMAIL);
-            cashier.setPasswordHash(passwordService.hash(CASHIER_PASS));
-            cashier.setDisplayName("Phase1M POS Cashier");
-            cashier.setRole("CASHIER");
-            cashier.setStatus("ACTIVE");
+    private void ensureShopManagerUser() {
+        adminUserRepo.findByEmail(SHOP_MGR_EMAIL).orElseGet(() -> {
+            AdminUserEntity mgr = new AdminUserEntity();
+            mgr.setEmail(SHOP_MGR_EMAIL);
+            mgr.setPasswordHash(passwordService.hash(SHOP_MGR_PASS));
+            mgr.setDisplayName("Phase1M POS ShopManager");
+            mgr.setRole("SHOP_MANAGER");
+            mgr.setStatus("ACTIVE");
             Instant now = Instant.now();
-            cashier.setCreatedAt(now);
-            cashier.setUpdatedAt(now);
-            return adminUserRepo.save(cashier);
+            mgr.setCreatedAt(now);
+            mgr.setUpdatedAt(now);
+            return adminUserRepo.save(mgr);
         });
     }
 
@@ -509,10 +509,10 @@ class Phase1MPosApiTest {
         return extractJsonString(result.getResponse().getContentAsString(), "accessToken");
     }
 
-    private String loginCashier() throws Exception {
+    private String loginShopManager() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + CASHIER_EMAIL + "\",\"password\":\"" + CASHIER_PASS + "\"}"))
+                        .content("{\"email\":\"" + SHOP_MGR_EMAIL + "\",\"password\":\"" + SHOP_MGR_PASS + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         return extractJsonString(result.getResponse().getContentAsString(), "accessToken");

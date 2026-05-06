@@ -41,7 +41,7 @@ public final class AdminRolePermissions {
                     "coupons.read", "coupons.write",
                     "shipping.read",
                     "reviews.read", "reviews.write",
-                    "pos.read", "pos.write", "pos.price_override"
+                    "pos.read", "pos.write"
             ),
             "EDITOR", List.of(
                     "products.read", "catalog.read",
@@ -60,9 +60,6 @@ public final class AdminRolePermissions {
             "SEO_EDITOR", List.of(
                     "content.read", "content.update",
                     "redirects.read", "redirects.write"
-            ),
-            "CASHIER", List.of(
-                    "pos.read", "pos.write"
             )
     );
 
