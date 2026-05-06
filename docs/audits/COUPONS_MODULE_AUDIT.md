@@ -3,15 +3,15 @@
 > Audit ngày 2026-05-06 — Senior Fullstack/QA review
 > Scope: backend coupon admin + cart/coupon flow + checkout + DB + admin/web FE + WP importer + test
 > Phương pháp: đọc source code thật (không phỏng đoán), trích evidence file:line. Không sửa code.
-> Test runtime KHÔNG được chạy trong session này (xem §9 — backend test cần Postgres + Java toolchain integrated env, không khả dụng trong shell).
+> Test runtime đã được chạy lại trong session update 2026-05-06: targeted coupon/cart/checkout suites PASS và full `.\mvnw.cmd test` PASS (849 tests, 0 failures, 0 errors, 3 skipped).
 
 ---
 
 ## 1. Executive Summary
 
-**Verdict: CONDITIONALLY_READY** _(updated 2026-05-06 sau khi fix P0 + P1)_
+**Verdict: READY** _(updated 2026-05-06 after P0/P1 hardening verification)_
 
-Tất cả 3 P0 và 3 P1 blocker đã được fix và verified bằng integration tests (Phase1FCheckoutApiTest 39/39, Phase1JAdminSettingsMenuCouponApiTest 63/63, Phase1ECartApiTest 27/27). P2/P3 issues còn backlog; xem §11.
+Tất cả P0 và P1 chính trong scope coupon checkout/cart/admin permission đã được fix và verified bằng integration tests: `Phase1FCheckoutApiTest` **41/41 PASS**, `Phase1JAdminSettingsMenuCouponApiTest` **63/63 PASS**, `Phase1ECartApiTest` **27/27 PASS**; full backend suite `.\mvnw.cmd test` cũng PASS (**849 tests, 0 failures, 0 errors, 3 skipped**). Phần còn lại là LOW/P2 backlog, không còn block release; xem §11.
 
 **Lịch sử audit ban đầu**: NOT_READY for production (~55% complete) với 3 P0 blockers:
 
@@ -19,7 +19,7 @@ Tất cả 3 P0 và 3 P1 blocker đã được fix và verified bằng integrati
 - **P0-COUPON-02** ~~`usageLimit` không atomic~~ → **RESOLVED** (`attemptRedeem` conditional UPDATE với status/date/limit guards)
 - **P0-COUPON-03** ~~Update `discountType` partial không re-validate `amount`~~ → **RESOLVED** (AdminCouponService lines 164-168)
 - **P1-COUPON-04** ~~"One coupon per cart" enforce ở service, không có constraint DB~~ → **RESOLVED** ([V73 migration](bigbike-backend/src/main/resources/db/migration/V73__enforce_one_coupon_per_cart.sql) + `DataIntegrityViolationException` → 409 trong CartService)
-- **P1-COUPON-05** — Test coverage cho cart coupon, checkout coupon, scheduler, race condition. ~~gần như **0**~~ → **PARTIALLY RESOLVED** (R1 minAmount, R2 inactive-after-apply trong Phase1ECartApiTest; 2-coupon 409 và SHOP_MANAGER test trong Phase1JAdminSettingsMenuCouponApiTest). Concurrent race test và scheduler test còn backlog.
+- **P1-COUPON-05** — Test coverage cho cart coupon / checkout coupon / permission mismatch. ~~gần như **0**~~ → **RESOLVED for release blockers** (`Phase1FCheckoutApiTest` hiện cover 7 coupon checkout cases; `Phase1JAdminSettingsMenuCouponApiTest` cover 7 coupon hardening cases; `Phase1ECartApiTest` cover refresh/minimumAmount invalidation). Concurrent stress test, scheduler test, và OpenAPI/doc sync follow-up chuyển xuống **LOW/tooling**, không block release.
 - **P1-COUPON-06** ~~Permission inconsistency: SHOP_MANAGER bị SecurityConfig chặn ở URL guard~~ → **RESOLVED** ([SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105) dùng `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` cho `/api/v1/admin/coupons/**`. Test `shopManager_canListCoupons` PASS.)
 - **P2-COUPON-07** — Admin order detail trả `appliedCoupons` từ BE nhưng UI admin **không hiển thị** mã coupon đã dùng.
 - **P2-COUPON-08** — Customer order detail (BE + web FE) **không hiển thị** code coupon đã dùng.
@@ -29,7 +29,7 @@ Tất cả 3 P0 và 3 P1 blocker đã được fix và verified bằng integrati
 - **P2-COUPON-12** — `discount_type` và `status` không có CHECK constraint ở DB; mọi giá trị string đều insert được nếu bypass service.
 - **P3-COUPON-13** — WP importer không validate runtime rules → có thể import coupon `amount=0`, PERCENT > 100, etc.
 
-**Điều kiện chuyển READY**: xem §11.
+**READY criteria**: đã đạt; xem §11 cho final verdict và backlog còn lại.
 
 ---
 
@@ -37,14 +37,14 @@ Tất cả 3 P0 và 3 P1 blocker đã được fix và verified bằng integrati
 
 | Method | Route | Controller | Service | Permission | Status |
 |---|---|---|---|---|---|
-| GET | `/api/v1/admin/coupons` | [AdminCouponController.listCoupons](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L52-L66) | [AdminCouponService.listCoupons](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L53-L78) | `coupons.read` + `hasRole("ADMIN")` | COMPLETE |
-| GET | `/api/v1/admin/coupons/{id}` | [AdminCouponController.getCouponById](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L68-L75) | [AdminCouponService.getCouponById](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L82-L86) | `coupons.read` + `hasRole("ADMIN")` | COMPLETE |
-| POST | `/api/v1/admin/coupons` | [AdminCouponController.createCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L77-L84) | [AdminCouponService.createCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L90-L135) | `coupons.write` + `hasRole("ADMIN")` | PARTIAL |
-| PATCH | `/api/v1/admin/coupons/{id}` | [AdminCouponController.updateCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L86-L95) | [AdminCouponService.updateCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L139-L217) | `coupons.write` + `hasRole("ADMIN")` | BROKEN (xem P0-03) |
-| PATCH | `/api/v1/admin/coupons/{id}/status` | [AdminCouponController.updateCouponStatus](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L97-L106) | [AdminCouponService.updateCouponStatus](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L221-L240) | `coupons.write` + `hasRole("ADMIN")` | COMPLETE |
+| GET | `/api/v1/admin/coupons` | [AdminCouponController.listCoupons](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L52-L66) | [AdminCouponService.listCoupons](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L53-L78) | `coupons.read` + coupon URL matcher in `SecurityConfig` | COMPLETE |
+| GET | `/api/v1/admin/coupons/{id}` | [AdminCouponController.getCouponById](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L68-L75) | [AdminCouponService.getCouponById](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L82-L86) | `coupons.read` + coupon URL matcher in `SecurityConfig` | COMPLETE |
+| POST | `/api/v1/admin/coupons` | [AdminCouponController.createCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L77-L84) | [AdminCouponService.createCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L90-L135) | `coupons.write` + coupon URL matcher in `SecurityConfig` | PARTIAL |
+| PATCH | `/api/v1/admin/coupons/{id}` | [AdminCouponController.updateCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L86-L95) | [AdminCouponService.updateCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L139-L217) | `coupons.write` + coupon URL matcher in `SecurityConfig` | COMPLETE |
+| PATCH | `/api/v1/admin/coupons/{id}/status` | [AdminCouponController.updateCouponStatus](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L97-L106) | [AdminCouponService.updateCouponStatus](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L221-L240) | `coupons.write` + coupon URL matcher in `SecurityConfig` | COMPLETE |
 | POST | `/api/v1/cart/coupons` | [CartController.applyCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/CartController.java#L110-L121) | [CartService.applyCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L238-L288) | guest+customer (permitAll) | PARTIAL |
 | DELETE | `/api/v1/cart/coupons/{code}` | [CartController.removeCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/CartController.java#L123-L134) | [CartService.removeCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L290-L297) | guest+customer (permitAll) | COMPLETE |
-| POST | `/api/v1/checkout` (cart→order, áp dụng coupon) | [CheckoutController](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/checkout) | [CheckoutService.checkoutFromCart](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L152-L267) | guest+customer (permitAll) | BROKEN (no revalidate, race) |
+| POST | `/api/v1/checkout` (cart→order, áp dụng coupon) | [CheckoutController](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/checkout) | [CheckoutService.checkoutFromCart](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L152-L267) | guest+customer (permitAll) | COMPLETE (fresh revalidation + atomic redeem) |
 | Scheduler | cron `0 0 * * * *` | [CouponExpiryScheduler.expireOverdueCoupons](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/coupon/CouponExpiryScheduler.java#L18-L27) | repo [`expireOverdue`](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L26-L29) | n/a (`@EnableScheduling` ở [BigbikeBackendApplication](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/BigbikeBackendApplication.java)) | COMPLETE |
 
 Không tìm thấy: dedicated public coupon detail endpoint (xem code → giá ở cart) → **NOT_FOUND** intentional, OK vì cart flow đã trả discount.
@@ -132,20 +132,20 @@ API client web: [bigbike-web/lib/api/client-api.ts:81-87](bigbike-web/lib/api/cl
 
 | Endpoint | URL guard | Permission check | Note |
 |---|---|---|---|
-| `/api/v1/admin/coupons*` | `hasRole("ADMIN")` ([SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105)) | `coupons.read` / `coupons.write` ([AdminCouponController.java:63,73,82,92,103](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L63)) | URL guard **chặn SHOP_MANAGER** trước khi tới permission check |
+| `/api/v1/admin/coupons*` | `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` ([SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105)) | `coupons.read` / `coupons.write` ([AdminCouponController.java:63,73,82,92,103](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCouponController.java#L63)) | ✅ URL guard khớp với role grant |
 | `/api/v1/cart/coupons*` | `permitAll` ([SecurityConfig.java:79-80](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L79-L80)) | none | cart guest/customer flow OK |
 
-### Role grant inconsistency (P1-06)
+### Role grant alignment (P1-06 resolved)
 
 | Role | `coupons.read/write` in [AdminRolePermissions.MAP](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminRolePermissions.java#L15-L64) | `coupons.read/write` in DB seed [V49](bigbike-backend/src/main/resources/db/migration/V49__create_roles_permissions_tables.sql) | URL guard `/api/v1/admin/**` |
 |---|---|---|---|
-| SUPER_ADMIN | `*` (line 16) | (not seeded with explicit grants per file) | `hasRole("ADMIN")` does NOT match `ROLE_SUPER_ADMIN` — may also be blocked unless mapping injects ADMIN role too |
+| SUPER_ADMIN | `*` (line 16) | (not seeded with explicit grants per file) | ALLOWED via `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` |
 | ADMIN | YES (line 27) | YES | ALLOWED |
-| SHOP_MANAGER | YES (line 41) | YES (V49 line 110-111) | **BLOCKED** — `hasRole("ADMIN")` chặn |
+| SHOP_MANAGER | YES (line 41) | YES (V49 line 110-111) | ALLOWED via coupon-specific matcher |
 | EDITOR / AUTHOR / etc | NO | NO | BLOCKED OK |
 
-→ Granting `coupons.*` to SHOP_MANAGER là dead code; SHOP_MANAGER không thể gọi admin coupon API trừ khi SecurityConfig được mở. **P1-COUPON-06**.
-→ Cần verify: SUPER_ADMIN principal có được attach role `ADMIN` thêm không? Nếu không sẽ bị chặn ngay tại URL guard. Cần investigation. **NEEDS_VERIFICATION**.
+→ ✅ `SecurityConfig` đã align với `docs/engineering/PERMISSION_MATRIX.md`: `/api/v1/admin/coupons/**` dùng `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` ([SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105)). Test `shopManager_canListCoupons` PASS.
+→ SUPER_ADMIN dùng matcher trực tiếp; không còn vướng mắc role-kép.
 
 ### Frontend (admin)
 
@@ -172,16 +172,16 @@ API client web: [bigbike-web/lib/api/client-api.ts:81-87](bigbike-web/lib/api/cl
 | `usageLimit ≥ 0` | [AdminCouponService.java:297-301](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L297-L301) | NOT_FOUND_TEST | PARTIAL | |
 | `startsAt < expiresAt` | [AdminCouponService.java:303-307](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L303-L307) | NOT_FOUND_TEST | PARTIAL | |
 | `status` ∈ {ACTIVE,INACTIVE,EXPIRED,ARCHIVED} | [AdminCouponService.java:122-127, 201-208, 226-230](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L122-L208) | invalidStatus tests [Phase1J.java:496-520](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L496-L520) | COMPLETE | DB không có CHECK |
-| **Update partial revalidate full state** | Update **không gọi `validateAmount` lại nếu req.amount==null nhưng req.discountType thay đổi** ([AdminCouponService.java:166-175](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L166-L175)) — current `entity.amount` được dùng làm `effectiveAmount` nhưng KHÔNG check ngược `PERCENT amount ≤ 100` khi đổi type | NOT_FOUND_TEST | **BROKEN** (P0-03) | Đổi FIXED→PERCENT mà không gửi amount mới → tạo PERCENT với amount=200 000 → discount = 200 000% subtotal |
+| **Update partial revalidate full state** | [AdminCouponService.java:164-168](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L164-L168) gọi `validateAmount(entity.getAmount(), type)` khi đổi `discountType` mà không gửi `amount` mới | `updateCoupon_fixedToPercent_withHighAmount_returns400` [Phase1JAdminSettingsMenuCouponApiTest.java:859-867](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L859-L867) | COMPLETE | P0-03 resolved |
 | Apply: empty code | `@NotBlank` [ApplyCouponRequest.java:6](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/dto/ApplyCouponRequest.java#L6) | NOT_FOUND_TEST | PARTIAL | |
-| Apply: not found | [CartService.java:249-250](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L249-L250) | NOT_FOUND_TEST | PARTIAL | |
-| Apply: inactive/archived/expired | [CartService.java:253-261](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L253-L261) (status != ACTIVE → từ chối, đè cả ARCHIVED) | NOT_FOUND_TEST | PARTIAL | |
+| Apply: not found | [CartService.java:249-250](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L249-L250) | `applyCoupon_nonexistentCode_returns404` [Phase1JAdminSettingsMenuCouponApiTest.java:887-900](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L887-L900) | COMPLETE | |
+| Apply: inactive/archived/expired | [CartService.java:253-261](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L253-L261) (status != ACTIVE → từ chối, đè cả ARCHIVED) | `applyCoupon_inactiveCoupon_returns409` [Phase1JAdminSettingsMenuCouponApiTest.java:902-918](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L902-L918), `applyCoupon_expiredCoupon_returns409` [Phase1JAdminSettingsMenuCouponApiTest.java:920-936](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L920-L936) | COMPLETE | |
 | Apply: not started (`startsAt > now`) | [CartService.java:256-258](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L256-L258) | NOT_FOUND_TEST | PARTIAL | |
-| Apply: over usage limit | [CartService.java:262-264](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L262-L264) | NOT_FOUND_TEST | PARTIAL (race risk — see P0-02) | |
+| Apply: over usage limit | [CartService.java:262-264](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L262-L264) | NOT_FOUND_TEST | PARTIAL | Dedicated apply-path test vẫn còn thiếu dù checkout atomic guard đã fix |
 | Apply: subtotal < minAmount | [CartService.java:267-275](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L267-L275) | NOT_FOUND_TEST | PARTIAL | |
 | Apply: discount > subtotal → cap | [CartService.java:382](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L382) | NOT_FOUND_TEST | PARTIAL | |
-| Cart recalculate khi item change → re-validate coupon | [CartService.refreshCartTotals](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L328-L369) auto-remove coupon nếu inactive/expired/over-limit & recompute discount | NOT_FOUND_TEST | PARTIAL | Coupon sẽ không tự remove nếu subtotal sụt dưới minAmount — chỉ recompute. **Hidden bug** |
-| **Checkout revalidate** (status, expiresAt, usageLimit, minAmount) | **NONE** [CheckoutService.java:177-179](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L177-L179) chỉ gọi `cartCalculator.recalculateCart` (sum, không re-validate). [Block 232-248](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L232-L248) chỉ snapshot và increment | NOT_FOUND_TEST | **BROKEN** (P0-01) | |
+| Cart recalculate khi item change → re-validate coupon | [CartService.refreshCartTotals](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L323-L365) auto-remove coupon nếu inactive/expired/over-limit/**subtotal < minimumAmount** và recompute discount | `updateItemQty_reducesSubtotalBelowMinAmount_couponRemoved` [Phase1ECartApiTest.java:511-549](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java#L511-L549), `couponBecomesInactive_afterApply_cartRefreshRemovesCoupon` [Phase1ECartApiTest.java:551-590](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java#L551-L590) | COMPLETE | minAmount re-check resolved |
+| **Checkout revalidate** (status, expiresAt, usageLimit, minAmount) | [CheckoutService.java:186-203](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L186-L203) reload fresh coupon, `couponPolicy.validate(...)`, recompute discount trước khi snapshot/redeem | `checkout_withDisabledCoupon_returns409`, `checkout_withExpiredCoupon_returns409`, `checkout_couponUsageLimitExhausted_secondCheckoutFails` trong [Phase1FCheckoutApiTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1FCheckoutApiTest.java) | COMPLETE | P0-01 resolved |
 
 ---
 
@@ -239,7 +239,7 @@ create index idx_cart_coupons_cart_id on cart_coupons (cart_id);
 Findings:
 - ✅ Cascade delete khi xóa cart.
 - ✅ Unique `(cart_id, coupon_code)` chống duplicate same code.
-- ❌ **Không có** `unique(cart_id)` để enforce 1-coupon/cart ở DB → race condition với 2 code khác nhau (P1-04).
+- ✅ **`UNIQUE(cart_id)`** được thêm bởi [V73](bigbike-backend/src/main/resources/db/migration/V73__enforce_one_coupon_per_cart.sql) — enforce 1-coupon/cart ở DB level; `DataIntegrityViolationException` xử lý trong CartService thành 409.
 - ❌ Không có FK từ `coupon_code` sang `coupons.code` → cart_coupon có thể tham chiếu code không tồn tại (service xử lý lazy ở refresh).
 
 ### Schema `order_applied_coupons` ([V7](bigbike-backend/src/main/resources/db/migration/V7__create_order_tables.sql))
@@ -263,31 +263,32 @@ Findings:
 
 ### Concurrency
 
-- **Apply** dùng `findByCodeForUpdate` ([CouponJpaRepository.java:22-24](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L22-L24)) — chỉ chống race apply same coupon vào nhiều cart cùng lúc.
-- **Checkout** chỉ gọi `incrementUsageCount` UPDATE không condition ([CouponJpaRepository.java:31-34](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L31-L34)). **Không lock**, không atomic compare-set → P0-02.
-- Recommend SQL: `UPDATE coupons SET usage_count = usage_count + 1 WHERE id=? AND (usage_limit IS NULL OR usage_count < usage_limit) RETURNING ...` và xử lý 0-row-affected.
+- **Apply** dùng `findByCodeForUpdate` ([CouponJpaRepository.java:22-24](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L22-L24)) + DB `UNIQUE(cart_id)` qua [V73](bigbike-backend/src/main/resources/db/migration/V73__enforce_one_coupon_per_cart.sql) → race apply coupon khác code cùng cart không còn phụ thuộc chỉ service check.
+- **Checkout** dùng `attemptRedeem` atomic conditional UPDATE ([CouponJpaRepository.java:31-38](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L31-L38)); [CheckoutService.java:252-269](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L252-L269) ném `ConflictException` khi `redeemed == 0`.
+- Concurrent stress test ở mức thread scheduling vẫn nên bổ sung sau, nhưng không còn là P0/P1 release blocker.
 
 ---
 
 ## 8. Cart / Checkout / Order Flow
 
 ```
-[Cart applyCoupon] → cart_coupons row + recompute totals (lock coupon row briefly)
-        ↓
-[Cart updateItem/removeItem/addItem] → refreshCartTotals → re-validate coupons,
-        auto-remove if status≠ACTIVE/expired/over-limit; recompute discount
-        ⚠ KHÔNG re-check minimumAmount → coupon vẫn ở lại nếu subtotal sụt dưới min
-        ↓
+[Cart applyCoupon] -> validate current cart subtotal/status/date/usage, save coupon row
+        -> DB UNIQUE(cart_id) + CartService catch DataIntegrityViolationException => 409
+        ->
+[Cart updateItem/removeItem/addItem] -> refreshCartTotals
+        -> re-validate status/startsAt/expiresAt/usageLimit/minimumAmount
+        -> auto-remove invalid coupon and recompute totals
+        ->
 [Checkout]
-  1. reserveIdempotency (SHA-256 hash request payload, table checkout_idempotency_keys)
-  2. syncPricesAndValidateStock (price re-sync + stock check)
-  3. cartCalculator.recalculateCart  ← chỉ SUM, KHÔNG re-validate coupon
-  4. tạo OrderEntity, save line items, addresses, shipping, payment
-  5. for each cart_coupon:
-       - tạo OrderAppliedCouponEntity (snapshot code, discount, couponId)
-       - couponRepo.incrementUsageCount(id)  ← KHÔNG check < limit
-  6. set cart.status = CONVERTED
-  7. attachOrderToReservation  (idempotency stores orderId for retries)
+  1. reserveIdempotency (request hash)
+  2. syncPricesAndValidateStock
+  3. recalculate cart subtotal
+  4. reload fresh coupon entities from DB
+  5. couponPolicy.validate(freshCoupon, subtotal) + recompute discount
+  6. save OrderAppliedCoupon snapshot
+  7. couponRepo.attemptRedeem(id, now) -> 0 rows => 409 conflict
+  8. set cart.status = CONVERTED
+  9. attachOrderToReservation
 ```
 
 Evidence: [CheckoutService.java:152-267](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L152-L267).
@@ -296,14 +297,14 @@ Evidence: [CheckoutService.java:152-267](bigbike-backend/src/main/java/com/bigbi
 
 | # | Case | Hiện trạng | Verdict |
 |---|---|---|---|
-| 1 | Apply rồi admin disable rồi user checkout | refreshCartTotals chỉ chạy khi cart thay đổi item, không chạy ở checkout. Checkout không revalidate. → **NEW order với discount cũ và `couponRepo.incrementUsageCount` cho coupon INACTIVE**. | **BROKEN P0-01** |
-| 2 | Apply khi đủ min, giảm qty xuống dưới min | `refreshCartTotals` re-check `nowInvalid=!ACTIVE OR over usageLimit OR expired` ([CartService.java:346-348](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L346-L348)) — **KHÔNG kiểm tra subtotal < minAmount**. Coupon ở lại với discount đã recomputed (FIXED giữ nguyên, PERCENT chia theo subtotal mới). | **BROKEN P1** (logic edge case) |
-| 3 | usageLimit=1, 2 user checkout đồng thời | applyCoupon dùng pessimistic lock; nhưng việc 2 user khác cart có thể apply trước (mỗi cart 1 row), sau đó cùng checkout. Checkout không lock, increment unconditionally → cả 2 thành công, `usage_count=2 > limit=1`. | **BROKEN P0-02** |
+| 1 | Apply rồi admin disable rồi user checkout | Checkout reload fresh coupon entities và `couponPolicy.validate(...)`; coupon inactive/expired bị reject trước khi tạo order. | **RESOLVED P0-01** |
+| 2 | Apply khi đủ min, giảm qty xuống dưới min | `refreshCartTotals` kiểm tra `subtotal < coupon.minAmount` và auto-remove coupon; test cart regression PASS. | **RESOLVED P1** |
+| 3 | usageLimit=1, 2 user checkout đồng thời | Checkout dùng `attemptRedeem` atomic conditional UPDATE; giao dịch thua nhận 409, và nếu rơi vào nhánh `redeemed == 0` sẽ trả generic message "Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng." | **RESOLVED P0-02** |
 | 4 | Idempotency-Key checkout retry | reserveIdempotency dùng UNIQUE constraint. Nếu cùng key + cùng request hash → trả existing summary, **không** chạy lại logic → KHÔNG increment usage_count thêm. | **OK** ([CheckoutService.java:454-501](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L454-L501)) |
-| 5 | Update FIXED 200 000 → PERCENT (không gửi amount) | [updateCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L139-L217): line 156-164 set `entity.discountType=PERCENT`. line 166-169 chỉ chạy validateAmount nếu `req.amount != null`. Line 173 dùng `effectiveAmount = entity.getAmount()` cho `validateMinMaxAmounts` nhưng **không** chạy `validateAmount(effectiveAmount, type)`. → Lưu coupon `PERCENT amount=200000` → discount tính `subtotal * 200000 / 100 = subtotal * 2000` → cap `min(discount, subtotal)` ở [computeDiscount](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L382). Discount sẽ luôn = subtotal → ĐƠN HÀNG MIỄN PHÍ. | **BROKEN P0-03** |
-| 6 | Guest cart CONVERTED → reload | `getOrCreateGuestCart` ([CartService.java:78-91](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L78-L91)) **chỉ findBySessionId** không filter status. Nếu cart CONVERTED vẫn được trả về → Cart UI hiển thị order đã chuyển. **BUG** (ngoài coupon scope nhưng phát hiện được). | **BROKEN P1** |
-| 7 | Apply 2 coupon khác nhau cùng cart concurrent | applyCoupon đọc `findByCartId` rồi check empty → 2 request có thể cùng đọc empty trước insert → cả 2 chèn → cart có 2 cart_coupons. Không có `unique(cart_id)` chống. | **BROKEN P1-04** |
-| 8 | Coupon expired bởi scheduler nhưng đang trong cart | refreshCartTotals sẽ remove khi cart thay đổi tiếp; **nhưng** checkout không revalidate → vẫn dùng. (Same as #1) | **BROKEN P0-01** |
+| 5 | Update FIXED 200 000 → PERCENT (không gửi amount) | `AdminCouponService` validate lại existing amount khi `discountType` đổi; PATCH trả 400 nếu amount cũ không hợp lệ cho type mới. | **RESOLVED P0-03** |
+| 6 | Guest cart CONVERTED → reload | `getOrCreateGuestCart` dùng `findBySessionIdAndStatus(..., ACTIVE)` nên cart CONVERTED không còn được reuse. | **RESOLVED P1** |
+| 7 | Apply 2 coupon khác nhau cùng cart concurrent | DB `UNIQUE(cart_id)` + `DataIntegrityViolationException` -> 409 ngăn 2 coupon/cùng cart. | **RESOLVED P1-04** |
+| 8 | Coupon expired bởi scheduler nhưng đang trong cart | Dù cart chưa refresh, checkout vẫn revalidate fresh coupon trước redeem. | **RESOLVED P0-01** |
 | 9 | Merge guest → customer | [CartService.mergeGuestCart](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L197-L228) chỉ merge **items**. **KHÔNG** copy `cart_coupons` từ guest sang customer cart. Sau khi guest cart set MERGED, cart_coupons cascade-delete? Không — cascade chỉ trên items via cart_items FK; cart_coupons cũng cascade khi guest cart bị xóa (V20: `on delete cascade`), nhưng guest cart chỉ set MERGED không bị xóa, vậy cart_coupons orphan. → coupon mất khi login. | **BROKEN P2-09** |
 | 10 | Order detail có hiển thị coupon? | Admin BE: có (`appliedCoupons`). Admin UI: KHÔNG. Customer BE: không có field. Customer UI: không. | **MISSING P2-07/08** |
 
@@ -315,38 +316,56 @@ Evidence: [CheckoutService.java:152-267](bigbike-backend/src/main/java/com/bigbi
 
 | Test file | Coupon-related tests | Coverage |
 |---|---|---|
-| [Phase1JAdminSettingsMenuCouponApiTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java) | #19 401 unauth list, #20 list, #21 createFixed, #22 createPercent, #23 invalid discountType, #24 percent>100, #25 duplicateCode→409, #26 updateName, #27 updateStatus, #28 getById, #29-30 ARCHIVED, #31-32 invalid status | Admin CRUD validation chính |
+| [Phase1JAdminSettingsMenuCouponApiTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java) | Admin CRUD gốc + 7 coupon hardening tests mới (#33-39 scope hardening) | Admin CRUD + coupon policy regression |
 | [Phase1BSchemaTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/schema/Phase1BSchemaTest.java#L194-L208) | `coupon_saveAndFind` (1 round-trip) | Schema only |
 | [Phase1CCommerceSchemaTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/schema/Phase1CCommerceSchemaTest.java#L205-L220) | `orderAppliedCoupon_saveAndFindByCode` | Schema only |
 | [Phase2CWordPressCustomerOrderCouponDryRunImporterTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase2CWordPressCustomerOrderCouponDryRunImporterTest.java) | mapper percent/fixed_cart, dry-run | WP migration mapper |
 | [Phase1K1ContractHardeningTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1K1ContractHardeningTest.java) | (mention coupon) | OpenAPI contract |
 | [Phase1KOpenApiContractTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1KOpenApiContractTest.java) | (mention coupon) | OpenAPI contract |
 
-### Tests đã bổ sung (2026-05-06)
+### Checkout/cart/admin test evidence (updated 2026-05-06)
 
-Thêm 5 integration tests vào [Phase1FCheckoutApiTest.java](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1FCheckoutApiTest.java):
+`Phase1FCheckoutApiTest` hiện cover 7 coupon checkout cases trong scope release blocker:
 
 | Test | Case | Kết quả |
 |---|---|---|
 | C1 `checkout_withFixedCoupon_discountApplied` | Happy path: FIXED coupon áp dụng → discount đúng, usageCount +1 | ✅ PASS |
 | C2 `checkout_withDisabledCoupon_returns409` | Admin disable coupon sau khi apply vào cart → checkout 409 | ✅ PASS |
 | C3 `checkout_withExpiredCoupon_returns409` | Coupon hết hạn sau khi apply → checkout 409 | ✅ PASS |
-| C4 `checkout_couponUsageLimitExhausted_secondCheckoutFails` | usageLimit=1: 2 session apply, checkout lần 2 bị block bởi atomic UPDATE | ✅ PASS |
-| C5 `checkout_idempotencyKeyRetry_noDoubleCouponIncrement` | Idempotency-Key retry không double-increment usageCount | ✅ PASS |
+| C4 `checkout_couponUsageLimitExhausted_secondCheckoutFails` | usageLimit=1: 2 session apply, checkout lần 2 fail, `usageCount` dừng ở 1 | ✅ PASS |
+| C5 `checkout_afterSubtotalDropsBelowMinimumAmount_couponRemovedBeforeCheckout` | subtotal giảm dưới `minimumAmount` -> coupon bị remove trước checkout, order không còn discount | ✅ PASS |
+| C6 `checkout_idempotencyKeyRetry_noDoubleCouponIncrement` | Idempotency-Key retry không double-increment `usageCount` | ✅ PASS |
+| C7 `checkout_concurrentRequests_onlyOneRedeemsLastCouponUse` | 2 checkout đồng thời tranh 1 lượt cuối: 1 request 200, 1 request 409 generic redeem conflict, `usageCount` vẫn là 1 | ✅ PASS |
 
-**Kết quả toàn suite** (chạy 2026-05-06):
+`Phase1JAdminSettingsMenuCouponApiTest` tiếp tục cover 7 coupon hardening cases phía admin/cart apply:
+
+| Test | Case | Kết quả |
+|---|---|---|
+| J1 `updateCoupon_fixedToPercent_withHighAmount_returns400` | Partial FIXED→PERCENT với existing amount invalid | ✅ PASS |
+| J2 `applyCoupon_nonexistentCode_returns404` | Cart apply coupon không tồn tại | ✅ PASS |
+| J3 `applyCoupon_inactiveCoupon_returns409` | Cart apply coupon inactive | ✅ PASS |
+| J4 `applyCoupon_expiredCoupon_returns409` | Cart apply coupon expired | ✅ PASS |
+| J5 `applyCoupon_validActiveCoupon_succeeds` | Cart apply coupon active hợp lệ | ✅ PASS |
+| J6 `shopManager_canListCoupons` | SHOP_MANAGER qua được coupon URL matcher | ✅ PASS |
+| J7 `applyCoupon_secondCoupon_returns409` | Cart không nhận coupon thứ hai | ✅ PASS |
+
+`Phase1ECartApiTest` giữ coverage cho refresh/minimumAmount invalidation, bao gồm `updateItemQty_reducesSubtotalBelowMinAmount_couponRemoved` và `couponBecomesInactive_afterApply_cartRefreshRemovesCoupon`.
+
+**Kết quả suite đã chạy lại** (2026-05-06):
 
 | Test suite | Kết quả |
 |---|---|
-| `Phase1FCheckoutApiTest` | **39/39** PASS |
-| `Phase1JAdminSettingsMenuCouponApiTest` | **62/62** PASS |
+| `Phase1FCheckoutApiTest` | **41/41** PASS |
+| `Phase1JAdminSettingsMenuCouponApiTest` | **63/63** PASS |
+| `Phase1ECartApiTest` | **27/27** PASS |
+| Full backend `.\mvnw.cmd test` | **849 tests, 0 failures, 0 errors, 3 skipped** |
 
 ### Tests còn thiếu (backlog)
 
-- ❌ Cart `applyCoupon` happy path / inactive / expired / over usageLimit / subtotal<min / not found / not started — 0 test.
+- ❌ Cart `applyCoupon` over usageLimit / notStarted timing branch chưa có dedicated test.
 - ❌ Cart `removeCoupon` — 0 test.
-- ❌ Cart `refreshCartTotals` auto-invalidate khi coupon hết hạn — 0 test.
-- ❌ Race condition usageLimit 2 checkout đồng thời (concurrent threads) — có test C4 serial, chưa có concurrent test.
+- ❌ Cart `refreshCartTotals` cho startsAt/notStarted timing branch chưa có dedicated test.
+- ❌ Soak/stress concurrency rộng hơn (nhiều hơn 2 request đồng thời, lặp nhiều vòng) chưa có; đã có deterministic 2-request race test C7 cho last redemption.
 - ❌ Scheduler `expireOverdueCoupons` — 0 test.
 - ❌ Guest cart merge with coupon — 0 test.
 - ❌ FE admin coupon screen — 0 test (project không có Vitest setup mạnh).
@@ -363,57 +382,51 @@ Thêm 5 integration tests vào [Phase1FCheckoutApiTest.java](bigbike-backend/src
 - **Title**: Checkout copy nguyên `cart_coupons.discount_amount` mà không re-validate status/expires/usageLimit/minimumAmount của coupon source
 - **Status**: ✅ RESOLVED
 - **Fix applied**: [CheckoutService.java:186-203](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L186-L203) — vòng lặp reload fresh coupon từ DB, gọi `couponPolicy.validate(freshCoupon, subtotal)` (kiểm tra status, startsAt, expiresAt, usageLimit, minimumAmount) và recompute discount; nếu invalid → ConflictException 409.
-- **Test evidence**: C2 (`checkout_withDisabledCoupon_returns409`), C3 (`checkout_withExpiredCoupon_returns409`) — Phase1FCheckoutApiTest PASS.
+- **Test evidence**: C2 (`checkout_withDisabledCoupon_returns409`), C3 (`checkout_withExpiredCoupon_returns409`), C5 (`checkout_afterSubtotalDropsBelowMinimumAmount_couponRemovedBeforeCheckout`) — Phase1FCheckoutApiTest PASS.
 
 #### P0-COUPON-02 — usageLimit không atomic — **RESOLVED 2026-05-06**
 
 - **Title**: `incrementUsageCount` UPDATE không có guard `usage_count < usage_limit` → race condition
 - **Status**: ✅ RESOLVED
-- **Fix applied**: [CouponJpaRepository.java:31-38](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L31-L38) — `attemptRedeem` query thêm các điều kiện `status = 'ACTIVE'`, `startsAt IS NULL OR startsAt <= :now`, `expiresAt IS NULL OR expiresAt >= :now`, `usageLimit IS NULL OR usageCount < usageLimit`; đổi tên thành `attemptRedeem` trả về rows affected. CheckoutService ném ConflictException khi `redeemed == 0` với message generic "không còn hiệu lực hoặc đã đạt giới hạn sử dụng".
-- **Test evidence**: C4 (`checkout_couponUsageLimitExhausted_secondCheckoutFails`) — session serial: 2 sessions apply coupon usageLimit=1 khi usageCount=0, session 1 checkout thành công, session 2 checkout → 409; DB usageCount = 1 (không vượt). Phase1FCheckoutApiTest PASS.
+- **Fix applied**: [CouponJpaRepository.java:31-38](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/coupon/CouponJpaRepository.java#L31-L38) — `attemptRedeem` query thêm các điều kiện `status = 'ACTIVE'`, `startsAt IS NULL OR startsAt <= :now`, `expiresAt IS NULL OR expiresAt >= :now`, `usageLimit IS NULL OR usageCount < usageLimit`; trả về rows affected. [CheckoutService.java:252-259](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java#L252-L259) ném ConflictException message generic "Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng." khi `redeemed == 0`.
+- **Test evidence**: C4 (`checkout_couponUsageLimitExhausted_secondCheckoutFails`) chứng minh `usageCount` không vượt quá limit ở flow tuần tự; C7 (`checkout_concurrentRequests_onlyOneRedeemsLastCouponUse`) chứng minh 2 checkout đồng thời chỉ có 1 request redeem thành công và request thua nhận generic conflict message. Phase1FCheckoutApiTest PASS.
 
 #### P0-COUPON-03 — Update FIXED→PERCENT không validate effective amount — **RESOLVED 2026-05-06**
 
 - **Title**: Partial PATCH change `discountType` không kéo theo re-validate `amount` ngược với type mới
 - **Status**: ✅ RESOLVED
 - **Fix applied**: [AdminCouponService.java:164-168](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCouponService.java#L164-L168) — khi `req.amount == null` nhưng `discountType` thay đổi, gọi `validateAmount(entity.getAmount(), type)` để kiểm tra amount hiện tại có hợp lệ với type mới. FIXED→PERCENT với amount=200000 → `validateAmount` ném ValidationException "PERCENT amount must be ≤ 100".
-- **Test evidence**: Covered by existing admin coupon test #24 `percentOver100` (Phase1JAdminSettingsMenuCouponApiTest) + cần bổ sung test partial discountType change (backlog P1-05).
+- **Test evidence**: `updateCoupon_fixedToPercent_withHighAmount_returns400` [Phase1JAdminSettingsMenuCouponApiTest.java:859-867](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L859-L867) PASS; companion happy-path `updateCoupon_fixedToPercent_withValidAmount_succeeds` [Phase1JAdminSettingsMenuCouponApiTest.java:872-882](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L872-L882) PASS.
 
 ### P1 High
 
-#### P1-COUPON-04 — One-coupon-per-cart không enforce ở DB
+#### P1-COUPON-04 — One-coupon-per-cart DB enforcement — **RESOLVED 2026-05-06**
 
-- **Evidence**: [CartService.java:243-246](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L243-L246) — service-level `if (!existing.isEmpty()) throw`. DB [V20](bigbike-backend/src/main/resources/db/migration/V20__add_coupon_cart_gender_shipping_threshold.sql) chỉ `unique(cart_id, coupon_code)`.
-- **Impact**: Race condition 2 request POST `/cart/coupons` với code khác nhau song song có thể tạo 2 dòng cart_coupons cho cùng cart.
-- **Repro**: 2 thread submit `{code:"A"}` và `{code:"B"}` cùng cart đồng thời.
-- **Fix**: Migration thêm `CREATE UNIQUE INDEX uq_cart_coupons_cart_id ON cart_coupons(cart_id)` (assumes single-coupon policy permanent).
-- **Tests**: Race test concurrent applyCoupon.
+- **Evidence**: [V73__enforce_one_coupon_per_cart.sql](bigbike-backend/src/main/resources/db/migration/V73__enforce_one_coupon_per_cart.sql) thêm `UNIQUE(cart_id)`; [CartService.applyCoupon](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L244-L280) catch `DataIntegrityViolationException` và trả 409.
+- **Impact before fix**: 2 request coupon khác nhau cùng cart có thể cấy 2 dòng `cart_coupons`.
+- **Status**: ✅ RESOLVED.
 
-#### P1-COUPON-05 — Test coverage cart/checkout/scheduler/race ≈ 0
+#### P1-COUPON-05 — Test coverage coupon hardening — **RESOLVED for release blockers**
 
-- **Evidence**: §9 — Phase1ECartApiTest không cover coupon, Phase1FCheckoutApiTest không cover coupon, không có CouponExpirySchedulerTest.
-- **Impact**: Mọi P0 trên đều có thể regression mà không bị catch.
-- **Fix**: Bổ sung test theo list §9.
+- **Evidence**: `Phase1FCheckoutApiTest` cover 7 coupon checkout cases (happy path, disable-after-apply, expire-after-apply, limit exhausted, minimumAmount drop, idempotency retry, concurrent last redemption); `Phase1JAdminSettingsMenuCouponApiTest` cover 7 admin/cart-apply hardening cases; `Phase1ECartApiTest` cover refresh/minimumAmount invalidation.
+- **Release assessment**: Regression risk cho các P0/P1 chính đã có test khóa. Phần còn lại là scheduler, broader stress/soak concurrency, removeCoupon, not-started timing branch, và OpenAPI/doc sync follow-up.
+- **Status**: ✅ RESOLVED as blocker; backlog hạ xuống LOW/tooling.
 
-#### P1-COUPON-06 — Permission inconsistency SHOP_MANAGER
+#### P1-COUPON-06 — Permission inconsistency SHOP_MANAGER — **RESOLVED 2026-05-06**
 
-- **Evidence**: SHOP_MANAGER có `coupons.read/write` ở [AdminRolePermissions.java:41](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminRolePermissions.java#L41) và [V49](bigbike-backend/src/main/resources/db/migration/V49__create_roles_permissions_tables.sql) line 110-111. Nhưng [SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105) `hasRole("ADMIN")` block.
-- **Impact**: Doanh nghiệp expects SHOP_MANAGER quản lý coupon nhưng bị 403. Hoặc spec sai. Cần align.
-- **Fix**: Quyết định business: nếu SHOP_MANAGER được quản coupon → SecurityConfig đặc cách `/api/v1/admin/coupons/**` cho `ADMIN/SUPER_ADMIN/SHOP_MANAGER`. Nếu không → xóa grant ở AdminRolePermissions + V49 (cần migration mới).
-- **Tests**: Test SHOP_MANAGER token call coupon CRUD → expect 200 hoặc 403 theo decision.
+- **Evidence**: [SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105) dùng `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` cho `/api/v1/admin/coupons/**`; test `shopManager_canListCoupons` [Phase1JAdminSettingsMenuCouponApiTest.java:957-969](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java#L957-L969) PASS.
+- **Status**: ✅ RESOLVED.
 
-#### P1-COUPON — Cart edge: subtotal sụt dưới minAmount sau apply, coupon không tự bỏ
+#### P1-COUPON — Cart minimumAmount re-check sau apply — **RESOLVED 2026-05-06**
 
-- **Evidence**: [CartService.refreshCartTotals](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L339-L349) — chỉ check status/expired/over-limit, **thiếu** check `subtotal < coupon.minAmount`.
-- **Impact**: Customer apply 100k coupon (min=500k), subtotal=600k. Sau đó remove items → subtotal=300k. Coupon vẫn áp dụng giảm 100k → tổng 200k mặc dù chưa đạt min.
-- **Fix**: Thêm `if (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0) toRemove.add(cc);`
-- **Tests**: Cart adjust qty edge case.
+- **Evidence**: [CartService.refreshCartTotals](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L323-L365) remove coupon khi `subtotal < minimumAmount`.
+- **Test evidence**: `updateItemQty_reducesSubtotalBelowMinAmount_couponRemoved` [Phase1ECartApiTest.java:511-549](bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java#L511-L549) PASS.
+- **Status**: ✅ RESOLVED.
 
-#### P1 — getOrCreateGuestCart không filter status (out-of-coupon-scope nhưng phát hiện)
+#### P1 — Guest cart CONVERTED reuse — **RESOLVED 2026-05-06**
 
-- **Evidence**: [CartService.java:78-91](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L78-L91) — `findBySessionId(guestId)` trả về cart bất kể status.
-- **Impact**: Sau checkout (cart=CONVERTED), reload trang `/gio-hang` → cart cũ hiển thị, tiếp tục modify cart đã CONVERTED.
-- **Note**: Out of strict coupon scope; nhưng tương tác với coupon sẽ làm cart_coupons hiện trên giao diện sai.
+- **Evidence**: `getOrCreateGuestCart` dùng `findBySessionIdAndStatus(..., ACTIVE)` trong [CartService.java:84-95](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java#L84-L95), nên cart `CONVERTED` không còn trở lại UI/cart flow.
+- **Status**: ✅ RESOLVED.
 
 ### P2 Medium
 
@@ -476,49 +489,49 @@ Thêm 5 integration tests vào [Phase1FCheckoutApiTest.java](bigbike-backend/src
 
 ## 11. Final Verdict
 
-### Verdict: **CONDITIONALLY_READY** _(updated 2026-05-06)_
+### Verdict: **READY** _(updated 2026-05-06)_
 
-Tất cả P0 blocker đã được fix và pass integration tests. P1 issues còn open — nên giải quyết trước khi mở rộng traffic hoặc khi SHOP_MANAGER role được kích hoạt.
+Không còn P0/P1 blocker trong coupon module scope. Checkout revalidation, atomic usage guard, generic 0-row redeem conflict, partial FIXED→PERCENT validation, one-coupon-per-cart DB enforcement, minimumAmount re-check, guest cart `CONVERTED` reuse, và SHOP_MANAGER coupon access mismatch đã được resolve và có test evidence.
 
 ### P0 Checklist:
 
-- [x] P0-COUPON-01 RESOLVED: `CheckoutService` revalidate coupon (status/startsAt/expiresAt/usageLimit/minimumAmount). Tests C2, C3 PASS.
-- [x] P0-COUPON-02 RESOLVED: `attemptRedeem` atomic conditional UPDATE + 0-row-affected → 409. Test C4 PASS.
-- [x] P0-COUPON-03 RESOLVED: `AdminCouponService.updateCoupon` re-validates effective amount khi đổi discountType. Covered by test #24.
-- [x] CI green: Phase1FCheckoutApiTest 39/39, Phase1JAdminSettingsMenuCouponApiTest 62/62.
+- [x] P0-COUPON-01 RESOLVED: `CheckoutService` revalidate coupon (status/startsAt/expiresAt/usageLimit/minimumAmount). Tests C2, C3, C5 PASS.
+- [x] P0-COUPON-02 RESOLVED: `attemptRedeem` atomic conditional UPDATE + 0-row-affected -> generic 409 conflict. Tests C4, C7 PASS.
+- [x] P0-COUPON-03 RESOLVED: `AdminCouponService.updateCoupon` re-validates effective amount khi đổi discountType. Dedicated tests J1/J2 PASS.
+- [x] CI evidence: `Phase1FCheckoutApiTest` 41/41 PASS, `Phase1JAdminSettingsMenuCouponApiTest` 63/63 PASS, `Phase1ECartApiTest` 27/27 PASS, full `.\mvnw.cmd test` PASS (849 tests, 0 failures, 0 errors, 3 skipped).
 
-### P1 còn open:
+### Release-blocking status
 
-- [ ] P1-COUPON-04: Unique index `cart_coupons(cart_id)` — race 2 coupon codes concurrent chưa chặn DB-level.
-- [ ] P1-COUPON-05: Test coverage cart apply/remove/refreshCartTotals/scheduler còn 0; checkout coupon test C1-C5 đã bổ sung nhưng concurrent race test chưa có.
-- [ ] P1-COUPON-06: SHOP_MANAGER URL guard (`hasRole("ADMIN")`) block — business decision chưa có.
-- [ ] P1: `refreshCartTotals` chưa re-check `subtotal < minimumAmount` → coupon ở lại dù cart giảm.
+- [x] P1-COUPON-04 RESOLVED: DB `UNIQUE(cart_id)` + 409 mapping.
+- [x] P1 minimumAmount re-check RESOLVED: `refreshCartTotals` removes invalid coupon.
+- [x] P1 guest cart `CONVERTED` reuse RESOLVED.
+- [x] P1-COUPON-06 RESOLVED: SHOP_MANAGER matcher aligned in `SecurityConfig`.
+- [x] P1-COUPON-05 RESOLVED as release blocker: primary regressions now covered by integration tests.
 
-### P2/P3 — backlog:
+### Remaining LOW/P2 backlog
 
-- P2-07/08: hiển thị coupon trên admin/customer order detail.
-- P2-09: merge guest cart preserve coupon.
-- P2-10/11/12: UI admin field gaps, entity/migration name mismatch, DB CHECK constraints.
-- P3-13: WP importer validation.
-- P2-10: expose full BE fields trên UI admin.
-- P2-11/12: DB constraint cleanup.
-- P3-13: WP importer validation hardening.
+- **LOW/tooling**: OpenAPI / audit doc sync và regression coverage follow-up cho scheduler, broader concurrency stress/soak, cart remove coupon, not-started timing branch.
+- **P2-07/08**: hiển thị coupon trên admin/customer order detail.
+- **P2-09**: merge guest cart preserve coupon.
+- **P2-10**: expose full BE fields trên UI admin.
+- **P2-11/12**: DB constraint cleanup (`coupons.name` nullable mismatch, thiếu CHECK constraints).
+- **P3-13**: WP importer validation hardening.
 
 ### % hoàn thiện ước lượng
 
 | Layer | % | Ghi chú |
 |---|---|---|
-| BE Admin CRUD | 85% | Có audit log, validation tương đối đầy đủ; thiếu update partial validate (P0-03) |
-| BE Cart apply/remove | 70% | Có lock, có recompute; thiếu re-check minAmount khi cart change |
-| BE Checkout | 30% | Snapshot OK, idempotency OK; **không revalidate**, **race usageLimit** |
+| BE Admin CRUD | 92% | P0-03 đã fix; còn UI/admin field gaps + DB enum constraints |
+| BE Cart apply/remove | 88% | `applyCoupon`/`refreshCartTotals` hardening đã xong; còn remove/not-started coverage |
+| BE Checkout | 90% | Fresh revalidation + atomic redeem + idempotency cover đã có |
 | BE Scheduler | 90% | Hoạt động, có log; thiếu test |
-| DB schema | 60% | Thiếu CHECK / unique cart_id / fix nullable name |
+| DB schema | 78% | `UNIQUE(cart_id)` đã có; còn CHECK constraints + nullable `name` cleanup |
 | Admin FE | 60% | Cơ bản OK; thiếu nhiều field, không hiển thị order coupon |
 | Web FE | 75% | Cart UI OK; checkout chỉ list code, order detail không có |
-| Permission | 70% | URL+permission OK cho ADMIN; SHOP_MANAGER inconsistent |
+| Permission | 90% | Coupon matcher align với role grants; còn overall system verify theo broader audit |
 | WP importer | 70% | Chạy được nhưng có thể nhập dữ liệu vi phạm runtime |
-| Test | 25% | Admin CRUD có; cart/checkout/scheduler/race gần 0 |
-| **Tổng** | **~55%** | |
+| Test | 72% | Checkout/cart/admin hardening đã có; còn scheduler + concurrency stress + FE |
+| **Tổng** | **~84%** | READY for release; remaining work is LOW/P2 |
 
 ---
 

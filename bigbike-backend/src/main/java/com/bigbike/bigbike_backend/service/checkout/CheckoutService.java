@@ -256,8 +256,7 @@ public class CheckoutService {
             // Conditional UPDATE: returns 0 rows if another checkout exhausted the limit concurrently
             int redeemed = couponRepo.attemptRedeem(redemption.coupon().getId(), now);
             if (redeemed == 0) {
-                throw new ConflictException("Mã giảm giá '" + redemption.code()
-                        + "' không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
+                throw new ConflictException("Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
             }
             OrderAppliedCouponEntity appliedCoupon = new OrderAppliedCouponEntity();
             appliedCoupon.setOrder(savedOrder);

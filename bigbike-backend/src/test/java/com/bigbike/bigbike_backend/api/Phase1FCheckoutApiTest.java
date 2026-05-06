@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,8 +26,14 @@ import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -656,7 +663,7 @@ class Phase1FCheckoutApiTest {
                 order.getSubtotalAmount().add(new java.math.BigDecimal("50000")));
     }
 
-    // ── Coupon checkout tests (5) ─────────────────────────────────────────────
+    // ── Coupon checkout tests (7) ─────────────────────────────────────────────
 
     // C1. FIXED coupon applied → discount reflected in order totals
     @Test
@@ -665,13 +672,19 @@ class Phase1FCheckoutApiTest {
         GuestSession session = newGuestSessionWithItem(1000000);
         applyCoupon(session, coupon.getCode());
 
-        mockMvc.perform(post("/api/v1/checkout")
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.discountAmount").value(100000.00))
-                .andExpect(jsonPath("$.data.totalAmount").value(900000.00));
+                .andExpect(jsonPath("$.data.totalAmount").value(900000.00))
+                .andReturn();
+
+        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
+        var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
+        assertThat(order.getDiscountAmount()).isEqualByComparingTo(new BigDecimal("100000.00"));
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(new BigDecimal("900000.00"));
 
         CouponEntity reloaded = couponRepo.findByCode(coupon.getCode()).orElseThrow();
         assertThat(reloaded.getUsageCount()).isEqualTo(1);
@@ -738,12 +751,55 @@ class Phase1FCheckoutApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session2.cookies).header("X-CSRF-Token", session2.csrf))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.message")
+                        .value("Mã giảm giá đã đạt giới hạn sử dụng."));
 
         assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
     }
 
-    // C5. Idempotency-Key retry does NOT double-increment coupon usageCount
+    // C5. Lowering subtotal below minimumAmount removes the coupon before checkout
+    @Test
+    void checkout_afterSubtotalDropsBelowMinimumAmount_couponRemovedBeforeCheckout() throws Exception {
+        CouponEntity coupon = createTestCoupon(
+                "MINDROP", "FIXED", new BigDecimal("50000"), new BigDecimal("1500000"), null);
+        ProductEntity product = createTestProduct("Min Drop Checkout Product", 1000000, null, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+
+        MvcResult addResult = mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        applyCoupon(session, coupon.getCode());
+
+        String itemId = extractItemId(addResult.getResponse().getContentAsString(), 0);
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":1}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes.length()").value(0))
+                .andExpect(jsonPath("$.data.totals.discountAmount").value(0.00));
+
+        MvcResult checkout = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountAmount").value(0.00))
+                .andExpect(jsonPath("$.data.totalAmount").value(1000000.00))
+                .andReturn();
+
+        String orderNumber = extractJsonValue(checkout.getResponse().getContentAsString(), "orderNumber");
+        var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
+        assertThat(order.getDiscountAmount()).isEqualByComparingTo(BigDecimal.ZERO.setScale(2));
+        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(0);
+    }
+
+    // C6. Idempotency-Key retry does NOT double-increment coupon usageCount
     @Test
     void checkout_idempotencyKeyRetry_noDoubleCouponIncrement() throws Exception {
         CouponEntity coupon = createTestCoupon("IDEM10", "FIXED", new BigDecimal("50000"), null, null);
@@ -772,6 +828,66 @@ class Phase1FCheckoutApiTest {
         assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
                 .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
         assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
+    }
+
+    // C7. Two concurrent checkouts competing for the last redemption:
+    // one succeeds, one gets the generic redeem conflict message, and usageCount stays at 1.
+    @Test
+    void checkout_concurrentRequests_onlyOneRedeemsLastCouponUse() throws Exception {
+        CouponEntity coupon = createTestCoupon("RACE1", "FIXED", new BigDecimal("50000"), null, 1);
+        GuestSession session1 = newGuestSessionWithItem(500000);
+        GuestSession session2 = newGuestSessionWithItem(500000);
+        applyCoupon(session1, coupon.getCode());
+        applyCoupon(session2, coupon.getCode());
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+
+        try {
+            Future<MvcResult> first = executor.submit(() -> {
+                ready.countDown();
+                assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
+                return mockMvc.perform(post("/api/v1/checkout")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(payload)
+                                .cookie(session1.cookies).header("X-CSRF-Token", session1.csrf))
+                        .andReturn();
+            });
+            Future<MvcResult> second = executor.submit(() -> {
+                ready.countDown();
+                assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
+                return mockMvc.perform(post("/api/v1/checkout")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(payload)
+                                .cookie(session2.cookies).header("X-CSRF-Token", session2.csrf))
+                        .andReturn();
+            });
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+
+            MvcResult firstResult = first.get(10, TimeUnit.SECONDS);
+            MvcResult secondResult = second.get(10, TimeUnit.SECONDS);
+
+            List<MvcResult> results = List.of(firstResult, secondResult);
+            List<Integer> statuses = results.stream()
+                    .map(r -> r.getResponse().getStatus())
+                    .toList();
+            assertThat(statuses).containsExactlyInAnyOrder(200, 409);
+
+            MvcResult failed = results.stream()
+                    .filter(r -> r.getResponse().getStatus() == 409)
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(failed.getResponse().getContentAsString())
+                    .contains("Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
+
+            assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -885,6 +1001,26 @@ class Phase1FCheckoutApiTest {
         start += marker.length();
         int end = json.indexOf("\"", start);
         return json.substring(start, end);
+    }
+
+    private String extractItemId(String json, int index) {
+        final String itemsMarker = "\"items\":[";
+        int itemsStart = json.indexOf(itemsMarker);
+        if (itemsStart < 0) return null;
+        String afterItems = json.substring(itemsStart + itemsMarker.length());
+        final String idMarker = "\"id\":\"";
+        int cursor = 0;
+        for (int i = 0; i <= index; i++) {
+            int found = afterItems.indexOf(idMarker, cursor);
+            if (found < 0) return null;
+            if (i == index) {
+                int start = found + idMarker.length();
+                int end = afterItems.indexOf("\"", start);
+                return afterItems.substring(start, end);
+            }
+            cursor = found + idMarker.length();
+        }
+        return null;
     }
 
     private ShippingMethodEntity createTestShippingMethod(
