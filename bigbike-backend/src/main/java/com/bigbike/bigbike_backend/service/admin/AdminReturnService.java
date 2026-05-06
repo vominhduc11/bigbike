@@ -176,8 +176,10 @@ public class AdminReturnService {
                     req.adminNote(), false);
         }
 
-        // Restore stock when goods are confirmed received back into warehouse
-        if ("COMPLETED".equals(newStatus)) {
+        // Restore stock when goods are confirmed received back into warehouse.
+        // COMPLETED = accepted/exchanged, no refund. REFUNDED = money returned, goods also back.
+        // Both transitions physically return items to inventory.
+        if ("COMPLETED".equals(newStatus) || "REFUNDED".equals(newStatus)) {
             restoreStockForReturn(ret.getId());
         }
 

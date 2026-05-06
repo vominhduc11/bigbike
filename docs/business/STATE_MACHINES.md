@@ -584,8 +584,8 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 | `PENDING` | `APPROVED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
 | `PENDING` | `REJECTED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
 | `APPROVED` | `RECEIVED` | Admin / return write permission | Return exists and approved. | History record; goods received notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `RECEIVED` | `COMPLETED` | Admin / return write permission | Goods received. | Restore stock for return; history record. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `RECEIVED` | `REFUNDED` | Admin / return write permission | Goods received; refundAmount optionally supplied. | Sync order refundAmount if provided; history record; refunded notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
+| `RECEIVED` | `COMPLETED` | Admin / return write permission | Goods received. | Restore stock for return items (variant-based); history record. No refund issued. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
+| `RECEIVED` | `REFUNDED` | Admin / return write permission | Goods received; `refundAmount` required (`> 0`, `≤ paidAmount − alreadyRefunded`). | Restore stock for return items (same as COMPLETED — goods physically returned); sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; audit log; order note; WS event; refunded notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `RefundService.java` |
 
 ### Forbidden Transitions
 
@@ -883,8 +883,9 @@ Not found.
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Payment | `PAID` | Payment record | Payment record can be set `SUCCEEDED`; paidAt set. | Reflect successful payment. | `CONFIRMED_BACKEND_ENFORCED` |
 | Payment | full refund | Order | Payment status `REFUNDED`; order status may become `REFUNDED` only if allowed from current order status. | Keep order/payment consistent. | `CONFIRMED_BACKEND_ENFORCED` |
-| Return | `COMPLETED` | Inventory | Return stock restored. | Goods received back into warehouse. | `CONFIRMED_BACKEND_ENFORCED` |
-| Return | `REFUNDED` | Order | Order refundAmount synced if provided. | Reflect return refund amount. | `CONFIRMED_BACKEND_ENFORCED`; payment record impact `NEEDS_VERIFICATION` |
+| Return | `COMPLETED` | Inventory | Return stock restored (variant-based). | Goods received back into warehouse, no refund. | `CONFIRMED_BACKEND_ENFORCED` |
+| Return | `REFUNDED` | Inventory | Return stock restored (same as COMPLETED — goods physically returned). | Goods received + money refunded; stock must also return. | `CONFIRMED_BACKEND_ENFORCED` |
+| Return | `REFUNDED` | Order / Payment | `orders.refundAmount` incremented; `paymentStatus` → `PARTIALLY_REFUNDED`/`REFUNDED`; `refundedAt` set; `PaymentEntity` synced; audit log; order note; WS event. | Unified via `RefundService.applyRefund`. | `CONFIRMED_BACKEND_ENFORCED` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Should block login/API use. | Security. | `NEEDS_VERIFICATION` |

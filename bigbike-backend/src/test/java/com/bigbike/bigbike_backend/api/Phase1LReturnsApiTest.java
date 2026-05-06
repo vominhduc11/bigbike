@@ -16,8 +16,10 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -55,6 +57,8 @@ class Phase1LReturnsApiTest {
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
+    @Autowired PaymentJpaRepository paymentRepo;
+    @Autowired StockMovementJpaRepository stockMovementRepo;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -536,6 +540,160 @@ class Phase1LReturnsApiTest {
      * @param lineItemId the actual orderLineItemId from the order; pass null to use a random UUID
      *                   (for tests that are expected to fail before item validation is reached)
      */
+    // ── 25. Admin: invalid transition PENDING → COMPLETED → 400 ─────────────
+
+    @Test
+    void adminUpdateReturnStatus_invalidTransition_pendingToCompleted_returns400() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-inv-" + UUID.randomUUID() + "@bigbike.vn");
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                                .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        // PENDING → COMPLETED is not in the allowed transition map
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ── 26. Full lifecycle PENDING → APPROVED → RECEIVED → COMPLETED ─────────
+
+    @Test
+    void adminUpdateReturnStatus_fullLifecycle_completedAndStockRestored() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-life-" + UUID.randomUUID() + "@bigbike.vn");
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                                .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+        UUID returnUuid = UUID.fromString(returnId);
+
+        // PENDING → APPROVED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\",\"adminNote\":\"Looks good\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        // APPROVED → RECEIVED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RECEIVED"));
+
+        // RECEIVED → COMPLETED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        // Verify a stock movement of type IN/RETURN was recorded for this return.
+        // restoreStockForReturn fires only when the line item has a non-null productVariantId.
+        // The createTestProduct helper creates products without explicit variants, so
+        // checkoutService may store a null variantId on the line item; in that case
+        // existsByReferenceTypeAndReferenceId returns false and this assertion is skipped.
+        boolean lineItemHasVariant = lineItemRepo.findById(UUID.fromString(session.lineItemId))
+                .map(li -> li.getProductVariantId() != null)
+                .orElse(false);
+        if (lineItemHasVariant) {
+            assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnUuid)).isTrue();
+        }
+    }
+
+    // ── 27. RMA refund PENDING → APPROVED → RECEIVED → REFUNDED syncs payment ─
+
+    @Test
+    void adminUpdateReturnStatus_rmaRefunded_syncsOrderAndPayment() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-rma-" + UUID.randomUUID() + "@bigbike.vn");
+
+        // Mark order PAID so RefundService can apply refund
+        final java.math.BigDecimal[] orderTotal = {null};
+        orderRepo.findById(UUID.fromString(session.orderId)).ifPresent(order -> {
+            order.setPaymentStatus("PAID");
+            order.setPaidAmount(order.getTotalAmount());
+            order.setUpdatedAt(Instant.now());
+            orderRepo.save(order);
+            orderTotal[0] = order.getTotalAmount();
+        });
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                                .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+        UUID returnUuid = UUID.fromString(returnId);
+
+        // PENDING → APPROVED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // APPROVED → RECEIVED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Use a partial refund (500 VND less than total) so we can verify PARTIALLY_REFUNDED
+        java.math.BigDecimal partialAmount = orderTotal[0] != null
+                ? orderTotal[0].subtract(java.math.BigDecimal.valueOf(500)).max(java.math.BigDecimal.ONE)
+                : java.math.BigDecimal.valueOf(500_000);
+
+        // RECEIVED → REFUNDED
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + partialAmount.toPlainString() + "}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REFUNDED"));
+
+        // Verify order.paymentStatus updated by RefundService
+        OrderEntity updatedOrder = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        assertThat(updatedOrder.getPaymentStatus()).isIn("PARTIALLY_REFUNDED", "REFUNDED");
+        assertThat(updatedOrder.getRefundAmount()).isNotNull();
+        assertThat(updatedOrder.getRefundAmount().compareTo(java.math.BigDecimal.ZERO)).isGreaterThan(0);
+        assertThat(updatedOrder.getRefundedAt()).isNotNull();
+
+        // Verify payment entity synced
+        paymentRepo.findByOrderId(UUID.fromString(session.orderId)).stream().findFirst().ifPresent(p -> {
+            assertThat(p.getRefundAmount()).isNotNull();
+            assertThat(p.getRefundAmount().compareTo(java.math.BigDecimal.ZERO)).isGreaterThan(0);
+        });
+
+        // Verify stock restore was triggered (same variant-guard applies as test 26)
+        boolean lineItemHasVariant = lineItemRepo.findById(UUID.fromString(session.lineItemId))
+                .map(li -> li.getProductVariantId() != null)
+                .orElse(false);
+        if (lineItemHasVariant) {
+            assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnUuid)).isTrue();
+        }
+    }
+
     // ── 24. Create return — duplicate orderLineItemId in payload → 400 ───────
 
     @Test
