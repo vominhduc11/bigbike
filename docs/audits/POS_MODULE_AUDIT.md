@@ -1,27 +1,35 @@
 # POS Module Audit
 
 > **Audit date:** 2026-05-06
+> **P0 fix date:** 2026-05-06
 > **Scope:** Module Point-of-Sale (POS / Bán tại quầy) trong dự án BigBike — backend (Spring Boot), admin SPA (React/Vite), tests, docs, permission/security.
 > **Source of truth:** Code repo. Docs được dùng để cross-check, không được dùng làm bằng chứng độc lập.
-> **Test result:** `./mvnw -B -Dtest=Phase1MPosApiTest test` → `Tests run: 8, Failures: 0, Errors: 0, Skipped: 0` — `BUILD SUCCESS`.
+> **Audit test result:** `./mvnw -B -Dtest=Phase1MPosApiTest test` → `Tests run: 8, Failures: 0, Errors: 0, Skipped: 0` — `BUILD SUCCESS`.
+> **Post-P0-fix test result:** `./mvnw -B -Dtest=Phase1MPosApiTest test` → `Tests run: 18, Failures: 0, Errors: 0, Skipped: 0` — `BUILD SUCCESS`.
 
 ---
 
 ## 1. Executive Summary
 
-**Kết luận tổng:** POS module đã được build với phạm vi **MVP_READY cho hoạt động bán tại quầy theo luồng "happy path"**, nhưng chưa đạt **PRODUCTION_READY**. Có 2 endpoint backend, 1 service transactional, 1 màn hình admin SPA, 8 test API đều passing, 1 entry trong OpenAPI spec, và đã đi vào báo cáo doanh thu / order list. Tuy nhiên còn nhiều **gap về business completeness**, **observability/audit**, **return/refund tại quầy**, và **inconsistency giữa request payload với DB**.
+**Kết luận tổng (post-P0-fix):** POS module đã vượt qua **MVP_READY** và đạt **PRODUCTION_READY_WITH_MINOR_GAPS** sau khi 5 P0 blocker được fix. Còn 10 mục P1 và 9 mục P2 chưa làm — chấp nhận được cho soft-launch single-cashier.
 
-**Mức hiện tại:** **PARTIAL → MVP_READY (cho luồng cash + card-terminal happy path)**, **NOT PRODUCTION_READY** vì những lý do dưới đây.
+**Mức hiện tại:** **PRODUCTION_READY_WITH_MINOR_GAPS** — đủ để chạy bán hàng thật tại quầy với điều kiện theo dõi P1 items.
 
-**Top 5 blocker / risk:**
+---
 
-1. **`staffId` không được persist.** Controller [AdminPosController.java:64](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminPosController.java#L64) lấy `admin.id()` rồi truyền `staffId` xuống service nhưng service [PosOrderService.createOrder()](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pos/PosOrderService.java#L108) **không lưu staffId vào đơn hàng, OrderNote, AuditLog hay bất kỳ đâu**. `OrderEntity` không có cột `staff_id` / `cashier_id`. Hệ quả: không truy được nhân viên nào bán đơn POS nào → không thể đối soát ca, không thể đối soát hoa hồng, không thể audit.
-2. **`customerName` không được persist.** Frontend gửi `customerName` ([PosScreen.jsx:48](../../bigbike-admin/src/screens/PosScreen.jsx#L48)) và OpenAPI có khai báo field, nhưng `OrderEntity` không có cột `customer_name`; service chỉ dùng `customerName` để build WS event display ([PosOrderService.java:263](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pos/PosOrderService.java#L263)) rồi vứt đi. Sau khi đơn lưu, tên khách biến mất → admin/order detail chỉ thấy số điện thoại.
-3. **POS không có audit log entry.** Mọi mutation order admin khác (status change, refund, note) đều ghi audit log qua `AdminAuditLogService`, nhưng POS create order **không** ghi audit. Không có file nào trong [service/pos/](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pos/) gọi `AdminAuditLogService`.
-4. **Simple product (không có variant) sẽ không trừ kho.** [`PosOrderService.decrementStock`](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pos/PosOrderService.java#L286) bỏ qua item nếu `productVariantId` null/blank: `if (item.productVariantId() == null || item.productVariantId().isBlank()) continue;`. Validation cũng chỉ check stock khi có variant ([line 156](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pos/PosOrderService.java#L156)). Nghĩa là: nếu một sản phẩm được lưu DB không có variant (hoặc client bị bug không gửi variantId), POS vẫn tạo đơn thành công mà KHÔNG trừ kho và KHÔNG có stock movement → oversell. UI hiện thời luôn gửi variantId nên chưa lộ, nhưng không có validation nào ép buộc → coi là **silent failure mode**.
-5. **Permission grain quá thô.** POS dùng chung `orders.write` với "đổi status đơn online", "refund", "thêm note". Một nhân viên cashier (chỉ cần bán tại quầy) hiện được mặc định cấp toàn bộ quyền sửa đơn online, kể cả refund. Không có role `CASHIER` riêng, không có permission `pos.write` / `pos.refund` / `pos.price_override`. Đặc biệt nguy hiểm với `unitPriceOverride` vì service chỉ chặn giá < 0, không có ceiling/discount limit.
+### Top 5 P0 Blockers — TẤT CẢ ĐÃ FIXED (2026-05-06)
 
-Các risk khác (P1/P2) liệt kê chi tiết ở Section 11.
+1. ~~**`staffId` không được persist.**~~ **→ FIXED.** `OrderEntity` có cột `created_by_admin_id UUID`. `PosOrderService` persist `staffId` vào `order.setCreatedByAdminId()`. Flyway migration V64. Test `createPosOrder_staffIdPersisted` pass.
+2. ~~**`customerName` bị drop.**~~ **→ FIXED.** `OrderEntity` có cột `customer_name VARCHAR(255)`. `PosOrderService` lưu `order.setCustomerName(req.customerName())`. Test `createPosOrder_customerNamePersisted` pass.
+3. ~~**POS không ghi audit log.**~~ **→ FIXED.** `PosOrderService` inject `AuditLogJpaRepository`, ghi `AuditLogEntity` với `action="POS_ORDER_CREATED"`, `resourceType="ORDER"`, `resourceId=orderId`, payload JSON chứa orderId/orderNumber/staffId/totalAmount/paymentMethod/itemCount/source=POS. Test `createPosOrder_auditLogCreated` pass.
+4. ~~**Simple product / null variantId → silent no-decrement.**~~ **→ FIXED.** `productVariantId` nay là bắt buộc ở đầu item loop — reject 409 nếu null/blank, trước khi tạo order hoặc trừ kho. Đồng thời re-check `product.publishStatus == PUBLISHED` và `variant.isAvailable() == true`. `decrementStock` loại bỏ `continue` guard (không cần thiết vì đã validate upstream). Test `createPosOrder_missingVariantId_returns409` pass.
+5. ~~**Permission grain quá thô + `unitPriceOverride` không có ceiling.**~~ **→ FIXED (partial).** Tách permission `pos.read`, `pos.write`, `pos.price_override` khỏi `orders.write`. ADMIN có cả 3, SHOP_MANAGER có `pos.read` + `pos.write` (không có `pos.price_override`). `AdminPosController` dùng `pos.read` cho search, `pos.write` cho create. `unitPriceOverride` require `pos.price_override` — nếu thiếu quyền → 409. Validate zero/negative override → 409. SecurityConfig thêm `SHOP_MANAGER` vào whitelist cho `/api/v1/admin/pos/**`. Frontend `App.jsx` cập nhật sang `pos.read`/`pos.write`. Tests `createPosOrder_priceOverride_withoutPermission_returns409` và `createPosOrder_priceOverride_withPermission_succeeds` pass.
+   - **Ghi chú semantic**: `unitPriceOverride` thiếu quyền trả 409 (nhất quán với pattern service-level gate trong codebase này), không phải 403. 403 chỉ từ Spring Security layer và `requirePermission`. Đây là trade-off có chủ ý, không phải lỗi.
+   - **Ghi chú còn lại (P1)**: ceiling check (`<= retailPrice`) chưa implement — xem P1 #12.
+
+**Idempotency race hardening — FIXED.** `orderRepo.save()` + `orderRepo.flush()` bọc trong `try/catch DataIntegrityViolationException` → retry `findByOrderKey` → trả response idempotent. Sequential idempotency test vẫn pass (test 7).
+
+Các risk còn lại (P1/P2) liệt kê chi tiết ở Section 11.
 
 ---
 
@@ -280,7 +288,9 @@ Các risk khác (P1/P2) liệt kê chi tiết ở Section 11.
 ## 9. Test Coverage Audit
 
 Test file: [Phase1MPosApiTest.java](../../bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1MPosApiTest.java)
-**Run result:** `Tests run: 8, Failures: 0, Errors: 0, Skipped: 0` (executed via `./mvnw -B -Dtest=Phase1MPosApiTest test`).
+**Audit run result (pre-fix):** `Tests run: 8, Failures: 0, Errors: 0, Skipped: 0`
+
+**Post-P0-fix run result:** `Tests run: 18, Failures: 0, Errors: 0, Skipped: 0` — `BUILD SUCCESS`
 
 | Test case | Existing test method | Covered? | Missing assertion | Recommendation |
 |---|---|---|---|---|
@@ -320,11 +330,37 @@ Test file: [Phase1MPosApiTest.java](../../bigbike-backend/src/test/java/com/bigb
 - **MISSING:** ≥17 cases
 - **NOT_TESTABLE_CURRENTLY:** 1 case (WS)
 
-**Run command actually executed:**
+**Run command:**
 ```
 ./mvnw -B -Dtest=Phase1MPosApiTest test
 ```
-**Output line:** `[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 31.34 s -- in com.bigbike.bigbike_backend.api.Phase1MPosApiTest` ; `[INFO] BUILD SUCCESS`.
+
+**Audit run output (pre-fix):** `Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 31.34 s` — `BUILD SUCCESS`
+
+**Post-P0-fix run output:** `Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 18.99 s` — `BUILD SUCCESS`
+
+### 10 new tests added (P0 coverage):
+
+| # | Test method | P0 / Concern | Assert chính |
+|---|---|---|---|
+| 9 | `createPosOrder_staffIdPersisted` | P0 #1 | `order.getCreatedByAdminId() == adminId` |
+| 10 | `createPosOrder_customerNamePersisted` | P0 #2 | `order.getCustomerName() == "Nguyen Van A"` |
+| 11 | `createPosOrder_missingVariantId_returns409` | P0 #4 | 409 khi không có `productVariantId` |
+| 12 | `createPosOrder_invalidPaymentMethod_returns409` | Validation | 409 khi `paymentMethod=BITCOIN` |
+| 13 | `createPosOrder_cashInsufficientTendered_returns409` | Validation | 409 khi tiền khách < tổng |
+| 14 | `createPosOrder_priceOverride_withoutPermission_returns409` | P0 #5 | SHOP_MANAGER (no `pos.price_override`) → 409 |
+| 15 | `createPosOrder_priceOverride_withPermission_succeeds` | P0 #5 | ADMIN → 200, `totalAmount=50000` |
+| 16 | `createPosOrder_paymentRecordCreated` | Observability | `payments` row exists, `status=PAID` |
+| 17 | `createPosOrder_stockMovementCreated` | Observability | `stock_movements` row với `referenceType=ORDER` |
+| 18 | `createPosOrder_auditLogCreated` | P0 #3 | `audit_logs` row với `action=POS_ORDER_CREATED` |
+
+### Phân loại tổng hợp (post-fix):
+
+- **COVERED:** 18 cases (tăng từ 8)
+- **PARTIAL (thiếu assertion sâu):** 3 cases (create CASH success chưa assert `channel`/`fulfillmentType`/`source`; idempotency chưa assert `order count = 1`; exceeds-stock chưa assert stock không thay đổi)
+- **MISSING (còn lại, P1):** CARD_TERMINAL flow; empty items `items=[]`; productId missing; product not found; product unpublished at order time; variant `isAvailable=false`; `unitPriceOverride > retailPrice`; concurrent idempotency (multi-thread); concurrent stock (multi-thread)
+- **NOT_TESTABLE:** WS broadcast (cần STOMP client)
+- **OUT_OF_SCOPE:** FE unit tests (Vitest), E2E (Playwright)
 
 ---
 
