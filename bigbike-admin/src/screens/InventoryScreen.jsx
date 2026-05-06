@@ -926,6 +926,7 @@ export function InventoryScreen({ canUpdate = false }) {
   const [isStockInOpen, setIsStockInOpen] = useState(false)
   const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
   const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
+  const [csvDownloading, setCsvDownloading] = useState(false)
 
   useEffect(() => {
     fetchInventorySummary().then(setSummary)
@@ -1035,8 +1036,18 @@ export function InventoryScreen({ canUpdate = false }) {
               {t('inventory.stockIn.btnLabel')}
             </button>
           )}
-          <button type="button" className="btn btn-secondary" onClick={() => downloadInventoryCsv().catch(console.error)}>
-            Xuất CSV
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={csvDownloading}
+            onClick={() => {
+              setCsvDownloading(true)
+              downloadInventoryCsv()
+                .catch((err) => toast.error('Xuất CSV thất bại: ' + (err?.message || 'Lỗi không xác định')))
+                .finally(() => setCsvDownloading(false))
+            }}
+          >
+            {csvDownloading ? 'Đang xuất…' : 'Xuất CSV'}
           </button>
         </div>
       </header>

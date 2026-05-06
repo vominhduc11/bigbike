@@ -44,6 +44,7 @@ class Phase1KInventoryP0FixApiTest {
 
     private static final String ADMIN_EMAIL = "p0fix-admin-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ADMIN_PASS  = "Admin@P0Fix12345";
+    // CONTRIBUTOR is in AdminRolePermissions.MAP with only content.read + media.read — no products.update
     private static final String NOPERM_EMAIL = "p0fix-noperm-" + UUID.randomUUID() + "@bigbike.test";
     private static final String NOPERM_PASS  = "Noperm@P0Fix123";
 
@@ -67,7 +68,7 @@ class Phase1KInventoryP0FixApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureAdminUser(ADMIN_EMAIL, ADMIN_PASS, "ADMIN");
-        ensureAdminUser(NOPERM_EMAIL, NOPERM_PASS, "VIEWER");
+        ensureAdminUser(NOPERM_EMAIL, NOPERM_PASS, "CONTRIBUTOR");
         adminToken  = loginUser(ADMIN_EMAIL, ADMIN_PASS);
         noPermToken = loginUser(NOPERM_EMAIL, NOPERM_PASS);
         testProductName = "P0Fix Product " + UUID.randomUUID().toString().substring(0, 8);
