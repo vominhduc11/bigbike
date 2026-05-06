@@ -1,12 +1,14 @@
 package com.bigbike.bigbike_backend.service.public_;
 
 import com.bigbike.bigbike_backend.api.common.PaginationMeta;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.public_.dto.PublicProductReviewsResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -69,13 +71,24 @@ public class PublicReviewService {
         productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
 
+        String normalizedName = authorName.trim();
+        String normalizedComment = comment != null ? comment.trim() : "";
+        Instant now = Instant.now();
+
+        long dupeCount = reviewRepo.countDuplicate(
+                productId, normalizedName, (short) rating, normalizedComment,
+                now.minus(30, ChronoUnit.MINUTES));
+        if (dupeCount > 0) {
+            throw new ConflictException(
+                    "\u0110\u00e1nh gi\u00e1 t\u01b0\u01a1ng t\u1ef1 v\u1eeba \u0111\u01b0\u1ee3c g\u1eedi. Vui l\u00f2ng th\u1eed l\u1ea1i sau.");
+        }
+
         ReviewEntity entity = new ReviewEntity();
         entity.setProductId(productId);
-        entity.setAuthorName(authorName.trim());
+        entity.setAuthorName(normalizedName);
         entity.setRating((short) rating);
-        entity.setBody(comment != null ? comment.trim() : "");
+        entity.setBody(normalizedComment);
         entity.setStatus("PENDING");
-        Instant now = Instant.now();
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 

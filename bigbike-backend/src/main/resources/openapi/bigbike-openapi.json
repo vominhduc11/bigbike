@@ -368,14 +368,19 @@
         },
         "responses": {
           "201": {
-            "description": "Review submitted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SubmitReviewDataResponse"
-                }
-              }
-            }
+            "description": "Review submitted and pending moderation"
+          },
+          "400": {
+            "description": "Validation error or honeypot triggered"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "409": {
+            "description": "Duplicate review — identical review submitted within the last 30 minutes"
+          },
+          "429": {
+            "description": "Rate limit exceeded — 5 submissions per IP per minute"
           }
         }
       }
@@ -5611,9 +5616,11 @@
       },
       "SubmitReviewRequest": {
         "type": "object",
+        "required": ["authorName", "rating"],
         "properties": {
           "authorName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "rating": {
             "type": "integer",
@@ -5621,7 +5628,13 @@
             "maximum": 5
           },
           "comment": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 1000
+          },
+          "website": {
+            "type": "string",
+            "description": "Honeypot field — must be empty string or omitted. Non-empty value causes 400.",
+            "example": ""
           }
         }
       },

@@ -528,6 +528,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           'authorName': _authorCtrl.text.trim(),
           'rating': _rating,
           'comment': _commentCtrl.text.trim(),
+          'website': '',
         },
       );
       final payload = response['data'] is Map<String, dynamic>
@@ -557,6 +558,8 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         _submitSucceeded = false;
         _submitNotice = apiError.statusCode == 429
             ? 'Bạn gửi đánh giá quá nhanh. Vui lòng thử lại sau.'
+            : apiError.statusCode == 409
+            ? 'Đánh giá tương tự vừa được gửi. Vui lòng thử lại sau.'
             : (apiError.displayMessage.trim().isNotEmpty
                   ? apiError.displayMessage
                   : 'Không thể gửi đánh giá. Vui lòng thử lại.');

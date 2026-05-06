@@ -269,6 +269,76 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isNotFound());
     }
 
+    // --- Phase 2F: Anti-abuse guard ---
+
+    @Test
+    void publicPostReview_honeypotFilled_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Bot","rating":5,"comment":"Cheap deal","website":"http://spam.example.com"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void publicPostReview_honeypotAbsent_succeeds() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van Honeypot OK","rating":3,"comment":"Field absent is fine"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.success").value(true));
+    }
+
+    @Test
+    void publicPostReview_honeypotEmpty_succeeds() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van Honeypot Empty","rating":3,"comment":"Empty string OK","website":""}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.success").value(true));
+    }
+
+    @Test
+    void publicPostReview_duplicate_returns409() throws Exception {
+        String content = """
+                {"authorName":"Nguyen Van Dup Guard","rating":4,"comment":"Duplicate guard test","website":""}
+                """;
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(content))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(content))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_sameAuthorDifferentRating_isNotDuplicate() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van Different","rating":3,"comment":"Rating changes it","website":""}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van Different","rating":5,"comment":"Rating changes it","website":""}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
     @Test
     void adminPatchStatus_approve_returns200WithApprovedStatus() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")

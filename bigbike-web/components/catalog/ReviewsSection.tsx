@@ -98,6 +98,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
   const [comment, setComment] = useState("");
+  const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
@@ -112,10 +113,24 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       const res = await fetch(`/api/products/${productId}/reviews/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ authorName: authorName.trim(), rating, comment: comment.trim() }),
+        body: JSON.stringify({
+          authorName: authorName.trim(),
+          rating,
+          comment: comment.trim(),
+          website,
+        }),
       });
       const json = (await res.json()) as { error?: string };
-      if (!res.ok) { setError(json.error ?? "Không thể gửi đánh giá."); return; }
+      if (!res.ok) {
+        if (res.status === 429) {
+          setError("Bạn gửi đánh giá quá nhanh. Vui lòng thử lại sau.");
+        } else if (res.status === 409) {
+          setError(json.error ?? "Đánh giá tương tự vừa được gửi. Vui lòng thử lại sau.");
+        } else {
+          setError(json.error ?? "Không thể gửi đánh giá.");
+        }
+        return;
+      }
       setDone(true);
       onSuccess();
     } catch {
@@ -148,6 +163,17 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   return (
     <form className="wp-review-form" onSubmit={handleSubmit} noValidate>
       <h4 className="wp-review-form-title">Đánh giá của bạn</h4>
+      {/* Honeypot — ẩn khỏi user, bot auto-fill sẽ bị block */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        aria-hidden="true"
+        autoComplete="off"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        style={{ position: "absolute", left: "-9999px", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
+      />
 
       <div className="wp-review-form-field">
         <label>Số sao <span className="req">*</span></label>

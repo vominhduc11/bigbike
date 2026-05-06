@@ -57,6 +57,9 @@ public class PublicReviewController {
     }
 
     private void validate(SubmitReviewRequest body) {
+        if (body.website() != null && !body.website().isEmpty()) {
+            throw ValidationException.fromField("website", "HONEYPOT_TRIGGERED", "Invalid request.");
+        }
         if (body.authorName() == null || body.authorName().isBlank()) {
             throw ValidationException.fromField("authorName", "REQUIRED", "Vui l\u00f2ng nh\u1eadp t\u00ean.");
         }

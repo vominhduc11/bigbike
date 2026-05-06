@@ -119,14 +119,14 @@ export async function GET(req: Request, { params }: Params) {
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
 
-  let body: { authorName?: string; rating?: number; comment?: string };
+  let body: { authorName?: string; rating?: number; comment?: string; website?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Dữ liệu không hợp lệ." }, { status: 400 });
   }
 
-  const { authorName, rating, comment } = body;
+  const { authorName, rating, comment, website } = body;
 
   if (!authorName?.trim()) {
     return NextResponse.json({ error: "Vui lòng nhập tên." }, { status: 400 });
@@ -140,7 +140,12 @@ export async function POST(req: Request, { params }: Params) {
       method: "POST",
       cache: "no-store",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ authorName: authorName.trim(), rating, comment: comment?.trim() ?? "" }),
+      body: JSON.stringify({
+        authorName: authorName.trim(),
+        rating,
+        comment: comment?.trim() ?? "",
+        website: website ?? "",
+      }),
     });
 
     if (!res.ok) {

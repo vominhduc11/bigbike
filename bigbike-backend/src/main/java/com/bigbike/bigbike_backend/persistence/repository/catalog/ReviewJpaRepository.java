@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.repository.catalog;
 
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,21 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
             @Param("status") String status,
             @Param("q") String q,
             Pageable pageable);
+
+    @Query("""
+            SELECT COUNT(r) FROM ReviewEntity r
+            WHERE r.productId = :productId
+              AND r.authorName = :authorName
+              AND r.rating = :rating
+              AND r.body = :body
+              AND r.createdAt > :since
+            """)
+    long countDuplicate(
+            @Param("productId") String productId,
+            @Param("authorName") String authorName,
+            @Param("rating") short rating,
+            @Param("body") String body,
+            @Param("since") Instant since);
 
     interface ReviewAggregate {
         Double getAvgRating();
