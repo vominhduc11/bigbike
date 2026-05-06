@@ -73,6 +73,7 @@ com\bigbike\bigbike_backend\service\ws\AdminOrderWsService.class
 com\bigbike\bigbike_backend\service\admin\AdminReportService.class
 com\bigbike\bigbike_backend\service\checkout\OrderKeyGenerator.class
 com\bigbike\bigbike_backend\api\admin\dto\coupon\AdminCouponDetailResponse.class
+com\bigbike\bigbike_backend\service\security\HomeVideoUrlPolicy.class
 com\bigbike\bigbike_backend\service\admin\AdminOrderService.class
 com\bigbike\bigbike_backend\api\admin\dto\ProductPublishRequest.class
 com\bigbike\bigbike_backend\api\admin\dto\returns\AdminReturnDetailResponse$ReturnItemResponse.class
@@ -223,6 +224,7 @@ com\bigbike\bigbike_backend\migration\wordpress\redirect\FgRedirectResolver$Reso
 com\bigbike\bigbike_backend\api\admin\dto\ReorderHomeVideosRequest$Item.class
 com\bigbike\bigbike_backend\service\common\PageResult.class
 com\bigbike\bigbike_backend\api\auth\dto\LoginRequest.class
+com\bigbike\bigbike_backend\service\security\SafePublicLinkPolicy.class
 com\bigbike\bigbike_backend\api\admin\dto\customer\AdminCustomerListItemResponse.class
 com\bigbike\bigbike_backend\api\admin\dto\order\AdminOrderListItemResponse.class
 com\bigbike\bigbike_backend\config\MinioConfig$MinioStartupInitializer.class
@@ -443,6 +445,7 @@ com\bigbike\bigbike_backend\api\admin\dto\returns\UpdateReturnStatusRequest.clas
 com\bigbike\bigbike_backend\persistence\repository\commerce\order\OrderAppliedCouponJpaRepository.class
 com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderAppliedCouponEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressCustomerMapper.class
+com\bigbike\bigbike_backend\service\security\SafeMediaAssetUrlPolicy.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RankMathRedirectImporter.class
 com\bigbike\bigbike_backend\api\public_\dto\SubmitReviewRequest.class
 com\bigbike\bigbike_backend\persistence\repository\catalog\ProductJpaRepository.class

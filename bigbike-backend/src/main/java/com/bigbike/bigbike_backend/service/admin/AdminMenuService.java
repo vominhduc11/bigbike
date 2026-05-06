@@ -172,7 +172,8 @@ public class AdminMenuService {
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
 
         String before = menuSnapshot(entity);
-        // DB ON DELETE CASCADE on menu_id handles item deletion (including deep hierarchies)
+        List<MenuItemEntity> items = menuItemRepo.findByMenuId(menuId);
+        deleteMenuItemsBottomUp(items);
         menuRepo.delete(entity);
 
         webRevalidationService.revalidate("menus");
@@ -411,6 +412,24 @@ public class AdminMenuService {
             parentId = parent.getParentId();
         }
         return true;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void deleteMenuItemsBottomUp(List<MenuItemEntity> items) {
+        if (items.isEmpty()) return;
+        Set<UUID> isParent = items.stream()
+                .map(MenuItemEntity::getParentId)
+                .filter(p -> p != null)
+                .collect(Collectors.toSet());
+        List<MenuItemEntity> leaves = items.stream()
+                .filter(i -> !isParent.contains(i.getId()))
+                .toList();
+        List<MenuItemEntity> parents = items.stream()
+                .filter(i -> isParent.contains(i.getId()))
+                .toList();
+        menuItemRepo.deleteAll(leaves);
+        deleteMenuItemsBottomUp(parents);
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
