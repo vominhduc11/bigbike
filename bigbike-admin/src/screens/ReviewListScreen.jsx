@@ -6,7 +6,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
-import { formatDateTime } from '../lib/formatters'
+import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
@@ -14,7 +14,17 @@ const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'neutral',
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
-export function ReviewListScreen({ canUpdate }) {
+function ReviewStatusBadge({ review, t }) {
+  return (
+    <span className={`status-badge status-${STATUS_TONES[review.status] || 'neutral'}`}>
+      {t(`reviews.status${review.status.charAt(0) + review.status.slice(1).toLowerCase()}`, {
+        defaultValue: review.status,
+      })}
+    </span>
+  )
+}
+
+export function ReviewListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
@@ -26,22 +36,41 @@ export function ReviewListScreen({ canUpdate }) {
   useEffect(() => {
     let active = true
     fetchReviews(query)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
+      .then((result) => {
+        if (!active) return
+        setState({
+          status: 'success',
+          items: result.items,
+          pagination: result.pagination,
+          warning: result.mode === 'mock' ? result.warning : '',
+        })
+      })
+      .catch((error) => {
+        if (!active) return
+        setState({ status: 'error', items: [], pagination: null, warning: '', error: error.message })
+      })
     return () => { active = false }
   }, [query])
 
   useEffect(() => {
-    if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false
+      return
+    }
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
   const handleStatusChange = useCallback(async (review, newStatus) => {
     setActionError('')
     try {
-      const r = await updateReviewStatus(review.id, newStatus)
-      setState((p) => ({ ...p, items: p.items.map((rv) => rv.id === review.id ? r.item : rv) }))
-    } catch (e) { setActionError(e.message || t('reviews.approveError')) }
+      const result = await updateReviewStatus(review.id, newStatus)
+      setState((prev) => ({
+        ...prev,
+        items: prev.items.map((item) => (item.id === review.id ? result.item : item)),
+      }))
+    } catch (error) {
+      setActionError(error.message || t('reviews.approveError'))
+    }
   }, [t])
 
   const handleDelete = useCallback(async (reviewId) => {
@@ -49,32 +78,112 @@ export function ReviewListScreen({ canUpdate }) {
     if (!confirmed) return
     try {
       await deleteReview(reviewId)
-      setState((p) => ({ ...p, items: p.items.filter((rv) => rv.id !== reviewId) }))
-    } catch (e) { setActionError(e.message || t('reviews.deleteError')) }
+      setState((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== reviewId) }))
+    } catch (error) {
+      setActionError(error.message || t('reviews.deleteError'))
+    }
   }, [t])
 
+  const handleOpenProduct = useCallback((productId) => {
+    if (!productId) return
+    navigate(`/admin/products/${productId}`)
+  }, [navigate])
+
+  const handleOpenReview = useCallback((reviewId) => {
+    if (!reviewId) return
+    navigate(`/admin/reviews/${reviewId}`)
+  }, [navigate])
+
   const columns = useMemo(() => [
-    { key: 'author', label: t('reviews.colAuthor'), render: (r) => r.authorName || '(—)' },
-    { key: 'productId', label: t('reviews.colProduct'), render: (r) => <code style={{ fontSize: '0.75rem' }}>{r.productId}</code> },
-    { key: 'rating', label: t('reviews.colRating'), render: (r) => r.rating },
-    { key: 'body', label: t('reviews.colContent'), render: (r) => <span style={{ fontSize: '0.85rem' }}>{r.body?.slice(0, 80)}{r.body?.length > 80 ? '...' : ''}</span> },
-    { key: 'status', label: t('reviews.colStatus'), render: (r) => <span className={`status-badge status-${STATUS_TONES[r.status] || 'neutral'}`}>{t(`reviews.status${r.status.charAt(0) + r.status.slice(1).toLowerCase()}`, { defaultValue: r.status })}</span> },
-    { key: 'createdAt', label: t('reviews.colDate'), render: (r) => formatDateTime(r.createdAt) },
-    canUpdate ? {
-      key: 'actions', label: '', align: 'right',
-      render: (r) => (
-        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-          {r.status !== 'APPROVED' && <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(r, 'APPROVED')}>{t('reviews.approve')}</button>}
-          {r.status !== 'SPAM' && <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(r, 'SPAM')}>{t('reviews.spam')}</button>}
-          <button type="button" className="btn btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => handleDelete(r.id)}>{t('common.delete')}</button>
+    {
+      key: 'author',
+      label: t('reviews.colAuthor'),
+      render: (review) => review.authorName || '(---)',
+    },
+    {
+      key: 'product',
+      label: t('reviews.colProduct'),
+      render: (review) => {
+        const productLabel = formatText(review.productName, review.productId || t('reviews.unknownProduct'))
+        const productMeta = review.productSlug ? `/${review.productSlug}` : review.productId
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'flex-start' }}>
+            {review.productId ? (
+              <button
+                type="button"
+                onClick={() => handleOpenProduct(review.productId)}
+                style={{
+                  padding: 0,
+                  border: 'none',
+                  background: 'none',
+                  color: 'var(--admin-color-accent)',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  textAlign: 'left',
+                }}
+              >
+                {productLabel}
+              </button>
+            ) : (
+              <strong>{productLabel}</strong>
+            )}
+            <span style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+              {formatText(productMeta, t('reviews.unknownProduct'))}
+            </span>
+          </div>
+        )
+      },
+    },
+    { key: 'rating', label: t('reviews.colRating'), render: (review) => review.rating },
+    {
+      key: 'body',
+      label: t('reviews.colContent'),
+      render: (review) => (
+        <span style={{ fontSize: '0.85rem' }}>
+          {review.body?.slice(0, 80)}
+          {review.body?.length > 80 ? '...' : ''}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('reviews.colStatus'),
+      render: (review) => <ReviewStatusBadge review={review} t={t} />,
+    },
+    { key: 'createdAt', label: t('reviews.colDate'), render: (review) => formatDateTime(review.createdAt) },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (review) => (
+        <div className="row-actions">
+          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleOpenReview(review.id)}>
+            {t('reviews.view')}
+          </button>
+          {canUpdate && review.status !== 'APPROVED' ? (
+            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(review, 'APPROVED')}>
+              {t('reviews.approve')}
+            </button>
+          ) : null}
+          {canUpdate && review.status !== 'SPAM' ? (
+            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(review, 'SPAM')}>
+              {t('reviews.spam')}
+            </button>
+          ) : null}
+          {canUpdate ? (
+            <button type="button" className="btn btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => handleDelete(review.id)}>
+              {t('common.delete')}
+            </button>
+          ) : null}
         </div>
       ),
-    } : null,
-  ].filter(Boolean), [canUpdate, handleDelete, handleStatusChange, t])
+    },
+  ], [canUpdate, handleDelete, handleOpenProduct, handleOpenReview, handleStatusChange, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setQuery((p) => {
-      const next = { ...p, ...partial }
+    setQuery((prev) => {
+      const next = { ...prev, ...partial }
       if (options.resetPage) next.page = 1
       return next
     })
@@ -90,33 +199,67 @@ export function ReviewListScreen({ canUpdate }) {
         </div>
       </header>
 
-      {actionError && (
+      {actionError ? (
         <p className="inline-error">
           {actionError}
-          <button type="button" onClick={() => setActionError('')}>✕</button>
+          <button type="button" onClick={() => setActionError('')}>x</button>
         </p>
-      )}
+      ) : null}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       <section className="filter-bar">
-        <label>{t('common.search')}
-          <input className="control-input" type="search" value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('reviews.searchPlaceholder')} />
+        <label>
+          {t('common.search')}
+          <input
+            className="control-input"
+            type="search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('reviews.searchPlaceholder')}
+          />
         </label>
-        <label>{t('reviews.filterStatus')}
-          <select className="control-select" value={query.status} onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s === 'ALL' ? t('common.all') : t(`reviews.status${s.charAt(0) + s.slice(1).toLowerCase()}`, { defaultValue: s })}
+        <label>
+          {t('reviews.filterStatus')}
+          <select
+            className="control-select"
+            value={query.status}
+            onChange={(event) => updateQuery({ status: event.target.value }, { resetPage: true })}
+          >
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status === 'ALL'
+                  ? t('common.all')
+                  : t(`reviews.status${status.charAt(0) + status.slice(1).toLowerCase()}`, { defaultValue: status })}
               </option>
             ))}
           </select>
         </label>
       </section>
 
-      {state.status === 'error' && <StatePanel tone="danger" title={t('reviews.error')} description={state.error} actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
-      {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title={t('reviews.empty')} description={t('reviews.emptyDesc')} actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />}
+      {state.status === 'error' ? (
+        <StatePanel
+          tone="danger"
+          title={t('reviews.error')}
+          description={state.error}
+          actionLabel={t('common.retry')}
+          onAction={() => setQuery((prev) => ({ ...prev }))}
+        />
+      ) : null}
+
+      {state.status === 'success' && state.items.length === 0 ? (
+        <StatePanel
+          tone="neutral"
+          title={t('reviews.empty')}
+          description={t('reviews.emptyDesc')}
+          actionLabel={t('common.resetFilters')}
+          onAction={() => {
+            setSearchInput('')
+            setQuery(INITIAL_QUERY)
+          }}
+        />
+      ) : null}
+
       {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>
           <AdminTable
@@ -126,9 +269,9 @@ export function ReviewListScreen({ canUpdate }) {
             loading={state.status === 'loading'}
             pageSize={query.pageSize}
           />
-          {state.status === 'success' && (
-            <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />
-          )}
+          {state.status === 'success' ? (
+            <PaginationControls pagination={state.pagination} onPageChange={(page) => updateQuery({ page })} />
+          ) : null}
         </>
       ) : null}
     </section>

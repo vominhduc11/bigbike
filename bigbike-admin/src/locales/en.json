@@ -870,11 +870,32 @@
     "statusTrash": "Trash",
     "approve": "Approve",
     "spam": "Spam",
+    "view": "View",
+    "unknownProduct": "Unknown product",
     "approveError": "Error approving review",
     "spamError": "Error marking as spam",
     "deleteError": "Error deleting review",
     "deleteConfirm": "Delete this review?",
-    "deleteConfirmTitle": "Delete review"
+    "deleteConfirmTitle": "Delete review",
+    "detail": {
+      "title": "Review Detail",
+      "loading": "Loading review detail",
+      "error": "Unable to load review detail",
+      "notFound": "Review not found",
+      "backToList": "Back to reviews",
+      "sectionReview": "Review Information",
+      "sectionProduct": "Product Reference",
+      "sectionContent": "Review Content",
+      "sectionActions": "Moderation Actions",
+      "authorEmail": "Author email",
+      "updatedAt": "Updated at",
+      "productName": "Product name",
+      "productSlug": "Product slug",
+      "productId": "Product ID",
+      "openProduct": "Open product detail",
+      "statusUpdated": "Review status updated.",
+      "deleteSuccess": "Review deleted."
+    }
   },
   "settings": {
     "eyebrow": "System",

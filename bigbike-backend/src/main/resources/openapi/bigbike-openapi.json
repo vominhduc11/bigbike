@@ -3631,13 +3631,13 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Review list"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
+          "responses": {
+            "200": {
+              "description": "Review list with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
         }
       }
     },
@@ -3663,13 +3663,13 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Review detail"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
+          "responses": {
+            "200": {
+              "description": "Review detail with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
         }
       },
       "delete": {
@@ -3705,13 +3705,13 @@
             "AdminBearerAuth": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
+          "responses": {
+            "200": {
+              "description": "Updated review payload with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
         }
       }
     },

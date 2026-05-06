@@ -2,16 +2,20 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -50,14 +54,18 @@ public class AdminReviewService {
                 normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, pageRequest);
 
-        List<Map<String, Object>> mapped = dbPage.getContent().stream().map(this::toMap).toList();
+        Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
+        List<Map<String, Object>> mapped = dbPage.getContent().stream()
+                .map(review -> toMap(review, productMetadata.get(review.getProductId())))
+                .toList();
         return new PageResult<>(mapped, normalizedPage, normalizedSize,
                 dbPage.getTotalElements(), dbPage.getTotalPages());
     }
 
     public Map<String, Object> getReview(Long id) {
-        return toMap(reviewRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Review not found.")));
+        ReviewEntity review = reviewRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Review not found."));
+        return toMap(review);
     }
 
     @Transactional
@@ -99,16 +107,40 @@ public class AdminReviewService {
     }
 
     private Map<String, Object> toMap(ReviewEntity r) {
-        return Map.of(
-                "id", r.getId(),
-                "productId", r.getProductId(),
-                "authorName", r.getAuthorName() != null ? r.getAuthorName() : "",
-                "authorEmail", r.getAuthorEmail() != null ? r.getAuthorEmail() : "",
-                "rating", r.getRating(),
-                "body", r.getBody() != null ? r.getBody() : "",
-                "status", r.getStatus(),
-                "createdAt", r.getCreatedAt() != null ? r.getCreatedAt().toString() : "",
-                "updatedAt", r.getUpdatedAt() != null ? r.getUpdatedAt().toString() : ""
-        );
+        return toMap(r, loadProductMetadata(List.of(r)).get(r.getProductId()));
     }
+
+    private Map<String, ProductReviewMetadata> loadProductMetadata(List<ReviewEntity> reviews) {
+        Set<String> productIds = reviews.stream()
+                .map(ReviewEntity::getProductId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, ProductReviewMetadata> result = new HashMap<>();
+        for (ProductEntity product : productRepo.findAllById(productIds)) {
+            result.put(product.getId(), new ProductReviewMetadata(product.getName(), product.getSlug()));
+        }
+        return result;
+    }
+
+    private Map<String, Object> toMap(ReviewEntity review, ProductReviewMetadata productMetadata) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", review.getId());
+        payload.put("productId", review.getProductId());
+        payload.put("productName", productMetadata != null ? productMetadata.name() : null);
+        payload.put("productSlug", productMetadata != null ? productMetadata.slug() : null);
+        payload.put("authorName", review.getAuthorName() != null ? review.getAuthorName() : "");
+        payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
+        payload.put("rating", review.getRating());
+        payload.put("body", review.getBody() != null ? review.getBody() : "");
+        payload.put("status", review.getStatus());
+        payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
+        payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");
+        return payload;
+    }
+
+    private record ProductReviewMetadata(String name, String slug) {}
 }

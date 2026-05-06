@@ -154,7 +154,8 @@ class Phase1GOrderReadApiTest {
         mockMvc.perform(get("/api/v1/customer/orders/" + session.orderId).cookie(session.cookies))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.orderNumber").value(session.orderNumber))
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.orderKey").isEmpty());
     }
 
     // ── 6. Customer order detail — another customer's order → 404 ────────────

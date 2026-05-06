@@ -649,6 +649,10 @@ const REVIEWS_DATA = [
   { id: 'rev-003', productId: 'prod-agv-k1', authorName: 'Spam Bot', authorEmail: 'spam@evil.com', rating: 1, body: 'Buy cheap stuff at example.com!!!', status: 'SPAM', createdAt: '2026-04-22T03:00:00Z', updatedAt: ISO_NOW },
 ]
 
+export function getMockReviewById(reviewId) {
+  return REVIEWS_DATA.find((review) => review.id === reviewId) || null
+}
+
 export function queryMockReviews(query) {
   let items = REVIEWS_DATA
   if (query?.status && query.status !== 'ALL') {

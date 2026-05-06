@@ -21,6 +21,7 @@ import {
   getMockRedirectById,
   getMockDashboardSummary,
   getMockProductById,
+  getMockReviewById,
   queryMockAdminUsers,
   queryMockAnalytics,
   queryMockBrands,
@@ -1413,11 +1414,19 @@ export async function updateAdminUser(userId, input) {
 
 // â”€â”€ Reviews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+const REVIEW_PRODUCT_FALLBACKS = {
+  'prod-agv-k1': { productName: 'AGV K1 S', productSlug: 'mu-bao-hiem-agv-k1-s' },
+  'prod-ls2-ff352': { productName: 'LS2 FF352 Rookie', productSlug: 'mu-bao-hiem-ls2-ff352-rookie' },
+}
+
 function normalizeReview(input) {
   const s = input && typeof input === 'object' ? input : {}
+  const fallbackProduct = REVIEW_PRODUCT_FALLBACKS[String(s.productId || '')] || {}
   return {
     id: s.id,
     productId: String(s.productId || ''),
+    productName: String(s.productName || fallbackProduct.productName || ''),
+    productSlug: String(s.productSlug || fallbackProduct.productSlug || ''),
     authorName: String(s.authorName || ''),
     authorEmail: String(s.authorEmail || ''),
     rating: Number(s.rating ?? 0),
@@ -1441,6 +1450,20 @@ export async function fetchReviews(query) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
     return withMockFallback(e.message, queryMockReviews(query))
+  }
+}
+
+export async function fetchReviewDetail(reviewId) {
+  if (FORCE_MOCK) {
+    return withMockFallback('Review detail served from mock.', { item: normalizeReview(getMockReviewById(reviewId)) })
+  }
+  try {
+    const payload = await requestJson(`/admin/reviews/${reviewId}`)
+    return withLiveData(parseDetailPayload(payload, normalizeReview))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { item: normalizeReview(getMockReviewById(reviewId)) })
   }
 }
 

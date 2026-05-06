@@ -870,11 +870,32 @@
     "statusTrash": "Đã xoá",
     "approve": "Duyệt",
     "spam": "Spam",
+    "view": "Chi tiết",
+    "unknownProduct": "Sản phẩm không xác định",
     "approveError": "Lỗi duyệt đánh giá",
     "spamError": "Lỗi đánh dấu spam",
     "deleteError": "Lỗi xoá đánh giá",
     "deleteConfirm": "Xoá đánh giá này?",
-    "deleteConfirmTitle": "Xoá đánh giá"
+    "deleteConfirmTitle": "Xoá đánh giá",
+    "detail": {
+      "title": "Chi tiết đánh giá",
+      "loading": "Đang tải chi tiết đánh giá",
+      "error": "Không thể tải chi tiết đánh giá",
+      "notFound": "Không tìm thấy đánh giá",
+      "backToList": "Quay lại danh sách",
+      "sectionReview": "Thông tin đánh giá",
+      "sectionProduct": "Sản phẩm liên quan",
+      "sectionContent": "Nội dung đánh giá",
+      "sectionActions": "Thao tác duyệt",
+      "authorEmail": "Email tác giả",
+      "updatedAt": "Cập nhật lúc",
+      "productName": "Tên sản phẩm",
+      "productSlug": "Slug sản phẩm",
+      "productId": "Mã sản phẩm",
+      "openProduct": "Mở chi tiết sản phẩm",
+      "statusUpdated": "Đã cập nhật trạng thái đánh giá.",
+      "deleteSuccess": "Đã xoá đánh giá."
+    }
   },
   "settings": {
     "eyebrow": "Hệ thống",

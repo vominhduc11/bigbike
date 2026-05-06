@@ -360,9 +360,22 @@ class Phase1NReviewsApiTest {
                         .header("X-Admin-Permissions", "reviews.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].productName").exists())
+                .andExpect(jsonPath("$.data[0].productSlug").exists())
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.pageSize").value(20))
                 .andExpect(jsonPath("$.meta.requestId").exists());
+    }
+
+    @Test
+    void adminGetReview_returnsProductMetadata() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/reviews/" + approvedReviewId)
+                        .header("X-Admin-Permissions", "reviews.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(approvedReviewId))
+                .andExpect(jsonPath("$.data.productId").value(PRODUCT_ID))
+                .andExpect(jsonPath("$.data.productName").value("LS2 FF800 Storm"))
+                .andExpect(jsonPath("$.data.productSlug").value("mu-bao-hiem-ls2-ff800"));
     }
 
     @Test

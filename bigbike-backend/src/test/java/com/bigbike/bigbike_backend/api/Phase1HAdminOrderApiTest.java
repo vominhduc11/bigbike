@@ -12,12 +12,18 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import jakarta.servlet.http.Cookie;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -47,6 +54,8 @@ class Phase1HAdminOrderApiTest {
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired ProductJpaRepository productRepo;
+    @Autowired ProductVariantJpaRepository variantRepo;
+    @Autowired StockMovementJpaRepository stockMovementRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired PasswordService passwordService;
 
@@ -343,6 +352,57 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.cancelledAt").isNotEmpty());
     }
 
+    @Test
+    void cancelOrder_restoresProductLevelStock() throws Exception {
+        ProductEntity product = createManagedStockProduct("1H Managed Product", 2100000, 10);
+        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 2, "COD");
+
+        ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(afterCheckout.getStockQuantity()).isEqualTo(8);
+        assertThat(afterCheckout.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(restored.getStockQuantity()).isEqualTo(10);
+        assertThat(restored.getStockState()).isEqualTo(ProductStockState.IN_STOCK);
+    }
+
+    @Test
+    void cancelOrder_writesOrderCancelStockMovement() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(4, 1900000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        ProductVariantEntity afterCheckout = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(afterCheckout.getQuantityOnHand()).isEqualTo(2);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        ProductVariantEntity restored = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(restored.getQuantityOnHand()).isEqualTo(4);
+
+        List<StockMovementEntity> movements = stockMovementRepo.findByVariantIdOrderByCreatedAtDesc(
+                fixture.variantId(), PageRequest.of(0, 10));
+        StockMovementEntity cancelMovement = movements.stream()
+                .filter(m -> "ORDER_CANCEL".equals(m.getReferenceType()) && order.orderId.equals(m.getReferenceId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(cancelMovement.getMovementType()).isEqualTo("IN");
+        assertThat(cancelMovement.getQuantityDelta()).isEqualTo(2);
+        assertThat(cancelMovement.getQuantityBefore()).isEqualTo(2);
+        assertThat(cancelMovement.getQuantityAfter()).isEqualTo(4);
+    }
+
     // ── 19. Update order status — with note → note is persisted ──────────────
 
     @Test
@@ -593,8 +653,22 @@ class Phase1HAdminOrderApiTest {
     }
 
     @Test
+    void listAllowedTransitions_returnsSortedCurrentOptions() throws Exception {
+        OrderInfo order = placeGuestOrder(7450000);
+
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0]").value("CANCELLED"))
+                .andExpect(jsonPath("$.data[1]").value("COMPLETED"))
+                .andExpect(jsonPath("$.data[2]").value("FAILED"));
+    }
+
+    @Test
     void refundReport_partial_includesPartialRefundAmount() throws Exception {
         Instant from = Instant.now().minusSeconds(1);
+        BigDecimal refundBefore = fetchRefundAmountSummary(from, Instant.now().plusSeconds(1));
 
         OrderInfo partialRefundOrder = placeGuestOrder(7500000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/payment-status")
@@ -631,7 +705,7 @@ class Phase1HAdminOrderApiTest {
                         .param("to", to.toString())
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.refundAmount").value(1500000.00));
+                .andExpect(jsonPath("$.summary.refundAmount").value(refundBefore.add(BigDecimal.valueOf(1500000)).doubleValue()));
     }
 
     @Test
@@ -669,11 +743,20 @@ class Phase1HAdminOrderApiTest {
 
     private OrderInfo placeGuestOrderWith(int price, String paymentMethod) throws Exception {
         ProductEntity product = createTestProduct("1H Product " + price, price);
+        return placeGuestOrderForItem(product.getId(), null, 1, paymentMethod);
+    }
+
+    private OrderInfo placeGuestOrderForItem(
+            String productId,
+            String productVariantId,
+            int quantity,
+            String paymentMethod
+    ) throws Exception {
         GuestSession session = newGuestSession();
 
         mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
+                        .content(addCartItemPayload(productId, productVariantId, quantity))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk());
 
@@ -711,6 +794,48 @@ class Phase1HAdminOrderApiTest {
         p.setUpdatedAt(now);
         p.setCategory(categoryRepo.findById(testCategoryId).orElseThrow());
         return productRepo.save(p);
+    }
+
+    private ProductEntity createManagedStockProduct(String name, int price, int stockQuantity) {
+        ProductEntity product = createTestProduct(name, price);
+        product.setManageStock(true);
+        product.setStockQuantity(stockQuantity);
+        product.setForceOutOfStock(false);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setUpdatedAt(Instant.now());
+        return productRepo.save(product);
+    }
+
+    private VariantFixture createProductWithVariantStock(int stock, int price) {
+        Instant now = Instant.now();
+        ProductEntity product = createManagedStockProduct("1H Variant Product", price, 0);
+        product.setManageStock(false);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setUpdatedAt(now);
+        product = productRepo.save(product);
+
+        ProductVariantEntity variant = new ProductVariantEntity();
+        variant.setId(UUID.randomUUID().toString());
+        variant.setProduct(product);
+        variant.setName("Default");
+        variant.setSku("1H-VAR-" + variant.getId().replace("-", "").substring(0, 8));
+        variant.setRetailPrice(BigDecimal.valueOf(price));
+        variant.setCurrency("VND");
+        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setQuantityOnHand(stock);
+        variant.setAvailable(true);
+        variant.setSortOrder(0);
+        variantRepo.save(variant);
+
+        return new VariantFixture(product.getId(), variant.getId());
+    }
+
+    private String addCartItemPayload(String productId, String productVariantId, int quantity) {
+        if (productVariantId == null) {
+            return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity + "}";
+        }
+        return "{\"productId\":\"" + productId + "\",\"productVariantId\":\"" + productVariantId +
+                "\",\"quantity\":" + quantity + "}";
     }
 
     private void ensureTestCategory() {
@@ -768,8 +893,35 @@ class Phase1HAdminOrderApiTest {
         return json.substring(start, end);
     }
 
+    private BigDecimal fetchRefundAmountSummary(Instant from, Instant to) throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/v1/admin/reports/analytics")
+                        .param("from", from.toString())
+                        .param("to", to.toString())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonDecimalValue(result.getResponse().getContentAsString(), "refundAmount");
+    }
+
+    private BigDecimal extractJsonDecimalValue(String json, String key) {
+        String marker = "\"" + key + "\":";
+        int start = json.indexOf(marker);
+        if (start < 0) return BigDecimal.ZERO;
+        start += marker.length();
+        int end = start;
+        while (end < json.length()) {
+            char c = json.charAt(end);
+            if ((c < '0' || c > '9') && c != '.' && c != '-') {
+                break;
+            }
+            end++;
+        }
+        return new BigDecimal(json.substring(start, end));
+    }
+
     // ── Value types ───────────────────────────────────────────────────────────
 
     private record GuestSession(Cookie[] cookies, String csrf) {}
     private record OrderInfo(UUID orderId, String orderNumber) {}
+    private record VariantFixture(String productId, String variantId) {}
 }

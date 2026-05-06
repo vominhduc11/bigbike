@@ -521,6 +521,65 @@ class Phase1FCheckoutApiTest {
         assertThat(refreshed.getStockQuantity()).isEqualTo(4);
     }
 
+    @Test
+    void checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders() throws Exception {
+        String idempotencyKey = "checkout-scope-" + UUID.randomUUID();
+        GuestSession sessionA = newGuestSessionWithItem(2600000);
+        GuestSession sessionB = newGuestSessionWithItem(2700000);
+        long ordersBefore = orderRepo.count();
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+
+        MvcResult resultA = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(sessionA.cookies).header("X-CSRF-Token", sessionA.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult resultB = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(sessionB.cookies).header("X-CSRF-Token", sessionB.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(extractJsonValue(resultA.getResponse().getContentAsString(), "orderNumber"))
+                .isNotEqualTo(extractJsonValue(resultB.getResponse().getContentAsString(), "orderNumber"));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
+    }
+
+    @Test
+    void checkoutAndQuickBuy_sameIdempotencyKey_doNotCollideAcrossFlows() throws Exception {
+        GuestSession session = newGuestSessionWithItem(2800000);
+        ProductEntity quickBuyProduct = createTestProduct(
+                "Idempotent Cross Flow Product", 2900000, null, PublishStatus.PUBLISHED);
+        long ordersBefore = orderRepo.count();
+        String idempotencyKey = "checkout-quick-buy-" + UUID.randomUUID();
+
+        MvcResult checkoutResult = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult quickBuyResult = mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + quickBuyProduct.getId() + "\",\"quantity\":1," +
+                                "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(extractJsonValue(checkoutResult.getResponse().getContentAsString(), "orderNumber"))
+                .isNotEqualTo(extractJsonValue(quickBuyResult.getResponse().getContentAsString(), "orderNumber"));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     /** Create a new guest session (GET /api/v1/cart) and capture cookies. */

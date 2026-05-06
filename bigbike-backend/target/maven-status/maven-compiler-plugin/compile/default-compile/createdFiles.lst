@@ -440,6 +440,7 @@ com\bigbike\bigbike_backend\migration\wordpress\importer\WordPressMigrationImpor
 com\bigbike\bigbike_backend\api\admin\dto\coupon\CreateCouponRequest.class
 com\bigbike\bigbike_backend\api\admin\AdminMenuController.class
 com\bigbike\bigbike_backend\api\admin\AdminRedirectController$UpdateRedirectRequest.class
+com\bigbike\bigbike_backend\service\admin\AdminReviewService$ProductReviewMetadata.class
 com\bigbike\bigbike_backend\migration\wordpress\media\MinioMediaStorageAdapter.class
 com\bigbike\bigbike_backend\persistence\entity\auth\AdminRoleEntity.class
 com\bigbike\bigbike_backend\service\address\VnAddressService$RawProvince.class

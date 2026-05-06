@@ -107,7 +107,7 @@ public class OrderReadService {
         if (!customerId.equals(order.getCustomerId())) {
             throw new NotFoundException("Order not found.");
         }
-        return toDetail(order, true);
+        return toDetail(order, true, false);
     }
 
     // ── Guest order lookup by orderNumber + orderKey ──────────────────────────
@@ -128,7 +128,7 @@ public class OrderReadService {
             throw new NotFoundException("Order not found.");
         }
 
-        return toDetail(order, true);
+        return toDetail(order, true, true);
     }
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
@@ -155,7 +155,11 @@ public class OrderReadService {
                 ));
     }
 
-    private OrderDetailResponse toDetail(OrderEntity order, boolean customerVisibleNotesOnly) {
+    private OrderDetailResponse toDetail(
+            OrderEntity order,
+            boolean customerVisibleNotesOnly,
+            boolean includeOrderKey
+    ) {
         List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
                 .stream().map(this::toLineItem).toList();
 
@@ -180,7 +184,7 @@ public class OrderReadService {
         return new OrderDetailResponse(
                 order.getId(),
                 order.getOrderNumber(),
-                order.getOrderKey(),
+                includeOrderKey ? order.getOrderKey() : null,
                 order.getStatus(),
                 order.getPaymentStatus(),
                 order.getFulfillmentStatus(),

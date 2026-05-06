@@ -35,6 +35,7 @@ const OrderListScreen    = lazyScreen(() => import('./screens/OrderListScreen'),
 const ProductDetailScreen = lazyScreen(() => import('./screens/ProductDetailScreen'), 'ProductDetailScreen')
 const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'),  'ProductListScreen')
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
+const ReviewDetailScreen = lazyScreen(() => import('./screens/ReviewDetailScreen'), 'ReviewDetailScreen')
 const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'),     'SettingsScreen')
 const ShippingScreen     = lazyScreen(() => import('./screens/ShippingScreen'),     'ShippingScreen')
 const SliderListScreen      = lazyScreen(() => import('./screens/SliderListScreen'),      'SliderListScreen')
@@ -146,6 +147,9 @@ function parseRoute(pathname) {
   if (module === 'customers' && !id) return { kind: 'screen', name: 'customers-list' }
   if (module === 'customers' && id)  return { kind: 'screen', name: 'customer-detail', customerId: id }
 
+  if (module === 'reviews' && !id) return { kind: 'screen', name: 'reviews' }
+  if (module === 'reviews' && id)  return { kind: 'screen', name: 'review-detail', reviewId: id }
+
   if (module === 'media')       return { kind: 'screen', name: 'media-library' }
   if (module === 'coupons')     return { kind: 'screen', name: 'coupons-list' }
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
@@ -153,7 +157,6 @@ function parseRoute(pathname) {
   if (module === 'home-videos')  return { kind: 'screen', name: 'home-videos' }
   if (module === 'redirects')    return { kind: 'screen', name: 'redirects' }
   if (module === 'shipping')    return { kind: 'screen', name: 'shipping' }
-  if (module === 'reviews')     return { kind: 'screen', name: 'reviews' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings')    return { kind: 'screen', name: 'settings' }
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
@@ -193,6 +196,7 @@ function routePermission(routeName) {
     case 'redirects':                    return 'redirects.read'
     case 'shipping':                     return 'shipping.read'
     case 'reviews':                      return 'reviews.read'
+    case 'review-detail':                return 'reviews.read'
     case 'admin-users':                  return 'admin-users.read'
     case 'settings':                     return 'settings.read'
     case 'audit-logs':                   return 'audit-logs.read'
@@ -368,7 +372,9 @@ function AdminApp() {
     case 'shipping':
       screen = <ShippingScreen canUpdate={hasPermission('shipping.write')} />; break
     case 'reviews':
-      screen = <ReviewListScreen canUpdate={hasPermission('reviews.write')} />; break
+      screen = <ReviewListScreen navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
+    case 'review-detail':
+      screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
     case 'admin-users':
       screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} />; break
     case 'settings':
