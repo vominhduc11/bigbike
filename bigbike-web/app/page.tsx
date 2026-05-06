@@ -25,7 +25,13 @@ import {
   buildWebSiteJsonLd,
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
-import { formatDate, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import {
+  formatDate,
+  isSafeHomeVideoUrl,
+  resolveMediaUrl,
+  safeText,
+  toSafePublicHref,
+} from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import {
   toArticleListPath,
@@ -95,9 +101,19 @@ function toHeroSlide(slider: HomeSlider) {
     id: slider.id,
     desktopSrc,
     mobileSrc,
-    href: slider.link || slider.productLink || slider.externalLink || toProductListPath(),
+    href: toSafePublicHref(
+      slider.link || slider.productLink || slider.externalLink,
+      toProductListPath(),
+    ),
     alt: safeText(slider.desktopImage?.alt || slider.mobileImage?.alt, "BigBike"),
   };
+}
+
+function isRenderableHomeVideo(video: import("@/lib/contracts/public").HomeVideo): boolean {
+  if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) {
+    return true;
+  }
+  return isSafeHomeVideoUrl(video.videoUrl);
 }
 
 function HomeTrustRail() {
@@ -295,7 +311,7 @@ export default async function HomePage() {
 
   const expArticles = expArticlesResult.data;
   const newsArticles = newsArticlesResult.data;
-  const homeVideos = homeVideosResult.data ?? [];
+  const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd("BigBike", HOME_ORG_LOGO));
   const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd("BigBike"));

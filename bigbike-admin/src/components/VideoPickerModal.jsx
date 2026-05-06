@@ -168,7 +168,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
             >
               <IconUpload />
               {uploading
-                ? t('homeVideos.picker.uploading', { progress: uploadProgress || null })
+                ? t('homeVideos.picker.uploading', { progress: uploadProgress || 0 })
                 : t('homeVideos.picker.uploadButton')}
             </button>
             <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label={t('homeVideos.picker.close')}>

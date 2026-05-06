@@ -19,10 +19,12 @@ import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -848,6 +850,138 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // P0/P1 FIX TESTS — Coupon policy hardening
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // P0-COUPON-03: switching discountType FIXED→PERCENT without a new amount must fail
+    // when the existing amount (e.g. 200 000) exceeds the PERCENT max of 100
+    @Test
+    void updateCoupon_fixedToPercent_withHighAmount_returns400() throws Exception {
+        CouponEntity coupon = createCouponWithAmount(
+                "FTP-" + UUID.randomUUID().toString().substring(0, 6), "FIXED", new BigDecimal("200000"));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"discountType\":\"PERCENT\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // P0-COUPON-03: switching FIXED→PERCENT while supplying a valid new amount must succeed
+    @Test
+    void updateCoupon_fixedToPercent_withValidAmount_succeeds() throws Exception {
+        CouponEntity coupon = createCouponWithAmount(
+                "FTP2-" + UUID.randomUUID().toString().substring(0, 6), "FIXED", new BigDecimal("200000"));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"discountType\":\"PERCENT\",\"amount\":15}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountType").value("PERCENT"))
+                .andExpect(jsonPath("$.data.amount").value(15));
+    }
+
+    // Cart: applying a nonexistent coupon code → 404
+    @Test
+    void applyCoupon_nonexistentCode_returns404() throws Exception {
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = cartResult.getResponse().getCookies();
+        String csrf = getCookieValue(cartResult.getResponse(), "bb_csrf");
+
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"DOESNOTEXIST-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase() + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isNotFound());
+    }
+
+    // P0-COUPON-01 guard: applying an INACTIVE coupon → 409
+    @Test
+    void applyCoupon_inactiveCoupon_returns409() throws Exception {
+        String code = "INACT-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        createCouponWithStatus(code, "INACTIVE");
+
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = cartResult.getResponse().getCookies();
+        String csrf = getCookieValue(cartResult.getResponse(), "bb_csrf");
+
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isConflict());
+    }
+
+    // P0-COUPON-01 guard: applying an expired coupon (expiresAt in the past) → 409
+    @Test
+    void applyCoupon_expiredCoupon_returns409() throws Exception {
+        String code = "EXPD-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        createExpiredCoupon(code);
+
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = cartResult.getResponse().getCookies();
+        String csrf = getCookieValue(cartResult.getResponse(), "bb_csrf");
+
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isConflict());
+    }
+
+    // Happy path: applying a valid ACTIVE coupon with no minimumAmount → 200
+    @Test
+    void applyCoupon_validActiveCoupon_succeeds() throws Exception {
+        String code = "VALID-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        createTestCoupon(code); // FIXED 10000, no minAmount, active, expires +30d
+
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = cartResult.getResponse().getCookies();
+        String csrf = getCookieValue(cartResult.getResponse(), "bb_csrf");
+
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes").isArray());
+    }
+
+    // P1-COUPON-04: applying a second coupon to the same cart → 409 (one-per-cart rule)
+    @Test
+    void applyCoupon_secondCoupon_returns409() throws Exception {
+        String code1 = "FIRST-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        String code2 = "SECND-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        createTestCoupon(code1);
+        createTestCoupon(code2);
+
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = cartResult.getResponse().getCookies();
+        String csrf = getCookieValue(cartResult.getResponse(), "bb_csrf");
+
+        // Apply first coupon — should succeed
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code1 + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk());
+
+        // Apply second coupon — must be rejected
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code2 + "\"}")
+                        .cookie(cookies)
+                        .header("X-CSRF-Token", csrf))
+                .andExpect(status().isConflict());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // HELPERS
     // ══════════════════════════════════════════════════════════════════════════
 
@@ -934,6 +1068,59 @@ class Phase1JAdminSettingsMenuCouponApiTest {
             c.setUpdatedAt(now);
             return couponRepo.save(c);
         });
+    }
+
+    private CouponEntity createCouponWithAmount(String code, String discountType, BigDecimal amount) {
+        String upperCode = code.toUpperCase();
+        CouponEntity c = new CouponEntity();
+        c.setCode(upperCode);
+        c.setName("Test Coupon " + upperCode);
+        c.setDiscountType(discountType);
+        c.setAmount(amount);
+        c.setUsageCount(0);
+        c.setStatus("ACTIVE");
+        c.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        Instant now = Instant.now();
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
+
+    private CouponEntity createCouponWithStatus(String code, String status) {
+        String upperCode = code.toUpperCase();
+        CouponEntity c = new CouponEntity();
+        c.setCode(upperCode);
+        c.setName("Test Coupon " + upperCode);
+        c.setDiscountType("FIXED");
+        c.setAmount(new BigDecimal("10000"));
+        c.setUsageCount(0);
+        c.setStatus(status);
+        c.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        Instant now = Instant.now();
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
+
+    private CouponEntity createExpiredCoupon(String code) {
+        String upperCode = code.toUpperCase();
+        CouponEntity c = new CouponEntity();
+        c.setCode(upperCode);
+        c.setName("Expired Coupon " + upperCode);
+        c.setDiscountType("FIXED");
+        c.setAmount(new BigDecimal("10000"));
+        c.setUsageCount(0);
+        c.setStatus("ACTIVE");
+        c.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
+        Instant now = Instant.now();
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
+
+    private String getCookieValue(MockHttpServletResponse response, String name) {
+        Cookie cookie = response.getCookie(name);
+        return cookie != null ? cookie.getValue() : null;
     }
 
     private String extractJsonValue(String json, String key) {

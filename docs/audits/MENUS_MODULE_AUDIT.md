@@ -241,12 +241,13 @@ private void deleteMenuItemsBottomUp(List<MenuItemEntity> items) {
 
 ## 7. Remaining Issues (LOW / P2)
 
-| ID | Severity | Area | Issue | Fix Recommendation |
-|---|---|---|---|---|
-| MNU-P2-001 | LOW | Docs | `API_CONTRACT.md` chưa document field `clearParentId` trong `PATCH /admin/menus/{menuId}/items/{itemId}`. OpenAPI spec cũng chưa có. Client FE cần biết để dùng. | Update `API_CONTRACT.md` section Menus. Nếu có OpenAPI generator, regenerate. |
-| MNU-P2-002 | LOW | Test | Không có test runner FE (Vitest/Jest) cho `bigbike-web`. `normalizeMenuUrl` và scheme blocking trong `nav.ts` chưa có unit test. | Thêm `nav.test.ts` với cases: `/path`, `https://ext`, `mailto:`, `tel:`, `#anchor`, `javascript:`, `vbscript:`, `data:`. |
-| MNU-P2-003 | LOW | Behavior | `normalizeMenuUrl` trong `nav.ts` thêm trailing slash cho internal paths (`/san-pham` → `/san-pham/`). Đây là behavior intentional (nhất quán với Header), nhưng footer items với query string hoặc anchor không bị thêm slash (đúng). | Không cần fix. Document behavior: trailing slash chỉ áp dụng cho path thuần `/...` không có `?` hoặc `#`. |
-| MNU-P2-004 | LOW | Resilience | `deleteMenuItemsBottomUp` không có guard cho vòng lặp vô hạn (circular `parent_id` trong DB). Trong production data không thể xảy ra (reorder + update đều detect cycle), nhưng nếu có dữ liệu corrupt thì `isParent` set sẽ không bao giờ rỗng → `parents` list không giảm → stack overflow sau nhiều level. | Thêm guard: so sánh size `parents` với `remaining`; nếu bằng nhau (không progress) → break và `deleteAll(parents)` để thoát. Hoặc dùng iterative set-based approach thay vì recursion. |
+| ID | Severity | Area | Issue | Status | Fix Recommendation |
+|---|---|---|---|---|---|
+| MNU-P2-001 | LOW | Docs | `API_CONTRACT.md` chưa document field `clearParentId` trong `PATCH /admin/menus/{menuId}/items/{itemId}`. | **RESOLVED 2026-05-06** | `API_CONTRACT.md` đã được cập nhật: mở rộng Menus row trong §8.5 + thêm §8.5.1 với full field table và precedence rule. |
+| MNU-P2-001a | LOW | Docs | OpenAPI generated spec (nếu có) chưa reflect `clearParentId`. Đây là follow-up riêng, độc lập với API_CONTRACT.md text. | OPEN | Regenerate OpenAPI spec sau khi deploy. Không block release. |
+| MNU-P2-002 | LOW | Test | Không có test runner FE (Vitest/Jest) cho `bigbike-web`. `normalizeMenuUrl` và scheme blocking trong `nav.ts` chưa có unit test. | OPEN | Thêm `nav.test.ts` với cases: `/path`, `https://ext`, `mailto:`, `tel:`, `#anchor`, `javascript:`, `vbscript:`, `data:`. |
+| MNU-P2-003 | LOW | Behavior | `normalizeMenuUrl` trong `nav.ts` thêm trailing slash cho internal paths (`/san-pham` → `/san-pham/`). Behavior intentional (nhất quán với Header). | CLOSED — by design | Trailing slash chỉ áp dụng cho path thuần `/...` không có `?` hoặc `#`. Không cần fix. |
+| MNU-P2-004 | LOW | Resilience | `deleteMenuItemsBottomUp` không có guard vòng lặp vô hạn nếu DB có dữ liệu corrupt (circular `parent_id`). Không thể xảy ra qua API nhờ cycle detection ở write path. | OPEN | Thêm guard: so sánh size `parents` trước/sau; nếu không giảm → `deleteAll(parents)` để thoát. |
 
 ---
 
@@ -301,22 +302,26 @@ private void deleteMenuItemsBottomUp(List<MenuItemEntity> items) {
 
 | Dimension | Score | Notes |
 |---|---|---|
-| API contract completeness | 9/10 | `clearParentId` field chưa trong `API_CONTRACT.md` |
+| API contract completeness | 10/10 | `API_CONTRACT.md` §8.5 + §8.5.1 updated 2026-05-06 |
 | Business logic correctness | 10/10 | Tất cả P0 đã fix + test |
 | Delete safety | 10/10 | 409 guard + topological delete |
 | URL security (XSS via `javascript:`) | 10/10 | Blocked ở `nav.ts` |
-| Test coverage (backend) | 9/10 | Không có permission-denial test (shared gap) |
-| Test coverage (frontend) | 6/10 | Không có test runner FE |
+| Test coverage (backend) | 9/10 | Không có permission-denial test (shared gap với toàn hệ thống) |
+| Test coverage (frontend) | 6/10 | Không có test runner FE (MNU-P2-002) |
 | DB schema | 9/10 | Self-referential FK không có cascade là by-design; code handles |
-| Docs | 7/10 | `API_CONTRACT.md` cần update `clearParentId` |
+| Docs | 10/10 | `API_CONTRACT.md` updated; OpenAPI regenerate là follow-up riêng (MNU-P2-001a) |
 
-**Production readiness: CONDITIONALLY_READY.**
+**Production readiness: READY.**
 
-**Không có P0 blocker còn lại.** Module có thể release sau khi update `API_CONTRACT.md` cho `clearParentId` (MNU-P2-001) — đây là docs gap, không phải code bug, và không ảnh hưởng runtime.
+**Không còn blocker nào.** `API_CONTRACT.md` đã được cập nhật (MNU-P2-001 RESOLVED). Không có P0 hoặc required-before-release item nào còn mở.
 
-**Required before release:**
-- [ ] Update `docs/engineering/API_CONTRACT.md`: thêm `clearParentId: Boolean?` vào `PATCH /admin/menus/{menuId}/items/{itemId}` request body description.
+**Required before release:** *(tất cả đã xong)*
+- [x] Fix PATCH move-to-root (`clearParentId`) — MNU-001
+- [x] Fix Footer URL normalize + scheme blocking — MNU-002
+- [x] Fix delete hierarchy safety (409 guard + topological delete) — MNU-003
+- [x] Update `docs/engineering/API_CONTRACT.md` §8.5 + §8.5.1 — MNU-P2-001
 
 **Recommended post-release:**
-- [ ] MNU-P2-002: Thêm `nav.test.ts` unit tests cho `normalizeMenuUrl`.
-- [ ] MNU-P2-004: Thêm infinite-loop guard vào `deleteMenuItemsBottomUp`.
+- [ ] MNU-P2-001a: Regenerate OpenAPI spec để reflect `clearParentId` field.
+- [ ] MNU-P2-002: Thêm `nav.test.ts` unit tests cho `normalizeMenuUrl` (7 test cases).
+- [ ] MNU-P2-004: Thêm infinite-loop guard vào `deleteMenuItemsBottomUp` cho corrupt-data resilience.

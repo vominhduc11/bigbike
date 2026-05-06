@@ -228,11 +228,54 @@ Global admin rule: `/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`.
 |---|---|---|---|---|---|
 | Content | `GET /admin/content`, `GET /admin/content/{type}/{id}`, `POST /admin/content/articles`, `PATCH /admin/content/articles/{id}`, `POST /admin/content/pages`, `PATCH /admin/content/pages/{id}`, `DELETE /admin/content/{type}/{id}` | `content.read/update` | article/page CRUD | `CONFIRMED_FROM_CODE` | `AdminContentController.java`, `adminApi.js` |
 | Settings | `GET /admin/settings`, `GET/PATCH /admin/settings/{settingKey}` | `settings.read/write` | site setting list/detail/update | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java` |
-| Menus | `GET/POST /admin/menus`, `GET/PATCH/DELETE /admin/menus/{menuId}`, item create/update/delete, `POST /items/reorder` | `menus.read/write` | menu + menu item CRUD/reorder | `CONFIRMED_FROM_CODE` | `AdminMenuController.java` |
+| Menus | `GET/POST /admin/menus`, `GET/PATCH/DELETE /admin/menus/{menuId}`, `POST/PATCH/DELETE /admin/menus/{menuId}/items/{itemId}`, `POST /admin/menus/{menuId}/items/reorder` | `menus.read/write` | menu + menu item CRUD/reorder; **PATCH item** (`UpdateMenuItemRequest`): all fields optional; send `clearParentId: true` to move item to root (`parentId` server-set to null); send `parentId: <UUID>` to reparent (same-menu + no-cycle validated — 400 if violated); omit both → parent unchanged; if `clearParentId: true` and `parentId` both present, `clearParentId` takes priority (`parentId` silently ignored); **DELETE item** → 409 `CHILD_ITEMS_EXIST` if item has children; **DELETE menu** → cascades all items including deep hierarchies; see §8.5.1 below for full field table | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, `AdminMenuService.java` |
 | Coupons | `GET/POST /admin/coupons`, `GET/PATCH /admin/coupons/{couponId}`, `PATCH /admin/coupons/{couponId}/status` | `coupons.read/write` | coupon list/detail/create/update/status | `CONFIRMED_FROM_CODE` | `AdminCouponController.java` |
 | Shipping | zone CRUD under `/admin/shipping/zones`, method CRUD under `/zones/{zoneId}/methods` | `shipping.read/write` | internal zone/method config | `CONFIRMED_FROM_CODE` | `AdminShippingController.java` |
 | Sliders | `GET/POST /admin/sliders`, `POST /admin/sliders/reorder`, `PATCH/DELETE /admin/sliders/{id}` | `sliders.read/write` | homepage slider CRUD/reorder | `CONFIRMED_FROM_CODE` | `AdminSliderController.java` |
 | Home videos | `GET/POST /admin/home-videos`, `POST /admin/home-videos/reorder`, `PATCH/DELETE /admin/home-videos/{id}` | `home_videos.read/write` | homepage video CRUD/reorder | `CONFIRMED_FROM_CODE` | `AdminHomeVideoController.java` |
+
+#### 8.5.1 `PATCH /api/v1/admin/menus/{menuId}/items/{itemId}` — `UpdateMenuItemRequest` field semantics
+
+All fields are optional. Fields not present in the JSON body are left unchanged on the server.
+
+| Field | Type | Semantics |
+|---|---|---|
+| `label` | `string?` | New display label. Ignored if blank/whitespace-only. |
+| `url` | `string?` | New URL. Empty string is accepted (clears URL). |
+| `targetType` | `string?` | `CUSTOM`, `CATEGORY`, `PRODUCT`, `BRAND`, `PAGE`, `ARTICLE`. If set to `CUSTOM`, server also sets `targetId = null`. |
+| `targetId` | `UUID?` | ID of the target resource. Set when `targetType` is non-`CUSTOM`. |
+| `sortOrder` | `integer?` | New sort order. |
+| `openInNewTab` | `boolean?` | Whether link opens in a new tab. |
+| `cssClass` | `string?` | Custom CSS class string. Empty string accepted (clears). |
+| `status` | `string?` | `ACTIVE` or `INACTIVE`. Other values → 400. |
+| `parentId` | `UUID?` | Move item under this parent. Parent must be in the same menu; setting it must not create a cycle — 400 if either violated. Ignored when `clearParentId: true`. |
+| `clearParentId` | `boolean?` | **`true`**: move item to root (`parentId` server-set to `null`). Takes priority over `parentId` if both are present. `false` / absent: no effect on parent. |
+
+**Parent resolution precedence** (confirmed from `AdminMenuService.updateMenuItem` implementation):
+
+```
+if clearParentId == true  → parentId = null              (parentId field ignored)
+else if parentId != null  → validate + move to parentId
+else                      → parent unchanged
+```
+
+**Response:** `ApiDataResponse<AdminMenuItemResponse>` — same shape regardless of which fields were updated.
+
+**Errors:**
+
+| Condition | HTTP | Error code |
+|---|---|---|
+| `parentId` not in same menu | 400 | `INVALID_FIELD / parentId / NOT_FOUND` |
+| `parentId` would create cycle | 400 | `INVALID_FIELD / parentId / CYCLE` |
+| `status` not in allowlist | 400 | `INVALID_FIELD / status / INVALID` |
+| Menu not found | 404 | — |
+| Item not found or belongs to different menu | 404 | — |
+
+**Evidence:** [`AdminMenuService.java:241–248`](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMenuService.java), [`UpdateMenuItemRequest.java`](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/dto/menu/UpdateMenuItemRequest.java) — `CONFIRMED_FROM_CODE` as of 2026-05-06.
+
+**OpenAPI:** `clearParentId` field is not yet reflected in the generated OpenAPI spec. Follow-up: regenerate spec after this doc update. Tracked in [MENUS_MODULE_AUDIT.md MNU-P2-001 follow-up](../audits/MENUS_MODULE_AUDIT.md).
+
+---
 
 ### 8.6 Reports / Dashboard / Users / Roles / Reviews / Redirects / Internal
 

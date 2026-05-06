@@ -4,7 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
-import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
 
 type Props = { videos: HomeVideo[] };
 
@@ -66,7 +66,7 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
-        ) : (
+        ) : isSafeHomeVideoUrl(video.videoUrl) ? (
           /* fallback: non-YouTube self-hosted */
           // eslint-disable-next-line jsx-a11y/media-has-caption
           <video
@@ -77,6 +77,10 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
             muted
             playsInline
           />
+        ) : (
+          <div className="wp-video-modal-player wp-video-thumb-fallback" aria-hidden="true">
+            <span className="wp-video-thumb-fallback-mark">BIGBIKE</span>
+          </div>
         )}
         <p className="wp-video-modal-title">{safeText(video.title, "Video")}</p>
       </div>

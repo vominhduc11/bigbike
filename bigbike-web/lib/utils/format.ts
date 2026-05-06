@@ -24,20 +24,87 @@ export function formatVnd(value: number | null | undefined): string {
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PROXY = "/wp-content/uploads/";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
+const PUBLIC_BASE_URL = "https://bigbike.vn";
+const SAFE_YOUTUBE_HOSTS = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "youtube-nocookie.com",
+  "www.youtube-nocookie.com",
+]);
 
 export function resolveMediaUrl(url: string | null | undefined): string | null | undefined {
   if (!url) return url;
-  // Legacy CDN absolute URL → same-origin proxy path
   if (url.startsWith(LEGACY_CDN_PREFIX)) {
     return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
   }
-  // MinIO/object-storage absolute URL (http://localhost:9000/bigbike-media/wp-uploads/...)
-  // → same-origin proxy path so Next.js rewrite forwards to the correct CDN/MinIO instance
+  if (/^https:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//.test(url)) {
+    const parsed = new URL(url);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
   if (url.startsWith("http") && url.includes(MINIO_UPLOADS_SUBPATH)) {
     const idx = url.indexOf(MINIO_UPLOADS_SUBPATH);
     return WP_UPLOADS_PROXY + url.slice(idx + MINIO_UPLOADS_SUBPATH.length);
   }
   return url;
+}
+
+function trimToNull(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function hasUnsafePrefix(value: string): boolean {
+  return /^(javascript|data|vbscript|file):/i.test(value)
+    || value.startsWith("//")
+    || value.startsWith("\\\\")
+    || value.includes("\\");
+}
+
+function parseUrl(value: string): URL | null {
+  try {
+    return new URL(value, PUBLIC_BASE_URL);
+  } catch {
+    return null;
+  }
+}
+
+export function isSafePublicHref(value: string | null | undefined): boolean {
+  const normalized = trimToNull(value);
+  if (!normalized || hasUnsafePrefix(normalized)) {
+    return false;
+  }
+  if (normalized.startsWith("/")) {
+    return true;
+  }
+  const parsed = parseUrl(normalized);
+  return Boolean(parsed && parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password);
+}
+
+export function toSafePublicHref(value: string | null | undefined, fallback: string): string {
+  return isSafePublicHref(value) ? (trimToNull(value) as string) : fallback;
+}
+
+export function isSafeHomeVideoUrl(value: string | null | undefined): boolean {
+  const normalized = trimToNull(value);
+  if (!normalized || hasUnsafePrefix(normalized)) {
+    return false;
+  }
+  if (normalized.startsWith("/media/") || normalized.startsWith("/media-proxy/")) {
+    return true;
+  }
+  const parsed = parseUrl(normalized);
+  if (!parsed || !["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+    return false;
+  }
+  if (SAFE_YOUTUBE_HOSTS.has(parsed.hostname.toLowerCase())) {
+    return true;
+  }
+  return parsed.pathname.includes("/bigbike-media/");
 }
 
 export function formatDate(value: string | null | undefined): string {
