@@ -316,6 +316,21 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminPatchStatus_invalidStatus_doesNotCreateAuditLog() throws Exception {
+        long countBefore = countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"HAHA\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId))
+                .isEqualTo(countBefore);
+    }
+
+    @Test
     void adminPatchStatus_missingStatusKey_returns400() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -347,6 +362,24 @@ class Phase1NReviewsApiTest {
         org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"status\":\"APPROVED\"");
         org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress()).isEqualTo("203.0.113.10");
         org.assertj.core.api.Assertions.assertThat(auditLog.getUserAgent()).isEqualTo("Phase2C-Test-Agent");
+    }
+
+    @Test
+    void adminPatchStatus_notFound_doesNotCreateAuditLog() throws Exception {
+        Long missingReviewId = reviewRepo.findAll().stream()
+                .map(ReviewEntity::getId)
+                .max(Long::compareTo)
+                .orElse(0L) + 999_999L;
+        long countBefore = countReviewAudits("REVIEW_STATUS_CHANGED", missingReviewId);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + missingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isNotFound());
+
+        org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_STATUS_CHANGED", missingReviewId))
+                .isEqualTo(countBefore);
     }
 
     @Test
@@ -382,6 +415,22 @@ class Phase1NReviewsApiTest {
         org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"deleted\":true");
         org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress()).isEqualTo("198.51.100.25");
         org.assertj.core.api.Assertions.assertThat(auditLog.getUserAgent()).isEqualTo("Phase2C-Delete-Agent");
+    }
+
+    @Test
+    void adminDeleteReview_notFound_doesNotCreateAuditLog() throws Exception {
+        Long missingReviewId = reviewRepo.findAll().stream()
+                .map(ReviewEntity::getId)
+                .max(Long::compareTo)
+                .orElse(0L) + 999_999L;
+        long countBefore = countReviewAudits("REVIEW_DELETED", missingReviewId);
+
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + missingReviewId)
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isNotFound());
+
+        org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_DELETED", missingReviewId))
+                .isEqualTo(countBefore);
     }
 
     @Test
@@ -435,6 +484,24 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminAuditLogList_canFilterReviewResource() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/audit-logs")
+                        .param("resourceType", "REVIEW")
+                        .header("X-Admin-Permissions", "audit-logs.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.resourceType == 'REVIEW' && @.action == 'REVIEW_STATUS_CHANGED')]")
+                        .isNotEmpty())
+                .andExpect(jsonPath("$.data[?(@.resourceType == 'REVIEW' && @.action == 'REVIEW_STATUS_CHANGED' && @.resourceCode == 'Review #"
+                        + pendingReviewId + "' && @.resourceDisplayName == 'LS2 FF800 Storm')]").isNotEmpty());
+    }
+
+    @Test
     void adminListReviews_noAuth_returns401() throws Exception {
         secMvc.perform(get("/api/v1/admin/reviews"))
                 .andExpect(status().isUnauthorized());
@@ -475,12 +542,40 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminPatchStatus_missingReviewsWritePermission_doesNotCreateAuditLog() throws Exception {
+        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        long countBefore = countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId);
+
+        secMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
+
+        org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_STATUS_CHANGED", pendingReviewId))
+                .isEqualTo(countBefore);
+    }
+
+    @Test
     void adminDeleteReview_missingReviewsWritePermission_returns403() throws Exception {
         String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
 
         secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminDeleteReview_missingReviewsWritePermission_doesNotCreateAuditLog() throws Exception {
+        String editorToken = jwtService.generateAccessToken("editor-id", "editor@bigbike.test", "EDITOR");
+        long countBefore = countReviewAudits("REVIEW_DELETED", pendingReviewId);
+
+        secMvc.perform(delete("/api/v1/admin/reviews/" + pendingReviewId)
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
+
+        org.assertj.core.api.Assertions.assertThat(countReviewAudits("REVIEW_DELETED", pendingReviewId))
+                .isEqualTo(countBefore);
     }
 
     private Long insertReview(String productId, String authorName, int rating, String body, String status) {
@@ -517,6 +612,15 @@ class Phase1NReviewsApiTest {
 
     private boolean contains(String value, String expected) {
         return value != null && value.contains(expected);
+    }
+
+    private long countReviewAudits(String action, Long reviewId) {
+        String reviewIdSnippet = "\"id\":" + reviewId;
+        return auditLogRepo.findAll().stream()
+                .filter(log -> action.equals(log.getAction()))
+                .filter(log -> "REVIEW".equals(log.getResourceType()))
+                .filter(log -> contains(log.getBeforeData(), reviewIdSnippet) || contains(log.getAfterData(), reviewIdSnippet))
+                .count();
     }
 
     private RequestPostProcessor remoteAddress(String remoteAddress) {
