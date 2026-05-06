@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/models/page_content.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/widgets/error_view.dart';
 
 class ContentScreen extends StatefulWidget {
@@ -14,7 +16,7 @@ class ContentScreen extends StatefulWidget {
 }
 
 class _ContentScreenState extends State<ContentScreen> {
-  Map<String, dynamic>? _page;
+  PageContent? _page;
   bool _loading = true;
   String? _error;
 
@@ -29,7 +31,11 @@ class _ContentScreenState extends State<ContentScreen> {
     try {
       final raw = await ApiClient()
           .get<Map<String, dynamic>>(ApiEndpoints.page(widget.slug));
-      setState(() { _page = raw['data'] as Map<String, dynamic>? ?? raw; _loading = false; });
+      final data = raw['data'] as Map<String, dynamic>? ?? raw;
+      setState(() {
+        _page = PageContent.fromJson(data);
+        _loading = false;
+      });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -40,7 +46,7 @@ class _ContentScreenState extends State<ContentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _page?['title'] as String? ?? widget.slug.replaceAll('-', ' '),
+          _page?.title ?? widget.slug.replaceAll('-', ' '),
           overflow: TextOverflow.ellipsis,
         ),
       ),
@@ -55,13 +61,29 @@ class _ContentScreenState extends State<ContentScreen> {
                   ? const EmptyState(message: 'Trang không tồn tại')
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
-                      child: HtmlWidget(
-                        _page!['body'] as String? ?? '',
-                        textStyle: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
-                          height: 1.7,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_page!.updatedAt != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                'Cập nhật: ${formatDate(_page!.updatedAt)}',
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          HtmlWidget(
+                            _page!.body ?? '',
+                            textStyle: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              height: 1.7,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
     );

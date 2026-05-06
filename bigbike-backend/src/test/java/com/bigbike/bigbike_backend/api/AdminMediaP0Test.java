@@ -18,6 +18,7 @@ import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaReposito
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -201,7 +202,7 @@ class AdminMediaP0Test {
     @Test
     void hardDelete_storageFailure_keepsDbRow() throws Exception {
         UUID mediaId = createTestMedia("/media/uploads/fail-" + UUID.randomUUID() + "/img.jpg");
-        doThrow(new Exception("MinIO unavailable"))
+        doThrow(new IOException("MinIO unavailable"))
                 .when(minioClient).removeObject(any(RemoveObjectArgs.class));
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
