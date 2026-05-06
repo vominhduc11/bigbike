@@ -117,7 +117,7 @@ class _ErrorInterceptor extends Interceptor {
       handler.reject(
         DioException(
           requestOptions: err.requestOptions,
-          error: const NetworkException('KhĂ´ng cĂ³ káº¿t ná»‘i máº¡ng'),
+          error: const NetworkException('Không có kết nối mạng'),
           type: err.type,
         ),
       );
@@ -127,7 +127,7 @@ class _ErrorInterceptor extends Interceptor {
     final response = err.response;
     if (response != null) {
       final data = response.data;
-      String message = 'Lá»—i khĂ´ng xĂ¡c Ä‘á»‹nh';
+      String message = 'Lỗi không xác định';
       Map<String, dynamic>? errors;
       List<Map<String, dynamic>>? details;
 

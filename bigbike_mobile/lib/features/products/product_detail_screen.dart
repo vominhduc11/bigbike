@@ -501,7 +501,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _loadError = 'Khong tai duoc danh gia. Vui long thu lai.';
+        _loadError = 'Không tải được đánh giá. Vui lòng thử lại.';
       });
     }
   }
@@ -511,7 +511,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     if (_rating < 1 || _rating > 5) {
       setState(() {
         _submitSucceeded = false;
-        _submitNotice = 'Vui long chon so sao tu 1 den 5.';
+        _submitNotice = 'Vui lòng chọn số sao từ 1 đến 5.';
       });
       return;
     }
@@ -534,7 +534,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           ? response['data'] as Map<String, dynamic>
           : response;
       if (payload['success'] != true) {
-        throw const ApiException(message: 'Khong the gui danh gia.');
+        throw const ApiException(message: 'Không thể gửi đánh giá.');
       }
       if (!mounted) return;
       FocusScope.of(context).unfocus();
@@ -546,7 +546,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         _submitting = false;
         _submitSucceeded = true;
         _submitNotice =
-            'Da gui danh gia thanh cong. Noi dung se hien thi sau khi duoc duyet.';
+            'Đã gửi đánh giá thành công. Nội dung sẽ hiển thị sau khi được duyệt.';
       });
       await _load(silent: true);
     } catch (error) {
@@ -555,7 +555,11 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       setState(() {
         _submitting = false;
         _submitSucceeded = false;
-        _submitNotice = apiError.displayMessage;
+        _submitNotice = apiError.statusCode == 429
+            ? 'Bạn gửi đánh giá quá nhanh. Vui lòng thử lại sau.'
+            : (apiError.displayMessage.trim().isNotEmpty
+                  ? apiError.displayMessage
+                  : 'Không thể gửi đánh giá. Vui lòng thử lại.');
       });
     } finally {
       if (mounted && _submitting) {
@@ -565,17 +569,17 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
   }
 
   String? _validateAuthorName(String? value) {
-    final required = Validators.required(value, 'Ten');
+    final required = Validators.required(value, 'Tên');
     if (required != null) return required;
     if (value!.trim().length > 80) {
-      return 'Ten khong duoc vuot qua 80 ky tu';
+      return 'Tên không được vượt quá 80 ký tự';
     }
     return null;
   }
 
   String? _validateComment(String? value) {
-    if (value != null && value.length > 1000) {
-      return 'Nhan xet khong duoc vuot qua 1000 ky tu';
+    if (value != null && value.trim().length > 1000) {
+      return 'Nhận xét không được vượt quá 1000 ký tự';
     }
     return null;
   }
@@ -602,7 +606,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         ],
         const SizedBox(height: 16),
         const Text(
-          'Danh gia tu khach hang',
+          'Đánh giá từ khách hàng',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
@@ -621,7 +625,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           _ReviewsErrorState(onRetry: _load)
         else if (_reviews == null || _reviews!.isEmpty)
           const Text(
-            'Chua co danh gia',
+            'Chưa có đánh giá',
             style: TextStyle(color: AppColors.textMuted),
           )
         else
@@ -671,7 +675,7 @@ class _ReviewComposer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Gui danh gia cua ban',
+              'Gửi đánh giá của bạn',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 16,
@@ -680,7 +684,7 @@ class _ReviewComposer extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Danh gia moi se duoc kiem duyet truoc khi hien thi cong khai.',
+              'Đánh giá mới sẽ được kiểm duyệt trước khi hiển thị công khai.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 16),
@@ -688,7 +692,7 @@ class _ReviewComposer extends StatelessWidget {
               controller: authorCtrl,
               validator: validateAuthorName,
               style: const TextStyle(color: AppColors.textPrimary),
-              decoration: _inputDecoration('Ten cua ban *'),
+              decoration: _inputDecoration('Tên của bạn *'),
             ),
             const SizedBox(height: 12),
             _RatingInput(
@@ -702,7 +706,7 @@ class _ReviewComposer extends StatelessWidget {
               maxLines: 4,
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: _inputDecoration(
-                'Nhan xet',
+                'Nhận xét',
               ).copyWith(alignLabelWithHint: true),
             ),
             const SizedBox(height: 16),
@@ -719,7 +723,7 @@ class _ReviewComposer extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Gui danh gia'),
+                    : const Text('Gửi đánh giá'),
               ),
             ),
           ],
@@ -766,7 +770,7 @@ class _RatingInput extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'So sao *',
+          'Số sao *',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
@@ -843,14 +847,14 @@ class _ReviewsErrorState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Khong tai duoc danh gia.',
+            'Không tải được đánh giá. Vui lòng thử lại.',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
-          TextButton(onPressed: () => onRetry(), child: const Text('Thu lai')),
+          TextButton(onPressed: () => onRetry(), child: const Text('Thử lại')),
         ],
       ),
     );
