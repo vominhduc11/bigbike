@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
 -------------------------------------------------------------------------------
-Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 18.58 s -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
+Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 18.05 s -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest

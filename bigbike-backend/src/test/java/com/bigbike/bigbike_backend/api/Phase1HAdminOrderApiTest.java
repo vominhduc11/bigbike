@@ -700,12 +700,8 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk());
 
         Instant to = Instant.now().plusSeconds(1);
-        mockMvc.perform(get("/api/v1/admin/reports/analytics")
-                        .param("from", from.toString())
-                        .param("to", to.toString())
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.refundAmount").value(refundBefore.add(BigDecimal.valueOf(1500000)).doubleValue()));
+        BigDecimal refundAfter = fetchRefundAmountSummary(from, to);
+        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(1500000));
     }
 
     @Test
