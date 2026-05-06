@@ -126,7 +126,7 @@ public class OrderEntity {
 
     @Version
     @Column(nullable = false)
-    private Long version = 0L;
+    private Long version;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
