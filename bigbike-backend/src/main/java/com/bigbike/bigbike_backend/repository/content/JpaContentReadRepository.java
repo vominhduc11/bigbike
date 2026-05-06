@@ -114,6 +114,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 entity.getTitle(),
                 entity.getBody(),
                 entity.getPageType(),
+                entity.getParent() != null ? entity.getParent().getId() : null,
                 entity.getPublishStatus(),
                 toSeoMeta(
                         entity.getSeoTitle(),

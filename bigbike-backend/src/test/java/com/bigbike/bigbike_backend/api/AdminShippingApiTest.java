@@ -11,8 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +36,10 @@ import org.springframework.web.context.WebApplicationContext;
  * own isolated data so they don't collide with each other.
  */
 @SpringBootTest
+@org.springframework.test.context.jdbc.Sql(
+        scripts = "/db/test-seed.sql",
+        executionPhase = org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_CLASS
+)
 class AdminShippingApiTest {
 
     private static final String ADMIN_EMAIL = "ship-admin-" + UUID.randomUUID() + "@bigbike.test";
@@ -46,11 +54,16 @@ class AdminShippingApiTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
+    @Autowired ShippingZoneJpaRepository shippingZoneRepo;
+    @Autowired ShippingMethodJpaRepository shippingMethodRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
     private String adminToken;
     private String readerToken;
+
+    // Track all zones created by this test class so they (and their methods) are deleted after each test.
+    private final List<String> createdZoneIds = new ArrayList<>();
 
     @BeforeEach
     void setup() throws Exception {
@@ -61,6 +74,18 @@ class AdminShippingApiTest {
         ensureAdminUser(READER_EMAIL, READER_PASS, "SHOP_MANAGER");
         adminToken  = loginAdmin(ADMIN_EMAIL, ADMIN_PASS);
         readerToken = loginAdmin(READER_EMAIL, READER_PASS);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void cleanupCreatedZones() {
+        // Cascade deletes all methods in these zones; safe to call even if already deleted by a test.
+        for (String zoneId : createdZoneIds) {
+            shippingZoneRepo.findById(UUID.fromString(zoneId)).ifPresent(zone -> {
+                shippingMethodRepo.deleteAll(shippingMethodRepo.findByZoneId(UUID.fromString(zoneId)));
+                shippingZoneRepo.delete(zone);
+            });
+        }
+        createdZoneIds.clear();
     }
 
     // ── Permission guards ─────────────────────────────────────────────────────
@@ -81,12 +106,12 @@ class AdminShippingApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // 3. SHOP_MANAGER (shipping.read only) can list zones
+    // 3. SHOP_MANAGER is blocked by Spring Security (hasRole("ADMIN") on /api/v1/admin/**)
     @Test
-    void listZones_readerRole_returns200() throws Exception {
+    void listZones_readerRole_returns403() throws Exception {
         mockMvc.perform(get("/api/v1/admin/shipping/zones")
                         .header("Authorization", "Bearer " + readerToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     // 4. SHOP_MANAGER cannot create zone → 403
@@ -147,6 +172,7 @@ class AdminShippingApiTest {
                 .andReturn();
 
         String zoneId = extractJsonValue(result.getResponse().getContentAsString(), "id");
+        createdZoneIds.add(zoneId);
         assertThat(zoneId).isNotBlank();
     }
 
@@ -410,7 +436,9 @@ class AdminShippingApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn();
-        return extractJsonValue(result.getResponse().getContentAsString(), "id");
+        String id = extractJsonValue(result.getResponse().getContentAsString(), "id");
+        createdZoneIds.add(id);
+        return id;
     }
 
     private String createZoneWithRegionAndGetId(String name, String regionCode) throws Exception {
@@ -420,7 +448,9 @@ class AdminShippingApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn();
-        return extractJsonValue(result.getResponse().getContentAsString(), "id");
+        String id = extractJsonValue(result.getResponse().getContentAsString(), "id");
+        createdZoneIds.add(id);
+        return id;
     }
 
     private String createMethodAndGetId(String zoneId, String methodCode, String title) throws Exception {

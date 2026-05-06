@@ -10,6 +10,7 @@ public record Page(
         String title,
         String body,
         PageType type,
+        String parentId,
         PublishStatus publishStatus,
         SeoMeta seo,
         Instant publishedAt,

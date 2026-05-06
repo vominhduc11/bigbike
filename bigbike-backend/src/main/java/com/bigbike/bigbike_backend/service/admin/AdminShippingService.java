@@ -11,7 +11,7 @@ import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMetho
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;

@@ -98,6 +98,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 "Giới Thiệu BigBike",
                 "<p>BigBike là cửa hàng đồ bảo hộ và phụ kiện biker.</p>",
                 PageType.ABOUT,
+                null,
                 PublishStatus.PUBLISHED,
                 new SeoMeta(
                         "Giới Thiệu BigBike",
@@ -117,6 +118,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 "Chính Sách Bảo Hành",
                 "<p>Chính sách bảo hành áp dụng theo từng nhóm sản phẩm.</p>",
                 PageType.POLICY,
+                null,
                 PublishStatus.PUBLISHED,
                 new SeoMeta(
                         "Chính Sách Bảo Hành",

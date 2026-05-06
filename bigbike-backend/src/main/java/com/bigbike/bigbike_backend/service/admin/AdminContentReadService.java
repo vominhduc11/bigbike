@@ -89,7 +89,15 @@ public class AdminContentReadService {
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
-                article.updatedAt()
+                article.updatedAt(),
+                article.tags(),
+                article.author(),
+                article.author() != null ? article.author().id() : null,
+                article.category(),
+                article.category() != null ? article.category().id() : null,
+                article.categories(),
+                null,
+                null
         );
     }
 
@@ -107,7 +115,15 @@ public class AdminContentReadService {
                 page.seo(),
                 page.publishedAt(),
                 page.createdAt(),
-                page.updatedAt()
+                page.updatedAt(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                page.type(),
+                page.parentId()
         );
     }
 

@@ -58,6 +58,7 @@ class Phase1FCheckoutApiTest {
     @Autowired ShippingZoneJpaRepository shippingZoneRepo;
 
     private MockMvc mockMvc;
+    private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
 
     private static String testCategoryId;
 
@@ -67,6 +68,13 @@ class Phase1FCheckoutApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureTestCategory();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void cleanupTestShippingMethods() {
+        testShippingMethodIds.forEach(id -> shippingMethodRepo.findById(id)
+                .ifPresent(shippingMethodRepo::delete));
+        testShippingMethodIds.clear();
     }
 
     private void ensureTestCategory() {
@@ -766,7 +774,6 @@ class Phase1FCheckoutApiTest {
                 UUID.fromString("00000000-0000-0000-0000-000000000301")).orElseThrow();
         ShippingMethodEntity m = new ShippingMethodEntity();
         m.setZone(zone);
-        // Use unique code per invocation to avoid duplicate-key conflicts
         m.setMethodCode(methodCode + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6));
         m.setTitle(title);
         m.setCost(cost);
@@ -777,7 +784,9 @@ class Phase1FCheckoutApiTest {
         Instant now = Instant.now();
         m.setCreatedAt(now);
         m.setUpdatedAt(now);
-        return shippingMethodRepo.save(m);
+        ShippingMethodEntity saved = shippingMethodRepo.save(m);
+        testShippingMethodIds.add(saved.getId());
+        return saved;
     }
 
     // ── value types ───────────────────────────────────────────────────────────
