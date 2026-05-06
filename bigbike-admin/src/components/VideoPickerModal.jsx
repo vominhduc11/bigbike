@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 
 const ALLOWED_MIME = ['video/mp4']
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB — matches backend limit
+const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 function formatBytes(bytes) {
   if (!bytes) return ''
@@ -47,10 +48,12 @@ function IconCheck() {
 }
 
 export function VideoPickerModal({ onSelect, onClose }) {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 280)
   const [page, setPage] = useState(1)
-  const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1 })
+  const [reloadKey, setReloadKey] = useState(0)
+  const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1, error: '' })
   const [selectedUrl, setSelectedUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -63,22 +66,33 @@ export function VideoPickerModal({ onSelect, onClose }) {
 
   useEffect(() => {
     let active = true
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState((p) => ({ ...p, status: 'loading' }))
+    setState((prev) => ({ ...prev, status: 'loading', error: '' }))
     fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE })
-      .then((r) => {
+      .then((result) => {
         if (!active) return
-        setState({ status: 'success', items: r.items ?? [], totalPages: r.pagination?.totalPages ?? 1 })
+        setState({
+          status: 'success',
+          items: result.items ?? [],
+          totalPages: result.pagination?.totalPages ?? 1,
+          error: '',
+        })
       })
-      .catch((e) => {
+      .catch((error) => {
         if (!active) return
-        setState({ status: 'error', items: [], totalPages: 1, error: e.message })
+        setState({
+          status: 'error',
+          items: [],
+          totalPages: 1,
+          error: error.message || t('homeVideos.picker.loadError'),
+        })
       })
     return () => { active = false }
-  }, [debouncedSearch, page])
+  }, [debouncedSearch, page, reloadKey, t])
 
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
+    function onKey(event) {
+      if (event.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
@@ -89,19 +103,21 @@ export function VideoPickerModal({ onSelect, onClose }) {
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  async function handleFileChange(e) {
-    const file = e.target.files?.[0]
+  async function handleFileChange(event) {
+    const file = event.target.files?.[0]
     if (!file) return
+
     if (!ALLOWED_MIME.includes(file.type)) {
-      setUploadError(`Không hỗ trợ định dạng ${file.type}. Chỉ hỗ trợ MP4.`)
-      e.target.value = ''
+      setUploadError(t('homeVideos.picker.unsupportedType', { type: file.type || 'unknown' }))
+      event.target.value = ''
       return
     }
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError(`File quá lớn (${formatBytes(file.size)}). Tối đa 500 MB.`)
-      e.target.value = ''
+      setUploadError(t('homeVideos.picker.maxSizeError', { size: formatBytes(file.size) }))
+      event.target.value = ''
       return
     }
+
     setUploadError('')
     setUploading(true)
     setUploadProgress(0)
@@ -109,13 +125,13 @@ export function VideoPickerModal({ onSelect, onClose }) {
       const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct))
       const url = result?.item?.publicUrl
       if (url) {
-        setPage(1)
-        setSearch('')
         setSelectedUrl(url)
-        setState((p) => ({ ...p, status: 'loading' }))
+        setSearch('')
+        setPage(1)
+        setReloadKey((value) => value + 1)
       }
-    } catch (err) {
-      setUploadError(err.message || 'Upload thất bại.')
+    } catch (error) {
+      setUploadError(error.message || t('homeVideos.picker.uploadError'))
     } finally {
       setUploading(false)
       setUploadProgress(0)
@@ -132,9 +148,9 @@ export function VideoPickerModal({ onSelect, onClose }) {
   return (
     <>
       <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label="Chọn video từ thư viện">
+      <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('homeVideos.picker.dialogLabel')}>
         <div className="mpicker-header">
-          <h3 className="mpicker-title">Thư viện video</h3>
+          <h3 className="mpicker-title">{t('homeVideos.picker.title')}</h3>
           <div className="mpicker-header-actions">
             <input
               ref={fileInputRef}
@@ -151,9 +167,11 @@ export function VideoPickerModal({ onSelect, onClose }) {
               disabled={uploading}
             >
               <IconUpload />
-              {uploading ? `Đang tải lên${uploadProgress ? ` ${uploadProgress}%` : '...'}` : 'Tải video lên'}
+              {uploading
+                ? t('homeVideos.picker.uploading', { progress: uploadProgress || null })
+                : t('homeVideos.picker.uploadButton')}
             </button>
-            <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label="Đóng">
+            <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label={t('homeVideos.picker.close')}>
               <IconClose />
             </button>
           </div>
@@ -163,26 +181,27 @@ export function VideoPickerModal({ onSelect, onClose }) {
           <input
             className="control-input"
             type="search"
-            placeholder="Tìm kiếm video..."
+            placeholder={t('homeVideos.picker.searchPlaceholder')}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
+            autoFocus
           />
         </div>
 
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label="Đóng lỗi">✕</button>
+            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}>âœ•</button>
           </div>
         )}
 
         <div className="mpicker-body">
-          {isLoading && <div className="mpicker-state">Đang tải...</div>}
+          {isLoading && <div className="mpicker-state">{t('homeVideos.picker.loading')}</div>}
           {state.status === 'error' && <div className="mpicker-state mpicker-state-error">{state.error}</div>}
           {state.status === 'success' && state.items.length === 0 && (
             <div className="mpicker-state mpicker-state-empty">
               <IconVideo />
-              <p>Chưa có video nào{search ? ' phù hợp' : ''}. Tải lên video đầu tiên.</p>
+              <p>{search ? t('homeVideos.picker.emptySearch') : t('homeVideos.picker.empty')}</p>
             </div>
           )}
           {state.status === 'success' && state.items.length > 0 && (
@@ -190,7 +209,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
               {state.items.map((media) => {
                 const url = media.publicUrl
                 const isSelected = url === selectedUrl
-                const filename = media.filename?.split('/').pop() ?? 'video'
+                const filename = media.filename?.split('/').pop() ?? t('homeVideos.picker.defaultFileName')
                 return (
                   <button
                     key={media.id}
@@ -226,9 +245,9 @@ export function VideoPickerModal({ onSelect, onClose }) {
 
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1 || isLoading}>← Trước</button>
-            <span className="mpicker-page-info">Trang {page} / {state.totalPages}</span>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((p) => Math.min(state.totalPages, p + 1))} disabled={page >= state.totalPages || isLoading}>Sau →</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || isLoading}>{t('homeVideos.picker.prev')}</button>
+            <span className="mpicker-page-info">{t('homeVideos.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((value) => Math.min(state.totalPages, value + 1))} disabled={page >= state.totalPages || isLoading}>{t('homeVideos.picker.next')}</button>
           </div>
         )}
 
@@ -238,12 +257,12 @@ export function VideoPickerModal({ onSelect, onClose }) {
               {selectedUrl.split('/').pop()}
             </span>
           ) : (
-            <span className="mpicker-hint">Chọn một video để sử dụng</span>
+            <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
             <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={!selectedUrl}>
-              Chọn video này
+              {t('homeVideos.picker.confirm')}
             </button>
           </div>
         </div>

@@ -161,6 +161,11 @@ public class AdminCouponService {
                         "discountType must be FIXED or PERCENT.");
             }
             entity.setDiscountType(type);
+            // P0-COUPON-03: when only discountType changes, the existing amount must still be valid
+            // e.g. switching FIXED→PERCENT with amount=200000 would violate the ≤100 rule
+            if (req.amount() == null) {
+                validateAmount(entity.getAmount(), type);
+            }
         }
 
         if (req.amount() != null) {

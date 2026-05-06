@@ -17,6 +17,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCoup
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
+import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -41,6 +42,7 @@ public class CartService {
     private final ProductVariantJpaRepository variantRepo;
     private final CouponJpaRepository couponRepo;
     private final CartCalculator calculator;
+    private final CouponPolicyService couponPolicy;
 
     public CartService(
             CartJpaRepository cartRepo,
@@ -49,7 +51,8 @@ public class CartService {
             ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
             CouponJpaRepository couponRepo,
-            CartCalculator calculator
+            CartCalculator calculator,
+            CouponPolicyService couponPolicy
     ) {
         this.cartRepo = cartRepo;
         this.cartItemRepo = cartItemRepo;
@@ -58,6 +61,7 @@ public class CartService {
         this.variantRepo = variantRepo;
         this.couponRepo = couponRepo;
         this.calculator = calculator;
+        this.couponPolicy = couponPolicy;
     }
 
     @Transactional
@@ -77,7 +81,7 @@ public class CartService {
 
     @Transactional
     public CartEntity getOrCreateGuestCart(String guestId) {
-        return cartRepo.findBySessionId(guestId)
+        return cartRepo.findBySessionIdAndStatus(guestId, STATUS_ACTIVE)
                 .orElseGet(() -> {
                     Instant now = Instant.now();
                     CartEntity cart = new CartEntity();
@@ -237,7 +241,7 @@ public class CartService {
 
     @Transactional
     public CartEntity applyCoupon(CartEntity cart, String code) {
-        String normalized = code.trim().toUpperCase(Locale.ROOT);
+        String normalized = couponPolicy.normalizeCode(code);
 
         // Enforce one coupon per cart
         List<CartCouponEntity> existing = cartCouponRepo.findByCartId(cart.getId());
@@ -249,32 +253,16 @@ public class CartService {
         CouponEntity coupon = couponRepo.findByCodeForUpdate(normalized)
                 .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
 
-        Instant now = Instant.now();
-        if (!"ACTIVE".equals(coupon.getStatus())) {
-            throw new ConflictException("Mã giảm giá không còn hiệu lực.");
-        }
-        if (coupon.getStartsAt() != null && now.isBefore(coupon.getStartsAt())) {
-            throw new ConflictException("Mã giảm giá chưa có hiệu lực.");
-        }
-        if (coupon.getExpiresAt() != null && now.isAfter(coupon.getExpiresAt())) {
-            throw new ConflictException("Mã giảm giá đã hết hạn.");
-        }
-        if (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit()) {
-            throw new ConflictException("Mã giảm giá đã đạt giới hạn sử dụng.");
-        }
-
-        // Recompute current cart subtotal before checking minAmount
         List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
         BigDecimal subtotal = items.stream()
                 .map(CartItemEntity::getLineSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        if (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0) {
-            throw new ConflictException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá.");
-        }
+        couponPolicy.validate(coupon, subtotal);
 
-        BigDecimal discountAmount = computeDiscount(coupon, subtotal);
+        BigDecimal discountAmount = couponPolicy.computeDiscount(coupon, subtotal);
+        Instant now = Instant.now();
 
         CartCouponEntity cartCoupon = new CartCouponEntity();
         cartCoupon.setCart(cart);
@@ -345,13 +333,14 @@ public class CartService {
             CouponEntity coupon = couponOpt.get();
             boolean nowInvalid = !"ACTIVE".equals(coupon.getStatus())
                     || (coupon.getExpiresAt() != null && now.isAfter(coupon.getExpiresAt()))
-                    || (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit());
+                    || (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit())
+                    || (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0);
             if (nowInvalid) {
                 toRemove.add(cc);
                 continue;
             }
-            // Recompute — handles PERCENT discount changing with subtotal and minAmount changes
-            BigDecimal recomputed = computeDiscount(coupon, subtotal);
+            // Recompute — handles PERCENT discount changing with subtotal
+            BigDecimal recomputed = couponPolicy.computeDiscount(coupon, subtotal);
             if (cc.getDiscountAmount().compareTo(recomputed) != 0) {
                 cc.setDiscountAmount(recomputed);
                 cartCouponRepo.save(cc);
@@ -366,20 +355,6 @@ public class CartService {
         calculator.recalculateCart(cart, items, coupons);
         cart.setUpdatedAt(now);
         return cartRepo.save(cart);
-    }
-
-    private static BigDecimal computeDiscount(CouponEntity coupon, BigDecimal subtotal) {
-        BigDecimal discount;
-        if ("PERCENT".equals(coupon.getDiscountType())) {
-            discount = subtotal.multiply(coupon.getAmount())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-        } else {
-            discount = coupon.getAmount().setScale(2, RoundingMode.HALF_UP);
-        }
-        if (coupon.getMaxAmount() != null && discount.compareTo(coupon.getMaxAmount()) > 0) {
-            discount = coupon.getMaxAmount().setScale(2, RoundingMode.HALF_UP);
-        }
-        return discount.compareTo(subtotal) > 0 ? subtotal : discount;
     }
 
     /**

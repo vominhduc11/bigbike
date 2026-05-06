@@ -25,6 +25,7 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
+import { validateSafePublicLink } from '../lib/urlPolicies'
 
 const LOCATIONS = ['home', 'category', 'promotion']
 const EMPTY_FORM = {
@@ -41,7 +42,10 @@ const EMPTY_FORM = {
 
 function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
   const { t } = useTranslation()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSelf } = useSortable({ id: slider.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSelf } = useSortable({
+    id: slider.id,
+    disabled: !canUpdate,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -80,6 +84,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
             touchAction: 'none',
           }}
           title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+          aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
         >
           <GripVertical size={16} />
         </button>
@@ -303,6 +308,13 @@ export function SliderListScreen({ canUpdate }) {
       setFormError(t('sliders.formRequired'))
       return
     }
+    if (form.externalLink.trim()) {
+      const linkValidation = validateSafePublicLink(form.externalLink)
+      if (!linkValidation.valid) {
+        setFormError(t('sliders.formExternalLinkInvalid'))
+        return
+      }
+    }
     setFormError('')
     const payload = buildPayload()
     if (editingId) {
@@ -313,10 +325,12 @@ export function SliderListScreen({ canUpdate }) {
   }
 
   function handleDragStart(event) {
+    if (!canUpdate || reorderMutation.isPending) return
     setActiveId(event.active.id)
   }
 
   function handleDragEnd(event) {
+    if (!canUpdate || reorderMutation.isPending) return
     const { active, over } = event
     setActiveId(null)
     if (!over || active.id === over.id) return
@@ -427,6 +441,7 @@ export function SliderListScreen({ canUpdate }) {
               <label className="form-field form-field-wide">
                 {t('sliders.formExternalLink')}
                 <input className="control-input" placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} />
+                <small className="field-help">{t('sliders.formExternalLinkHint')}</small>
               </label>
               <label className="form-field">
                 {t('sliders.formProductId')}

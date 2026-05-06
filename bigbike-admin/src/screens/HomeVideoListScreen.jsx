@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -31,16 +32,11 @@ import { VideoPickerModal } from '../components/VideoPickerModal'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
-
-function extractYouTubeId(url) {
-  if (!url) return null
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/)
-  return m ? m[1] : null
-}
+import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
 
 const EMPTY_FORM = {
   title: '',
-  videoType: 'youtube', // 'youtube' | 'upload'
+  videoType: 'youtube',
   videoUrl: '',
   thumbnailUrl: '',
   thumbnailAlt: '',
@@ -48,7 +44,11 @@ const EMPTY_FORM = {
 }
 
 function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: video.id })
+  const { t } = useTranslation()
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: video.id,
+    disabled: !canUpdate,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -86,7 +86,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
             flexShrink: 0,
             touchAction: 'none',
           }}
-          aria-label="Kéo để sắp xếp"
+          aria-label={t('homeVideos.dragToReorder')}
         >
           <GripVertical size={16} />
         </button>
@@ -118,7 +118,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
             color: video.isActive ? 'var(--admin-color-success)' : 'var(--admin-color-text-muted)',
             fontWeight: 600,
           }}>
-            {video.isActive ? 'Hiển thị' : 'Ẩn'}
+            {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
           </span>
         </div>
       </div>
@@ -130,21 +130,21 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
             onClick={() => onToggleActive(video)}
             style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer' }}
           >
-            {video.isActive ? 'Ẩn' : 'Hiện'}
+            {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
           </button>
           <button
             type="button"
             onClick={() => onEdit(video)}
             style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer' }}
           >
-            Sửa
+            {t('common.edit')}
           </button>
           <button
             type="button"
             onClick={() => onDelete(video.id)}
             style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-danger-border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--admin-color-danger)' }}
           >
-            Xoá
+            {t('common.delete')}
           </button>
         </div>
       )}
@@ -153,10 +153,12 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
 }
 
 export function HomeVideoListScreen({ canUpdate }) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [editingVideo, setEditingVideo] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [formError, setFormError] = useState('')
   const [localItems, setLocalItems] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
@@ -166,23 +168,23 @@ export function HomeVideoListScreen({ canUpdate }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['home-videos'],
     queryFn: fetchHomeVideos,
   })
 
   const items = localItems ?? (data?.items ?? [])
-  const activeItem = activeId ? items.find((v) => v.id === activeId) : null
+  const activeItem = activeId ? items.find((video) => video.id === activeId) : null
 
   const createMutation = useMutation({
     mutationFn: createHomeVideo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
-      toast.success('Đã thêm video.')
+      toast.success(t('homeVideos.createSuccess'))
       resetForm()
     },
-    onError: (err) => toast.error(err.message || 'Lỗi khi thêm video.'),
+    onError: (err) => setFormError(err.message || t('homeVideos.createError')),
   })
 
   const updateMutation = useMutation({
@@ -190,10 +192,10 @@ export function HomeVideoListScreen({ canUpdate }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
-      toast.success('Đã cập nhật video.')
+      toast.success(t('homeVideos.updateSuccess'))
       resetForm()
     },
-    onError: (err) => toast.error(err.message || 'Lỗi khi cập nhật video.'),
+    onError: (err) => setFormError(err.message || t('homeVideos.updateError')),
   })
 
   const deleteMutation = useMutation({
@@ -201,19 +203,32 @@ export function HomeVideoListScreen({ canUpdate }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
-      toast.success('Đã xoá video.')
+      toast.success(t('homeVideos.deleteSuccess'))
     },
-    onError: (err) => toast.error(err.message || 'Lỗi khi xoá video.'),
+    onError: (err) => toast.error(err.message || t('homeVideos.deleteError')),
   })
 
   const reorderMutation = useMutation({
     mutationFn: (reorderItems) => reorderHomeVideos(reorderItems),
+    onMutate: async (reorderItems) => {
+      await queryClient.cancelQueries({ queryKey: ['home-videos'] })
+      const previous = queryClient.getQueryData(['home-videos'])
+      const optimisticItems = items.map((video) => {
+        const next = reorderItems.find((entry) => entry.id === video.id)
+        return next ? { ...video, sortOrder: next.sortOrder } : video
+      }).sort((left, right) => left.sortOrder - right.sortOrder)
+      setLocalItems(optimisticItems)
+      return { previous }
+    },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['home-videos'] })
+      queryClient.setQueryData(['home-videos'], result)
       setLocalItems(result.items)
     },
-    onError: (err) => {
-      toast.error(err.message || 'Lỗi khi sắp xếp.')
+    onError: (err, _vars, context) => {
+      toast.error(err.message || t('homeVideos.reorderError'))
+      if (context?.previous) {
+        queryClient.setQueryData(['home-videos'], context.previous)
+      }
       setLocalItems(null)
     },
   })
@@ -222,6 +237,7 @@ export function HomeVideoListScreen({ canUpdate }) {
     setShowForm(false)
     setEditingVideo(null)
     setForm(EMPTY_FORM)
+    setFormError('')
   }
 
   function openEdit(video) {
@@ -234,12 +250,13 @@ export function HomeVideoListScreen({ canUpdate }) {
       thumbnailAlt: video.thumbnail?.alt || '',
       isActive: video.isActive,
     })
+    setFormError('')
     setShowForm(true)
   }
 
   async function handleDelete(id) {
-    const ok = await showConfirm('Xoá video này?')
-    if (!ok) return
+    const confirmed = await showConfirm(t('homeVideos.deleteConfirm'), t('homeVideos.deleteConfirmTitle'))
+    if (!confirmed) return
     deleteMutation.mutate(id)
   }
 
@@ -250,22 +267,47 @@ export function HomeVideoListScreen({ canUpdate }) {
     })
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    const hasThumbnail = !!form.thumbnailUrl.trim()
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    const title = form.title.trim()
+    if (!title) {
+      setFormError(t('homeVideos.validationTitle'))
+      return
+    }
+
+    const videoCheck = validateHomeVideoUrl(form.videoUrl)
+    if (!videoCheck.valid) {
+      setFormError(form.videoType === 'youtube' ? t('homeVideos.validationYoutube') : t('homeVideos.validationUpload'))
+      return
+    }
+
+    if (form.videoType === 'youtube' && !extractAllowedYouTubeId(form.videoUrl)) {
+      setFormError(t('homeVideos.validationYoutube'))
+      return
+    }
+
+    if (form.videoType === 'upload' && videoCheck.source !== 'upload') {
+      setFormError(t('homeVideos.validationUpload'))
+      return
+    }
+
+    const hasThumbnail = Boolean(form.thumbnailUrl.trim())
     const newSortOrder = items.length > 0
-      ? Math.max(...items.map((v) => v.sortOrder)) + 1
+      ? Math.max(...items.map((video) => video.sortOrder)) + 1
       : 0
     const input = {
-      title: form.title.trim(),
-      videoUrl: form.videoUrl.trim(),
+      title,
+      videoUrl: videoCheck.normalized,
       sortOrder: editingVideo ? editingVideo.sortOrder : newSortOrder,
       isActive: form.isActive,
       thumbnail: hasThumbnail
-        ? { url: form.thumbnailUrl.trim(), alt: form.thumbnailAlt.trim() || form.title.trim() }
+        ? { url: form.thumbnailUrl.trim(), alt: form.thumbnailAlt.trim() || title }
         : null,
       ...(editingVideo && !hasThumbnail ? { clearThumbnail: true } : {}),
     }
+
+    setFormError('')
     if (editingVideo) {
       updateMutation.mutate({ id: editingVideo.id, input })
     } else {
@@ -274,38 +316,58 @@ export function HomeVideoListScreen({ canUpdate }) {
   }
 
   function handleDragStart(event) {
+    if (!canUpdate || reorderMutation.isPending) return
     setActiveId(event.active.id)
   }
 
   function handleDragEnd(event) {
+    if (!canUpdate || reorderMutation.isPending) return
     const { active, over } = event
     setActiveId(null)
     if (!over || active.id === over.id) return
-    const oldIndex = items.findIndex((v) => v.id === active.id)
-    const newIndex = items.findIndex((v) => v.id === over.id)
-    const reordered = arrayMove(items, oldIndex, newIndex).map((v, i) => ({ ...v, sortOrder: i }))
+    const oldIndex = items.findIndex((video) => video.id === active.id)
+    const newIndex = items.findIndex((video) => video.id === over.id)
+    const reordered = arrayMove(items, oldIndex, newIndex).map((video, index) => ({ ...video, sortOrder: index }))
     setLocalItems(reordered)
-    reorderMutation.mutate(reordered.map((v) => ({ id: v.id, sortOrder: v.sortOrder })))
+    reorderMutation.mutate(reordered.map((video) => ({ id: video.id, sortOrder: video.sortOrder })))
   }
 
   const isBusy = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
+  const youtubePreviewId = extractAllowedYouTubeId(form.videoUrl)
 
-  if (isLoading) return <StatePanel tone="neutral" title="Đang tải video..." />
-  if (isError) return <StatePanel tone="danger" title="Không thể tải danh sách video." />
+  if (isLoading) return <StatePanel tone="neutral" title={t('homeVideos.loading')} />
+  if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} />
+
+  const listContent = items.length === 0 ? (
+    <StatePanel tone="neutral" title={t('homeVideos.empty')} description={t('homeVideos.emptyDescription')} />
+  ) : (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {items.map((video) => (
+        <VideoCard
+          key={video.id}
+          video={video}
+          canUpdate={canUpdate}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
+        />
+      ))}
+    </div>
+  )
 
   return (
     <div style={{ padding: '24px 0', maxWidth: 760 }}>
       {!canUpdate && <ReadOnlyBanner />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Video trang chủ</h1>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{t('homeVideos.title')}</h1>
         {canUpdate && !showForm && (
           <button
             type="button"
-            onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM) }}
+            onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
             style={{ padding: '8px 16px', background: 'var(--admin-color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
           >
-            + Thêm video
+            {t('homeVideos.addButton')}
           </button>
         )}
       </div>
@@ -325,23 +387,26 @@ export function HomeVideoListScreen({ canUpdate }) {
           }}
         >
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
-            {editingVideo ? 'Chỉnh sửa video' : 'Thêm video mới'}
+            {editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}
           </h3>
 
+          {formError ? (
+            <p style={{ color: 'var(--admin-color-danger)', margin: 0 }}>{formError}</p>
+          ) : null}
+
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-            Tiêu đề *
+            {t('homeVideos.formTitle')}
             <input
               required
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder="Tên video"
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder={t('homeVideos.formTitlePlaceholder')}
               style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, fontSize: 14 }}
             />
           </label>
 
-          {/* Video source type */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600 }}>
-            Nguồn video *
+            {t('homeVideos.formSource')}
             <div style={{ display: 'flex', gap: 20, fontWeight: 400 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -349,9 +414,9 @@ export function HomeVideoListScreen({ canUpdate }) {
                   name="videoType"
                   value="youtube"
                   checked={form.videoType === 'youtube'}
-                  onChange={() => setForm((f) => ({ ...f, videoType: 'youtube' }))}
+                  onChange={() => setForm((prev) => ({ ...prev, videoType: 'youtube', videoUrl: '' }))}
                 />
-                YouTube
+                {t('homeVideos.sourceYoutube')}
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -359,94 +424,88 @@ export function HomeVideoListScreen({ canUpdate }) {
                   name="videoType"
                   value="upload"
                   checked={form.videoType === 'upload'}
-                  onChange={() => setForm((f) => ({ ...f, videoType: 'upload' }))}
+                  onChange={() => setForm((prev) => ({ ...prev, videoType: 'upload', videoUrl: '' }))}
                 />
-                Upload video
+                {t('homeVideos.sourceUpload')}
               </label>
             </div>
           </div>
 
           {form.videoType === 'youtube' ? (
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-              YouTube URL *
+              {t('homeVideos.formYoutubeUrl')}
               <input
                 required
                 type="url"
                 value={form.videoUrl}
-                onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
+                onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
                 placeholder="https://www.youtube.com/watch?v=..."
                 style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, fontSize: 14 }}
               />
               <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
-                Hỗ trợ: youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/...
+                {t('homeVideos.youtubeHint')}
               </span>
-              {extractYouTubeId(form.videoUrl) && (
+              {youtubePreviewId && (
                 <img
-                  src={`https://img.youtube.com/vi/${extractYouTubeId(form.videoUrl)}/maxresdefault.jpg`}
-                  alt="YouTube thumbnail preview"
+                  src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
+                  alt={t('homeVideos.youtubePreviewAlt')}
                   style={{ marginTop: 6, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
                 />
               )}
             </label>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-              File video *
+              {t('homeVideos.formUpload')}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => setVideoPickerOpen(true)}
+                  disabled={!canUpdate}
                 >
-                  {form.videoUrl ? 'Đổi video' : 'Chọn từ thư viện'}
+                  {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
                 </button>
                 {form.videoUrl && (
                   <button
                     type="button"
                     className="btn btn-icon btn-danger-ghost"
-                    onClick={() => setForm((f) => ({ ...f, videoUrl: '' }))}
-                    aria-label="Xoá video"
+                    onClick={() => setForm((prev) => ({ ...prev, videoUrl: '' }))}
+                    aria-label={t('homeVideos.removeVideo')}
+                    disabled={!canUpdate}
                   >
-                    ✕
+                    âœ•
                   </button>
                 )}
               </div>
-              {form.videoUrl && (
+              {form.videoUrl ? (
                 <span style={{ fontSize: 11, color: 'var(--admin-color-text-success)', fontWeight: 400 }}>
-                  ✓ {form.videoUrl.split('/').pop()}
+                  âœ“ {form.videoUrl.split('/').pop()}
                 </span>
-              )}
-              {!form.videoUrl && (
+              ) : (
                 <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
-                  Định dạng hỗ trợ: MP4, WebM. Tối đa 500 MB.
+                  {t('homeVideos.uploadHint')}
                 </span>
               )}
             </div>
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-            Ảnh thumbnail (tuỳ chọn)
+            {t('homeVideos.formThumbnail')}
             <ImageUrlInput
               value={form.thumbnailUrl}
-              onChange={(url) => setForm((f) => ({ ...f, thumbnailUrl: url }))}
-              placeholder="URL ảnh thumbnail"
+              onChange={(url) => setForm((prev) => ({ ...prev, thumbnailUrl: url }))}
+              alt={form.thumbnailAlt}
+              onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
             />
-            {form.thumbnailUrl && (
-              <input
-                value={form.thumbnailAlt}
-                onChange={(e) => setForm((f) => ({ ...f, thumbnailAlt: e.target.value }))}
-                placeholder="Alt text ảnh"
-                style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, fontSize: 14, marginTop: 4 }}
-              />
-            )}
           </div>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={form.isActive}
-              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+              onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
             />
-            Hiển thị
+            {t('homeVideos.formIsActive')}
           </label>
 
           <div style={{ display: 'flex', gap: 10 }}>
@@ -455,41 +514,28 @@ export function HomeVideoListScreen({ canUpdate }) {
               disabled={isBusy}
               style={{ padding: '8px 20px', background: 'var(--admin-color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.7 : 1 }}
             >
-              {isBusy ? 'Đang lưu...' : editingVideo ? 'Lưu thay đổi' : 'Thêm'}
+              {isBusy ? t('homeVideos.saving') : editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
             </button>
             <button
               type="button"
               onClick={resetForm}
               style={{ padding: '8px 16px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 8, background: 'none', cursor: 'pointer' }}
             >
-              Huỷ
+              {t('common.cancel')}
             </button>
           </div>
         </form>
       )}
 
-      {items.length === 0 ? (
-        <StatePanel tone="neutral" title="Chưa có video nào." description="Thêm video đầu tiên bằng nút phía trên." />
-      ) : (
+      {canUpdate && items.length > 0 ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={items.map((v) => v.id)} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {items.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  canUpdate={canUpdate}
-                  onEdit={openEdit}
-                  onDelete={handleDelete}
-                  onToggleActive={handleToggleActive}
-                />
-              ))}
-            </div>
+          <SortableContext items={items.map((video) => video.id)} strategy={verticalListSortingStrategy}>
+            {listContent}
           </SortableContext>
           <DragOverlay>
             {activeItem && (
@@ -503,11 +549,11 @@ export function HomeVideoListScreen({ canUpdate }) {
             )}
           </DragOverlay>
         </DndContext>
-      )}
+      ) : listContent}
 
-      {videoPickerOpen && (
+      {videoPickerOpen && canUpdate && (
         <VideoPickerModal
-          onSelect={(url) => { setForm((f) => ({ ...f, videoUrl: url })); setVideoPickerOpen(false) }}
+          onSelect={(url) => { setForm((prev) => ({ ...prev, videoUrl: url })); setVideoPickerOpen(false) }}
           onClose={() => setVideoPickerOpen(false)}
         />
       )}

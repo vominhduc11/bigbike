@@ -43,6 +43,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.Payme
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
+import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -97,6 +98,7 @@ public class CheckoutService {
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final InventoryPolicyService inventoryPolicyService;
+    private final CouponPolicyService couponPolicy;
     private final JdbcTemplate jdbcTemplate;
 
     public CheckoutService(
@@ -121,6 +123,7 @@ public class CheckoutService {
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
             InventoryPolicyService inventoryPolicyService,
+            CouponPolicyService couponPolicy,
             JdbcTemplate jdbcTemplate
     ) {
         this.cartRepo = cartRepo;
@@ -144,6 +147,7 @@ public class CheckoutService {
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.couponPolicy = couponPolicy;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -174,19 +178,36 @@ public class CheckoutService {
         List<OrderSummaryResponse.PriceChange> priceChanges = new ArrayList<>();
         syncPricesAndValidateStock(items, priceChanges);
 
-        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> cartCoupons =
-                cartCouponRepo.findByCartId(cart.getId());
-        cartCalculator.recalculateCart(cart, items, cartCoupons);
-
-        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
-
         BigDecimal subtotal = items.stream()
                 .map(CartItemEntity::getLineSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal discount = cart.getDiscountAmount() != null
-                ? cart.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+        // Reload, revalidate, and recompute each coupon from fresh DB data before creating the order
+        record CouponRedemption(
+                String code,
+                com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity coupon,
+                BigDecimal freshDiscount
+        ) {}
+        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> cartCoupons =
+                cartCouponRepo.findByCartId(cart.getId());
+        List<CouponRedemption> couponRedemptions = new ArrayList<>();
+        for (var cc : cartCoupons) {
+            com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity freshCoupon =
+                    couponRepo.findByCode(cc.getCouponCode())
+                            .orElseThrow(() -> new ConflictException(
+                                    "Mã giảm giá '" + cc.getCouponCode() + "' không còn tồn tại."));
+            couponPolicy.validate(freshCoupon, subtotal);
+            couponRedemptions.add(new CouponRedemption(
+                    cc.getCouponCode(), freshCoupon, couponPolicy.computeDiscount(freshCoupon, subtotal)));
+        }
+
+        BigDecimal discount = couponRedemptions.stream()
+                .map(CouponRedemption::freshDiscount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
         BigDecimal shippingCost = resolveShippingCost(shippingMethod, subtotal);
         BigDecimal total = subtotal.subtract(discount).add(shippingCost).max(BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
@@ -228,22 +249,22 @@ public class CheckoutService {
         // Payment
         paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
 
-        // Record applied coupons on the order + increment usageCount
-        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> freshCartCoupons =
-                cartCouponRepo.findByCartId(cart.getId());
-        List<String> couponCodes = freshCartCoupons.stream()
-                .map(cc -> cc.getCouponCode())
-                .toList();
-        for (var cc : freshCartCoupons) {
+        // Atomically increment usageCount and snapshot each coupon onto the order
+        List<String> couponCodes = couponRedemptions.stream()
+                .map(CouponRedemption::code).toList();
+        for (CouponRedemption redemption : couponRedemptions) {
+            // Conditional UPDATE: returns 0 rows if another checkout exhausted the limit concurrently
+            int redeemed = couponRepo.attemptRedeem(redemption.coupon().getId(), now);
+            if (redeemed == 0) {
+                throw new ConflictException("Mã giảm giá '" + redemption.code()
+                        + "' đã đạt giới hạn sử dụng.");
+            }
             OrderAppliedCouponEntity appliedCoupon = new OrderAppliedCouponEntity();
             appliedCoupon.setOrder(savedOrder);
-            appliedCoupon.setCode(cc.getCouponCode());
-            appliedCoupon.setDiscountAmount(cc.getDiscountAmount());
+            appliedCoupon.setCouponId(redemption.coupon().getId());
+            appliedCoupon.setCode(redemption.code());
+            appliedCoupon.setDiscountAmount(redemption.freshDiscount());
             appliedCoupon.setCreatedAt(now);
-            couponRepo.findByCode(cc.getCouponCode()).ifPresent(coupon -> {
-                appliedCoupon.setCouponId(coupon.getId());
-                couponRepo.incrementUsageCount(coupon.getId(), now);
-            });
             orderAppliedCouponRepo.save(appliedCoupon);
         }
 

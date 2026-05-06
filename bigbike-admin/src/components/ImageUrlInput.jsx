@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MediaPickerModal } from './MediaPickerModal'
 
 function IconLibrary() {
@@ -12,6 +13,7 @@ function IconLibrary() {
 }
 
 function ImagePreview({ url }) {
+  const { t } = useTranslation()
   const [ok, setOk] = useState(false)
   const [loading, setLoading] = useState(false)
   const trimmed = url.trim()
@@ -28,12 +30,13 @@ function ImagePreview({ url }) {
   }, [trimmed])
 
   if (!trimmed) return null
-  if (loading) return <div className="img-preview img-preview-loading">Đang tải...</div>
-  if (!ok) return <div className="img-preview img-preview-error">URL ảnh không hợp lệ</div>
-  return <img src={trimmed} alt="preview" className="img-preview" loading="eager" />
+  if (loading) return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
+  if (!ok) return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
+  return <img src={trimmed} alt={t('imageInput.previewAlt')} className="img-preview" loading="eager" />
 }
 
 export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, error }) {
+  const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
 
@@ -47,7 +50,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
           disabled={disabled}
         >
           <IconLibrary />
-          {hasImage ? 'Đổi ảnh' : 'Chọn từ thư viện'}
+          {hasImage ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
         </button>
         {hasImage && (
           <button
@@ -55,9 +58,9 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
             className="btn btn-icon btn-danger-ghost"
             onClick={() => { onChange(''); onAltChange?.('') }}
             disabled={disabled}
-            aria-label="Xóa ảnh"
+            aria-label={t('imageInput.removeImage')}
           >
-            ✕
+            âœ•
           </button>
         )}
       </div>
@@ -67,7 +70,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
         <input
           className="control-input"
           type="text"
-          placeholder="Alt text ảnh (mô tả ngắn cho SEO & accessibility)"
+          placeholder={t('imageInput.altPlaceholder')}
           value={alt ?? ''}
           onChange={(e) => onAltChange(e.target.value)}
           disabled={disabled}
