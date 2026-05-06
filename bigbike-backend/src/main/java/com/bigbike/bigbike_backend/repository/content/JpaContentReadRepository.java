@@ -129,7 +129,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
             org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
         List<String> ids = idPage.getContent();
         if (ids.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
         }
         List<ArticleEntity> entities = articleJpaRepository.findWithAssociationsByIdIn(ids);
         List<Article> ordered = orderByIds(entities, ids, ArticleEntity::getId)
@@ -141,7 +141,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
             org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
         List<String> ids = idPage.getContent();
         if (ids.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
         }
         List<PageEntity> entities = pageJpaRepository.findWithParentByIdIn(ids);
         List<Page> ordered = orderByIds(entities, ids, PageEntity::getId)
