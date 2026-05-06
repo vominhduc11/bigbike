@@ -12,12 +12,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "sliders")
+@Table(
+        name = "sliders",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_sliders_location_sort_order", columnNames = {"location", "sort_order"})
+        }
+)
 public class SliderEntity {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

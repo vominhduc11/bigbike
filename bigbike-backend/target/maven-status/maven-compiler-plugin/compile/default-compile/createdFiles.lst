@@ -421,6 +421,7 @@ com\bigbike\bigbike_backend\migration\wordpress\importer\MediaImporter.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RedirectResolverService.class
 com\bigbike\bigbike_backend\persistence\entity\video\HomeVideoEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\report\CustomerOrderCouponDryRunResult.class
+com\bigbike\bigbike_backend\service\checkout\CheckoutService$1CouponRedemption.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\WordPressMigrationImportService.class
 com\bigbike\bigbike_backend\api\admin\dto\coupon\CreateCouponRequest.class
 com\bigbike\bigbike_backend\api\admin\AdminMenuController.class
@@ -497,6 +498,7 @@ com\bigbike\bigbike_backend\persistence\repository\customer\CustomerJpaRepositor
 com\bigbike\bigbike_backend\persistence\entity\customer\CustomerEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RedirectResolverService$ResolutionSummary.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\CapabilityMapper$Mapped.class
+com\bigbike\bigbike_backend\service\coupon\CouponPolicyService.class
 com\bigbike\bigbike_backend\api\content\ContentController.class
 com\bigbike\bigbike_backend\persistence\repository\coupon\CouponSpecification.class
 com\bigbike\bigbike_backend\domain\commerce\AddressType.class

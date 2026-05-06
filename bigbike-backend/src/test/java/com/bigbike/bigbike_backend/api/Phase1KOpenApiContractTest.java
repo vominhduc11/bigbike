@@ -92,6 +92,7 @@ class Phase1KOpenApiContractTest {
         String body = fetchApiDocs();
         assertThat(body).contains("/api/v1/admin/customers");
         assertThat(body).contains("/api/v1/admin/media");
+        assertThat(body).contains("/api/v1/home-videos");
     }
 
     @Test

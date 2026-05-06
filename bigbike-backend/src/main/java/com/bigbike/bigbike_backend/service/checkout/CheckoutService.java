@@ -257,7 +257,7 @@ public class CheckoutService {
             int redeemed = couponRepo.attemptRedeem(redemption.coupon().getId(), now);
             if (redeemed == 0) {
                 throw new ConflictException("Mã giảm giá '" + redemption.code()
-                        + "' đã đạt giới hạn sử dụng.");
+                        + "' không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
             }
             OrderAppliedCouponEntity appliedCoupon = new OrderAppliedCouponEntity();
             appliedCoupon.setOrder(savedOrder);

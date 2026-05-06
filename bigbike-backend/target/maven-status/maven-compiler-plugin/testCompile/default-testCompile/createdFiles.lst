@@ -20,6 +20,7 @@ com\bigbike\bigbike_backend\api\Phase1KInventoryP0FixApiTest.class
 com\bigbike\bigbike_backend\api\Phase2BWordPressCatalogDryRunImporterTest.class
 com\bigbike\bigbike_backend\api\AdminRedirectApiTest.class
 com\bigbike\bigbike_backend\api\Phase2D1StagingImportRehearsalTest.class
+com\bigbike\bigbike_backend\schema\HomeVideoRepositoryTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$GuestSession.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2B1RealDumpDryRunCalibrationTest.class
@@ -38,6 +39,8 @@ com\bigbike\bigbike_backend\api\Phase1ECartApiTest.class
 com\bigbike\bigbike_backend\api\Phase2EProductGalleryBackfillTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest$GuestSession.class
 com\bigbike\bigbike_backend\api\Phase1MPosApiTest.class
+com\bigbike\bigbike_backend\api\HomeVideoApiTest.class
+com\bigbike\bigbike_backend\service\video\YouTubeUrlParserTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2D3ProductNormalizationTest.class
 com\bigbike\bigbike_backend\schema\SliderRepositoryTest.class
@@ -47,10 +50,12 @@ com\bigbike\bigbike_backend\config\CorsConfigTest.class
 com\bigbike\bigbike_backend\api\AdminAuthApiTest.class
 com\bigbike\bigbike_backend\service\auth\PasswordServiceTest.class
 com\bigbike\bigbike_backend\api\AdminReadApiTest.class
+com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponseTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest.class
 com\bigbike\bigbike_backend\api\Phase1IAdminManagementApiTest.class
 com\bigbike\bigbike_backend\api\PublicReadApiTest.class
 com\bigbike\bigbike_backend\api\AdminShippingApiTest.class
+com\bigbike\bigbike_backend\service\slider\SliderReadServiceTest.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase1K1ContractHardeningTest.class

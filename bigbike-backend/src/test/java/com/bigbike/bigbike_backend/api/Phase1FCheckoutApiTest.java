@@ -11,16 +11,20 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import jakarta.servlet.http.Cookie;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +60,7 @@ class Phase1FCheckoutApiTest {
     @Autowired OrderJpaRepository orderRepo;
     @Autowired ShippingMethodJpaRepository shippingMethodRepo;
     @Autowired ShippingZoneJpaRepository shippingZoneRepo;
+    @Autowired CouponJpaRepository couponRepo;
 
     private MockMvc mockMvc;
     private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
@@ -651,6 +656,124 @@ class Phase1FCheckoutApiTest {
                 order.getSubtotalAmount().add(new java.math.BigDecimal("50000")));
     }
 
+    // ── Coupon checkout tests (5) ─────────────────────────────────────────────
+
+    // C1. FIXED coupon applied → discount reflected in order totals
+    @Test
+    void checkout_withFixedCoupon_discountApplied() throws Exception {
+        CouponEntity coupon = createTestCoupon("FIXED10", "FIXED", new BigDecimal("100000"), null, null);
+        GuestSession session = newGuestSessionWithItem(1000000);
+        applyCoupon(session, coupon.getCode());
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountAmount").value(100000.00))
+                .andExpect(jsonPath("$.data.totalAmount").value(900000.00));
+
+        CouponEntity reloaded = couponRepo.findByCode(coupon.getCode()).orElseThrow();
+        assertThat(reloaded.getUsageCount()).isEqualTo(1);
+    }
+
+    // C2. Admin disables coupon after apply → checkout rejects with 409
+    @Test
+    void checkout_withDisabledCoupon_returns409() throws Exception {
+        CouponEntity coupon = createTestCoupon("DISABLED10", "FIXED", new BigDecimal("50000"), null, null);
+        GuestSession session = newGuestSessionWithItem(500000);
+        applyCoupon(session, coupon.getCode());
+
+        coupon.setStatus("INACTIVE");
+        coupon.setUpdatedAt(Instant.now());
+        couponRepo.save(coupon);
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    // C3. Coupon expires after apply → checkout rejects with 409
+    @Test
+    void checkout_withExpiredCoupon_returns409() throws Exception {
+        CouponEntity coupon = createTestCoupon("EXPIRED10", "FIXED", new BigDecimal("50000"), null, null);
+        GuestSession session = newGuestSessionWithItem(500000);
+        applyCoupon(session, coupon.getCode());
+
+        coupon.setExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS));
+        coupon.setUpdatedAt(Instant.now());
+        couponRepo.save(coupon);
+
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    // C4. usageLimit=1: two sessions apply while usageCount=0, first checkout succeeds,
+    //     second checkout blocked by atomic UPDATE guard (returns 409)
+    @Test
+    void checkout_couponUsageLimitExhausted_secondCheckoutFails() throws Exception {
+        CouponEntity coupon = createTestCoupon("LIMIT1", "FIXED", new BigDecimal("50000"), null, 1);
+        // Both sessions apply the coupon while usageCount is still 0
+        GuestSession session1 = newGuestSessionWithItem(500000);
+        applyCoupon(session1, coupon.getCode());
+        GuestSession session2 = newGuestSessionWithItem(500000);
+        applyCoupon(session2, coupon.getCode());
+
+        // Session1 checks out first → usageCount becomes 1
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session1.cookies).header("X-CSRF-Token", session1.csrf))
+                .andExpect(status().isOk());
+
+        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
+
+        // Session2 checkout must be rejected — limit already reached
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session2.cookies).header("X-CSRF-Token", session2.csrf))
+                .andExpect(status().isConflict());
+
+        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
+    }
+
+    // C5. Idempotency-Key retry does NOT double-increment coupon usageCount
+    @Test
+    void checkout_idempotencyKeyRetry_noDoubleCouponIncrement() throws Exception {
+        CouponEntity coupon = createTestCoupon("IDEM10", "FIXED", new BigDecimal("50000"), null, null);
+        GuestSession session = newGuestSessionWithItem(500000);
+        applyCoupon(session, coupon.getCode());
+
+        String idempotencyKey = "coupon-idem-" + UUID.randomUUID();
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+
+        MvcResult first = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult second = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
+                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
+        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     /** Create a new guest session (GET /api/v1/cart) and capture cookies. */
@@ -787,6 +910,33 @@ class Phase1FCheckoutApiTest {
         ShippingMethodEntity saved = shippingMethodRepo.save(m);
         testShippingMethodIds.add(saved.getId());
         return saved;
+    }
+
+    private CouponEntity createTestCoupon(
+            String code, String discountType, BigDecimal amount,
+            BigDecimal minimumAmount, Integer usageLimit
+    ) {
+        Instant now = Instant.now();
+        CouponEntity c = new CouponEntity();
+        c.setCode((code + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6)).toUpperCase());
+        c.setName(code + " test coupon");
+        c.setDiscountType(discountType);
+        c.setAmount(amount);
+        c.setMinAmount(minimumAmount);
+        c.setUsageLimit(usageLimit);
+        c.setUsageCount(0);
+        c.setStatus("ACTIVE");
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
+
+    private void applyCoupon(GuestSession session, String code) throws Exception {
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + code + "\"}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk());
     }
 
     // ── value types ───────────────────────────────────────────────────────────

@@ -478,6 +478,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\ContactService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\content\ContentReadService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\coupon\CouponExpiryScheduler.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\coupon\CouponPolicyService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\customer\CustomerAddressService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\customer\CustomerAuthResult.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\customer\CustomerAuthService.java

@@ -8,12 +8,18 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "home_videos")
+@Table(
+        name = "home_videos",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_home_videos_sort_order", columnNames = "sort_order")
+        }
+)
 public class HomeVideoEntity {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

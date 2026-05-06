@@ -3636,13 +3636,13 @@
             }
           }
         ],
-          "responses": {
-            "200": {
-              "description": "Review list with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
-            },
-            "401": {
-              "$ref": "#/components/responses/Unauthorized"
-            }
+        "responses": {
+          "200": {
+            "description": "Review list with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       }
     },
@@ -3668,13 +3668,13 @@
             }
           }
         ],
-          "responses": {
-            "200": {
-              "description": "Review detail with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
-            },
-            "401": {
-              "$ref": "#/components/responses/Unauthorized"
-            }
+        "responses": {
+          "200": {
+            "description": "Review detail with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       },
       "delete": {
@@ -3710,13 +3710,13 @@
             "AdminBearerAuth": []
           }
         ],
-          "responses": {
-            "200": {
-              "description": "Updated review payload with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
-            },
-            "401": {
-              "$ref": "#/components/responses/Unauthorized"
-            }
+        "responses": {
+          "200": {
+            "description": "Updated review payload with productId, productName, productSlug, author fields, rating, body, status, and timestamps"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       }
     },
@@ -5023,6 +5023,28 @@
           }
         }
       }
+    },
+    "/api/v1/home-videos": {
+      "get": {
+        "tags": [
+          "Public Content"
+        ],
+        "summary": "List active home videos",
+        "operationId": "listHomeVideos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Home video list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicHomeVideoListDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5616,7 +5638,10 @@
       },
       "SubmitReviewRequest": {
         "type": "object",
-        "required": ["authorName", "rating"],
+        "required": [
+          "authorName",
+          "rating"
+        ],
         "properties": {
           "authorName": {
             "type": "string",
@@ -6633,6 +6658,53 @@
             "type": "integer",
             "nullable": true,
             "description": "Change to return to customer (CASH only)"
+          }
+        }
+      },
+      "PublicHomeVideoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "videoUrl": {
+            "type": "string"
+          },
+          "youtubeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "embedUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "autoThumbnailUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "thumbnail": {
+            "$ref": "#/components/schemas/ImageAsset",
+            "nullable": true
+          }
+        }
+      },
+      "PublicHomeVideoListDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicHomeVideoResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       }

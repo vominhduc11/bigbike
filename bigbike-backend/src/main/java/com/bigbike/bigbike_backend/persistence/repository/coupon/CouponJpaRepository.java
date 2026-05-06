@@ -30,6 +30,10 @@ public interface CouponJpaRepository
 
     @Modifying
     @Query("UPDATE CouponEntity c SET c.usageCount = c.usageCount + 1, c.updatedAt = :now "
-            + "WHERE c.id = :id AND (c.usageLimit IS NULL OR c.usageCount < c.usageLimit)")
+            + "WHERE c.id = :id "
+            + "AND c.status = 'ACTIVE' "
+            + "AND (c.startsAt IS NULL OR c.startsAt <= :now) "
+            + "AND (c.expiresAt IS NULL OR c.expiresAt >= :now) "
+            + "AND (c.usageLimit IS NULL OR c.usageCount < c.usageLimit)")
     int attemptRedeem(@Param("id") UUID id, @Param("now") Instant now);
 }
