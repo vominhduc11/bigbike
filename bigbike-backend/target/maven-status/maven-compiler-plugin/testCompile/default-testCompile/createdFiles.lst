@@ -4,6 +4,7 @@ com\bigbike\bigbike_backend\api\AdminUsersApiTest.class
 com\bigbike\bigbike_backend\api\Phase1I1CustomerStatusLoginTest.class
 com\bigbike\bigbike_backend\api\Phase1NReviewsApiTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest.class
+com\bigbike\bigbike_backend\api\Phase1NReviewsApiTest$TestProductRef.class
 com\bigbike\bigbike_backend\service\web\WebRevalidationServiceTest.class
 com\bigbike\bigbike_backend\api\AdminMutationApiTest.class
 com\bigbike\bigbike_backend\api\Phase2EMediaCopyTest.class

@@ -13,6 +13,8 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,6 +35,7 @@ public class AdminReviewService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final String APPROVED_STATUS = "APPROVED";
     private static final Set<String> ALLOWED_STATUSES = Set.of("APPROVED", "PENDING", "SPAM", "TRASH");
     private static final String REVIEW_RESOURCE_TYPE = "REVIEW";
     private static final String REVIEW_STATUS_CHANGED_ACTION = "REVIEW_STATUS_CHANGED";
@@ -116,6 +119,8 @@ public class AdminReviewService {
         entity.setUpdatedAt(now);
 
         ReviewEntity saved = reviewRepo.save(entity);
+        reviewRepo.flush();
+        recomputeProductReviewAggregate(entity.getProductId());
         auditLogRepo.save(buildAudit(
                 adminId,
                 REVIEW_STATUS_CHANGED_ACTION,
@@ -146,6 +151,8 @@ public class AdminReviewService {
         String before = snapshot(entity, productMetadata);
 
         reviewRepo.delete(entity);
+        reviewRepo.flush();
+        recomputeProductReviewAggregate(productId);
         auditLogRepo.save(buildAudit(
                 adminId,
                 REVIEW_DELETED_ACTION,
@@ -157,6 +164,22 @@ public class AdminReviewService {
         ));
 
         revalidateProduct(productId);
+    }
+
+    private void recomputeProductReviewAggregate(String productId) {
+        if (productId == null || productId.isBlank()) {
+            return;
+        }
+
+        productRepo.findByIdForUpdate(productId).ifPresent(product -> {
+            ReviewJpaRepository.ReviewAggregate aggregate =
+                    reviewRepo.findAggregateByProductIdAndStatus(productId, APPROVED_STATUS);
+            int totalReviews = aggregate.getTotalReviews() != null
+                    ? Math.toIntExact(aggregate.getTotalReviews())
+                    : 0;
+            product.setRating(totalReviews > 0 ? toCachedRating(aggregate.getAvgRating()) : null);
+            product.setRatingCount(totalReviews);
+        });
     }
 
     private void revalidateProduct(String productId) {
@@ -245,6 +268,13 @@ public class AdminReviewService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize review audit payload.", exception);
         }
+    }
+
+    private BigDecimal toCachedRating(Double avgRating) {
+        if (avgRating == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(avgRating).setScale(1, RoundingMode.HALF_UP);
     }
 
     private String blankToNull(String value) {

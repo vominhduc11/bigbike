@@ -140,12 +140,14 @@ Chi tiết permission action/API để `PERMISSION_MATRIX.md`, không nhét vào
 - Admin có thể tạo/sửa/publish/soft-delete sản phẩm nếu có quyền.
 - Public web có thể hiển thị product listing/detail.
 - Product chưa đủ điều kiện publish không nên xuất hiện public.
+- Khi admin moderate hoặc xoá review, rating runtime của product phải được đồng bộ lại từ approved reviews để listing/detail không lệch với khu vực đánh giá trên PDP.
 
 ### Evidence
 
 - `bigbike-admin/README.md`
 - `bigbike-admin/src/lib/adminApi.js`
 - `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCatalogController.java`
+- `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminReviewService.java`
 - `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/catalog/CatalogController.java`
 - `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java`
 - `bigbike-web/lib/utils/routes.ts`

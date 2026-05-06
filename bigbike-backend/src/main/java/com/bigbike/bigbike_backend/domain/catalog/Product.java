@@ -26,8 +26,9 @@ public record Product(
         PublishStatus publishStatus,
         Boolean isFeatured,
         Boolean showOnHomepage,
+        /** Denormalized cache of the approved-review average used by product list/detail reads. */
         java.math.BigDecimal rating,
-        /** Manual review count carried over from the legacy WP ACF field. */
+        /** Denormalized cache of the approved-review count used by product list/detail reads. */
         Integer ratingCount,
         /** Long-form rich-HTML SEO copy rendered at the bottom of PDP. */
         String contentBottom,

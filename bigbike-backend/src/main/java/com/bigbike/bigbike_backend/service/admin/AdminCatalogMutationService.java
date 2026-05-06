@@ -401,7 +401,6 @@ public class AdminCatalogMutationService {
         AdminMutationValidators.validateNonNegativeDecimal(request.getRetailPrice(), "retailPrice", "retailPrice", errors);
         AdminMutationValidators.validateNonNegativeDecimal(request.getCompareAtPrice(), "compareAtPrice", "compareAtPrice", errors);
         AdminMutationValidators.validateNonNegativeDecimal(request.getSalePrice(), "salePrice", "salePrice", errors);
-        AdminMutationValidators.validateRating(request.getRating(), "rating", errors);
         AdminMutationValidators.validateCurrency(request.getCurrency(), "currency", errors);
         AdminMutationValidators.validateImageAsset(
                 request.getImage(),
@@ -724,12 +723,8 @@ public class AdminCatalogMutationService {
         if (create || request.getShowOnHomepage() != null) {
             entity.setShowOnHomepage(Boolean.TRUE.equals(request.getShowOnHomepage()));
         }
-        if (create || request.getRating() != null) {
-            entity.setRating(request.getRating());
-        }
-        if (create || request.getRatingCount() != null) {
-            entity.setRatingCount(request.getRatingCount());
-        }
+        // Phase 2D: review moderation owns rating cache recomputation, so
+        // product mutations must not write rating/ratingCount directly.
         if (create || request.isContentBottomPresent()) {
             entity.setContentBottom(AdminMutationValidators.trimToNull(request.getContentBottom()));
         }

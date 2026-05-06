@@ -169,7 +169,9 @@ export type Product = {
   publishStatus: PublishStatus;
   isFeatured?: boolean;
   showOnHomepage?: boolean;
+  /** Denormalized cache of the approved-review average for fast listing/detail reads. */
   rating?: number | null;
+  /** Denormalized cache of the approved-review count for fast listing/detail reads. */
   ratingCount?: number | null;
   /** Long-form rich-HTML SEO copy rendered at the bottom of the PDP. */
   contentBottom?: string | null;

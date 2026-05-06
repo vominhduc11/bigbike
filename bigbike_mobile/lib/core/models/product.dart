@@ -129,7 +129,8 @@ class ProductSummary {
         stockState:
             StockState.fromString(j['stockState'] as String?),
         rating: (j['rating'] as num?)?.toDouble(),
-        reviewCount: j['reviewCount'] as int?,
+        reviewCount: (j['ratingCount'] as num?)?.toInt() ??
+            (j['reviewCount'] as num?)?.toInt(),
         brand: j['brand'] != null
             ? BrandSummary.fromJson(
                 j['brand'] as Map<String, dynamic>)

@@ -6325,6 +6325,14 @@
             "format": "double",
             "minimum": 0,
             "maximum": 5,
+            "description": "Denormalized cache of the approved-review average used by product list/detail reads.",
+            "nullable": true
+          },
+          "ratingCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "description": "Denormalized cache of the approved-review count used by product list/detail reads.",
             "nullable": true
           },
           "createdAt": {

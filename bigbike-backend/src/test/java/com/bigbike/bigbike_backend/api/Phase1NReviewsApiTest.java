@@ -8,10 +8,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Optional;
@@ -50,6 +53,7 @@ class Phase1NReviewsApiTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired ReviewJpaRepository reviewRepo;
+    @Autowired ProductJpaRepository productRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired JwtService jwtService;
 
@@ -383,6 +387,100 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminPatchStatus_approve_syncsProductRatingCache() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Rating Sync Approve");
+        insertReview(product.id(), "Existing Approved", 5, "Great", "APPROVED");
+        Long pendingId = insertReview(product.id(), "Pending Review", 3, "Okay", "PENDING");
+        setProductRatingCache(product.id(), new BigDecimal("1.1"), 99);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("APPROVED"));
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avgRating").value(4.0))
+                .andExpect(jsonPath("$.data.totalReviews").value(2));
+
+        mockMvc.perform(get("/api/v1/products/" + product.slug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(product.id()))
+                .andExpect(jsonPath("$.data.rating").value(4.0))
+                .andExpect(jsonPath("$.data.ratingCount").value(2));
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("page", "1")
+                        .param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '" + product.slug() + "' && @.rating == 4.0 && @.ratingCount == 2)]")
+                        .isNotEmpty());
+    }
+
+    @Test
+    void adminPatchStatus_trashApprovedReview_syncsProductRatingCache() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Rating Sync Trash");
+        Long approvedId = insertReview(product.id(), "Approved Review", 5, "Great", "APPROVED");
+        setProductRatingCache(product.id(), new BigDecimal("4.8"), 88);
+
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + approvedId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"TRASH\"}")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("TRASH"));
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avgRating").value(0.0))
+                .andExpect(jsonPath("$.data.totalReviews").value(0));
+
+        mockMvc.perform(get("/api/v1/products/" + product.slug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(product.id()))
+                .andExpect(jsonPath("$.data.rating").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.ratingCount").value(0));
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("page", "1")
+                        .param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '" + product.slug() + "' && @.ratingCount == 0)]")
+                        .isNotEmpty());
+    }
+
+    @Test
+    void adminDeleteApprovedReview_syncsProductRatingCache() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Rating Sync Delete");
+        Long approvedId = insertReview(product.id(), "Approved Review", 4, "Good", "APPROVED");
+        setProductRatingCache(product.id(), new BigDecimal("4.9"), 77);
+
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + approvedId)
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avgRating").value(0.0))
+                .andExpect(jsonPath("$.data.totalReviews").value(0));
+
+        mockMvc.perform(get("/api/v1/products/" + product.slug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(product.id()))
+                .andExpect(jsonPath("$.data.rating").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.ratingCount").value(0));
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("page", "1")
+                        .param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '" + product.slug() + "' && @.ratingCount == 0)]")
+                        .isNotEmpty());
+    }
+
+    @Test
     void adminDeleteReview_returns204() throws Exception {
         Long toDelete = insertReview(PRODUCT_ID, "To Delete", 2, "Will be deleted", "PENDING");
 
@@ -601,6 +699,50 @@ class Phase1NReviewsApiTest {
         return reviewRepo.save(review).getId();
     }
 
+    private TestProductRef createPublishedProductCopy(String nameSuffix) {
+        ProductEntity source = productRepo.findById(PRODUCT_ID)
+                .orElseThrow(() -> new AssertionError("Expected seed product."));
+
+        String slugSeed = nameSuffix.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        String unique = UUID.randomUUID().toString().substring(0, 8);
+
+        ProductEntity entity = new ProductEntity();
+        entity.setId("prod_review_sync_" + unique);
+        entity.setSlug("review-sync-" + slugSeed + "-" + unique);
+        entity.setName("Review Sync " + nameSuffix);
+        entity.setSku(source.getSku());
+        entity.setCategory(source.getCategory());
+        entity.setBrand(source.getBrand());
+        entity.setRetailPrice(source.getRetailPrice());
+        entity.setCompareAtPrice(source.getCompareAtPrice());
+        entity.setSalePrice(source.getSalePrice());
+        entity.setCurrency(source.getCurrency());
+        entity.setStockState(source.getStockState());
+        entity.setStockQuantity(source.getStockQuantity());
+        entity.setForceOutOfStock(source.getForceOutOfStock());
+        entity.setPublishStatus(source.getPublishStatus());
+        entity.setFeatured(source.getFeatured());
+        entity.setShowOnHomepage(source.getShowOnHomepage());
+        entity.setCreatedAt(Instant.now());
+        entity.setUpdatedAt(Instant.now());
+        entity.setRating(null);
+        entity.setRatingCount(0);
+
+        productRepo.save(entity);
+        return new TestProductRef(entity.getId(), entity.getSlug());
+    }
+
+    private void setProductRatingCache(String productId, BigDecimal rating, Integer ratingCount) {
+        ProductEntity product = productRepo.findById(productId)
+                .orElseThrow(() -> new AssertionError("Expected product " + productId));
+        product.setRating(rating);
+        product.setRatingCount(ratingCount);
+        product.setUpdatedAt(Instant.now());
+        productRepo.save(product);
+    }
+
     private Optional<AuditLogEntity> findLatestReviewAudit(String action, Long reviewId) {
         String reviewIdSnippet = "\"id\":" + reviewId;
         return auditLogRepo.findAll().stream()
@@ -629,4 +771,6 @@ class Phase1NReviewsApiTest {
             return request;
         };
     }
+
+    private record TestProductRef(String id, String slug) {}
 }
