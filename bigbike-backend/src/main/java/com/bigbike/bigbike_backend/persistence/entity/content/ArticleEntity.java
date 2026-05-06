@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,7 @@ public class ArticleEntity {
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
     private List<ContentCategoryEntity> categories = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -77,6 +79,7 @@ public class ArticleEntity {
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
     private List<BlogTagEntity> tags = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

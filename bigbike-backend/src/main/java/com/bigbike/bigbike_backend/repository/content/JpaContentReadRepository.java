@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.repository.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
@@ -13,11 +14,16 @@ import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEnt
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,15 +41,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         this.pageJpaRepository = pageJpaRepository;
     }
 
-    @Override
-    public List<Article> findAllArticles() {
-        return articleJpaRepository.findAll().stream().map(this::toDomain).toList();
-    }
-
-    @Override
-    public List<Page> findAllPages() {
-        return pageJpaRepository.findAll().stream().map(this::toDomain).toList();
-    }
+    // --- Single-entity lookups ---
 
     @Override
     public Optional<Article> findArticleBySlug(String slug) {
@@ -64,6 +62,100 @@ public class JpaContentReadRepository implements ContentReadRepository {
     public Optional<Page> findPageById(String id) {
         return pageJpaRepository.findById(id).map(this::toDomain);
     }
+
+    // --- Full-scan for GlobalSearchService ---
+
+    @Override
+    public List<Article> findAllArticles() {
+        return articleJpaRepository.findAll().stream().map(this::toDomain).toList();
+    }
+
+    // --- DB-paginated public listing ---
+
+    @Override
+    public org.springframework.data.domain.Page<Article> listPublishedArticles(
+            String categorySlug, String q, Pageable pageable) {
+        String normalizedQ = normalizeQuery(q);
+        String normalizedCategory = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug : null;
+
+        org.springframework.data.domain.Page<String> idPage =
+                articleJpaRepository.findPublishedArticleIds(
+                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, pageable);
+
+        return fetchAndOrderArticles(idPage, pageable);
+    }
+
+    // --- DB-paginated admin listing ---
+
+    @Override
+    public org.springframework.data.domain.Page<Article> listArticlesAdmin(
+            PublishStatus publishStatus, String q, Pageable pageable) {
+        String normalizedQ = normalizeQuery(q);
+
+        org.springframework.data.domain.Page<String> idPage =
+                articleJpaRepository.findAdminArticleIds(publishStatus, normalizedQ, pageable);
+
+        return fetchAndOrderArticles(idPage, pageable);
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<Page> listPagesAdmin(
+            PublishStatus publishStatus, String q, Pageable pageable) {
+        String normalizedQ = normalizeQuery(q);
+
+        org.springframework.data.domain.Page<String> idPage =
+                pageJpaRepository.findAdminPageIds(publishStatus, normalizedQ, pageable);
+
+        return fetchAndOrderPages(idPage, pageable);
+    }
+
+    // --- Non-paginated filter for admin combined listing ---
+
+    @Override
+    public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q) {
+        return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
+                .stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q) {
+        return pageJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
+                .stream().map(this::toDomain).toList();
+    }
+
+    // --- Two-query helpers ---
+
+    private org.springframework.data.domain.Page<Article> fetchAndOrderArticles(
+            org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
+        List<String> ids = idPage.getContent();
+        if (ids.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+        List<ArticleEntity> entities = articleJpaRepository.findWithAssociationsByIdIn(ids);
+        List<Article> ordered = orderByIds(entities, ids, ArticleEntity::getId)
+                .stream().map(this::toDomain).toList();
+        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
+    }
+
+    private org.springframework.data.domain.Page<Page> fetchAndOrderPages(
+            org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
+        List<String> ids = idPage.getContent();
+        if (ids.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+        List<PageEntity> entities = pageJpaRepository.findWithParentByIdIn(ids);
+        List<Page> ordered = orderByIds(entities, ids, PageEntity::getId)
+                .stream().map(this::toDomain).toList();
+        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
+    }
+
+    private static <E> List<E> orderByIds(List<E> entities, List<String> ids, java.util.function.Function<E, String> idExtractor) {
+        Map<String, E> byId = entities.stream()
+                .collect(Collectors.toMap(idExtractor, e -> e, (a, b) -> a, LinkedHashMap::new));
+        return ids.stream().map(byId::get).filter(Objects::nonNull).toList();
+    }
+
+    // --- Entity → domain mappers ---
 
     private Article toDomain(ArticleEntity entity) {
         return new Article(
@@ -171,13 +263,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
     }
 
     private static ImageAsset toImageAsset(
-            String id,
-            String url,
-            String alt,
-            Integer width,
-            Integer height,
-            String mimeType
-    ) {
+            String id, String url, String alt, Integer width, Integer height, String mimeType) {
         if (url == null || url.isBlank()) {
             return null;
         }
@@ -185,17 +271,10 @@ public class JpaContentReadRepository implements ContentReadRepository {
     }
 
     private static SeoMeta toSeoMeta(
-            String title,
-            String description,
-            String canonicalUrl,
-            String ogImageId,
-            String ogImageUrl,
-            String ogImageAlt,
-            Integer ogImageWidth,
-            Integer ogImageHeight,
-            String ogImageMimeType,
-            Boolean noIndex
-    ) {
+            String title, String description, String canonicalUrl,
+            String ogImageId, String ogImageUrl, String ogImageAlt,
+            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType,
+            Boolean noIndex) {
         if ((title == null || title.isBlank())
                 && (description == null || description.isBlank())
                 && (canonicalUrl == null || canonicalUrl.isBlank())
@@ -203,13 +282,13 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 && noIndex == null) {
             return null;
         }
-
         return new SeoMeta(
-                title,
-                description,
-                canonicalUrl,
+                title, description, canonicalUrl,
                 toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                noIndex
-        );
+                noIndex);
+    }
+
+    private static String normalizeQuery(String q) {
+        return (q != null && !q.isBlank()) ? q.trim() : null;
     }
 }

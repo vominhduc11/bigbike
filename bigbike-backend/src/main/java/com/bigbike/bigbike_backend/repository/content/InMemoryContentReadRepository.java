@@ -9,9 +9,15 @@ import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.domain.content.PageType;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -141,27 +147,150 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public List<Page> findAllPages() {
-        return pages;
-    }
-
-    @Override
     public Optional<Article> findArticleBySlug(String slug) {
-        return articles.stream().filter(article -> article.slug().equals(slug)).findFirst();
+        return articles.stream().filter(a -> a.slug().equals(slug)).findFirst();
     }
 
     @Override
     public Optional<Article> findArticleById(String id) {
-        return articles.stream().filter(article -> article.id().equals(id)).findFirst();
+        return articles.stream().filter(a -> a.id().equals(id)).findFirst();
     }
 
     @Override
     public Optional<Page> findPageBySlug(String slug) {
-        return pages.stream().filter(page -> page.slug().equals(slug)).findFirst();
+        return pages.stream().filter(p -> p.slug().equals(slug)).findFirst();
     }
 
     @Override
     public Optional<Page> findPageById(String id) {
-        return pages.stream().filter(page -> page.id().equals(id)).findFirst();
+        return pages.stream().filter(p -> p.id().equals(id)).findFirst();
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<Article> listPublishedArticles(
+            String categorySlug, String q, Pageable pageable) {
+        List<Article> filtered = articles.stream()
+                .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(a -> matchesCategory(a, categorySlug))
+                .filter(a -> matchesArticleQuery(a, q))
+                .toList();
+        return toSpringPage(filtered, pageable, InMemoryContentReadRepository::articleComparator);
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<Article> listArticlesAdmin(
+            PublishStatus publishStatus, String q, Pageable pageable) {
+        List<Article> filtered = articles.stream()
+                .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
+                .filter(a -> matchesArticleAdminQuery(a, q))
+                .toList();
+        return toSpringPage(filtered, pageable, InMemoryContentReadRepository::articleComparator);
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<Page> listPagesAdmin(
+            PublishStatus publishStatus, String q, Pageable pageable) {
+        List<Page> filtered = pages.stream()
+                .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
+                .filter(p -> matchesPageQuery(p, q))
+                .toList();
+        return toSpringPage(filtered, pageable, InMemoryContentReadRepository::pageComparator);
+    }
+
+    @Override
+    public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q) {
+        return articles.stream()
+                .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
+                .filter(a -> matchesArticleAdminQuery(a, q))
+                .toList();
+    }
+
+    @Override
+    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q) {
+        return pages.stream()
+                .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
+                .filter(p -> matchesPageQuery(p, q))
+                .toList();
+    }
+
+    // --- Filter helpers ---
+
+    private static boolean matchesCategory(Article a, String categorySlug) {
+        if (categorySlug == null || categorySlug.isBlank()) return true;
+        if (a.category() != null && categorySlug.equals(a.category().slug())) return true;
+        return a.categories() != null && a.categories().stream()
+                .anyMatch(c -> c != null && categorySlug.equals(c.slug()));
+    }
+
+    private static boolean matchesArticleQuery(Article a, String q) {
+        if (q == null || q.isBlank()) return true;
+        String term = q.toLowerCase(Locale.ROOT);
+        return containsLower(a.title(), term) || containsLower(a.excerpt(), term);
+    }
+
+    private static boolean matchesArticleAdminQuery(Article a, String q) {
+        if (q == null || q.isBlank()) return true;
+        String term = q.toLowerCase(Locale.ROOT);
+        return containsLower(a.title(), term) || containsLower(a.excerpt(), term) || containsLower(a.slug(), term);
+    }
+
+    private static boolean matchesPageQuery(Page p, String q) {
+        if (q == null || q.isBlank()) return true;
+        String term = q.toLowerCase(Locale.ROOT);
+        return containsLower(p.title(), term) || containsLower(p.slug(), term);
+    }
+
+    private static boolean containsLower(String s, String termLower) {
+        return s != null && s.toLowerCase(Locale.ROOT).contains(termLower);
+    }
+
+    // --- Sort helpers ---
+
+    private static Comparator<Article> articleComparator(String field, Sort.Direction dir) {
+        Comparator<Article> comp = switch (field) {
+            case "title" -> Comparator.comparing(Article::title, String.CASE_INSENSITIVE_ORDER);
+            case "createdAt" -> Comparator.comparing(Article::createdAt);
+            case "updatedAt" -> Comparator.comparing(Article::updatedAt);
+            case "publishedAt" -> Comparator.comparing(
+                    a -> a.publishedAt() != null ? a.publishedAt() : a.createdAt());
+            default -> Comparator.comparing(a -> a.publishedAt() != null ? a.publishedAt() : a.createdAt());
+        };
+        return dir == Sort.Direction.ASC ? comp : comp.reversed();
+    }
+
+    private static Comparator<Page> pageComparator(String field, Sort.Direction dir) {
+        Comparator<Page> comp = switch (field) {
+            case "title" -> Comparator.comparing(Page::title, String.CASE_INSENSITIVE_ORDER);
+            case "createdAt" -> Comparator.comparing(Page::createdAt);
+            case "updatedAt" -> Comparator.comparing(Page::updatedAt);
+            default -> Comparator.comparing(Page::updatedAt);
+        };
+        return dir == Sort.Direction.ASC ? comp : comp.reversed();
+    }
+
+    @FunctionalInterface
+    private interface ComparatorFactory<T> {
+        Comparator<T> make(String field, Sort.Direction dir);
+    }
+
+    private static <T> org.springframework.data.domain.Page<T> toSpringPage(
+            List<T> all, Pageable pageable, ComparatorFactory<T> factory) {
+        List<T> sorted = all;
+        if (pageable.getSort().isSorted()) {
+            Comparator<T> comp = null;
+            for (Sort.Order order : pageable.getSort()) {
+                Comparator<T> c = factory.make(order.getProperty(), order.getDirection());
+                comp = comp == null ? c : comp.thenComparing(c);
+            }
+            if (comp != null) {
+                sorted = all.stream().sorted(comp).toList();
+            }
+        }
+        int total = sorted.size();
+        int offset = (int) pageable.getOffset();
+        List<T> content = offset >= total
+                ? List.of()
+                : sorted.subList(offset, Math.min(offset + pageable.getPageSize(), total));
+        return new PageImpl<>(content, pageable, total);
     }
 }

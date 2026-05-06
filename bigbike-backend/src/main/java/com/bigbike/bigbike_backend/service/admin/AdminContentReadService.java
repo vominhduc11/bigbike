@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,28 +40,36 @@ public class AdminContentReadService {
     }
 
     public PageResult<AdminContentItem> listContent(
-            int page,
-            int size,
-            String sort,
-            String q,
-            String search,
-            String type,
-            String publishStatus
-    ) {
+            int page, int size, String sort, String q, String search, String type, String publishStatus) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CONTENT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
+        PublishStatus statusFilter = parsePublishStatus(publishStatus);
+        String normalizedType = normalizeType(type);
 
-        List<AdminContentItem> result = Stream.concat(
-                        contentReadRepository.findAllArticles().stream().map(AdminContentReadService::fromArticle),
-                        contentReadRepository.findAllPages().stream().map(AdminContentReadService::fromPage)
-                )
-                .filter(content -> matchesType(content, type))
-                .filter(content -> matchesPublishStatus(content, publishStatus))
-                .filter(content -> matchesQuery(content, query))
+        if ("ARTICLE".equals(normalizedType)) {
+            org.springframework.data.domain.Page<Article> ap = contentReadRepository
+                    .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size));
+            return mapToPageResult(ap, AdminContentReadService::fromArticle);
+        }
+        if ("PAGE".equals(normalizedType)) {
+            org.springframework.data.domain.Page<Page> pp = contentReadRepository
+                    .listPagesAdmin(statusFilter, query, toPageable(sortSpec, page, size));
+            return mapToPageResult(pp, AdminContentReadService::fromPage);
+        }
+
+        // Combined: load filtered articles + pages from DB, merge+sort+paginate in Java
+        List<AdminContentItem> articles = contentReadRepository
+                .findArticlesByFilter(statusFilter, query)
+                .stream().map(AdminContentReadService::fromArticle).toList();
+        List<AdminContentItem> pages = contentReadRepository
+                .findPagesByFilter(statusFilter, query)
+                .stream().map(AdminContentReadService::fromPage).toList();
+
+        List<AdminContentItem> merged = Stream.concat(articles.stream(), pages.stream())
                 .sorted(contentComparator(sortSpec))
                 .toList();
 
-        return paginationService.paginate(result, page, size);
+        return paginationService.paginate(merged, page, size);
     }
 
     public AdminContentItem getContentByTypeAndId(String type, String id) {
@@ -75,7 +85,7 @@ public class AdminContentReadService {
         };
     }
 
-    private static AdminContentItem fromArticle(Article article) {
+    static AdminContentItem fromArticle(Article article) {
         return new AdminContentItem(
                 article.id(),
                 "ARTICLE",
@@ -101,7 +111,7 @@ public class AdminContentReadService {
         );
     }
 
-    private static AdminContentItem fromPage(Page page) {
+    static AdminContentItem fromPage(Page page) {
         return new AdminContentItem(
                 page.id(),
                 "PAGE",
@@ -127,10 +137,33 @@ public class AdminContentReadService {
         );
     }
 
+    // --- Helpers ---
+
+    private static org.springframework.data.domain.Pageable toPageable(SortSpec spec, int page, int size) {
+        Sort.Direction dir = spec.direction() == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String field = mapSortField(spec.field());
+        return PageRequest.of(page - 1, size, Sort.by(dir, field));
+    }
+
+    private static String mapSortField(String field) {
+        // "type" is not a DB column — fall back to updatedAt for combined sort
+        return "type".equals(field) ? "updatedAt" : field;
+    }
+
+    private static <S> PageResult<AdminContentItem> mapToPageResult(
+            org.springframework.data.domain.Page<S> springPage,
+            java.util.function.Function<S, AdminContentItem> mapper) {
+        return new PageResult<>(
+                springPage.getContent().stream().map(mapper).toList(),
+                springPage.getNumber() + 1,
+                springPage.getSize(),
+                springPage.getTotalElements(),
+                springPage.getTotalPages()
+        );
+    }
+
     private static String coalesceSearch(String q, String search) {
-        if (q != null && !q.isBlank()) {
-            return q;
-        }
+        if (q != null && !q.isBlank()) return q;
         return search;
     }
 
@@ -138,28 +171,9 @@ public class AdminContentReadService {
         return type == null ? "" : type.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static boolean matchesType(AdminContentItem content, String typeRaw) {
-        if (typeRaw == null || typeRaw.isBlank()) {
-            return true;
-        }
-        return content.type().equals(normalizeType(typeRaw));
-    }
-
-    private static boolean matchesPublishStatus(AdminContentItem content, String publishStatusRaw) {
-        if (publishStatusRaw == null || publishStatusRaw.isBlank()) {
-            return true;
-        }
-        return content.publishStatus() == PublishStatus.valueOf(publishStatusRaw);
-    }
-
-    private static boolean matchesQuery(AdminContentItem content, String query) {
-        if (query == null || query.isBlank()) {
-            return true;
-        }
-        String term = query.toLowerCase(Locale.ROOT);
-        return content.title().toLowerCase(Locale.ROOT).contains(term)
-                || content.slug().toLowerCase(Locale.ROOT).contains(term)
-                || (content.excerpt() != null && content.excerpt().toLowerCase(Locale.ROOT).contains(term));
+    private static PublishStatus parsePublishStatus(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        return PublishStatus.valueOf(raw.trim().toUpperCase(Locale.ROOT));
     }
 
     private static Comparator<AdminContentItem> contentComparator(SortSpec sortSpec) {
@@ -167,7 +181,8 @@ public class AdminContentReadService {
             case "title" -> Comparator.comparing(AdminContentItem::title, String.CASE_INSENSITIVE_ORDER);
             case "createdAt" -> Comparator.comparing(AdminContentItem::createdAt);
             case "updatedAt" -> Comparator.comparing(AdminContentItem::updatedAt);
-            case "publishedAt" -> Comparator.comparing(content -> content.publishedAt() == null ? content.createdAt() : content.publishedAt());
+            case "publishedAt" -> Comparator.comparing(
+                    content -> content.publishedAt() == null ? content.createdAt() : content.publishedAt());
             case "type" -> Comparator.comparing(AdminContentItem::type);
             default -> throw new IllegalStateException("Unsupported sort field.");
         };

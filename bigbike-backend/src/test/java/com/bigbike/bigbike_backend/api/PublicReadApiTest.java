@@ -9,11 +9,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
+@Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class PublicReadApiTest {
 
     private MockMvc mockMvc;
@@ -105,14 +107,15 @@ class PublicReadApiTest {
     }
 
     @Test
-    @Disabled("Requires V1000 catalog seed (disabled) — data not available in H2 test context")
     void shouldReturnArticleAndPageBySlug() throws Exception {
         mockMvc.perform(get("/api/v1/articles/chon-mu-fullface-phu-hop"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.slug").value("chon-mu-fullface-phu-hop"));
+                .andExpect(jsonPath("$.data.slug").value("chon-mu-fullface-phu-hop"))
+                .andExpect(jsonPath("$.meta.requestId").exists());
 
         mockMvc.perform(get("/api/v1/pages/chinh-sach-bao-hanh"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"));
+                .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"))
+                .andExpect(jsonPath("$.meta.requestId").exists());
     }
 }

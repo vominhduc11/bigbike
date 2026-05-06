@@ -534,6 +534,7 @@ com\bigbike\bigbike_backend\service\admin\AdminContentReadService.class
 com\bigbike\bigbike_backend\persistence\repository\catalog\StockMovementSerialJpaRepository.class
 com\bigbike\bigbike_backend\migration\wordpress\writeplan\MigrationOperationType.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\ProductEntity.class
+com\bigbike\bigbike_backend\repository\content\InMemoryContentReadRepository$ComparatorFactory.class
 com\bigbike\bigbike_backend\api\public_\dto\ContactRequest.class
 com\bigbike\bigbike_backend\migration\wordpress\report\CustomerOrderCouponDryRunResult$Builder.class
 com\bigbike\bigbike_backend\api\admin\dto\ImageAssetRequest.class

@@ -1,4 +1,5 @@
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest.class
+com\bigbike\bigbike_backend\api\AdminContentApiTest.class
 com\bigbike\bigbike_backend\api\SliderApiTest.class
 com\bigbike\bigbike_backend\api\AdminUsersApiTest.class
 com\bigbike\bigbike_backend\api\Phase1I1CustomerStatusLoginTest.class
@@ -39,6 +40,7 @@ com\bigbike\bigbike_backend\api\Phase1MPosApiTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2D3ProductNormalizationTest.class
 com\bigbike\bigbike_backend\schema\SliderRepositoryTest.class
+com\bigbike\bigbike_backend\api\ContentPublicApiTest.class
 com\bigbike\bigbike_backend\api\Phase2DWordPressMigrationWritePlanImportTest.class
 com\bigbike\bigbike_backend\config\CorsConfigTest.class
 com\bigbike\bigbike_backend\api\AdminAuthApiTest.class

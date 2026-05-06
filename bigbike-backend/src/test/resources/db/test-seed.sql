@@ -180,4 +180,21 @@ INSERT INTO articles (id, slug, title, body, category_id, publish_status, publis
 SELECT 'article_blog_3', 'blog-tin-tuc-xe-may-3', 'Blog tin tuc xe may 3', '<p>Blog 3.</p>', 'cc_blog', 'PUBLISHED', DATEADD(SECOND, -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_blog_3');
 
+INSERT INTO articles (id, slug, title, body, category_id, publish_status, created_at, updated_at)
+SELECT 'article_draft_1', 'bai-viet-nhap-1', 'Bai viet nhap 1', '<p>Draft.</p>', 'cc_blog', 'DRAFT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM articles WHERE id = 'article_draft_1');
+
+-- ── Pages ─────────────────────────────────────────────────────────────────────
+INSERT INTO pages (id, slug, title, body, page_type, publish_status, published_at, created_at, updated_at)
+SELECT 'page_gioi_thieu', 'gioi-thieu', 'Gioi Thieu BigBike', '<p>BigBike la cua hang do bao ho.</p>', 'ABOUT', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM pages WHERE id = 'page_gioi_thieu');
+
+INSERT INTO pages (id, slug, title, body, page_type, publish_status, published_at, created_at, updated_at)
+SELECT 'page_chinh_sach_bao_hanh', 'chinh-sach-bao-hanh', 'Chinh Sach Bao Hanh', '<p>Chinh sach bao hanh san pham.</p>', 'POLICY', 'PUBLISHED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM pages WHERE id = 'page_chinh_sach_bao_hanh');
+
+INSERT INTO pages (id, slug, title, body, page_type, publish_status, created_at, updated_at)
+SELECT 'page_draft_1', 'trang-nhap-1', 'Trang nhap 1', '<p>Draft page.</p>', 'CUSTOM', 'DRAFT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM pages WHERE id = 'page_draft_1');
+
 CREATE SEQUENCE IF NOT EXISTS return_number_seq START WITH 1000 INCREMENT BY 1;
