@@ -28,9 +28,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<AuthState> _fetchMe() async {
     try {
-      final data = await ApiClient().get<Map<String, dynamic>>(
+      final envelope = await ApiClient().get<Map<String, dynamic>>(
         ApiEndpoints.me,
       );
+      final data = envelope['data'] as Map<String, dynamic>;
       return AuthAuthenticated(CustomerProfile.fromJson(data));
     } catch (_) {
       return const AuthAnonymous();
@@ -84,10 +85,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
     try {
-      final updated = await ApiClient().patch<Map<String, dynamic>>(
+      final envelope = await ApiClient().patch<Map<String, dynamic>>(
         ApiEndpoints.me,
         data: data,
       );
+      final updated = envelope['data'] as Map<String, dynamic>;
       state = AsyncValue.data(AuthAuthenticated(
         CustomerProfile.fromJson(updated),
       ));

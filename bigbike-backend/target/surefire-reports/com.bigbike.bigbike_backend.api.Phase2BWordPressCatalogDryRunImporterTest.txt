@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase2BWordPressCatalogDryRunImporterTest
 -------------------------------------------------------------------------------
-Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.671 s -- in com.bigbike.bigbike_backend.api.Phase2BWordPressCatalogDryRunImporterTest
+Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.883 s -- in com.bigbike.bigbike_backend.api.Phase2BWordPressCatalogDryRunImporterTest

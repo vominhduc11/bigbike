@@ -14,5 +14,11 @@ public record CustomerRegisterRequest(
         @Size(min = 8, max = 256, message = "Mật khẩu phải có 8–256 ký tự.")
         String password,
 
-        String displayName
+        String displayName,
+
+        @Size(max = 127, message = "Tên không được vượt quá 127 ký tự.")
+        String firstName,
+
+        @Size(max = 127, message = "Họ không được vượt quá 127 ký tự.")
+        String lastName
 ) {}

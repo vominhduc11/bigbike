@@ -61,6 +61,8 @@ public class CustomerAuthService {
         customer.setPhone(req.phone());
         customer.setPasswordHash(passwordService.hash(req.password()));
         customer.setDisplayName(req.displayName() != null ? req.displayName() : deriveDisplayName(req));
+        customer.setFirstName(req.firstName());
+        customer.setLastName(req.lastName());
         customer.setStatus(STATUS_ACTIVE);
         customer.setSynthetic(false);
         customer.setCreatedAt(now);
@@ -96,6 +98,10 @@ public class CustomerAuthService {
         }
 
         Instant now = Instant.now();
+        // Rehash legacy phpass hashes to Argon2id on successful login.
+        if (passwordService.isLegacyHash(customer.getPasswordHash())) {
+            customer.setPasswordHash(passwordService.hash(req.password()));
+        }
         customer.setLastLoginAt(now);
         customer.setUpdatedAt(now);
         customerRepo.save(customer);
@@ -204,6 +210,13 @@ public class CustomerAuthService {
     }
 
     private String deriveDisplayName(CustomerRegisterRequest req) {
+        if (req.firstName() != null && !req.firstName().isBlank()) {
+            String full = req.firstName().trim();
+            if (req.lastName() != null && !req.lastName().isBlank()) {
+                full = req.lastName().trim() + " " + full;
+            }
+            return full;
+        }
         if (req.email() != null) return req.email().split("@")[0];
         return req.phone();
     }

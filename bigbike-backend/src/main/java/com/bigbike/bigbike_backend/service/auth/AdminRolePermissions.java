@@ -30,7 +30,8 @@ public final class AdminRolePermissions {
                     "admin-users.read", "admin-users.write",
                     "audit-logs.read",
                     "home_videos.read", "home_videos.write",
-                    "redirects.read", "redirects.write"
+                    "redirects.read", "redirects.write",
+                    "pos.read", "pos.write", "pos.price_override"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
@@ -39,7 +40,8 @@ public final class AdminRolePermissions {
                     "customers.read", "customers.write",
                     "coupons.read", "coupons.write",
                     "shipping.read",
-                    "reviews.read", "reviews.write"
+                    "reviews.read", "reviews.write",
+                    "pos.read", "pos.write", "pos.price_override"
             ),
             "EDITOR", List.of(
                     "products.read", "catalog.read",
@@ -58,6 +60,9 @@ public final class AdminRolePermissions {
             "SEO_EDITOR", List.of(
                     "content.read", "content.update",
                     "redirects.read", "redirects.write"
+            ),
+            "CASHIER", List.of(
+                    "pos.read", "pos.write"
             )
     );
 

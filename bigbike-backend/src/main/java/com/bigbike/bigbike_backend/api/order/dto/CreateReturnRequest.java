@@ -1,8 +1,9 @@
 package com.bigbike.bigbike_backend.api.order.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import java.math.BigDecimal;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,12 +13,8 @@ public record CreateReturnRequest(
         @NotEmpty List<ReturnItemRequest> items
 ) {
     public record ReturnItemRequest(
-            UUID orderLineItemId,
-            @NotBlank String productName,
-            String variantName,
-            String sku,
-            int quantity,
-            BigDecimal unitPrice,
+            @NotNull UUID orderLineItemId,
+            @Min(1) int quantity,
             String reason
     ) {}
 }

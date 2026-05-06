@@ -46,9 +46,7 @@ public class AdminPosController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        // Reuse existing listProducts với search query
-        // listProducts(page, size, sort, q, search, publishStatus, stockState, brandId, categoryId)
+        devAdminAuthService.requirePermission(request, "pos.read");
         var results = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null);
         return apiResponseFactory.list(results, request);
     }
@@ -59,9 +57,10 @@ public class AdminPosController {
             @Valid @RequestBody PosCreateOrderRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        var admin = devAdminAuthService.currentAdminUser(request);
-        String staffId = admin != null ? admin.id() : null;
-        return apiResponseFactory.data(posOrderService.createOrder(req, staffId), request);
+        var admin = devAdminAuthService.requirePermission(request, "pos.write");
+        String staffId = admin.id();
+        boolean canOverridePrice = admin.permissions().contains("*")
+                || admin.permissions().contains("pos.price_override");
+        return apiResponseFactory.data(posOrderService.createOrder(req, staffId, canOverridePrice), request);
     }
 }

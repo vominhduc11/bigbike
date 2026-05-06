@@ -34,6 +34,12 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     List<OrderEntity> findByCustomerEmail(String customerEmail);
 
+    // ── Customer admin aggregate ──────────────────────────────────────────────
+
+    @Query("SELECT o.customerId, COUNT(o), COALESCE(SUM(o.totalAmount), 0) " +
+           "FROM OrderEntity o WHERE o.customerId IN :ids GROUP BY o.customerId")
+    List<Object[]> countAndSumByCustomerIds(@Param("ids") java.util.Collection<UUID> ids);
+
     // ── POS background jobs ───────────────────────────────────────────────────
 
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createReturn, fetchMyOrders, fetchMyReturn, fetchMyReturns } from "@/lib/api/client-api";
-import type { CustomerReturn, OrderListItem } from "@/lib/contracts/commerce";
+import { createReturn, fetchMyOrder, fetchMyOrders, fetchMyReturn, fetchMyReturns } from "@/lib/api/client-api";
+import type { CustomerReturn, OrderLineItem, OrderListItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 
@@ -23,7 +23,7 @@ const RETURN_REASON_LABELS: Record<string, string> = {
   OTHER: "Khác",
 };
 
-const RETURNABLE_STATUSES = ["COMPLETED", "DELIVERED"];
+const RETURNABLE_STATUSES = ["COMPLETED"];
 
 function returnStatusClass(status: string): string {
   const map: Record<string, string> = {
@@ -165,6 +165,10 @@ function ReturnsContent() {
   const [showForm, setShowForm] = useState(false);
   const [returnableOrders, setReturnableOrders] = useState<OrderListItem[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [selectedLineItems, setSelectedLineItems] = useState<OrderLineItem[]>([]);
+  const [lineItemsLoading, setLineItemsLoading] = useState(false);
+  const [itemSelections, setItemSelections] = useState<Record<string, { selected: boolean; quantity: number }>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -208,6 +212,35 @@ function ReturnsContent() {
     setShowForm(false);
     setFormError("");
     setFormSuccess("");
+    setSelectedOrderId("");
+    setSelectedLineItems([]);
+    setItemSelections({});
+  }
+
+  async function handleOrderChange(orderId: string) {
+    setSelectedOrderId(orderId);
+    setSelectedLineItems([]);
+    setItemSelections({});
+    if (!orderId) return;
+    setLineItemsLoading(true);
+    try {
+      const detail = await fetchMyOrder(orderId);
+      const items = detail.lineItems ?? [];
+      setSelectedLineItems(items);
+      setItemSelections(Object.fromEntries(items.map((li) => [li.id, { selected: false, quantity: 1 }])));
+    } catch {
+      setSelectedLineItems([]);
+    } finally {
+      setLineItemsLoading(false);
+    }
+  }
+
+  function toggleLineItem(id: string) {
+    setItemSelections((prev) => ({ ...prev, [id]: { ...prev[id], selected: !prev[id].selected } }));
+  }
+
+  function setLineItemQty(id: string, raw: number, max: number) {
+    setItemSelections((prev) => ({ ...prev, [id]: { ...prev[id], quantity: Math.min(max, Math.max(1, raw)) } }));
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -216,22 +249,21 @@ function ReturnsContent() {
     setFormSuccess("");
 
     const fd = new FormData(e.currentTarget);
-    const orderId = (fd.get("orderId") as string).trim();
     const reason = (fd.get("reason") as string).trim();
     const customerNote = (fd.get("customerNote") as string).trim();
 
-    if (!orderId) {
-      setFormError("Vui lòng chọn đơn hàng.");
-      return;
-    }
-    if (!reason) {
-      setFormError("Vui lòng chọn lý do đổi trả.");
-      return;
-    }
+    if (!selectedOrderId) { setFormError("Vui lòng chọn đơn hàng."); return; }
+    if (!reason) { setFormError("Vui lòng chọn lý do đổi trả."); return; }
+
+    const items = selectedLineItems
+      .filter((li) => itemSelections[li.id]?.selected)
+      .map((li) => ({ orderLineItemId: li.id, quantity: itemSelections[li.id].quantity }));
+
+    if (items.length === 0) { setFormError("Vui lòng chọn ít nhất một sản phẩm cần đổi trả."); return; }
 
     setSubmitting(true);
     try {
-      await createReturn(orderId, { reason, customerNote: customerNote || undefined });
+      await createReturn(selectedOrderId, { reason, customerNote: customerNote || undefined, items });
       setFormSuccess("Yêu cầu đổi trả đã được gửi thành công.");
       closeForm();
       loadReturns();
@@ -284,16 +316,60 @@ function ReturnsContent() {
                     Không có đơn hàng nào đủ điều kiện đổi trả (cần trạng thái Hoàn thành).
                   </p>
                 ) : (
-                  <select className="wp-input" name="orderId" required>
+                  <select
+                    className="wp-input"
+                    value={selectedOrderId}
+                    onChange={(e) => handleOrderChange(e.target.value)}
+                    required
+                  >
                     <option value="">-- Chọn đơn hàng --</option>
                     {returnableOrders.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        Đơn #{o.orderNumber}
-                      </option>
+                      <option key={o.id} value={o.id}>Đơn #{o.orderNumber}</option>
                     ))}
                   </select>
                 )}
               </div>
+
+              {/* Line items appear after an order is chosen */}
+              {selectedOrderId && (
+                <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ marginBottom: 8, display: "block" }}>Chọn sản phẩm đổi trả</label>
+                  {lineItemsLoading ? (
+                    <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 32 }} />
+                  ) : selectedLineItems.length === 0 ? (
+                    <p style={{ fontSize: "0.85rem", color: "var(--bb-text-muted)" }}>Không có sản phẩm nào trong đơn hàng này.</p>
+                  ) : (
+                    selectedLineItems.map((li) => (
+                      <div key={li.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <input
+                          type="checkbox"
+                          id={`dt-item-${li.id}`}
+                          checked={itemSelections[li.id]?.selected ?? false}
+                          onChange={() => toggleLineItem(li.id)}
+                        />
+                        <label htmlFor={`dt-item-${li.id}`} style={{ flex: 1, cursor: "pointer", fontSize: 14 }}>
+                          {li.productName}
+                          {li.variantName ? <span style={{ color: "var(--c-muted)" }}> ({li.variantName})</span> : null}
+                          <span style={{ color: "var(--c-muted)", marginLeft: 6 }}>×{li.quantity}</span>
+                        </label>
+                        {itemSelections[li.id]?.selected && (
+                          <input
+                            type="number"
+                            min={1}
+                            max={li.quantity}
+                            value={itemSelections[li.id].quantity}
+                            onChange={(e) => setLineItemQty(li.id, Number(e.target.value), li.quantity)}
+                            className="wp-input"
+                            style={{ width: 64, textAlign: "center" }}
+                            aria-label={`Số lượng ${li.productName}`}
+                          />
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
               <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
                 <label>Lý do đổi trả</label>
                 <select className="wp-input" name="reason" required>
@@ -315,7 +391,7 @@ function ReturnsContent() {
               </div>
             </div>
             <div className="wp-form-actions">
-              <button type="submit" className="wp-btn-primary" disabled={submitting || (returnableOrders.length === 0 && !ordersLoading)}>
+              <button type="submit" className="wp-btn-primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
                 {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
               </button>
               <button type="button" className="wp-btn-secondary" onClick={closeForm} disabled={submitting}>

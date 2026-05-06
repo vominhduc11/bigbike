@@ -1,7 +1,9 @@
 package com.bigbike.bigbike_backend.config;
 
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,10 +25,15 @@ public class CustomerSessionFilter extends OncePerRequestFilter {
 
     public static final String SESSION_COOKIE = "bb_session";
 
-    private final CustomerSessionService sessionService;
+    private static final String STATUS_ACTIVE = "ACTIVE";
 
-    public CustomerSessionFilter(CustomerSessionService sessionService) {
+    private final CustomerSessionService sessionService;
+    private final CustomerJpaRepository customerRepo;
+
+    public CustomerSessionFilter(CustomerSessionService sessionService,
+                                 CustomerJpaRepository customerRepo) {
         this.sessionService = sessionService;
+        this.customerRepo = customerRepo;
     }
 
     @Override
@@ -40,13 +47,18 @@ public class CustomerSessionFilter extends OncePerRequestFilter {
             Optional<CustomerSessionEntity> sessionOpt = sessionService.findBySessionToken(rawToken);
             if (sessionOpt.isPresent()) {
                 CustomerSessionEntity session = sessionOpt.get();
-                CustomerPrincipal principal = new CustomerPrincipal(
-                        session.getCustomerId(), null, null, session.getId());
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        principal, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
-                );
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                // Verify the customer account is still active before granting authentication.
+                // This catches the case where a session was not yet revoked when the account was disabled.
+                Optional<CustomerEntity> customerOpt = customerRepo.findById(session.getCustomerId());
+                if (customerOpt.isPresent() && STATUS_ACTIVE.equals(customerOpt.get().getStatus())) {
+                    CustomerPrincipal principal = new CustomerPrincipal(
+                            session.getCustomerId(), null, null, session.getId());
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                            principal, null,
+                            List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
         }
         filterChain.doFilter(request, response);

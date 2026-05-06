@@ -13,11 +13,14 @@ import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,12 +44,18 @@ class Phase1MPosApiTest {
     private static final String ADMIN_EMAIL = "1m-pos-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ADMIN_PASS  = "Admin@1M2345678";
 
+    private static final String CASHIER_EMAIL = "1m-cashier-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String CASHIER_PASS  = "Cashier@1M2345678";
+
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired ProductJpaRepository productRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired OrderJpaRepository orderRepo;
+    @Autowired PaymentJpaRepository paymentRepo;
+    @Autowired StockMovementJpaRepository stockMovementRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -58,6 +67,7 @@ class Phase1MPosApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureAdminUser();
+        ensureCashierUser();
         adminToken = loginAdmin();
     }
 
@@ -181,6 +191,217 @@ class Phase1MPosApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // ── 9. P0 #1 — staffId (createdByAdminId) persisted ─────────────────────
+
+    @Test
+    void createPosOrder_staffIdPersisted() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        UUID adminId = adminUserRepo.findByEmail(ADMIN_EMAIL).orElseThrow().getId();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getCreatedByAdminId()).isEqualTo(adminId);
+    }
+
+    // ── 10. P0 #2 — customerName persisted ───────────────────────────────────
+
+    @Test
+    void createPosOrder_customerNamePersisted() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "customerName": "Nguyen Van A",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getCustomerName()).isEqualTo("Nguyen Van A");
+    }
+
+    // ── 11. P0 #4 — missing productVariantId → 409 ───────────────────────────
+
+    @Test
+    void createPosOrder_missingVariantId_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId)))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 12. Invalid paymentMethod → 409 ──────────────────────────────────────
+
+    @Test
+    void createPosOrder_invalidPaymentMethod_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "BITCOIN",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 13. CASH insufficient tendered → 409 ─────────────────────────────────
+
+    @Test
+    void createPosOrder_cashInsufficientTendered_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 200000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 1,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 14. P0 #5 — priceOverride without pos.price_override → 409 ───────────
+
+    @Test
+    void createPosOrder_priceOverride_withoutPermission_returns409() throws Exception {
+        String cashierToken = loginCashier();
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + cashierToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1,
+                                             "unitPriceOverride": 50000}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 15. P0 #5 — priceOverride with pos.price_override → 200, correct total
+
+    @Test
+    void createPosOrder_priceOverride_withPermission_succeeds() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1,
+                                             "unitPriceOverride": 50000}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalAmount").value(50000.0));
+    }
+
+    // ── 16. Payment record created ────────────────────────────────────────────
+
+    @Test
+    void createPosOrder_paymentRecordCreated() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 300000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var payments = paymentRepo.findByOrderId(UUID.fromString(orderId));
+        assertThat(payments).isNotEmpty();
+        assertThat(payments.get(0).getStatus()).isEqualTo("PAID");
+    }
+
+    // ── 17. Stock movement created ────────────────────────────────────────────
+
+    @Test
+    void createPosOrder_stockMovementCreated() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 2,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        boolean exists = stockMovementRepo.existsByReferenceTypeAndReferenceId(
+                "ORDER", UUID.fromString(orderId));
+        assertThat(exists).isTrue();
+    }
+
+    // ── 18. Audit log POS_ORDER_CREATED written ───────────────────────────────
+
+    @Test
+    void createPosOrder_auditLogCreated() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var logs = auditLogRepo.findByResourceTypeAndResourceId(
+                "ORDER", UUID.fromString(orderId));
+        assertThat(logs).isNotEmpty();
+        assertThat(logs.get(0).getAction()).isEqualTo("POS_ORDER_CREATED");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private record TestVariant(String productId, String variantId) {}
@@ -264,10 +485,34 @@ class Phase1MPosApiTest {
         });
     }
 
+    private void ensureCashierUser() {
+        adminUserRepo.findByEmail(CASHIER_EMAIL).orElseGet(() -> {
+            AdminUserEntity cashier = new AdminUserEntity();
+            cashier.setEmail(CASHIER_EMAIL);
+            cashier.setPasswordHash(passwordService.hash(CASHIER_PASS));
+            cashier.setDisplayName("Phase1M POS Cashier");
+            cashier.setRole("CASHIER");
+            cashier.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            cashier.setCreatedAt(now);
+            cashier.setUpdatedAt(now);
+            return adminUserRepo.save(cashier);
+        });
+    }
+
     private String loginAdmin() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + ADMIN_EMAIL + "\",\"password\":\"" + ADMIN_PASS + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonString(result.getResponse().getContentAsString(), "accessToken");
+    }
+
+    private String loginCashier() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + CASHIER_EMAIL + "\",\"password\":\"" + CASHIER_PASS + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         return extractJsonString(result.getResponse().getContentAsString(), "accessToken");

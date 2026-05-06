@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { createReturn, fetchMyOrder } from "@/lib/api/client-api";
-import type { OrderDetail } from "@/lib/contracts/commerce";
+import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
-import type { CreateReturnPayload } from "@/lib/contracts/commerce";
 import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 
@@ -47,9 +46,28 @@ const RETURN_REASON_LABELS: Record<string, string> = {
   OTHER: "Khác",
 };
 
-function CreateReturnForm({ orderId, onDone }: { orderId: string; onDone: () => void }) {
+function CreateReturnForm({
+  orderId,
+  lineItems,
+  onDone,
+}: {
+  orderId: string;
+  lineItems: OrderLineItem[];
+  onDone: () => void;
+}) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [selections, setSelections] = useState<Record<string, { selected: boolean; quantity: number }>>(
+    () => Object.fromEntries(lineItems.map((li) => [li.id, { selected: false, quantity: 1 }])),
+  );
+
+  function toggleItem(id: string) {
+    setSelections((prev) => ({ ...prev, [id]: { ...prev[id], selected: !prev[id].selected } }));
+  }
+
+  function setQty(id: string, raw: number, max: number) {
+    setSelections((prev) => ({ ...prev, [id]: { ...prev[id], quantity: Math.min(max, Math.max(1, raw)) } }));
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,9 +76,16 @@ function CreateReturnForm({ orderId, onDone }: { orderId: string; onDone: () => 
     const reason = (fd.get("reason") as string).trim();
     const customerNote = (fd.get("customerNote") as string).trim();
     if (!reason) { setFormError("Vui lòng chọn lý do."); return; }
+
+    const items = lineItems
+      .filter((li) => selections[li.id]?.selected)
+      .map((li) => ({ orderLineItemId: li.id, quantity: selections[li.id].quantity }));
+
+    if (items.length === 0) { setFormError("Vui lòng chọn ít nhất một sản phẩm cần đổi trả."); return; }
+
     setSubmitting(true);
     try {
-      const payload: CreateReturnPayload = { reason, customerNote: customerNote || undefined };
+      const payload: CreateReturnPayload = { reason, customerNote: customerNote || undefined, items };
       await createReturn(orderId, payload);
       onDone();
     } catch (err: unknown) {
@@ -76,6 +101,36 @@ function CreateReturnForm({ orderId, onDone }: { orderId: string; onDone: () => 
       {formError && <div className="wp-alert-error" style={{ marginBottom: 12 }}><p>{formError}</p></div>}
       <form onSubmit={handleSubmit}>
         <div className="wp-form-grid">
+          <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
+            <label style={{ marginBottom: 8, display: "block" }}>Chọn sản phẩm đổi trả</label>
+            {lineItems.map((li) => (
+              <div key={li.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <input
+                  type="checkbox"
+                  id={`ret-item-${li.id}`}
+                  checked={selections[li.id]?.selected ?? false}
+                  onChange={() => toggleItem(li.id)}
+                />
+                <label htmlFor={`ret-item-${li.id}`} style={{ flex: 1, cursor: "pointer", fontSize: 14 }}>
+                  {li.productName}
+                  {li.variantName ? <span style={{ color: "var(--c-muted)" }}> ({li.variantName})</span> : null}
+                  <span style={{ color: "var(--c-muted)", marginLeft: 6 }}>×{li.quantity}</span>
+                </label>
+                {selections[li.id]?.selected && (
+                  <input
+                    type="number"
+                    min={1}
+                    max={li.quantity}
+                    value={selections[li.id].quantity}
+                    onChange={(e) => setQty(li.id, Number(e.target.value), li.quantity)}
+                    className="wp-input"
+                    style={{ width: 64, textAlign: "center" }}
+                    aria-label={`Số lượng ${li.productName}`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
           <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
             <label>Lý do đổi trả</label>
             <select className="wp-input" name="reason" required>
@@ -388,7 +443,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             returnSubmitted ? (
               <div className="wp-alert-success"><p>Yêu cầu đổi trả đã được gửi. <Link href="/tai-khoan/doi-tra" className="bb-link">Xem đổi trả của tôi</Link></p></div>
             ) : showReturnForm ? (
-              <CreateReturnForm orderId={order.id} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
+              <CreateReturnForm orderId={order.id} lineItems={order.lineItems} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
             ) : (
               <div style={{ textAlign: "right" }}>
                 <button type="button" className="wp-btn-secondary wp-btn-sm" onClick={() => setShowReturnForm(true)}>

@@ -158,6 +158,7 @@ com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressCouponMapper$Map
 com\bigbike\bigbike_backend\persistence\entity\commerce\cart\CartCouponEntity.class
 com\bigbike\bigbike_backend\api\admin\AdminReviewController.class
 com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderShippingItemEntity.class
+com\bigbike\bigbike_backend\service\payment\RefundService.class
 com\bigbike\bigbike_backend\service\admin\AdminReviewService.class
 com\bigbike\bigbike_backend\migration\wordpress\normalizer\ProductSlugGenerator.class
 com\bigbike\bigbike_backend\api\public_\dto\PublicProductReviewsResponse.class

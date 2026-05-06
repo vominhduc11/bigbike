@@ -187,7 +187,61 @@ class Phase1I1CustomerStatusLoginTest {
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
     }
 
-    // ── 7. Error response does not leak account status ───────────────────────
+    // ── 7. Admin disables customer → existing session cookie immediately rejected ──
+
+    @Test
+    void adminDisable_existingSessionCookie_isRejected() throws Exception {
+        String email = "sess-dis-" + UUID.randomUUID() + "@bigbike.test";
+        String password = "pass5678";
+        registerCustomer(email, password);
+
+        // Login to get a valid session cookie
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/customer/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + email + "\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        jakarta.servlet.http.Cookie sessionCookie = getNamedCookie(loginResult.getResponse(), "bb_session");
+        jakarta.servlet.http.Cookie csrfCookie = getNamedCookie(loginResult.getResponse(), "bb_csrf");
+        assertThat(sessionCookie).isNotNull();
+        assertThat(csrfCookie).isNotNull();
+
+        // Confirm /me works with the session before disable
+        mockMvc.perform(get("/api/v1/customer/me")
+                        .cookie(sessionCookie)
+                        .header("X-CSRF-Token", csrfCookie.getValue()))
+                .andExpect(status().isOk());
+
+        // Find customer UUID and admin-disable via API (triggers session revocation)
+        MvcResult listResult = mockMvc.perform(get("/api/v1/admin/customers")
+                        .param("q", email)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String customerId = extractFirstId(listResult.getResponse().getContentAsString());
+        assertThat(customerId).isNotNull();
+
+        mockMvc.perform(patch("/api/v1/admin/customers/" + customerId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"DISABLED\",\"reason\":\"CRIT-1 test\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // The same session cookie must now be rejected — customer is disabled
+        mockMvc.perform(get("/api/v1/customer/me")
+                        .cookie(sessionCookie)
+                        .header("X-CSRF-Token", csrfCookie.getValue()))
+                .andExpect(status().isUnauthorized());
+
+        // All active sessions for this customer must have been revoked in DB
+        UUID cid = customerRepo.findByEmail(email).orElseThrow().getId();
+        long activeSessions = sessionRepo.findByCustomerId(cid).stream()
+                .filter(s -> "ACTIVE".equals(s.getStatus())).count();
+        assertThat(activeSessions).isZero();
+    }
+
+    // ── 8. Error response does not leak account status ───────────────────────
 
     @Test
     void login_disabledCustomer_errorResponseDoesNotLeakStatus() throws Exception {

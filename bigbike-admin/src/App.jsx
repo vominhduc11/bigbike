@@ -57,7 +57,7 @@ const NAV_GROUP_DEFS = [
     items: [
       { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard },
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
-      { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'orders.write',   icon: Store },
+      { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'pos.read',       icon: Store },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
       { path: '/admin/returns',    labelKey: 'nav.returns',    permission: 'orders.read',    icon: RotateCcw },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
@@ -204,7 +204,7 @@ function routePermission(routeName) {
     case 'inventory':                    return 'products.read'
     case 'returns':                      return 'orders.read'
     case 'roles':                        return 'admin-users.read'
-    case 'pos':                          return 'orders.write'
+    case 'pos':                          return 'pos.read'
     default:                             return ''
   }
 }
@@ -390,7 +390,7 @@ function AdminApp() {
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('admin-users.write')} />; break
     case 'pos':
-      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('orders.write')} userId={authState.user?.id} />; break
+      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

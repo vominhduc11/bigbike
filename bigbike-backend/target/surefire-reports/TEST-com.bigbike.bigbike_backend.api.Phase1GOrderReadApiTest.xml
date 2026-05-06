@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="2.317" tests="22" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="2.091" tests="22" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -16,10 +16,9 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="A:\jdk17\bin"/>
-    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire11424416266722374038\surefirebooter-20260506071109068_3.jar C:\Users\vomin\AppData\Local\Temp\surefire11424416266722374038 2026-05-06T07-11-08_893-jvmRun1 surefire-20260506071109068_1tmp surefire_0-20260506071109068_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130\surefirebooter-20260506090232128_3.jar C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130 2026-05-06T09-02-31_870-jvmRun1 surefire-20260506090232128_1tmp surefire_0-20260506090232128_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="S:\project\bigbike\bigbike-backend\target\test-classes;S:\project\bigbike\bigbike-backend\target\classes;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.5\spring-boot-starter-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.5\spring-boot-starter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.5\spring-boot-starter-logging-4.0.5.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\vomin\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.5\spring-boot-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\vomin\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.5\spring-boot-starter-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.5\spring-boot-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.5\spring-boot-micrometer-observation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.5\spring-boot-actuator-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.5\spring-boot-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-health\4.0.5\spring-boot-health-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot\4.0.5\spring-boot-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context\7.0.6\spring-context-7.0.6.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation\1.16.4\micrometer-observation-1.16.4.jar;C:\Users\vomin\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-commons\1.16.4\micrometer-commons-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.4\micrometer-jakarta9-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-core\1.16.4\micrometer-core-1.16.4.jar;C:\Users\vomin\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\vomin\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.5\spring-boot-starter-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.5\spring-boot-starter-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.5\spring-boot-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.5\spring-boot-data-commons-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.5\spring-boot-persistence-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-commons\4.0.4\spring-data-commons-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.5\spring-boot-hibernate-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.5\spring-boot-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\vomin\.m2\repository\org\hibernate\orm\hibernate-core\7.2.7.Final\hibernate-core-7.2.7.Final.jar;C:\Users\vomin\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\vomin\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\vomin\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-orm\7.0.6\spring-orm-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-jpa\4.0.4\spring-data-jpa-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-tx\7.0.6\spring-tx-7.0.6.jar;C:\Users\vomin\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aspects\7.0.6\spring-aspects-7.0.6.jar;C:\Users\vomin\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.5\spring-boot-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.5\spring-boot-sql-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.5\spring-boot-transaction-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-jdbc\7.0.6\spring-jdbc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.5\spring-boot-starter-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.5\spring-boot-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail\4.0.5\spring-boot-starter-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-mail\4.0.5\spring-boot-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context-support\7.0.6\spring-context-support-7.0.6.jar;C:\Users\vomin\.m2\repository\jakarta\mail\jakarta.mail-api\2.1.5\jakarta.mail-api-2.1.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-mail\2.0.5\angus-mail-2.0.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.5\spring-boot-starter-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security\4.0.5\spring-boot-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-config\7.0.4\spring-security-config-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-core\7.0.4\spring-security-core-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-crypto\7.0.4\spring-security-crypto-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-web\7.0.4\spring-security-web-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-expression\7.0.6\spring-expression-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aop\7.0.6\spring-aop-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-beans\7.0.6\spring-beans-7.0.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.6\jjwt-api-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.6\jjwt-impl-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.6\jjwt-jackson-0.12.6.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\vomin\.m2\repository\org\bouncycastle\bcprov-jdk18on\1.80\bcprov-jdk18on-1.80.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf\4.0.5\spring-boot-starter-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-thymeleaf\4.0.5\spring-boot-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-web\7.0.6\spring-web-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.5\spring-boot-starter-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.5\spring-boot-starter-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.5\spring-boot-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-databind\3.1.0\jackson-databind-3.1.0.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-core\3.1.0\jackson-core-3.1.0.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.5\spring-boot-starter-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.5\spring-boot-starter-tomcat-runtime-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.20\tomcat-embed-core-11.0.20.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.20\tomcat-embed-websocket-11.0.20.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.5\spring-boot-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.5\spring-boot-http-converter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.5\spring-boot-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.5\spring-boot-servlet-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-webmvc\7.0.6\spring-webmvc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.5\spring-boot-starter-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.5\spring-boot-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.20\tomcat-embed-el-11.0.20.jar;C:\Users\vomin\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\vomin\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\vomin\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\vomin\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket\4.0.5\spring-boot-starter-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-websocket\4.0.5\spring-boot-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-messaging\7.0.6\spring-messaging-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-websocket\7.0.6\spring-websocket-7.0.6.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\extras\thymeleaf-extras-springsecurity6\3.1.3.RELEASE\thymeleaf-extras-springsecurity6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf-spring6\3.1.3.RELEASE\thymeleaf-spring6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf\3.1.3.RELEASE\thymeleaf-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\attoparser\attoparser\2.0.7.RELEASE\attoparser-2.0.7.RELEASE.jar;C:\Users\vomin\.m2\repository\org\unbescape\unbescape\1.1.6.RELEASE\unbescape-1.1.6.RELEASE.jar;C:\Users\vomin\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\vomin\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\vomin\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\vomin\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\vomin\.m2\repository\io\minio\minio\8.5.17\minio-8.5.17.jar;C:\Users\vomin\.m2\repository\com\carrotsearch\thirdparty\simple-xml-safe\2.7.1\simple-xml-safe-2.7.1.jar;C:\Users\vomin\.m2\repository\com\google\guava\guava\33.3.1-jre\guava-33.3.1-jre.jar;C:\Users\vomin\.m2\repository\com\google\guava\failureaccess\1.0.2\failureaccess-1.0.2.jar;C:\Users\vomin\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\vomin\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\vomin\.m2\repository\com\google\errorprone\error_prone_annotations\2.28.0\error_prone_annotations-2.28.0.jar;C:\Users\vomin\.m2\repository\com\google\j2objc\j2objc-annotations\3.0.0\j2objc-annotations-3.0.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okhttp3\okhttp\4.12.0\okhttp-4.12.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio\3.6.0\okio-3.6.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio-jvm\3.6.0\okio-jvm-3.6.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-common\1.9.10\kotlin-stdlib-common-1.9.10.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk8\2.2.21\kotlin-stdlib-jdk8-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib\2.2.21\kotlin-stdlib-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\annotations\13.0\annotations-13.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk7\2.2.21\kotlin-stdlib-jdk7-2.2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-compress\1.27.1\commons-compress-1.27.1.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-lang3\3.19.0\commons-lang3-3.19.0.jar;C:\Users\vomin\.m2\repository\commons-codec\commons-codec\1.19.0\commons-codec-1.19.0.jar;C:\Users\vomin\.m2\repository\org\xerial\snappy\snappy-java\1.1.10.7\snappy-java-1.1.10.7.jar;C:\Users\vomin\.m2\repository\com\bucket4j\bucket4j-core\8.10.1\bucket4j-core-8.10.1.jar;C:\Users\vomin\.m2\repository\net\logstash\logback\logstash-logback-encoder\8.0\logstash-logback-encoder-8.0.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\vomin\.m2\repository\commons-io\commons-io\2.16.1\commons-io-2.16.1.jar;C:\Users\vomin\.m2\repository\org\projectlombok\lombok\1.18.44\lombok-1.18.44.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator-test\4.0.5\spring-boot-starter-actuator-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics-test\4.0.5\spring-boot-starter-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics-test\4.0.5\spring-boot-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation-test\1.16.4\micrometer-observation-test-1.16.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-configuration-processor\4.0.5\spring-boot-configuration-processor-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.5\spring-boot-starter-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test\4.0.5\spring-boot-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.5\spring-boot-test-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\vomin\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\vomin\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\vomin\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\vomin\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\vomin\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\vomin\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\vomin\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\vomin\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\vomin\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\vomin\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\vomin\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-core\7.0.6\spring-core-7.0.6.jar;C:\Users\vomin\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-test\7.0.6\spring-test-7.0.6.jar;C:\Users\vomin\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.5\spring-boot-starter-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.5\spring-boot-starter-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.5\spring-boot-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.5\spring-boot-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.5\spring-boot-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway-test\4.0.5\spring-boot-starter-flyway-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail-test\4.0.5\spring-boot-starter-mail-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.5\spring-boot-starter-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.5\spring-boot-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-test\7.0.4\spring-security-test-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf-test\4.0.5\spring-boot-starter-thymeleaf-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.5\spring-boot-starter-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.5\spring-boot-starter-jackson-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.5\spring-boot-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.5\spring-boot-web-server-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.5\spring-boot-resttestclient-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket-test\4.0.5\spring-boot-starter-websocket-test-4.0.5.jar;"/>
-    <property name="test" value="Phase1FCheckoutApiTest,Phase1GOrderReadApiTest,Phase1HAdminOrderApiTest"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\vomin"/>
     <property name="user.language" value="en"/>
@@ -34,7 +33,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire11424416266722374038\surefirebooter-20260506071109068_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire63933450588081130\surefirebooter-20260506090232128_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.12+8-LTS-286"/>
@@ -47,437 +46,105 @@
     <property name="localRepository" value="C:\Users\vomin\.m2\repository"/>
     <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
     <property name="java.io.tmpdir" value="C:\Users\vomin\AppData\Local\Temp\"/>
-    <property name="com.zaxxer.hikari.pool_number" value="1"/>
+    <property name="com.zaxxer.hikari.pool_number" value="2"/>
     <property name="java.version" value="17.0.12"/>
     <property name="user.dir" value="S:\project\bigbike\bigbike-backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="23624"/>
+    <property name="PID" value="248"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="windows-1258"/>
     <property name="native.encoding" value="Cp1258"/>
-    <property name="java.library.path" value="A:\jdk17\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\vomin\.codex\tmp\arg0\codex-arg08LePXh;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;A:\nodejs\;C:\ProgramData\chocolatey\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;A:\jdk17\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Users\vomin\develop\flutter\bin;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\vomin\.local\bin;C:\Users\vomin\AppData\Local\Programs\Python\Launcher\;A:\anacoda3;A:\anacoda3\Library\mingw-w64\bin;A:\anacoda3\Library\usr\bin;A:\anacoda3\Library\bin;A:\anacoda3\Scripts;C:\Users\vomin\AppData\Local\Microsoft\WindowsApps;A:\visual studio code\Microsoft VS Code\bin;C:\Users\vomin\AppData\Roaming\npm;A:\intelliji idea\IntelliJ IDEA 2025.2.1\bin;C:\Users\vomin\AppData\Local\PowerToys\DSCModules\;C:\Users\vomin\AppData\Local\OpenAI\Codex\bin;C:\Program Files\WindowsApps\OpenAI.Codex_26.429.3425.0_x64__2p2nqsd0c76g0\app\resources;."/>
+    <property name="java.library.path" value="A:\jdk17\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\vomin\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\vomin\bin;C:\Users\vomin\AppData\Local\Programs\Python\Python313\Scripts;A:\visual studio code\Microsoft VS Code;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\dotnet;C:\Program Files\Git\cmd;A:\nodejs;C:\ProgramData\chocolatey\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;A:\jdk17\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Users\vomin\develop\flutter\bin;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit;C:\Users\vomin\.local\bin;C:\Users\vomin\AppData\Local\Programs\Python\Launcher;A:\anacoda3;A:\anacoda3\Library\mingw-w64\bin;A:\anacoda3\Library\usr\bin;A:\anacoda3\Library\bin;A:\anacoda3\Scripts;C:\Users\vomin\AppData\Local\Microsoft\WindowsApps;A:\visual studio code\Microsoft VS Code\bin;C:\Users\vomin\AppData\Roaming\npm;A:\intelliji idea\IntelliJ IDEA 2025.2.1\bin;C:\Users\vomin\AppData\Local\PowerToys\DSCModules;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
     <property name="java.vendor" value="Oracle Corporation"/>
     <property name="java.vm.version" value="17.0.12+8-LTS-286"/>
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="customerOrderDetail_includesAddresses" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.229">
-    <system-out><![CDATA[07:11:28.120 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest]: Phase1GOrderReadApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-07:11:28.121 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest
-07:11:28.122 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.c.s.AnnotationConfigContextLoaderUtils&amp#27;[0;39m - Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest]: Phase1GOrderReadApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-07:11:28.123 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.c.SpringBootTestContextBootstrapper&amp#27;[0;39m - Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest
-07:11:28.151 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:28.151 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:28.154 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-07:11:28.161 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.162 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.163 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.225 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 612c2a61-2215-4273-aeac-dfa0c174de8b
-07:11:28.232 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.232 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.232 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:28.293 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:28.295 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:28.308 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:28.310 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:28.319 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-39] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-853B7D.
-07:11:28.323 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-853B7D
-07:11:28.325 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/e01d426e-b352-4331-9730-698dbd2b7588
-07:11:28.328 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/e01d426e-b352-4331-9730-698dbd2b7588
+  <testcase name="customerOrderDetail_includesAddresses" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.193">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:14.8510146+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 5b788e4d-b16b-4753-af70-48f8883db85d","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:14.9425444+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-4DDC13.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-39","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrderDetail_includesPaymentSummary" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.159">
-    <system-out><![CDATA[07:11:28.381 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:28.381 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:28.384 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-07:11:28.386 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.386 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.386 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.433 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 9bd822f4-9635-4ff9-822b-0cd06c9ef6b9
-07:11:28.434 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.434 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.434 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:28.498 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:28.500 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:28.510 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:28.511 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:28.519 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-41] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-AF15D1.
-07:11:28.524 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-AF15D1
-07:11:28.525 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/b55d74a6-b1ca-4c8e-9af1-1b4016a32de4
-07:11:28.525 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/b55d74a6-b1ca-4c8e-9af1-1b4016a32de4
+  <testcase name="customerOrderDetail_includesPaymentSummary" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.132">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.0339954+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 34bd851f-6bd7-46d8-9a6a-81ee72ddc404","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.1070818+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-2D8A29.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-41","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="checkoutApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.012">
-    <system-out><![CDATA[07:11:28.542 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:28.542 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:28.543 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-07:11:28.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/checkout/options
-07:11:28.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/checkout/options
+  <testcase name="checkoutApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.01"/>
+  <testcase name="customerOrderDetail_otherCustomerOrder_returns404" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.262">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.1816042+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer c6f3357c-9f6f-4b90-b47b-804970eac864","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.2613697+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-57D104.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-43","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.3164227+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 3d4bb527-7e9a-459c-a800-0266e6d34a75","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.3889035+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-5FDE53.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-45","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrderDetail_otherCustomerOrder_returns404" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.258">
-    <system-out><![CDATA[07:11:28.556 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:28.556 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:28.556 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:28.556 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.561 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.561 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.621 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 7975bc71-c690-4ded-a089-34aa695ae8f7
-07:11:28.623 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.623 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.623 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:28.667 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:28.671 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:28.677 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:28.677 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:28.689 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-43] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-FB7135.
-07:11:28.692 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-FB7135
-07:11:28.693 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.693 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.693 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.728 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 2faefaa3-3a5a-4f48-a2f4-9cbcb30042ae
-07:11:28.731 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.732 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.732 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:28.774 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:28.774 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:28.784 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:28.786 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:28.795 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-45] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-323CE8.
-07:11:28.798 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-323CE8
-07:11:28.800 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/f897844b-9862-4efb-8b95-18009d429784
-07:11:28.802 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/f897844b-9862-4efb-8b95-18009d429784
+  <testcase name="customerOrders_withSession_returnsOnlyOwnOrders" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.334">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.4679773+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 99e640d2-f654-4b32-b8f5-383c785dd0ee","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.5349859+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-C4D8B8.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-47","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.5953421+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 7ceb2096-83db-4ff5-af50-02d0420a8df8","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:15.6827552+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-C1990D.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-49","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrders_withSession_returnsOnlyOwnOrders" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.3">
-    <system-out><![CDATA[07:11:28.810 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:28.810 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:28.810 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:28.810 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.815 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.815 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.859 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 3c52bc66-e1d5-4bc0-bb65-012962937dca
-07:11:28.865 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.865 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.865 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:28.901 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:28.901 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:28.914 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:28.916 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:28.925 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-47] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-7D642E.
-07:11:28.925 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-7D642E
-07:11:28.925 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:28.930 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.930 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:28.967 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer b2e11f83-9420-40c4-9797-89f9a5b54538
-07:11:28.968 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:28.968 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:28.968 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.019 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.021 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.028 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.028 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.034 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-49] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-6AA677.
-07:11:29.041 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-6AA677
-07:11:29.041 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.041 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders
-07:11:29.095 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.100 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders
+  <testcase name="customerMe_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.118">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.787289+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer c3ae8cae-7350-410f-aa8d-7febfdc20434","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerMe_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.095">
-    <system-out><![CDATA[07:11:29.111 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.111 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.113 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.114 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:29.115 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.115 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:29.150 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer ab50c10d-a8e1-45e0-8306-feec7b4364fa
-07:11:29.154 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:29.156 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.156 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.197 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/me
-07:11:29.198 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/me
+  <testcase name="customerOrders_withoutSession_returns401" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.008"/>
+  <testcase name="adminEndpoint_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.008"/>
+  <testcase name="guestLookup_wrongKey_returns404" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.048">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.9087937+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-93E959.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-51","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrders_withoutSession_returns401" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.018">
-    <system-out><![CDATA[07:11:29.209 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.209 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.210 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-07:11:29.210 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.210 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="adminEndpoint_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.014">
-    <system-out><![CDATA[07:11:29.227 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.227 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.229 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.229 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/products
-07:11:29.229 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="guestLookup_wrongKey_returns404" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.046">
-    <system-out><![CDATA[07:11:29.239 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.240 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.242 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:29.248 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.248 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-07:11:29.255 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.256 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.256 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.263 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.263 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.264 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.272 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-51] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-49DC1E.
-07:11:29.273 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-49DC1E
-07:11:29.275 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:29.276 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.276 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
-]]></system-out>
-  </testcase>
-  <testcase name="customerOrderDetail_includesLineItems" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.145">
-    <system-out><![CDATA[07:11:29.289 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.289 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.289 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:29.294 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:29.294 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.294 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:29.334 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 6be2be62-f3b8-4cb5-8be8-9f116d4bb673
-07:11:29.340 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:29.340 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.340 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.389 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.390 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.399 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.400 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.411 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-53] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-131740.
-07:11:29.413 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-131740
-07:11:29.416 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/d711b6b4-4a21-4e5b-b4b2-7b2ccc9ffcad
-07:11:29.418 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/d711b6b4-4a21-4e5b-b4b2-7b2ccc9ffcad
+  <testcase name="customerOrderDetail_includesLineItems" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.158">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:15.9833153+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 2ee3d24f-d3a0-4b0a-983e-ab7610e94502","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.0667847+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-F66D57.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-53","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
   <testcase name="quickBuyOrder_canLookupByOrderNumberAndKey" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.027">
-    <system-out><![CDATA[07:11:29.432 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.432 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.434 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.435 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:29.435 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.435 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-07:11:29.440 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/orders/quick-buy
-07:11:29.440 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.440 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/orders/quick-buy
-07:11:29.447 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-55] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-637CA8.
-07:11:29.447 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-637CA8
-07:11:29.447 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:29.447 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.447 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.0967823+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-99112B.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-55","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.11">
-    <system-out><![CDATA[07:11:29.460 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.460 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.462 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.463 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/products
-07:11:29.463 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.464 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/products
+  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.032"/>
+  <testcase name="customerOrders_filterByStatusWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.123">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.1890653+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 733fa55b-38b2-4a59-b36e-5a7c7dccb140","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.2465757+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-7CF9E2.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-57","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrders_filterByStatusWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.122">
-    <system-out><![CDATA[07:11:29.572 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.572 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.575 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-07:11:29.576 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:29.576 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.576 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:29.607 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer cae9ac0e-3635-4e10-ba90-36fc4cbb2ccf
-07:11:29.610 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:29.610 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.610 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.651 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.654 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.662 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.663 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.670 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-57] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-DAE444.
-07:11:29.672 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-DAE444
-07:11:29.674 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.675 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders
-07:11:29.685 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.686 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders
+  <testcase name="customerOrders_paginationWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.14">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.3055031+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 4849cf5d-d870-4d6b-94b9-a31fd426539b","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.3625274+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-7A3896.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-59","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.3896931+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-707BFC.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-61","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrders_paginationWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.127">
-    <system-out><![CDATA[07:11:29.694 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.694 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.696 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.696 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:29.697 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.697 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:29.727 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 483da590-29f2-44ac-9a75-c12e96ec0b82
-07:11:29.730 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:29.730 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.730 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.765 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.766 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.772 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.773 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.778 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-59] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-6DAC9D.
-07:11:29.781 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-6DAC9D
-07:11:29.785 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.786 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.794 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.795 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.801 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-61] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-0185C9.
-07:11:29.803 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-0185C9
-07:11:29.804 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-07:11:29.806 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders
+  <testcase name="guestLookup_doesNotExposeInternalNotes" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.042">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.4368447+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-68C0C0.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-63","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="guestLookup_doesNotExposeInternalNotes" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.038">
-    <system-out><![CDATA[07:11:29.822 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.822 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.824 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:29.828 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:29.829 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.829 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-07:11:29.834 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.835 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.835 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.844 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.852 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-63] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-5FFFB1.
-07:11:29.852 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-5FFFB1
-07:11:29.852 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:29.852 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.852 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
+  <testcase name="customerOrderDetail_includesShippingItems" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.096">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.4853704+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 81f834b7-3da4-4001-a68f-e3106e3d59e7","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.5352483+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-B678AF.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-65","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrderDetail_includesShippingItems" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.121">
-    <system-out><![CDATA[07:11:29.865 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.865 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.870 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 5 ms
-07:11:29.871 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:29.871 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.871 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:29.911 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 7ea8f4be-39e8-4d57-a2f5-2d989e7ea474
-07:11:29.914 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:29.915 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:29.915 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:29.955 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:29.955 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:29.966 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:29.967 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:29.973 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-65] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-F0D32E.
-07:11:29.977 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-F0D32E
-07:11:29.978 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/a2baba3e-36f0-41d8-baab-457487a4dffc
-07:11:29.980 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/a2baba3e-36f0-41d8-baab-457487a4dffc
+  <testcase name="orderReceivedFlow_afterCheckout_canLookupByOrderNumberAndKey" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.028">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.5647159+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-A4D847.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-67","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="orderReceivedFlow_afterCheckout_canLookupByOrderNumberAndKey" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.061">
-    <system-out><![CDATA[07:11:29.993 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:29.993 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:29.995 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:30.000 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:30.000 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.001 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-07:11:30.005 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:30.006 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.006 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:30.017 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:30.017 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.017 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:30.029 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-67] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-B29990.
-07:11:30.029 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-B29990
-07:11:30.033 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:30.034 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.034 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
+  <testcase name="customerOrderDetail_ownOrder_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.114">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.6192121+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 2c6c1dd1-f12b-42f9-a3fb-b6230f448865","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.6748265+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-C7B119.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-69","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="customerOrderDetail_ownOrder_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.154">
-    <system-out><![CDATA[07:11:30.052 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:30.053 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:30.053 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:30.053 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:30.053 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.053 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:30.105 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer a1a7ee2c-6309-4800-92eb-e53030d31723
-07:11:30.110 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:30.110 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.110 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:30.156 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:30.162 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:30.174 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:30.174 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:30.186 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-69] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-7353CE.
-07:11:30.192 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-7353CE
-07:11:30.192 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/365e69c1-7354-47a8-8f0b-b4f16ffa608f
-07:11:30.198 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/365e69c1-7354-47a8-8f0b-b4f16ffa608f
+  <testcase name="guestLookup_validOrderNumberAndKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.035">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.7157394+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-CDBF38.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-71","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
-  <testcase name="guestLookup_validOrderNumberAndKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.055">
-    <system-out><![CDATA[07:11:30.210 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:30.210 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:30.210 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:30.219 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:30.220 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.220 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-07:11:30.225 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:30.226 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.226 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:30.236 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:30.236 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.236 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:30.244 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-71] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-D86EB4.
-07:11:30.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-D86EB4
-07:11:30.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:30.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
-]]></system-out>
-  </testcase>
-  <testcase name="guestLookup_missingParams_returns400" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.018">
-    <system-out><![CDATA[07:11:30.265 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:30.265 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:30.265 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 0 ms
-07:11:30.265 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:30.269 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.269 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
-07:11:30.271 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-07:11:30.271 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.271 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
-]]></system-out>
-  </testcase>
-  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.012">
-    <system-out><![CDATA[07:11:30.277 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:30.281 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:30.283 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-07:11:30.283 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-07:11:30.283 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.283 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-]]></system-out>
-  </testcase>
-  <testcase name="customerOrderDetail_doesNotExposeIpOrUserAgent" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.138">
-    <system-out><![CDATA[07:11:30.296 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-07:11:30.296 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-07:11:30.301 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 5 ms
-07:11:30.301 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/register
-07:11:30.301 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.301 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/register
-07:11:30.343 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.c.EmailVerificationService&amp#27;[0;39m - Mail not configured — verification email skipped for customer 263c280e-3960-415c-af28-c4e6de3e3378
-07:11:30.346 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/customer/auth/login
-07:11:30.347 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-07:11:30.347 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/customer/auth/login
-07:11:30.398 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/items
-07:11:30.398 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/items
-07:11:30.410 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/checkout
-07:11:30.412 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/checkout
-07:11:30.420 &amp#27;[34mINFO &amp#27;[0;39m [SimpleAsyncTaskExecutor-73] &amp#27;[36mc.b.b.s.c.OrderNotificationService&amp#27;[0;39m - Mail not configured — order confirmation skipped for order BB-20260506-0ED992.
-07:11:30.422 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.service.ws.AdminOrderWsService&amp#27;[0;39m - WS pushed NEW_ORDER for order BB-20260506-0ED992
-07:11:30.424 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders/82263fdc-081e-4b98-9b28-9e3d63295dc2
-07:11:30.425 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/customer/orders/82263fdc-081e-4b98-9b28-9e3d63295dc2
+  <testcase name="guestLookup_missingParams_returns400" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.011"/>
+  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.011"/>
+  <testcase name="customerOrderDetail_doesNotExposeIpOrUserAgent" classname="com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest" time="0.115">
+    <system-out><![CDATA[{"timestamp":"2026-05-06T09:03:16.8031589+07:00","@version":"1","message":"Mail not configured â€” verification email skipped for customer 886f1200-97b7-4ed5-ab3f-5215f1a0bb16","logger":"com.bigbike.bigbike_backend.service.customer.EmailVerificationService","thread":"main","level":"INFO","level_value":20000}
+{"timestamp":"2026-05-06T09:03:16.8566892+07:00","@version":"1","message":"Mail not configured â€” order confirmation skipped for order BB-20260506-2495B9.","logger":"com.bigbike.bigbike_backend.service.checkout.OrderNotificationService","thread":"SimpleAsyncTaskExecutor-73","level":"INFO","level_value":20000}
 ]]></system-out>
   </testcase>
 </testsuite>

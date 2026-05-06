@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAddressService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -43,13 +44,13 @@ public class CustomerAddressController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiDataResponse<CustomerAddressResponse> create(@RequestBody SaveCustomerAddressRequest req, HttpServletRequest request) {
+    public ApiDataResponse<CustomerAddressResponse> create(@Valid @RequestBody SaveCustomerAddressRequest req, HttpServletRequest request) {
         UUID customerId = requireCustomer();
         return apiResponseFactory.data(addressService.save(customerId, req), request);
     }
 
     @PatchMapping("/{id}")
-    public ApiDataResponse<CustomerAddressResponse> update(@PathVariable UUID id, @RequestBody SaveCustomerAddressRequest req, HttpServletRequest request) {
+    public ApiDataResponse<CustomerAddressResponse> update(@PathVariable UUID id, @Valid @RequestBody SaveCustomerAddressRequest req, HttpServletRequest request) {
         UUID customerId = requireCustomer();
         return apiResponseFactory.data(addressService.update(customerId, id, req), request);
     }

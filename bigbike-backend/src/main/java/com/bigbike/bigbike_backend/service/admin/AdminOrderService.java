@@ -115,6 +115,7 @@ public class AdminOrderService {
     private final InventoryPolicyService inventoryPolicyService;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
+    private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
 
     public AdminOrderService(
             OrderJpaRepository orderRepo,
@@ -130,7 +131,8 @@ public class AdminOrderService {
             StockMovementJpaRepository stockMovementRepo,
             InventoryPolicyService inventoryPolicyService,
             OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService
+            AdminOrderWsService adminOrderWsService,
+            com.bigbike.bigbike_backend.service.payment.RefundService refundService
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
@@ -146,6 +148,7 @@ public class AdminOrderService {
         this.inventoryPolicyService = inventoryPolicyService;
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
+        this.refundService = refundService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -377,82 +380,11 @@ public class AdminOrderService {
 
     @Transactional
     public AdminOrderDetailResponse createRefund(UUID orderId, UUID adminId, CreateRefundRequest req) {
-        OrderEntity order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found."));
-
-        String paymentStatus = order.getPaymentStatus();
-        if (!"PAID".equals(paymentStatus) && !"PARTIALLY_PAID".equals(paymentStatus)) {
-            throw new ConflictException(
-                    "Refund requires payment status PAID or PARTIALLY_PAID, current: " + paymentStatus);
-        }
-
-        BigDecimal refundAmount = req.refundAmount().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal alreadyRefunded = order.getRefundAmount() != null
-                ? order.getRefundAmount() : BigDecimal.ZERO;
-        BigDecimal maxRefundable = order.getPaidAmount().subtract(alreadyRefunded);
-
-        if (refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw ValidationException.fromField("refundAmount", "INVALID", "refundAmount must be > 0.");
-        }
-        if (refundAmount.compareTo(maxRefundable) > 0) {
-            throw ValidationException.fromField("refundAmount", "INVALID",
-                    "refundAmount (" + refundAmount + ") exceeds refundable amount (" + maxRefundable + ").");
-        }
-
-        Instant now = Instant.now();
-        BigDecimal newTotalRefunded = alreadyRefunded.add(refundAmount);
-
-        order.setRefundAmount(newTotalRefunded);
-        if (req.refundReason() != null && !req.refundReason().isBlank()) {
-            order.setRefundReason(req.refundReason());
-        }
-        order.setRefundedAt(now);
-
-        boolean fullRefund = newTotalRefunded.compareTo(order.getPaidAmount()) == 0;
-        if (fullRefund) {
-            order.setPaymentStatus("REFUNDED");
-            if (ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of()).contains("REFUNDED")) {
-                order.setStatus("REFUNDED");
-            }
-        } else {
-            order.setPaymentStatus("PARTIALLY_REFUNDED");
-        }
-        order.setUpdatedAt(now);
-        orderRepo.save(order);
-
-        // Update payment record
-        paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
-            p.setRefundAmount(newTotalRefunded);
-            p.setRefundedAt(now);
-            if (fullRefund) p.setStatus("REFUNDED");
-            p.setUpdatedAt(now);
-            paymentRepo.save(p);
-        });
-
-        // Note
-        String noteContent = req.note() != null && !req.note().isBlank()
-                ? req.note()
-                : "Hoàn tiền " + refundAmount + " VND" + (req.refundReason() != null ? " — " + req.refundReason() : "");
-        boolean visible = Boolean.TRUE.equals(req.customerVisible());
-        noteRepo.save(buildNote(order, adminId, "REFUND", noteContent, visible, now));
-
-        // Audit
-        auditLogRepo.save(buildAudit(adminId, "ORDER_REFUND_CREATED", "ORDER", orderId,
-                "{\"paymentStatus\":\"" + paymentStatus + "\",\"refundAmount\":\"" + alreadyRefunded + "\"}",
-                "{\"paymentStatus\":\"" + order.getPaymentStatus() + "\",\"refundAmount\":\"" + newTotalRefunded + "\"}",
-                now));
-
-        // Notify customer on full refund
-        if (fullRefund) {
-            String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible())) ? req.note() : null;
-            orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", customerNote);
-        }
-
-        adminOrderWsService.pushEvent(new OrderWsEvent(
-                "ORDER_REFUND_CREATED", order.getId(), order.getOrderNumber(),
-                safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentStatus(), now));
-
+        String noteContent = req.note() != null && !req.note().isBlank() ? req.note() : null;
+        refundService.applyRefund(
+                orderId, adminId,
+                req.refundAmount(), req.refundReason(),
+                noteContent, Boolean.TRUE.equals(req.customerVisible()));
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 

@@ -30,6 +30,12 @@ public class OrderEntity {
     @Column(name = "customer_id")
     private UUID customerId;
 
+    @Column(name = "created_by_admin_id")
+    private UUID createdByAdminId;
+
+    @Column(name = "customer_name", length = 255)
+    private String customerName;
+
     @Column(nullable = false, length = 50)
     private String status;
 
@@ -131,6 +137,12 @@ public class OrderEntity {
 
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+
+    public UUID getCreatedByAdminId() { return createdByAdminId; }
+    public void setCreatedByAdminId(UUID createdByAdminId) { this.createdByAdminId = createdByAdminId; }
+
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

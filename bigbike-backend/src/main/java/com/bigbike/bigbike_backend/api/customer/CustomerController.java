@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public class CustomerController {
     }
 
     @PatchMapping("/me")
-    public ApiDataResponse<CustomerSummary> updateMe(@RequestBody UpdateCustomerProfileRequest req, HttpServletRequest request) {
+    public ApiDataResponse<CustomerSummary> updateMe(@Valid @RequestBody UpdateCustomerProfileRequest req, HttpServletRequest request) {
         CustomerPrincipal principal = requireCustomer();
         return apiResponseFactory.data(authService.updateProfile(principal.customerId(), req), request);
     }

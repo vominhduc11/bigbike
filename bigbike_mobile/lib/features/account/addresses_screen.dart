@@ -27,9 +27,9 @@ class _AddressesScreenState extends State<AddressesScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiClient().get<Map<String, dynamic>>(ApiEndpoints.addresses);
+      final envelope = await ApiClient().get<Map<String, dynamic>>(ApiEndpoints.addresses);
       setState(() {
-        _addresses = (data['items'] as List? ?? [])
+        _addresses = (envelope['data'] as List? ?? [])
             .cast<Map<String, dynamic>>()
             .map(CustomerAddress.fromJson)
             .toList();

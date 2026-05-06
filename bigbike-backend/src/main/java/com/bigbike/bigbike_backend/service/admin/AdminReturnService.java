@@ -65,6 +65,7 @@ public class AdminReturnService {
     private final StockMovementJpaRepository stockMovementRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final OrderNotificationService notificationService;
+    private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
 
     public AdminReturnService(
             ReturnJpaRepository returnRepo,
@@ -75,7 +76,8 @@ public class AdminReturnService {
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository stockMovementRepo,
             InventoryPolicyService inventoryPolicyService,
-            OrderNotificationService notificationService
+            OrderNotificationService notificationService,
+            com.bigbike.bigbike_backend.service.payment.RefundService refundService
     ) {
         this.returnRepo = returnRepo;
         this.itemRepo = itemRepo;
@@ -86,6 +88,7 @@ public class AdminReturnService {
         this.stockMovementRepo = stockMovementRepo;
         this.inventoryPolicyService = inventoryPolicyService;
         this.notificationService = notificationService;
+        this.refundService = refundService;
     }
 
     // ── List (server-side pagination) ─────────────────────────────────────────
@@ -140,6 +143,13 @@ public class AdminReturnService {
                     ". Allowed: " + allowed);
         }
 
+        if ("REFUNDED".equals(newStatus)) {
+            if (req.refundAmount() == null || req.refundAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw ValidationException.fromField("refundAmount", "REQUIRED",
+                        "refundAmount must be provided and > 0 when transitioning to REFUNDED.");
+            }
+        }
+
         String oldStatus = ret.getStatus();
         ret.setStatus(newStatus);
         if (req.adminNote() != null) ret.setAdminNote(req.adminNote());
@@ -158,10 +168,12 @@ public class AdminReturnService {
 
         OrderEntity order = orderRepo.findById(ret.getOrderId()).orElse(null);
 
-        // Sync orders.refund_amount when admin explicitly records a refund
-        if ("REFUNDED".equals(newStatus) && req.refundAmount() != null && order != null) {
-            order.setRefundAmount(req.refundAmount());
-            orderRepo.save(order);
+        // Full refund sync via unified RefundService — updates paymentStatus, PaymentEntity, note, audit, WS
+        if ("REFUNDED".equals(newStatus) && order != null) {
+            refundService.applyRefund(
+                    order.getId(), adminId,
+                    req.refundAmount(), ret.getReason(),
+                    req.adminNote(), false);
         }
 
         // Restore stock when goods are confirmed received back into warehouse

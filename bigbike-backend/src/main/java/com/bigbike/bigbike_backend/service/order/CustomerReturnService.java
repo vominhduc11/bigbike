@@ -7,10 +7,12 @@ import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse.ReturnHistoryResponse;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse.ReturnItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnHistoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnItemEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnHistoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnJpaRepository;
@@ -20,8 +22,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +37,7 @@ public class CustomerReturnService {
             Set.of("DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER");
 
     private final OrderJpaRepository orderRepo;
+    private final OrderLineItemJpaRepository lineItemRepo;
     private final ReturnJpaRepository returnRepo;
     private final ReturnItemJpaRepository itemRepo;
     private final ReturnHistoryJpaRepository historyRepo;
@@ -41,6 +46,7 @@ public class CustomerReturnService {
 
     public CustomerReturnService(
             OrderJpaRepository orderRepo,
+            OrderLineItemJpaRepository lineItemRepo,
             ReturnJpaRepository returnRepo,
             ReturnItemJpaRepository itemRepo,
             ReturnHistoryJpaRepository historyRepo,
@@ -48,6 +54,7 @@ public class CustomerReturnService {
             EntityManager em
     ) {
         this.orderRepo = orderRepo;
+        this.lineItemRepo = lineItemRepo;
         this.returnRepo = returnRepo;
         this.itemRepo = itemRepo;
         this.historyRepo = historyRepo;
@@ -75,12 +82,33 @@ public class CustomerReturnService {
                     "reason must be one of: " + VALID_REASONS);
         }
 
-        // Duplicate-in-progress check (also guarded by partial unique index V39)
-        boolean alreadyPending = returnRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
-                .stream().anyMatch(r -> "PENDING".equals(r.getStatus()) || "APPROVED".equals(r.getStatus()));
-        if (alreadyPending) {
+        // Duplicate-in-progress check (also guarded by partial unique index V65)
+        boolean alreadyActive = returnRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
+                .stream().anyMatch(r -> "PENDING".equals(r.getStatus())
+                        || "APPROVED".equals(r.getStatus())
+                        || "RECEIVED".equals(r.getStatus()));
+        if (alreadyActive) {
             throw ValidationException.fromField("orderId", "RETURN_IN_PROGRESS",
                     "A return request for this order is already in progress.");
+        }
+
+        // Build a lookup map of line items that belong to this order
+        Map<UUID, OrderLineItemEntity> lineItemMap = lineItemRepo.findByOrderId(orderId)
+                .stream().collect(Collectors.toMap(OrderLineItemEntity::getId, li -> li));
+
+        // Validate every requested item before persisting anything
+        for (CreateReturnRequest.ReturnItemRequest item : req.items()) {
+            OrderLineItemEntity lineItem = lineItemMap.get(item.orderLineItemId());
+            if (lineItem == null) {
+                throw ValidationException.fromField("items[].orderLineItemId", "NOT_IN_ORDER",
+                        "Line item " + item.orderLineItemId() + " does not belong to order " + orderId);
+            }
+            int alreadyReturned = itemRepo.sumNonRejectedQuantityByLineItemId(item.orderLineItemId());
+            int remaining = lineItem.getQuantity() - alreadyReturned;
+            if (item.quantity() > remaining) {
+                throw ValidationException.fromField("items[].quantity", "EXCEEDS_RETURNABLE",
+                        "Quantity " + item.quantity() + " exceeds returnable remaining (" + remaining + ") for line item " + item.orderLineItemId());
+            }
         }
 
         Instant now = Instant.now();
@@ -99,14 +127,15 @@ public class CustomerReturnService {
         returnRepo.save(ret);
 
         for (CreateReturnRequest.ReturnItemRequest item : req.items()) {
+            OrderLineItemEntity lineItem = lineItemMap.get(item.orderLineItemId());
             ReturnItemEntity itemEntity = new ReturnItemEntity();
             itemEntity.setReturnId(ret.getId());
             itemEntity.setOrderLineItemId(item.orderLineItemId());
-            itemEntity.setProductName(item.productName());
-            itemEntity.setVariantName(item.variantName());
-            itemEntity.setSku(item.sku());
-            itemEntity.setQuantity(Math.max(1, item.quantity()));
-            itemEntity.setUnitPrice(item.unitPrice() != null ? item.unitPrice() : BigDecimal.ZERO);
+            itemEntity.setProductName(lineItem.getProductName());
+            itemEntity.setVariantName(lineItem.getVariantName());
+            itemEntity.setSku(lineItem.getSku());
+            itemEntity.setQuantity(item.quantity());
+            itemEntity.setUnitPrice(lineItem.getUnitPrice());
             itemEntity.setReason(item.reason());
             itemEntity.setCreatedAt(now);
             itemRepo.save(itemEntity);

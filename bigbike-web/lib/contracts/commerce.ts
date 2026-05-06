@@ -282,16 +282,12 @@ export type CustomerReturn = {
 
 export type CreateReturnItemPayload = {
   orderLineItemId: string
-  productName: string
-  variantName?: string | null
-  sku?: string | null
   quantity: number
-  unitPrice?: number | null
   reason?: string | null
 }
 
 export type CreateReturnPayload = {
   reason: string
   customerNote?: string
-  items?: CreateReturnItemPayload[]
+  items: CreateReturnItemPayload[]
 }

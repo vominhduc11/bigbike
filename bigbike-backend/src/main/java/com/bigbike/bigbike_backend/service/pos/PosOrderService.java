@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.service.pos;
 
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
@@ -9,6 +11,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
@@ -27,6 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +77,7 @@ public class PosOrderService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
+    private final AuditLogJpaRepository auditLogRepo;
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final AdminOrderWsService wsService;
@@ -86,6 +91,7 @@ public class PosOrderService {
             OrderLineItemJpaRepository lineItemRepo,
             OrderNoteJpaRepository noteRepo,
             PaymentJpaRepository paymentRepo,
+            AuditLogJpaRepository auditLogRepo,
             OrderNumberGenerator orderNumberGenerator,
             OrderKeyGenerator orderKeyGenerator,
             AdminOrderWsService wsService,
@@ -98,6 +104,7 @@ public class PosOrderService {
         this.lineItemRepo = lineItemRepo;
         this.noteRepo = noteRepo;
         this.paymentRepo = paymentRepo;
+        this.auditLogRepo = auditLogRepo;
         this.orderNumberGenerator = orderNumberGenerator;
         this.orderKeyGenerator = orderKeyGenerator;
         this.wsService = wsService;
@@ -105,7 +112,7 @@ public class PosOrderService {
     }
 
     @Transactional
-    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId) {
+    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice) {
         if (req.items() == null || req.items().isEmpty()) {
             throw new ConflictException("POS order must have at least one item.");
         }
@@ -134,44 +141,68 @@ public class PosOrderService {
             if (item.productId() == null || item.productId().isBlank()) {
                 throw new ConflictException("productId là bắt buộc cho mỗi dòng hàng.");
             }
+            // P0 #4: productVariantId is required
+            if (item.productVariantId() == null || item.productVariantId().isBlank()) {
+                throw new ConflictException("productVariantId là bắt buộc cho mỗi dòng hàng POS.");
+            }
             if (item.quantity() <= 0) {
                 throw new ConflictException("Số lượng phải là số nguyên dương (>= 1).");
             }
-            if (item.unitPriceOverride() != null && item.unitPriceOverride().compareTo(java.math.BigDecimal.ZERO) < 0) {
-                throw new ConflictException("unitPriceOverride không được âm.");
+            // P0 #5: price override permission + validation
+            if (item.unitPriceOverride() != null) {
+                if (!canOverridePrice) {
+                    throw new ConflictException("Không có quyền override giá (pos.price_override).");
+                }
+                if (item.unitPriceOverride().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ConflictException("unitPriceOverride phải lớn hơn 0.");
+                }
             }
 
             ProductEntity product = productRepo.findByIdForUpdate(item.productId())
                     .orElseThrow(() -> new NotFoundException("Product not found: " + item.productId()));
 
-            ProductVariantEntity variant = null;
-            if (item.productVariantId() != null && !item.productVariantId().isBlank()) {
-                variant = variantRepo.findByIdForUpdate(item.productVariantId())
-                        .orElseThrow(() -> new NotFoundException("Variant not found: " + item.productVariantId()));
-                // Validate variant belongs to the specified product
-                if (variant.getProduct() != null && !variant.getProduct().getId().equals(product.getId())) {
-                    throw new ConflictException("Variant '" + item.productVariantId()
-                            + "' không thuộc sản phẩm '" + product.getName() + "'.");
-                }
-                if (variant.getQuantityOnHand() < item.quantity()) {
-                    throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
-                            + variant.getQuantityOnHand() + " trong kho.");
-                }
+            // P0 #4: re-check product is still published
+            if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' không còn được bán.");
             }
 
-            BigDecimal unitPrice = item.unitPriceOverride() != null
-                    ? item.unitPriceOverride().setScale(2, RoundingMode.HALF_UP)
-                    : resolvePrice(product, variant);
+            ProductVariantEntity variant = variantRepo.findByIdForUpdate(item.productVariantId())
+                    .orElseThrow(() -> new NotFoundException("Variant not found: " + item.productVariantId()));
+
+            // P0 #4: variant must belong to product
+            if (variant.getProduct() != null && !variant.getProduct().getId().equals(product.getId())) {
+                throw new ConflictException("Variant '" + item.productVariantId()
+                        + "' không thuộc sản phẩm '" + product.getName() + "'.");
+            }
+            // P0 #4: variant must be available
+            if (!variant.isAvailable()) {
+                throw new ConflictException("Phiên bản '" + variant.getName() + "' không còn khả dụng.");
+            }
+            if (variant.getQuantityOnHand() < item.quantity()) {
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                        + variant.getQuantityOnHand() + " trong kho.");
+            }
+
+            BigDecimal basePrice = resolvePrice(product, variant);
+            BigDecimal unitPrice;
+            if (item.unitPriceOverride() != null) {
+                // P0 #5: override must not exceed base price ceiling check is intentionally omitted
+                // (manual overrides can be discounts, not just markups); zero/negative already blocked above
+                unitPrice = item.unitPriceOverride().setScale(2, RoundingMode.HALF_UP);
+            } else {
+                unitPrice = basePrice;
+            }
+
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(item.quantity()))
                     .setScale(2, RoundingMode.HALF_UP);
             subtotal = subtotal.add(lineTotal);
 
             OrderLineItemEntity li = new OrderLineItemEntity();
             li.setProductId(tryParseUUID(product.getId()));
-            li.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
-            li.setSku(variant != null ? variant.getSku() : product.getSku());
+            li.setProductVariantId(tryParseUUID(variant.getId()));
+            li.setSku(variant.getSku() != null ? variant.getSku() : product.getSku());
             li.setProductName(product.getName());
-            li.setVariantName(variant != null ? variant.getName() : null);
+            li.setVariantName(variant.getName());
             li.setQuantity(item.quantity());
             li.setUnitPrice(unitPrice);
             li.setRegularPrice(product.getRetailPrice());
@@ -207,6 +238,8 @@ public class PosOrderService {
         order.setPaymentStatus("PAID");
         order.setCustomerPhone(req.customerPhone());
         order.setCustomerNote(req.customerNote());
+        // P0 #2: persist customerName
+        order.setCustomerName(req.customerName());
         order.setCurrency("VND");
         order.setSubtotalAmount(subtotal);
         order.setDiscountAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
@@ -221,8 +254,31 @@ public class PosOrderService {
         order.setPlacedAt(now);
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
+        // P0 #1: persist staffId
+        if (staffId != null) {
+            try { order.setCreatedByAdminId(UUID.fromString(staffId)); } catch (IllegalArgumentException ignored) {}
+        }
 
-        OrderEntity savedOrder = orderRepo.save(order);
+        OrderEntity savedOrder;
+        try {
+            savedOrder = orderRepo.save(order);
+            // Flush within transaction so constraint violation surfaces here
+            orderRepo.flush();
+        } catch (DataIntegrityViolationException ex) {
+            // Idempotency race: concurrent request already inserted same order_key
+            if (req.posIdempotencyKey() != null && !req.posIdempotencyKey().isBlank()) {
+                OrderEntity found = orderRepo.findByOrderKey(req.posIdempotencyKey())
+                        .orElseThrow(() -> ex);
+                Long changeAmt = null;
+                if ("CASH".equals(found.getPaymentMethod()) && req.tenderedAmount() != null) {
+                    changeAmt = req.tenderedAmount() - found.getTotalAmount().setScale(0, RoundingMode.HALF_UP).longValue();
+                }
+                return new PosOrderResponse(
+                        found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
+                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt);
+            }
+            throw ex;
+        }
 
         for (OrderLineItemEntity li : lineItems) {
             li.setOrder(savedOrder);
@@ -258,6 +314,26 @@ public class PosOrderService {
         orderNote.setCreatedAt(now);
         noteRepo.save(orderNote);
 
+        // P0 #3: audit log
+        String auditPayload = "{\"orderId\":\"" + savedOrder.getId() + "\""
+                + ",\"orderNumber\":\"" + savedOrder.getOrderNumber() + "\""
+                + ",\"staffId\":\"" + (staffId != null ? staffId : "") + "\""
+                + ",\"totalAmount\":" + subtotal.setScale(0, RoundingMode.HALF_UP).longValue()
+                + ",\"paymentMethod\":\"" + req.paymentMethod() + "\""
+                + ",\"itemCount\":" + req.items().size()
+                + ",\"source\":\"POS\"}";
+        AuditLogEntity auditLog = new AuditLogEntity();
+        auditLog.setActorType("ADMIN");
+        if (staffId != null) {
+            try { auditLog.setActorId(UUID.fromString(staffId)); } catch (IllegalArgumentException ignored) {}
+        }
+        auditLog.setAction("POS_ORDER_CREATED");
+        auditLog.setResourceType("ORDER");
+        auditLog.setResourceId(savedOrder.getId());
+        auditLog.setAfterData(auditPayload);
+        auditLog.setCreatedAt(now);
+        auditLogRepo.save(auditLog);
+
         wsService.pushEvent(new OrderWsEvent(
                 "NEW_ORDER", savedOrder.getId(), savedOrder.getOrderNumber(),
                 req.customerName() != null ? req.customerName() : req.customerPhone(),
@@ -268,7 +344,6 @@ public class PosOrderService {
         if ("CASH".equals(req.paymentMethod()) && req.tenderedAmount() != null) {
             changeAmount = req.tenderedAmount() - subtotal.setScale(0, RoundingMode.HALF_UP).longValue();
         }
-
 
         return new PosOrderResponse(
                 savedOrder.getId(), savedOrder.getOrderNumber(),
@@ -284,8 +359,7 @@ public class PosOrderService {
             Instant now
     ) {
         for (PosLineItemRequest item : items) {
-            if (item.productVariantId() == null || item.productVariantId().isBlank()) continue;
-
+            // productVariantId is always non-null here (validated in createOrder)
             ProductVariantEntity v = variantRepo.findByIdForUpdate(item.productVariantId())
                     .orElseThrow(() -> new NotFoundException("Variant không tìm thấy khi trừ kho: " + item.productVariantId()));
 

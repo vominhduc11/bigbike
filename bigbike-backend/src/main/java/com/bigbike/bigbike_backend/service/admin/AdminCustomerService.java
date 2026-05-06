@@ -20,15 +20,23 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddre
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
+import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,19 +53,22 @@ public class AdminCustomerService {
     private final OrderJpaRepository orderRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
+    private final CustomerSessionService customerSessionService;
 
     public AdminCustomerService(
             CustomerJpaRepository customerRepo,
             CustomerAddressJpaRepository addressRepo,
             OrderJpaRepository orderRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService
+            PaginationService paginationService,
+            CustomerSessionService customerSessionService
     ) {
         this.customerRepo = customerRepo;
         this.addressRepo = addressRepo;
         this.orderRepo = orderRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
+        this.customerSessionService = customerSessionService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -68,29 +79,56 @@ public class AdminCustomerService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Stream<CustomerEntity> stream = customerRepo.findAll().stream();
+        Specification<CustomerEntity> spec = buildSpec(q, status, synthetic);
+        org.springframework.data.domain.Pageable pageable = PageRequest.of(
+                normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        if (q != null && !q.isBlank()) {
-            String qLower = q.toLowerCase(Locale.ROOT);
-            stream = stream.filter(c ->
-                    matchesQ(c.getEmail(), qLower) ||
-                    matchesQ(c.getPhone(), qLower) ||
-                    matchesQ(c.getDisplayName(), qLower)
-            );
-        }
-        if (status != null && !status.isBlank()) {
-            stream = stream.filter(c -> status.equalsIgnoreCase(c.getStatus()));
-        }
-        if (synthetic != null) {
-            stream = stream.filter(c -> c.isSynthetic() == synthetic);
-        }
+        Page<CustomerEntity> customerPage = customerRepo.findAll(spec, pageable);
 
-        List<AdminCustomerListItemResponse> items = stream
-                .sorted(Comparator.comparing(CustomerEntity::getCreatedAt, Comparator.reverseOrder()))
-                .map(this::toListItem)
-                .toList();
+        // Batch-load order aggregates for customers on this page only (eliminates N+1).
+        List<UUID> ids = customerPage.getContent().stream().map(CustomerEntity::getId).toList();
+        Map<UUID, long[]> orderAggs = fetchOrderAggregates(ids);
 
-        return paginationService.paginate(items, normalizedPage, normalizedSize);
+        List<AdminCustomerListItemResponse> items = customerPage.getContent().stream()
+                .map(c -> toListItemFromAgg(c, orderAggs))
+                .collect(Collectors.toList());
+
+        return new PageResult<>(items, normalizedPage, normalizedSize,
+                customerPage.getTotalElements(), customerPage.getTotalPages());
+    }
+
+    private Specification<CustomerEntity> buildSpec(String q, String status, Boolean synthetic) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (q != null && !q.isBlank()) {
+                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("email")), pattern),
+                        cb.like(cb.lower(root.get("phone")), pattern),
+                        cb.like(cb.lower(root.get("displayName")), pattern)
+                ));
+            }
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), status.toUpperCase(Locale.ROOT)));
+            }
+            if (synthetic != null) {
+                predicates.add(cb.equal(root.get("isSynthetic"), synthetic));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /** Returns Map<customerId, [orderCount, totalSpentRaw]> for the given customer IDs. */
+    private Map<UUID, long[]> fetchOrderAggregates(List<UUID> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return orderRepo.countAndSumByCustomerIds(ids).stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> new long[]{
+                                ((Number) row[1]).longValue(),
+                                ((BigDecimal) row[2]).longValue()
+                        }
+                ));
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -166,6 +204,13 @@ public class AdminCustomerService {
         customer.setUpdatedAt(Instant.now());
         customerRepo.save(customer);
 
+        // Revoke all active sessions when account becomes non-ACTIVE so existing
+        // session cookies stop working immediately (defence-in-depth alongside the
+        // status check in CustomerSessionFilter).
+        if (!"ACTIVE".equals(newStatus)) {
+            customerSessionService.revokeAllSessions(customerId);
+        }
+
         String after = "{\"status\":\"" + newStatus + "\",\"reason\":" +
                 (req.reason() != null ? "\"" + escapeJson(req.reason()) + "\"" : "null") + "}";
         auditLogRepo.save(buildAudit(adminId, "CUSTOMER_STATUS_UPDATED", customerId, before, after));
@@ -175,16 +220,14 @@ public class AdminCustomerService {
 
     // ── Mapping ───────────────────────────────────────────────────────────────
 
-    private AdminCustomerListItemResponse toListItem(CustomerEntity c) {
-        List<OrderEntity> orders = orderRepo.findByCustomerId(c.getId());
-        BigDecimal totalSpent = orders.stream()
-                .map(OrderEntity::getTotalAmount)
-                .filter(a -> a != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    private AdminCustomerListItemResponse toListItemFromAgg(CustomerEntity c,
+            Map<UUID, long[]> orderAggs) {
+        long[] agg = orderAggs.getOrDefault(c.getId(), new long[]{0L, 0L});
         return new AdminCustomerListItemResponse(
                 c.getId(), c.getLegacyId(), c.getEmail(), c.getPhone(),
                 c.getDisplayName(), c.getStatus(), c.isSynthetic(),
-                c.getLastLoginAt(), c.getCreatedAt(), orders.size(), totalSpent
+                c.getLastLoginAt(), c.getCreatedAt(),
+                (int) agg[0], BigDecimal.valueOf(agg[1])
         );
     }
 

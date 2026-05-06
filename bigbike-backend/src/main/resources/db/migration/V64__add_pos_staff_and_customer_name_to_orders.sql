@@ -1,0 +1,2 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_by_admin_id UUID;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
