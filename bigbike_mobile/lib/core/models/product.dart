@@ -10,21 +10,21 @@ enum StockState {
   contactForStock;
 
   static StockState fromString(String? s) => switch (s) {
-        'IN_STOCK' => inStock,
-        'LOW_STOCK' => lowStock,
-        'OUT_OF_STOCK' => outOfStock,
-        'PREORDER' => preorder,
-        'CONTACT_FOR_STOCK' => contactForStock,
-        _ => inStock,
-      };
+    'IN_STOCK' => inStock,
+    'LOW_STOCK' => lowStock,
+    'OUT_OF_STOCK' => outOfStock,
+    'PREORDER' => preorder,
+    'CONTACT_FOR_STOCK' => contactForStock,
+    _ => inStock,
+  };
 
   String get label => switch (this) {
-        inStock => 'Còn hàng',
-        lowStock => 'Sắp hết',
-        outOfStock => 'Hết hàng',
-        preorder => 'Đặt trước',
-        contactForStock => 'Liên hệ',
-      };
+    inStock => 'Còn hàng',
+    lowStock => 'Sắp hết',
+    outOfStock => 'Hết hàng',
+    preorder => 'Đặt trước',
+    contactForStock => 'Liên hệ',
+  };
 
   bool get canAddToCart =>
       this == inStock || this == lowStock || this == preorder;
@@ -62,27 +62,28 @@ class ProductVariant {
   });
 
   factory ProductVariant.fromJson(Map<String, dynamic> j) => ProductVariant(
-        id: j['id'].toString(),
-        sku: j['sku'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        options: (j['options'] as List? ?? [])
-            .cast<Map<String, dynamic>>()
-            .map(ProductVariantOption.fromJson)
-            .toList(),
-        price: ProductPrice.fromJson(
-            j['price'] as Map<String, dynamic>? ?? {}),
-        stockState:
-            StockState.fromString(j['stockState'] as String?),
-        image: j['image'] as String?,
-      );
+    id: j['id'].toString(),
+    sku: j['sku'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    options: (j['options'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(ProductVariantOption.fromJson)
+        .toList(),
+    price: ProductPrice.fromJson(j['price'] as Map<String, dynamic>? ?? {}),
+    stockState: StockState.fromString(j['stockState'] as String?),
+    image: j['image'] as String?,
+  );
 }
 
 class ProductSpecification {
   final String name;
   final String value;
   final String? group;
-  const ProductSpecification(
-      {required this.name, required this.value, this.group});
+  const ProductSpecification({
+    required this.name,
+    required this.value,
+    this.group,
+  });
 
   factory ProductSpecification.fromJson(Map<String, dynamic> j) =>
       ProductSpecification(
@@ -120,27 +121,24 @@ class ProductSummary {
   });
 
   factory ProductSummary.fromJson(Map<String, dynamic> j) => ProductSummary(
-        id: j['id'].toString(),
-        slug: j['slug'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        image: j['image'] as String?,
-        price: ProductPrice.fromJson(
-            j['price'] as Map<String, dynamic>? ?? {}),
-        stockState:
-            StockState.fromString(j['stockState'] as String?),
-        rating: (j['rating'] as num?)?.toDouble(),
-        reviewCount: (j['ratingCount'] as num?)?.toInt() ??
-            (j['reviewCount'] as num?)?.toInt(),
-        brand: j['brand'] != null
-            ? BrandSummary.fromJson(
-                j['brand'] as Map<String, dynamic>)
-            : null,
-        category: j['category'] != null
-            ? CategorySummary.fromJson(
-                j['category'] as Map<String, dynamic>)
-            : null,
-        isFeatured: j['isFeatured'] as bool? ?? false,
-      );
+    id: j['id'].toString(),
+    slug: j['slug'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    image: j['image'] as String?,
+    price: ProductPrice.fromJson(j['price'] as Map<String, dynamic>? ?? {}),
+    stockState: StockState.fromString(j['stockState'] as String?),
+    rating: (j['rating'] as num?)?.toDouble(),
+    reviewCount:
+        (j['ratingCount'] as num?)?.toInt() ??
+        (j['reviewCount'] as num?)?.toInt(),
+    brand: j['brand'] != null
+        ? BrandSummary.fromJson(j['brand'] as Map<String, dynamic>)
+        : null,
+    category: j['category'] != null
+        ? CategorySummary.fromJson(j['category'] as Map<String, dynamic>)
+        : null,
+    isFeatured: j['isFeatured'] as bool? ?? false,
+  );
 }
 
 class Product extends ProductSummary {
@@ -187,8 +185,7 @@ class Product extends ProductSummary {
       isFeatured: base.isFeatured,
       shortDescription: j['shortDescription'] as String?,
       description: j['description'] as String?,
-      gallery:
-          (j['gallery'] as List? ?? []).cast<String>(),
+      gallery: (j['gallery'] as List? ?? []).cast<String>(),
       variants: (j['variants'] as List? ?? [])
           .cast<Map<String, dynamic>>()
           .map(ProductVariant.fromJson)
@@ -221,10 +218,10 @@ class ProductReview {
   });
 
   factory ProductReview.fromJson(Map<String, dynamic> j) => ProductReview(
-        id: j['id'].toString(),
-        authorName: j['authorName'] as String?,
-        rating: j['rating'] as int? ?? 5,
-        content: j['comment'] as String?,
-        createdAt: j['createdAt'] as String?,
-      );
+    id: j['id'].toString(),
+    authorName: j['authorName'] as String?,
+    rating: j['rating'] as int? ?? 5,
+    content: j['comment'] as String?,
+    createdAt: j['createdAt'] as String?,
+  );
 }

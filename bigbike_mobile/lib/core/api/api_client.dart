@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -22,15 +21,17 @@ class ApiClient {
       storage: FileStorage('${dir.path}/.cookies/'),
     );
 
-    _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
 
     _dio.interceptors.add(CookieManager(_cookieJar));
     _dio.interceptors.add(_CsrfInterceptor(_cookieJar));
@@ -88,7 +89,10 @@ class _CsrfInterceptor extends Interceptor {
   static const _mutateMethods = {'POST', 'PUT', 'PATCH', 'DELETE'};
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     if (_mutateMethods.contains(options.method.toUpperCase())) {
       try {
         final uri = Uri.parse(options.baseUrl);
@@ -110,37 +114,60 @@ class _ErrorInterceptor extends Interceptor {
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.connectionError) {
-      handler.reject(DioException(
-        requestOptions: err.requestOptions,
-        error: const NetworkException('Không có kết nối mạng'),
-        type: err.type,
-      ));
+      handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          error: const NetworkException('KhĂ´ng cĂ³ káº¿t ná»‘i máº¡ng'),
+          type: err.type,
+        ),
+      );
       return;
     }
 
     final response = err.response;
     if (response != null) {
       final data = response.data;
-      String message = 'Lỗi không xác định';
+      String message = 'Lá»—i khĂ´ng xĂ¡c Ä‘á»‹nh';
       Map<String, dynamic>? errors;
+      List<Map<String, dynamic>>? details;
 
       if (data is Map<String, dynamic>) {
-        message = data['message'] as String? ??
-            data['error'] as String? ??
-            message;
-        errors = data['errors'] as Map<String, dynamic>?;
+        final errorPayload = data['error'];
+        if (errorPayload is Map<String, dynamic>) {
+          message =
+              errorPayload['message'] as String? ??
+              data['message'] as String? ??
+              message;
+          errors =
+              errorPayload['errors'] as Map<String, dynamic>? ??
+              data['errors'] as Map<String, dynamic>?;
+          final rawDetails = errorPayload['details'];
+          if (rawDetails is List) {
+            details = rawDetails
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList();
+          }
+        } else {
+          message =
+              data['message'] as String? ?? data['error'] as String? ?? message;
+          errors = data['errors'] as Map<String, dynamic>?;
+        }
       }
 
-      handler.reject(DioException(
-        requestOptions: err.requestOptions,
-        error: ApiException(
-          statusCode: response.statusCode,
-          message: message,
-          errors: errors,
+      handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          error: ApiException(
+            statusCode: response.statusCode,
+            message: message,
+            errors: errors,
+            details: details,
+          ),
+          response: response,
+          type: err.type,
         ),
-        response: response,
-        type: err.type,
-      ));
+      );
       return;
     }
     handler.next(err);

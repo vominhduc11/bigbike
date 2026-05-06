@@ -143,7 +143,7 @@ Giới hạn có chủ ý:
 |---|---|---|---|---|---|---|---|
 | POST | `/api/v1/contact` | Submit contact form | `ContactRequest` | `ApiDataResponse<Void>` with HTTP 201 | Public `permitAll` | `CONFIRMED_FROM_CODE` | `ContactController.java`, `SecurityConfig.java` |
 | GET | `/api/v1/products/{productId}/reviews` | Get approved product reviews | `productId` path; optional `page` (default 1, min 1), optional `size` (default 10, min 1, max 50) | `ApiDataResponse<{avgRating,totalReviews,reviews[],pagination}>`; aggregate values cover **all APPROVED reviews**, `reviews[]` is current page only; returns `404` if `productId` does not exist | Public | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `PublicReviewService.java`, `ReviewJpaRepository.java` |
-| POST | `/api/v1/products/{productId}/reviews` | Submit product review | `authorName`, `rating`, `comment` | `ApiDataResponse<{success:true}>` with HTTP 201 | Public `permitAll` | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `SecurityConfig.java` |
+| POST | `/api/v1/products/{productId}/reviews` | Submit product review | `authorName`, `rating`, `comment` | `ApiDataResponse<{success:true}>` with HTTP 201 | Public `permitAll` | `CONFIRMED_FROM_CODE` | `PublicReviewController.java`, `SecurityConfig.java`, `bigbike_mobile/lib/features/products/product_detail_screen.dart` |
 | GET | `/api/v1/orders/lookup` | Guest order lookup | `orderNumber`, `orderKey` required | `ApiDataResponse<OrderDetailResponse>` | Public `permitAll` | `CONFIRMED_FROM_CODE` | `OrderLookupController.java`, `public-api.ts` |
 
 ## 7. Customer API Contract
