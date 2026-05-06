@@ -10,7 +10,7 @@ import { formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 
 const ALLOWED_MIME = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
   'video/mp4',
   'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/webm', 'audio/aac',
 ]

@@ -739,6 +739,33 @@ export async function deleteContent(contentType, contentId) {
   return parseDetailPayload(payload, normalizeContentItem)
 }
 
+export async function fetchContentAuthors() {
+  try {
+    const payload = await requestJson('/admin/content/reference/authors')
+    return (payload?.data ?? []).map((a) => ({ id: String(a.id ?? ''), name: String(a.name ?? '') }))
+  } catch {
+    return []
+  }
+}
+
+export async function fetchContentCategories() {
+  try {
+    const payload = await requestJson('/admin/content/reference/categories')
+    return (payload?.data ?? []).map((c) => ({ id: String(c.id ?? ''), slug: String(c.slug ?? ''), name: String(c.name ?? '') }))
+  } catch {
+    return []
+  }
+}
+
+export async function fetchContentPageRefs() {
+  try {
+    const payload = await requestJson('/admin/content/reference/pages')
+    return (payload?.data ?? []).map((p) => ({ id: String(p.id ?? ''), slug: String(p.slug ?? ''), title: String(p.title ?? '') }))
+  } catch {
+    return []
+  }
+}
+
 export async function fetchRedirects(query) {
   if (FORCE_MOCK) {
     return withMockFallback('Redirect list served from mock.', queryMockRedirects(query))

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -50,6 +51,10 @@ public class ContentReadService {
         return contentReadRepository.findPageBySlug(slug)
                 .filter(page -> page.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Page not found."));
+    }
+
+    public List<Page> listPublishedPages() {
+        return contentReadRepository.findPagesByFilter(PublishStatus.PUBLISHED, null);
     }
 
     private static Sort toSpringSort(SortSpec spec) {

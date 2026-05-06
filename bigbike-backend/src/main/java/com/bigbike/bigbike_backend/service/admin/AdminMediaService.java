@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpdateMediaRequest;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MinioProperties;
@@ -18,12 +19,15 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -38,12 +42,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminMediaService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminMediaService.class);
+    private static final Tika TIKA = new Tika();
+    private static final int TIKA_HEADER_BYTES = 8192;
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "DELETED");
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+            "image/jpeg", "image/png", "image/webp", "image/gif",
             "video/mp4",
             "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac");
     private static final Set<String> RASTER_IMAGE_TYPES = Set.of(
@@ -57,31 +63,32 @@ public class AdminMediaService {
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
     private final ObjectMapper objectMapper;
+    private final MediaReferenceService mediaReferenceService;
 
     public AdminMediaService(
             MediaJpaRepository mediaRepo,
             AuditLogJpaRepository auditLogRepo,
             MinioClient minioClient,
             MinioProperties minioProperties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            MediaReferenceService mediaReferenceService
     ) {
         this.mediaRepo = mediaRepo;
         this.auditLogRepo = auditLogRepo;
         this.minioClient = minioClient;
         this.minioProperties = minioProperties;
         this.objectMapper = objectMapper;
+        this.mediaReferenceService = mediaReferenceService;
     }
 
     // ── Upload ────────────────────────────────────────────────────────────────
 
     @Transactional
     public AdminMediaDetailResponse uploadMedia(MultipartFile file, String altText, UUID adminId) {
+        validateMimeContent(file);
+
         String mimeType = file.getContentType() != null
                 ? file.getContentType().toLowerCase(Locale.ROOT) : "";
-        if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
-            throw ValidationException.fromField("file", "INVALID_MIME",
-                    "Unsupported file type: " + mimeType);
-        }
         if (file.getSize() > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
                     "File exceeds 50 MB limit.");
@@ -244,7 +251,15 @@ public class AdminMediaService {
         MediaEntity media = mediaRepo.findById(mediaId)
                 .orElseThrow(() -> new NotFoundException("Media not found."));
 
-        // Remove from object storage
+        if (mediaReferenceService.hasReferences(media.getPublicUrl())) {
+            throw new ConflictException(
+                    "Media is referenced by other content and cannot be permanently deleted.");
+        }
+
+        String before = snapshot(media);
+
+        // Storage deletion must succeed before the DB row is removed.
+        // If MinIO fails, the exception propagates and the transaction rolls back (no DB delete).
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
@@ -252,11 +267,11 @@ public class AdminMediaService {
                             .object(media.getFilePath())
                             .build());
         } catch (Exception e) {
-            log.warn("Could not remove object {} from MinIO: {}", media.getFilePath(), e.getMessage());
+            throw new IllegalStateException(
+                    "Storage deletion failed; database record retained. Cause: " + e.getMessage(), e);
         }
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_HARD_DELETED", mediaId,
-                snapshot(media), null));
+        auditLogRepo.save(buildAudit(adminId, "MEDIA_HARD_DELETED", mediaId, before, null));
         mediaRepo.delete(media);
     }
 
@@ -334,6 +349,39 @@ public class AdminMediaService {
     private static String nvl(String s) { return s != null ? s : ""; }
 
     // ── File helpers ──────────────────────────────────────────────────────────
+
+    /**
+     * Validates the declared Content-Type and detects the actual MIME type from the first
+     * 8 KB of file content using Apache Tika magic-byte detection.
+     * Rejects empty files, unsupported declared types, and content that doesn't match
+     * any allowed MIME — preventing MIME spoofing attacks (P0-2).
+     */
+    private void validateMimeContent(MultipartFile file) {
+        if (file.isEmpty() || file.getSize() == 0) {
+            throw ValidationException.fromField("file", "EMPTY_FILE", "File must not be empty.");
+        }
+        String declared = file.getContentType() != null
+                ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+        if (!ALLOWED_MIME_TYPES.contains(declared)) {
+            throw ValidationException.fromField("file", "INVALID_MIME",
+                    "Unsupported file type: " + declared);
+        }
+        byte[] header = new byte[TIKA_HEADER_BYTES];
+        int read;
+        try (InputStream is = file.getInputStream()) {
+            read = is.read(header, 0, header.length);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read file for MIME validation.", e);
+        }
+        if (read <= 0) {
+            throw ValidationException.fromField("file", "EMPTY_FILE", "File must not be empty.");
+        }
+        String detected = TIKA.detect(Arrays.copyOf(header, read), file.getOriginalFilename());
+        if (!ALLOWED_MIME_TYPES.contains(detected)) {
+            throw ValidationException.fromField("file", "MIME_MISMATCH",
+                    "File content does not match an allowed type (detected: " + detected + ").");
+        }
+    }
 
     private static String sanitizeFilename(String original) {
         if (original == null || original.isBlank()) return "upload";

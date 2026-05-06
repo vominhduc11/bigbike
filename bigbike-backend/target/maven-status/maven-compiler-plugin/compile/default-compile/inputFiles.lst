@@ -76,6 +76,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\shipping\CreateShippingZoneRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\SpecificationRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\UpsertArticleRequest.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\UpsertAuthorRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\UpsertBrandRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\UpsertCategoryRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\UpsertHomeVideoRequest.java
@@ -213,7 +214,10 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\dom
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\AdminContentItem.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\Article.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\AuthorSummary.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\ContentAuthorItem.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\ContentCategoryItem.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\ContentCategorySummary.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\ContentPageRefItem.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\Page.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\content\PageType.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\customer\CustomerPrincipal.java
@@ -435,6 +439,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminCatalogReadService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentMutationService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentReadService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentReferenceService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminCouponService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminCustomerService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminDashboardService.java
@@ -452,6 +457,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminSettingsService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminShippingService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminSliderService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\MediaReferenceService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\AdminAuthService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\AdminRolePermissions.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\DevAdminAuthService.java

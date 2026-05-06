@@ -350,13 +350,13 @@ public class AdminContentMutationService {
         }
         if (create || request.getCategoryId() != null) {
             entity.setCategory(category);
-            if (create) {
-                List<ContentCategoryEntity> categories = new ArrayList<>();
-                if (category != null) {
-                    categories.add(category);
-                }
-                entity.setCategories(categories);
+            // Sync the many-to-many categories list with the primary category on both create and update.
+            // This ensures the public category filter (which checks both fields) stays consistent.
+            List<ContentCategoryEntity> syncedCategories = new ArrayList<>();
+            if (category != null) {
+                syncedCategories.add(category);
             }
+            entity.setCategories(syncedCategories);
         }
         if (create || request.getTags() != null) {
             entity.setTags(resolveTags(request.getTags()));

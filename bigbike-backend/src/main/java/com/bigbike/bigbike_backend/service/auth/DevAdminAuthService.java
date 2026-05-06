@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.auth;
 
 import com.bigbike.bigbike_backend.api.error.AuthNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,11 +30,17 @@ public class DevAdminAuthService {
 
     private final Environment environment;
 
+    @Value("${bigbike.auth.dev-header-enabled:false}")
+    private boolean devHeaderEnabled;
+
     public DevAdminAuthService(Environment environment) {
         this.environment = environment;
     }
 
     public AdminUserProfile currentAdminUser(HttpServletRequest request) {
+        if (!devHeaderEnabled) {
+            throw new UnauthorizedException("Dev header authentication is disabled.");
+        }
         ensureDevMockProfile();
 
         String role = resolveRole(request.getHeader(HEADER_ROLE));
@@ -76,7 +84,10 @@ public class DevAdminAuthService {
                     List.of(principal.role()), permissions, "ACTIVE", now, now);
         }
 
-        // Dev/test bypass path — reads X-Admin-Role and X-Admin-Permissions headers
+        // Dev/test bypass path — only active when bigbike.auth.dev-header-enabled=true (P0-3)
+        if (!devHeaderEnabled) {
+            throw new UnauthorizedException("No authenticated admin principal.");
+        }
         AdminUserProfile user = currentAdminUser(request);
         boolean granted = user.permissions().contains("*") || user.permissions().contains(requiredPermission);
         if (!granted) {

@@ -338,6 +338,10 @@ export function getArticleBySlug(slug: string): Promise<DataResult<Article>> {
   return loadData(`/api/v1/articles/${slug}`, 3600, ["articles", `article:${slug}`]);
 }
 
+export function listPages(): Promise<ListResult<Page>> {
+  return loadList("/api/v1/pages", {}, 3600, ["pages"]);
+}
+
 export function getPageBySlug(slug: string): Promise<DataResult<Page>> {
   return loadData(`/api/v1/pages/${slug}`, 3600, ["pages", `page:${slug}`]);
 }

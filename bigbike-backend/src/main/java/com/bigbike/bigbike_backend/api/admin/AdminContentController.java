@@ -1,20 +1,28 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertAuthorRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
+import com.bigbike.bigbike_backend.domain.content.ContentAuthorItem;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
+import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
 import com.bigbike.bigbike_backend.service.admin.AdminContentMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
+import com.bigbike.bigbike_backend.service.admin.AdminContentReferenceService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,17 +46,20 @@ public class AdminContentController {
 
     private final AdminContentReadService adminContentReadService;
     private final AdminContentMutationService adminContentMutationService;
+    private final AdminContentReferenceService adminContentReferenceService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
     public AdminContentController(
             AdminContentReadService adminContentReadService,
             AdminContentMutationService adminContentMutationService,
+            AdminContentReferenceService adminContentReferenceService,
             DevAdminAuthService devAdminAuthService,
             ApiResponseFactory apiResponseFactory
     ) {
         this.adminContentReadService = adminContentReadService;
         this.adminContentMutationService = adminContentMutationService;
+        this.adminContentReferenceService = adminContentReferenceService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
     }
@@ -141,6 +152,73 @@ public class AdminContentController {
         }
         return apiResponseFactory.data(adminContentMutationService.deleteArticle(id), request);
     }
+
+    // ── Reference lists (for article/page form dropdowns) ────────────────────
+
+    @GetMapping("/reference/authors")
+    public ApiListResponse<ContentAuthorItem> listAuthorRefs(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "content.read");
+        List<ContentAuthorItem> items = adminContentReferenceService.listAuthors();
+        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
+    }
+
+    @GetMapping("/reference/categories")
+    public ApiListResponse<ContentCategoryItem> listCategoryRefs(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "content.read");
+        List<ContentCategoryItem> items = adminContentReferenceService.listCategories();
+        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
+    }
+
+    @GetMapping("/reference/pages")
+    public ApiListResponse<ContentPageRefItem> listPageRefs(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "content.read");
+        List<ContentPageRefItem> items = adminContentReferenceService.listPageRefs();
+        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
+    }
+
+    // ── Author CRUD ──────────────────────────────────────────────────────────
+
+    @PostMapping("/authors")
+    public ApiDataResponse<ContentAuthorItem> createAuthor(
+            @Valid @RequestBody UpsertAuthorRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentReferenceService.createAuthor(payload), request);
+    }
+
+    @PatchMapping("/authors/{id}")
+    public ApiDataResponse<ContentAuthorItem> updateAuthor(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            @Valid @RequestBody UpsertAuthorRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentReferenceService.updateAuthor(id, payload), request);
+    }
+
+    // ── Content Category CRUD ────────────────────────────────────────────────
+
+    @PostMapping("/content-categories")
+    public ApiDataResponse<ContentCategoryItem> createCategory(
+            @Valid @RequestBody UpsertCategoryRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentReferenceService.createCategory(payload), request);
+    }
+
+    @PatchMapping("/content-categories/{id}")
+    public ApiDataResponse<ContentCategoryItem> updateCategory(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            @Valid @RequestBody UpsertCategoryRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentReferenceService.updateCategory(id, payload), request);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static int resolveSize(Integer size, Integer pageSize) {
         if (size != null) {

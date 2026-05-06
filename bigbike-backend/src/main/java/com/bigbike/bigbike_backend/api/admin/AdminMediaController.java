@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.media.UpdateMediaRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminMediaService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
@@ -35,8 +36,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/admin/media")
 public class AdminMediaController {
-
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminMediaService adminMediaService;
     private final DevAdminAuthService devAdminAuthService;
@@ -129,6 +128,6 @@ public class AdminMediaController {
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
             try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
         }
-        return DEV_ADMIN_ID;
+        throw new UnauthorizedException("No authenticated admin principal.");
     }
 }

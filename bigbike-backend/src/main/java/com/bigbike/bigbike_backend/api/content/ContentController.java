@@ -5,12 +5,14 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.Page;
+import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.content.ContentReadService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,6 +53,13 @@ public class ContentController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(contentReadService.getArticleBySlug(slug), request);
+    }
+
+    @GetMapping("/pages")
+    public ApiListResponse<Page> listPages(HttpServletRequest request) {
+        List<Page> pages = contentReadService.listPublishedPages();
+        PageResult<Page> result = new PageResult<>(pages, 1, pages.size(), pages.size(), 1);
+        return apiResponseFactory.list(result, request);
     }
 
     @GetMapping("/pages/{slug}")

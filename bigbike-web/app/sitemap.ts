@@ -3,6 +3,7 @@ import {
   listArticles,
   listBrands,
   listCategories,
+  listPages,
   listProducts,
 } from "@/lib/api/public-api";
 import {
@@ -17,6 +18,22 @@ import {
   toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
+
+// Map backend page slug → web route slug for POLICY pages served under /chinh-sach/
+const POLICY_BACKEND_TO_ROUTE: Record<string, string> = {
+  "chinh-sach-bao-ve-thong-tin-ca-nhan": "bao-mat",
+  "chinh-sach-bao-hanh": "bao-hanh",
+  "chinh-sach-doi-tra-hang": "doi-tra",
+  "cac-dieu-kien-va-dieu-khoan": "dieu-khoan",
+};
+
+function toPageUrl(page: { slug: string; type?: string | null }): string {
+  const routeSlug = POLICY_BACKEND_TO_ROUTE[page.slug];
+  if (routeSlug) {
+    return toCanonicalUrl(`/chinh-sach/${routeSlug}/`);
+  }
+  return toCanonicalUrl(toPagePath(page.slug));
+}
 
 // Single-file sitemap suitable for the cutover catalog (< 50k URLs).
 // If product/article counts grow past Google's 50k-per-file limit later,
@@ -51,7 +68,7 @@ async function fetchAll<T>(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, categories, brands, articles] = await Promise.all([
+  const [products, categories, brands, articles, pages] = await Promise.all([
     fetchAll((page) =>
       listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc" }),
     ),
@@ -64,6 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchAll((page) =>
       listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc" }),
     ),
+    listPages(),
   ]);
 
   const entries: MetadataRoute.Sitemap = [
@@ -117,31 +135,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.5,
     },
-    // ── Policy pages ─────────────────────────────────────────
-    {
-      url: toCanonicalUrl("/chinh-sach/bao-mat/"),
-      lastModified: STATIC_PAGE_DATES.policy,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: toCanonicalUrl("/chinh-sach/bao-hanh/"),
-      lastModified: STATIC_PAGE_DATES.policy,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: toCanonicalUrl("/chinh-sach/doi-tra/"),
-      lastModified: STATIC_PAGE_DATES.policy,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: toCanonicalUrl("/chinh-sach/dieu-khoan/"),
-      lastModified: STATIC_PAGE_DATES.policy,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
   ];
 
   for (const p of products) {
@@ -172,11 +165,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   for (const a of articles) {
+    if (a.seo?.noIndex) continue;
     entries.push({
       url: toCanonicalUrl(toArticlePath(a.slug)),
-      lastModified: a.publishedAt ? new Date(a.publishedAt) : STATIC_PAGE_DATES.home,
+      lastModified: a.updatedAt ? new Date(a.updatedAt) : STATIC_PAGE_DATES.home,
       changeFrequency: "monthly",
       priority: 0.4,
+    });
+  }
+
+  for (const p of pages.data) {
+    if (p.seo?.noIndex) continue;
+    entries.push({
+      url: toPageUrl(p),
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home,
+      changeFrequency: "yearly",
+      priority: p.type === "POLICY" ? 0.3 : 0.5,
     });
   }
 

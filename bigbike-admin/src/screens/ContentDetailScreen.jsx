@@ -5,7 +5,10 @@ import { toast } from 'sonner'
 import {
   createContent,
   deleteContent,
+  fetchContentAuthors,
+  fetchContentCategories,
   fetchContentDetail,
+  fetchContentPageRefs,
   mapValidationErrors,
   updateContent,
 } from '../lib/adminApi'
@@ -32,6 +35,9 @@ function buildEmptyForm(contentType) {
     body: '',
     publishStatus: 'DRAFT',
     pageType: 'CUSTOM',
+    authorId: '',
+    categoryId: '',
+    parentId: '',
     coverImageUrl: '',
     coverImageAlt: '',
     productImageUrl: '',
@@ -57,6 +63,9 @@ function buildFormFromItem(contentType, item) {
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
     pageType: item.pageType || fallback.pageType,
+    authorId: item.authorId || '',
+    categoryId: item.categoryId || '',
+    parentId: item.parentId || '',
     coverImageUrl: item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
     productImageUrl: item.productImage?.url || '',
@@ -78,7 +87,8 @@ function normalizeTagsInput(rawValue) {
     .filter(Boolean)
 }
 
-
+// P1-001: Always emit fields that can be cleared so backend can distinguish
+// "omitted = keep" vs "sent = apply (possibly clear)".
 function toPayload(form, isCreate) {
   const payload = {
     slug: form.slug.trim(),
@@ -89,36 +99,42 @@ function toPayload(form, isCreate) {
 
   if (form.type === 'ARTICLE') {
     payload.excerpt = form.excerpt.trim() || undefined
+
+    // Always send coverImage so clearing a URL removes it on backend
     payload.coverImage = form.coverImageUrl.trim()
       ? { url: form.coverImageUrl.trim(), alt: form.coverImageAlt.trim() || undefined }
       : { url: '' }
-    if (form.productImageUrl.trim()) {
-      payload.productImage = { url: form.productImageUrl.trim(), alt: form.productImageAlt.trim() || undefined }
-    }
-    const tags = normalizeTagsInput(form.tags)
-    if (tags.length > 0) payload.tags = tags
+
+    // Always send productImage — empty url explicitly clears it
+    payload.productImage = form.productImageUrl.trim()
+      ? { url: form.productImageUrl.trim(), alt: form.productImageAlt.trim() || undefined }
+      : { url: '' }
+
+    // Always send tags — empty array explicitly clears all tags
+    payload.tags = normalizeTagsInput(form.tags)
+
+    // Always send authorId — empty string clears the author
+    payload.authorId = form.authorId || ''
+
+    // Always send categoryId — empty string clears the category
+    payload.categoryId = form.categoryId || ''
   }
 
-  if (form.type === 'PAGE' && isCreate) {
-    payload.pageType = form.pageType.trim()
+  if (form.type === 'PAGE') {
+    if (isCreate) {
+      payload.pageType = form.pageType.trim()
+    }
+    // Always send parentId — empty string clears the parent
+    payload.parentId = form.parentId || ''
   }
 
-  if (
-    form.seoTitle.trim() ||
-    form.seoDescription.trim() ||
-    form.seoCanonicalUrl.trim() ||
-    form.seoOgImageUrl.trim() ||
-    form.seoNoIndex
-  ) {
-    payload.seo = {
-      title: form.seoTitle.trim() || undefined,
-      description: form.seoDescription.trim() || undefined,
-      canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
-      noIndex: Boolean(form.seoNoIndex),
-    }
-    if (form.seoOgImageUrl.trim()) {
-      payload.seo.ogImage = { url: form.seoOgImageUrl.trim() }
-    }
+  // Always send seo as non-null object so backend can clear fields when all are empty
+  payload.seo = {
+    title: form.seoTitle.trim() || null,
+    description: form.seoDescription.trim() || null,
+    canonicalUrl: form.seoCanonicalUrl.trim() || null,
+    noIndex: Boolean(form.seoNoIndex),
+    ogImage: form.seoOgImageUrl.trim() ? { url: form.seoOgImageUrl.trim() } : null,
   }
 
   return payload
@@ -139,6 +155,26 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     queryKey: ['content', normalizedType, contentId],
     queryFn: () => fetchContentDetail(normalizedType, contentId),
     enabled: !isCreate,
+  })
+
+  // P1-002: Fetch reference data for dropdowns
+  const { data: authors = [] } = useQuery({
+    queryKey: ['content-reference', 'authors'],
+    queryFn: fetchContentAuthors,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['content-reference', 'categories'],
+    queryFn: fetchContentCategories,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: pageRefs = [] } = useQuery({
+    queryKey: ['content-reference', 'pages'],
+    queryFn: fetchContentPageRefs,
+    staleTime: 5 * 60 * 1000,
+    enabled: normalizedType === 'PAGE',
   })
 
   useEffect(() => {
@@ -396,6 +432,62 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 {validationErrors.pageType ? (
                   <small className="field-error">{validationErrors.pageType}</small>
                 ) : null}
+              </label>
+            ) : null}
+
+            {/* P1-002: Author selector for articles */}
+            {isArticle ? (
+              <label className="form-field">
+                <span>{t('content.detail.author', { defaultValue: 'Tác giả' })}</span>
+                <select
+                  className="control-select"
+                  value={form.authorId}
+                  onChange={(event) => updateField('authorId', event.target.value)}
+                  disabled={isReadOnly}
+                >
+                  <option value="">{t('content.detail.authorNone', { defaultValue: '— Không chọn —' })}</option>
+                  {authors.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {/* P1-002: Category selector for articles */}
+            {isArticle ? (
+              <label className="form-field">
+                <span>{t('content.detail.category', { defaultValue: 'Danh mục' })}</span>
+                <select
+                  className="control-select"
+                  value={form.categoryId}
+                  onChange={(event) => updateField('categoryId', event.target.value)}
+                  disabled={isReadOnly}
+                >
+                  <option value="">{t('content.detail.categoryNone', { defaultValue: '— Không chọn —' })}</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {/* P1-002: Parent page selector for pages */}
+            {!isArticle ? (
+              <label className="form-field">
+                <span>{t('content.detail.parentPage', { defaultValue: 'Trang cha' })}</span>
+                <select
+                  className="control-select"
+                  value={form.parentId}
+                  onChange={(event) => updateField('parentId', event.target.value)}
+                  disabled={isReadOnly}
+                >
+                  <option value="">{t('content.detail.parentNone', { defaultValue: '— Không có trang cha —' })}</option>
+                  {pageRefs
+                    .filter((p) => p.id !== contentId)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>{p.title || p.slug}</option>
+                    ))}
+                </select>
               </label>
             ) : null}
 
