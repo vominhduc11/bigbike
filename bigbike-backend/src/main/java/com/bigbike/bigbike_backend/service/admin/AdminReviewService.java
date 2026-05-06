@@ -1,9 +1,14 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -15,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,17 +34,25 @@ public class AdminReviewService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("APPROVED", "PENDING", "SPAM", "TRASH");
+    private static final String REVIEW_RESOURCE_TYPE = "REVIEW";
+    private static final String REVIEW_STATUS_CHANGED_ACTION = "REVIEW_STATUS_CHANGED";
+    private static final String REVIEW_DELETED_ACTION = "REVIEW_DELETED";
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().findAndAddModules().build();
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
+    private final AuditLogJpaRepository auditLogRepo;
     private final WebRevalidationService webRevalidationService;
 
     public AdminReviewService(
             ReviewJpaRepository reviewRepo,
             ProductJpaRepository productRepo,
-            WebRevalidationService webRevalidationService) {
+            AuditLogJpaRepository auditLogRepo,
+            WebRevalidationService webRevalidationService
+    ) {
         this.reviewRepo = reviewRepo;
         this.productRepo = productRepo;
+        this.auditLogRepo = auditLogRepo;
         this.webRevalidationService = webRevalidationService;
     }
 
@@ -46,12 +60,15 @@ public class AdminReviewService {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        // Empty string (not null) — see ReviewJpaRepository.findByFilters comment for why.
+        // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
 
         PageRequest pageRequest = PageRequest.of(
-                normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+                normalizedPage - 1,
+                normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
         Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, pageRequest);
 
         Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
@@ -69,45 +86,93 @@ public class AdminReviewService {
     }
 
     @Transactional
-    public Map<String, Object> updateStatus(Long id, String status) {
+    public Map<String, Object> updateStatus(
+            UUID adminId,
+            Long id,
+            String status,
+            String ipAddress,
+            String userAgent
+    ) {
         if (status == null || status.isBlank()) {
-            throw ValidationException.fromField("status", "REQUIRED", "Trạng thái không được để trống.");
+            throw ValidationException.fromField("status", "REQUIRED", "Tráº¡ng thĂ¡i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
         }
+
         String normalized = status.toUpperCase(Locale.ROOT);
         if (!ALLOWED_STATUSES.contains(normalized)) {
-            throw ValidationException.fromField("status", "INVALID",
-                    "Trạng thái không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH.");
+            throw ValidationException.fromField(
+                    "status",
+                    "INVALID",
+                    "Tráº¡ng thĂ¡i khĂ´ng há»£p lá»‡. Chá»‰ cháº¥p nháº­n: APPROVED, PENDING, SPAM, TRASH."
+            );
         }
+
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
+        ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
+        Instant now = Instant.now();
+        String before = snapshot(entity, productMetadata);
+
         entity.setStatus(normalized);
-        entity.setUpdatedAt(Instant.now());
-        Map<String, Object> result = toMap(reviewRepo.save(entity));
+        entity.setUpdatedAt(now);
+
+        ReviewEntity saved = reviewRepo.save(entity);
+        auditLogRepo.save(buildAudit(
+                adminId,
+                REVIEW_STATUS_CHANGED_ACTION,
+                before,
+                snapshot(saved, productMetadata),
+                ipAddress,
+                userAgent,
+                now
+        ));
+
+        Map<String, Object> result = toMap(saved, productMetadata);
         revalidateProduct(entity.getProductId());
         return result;
     }
 
     @Transactional
-    public void deleteReview(Long id) {
+    public void deleteReview(
+            UUID adminId,
+            Long id,
+            String ipAddress,
+            String userAgent
+    ) {
         ReviewEntity entity = reviewRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review not found."));
+        ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
         String productId = entity.getProductId();
+        Instant now = Instant.now();
+        String before = snapshot(entity, productMetadata);
+
         reviewRepo.delete(entity);
+        auditLogRepo.save(buildAudit(
+                adminId,
+                REVIEW_DELETED_ACTION,
+                before,
+                deletedSnapshot(entity, productMetadata),
+                ipAddress,
+                userAgent,
+                now
+        ));
+
         revalidateProduct(productId);
     }
 
     private void revalidateProduct(String productId) {
-        if (productId == null) return;
-        productRepo.findById(productId).ifPresent(p -> {
-            String slug = p.getSlug();
+        if (productId == null) {
+            return;
+        }
+        productRepo.findById(productId).ifPresent(product -> {
+            String slug = product.getSlug();
             if (slug != null && !slug.isBlank()) {
                 webRevalidationService.revalidate("product:" + slug, "products");
             }
         });
     }
 
-    private Map<String, Object> toMap(ReviewEntity r) {
-        return toMap(r, loadProductMetadata(List.of(r)).get(r.getProductId()));
+    private Map<String, Object> toMap(ReviewEntity review) {
+        return toMap(review, loadProductMetadata(List.of(review)).get(review.getProductId()));
     }
 
     private Map<String, ProductReviewMetadata> loadProductMetadata(List<ReviewEntity> reviews) {
@@ -140,6 +205,53 @@ public class AdminReviewService {
         payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
         payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");
         return payload;
+    }
+
+    private String snapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {
+        return writeJson(toMap(review, productMetadata));
+    }
+
+    private String deletedSnapshot(ReviewEntity review, ProductReviewMetadata productMetadata) {
+        Map<String, Object> payload = new LinkedHashMap<>(toMap(review, productMetadata));
+        payload.put("deleted", true);
+        return writeJson(payload);
+    }
+
+    private AuditLogEntity buildAudit(
+            UUID adminId,
+            String action,
+            String before,
+            String after,
+            String ipAddress,
+            String userAgent,
+            Instant now
+    ) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction(action);
+        log.setResourceType(REVIEW_RESOURCE_TYPE);
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setIpAddress(blankToNull(ipAddress));
+        log.setUserAgent(blankToNull(userAgent));
+        log.setCreatedAt(now);
+        return log;
+    }
+
+    private String writeJson(Map<String, Object> payload) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(payload);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to serialize review audit payload.", exception);
+        }
+    }
+
+    private String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 
     private record ProductReviewMetadata(String name, String slug) {}

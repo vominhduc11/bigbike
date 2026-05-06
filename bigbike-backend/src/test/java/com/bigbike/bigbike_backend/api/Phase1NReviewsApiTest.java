@@ -7,10 +7,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.JwtService;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -40,9 +46,11 @@ class Phase1NReviewsApiTest {
 
     private static final String PRODUCT_ID = "prod_ls2_ff800";
     private static final String UNKNOWN_PRODUCT_ID = "prod-does-not-exist-xyz";
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired ReviewJpaRepository reviewRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired JwtService jwtService;
 
     // Plain MockMvc (no Spring Security) â€” for functional behavior tests
@@ -318,6 +326,30 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void adminPatchStatus_writesAuditLog() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/reviews/" + pendingReviewId + "/status")
+                        .with(remoteAddress("203.0.113.10"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("User-Agent", "Phase2C-Test-Agent")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isOk());
+
+        AuditLogEntity auditLog = findLatestReviewAudit("REVIEW_STATUS_CHANGED", pendingReviewId)
+                .orElseThrow(() -> new AssertionError("Expected review status audit log."));
+
+        org.assertj.core.api.Assertions.assertThat(auditLog.getActorType()).isEqualTo("ADMIN");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getActorId()).isEqualTo(DEV_ADMIN_ID);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getResourceType()).isEqualTo("REVIEW");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"id\":" + pendingReviewId);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"status\":\"PENDING\"");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"id\":" + pendingReviewId);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"status\":\"APPROVED\"");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress()).isEqualTo("203.0.113.10");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getUserAgent()).isEqualTo("Phase2C-Test-Agent");
+    }
+
+    @Test
     void adminDeleteReview_returns204() throws Exception {
         Long toDelete = insertReview(PRODUCT_ID, "To Delete", 2, "Will be deleted", "PENDING");
 
@@ -326,6 +358,30 @@ class Phase1NReviewsApiTest {
                 .andExpect(status().isNoContent());
 
         org.assertj.core.api.Assertions.assertThat(reviewRepo.findById(toDelete)).isEmpty();
+    }
+
+    @Test
+    void adminDeleteReview_writesAuditLog() throws Exception {
+        Long toDelete = insertReview(PRODUCT_ID, "To Delete With Audit", 2, "Will be deleted", "PENDING");
+
+        mockMvc.perform(delete("/api/v1/admin/reviews/" + toDelete)
+                        .with(remoteAddress("198.51.100.25"))
+                        .header("User-Agent", "Phase2C-Delete-Agent")
+                        .header("X-Admin-Permissions", "reviews.write"))
+                .andExpect(status().isNoContent());
+
+        AuditLogEntity auditLog = findLatestReviewAudit("REVIEW_DELETED", toDelete)
+                .orElseThrow(() -> new AssertionError("Expected review delete audit log."));
+
+        org.assertj.core.api.Assertions.assertThat(auditLog.getActorType()).isEqualTo("ADMIN");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getActorId()).isEqualTo(DEV_ADMIN_ID);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getResourceType()).isEqualTo("REVIEW");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"id\":" + toDelete);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getBeforeData()).contains("\"status\":\"PENDING\"");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"id\":" + toDelete);
+        org.assertj.core.api.Assertions.assertThat(auditLog.getAfterData()).contains("\"deleted\":true");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getIpAddress()).isEqualTo("198.51.100.25");
+        org.assertj.core.api.Assertions.assertThat(auditLog.getUserAgent()).isEqualTo("Phase2C-Delete-Agent");
     }
 
     @Test
@@ -448,5 +504,25 @@ class Phase1NReviewsApiTest {
         review.setCreatedAt(createdAt);
         review.setUpdatedAt(createdAt);
         return reviewRepo.save(review).getId();
+    }
+
+    private Optional<AuditLogEntity> findLatestReviewAudit(String action, Long reviewId) {
+        String reviewIdSnippet = "\"id\":" + reviewId;
+        return auditLogRepo.findAll().stream()
+                .filter(log -> action.equals(log.getAction()))
+                .filter(log -> "REVIEW".equals(log.getResourceType()))
+                .filter(log -> contains(log.getBeforeData(), reviewIdSnippet) || contains(log.getAfterData(), reviewIdSnippet))
+                .max(Comparator.comparing(AuditLogEntity::getCreatedAt));
+    }
+
+    private boolean contains(String value, String expected) {
+        return value != null && value.contains(expected);
+    }
+
+    private RequestPostProcessor remoteAddress(String remoteAddress) {
+        return request -> {
+            request.setRemoteAddr(remoteAddress);
+            return request;
+        };
     }
 }

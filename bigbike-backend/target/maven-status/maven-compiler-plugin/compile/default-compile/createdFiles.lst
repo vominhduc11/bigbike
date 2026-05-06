@@ -179,6 +179,7 @@ com\bigbike\bigbike_backend\api\admin\dto\VariantRequest.class
 com\bigbike\bigbike_backend\config\CustomerCsrfFilter.class
 com\bigbike\bigbike_backend\api\public_\VnAddressController.class
 com\bigbike\bigbike_backend\api\error\MutationNotImplementedException.class
+com\bigbike\bigbike_backend\service\admin\AdminAuditLogService$ReviewAuditResource.class
 com\bigbike\bigbike_backend\service\web\WebRevalidationService$1.class
 com\bigbike\bigbike_backend\domain\content\PageType.class
 com\bigbike\bigbike_backend\service\cart\CartService.class
@@ -543,6 +544,7 @@ com\bigbike\bigbike_backend\persistence\repository\catalog\CategoryJpaRepository
 com\bigbike\bigbike_backend\service\cart\CartCalculator.class
 com\bigbike\bigbike_backend\api\cart\dto\CartResponse.class
 com\bigbike\bigbike_backend\persistence\repository\catalog\ReviewJpaRepository.class
+com\bigbike\bigbike_backend\service\admin\AdminAuditLogService$1.class
 com\bigbike\bigbike_backend\service\customer\CustomerSessionService.class
 com\bigbike\bigbike_backend\migration\wordpress\parser\WordPressCsvRedirectReader$ParseResult.class
 com\bigbike\bigbike_backend\config\SecurityConfig.class

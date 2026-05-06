@@ -1,5 +1,8 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.audit.AdminAuditLogListItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
@@ -14,6 +17,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +34,7 @@ public class AdminAuditLogService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().findAndAddModules().build();
 
     private final AuditLogJpaRepository auditLogRepo;
     private final AdminUserJpaRepository adminUserRepo;
@@ -155,6 +160,13 @@ public class AdminAuditLogService {
                 resourceCode = orderNumber;
             }
         }
+        if ("REVIEW".equals(e.getResourceType())) {
+            ReviewAuditResource reviewResource = resolveReviewAuditResource(e);
+            if (reviewResource != null) {
+                resourceCode = reviewResource.resourceCode();
+                resourceDisplayName = reviewResource.resourceDisplayName();
+            }
+        }
 
         return new AdminAuditLogListItemResponse(
                 e.getId(),
@@ -174,6 +186,36 @@ public class AdminAuditLogService {
         );
     }
 
+    private ReviewAuditResource resolveReviewAuditResource(AuditLogEntity entity) {
+        Map<String, Object> payload = parseAuditPayload(entity.getAfterData());
+        if (payload.isEmpty()) {
+            payload = parseAuditPayload(entity.getBeforeData());
+        }
+        if (payload.isEmpty()) {
+            return null;
+        }
+
+        Object reviewId = payload.get("id");
+        Object productName = payload.get("productName");
+        String resourceCode = reviewId != null ? "Review #" + reviewId : null;
+        String resourceDisplayName = productName instanceof String name && !name.isBlank() ? name : null;
+        if (resourceCode == null && resourceDisplayName == null) {
+            return null;
+        }
+        return new ReviewAuditResource(resourceCode, resourceDisplayName);
+    }
+
+    private Map<String, Object> parseAuditPayload(String rawPayload) {
+        if (rawPayload == null || rawPayload.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(rawPayload, new TypeReference<LinkedHashMap<String, Object>>() {});
+        } catch (Exception ignored) {
+            return Map.of();
+        }
+    }
+
     private Instant parseFromDate(String from) {
         if (from == null || from.isBlank()) return null;
         try {
@@ -191,4 +233,6 @@ public class AdminAuditLogService {
             try { return Instant.parse(to); } catch (Exception ignored) { return null; }
         }
     }
+
+    private record ReviewAuditResource(String resourceCode, String resourceDisplayName) {}
 }
