@@ -16,6 +16,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepos
 import com.bigbike.bigbike_backend.service.auth.JwtService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
@@ -272,14 +273,38 @@ class Phase1NReviewsApiTest {
     // --- Phase 2F: Anti-abuse guard ---
 
     @Test
-    void publicPostReview_honeypotFilled_returns400() throws Exception {
+    void publicPostReview_honeypotFilled_returnsSuccessButDoesNotCreateReview() throws Exception {
+        long countBefore = reviewRepo.count();
+
         mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"authorName":"Bot","rating":5,"comment":"Cheap deal","website":"http://spam.example.com"}
+                                {"authorName":"Bot Honeypot","rating":5,"comment":"Cheap deal","website":"http://spam.example.com"}
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.success").value(true));
+
+        long countAfter = reviewRepo.count();
+        org.assertj.core.api.Assertions.assertThat(countAfter).isEqualTo(countBefore);
+    }
+
+    @Test
+    void publicPostReview_honeypotWhitespaceOnly_persistsLikeNormal() throws Exception {
+        // Whitespace-only honeypot is treated as empty (real user, normal flow).
+        long countBefore = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "PENDING", PageRequest.of(0, 500))
+                .getTotalElements();
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van Whitespace HP","rating":3,"comment":"Honeypot blanks ok","website":"   "}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.success").value(true));
+
+        long countAfter = reviewRepo.findByProductIdAndStatus(PRODUCT_ID, "PENDING", PageRequest.of(0, 500))
+                .getTotalElements();
+        org.assertj.core.api.Assertions.assertThat(countAfter).isEqualTo(countBefore + 1);
     }
 
     @Test
@@ -305,7 +330,7 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
-    void publicPostReview_duplicate_returns409() throws Exception {
+    void publicPostReview_duplicate_sameAuthorComment_returns409() throws Exception {
         String content = """
                 {"authorName":"Nguyen Van Dup Guard","rating":4,"comment":"Duplicate guard test","website":""}
                 """;
@@ -323,20 +348,143 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
-    void publicPostReview_sameAuthorDifferentRating_isNotDuplicate() throws Exception {
+    void publicPostReview_duplicateCaseInsensitive_returns409() throws Exception {
         mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"authorName":"Nguyen Van Different","rating":3,"comment":"Rating changes it","website":""}
+                                {"authorName":"Nguyen Van Casing","rating":4,"comment":"Mixed Case Comment","website":""}
                                 """))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"authorName":"Nguyen Van Different","rating":5,"comment":"Rating changes it","website":""}
+                                {"authorName":"NGUYEN VAN CASING","rating":4,"comment":"mixed CASE comment","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_duplicateWhitespaceCollapsed_returns409() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van WS","rating":4,"comment":"Lots of   spaces here","website":""}
                                 """))
                 .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"  Nguyen   Van   WS  ","rating":4,"comment":"Lots of spaces here","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_sameAuthorDifferentComment_succeeds() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van DiffComment","rating":4,"comment":"Comment one","website":""}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van DiffComment","rating":4,"comment":"Comment two distinct","website":""}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void publicPostReview_differentAuthorSameComment_succeeds() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van AuthorOne","rating":4,"comment":"Identical comment text","website":""}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van AuthorTwo","rating":4,"comment":"Identical comment text","website":""}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void publicPostReview_sameAuthorCommentDifferentRating_returns409() throws Exception {
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van RatingDup","rating":3,"comment":"Rating ignored in dupe","website":""}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van RatingDup","rating":5,"comment":"Rating ignored in dupe","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_duplicateOlderThan24h_succeeds() throws Exception {
+        insertReview(PRODUCT_ID, "Nguyen Van OldDup", 4, "Old duplicate body", "APPROVED",
+                Instant.now().minus(25, ChronoUnit.HOURS));
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van OldDup","rating":4,"comment":"Old duplicate body","website":""}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void publicPostReview_duplicateAgainstPendingReview_returns409() throws Exception {
+        insertReview(PRODUCT_ID, "Nguyen Van PendingDup", 4, "Pending blocks dup", "PENDING");
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van PendingDup","rating":4,"comment":"Pending blocks dup","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_duplicateAgainstSpamReview_returns409() throws Exception {
+        insertReview(PRODUCT_ID, "Nguyen Van SpamDup", 4, "Spam blocks dup", "SPAM");
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van SpamDup","rating":4,"comment":"Spam blocks dup","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void publicPostReview_duplicateAgainstTrashReview_returns409() throws Exception {
+        insertReview(PRODUCT_ID, "Nguyen Van TrashDup", 4, "Trash blocks dup", "TRASH");
+
+        mockMvc.perform(post("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"authorName":"Nguyen Van TrashDup","rating":4,"comment":"Trash blocks dup","website":""}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
     }
 
     @Test

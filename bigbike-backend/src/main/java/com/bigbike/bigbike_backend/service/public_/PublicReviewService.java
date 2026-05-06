@@ -10,6 +10,8 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepos
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -23,6 +25,8 @@ public class PublicReviewService {
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final int DUPLICATE_WINDOW_HOURS = 24;
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
@@ -75,12 +79,22 @@ public class PublicReviewService {
         String normalizedComment = comment != null ? comment.trim() : "";
         Instant now = Instant.now();
 
-        long dupeCount = reviewRepo.countDuplicate(
-                productId, normalizedName, (short) rating, normalizedComment,
-                now.minus(30, ChronoUnit.MINUTES));
-        if (dupeCount > 0) {
+        // Duplicate guard: same productId + normalized(authorName) + normalized(body)
+        // within the last 24 hours, regardless of rating or moderation status. We pull
+        // the recent window for this product (small set in practice) and compare in
+        // Java so the normalization rules (trim/lowercase/collapse whitespace) match
+        // exactly between request and stored row, even when the row was inserted
+        // before this guard existed.
+        String dupKeyAuthor = normalizeForDup(normalizedName);
+        String dupKeyComment = normalizeForDup(normalizedComment);
+        Instant duplicateSince = now.minus(DUPLICATE_WINDOW_HOURS, ChronoUnit.HOURS);
+        List<ReviewEntity> recent = reviewRepo.findRecentByProductId(productId, duplicateSince);
+        boolean duplicate = recent.stream().anyMatch(r ->
+                normalizeForDup(r.getAuthorName()).equals(dupKeyAuthor)
+                        && normalizeForDup(r.getBody()).equals(dupKeyComment));
+        if (duplicate) {
             throw new ConflictException(
-                    "\u0110\u00e1nh gi\u00e1 t\u01b0\u01a1ng t\u1ef1 v\u1eeba \u0111\u01b0\u1ee3c g\u1eedi. Vui l\u00f2ng th\u1eed l\u1ea1i sau.");
+                    "B\u1ea1n \u0111\u00e3 g\u1eedi \u0111\u00e1nh gi\u00e1 t\u01b0\u01a1ng t\u1ef1 g\u1ea7n \u0111\u00e2y. Vui l\u00f2ng ch\u1edd ki\u1ec3m duy\u1ec7t ho\u1eb7c ch\u1ec9nh s\u1eeda n\u1ed9i dung.");
         }
 
         ReviewEntity entity = new ReviewEntity();
@@ -93,6 +107,17 @@ public class PublicReviewService {
         entity.setUpdatedAt(now);
 
         reviewRepo.save(entity);
+    }
+
+    private static String normalizeForDup(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        return WHITESPACE.matcher(trimmed.toLowerCase(Locale.ROOT)).replaceAll(" ");
     }
 
     private double roundAverage(Double avgRating) {

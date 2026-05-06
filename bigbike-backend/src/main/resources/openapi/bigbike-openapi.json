@@ -368,16 +368,16 @@
         },
         "responses": {
           "201": {
-            "description": "Review submitted and pending moderation"
+            "description": "Review submitted and pending moderation. Also returned (with no persistence) when honeypot is filled."
           },
           "400": {
-            "description": "Validation error or honeypot triggered"
+            "description": "Validation error (missing/invalid authorName, rating, or comment)"
           },
           "404": {
             "description": "Product not found"
           },
           "409": {
-            "description": "Duplicate review — identical review submitted within the last 30 minutes"
+            "description": "Duplicate review — same productId + normalized (trim/lowercase/collapsed-whitespace) authorName + comment submitted within the last 24 hours. Rating is not part of the duplicate key, and reviews in any moderation status (PENDING/APPROVED/SPAM/TRASH) are counted."
           },
           "429": {
             "description": "Rate limit exceeded — 5 submissions per IP per minute"
@@ -5633,7 +5633,7 @@
           },
           "website": {
             "type": "string",
-            "description": "Honeypot field — must be empty string or omitted. Non-empty value causes 400.",
+            "description": "Honeypot field — real clients leave this empty/omitted. Non-empty value (after trim) is silently dropped server-side: response is success-shaped 201 but no review is persisted.",
             "example": ""
           }
         }

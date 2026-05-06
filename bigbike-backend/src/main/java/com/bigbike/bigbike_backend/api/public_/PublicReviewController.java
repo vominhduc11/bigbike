@@ -51,15 +51,18 @@ public class PublicReviewController {
             @RequestBody SubmitReviewRequest body,
             HttpServletRequest request
     ) {
+        // Honeypot stealth: real users never see this field. If a bot fills it,
+        // accept-and-drop silently — same response shape as a legitimate submit
+        // so the bot can't distinguish success from rejection.
+        if (body.website() != null && !body.website().trim().isEmpty()) {
+            return apiResponseFactory.data(Map.of("success", true), request);
+        }
         validate(body);
         publicReviewService.submitReview(productId, body.authorName(), body.rating(), body.comment());
         return apiResponseFactory.data(Map.of("success", true), request);
     }
 
     private void validate(SubmitReviewRequest body) {
-        if (body.website() != null && !body.website().isEmpty()) {
-            throw ValidationException.fromField("website", "HONEYPOT_TRIGGERED", "Invalid request.");
-        }
         if (body.authorName() == null || body.authorName().isBlank()) {
             throw ValidationException.fromField("authorName", "REQUIRED", "Vui l\u00f2ng nh\u1eadp t\u00ean.");
         }
