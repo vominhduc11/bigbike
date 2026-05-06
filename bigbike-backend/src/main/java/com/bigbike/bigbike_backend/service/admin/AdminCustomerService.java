@@ -19,7 +19,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.customer.CustomerSessionService;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
@@ -52,7 +51,6 @@ public class AdminCustomerService {
     private final CustomerAddressJpaRepository addressRepo;
     private final OrderJpaRepository orderRepo;
     private final AuditLogJpaRepository auditLogRepo;
-    private final PaginationService paginationService;
     private final CustomerSessionService customerSessionService;
 
     public AdminCustomerService(
@@ -60,14 +58,12 @@ public class AdminCustomerService {
             CustomerAddressJpaRepository addressRepo,
             OrderJpaRepository orderRepo,
             AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService,
             CustomerSessionService customerSessionService
     ) {
         this.customerRepo = customerRepo;
         this.addressRepo = addressRepo;
         this.orderRepo = orderRepo;
         this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
         this.customerSessionService = customerSessionService;
     }
 
@@ -152,6 +148,8 @@ public class AdminCustomerService {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found."));
 
+        String beforeSnapshot = snapshot(customer);
+
         // Email uniqueness check
         if (req.email() != null && !req.email().isBlank()) {
             String newEmail = req.email().toLowerCase(Locale.ROOT).trim();
@@ -173,14 +171,16 @@ public class AdminCustomerService {
             customer.setPhone(req.phone().trim());
         }
 
-        String beforeSnapshot = snapshot(customer);
-
         if (req.displayName() != null) customer.setDisplayName(req.displayName());
         if (req.firstName() != null) customer.setFirstName(req.firstName());
         if (req.lastName() != null) customer.setLastName(req.lastName());
 
         customer.setUpdatedAt(Instant.now());
-        customerRepo.save(customer);
+        try {
+            customerRepo.saveAndFlush(customer);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw new ConflictException("Email or phone is already in use by another customer.");
+        }
 
         auditLogRepo.save(buildAudit(adminId, "CUSTOMER_UPDATED", customerId, beforeSnapshot, snapshot(customer)));
 
@@ -321,10 +321,6 @@ public class AdminCustomerService {
         return "{\"email\":\"" + nvl(c.getEmail()) + "\",\"phone\":\"" + nvl(c.getPhone()) +
                "\",\"displayName\":\"" + nvl(c.getDisplayName()) +
                "\",\"status\":\"" + nvl(c.getStatus()) + "\"}";
-    }
-
-    private static boolean matchesQ(String field, String qLower) {
-        return field != null && field.toLowerCase(Locale.ROOT).contains(qLower);
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }

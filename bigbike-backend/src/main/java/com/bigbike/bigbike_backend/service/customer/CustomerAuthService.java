@@ -14,7 +14,9 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRe
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,24 +43,27 @@ public class CustomerAuthService {
 
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
-        if (req.email() == null && req.phone() == null) {
+        String normalizedEmail = req.email() != null ? req.email().toLowerCase(Locale.ROOT).trim() : null;
+        String normalizedPhone = req.phone() != null ? req.phone().trim() : null;
+
+        if (normalizedEmail == null && normalizedPhone == null) {
             throw ValidationException.fromField("email", "REQUIRED", "Email or phone is required.");
         }
         if (req.password() == null || req.password().length() < 8) {
             throw ValidationException.fromField("password", "TOO_SHORT", "Mật khẩu phải có ít nhất 8 ký tự.");
         }
         // Generic message prevents account enumeration via register endpoint.
-        if (req.email() != null && customerRepo.findByEmail(req.email()).isPresent()) {
+        if (normalizedEmail != null && customerRepo.findByEmail(normalizedEmail).isPresent()) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
-        if (req.phone() != null && customerRepo.findByPhone(req.phone()).isPresent()) {
+        if (normalizedPhone != null && customerRepo.findByPhone(normalizedPhone).isPresent()) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
 
         Instant now = Instant.now();
         CustomerEntity customer = new CustomerEntity();
-        customer.setEmail(req.email());
-        customer.setPhone(req.phone());
+        customer.setEmail(normalizedEmail);
+        customer.setPhone(normalizedPhone);
         customer.setPasswordHash(passwordService.hash(req.password()));
         customer.setDisplayName(req.displayName() != null ? req.displayName() : deriveDisplayName(req));
         customer.setFirstName(req.firstName());
@@ -67,7 +72,12 @@ public class CustomerAuthService {
         customer.setSynthetic(false);
         customer.setCreatedAt(now);
         customer.setUpdatedAt(now);
-        CustomerEntity saved = customerRepo.save(customer);
+        CustomerEntity saved;
+        try {
+            saved = customerRepo.saveAndFlush(customer);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("Thông tin đăng ký không hợp lệ.");
+        }
 
         // Fire-and-forget-on-failure email send. Mail outages must not break signup.
         if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
@@ -147,9 +157,14 @@ public class CustomerAuthService {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found."));
 
+        String newEmail = (req.email() != null && !req.email().isBlank())
+                ? req.email().toLowerCase(Locale.ROOT).trim() : null;
+        String newPhone = (req.phone() != null && !req.phone().isBlank())
+                ? req.phone().trim() : null;
+
         boolean isSensitiveChange = (req.newPassword() != null && !req.newPassword().isBlank())
-                || (req.email() != null && !req.email().isBlank() && !req.email().equals(customer.getEmail()))
-                || (req.phone() != null && !req.phone().isBlank() && !req.phone().equals(customer.getPhone()));
+                || (newEmail != null && !newEmail.equals(customer.getEmail()))
+                || (newPhone != null && !newPhone.equals(customer.getPhone()));
 
         if (isSensitiveChange) {
             if (req.currentPassword() == null || req.currentPassword().isBlank()) {
@@ -162,17 +177,17 @@ public class CustomerAuthService {
             }
         }
 
-        if (req.email() != null && !req.email().isBlank() && !req.email().equals(customer.getEmail())) {
-            customerRepo.findByEmail(req.email()).ifPresent(c -> {
+        if (newEmail != null && !newEmail.equals(customer.getEmail())) {
+            customerRepo.findByEmail(newEmail).ifPresent(c -> {
                 throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
-            customer.setEmail(req.email());
+            customer.setEmail(newEmail);
         }
-        if (req.phone() != null && !req.phone().isBlank() && !req.phone().equals(customer.getPhone())) {
-            customerRepo.findByPhone(req.phone()).ifPresent(c -> {
+        if (newPhone != null && !newPhone.equals(customer.getPhone())) {
+            customerRepo.findByPhone(newPhone).ifPresent(c -> {
                 throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
-            customer.setPhone(req.phone());
+            customer.setPhone(newPhone);
         }
         if (req.displayName() != null && !req.displayName().isBlank()) {
             customer.setDisplayName(req.displayName());
@@ -196,7 +211,11 @@ public class CustomerAuthService {
             }
         }
         customer.setUpdatedAt(Instant.now());
-        return toSummary(customerRepo.save(customer));
+        try {
+            return toSummary(customerRepo.saveAndFlush(customer));
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("Thông tin cập nhật không hợp lệ.");
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -204,9 +223,9 @@ public class CustomerAuthService {
     private CustomerEntity findByEmailOrPhone(String login) {
         if (login == null) return null;
         if (login.contains("@")) {
-            return customerRepo.findByEmail(login).orElse(null);
+            return customerRepo.findByEmail(login.toLowerCase(Locale.ROOT).trim()).orElse(null);
         }
-        return customerRepo.findByPhone(login).orElse(null);
+        return customerRepo.findByPhone(login.trim()).orElse(null);
     }
 
     private String deriveDisplayName(CustomerRegisterRequest req) {
