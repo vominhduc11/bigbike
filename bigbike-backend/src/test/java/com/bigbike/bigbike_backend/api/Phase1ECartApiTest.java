@@ -14,13 +14,17 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import jakarta.servlet.http.Cookie;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +49,7 @@ class Phase1ECartApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired CouponJpaRepository couponRepo;
 
     private MockMvc mockMvc;
 
@@ -499,7 +504,108 @@ class Phase1ECartApiTest {
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
     }
 
+    // ── cart coupon refresh tests ─────────────────────────────────────────────
+
+    // R1. Reduce item qty → subtotal drops below coupon minimumAmount → coupon auto-removed
+    @Test
+    void updateItemQty_reducesSubtotalBelowMinAmount_couponRemoved() throws Exception {
+        // Product at 1 000 000; 2 units → subtotal 2 000 000, which meets min 1 500 000
+        ProductEntity product = createTestProduct("MinAmount Helmet", 1000000, null, PublishStatus.PUBLISHED);
+        CouponEntity coupon = createCartTestCoupon("MINAMT-" + UUID.randomUUID().toString().replace("-","").substring(0,6).toUpperCase(),
+                "FIXED", new BigDecimal("50000"), new BigDecimal("1500000"));
+
+        MvcResult getResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = getResult.getResponse().getCookies();
+        String csrf = getCookieValue(getResult.getResponse(), "bb_csrf");
+
+        // Add 2 units (subtotal 2 000 000 ≥ min 1 500 000)
+        MvcResult addResult = mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Apply coupon — should succeed (subtotal 2M ≥ min 1.5M)
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + coupon.getCode() + "\"}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes").isArray())
+                .andExpect(jsonPath("$.data.couponCodes.length()").value(1));
+
+        // Reduce to 1 unit (subtotal 1M < min 1.5M) → refreshCartTotals removes coupon
+        String itemId = extractItemId(addResult.getResponse().getContentAsString(), 0);
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":1}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes.length()").value(0))
+                .andExpect(jsonPath("$.data.totals.discountAmount").value(0.00));
+    }
+
+    // R2. Coupon goes INACTIVE after apply → cart item update triggers refresh → coupon removed
+    @Test
+    void couponBecomesInactive_afterApply_cartRefreshRemovesCoupon() throws Exception {
+        ProductEntity product = createTestProduct("Inactive Coupon Helmet", 500000, null, PublishStatus.PUBLISHED);
+        CouponEntity coupon = createCartTestCoupon("INACTIVE-" + UUID.randomUUID().toString().replace("-","").substring(0,6).toUpperCase(),
+                "FIXED", new BigDecimal("30000"), null);
+
+        MvcResult getResult = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = getResult.getResponse().getCookies();
+        String csrf = getCookieValue(getResult.getResponse(), "bb_csrf");
+
+        // Add item and apply coupon — both succeed
+        MvcResult addResult = mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        mockMvc.perform(post("/api/v1/cart/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + coupon.getCode() + "\"}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes.length()").value(1));
+
+        // Admin disables the coupon (direct DB write)
+        coupon.setStatus("INACTIVE");
+        coupon.setUpdatedAt(Instant.now());
+        couponRepo.save(coupon);
+
+        // Trigger refreshCartTotals by updating the item quantity
+        String itemId = extractItemId(addResult.getResponse().getContentAsString(), 0);
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":2}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.couponCodes.length()").value(0))
+                .andExpect(jsonPath("$.data.totals.discountAmount").value(0.00));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private CouponEntity createCartTestCoupon(String code, String discountType,
+            BigDecimal amount, BigDecimal minimumAmount) {
+        Instant now = Instant.now();
+        CouponEntity c = new CouponEntity();
+        c.setCode(code);
+        c.setName("Cart Test Coupon " + code);
+        c.setDiscountType(discountType);
+        c.setAmount(amount);
+        c.setMinAmount(minimumAmount);
+        c.setUsageCount(0);
+        c.setStatus("ACTIVE");
+        c.setExpiresAt(now.plus(30, ChronoUnit.DAYS));
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
 
     private ProductEntity createTestProduct(
             String name, int retailPrice, Integer salePrice, PublishStatus status

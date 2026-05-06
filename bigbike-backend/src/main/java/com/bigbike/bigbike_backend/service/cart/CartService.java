@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -270,7 +271,13 @@ public class CartService {
         cartCoupon.setDiscountType(coupon.getDiscountType());
         cartCoupon.setDiscountAmount(discountAmount);
         cartCoupon.setCreatedAt(now);
-        cartCouponRepo.save(cartCoupon);
+        try {
+            cartCouponRepo.saveAndFlush(cartCoupon);
+        } catch (DataIntegrityViolationException ex) {
+            // Concurrent request slipped past the service-level pre-check and
+            // hit the DB UNIQUE(cart_id) constraint from V73 migration.
+            throw new ConflictException("Mỗi đơn hàng chỉ được áp dụng một mã giảm giá.");
+        }
 
         return refreshCartTotals(cart);
     }

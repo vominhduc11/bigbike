@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.AdminMutationApiTest
 -------------------------------------------------------------------------------
-Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.651 s -- in com.bigbike.bigbike_backend.api.AdminMutationApiTest
+Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.658 s -- in com.bigbike.bigbike_backend.api.AdminMutationApiTest

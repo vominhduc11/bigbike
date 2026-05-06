@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest
 -------------------------------------------------------------------------------
-Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.509 s -- in com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.574 s -- in com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest

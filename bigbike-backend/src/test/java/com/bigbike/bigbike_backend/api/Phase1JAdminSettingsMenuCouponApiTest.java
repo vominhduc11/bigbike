@@ -952,6 +952,20 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                 .andExpect(jsonPath("$.data.couponCodes").isArray());
     }
 
+    // P1-COUPON-06: SHOP_MANAGER can list coupons (SecurityConfig + role grant aligned)
+    @Test
+    void shopManager_canListCoupons() throws Exception {
+        String smEmail = "sm-coupon-" + UUID.randomUUID() + "@bigbike.test";
+        String smPass  = "ShopMgr@1Test";
+        ensureShopManagerUser(smEmail, smPass);
+        String smToken = loginAdminUser(smEmail, smPass);
+
+        mockMvc.perform(get("/api/v1/admin/coupons")
+                        .header("Authorization", "Bearer " + smToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
     // P1-COUPON-04: applying a second coupon to the same cart → 409 (one-per-cart rule)
     @Test
     void applyCoupon_secondCoupon_returns409() throws Exception {
@@ -984,6 +998,30 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     // ══════════════════════════════════════════════════════════════════════════
     // HELPERS
     // ══════════════════════════════════════════════════════════════════════════
+
+    private void ensureShopManagerUser(String email, String pass) {
+        adminUserRepo.findByEmail(email).orElseGet(() -> {
+            AdminUserEntity sm = new AdminUserEntity();
+            sm.setEmail(email);
+            sm.setPasswordHash(passwordService.hash(pass));
+            sm.setDisplayName("Phase1J SHOP_MANAGER");
+            sm.setRole("SHOP_MANAGER");
+            sm.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            sm.setCreatedAt(now);
+            sm.setUpdatedAt(now);
+            return adminUserRepo.save(sm);
+        });
+    }
+
+    private String loginAdminUser(String email, String pass) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"" + pass + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return extractJsonValue(result.getResponse().getContentAsString(), "accessToken");
+    }
 
     private void ensureAdminUser() {
         adminUserRepo.findByEmail(ADMIN_EMAIL).orElseGet(() -> {

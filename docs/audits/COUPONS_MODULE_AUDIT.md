@@ -9,18 +9,18 @@
 
 ## 1. Executive Summary
 
-**Verdict: CONDITIONALLY_READY** _(updated 2026-05-06 sau khi fix P0)_
+**Verdict: CONDITIONALLY_READY** _(updated 2026-05-06 sau khi fix P0 + P1)_
 
-Tất cả 3 P0 blocker đã được fix và verified bằng integration tests (Phase1FCheckoutApiTest 39/39, Phase1JAdminSettingsMenuCouponApiTest 62/62). P1 issues còn open; xem §11.
+Tất cả 3 P0 và 3 P1 blocker đã được fix và verified bằng integration tests (Phase1FCheckoutApiTest 39/39, Phase1JAdminSettingsMenuCouponApiTest 63/63, Phase1ECartApiTest 27/27). P2/P3 issues còn backlog; xem §11.
 
 **Lịch sử audit ban đầu**: NOT_READY for production (~55% complete) với 3 P0 blockers:
 
 - **P0-COUPON-01** ~~Checkout **KHÔNG** revalidate coupon~~ → **RESOLVED** (CheckoutService lines 186-203)
 - **P0-COUPON-02** ~~`usageLimit` không atomic~~ → **RESOLVED** (`attemptRedeem` conditional UPDATE với status/date/limit guards)
 - **P0-COUPON-03** ~~Update `discountType` partial không re-validate `amount`~~ → **RESOLVED** (AdminCouponService lines 164-168)
-- **P1-COUPON-04** — "One coupon per cart" enforce ở service, không có constraint DB. 2 request POST `/cart/coupons` concurrent với code khác nhau có thể chèn 2 dòng vào `cart_coupons`.
-- **P1-COUPON-05** — Test coverage cho cart coupon, checkout coupon, scheduler, race condition: gần như **0**. Coupon admin có 10 test (status / discount type / duplicate), không có test apply/checkout/race.
-- **P1-COUPON-06** — Permission inconsistency: SHOP_MANAGER có `coupons.read/write` trong [AdminRolePermissions.java:41](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminRolePermissions.java#L41) và migration [V49](bigbike-backend/src/main/resources/db/migration/V49__create_roles_permissions_tables.sql), nhưng `SecurityConfig` chặn `/api/v1/admin/**` ở mức `hasRole("ADMIN")` → SHOP_MANAGER không qua được URL guard.
+- **P1-COUPON-04** ~~"One coupon per cart" enforce ở service, không có constraint DB~~ → **RESOLVED** ([V73 migration](bigbike-backend/src/main/resources/db/migration/V73__enforce_one_coupon_per_cart.sql) + `DataIntegrityViolationException` → 409 trong CartService)
+- **P1-COUPON-05** — Test coverage cho cart coupon, checkout coupon, scheduler, race condition. ~~gần như **0**~~ → **PARTIALLY RESOLVED** (R1 minAmount, R2 inactive-after-apply trong Phase1ECartApiTest; 2-coupon 409 và SHOP_MANAGER test trong Phase1JAdminSettingsMenuCouponApiTest). Concurrent race test và scheduler test còn backlog.
+- **P1-COUPON-06** ~~Permission inconsistency: SHOP_MANAGER bị SecurityConfig chặn ở URL guard~~ → **RESOLVED** ([SecurityConfig.java:105](bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L105) dùng `hasAnyRole("ADMIN","SUPER_ADMIN","SHOP_MANAGER")` cho `/api/v1/admin/coupons/**`. Test `shopManager_canListCoupons` PASS.)
 - **P2-COUPON-07** — Admin order detail trả `appliedCoupons` từ BE nhưng UI admin **không hiển thị** mã coupon đã dùng.
 - **P2-COUPON-08** — Customer order detail (BE + web FE) **không hiển thị** code coupon đã dùng.
 - **P2-COUPON-09** — `merge guest → customer cart` chỉ merge items, **không merge cart_coupons** → coupon do guest apply biến mất sau login.

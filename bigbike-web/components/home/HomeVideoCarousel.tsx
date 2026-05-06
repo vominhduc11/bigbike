@@ -40,8 +40,9 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
 
   // Stop video on close by clearing src
   useEffect(() => {
+    const iframe = iframeRef.current;
     return () => {
-      if (iframeRef.current) iframeRef.current.src = "";
+      if (iframe) iframe.src = "";
     };
   }, []);
 
@@ -68,7 +69,6 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
           />
         ) : isSafeHomeVideoUrl(video.videoUrl) ? (
           /* fallback: non-YouTube self-hosted */
-          // eslint-disable-next-line jsx-a11y/media-has-caption
           <video
             className="wp-video-modal-player"
             src={video.videoUrl}

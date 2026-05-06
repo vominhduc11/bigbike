@@ -5,6 +5,7 @@ import { useDebounce } from '../lib/useDebounce'
 
 const ALLOWED_MIME = ['video/mp4']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
+const PAGE_SIZE = 20
 
 function formatBytes(bytes) {
   if (!bytes) return ''
@@ -59,14 +60,16 @@ export function VideoPickerModal({ onSelect, onClose }) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
   const fileInputRef = useRef(null)
-  const PAGE_SIZE = 20
+
+  function markLoading() {
+    setState((prev) => ({ ...prev, status: 'loading', error: '' }))
+  }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPage(1) }, [debouncedSearch])
 
   useEffect(() => {
     let active = true
-    setState((prev) => ({ ...prev, status: 'loading', error: '' }))
     fetchMedia({ search: debouncedSearch, mimeType: 'video/', page, pageSize: PAGE_SIZE })
       .then((result) => {
         if (!active) return
@@ -125,6 +128,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
       const result = await uploadMedia(file, '', (pct) => setUploadProgress(pct))
       const url = result?.item?.publicUrl
       if (url) {
+        markLoading()
         setSelectedUrl(url)
         setSearch('')
         setPage(1)
@@ -183,7 +187,10 @@ export function VideoPickerModal({ onSelect, onClose }) {
             type="search"
             placeholder={t('homeVideos.picker.searchPlaceholder')}
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              markLoading()
+              setSearch(event.target.value)
+            }}
             autoFocus
           />
         </div>
@@ -191,7 +198,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}>âœ•</button>
+            <button type="button" onClick={() => setUploadError('')} aria-label={t('homeVideos.picker.dismissError')}>x</button>
           </div>
         )}
 
@@ -245,9 +252,29 @@ export function VideoPickerModal({ onSelect, onClose }) {
 
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || isLoading}>{t('homeVideos.picker.prev')}</button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                markLoading()
+                setPage((value) => Math.max(1, value - 1))
+              }}
+              disabled={page <= 1 || isLoading}
+            >
+              {t('homeVideos.picker.prev')}
+            </button>
             <span className="mpicker-page-info">{t('homeVideos.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPage((value) => Math.min(state.totalPages, value + 1))} disabled={page >= state.totalPages || isLoading}>{t('homeVideos.picker.next')}</button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                markLoading()
+                setPage((value) => Math.min(state.totalPages, value + 1))
+              }}
+              disabled={page >= state.totalPages || isLoading}
+            >
+              {t('homeVideos.picker.next')}
+            </button>
           </div>
         )}
 
