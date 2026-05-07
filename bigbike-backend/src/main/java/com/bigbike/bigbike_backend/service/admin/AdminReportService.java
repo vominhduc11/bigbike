@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.D
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.PeriodSummary;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopCustomerItem;
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse.TopProductItem;
+import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
@@ -19,11 +20,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.PageRequest;
@@ -37,12 +40,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminReportService {
 
     private static final int EXPORT_MAX_ROWS = 10_000;
-    private static final DateTimeFormatter DT_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
 
-    // Statuses that represent no revenue (cancelled/failed/refunded orders are excluded
-    // from totalRevenue, orderCount, AOV, and top-product/customer rankings)
-    private static final List<String> EXCLUDED_STATUSES = List.of("CANCELLED", "FAILED");
+    // Vietnam timezone — all date boundary parsing and CSV timestamp formatting use this zone
+    // to match AdminDashboardService and the AT TIME ZONE 'Asia/Ho_Chi_Minh' used in native queries.
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter DT_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(VN_ZONE);
+
+    // REVENUE_EXCLUDED: orders that generated no revenue and should not appear in GMV/paidRevenue/count.
+    private static final List<String> REVENUE_EXCLUDED = List.of("CANCELLED", "FAILED");
+
+    // RANKING_EXCLUDED: orders excluded from topProducts/topCustomers because refunded revenue is not retained.
+    private static final List<String> RANKING_EXCLUDED = List.of("CANCELLED", "FAILED", "REFUNDED");
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -66,26 +75,38 @@ public class AdminReportService {
         Instant toInstant   = parseToDate(to);
 
         if (fromInstant == null) {
-            fromInstant = LocalDate.now(ZoneOffset.UTC).minusDays(29)
-                    .atStartOfDay(ZoneOffset.UTC).toInstant();
+            fromInstant = LocalDate.now(VN_ZONE).minusDays(29)
+                    .atStartOfDay(VN_ZONE).toInstant();
         }
         if (toInstant == null) {
-            toInstant = LocalDate.now(ZoneOffset.UTC).plusDays(1)
-                    .atStartOfDay(ZoneOffset.UTC).toInstant();
+            toInstant = LocalDate.now(VN_ZONE).plusDays(1)
+                    .atStartOfDay(VN_ZONE).toInstant();
         }
 
-        // SQL-level aggregation — no entity load for summary
-        BigDecimal totalRevenue = orderRepo.sumRevenueBetweenExcluding(fromInstant, toInstant, EXCLUDED_STATUSES);
-        long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, EXCLUDED_STATUSES);
-        BigDecimal aov = orderCount > 0
-                ? totalRevenue.divide(BigDecimal.valueOf(orderCount), 0, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+        // GMV: SUM(totalAmount) excl CANCELLED/FAILED — REFUNDED stays (real demand)
+        BigDecimal grossOrderValue = orderRepo.sumRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
+
+        // Paid revenue: SUM(paidAmount) for orders where payment was collected (incl. post-refund statuses)
+        // paidAmount is never modified by RefundService.applyRefund() — it is the total cash collected.
+        BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
+
+        // Refund amount: SUM(refundAmount) anchored to placedAt (not refundedAt — see REPORT_RULE_011)
         BigDecimal refundAmount = orderRepo.sumRefundAmountInRange(fromInstant, toInstant);
 
-        PeriodSummary summary = new PeriodSummary(totalRevenue, (int) orderCount, aov, refundAmount);
+        // Net revenue may be negative — no clamp
+        BigDecimal netRevenue = paidRevenue.subtract(refundAmount);
 
-        // Daily revenue series (VN timezone, excludes cancelled/failed)
-        List<Object[]> rawDaily = orderRepo.dailyRevenueInRange(fromInstant, toInstant, EXCLUDED_STATUSES);
+        long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
+        BigDecimal avgOrderValue = orderCount > 0
+                ? grossOrderValue.divide(BigDecimal.valueOf(orderCount), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        PeriodSummary summary = new PeriodSummary(
+                grossOrderValue, paidRevenue, refundAmount, netRevenue,
+                (int) orderCount, avgOrderValue);
+
+        // Daily revenue (VN timezone grouping, REVENUE_EXCLUDED)
+        List<Object[]> rawDaily = orderRepo.dailyRevenueInRange(fromInstant, toInstant, REVENUE_EXCLUDED);
         List<DailyRevenueItem> dailyRevenue = rawDaily.stream()
                 .map(row -> new DailyRevenueItem(
                         row[0] != null ? row[0].toString() : "",
@@ -94,27 +115,29 @@ public class AdminReportService {
                 ))
                 .toList();
 
-        // Top 10 products by revenue (excludes cancelled/failed line items)
-        // Query: SELECT productId[0], productName[1], SUM(lineTotal)[2], SUM(quantity)[3]
-        List<Object[]> rawProducts = lineItemRepo.topProductsByRevenueInRange(
-                fromInstant, toInstant, EXCLUDED_STATUSES, PageRequest.of(0, 10));
+        // Top 10 products — native COALESCE query, RANKING_EXCLUDED
+        // row: [0]=productKey, [1]=productName, [2]=revenue, [3]=unitsSold
+        List<Object[]> rawProducts = lineItemRepo.topProductsByRevenueInRangeNative(
+                fromInstant, toInstant, RANKING_EXCLUDED, PageRequest.of(0, 10));
         List<TopProductItem> topProducts = rawProducts.stream()
                 .map(row -> new TopProductItem(
-                        (String) row[1],
-                        row[2] != null ? ((BigDecimal) row[2]).setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO,
+                        row[0] != null ? row[0].toString() : "",
+                        row[1] != null ? row[1].toString() : "",
+                        row[2] != null ? new BigDecimal(row[2].toString()).setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO,
                         row[3] != null ? ((Number) row[3]).longValue() : 0L
                 ))
                 .toList();
 
-        // Top 10 customers by revenue (excludes cancelled/failed orders)
-        // Query: SELECT customerEmail[0], SUM(totalAmount)[1], COUNT(o)[2]
-        List<Object[]> rawCustomers = orderRepo.topCustomersByRevenueInRange(
-                fromInstant, toInstant, EXCLUDED_STATUSES, PageRequest.of(0, 10));
+        // Top 10 customers — native COALESCE(customer_id::text, customer_email) group key, RANKING_EXCLUDED
+        // row: [0]=customerKey, [1]=displayEmail, [2]=totalRevenue, [3]=orderCount
+        List<Object[]> rawCustomers = orderRepo.topCustomersByRevenueInRangeCoalesce(
+                fromInstant, toInstant, RANKING_EXCLUDED, PageRequest.of(0, 10));
         List<TopCustomerItem> topCustomers = rawCustomers.stream()
                 .map(row -> new TopCustomerItem(
-                        (String) row[0],
-                        row[1] != null ? ((BigDecimal) row[1]).setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO,
-                        row[2] != null ? ((Number) row[2]).longValue() : 0L
+                        row[0] != null ? row[0].toString() : "",
+                        row[1] != null ? row[1].toString() : "",
+                        row[2] != null ? new BigDecimal(row[2].toString()).setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO,
+                        row[3] != null ? ((Number) row[3]).longValue() : 0L
                 ))
                 .toList();
 
@@ -185,14 +208,21 @@ public class AdminReportService {
     }
 
     public byte[] exportCustomersCsv(String status) {
-        // Use Pageable to limit DB load; filter status in-stream since CustomerJpaRepository
-        // doesn't expose a status-indexed query
-        List<CustomerEntity> customers = customerRepo
-                .findAll(PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("createdAt").descending()))
-                .getContent()
-                .stream()
-                .filter(c -> status == null || status.isBlank() || status.equalsIgnoreCase(c.getStatus()))
-                .toList();
+        // Filter status at DB level via JpaSpecificationExecutor to avoid loading all customers
+        // and then filtering in memory (which would silently miss customers beyond EXPORT_MAX_ROWS).
+        Specification<CustomerEntity> spec = (root, query, cb) -> {
+            if (status == null || status.isBlank()) return cb.conjunction();
+            String normalized = status.toUpperCase(Locale.ROOT);
+            // Only allow valid CustomerStatus values to prevent unsolicited SQL
+            boolean valid = Arrays.stream(CustomerStatus.values())
+                    .anyMatch(s -> s.name().equals(normalized));
+            if (!valid) return cb.disjunction(); // returns no rows for unknown status
+            return cb.equal(root.get("status"), normalized);
+        };
+
+        List<CustomerEntity> customers = customerRepo.findAll(
+                spec, PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("createdAt").descending())
+        ).getContent();
 
         StringWriter sw = new StringWriter();
         CSVFormat format = CSVFormat.DEFAULT.builder()
@@ -281,19 +311,22 @@ public class AdminReportService {
         return instant != null ? DT_FORMAT.format(instant) : "";
     }
 
-    private Instant parseFromDate(String from) {
+    // Parse YYYY-MM-DD as start-of-day in Vietnam timezone.
+    // Returns null for blank/unparseable input (caller applies default).
+    Instant parseFromDate(String from) {
         if (from == null || from.isBlank()) return null;
         try {
-            return LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant();
+            return LocalDate.parse(from).atStartOfDay(VN_ZONE).toInstant();
         } catch (Exception e) {
             try { return Instant.parse(from); } catch (Exception ignored) { return null; }
         }
     }
 
-    private Instant parseToDate(String to) {
+    // Parse YYYY-MM-DD as exclusive end boundary (next day start-of-day in Vietnam timezone).
+    Instant parseToDate(String to) {
         if (to == null || to.isBlank()) return null;
         try {
-            return LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            return LocalDate.parse(to).plusDays(1).atStartOfDay(VN_ZONE).toInstant();
         } catch (Exception e) {
             try { return Instant.parse(to); } catch (Exception ignored) { return null; }
         }
