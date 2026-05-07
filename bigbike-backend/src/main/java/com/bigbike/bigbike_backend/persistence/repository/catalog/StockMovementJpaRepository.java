@@ -13,6 +13,8 @@ public interface StockMovementJpaRepository extends JpaRepository<StockMovementE
 
     boolean existsByReferenceTypeAndReferenceId(String referenceType, UUID referenceId);
 
+    List<StockMovementEntity> findByReferenceTypeAndReferenceId(String referenceType, UUID referenceId);
+
     @Query("""
         SELECT m FROM StockMovementEntity m JOIN FETCH m.variant v JOIN FETCH v.product
         WHERE m.variant.id = :variantId
@@ -23,7 +25,7 @@ public interface StockMovementJpaRepository extends JpaRepository<StockMovementE
     long countByVariantId(String variantId);
 
     @Query("""
-        SELECT m FROM StockMovementEntity m JOIN FETCH m.variant v JOIN FETCH v.product
+        SELECT m FROM StockMovementEntity m LEFT JOIN FETCH m.variant v LEFT JOIN FETCH v.product
         WHERE (:movementType IS NULL OR m.movementType = :movementType)
           AND (:referenceType IS NULL OR m.referenceType = :referenceType)
         ORDER BY m.createdAt DESC

@@ -173,7 +173,7 @@ public class AdminReturnService {
             refundService.applyRefund(
                     order.getId(), adminId,
                     req.refundAmount(), ret.getReason(),
-                    req.adminNote(), false);
+                    req.adminNote(), false, null, null);
         }
 
         // Restore stock when goods are confirmed received back into warehouse.

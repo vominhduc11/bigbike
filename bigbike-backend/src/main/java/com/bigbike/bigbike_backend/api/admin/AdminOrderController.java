@@ -98,7 +98,8 @@ public class AdminOrderController {
         devAdminAuthService.requirePermission(request, "orders.write");
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
-                adminOrderService.updateOrderStatus(orderId, adminId, body),
+                adminOrderService.updateOrderStatus(orderId, adminId, body,
+                        extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );
     }
@@ -112,7 +113,8 @@ public class AdminOrderController {
         devAdminAuthService.requirePermission(request, "orders.write");
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
-                adminOrderService.updatePaymentStatus(orderId, adminId, body),
+                adminOrderService.updatePaymentStatus(orderId, adminId, body,
+                        extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );
     }
@@ -126,7 +128,8 @@ public class AdminOrderController {
         devAdminAuthService.requirePermission(request, "orders.write");
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
-                adminOrderService.createRefund(orderId, adminId, body),
+                adminOrderService.createRefund(orderId, adminId, body,
+                        extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );
     }
@@ -140,7 +143,8 @@ public class AdminOrderController {
         devAdminAuthService.requirePermission(request, "orders.write");
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
-                adminOrderService.addNote(orderId, adminId, body),
+                adminOrderService.addNote(orderId, adminId, body,
+                        extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );
     }
@@ -164,5 +168,13 @@ public class AdminOrderController {
             }
         }
         return DEV_ADMIN_ID;
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

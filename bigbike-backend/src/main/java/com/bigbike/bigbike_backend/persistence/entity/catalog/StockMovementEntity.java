@@ -20,8 +20,11 @@ public class StockMovementEntity {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "product_variant_id", nullable = false)
+    @JoinColumn(name = "product_variant_id", nullable = true)
     private ProductVariantEntity variant;
+
+    @Column(name = "product_id", length = 255)
+    private String productId;
 
     @Column(name = "movement_type", nullable = false, length = 32)
     private String movementType;
@@ -55,6 +58,9 @@ public class StockMovementEntity {
 
     public ProductVariantEntity getVariant() { return variant; }
     public void setVariant(ProductVariantEntity variant) { this.variant = variant; }
+
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
 
     public String getMovementType() { return movementType; }
     public void setMovementType(String movementType) { this.movementType = movementType; }

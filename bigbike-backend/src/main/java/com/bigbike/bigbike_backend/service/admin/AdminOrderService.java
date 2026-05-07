@@ -16,7 +16,6 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
@@ -24,12 +23,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineIt
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
@@ -38,7 +32,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNo
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
-import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
+import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -109,13 +103,10 @@ public class AdminOrderService {
     private final PaymentJpaRepository paymentRepo;
     private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final AuditLogJpaRepository auditLogRepo;
-    private final ProductJpaRepository productRepo;
-    private final ProductVariantJpaRepository variantRepo;
-    private final StockMovementJpaRepository stockMovementRepo;
-    private final InventoryPolicyService inventoryPolicyService;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
+    private final OrderStockRestoreService orderStockRestoreService;
 
     public AdminOrderService(
             OrderJpaRepository orderRepo,
@@ -126,13 +117,10 @@ public class AdminOrderService {
             PaymentJpaRepository paymentRepo,
             OrderAppliedCouponJpaRepository appliedCouponRepo,
             AuditLogJpaRepository auditLogRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            InventoryPolicyService inventoryPolicyService,
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
-            com.bigbike.bigbike_backend.service.payment.RefundService refundService
+            com.bigbike.bigbike_backend.service.payment.RefundService refundService,
+            OrderStockRestoreService orderStockRestoreService
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
@@ -142,13 +130,10 @@ public class AdminOrderService {
         this.paymentRepo = paymentRepo;
         this.appliedCouponRepo = appliedCouponRepo;
         this.auditLogRepo = auditLogRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.inventoryPolicyService = inventoryPolicyService;
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.refundService = refundService;
+        this.orderStockRestoreService = orderStockRestoreService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -229,7 +214,8 @@ public class AdminOrderService {
     // ── Update order status ───────────────────────────────────────────────────
 
     @Transactional
-    public AdminOrderDetailResponse updateOrderStatus(UUID orderId, UUID adminId, UpdateOrderStatusRequest req) {
+    public AdminOrderDetailResponse updateOrderStatus(UUID orderId, UUID adminId, UpdateOrderStatusRequest req,
+            String clientIp, String userAgent) {
         String newStatus = req.status().toUpperCase(Locale.ROOT);
         if (!ALLOWED_ORDER_STATUSES.contains(newStatus)) {
             throw ValidationException.fromField("status", "INVALID", "Unknown order status: " + newStatus);
@@ -266,8 +252,10 @@ public class AdminOrderService {
         orderRepo.save(order);
 
         // Restore stock when order is cancelled or refunded
-        if ("CANCELLED".equals(newStatus) || "REFUNDED".equals(newStatus)) {
-            restoreStockForOrder(orderId);
+        if ("CANCELLED".equals(newStatus)) {
+            orderStockRestoreService.restoreForCancel(orderId);
+        } else if ("REFUNDED".equals(newStatus)) {
+            orderStockRestoreService.restoreForRefund(orderId);
         }
 
         // Add note if provided
@@ -279,7 +267,7 @@ public class AdminOrderService {
         // Audit log
         auditLogRepo.save(buildAudit(adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"status\":\"" + beforeStatus + "\"}",
-                "{\"status\":\"" + newStatus + "\"}", now));
+                "{\"status\":\"" + newStatus + "\"}", now, clientIp, userAgent));
 
         // Email customer when status is customer-visible
         String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
@@ -293,7 +281,8 @@ public class AdminOrderService {
     // ── Update payment status ─────────────────────────────────────────────────
 
     @Transactional
-    public AdminOrderDetailResponse updatePaymentStatus(UUID orderId, UUID adminId, UpdatePaymentStatusRequest req) {
+    public AdminOrderDetailResponse updatePaymentStatus(UUID orderId, UUID adminId, UpdatePaymentStatusRequest req,
+            String clientIp, String userAgent) {
         String newPaymentStatus = req.paymentStatus().toUpperCase(Locale.ROOT);
         if (!ALLOWED_PAYMENT_STATUSES.contains(newPaymentStatus)) {
             throw ValidationException.fromField("paymentStatus", "INVALID",
@@ -366,7 +355,7 @@ public class AdminOrderService {
         // Audit
         auditLogRepo.save(buildAudit(adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
-                "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now));
+                "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now, clientIp, userAgent));
 
         adminOrderWsService.pushEvent(new OrderWsEvent(
                 "ORDER_PAYMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
@@ -379,19 +368,22 @@ public class AdminOrderService {
     // ── Create refund ─────────────────────────────────────────────────────────
 
     @Transactional
-    public AdminOrderDetailResponse createRefund(UUID orderId, UUID adminId, CreateRefundRequest req) {
+    public AdminOrderDetailResponse createRefund(UUID orderId, UUID adminId, CreateRefundRequest req,
+            String clientIp, String userAgent) {
         String noteContent = req.note() != null && !req.note().isBlank() ? req.note() : null;
         refundService.applyRefund(
                 orderId, adminId,
                 req.refundAmount(), req.refundReason(),
-                noteContent, Boolean.TRUE.equals(req.customerVisible()));
+                noteContent, Boolean.TRUE.equals(req.customerVisible()),
+                clientIp, userAgent);
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 
     // ── Add note ──────────────────────────────────────────────────────────────
 
     @Transactional
-    public AdminOrderNoteResponse addNote(UUID orderId, UUID adminId, CreateOrderNoteRequest req) {
+    public AdminOrderNoteResponse addNote(UUID orderId, UUID adminId, CreateOrderNoteRequest req,
+            String clientIp, String userAgent) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
@@ -404,7 +396,8 @@ public class AdminOrderService {
 
         auditLogRepo.save(buildAudit(adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
                 null,
-                "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now));
+                "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now,
+                clientIp, userAgent));
 
         adminOrderWsService.pushEvent(new OrderWsEvent(
                 "ORDER_NOTE_ADDED", order.getId(), order.getOrderNumber(),
@@ -546,51 +539,6 @@ public class AdminOrderService {
         return "Khách hàng";
     }
 
-    private void restoreStockForOrder(UUID orderId) {
-        List<OrderLineItemEntity> items = lineItemRepo.findByOrderId(orderId);
-        Instant now = Instant.now();
-        int threshold = inventoryPolicyService.lowStockThreshold();
-        for (OrderLineItemEntity item : items) {
-            if (item.getProductId() == null) continue;
-            if (item.getProductVariantId() != null) {
-                variantRepo.findByIdForUpdate(item.getProductVariantId().toString()).ifPresent(variant -> {
-                    int before = variant.getQuantityOnHand();
-                    int after = before + item.getQuantity();
-                    variant.setQuantityOnHand(after);
-                    inventoryPolicyService.recomputeStockState(variant);
-                    variantRepo.save(variant);
-                    StockMovementEntity m = new StockMovementEntity();
-                    m.setVariant(variant);
-                    m.setMovementType("IN");
-                    m.setQuantityDelta(item.getQuantity());
-                    m.setQuantityBefore(before);
-                    m.setQuantityAfter(after);
-                    m.setReferenceType("ORDER_CANCEL");
-                    m.setReferenceId(orderId);
-                    m.setCreatedAt(now);
-                    stockMovementRepo.save(m);
-                });
-            } else {
-                productRepo.findByIdForUpdate(item.getProductId().toString()).ifPresent(product -> {
-                    if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
-                    int restored = product.getStockQuantity() + item.getQuantity();
-                    product.setStockQuantity(restored);
-                    ProductStockState current = product.getStockState();
-                    if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
-                        if (restored <= 0) {
-                            product.setStockState(ProductStockState.OUT_OF_STOCK);
-                        } else if (restored <= threshold) {
-                            product.setStockState(ProductStockState.LOW_STOCK);
-                        } else {
-                            product.setStockState(ProductStockState.IN_STOCK);
-                        }
-                    }
-                    productRepo.save(product);
-                });
-            }
-        }
-    }
-
     private OrderNoteEntity buildNote(OrderEntity order, UUID adminId, String noteType,
             String content, boolean customerVisible, Instant now) {
         OrderNoteEntity note = new OrderNoteEntity();
@@ -605,7 +553,7 @@ public class AdminOrderService {
     }
 
     private AuditLogEntity buildAudit(UUID adminId, String action, String resourceType,
-            UUID resourceId, String before, String after, Instant now) {
+            UUID resourceId, String before, String after, Instant now, String clientIp, String userAgent) {
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(adminId);
@@ -614,6 +562,8 @@ public class AdminOrderService {
         log.setResourceId(resourceId);
         log.setBeforeData(before);
         log.setAfterData(after);
+        log.setIpAddress(clientIp);
+        log.setUserAgent(userAgent);
         log.setCreatedAt(now);
         return log;
     }

@@ -9,11 +9,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
@@ -56,6 +58,7 @@ class Phase1HAdminOrderApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired PasswordService passwordService;
 
@@ -725,6 +728,289 @@ class Phase1HAdminOrderApiTest {
         // Admin endpoints require auth (not just any auth — must be ROLE_ADMIN)
         mockMvc.perform(get("/api/v1/admin/orders"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ── ORD-005: Full refund of COMPLETED variant order restores stock ─────────
+
+    @Test
+    void fullRefundCompletedVariantOrder_restoresStockAndWritesOrderRefundMovement() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(5, 2000000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        ProductVariantEntity afterCheckout = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(afterCheckout.getQuantityOnHand()).isEqualTo(3);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":4000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":4000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        ProductVariantEntity restored = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(restored.getQuantityOnHand()).isEqualTo(5);
+
+        List<StockMovementEntity> movements = stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
+        assertThat(movements).hasSize(1);
+        StockMovementEntity m = movements.get(0);
+        assertThat(m.getMovementType()).isEqualTo("IN");
+        assertThat(m.getQuantityDelta()).isEqualTo(2);
+        assertThat(m.getQuantityBefore()).isEqualTo(3);
+        assertThat(m.getQuantityAfter()).isEqualTo(5);
+    }
+
+    // ── ORD-002: Cancel product-level order writes ORDER_CANCEL movement ───────
+
+    @Test
+    void cancelProductLevelOrder_writesOrderCancelStockMovement() throws Exception {
+        ProductEntity product = createManagedStockProduct("1H ORD-002 Product", 1500000, 8);
+        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 3, "COD");
+
+        ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(afterCheckout.getStockQuantity()).isEqualTo(5);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(restored.getStockQuantity()).isEqualTo(8);
+
+        List<StockMovementEntity> movements = stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_CANCEL", order.orderId);
+        assertThat(movements).hasSize(1);
+        StockMovementEntity m = movements.get(0);
+        assertThat(m.getMovementType()).isEqualTo("IN");
+        assertThat(m.getQuantityDelta()).isEqualTo(3);
+        assertThat(m.getQuantityBefore()).isEqualTo(5);
+        assertThat(m.getQuantityAfter()).isEqualTo(8);
+        assertThat(m.getProductId()).isEqualTo(product.getId());
+        assertThat(m.getVariant()).isNull();
+    }
+
+    // ── ORD-002: Full refund of COMPLETED product-level order restores stock ───
+
+    @Test
+    void fullRefundCompletedProductLevelOrder_restoresStockAndWritesOrderRefundMovement() throws Exception {
+        ProductEntity product = createManagedStockProduct("1H ORD-002 Refund Product", 2500000, 10);
+        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 4, "COD");
+
+        ProductEntity afterCheckout = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(afterCheckout.getStockQuantity()).isEqualTo(6);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":10000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":10000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        ProductEntity restored = productRepo.findById(product.getId()).orElseThrow();
+        assertThat(restored.getStockQuantity()).isEqualTo(10);
+
+        List<StockMovementEntity> movements = stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
+        assertThat(movements).hasSize(1);
+        StockMovementEntity m = movements.get(0);
+        assertThat(m.getMovementType()).isEqualTo("IN");
+        assertThat(m.getQuantityDelta()).isEqualTo(4);
+        assertThat(m.getProductId()).isEqualTo(product.getId());
+        assertThat(m.getVariant()).isNull();
+    }
+
+    // ── Partial refund does NOT restore stock ─────────────────────────────────
+
+    @Test
+    void partialRefund_doesNotRestoreStock() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(6, 3000000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":6000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":3000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_REFUNDED"));
+
+        // Stock must NOT be restored for a partial refund
+        ProductVariantEntity notRestored = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(notRestored.getQuantityOnHand()).isEqualTo(4);
+
+        assertThat(stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).isEmpty();
+    }
+
+    // ── ORD-005 idempotency: double call does not double-restore stock ─────────
+
+    @Test
+    void fullRefund_idempotencyGuard_doesNotDoubleRestore() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(8, 1000000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // First full refund — restores stock
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":2000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        ProductVariantEntity afterRefund = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(afterRefund.getQuantityOnHand()).isEqualTo(8);
+
+        // Second refund attempt on already-REFUNDED order — must be rejected (payment already REFUNDED)
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":2000000,\"refundReason\":\"RETRY\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        // Quantity must remain at original (no double-restore)
+        ProductVariantEntity afterRetry = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(afterRetry.getQuantityOnHand()).isEqualTo(8);
+
+        // Only one ORDER_REFUND movement written
+        assertThat(stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).hasSize(1);
+    }
+
+    // ── ORD-001: Audit logs include IP and User-Agent ─────────────────────────
+
+    @Test
+    void updateOrderStatus_writesAuditLogWithIpAndUserAgent() throws Exception {
+        // COD orders start in PROCESSING, so transition to COMPLETED to guarantee audit log is written
+        OrderInfo order = placeGuestOrder(8100000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("User-Agent", "TestBrowser/1.0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        AuditLogEntity log = auditLogRepo.findAll().stream()
+                .filter(a -> order.orderId.equals(a.getResourceId())
+                        && "ORDER_STATUS_UPDATED".equals(a.getAction()))
+                .findFirst().orElseThrow();
+        assertThat(log.getIpAddress()).isNotBlank();
+        assertThat(log.getUserAgent()).isEqualTo("TestBrowser/1.0");
+    }
+
+    @Test
+    void updatePaymentStatus_writesAuditLogWithIpAndUserAgent() throws Exception {
+        OrderInfo order = placeGuestOrder(8200000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":8200000}")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("User-Agent", "TestBrowser/2.0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"));
+
+        AuditLogEntity log = auditLogRepo.findAll().stream()
+                .filter(a -> order.orderId.equals(a.getResourceId())
+                        && "ORDER_PAYMENT_STATUS_UPDATED".equals(a.getAction()))
+                .findFirst().orElseThrow();
+        assertThat(log.getIpAddress()).isNotBlank();
+        assertThat(log.getUserAgent()).isEqualTo("TestBrowser/2.0");
+    }
+
+    @Test
+    void createRefund_writesAuditLogWithIpAndUserAgent() throws Exception {
+        OrderInfo order = placeGuestOrder(8300000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":8300000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":1000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("User-Agent", "TestBrowser/3.0"))
+                .andExpect(status().isOk());
+
+        AuditLogEntity log = auditLogRepo.findAll().stream()
+                .filter(a -> order.orderId.equals(a.getResourceId())
+                        && "ORDER_REFUND_CREATED".equals(a.getAction()))
+                .findFirst().orElseThrow();
+        assertThat(log.getIpAddress()).isNotBlank();
+        assertThat(log.getUserAgent()).isEqualTo("TestBrowser/3.0");
+    }
+
+    @Test
+    void addNote_writesAuditLogWithIpAndUserAgent() throws Exception {
+        OrderInfo order = placeGuestOrder(8400000);
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/notes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"Test note\",\"noteType\":\"ADMIN\",\"customerVisible\":false}")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("User-Agent", "TestBrowser/4.0"))
+                .andExpect(status().isOk());
+
+        AuditLogEntity log = auditLogRepo.findAll().stream()
+                .filter(a -> order.orderId.equals(a.getResourceId())
+                        && "ORDER_NOTE_CREATED".equals(a.getAction()))
+                .findFirst().orElseThrow();
+        assertThat(log.getIpAddress()).isNotBlank();
+        assertThat(log.getUserAgent()).isEqualTo("TestBrowser/4.0");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

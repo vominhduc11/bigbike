@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
+import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ public class RefundService {
     private final AuditLogJpaRepository auditLogRepo;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
+    private final OrderStockRestoreService orderStockRestoreService;
 
     public RefundService(
             OrderJpaRepository orderRepo,
@@ -41,13 +43,15 @@ public class RefundService {
             OrderNoteJpaRepository noteRepo,
             AuditLogJpaRepository auditLogRepo,
             OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService) {
+            AdminOrderWsService adminOrderWsService,
+            OrderStockRestoreService orderStockRestoreService) {
         this.orderRepo = orderRepo;
         this.paymentRepo = paymentRepo;
         this.noteRepo = noteRepo;
         this.auditLogRepo = auditLogRepo;
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
+        this.orderStockRestoreService = orderStockRestoreService;
     }
 
     /**
@@ -67,7 +71,9 @@ public class RefundService {
             BigDecimal refundAmount,
             String refundReason,
             String noteContent,
-            boolean customerVisible) {
+            boolean customerVisible,
+            String clientIp,
+            String userAgent) {
 
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
@@ -103,9 +109,10 @@ public class RefundService {
         order.setRefundedAt(now);
 
         boolean fullRefund = newTotalRefunded.compareTo(order.getPaidAmount()) == 0;
+        boolean wasCompleted = "COMPLETED".equals(order.getStatus());
         if (fullRefund) {
             order.setPaymentStatus("REFUNDED");
-            if ("COMPLETED".equals(order.getStatus())) {
+            if (wasCompleted) {
                 order.setStatus("REFUNDED");
             }
         } else {
@@ -113,6 +120,10 @@ public class RefundService {
         }
         order.setUpdatedAt(now);
         orderRepo.save(order);
+
+        if (fullRefund && wasCompleted) {
+            orderStockRestoreService.restoreForRefund(orderId);
+        }
 
         paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
             p.setRefundAmount(newTotalRefunded);
@@ -145,6 +156,8 @@ public class RefundService {
                 + "\",\"refundAmount\":\"" + alreadyRefunded + "\"}");
         auditLog.setAfterData("{\"paymentStatus\":\"" + order.getPaymentStatus()
                 + "\",\"refundAmount\":\"" + newTotalRefunded + "\"}");
+        auditLog.setIpAddress(clientIp);
+        auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(now);
         auditLogRepo.save(auditLog);
 

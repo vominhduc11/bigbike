@@ -37,6 +37,7 @@ com\bigbike\bigbike_backend\api\admin\dto\report\AdminAnalyticsResponse$TopCusto
 com\bigbike\bigbike_backend\api\order\dto\CustomerReturnResponse$ReturnItemResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\writeplan\WordPressMigrationWritePlanService.class
 com\bigbike\bigbike_backend\api\admin\dto\UpsertBrandRequest.class
+com\bigbike\bigbike_backend\service\inventory\OrderStockRestoreService.class
 com\bigbike\bigbike_backend\migration\wordpress\media\MediaChecksumService.class
 com\bigbike\bigbike_backend\service\admin\settings\SettingValueValidator.class
 com\bigbike\bigbike_backend\service\customer\CustomerAuthResult.class
