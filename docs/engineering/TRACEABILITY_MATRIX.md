@@ -14,3 +14,5 @@
 | Returns | web, mobile, admin | `CustomerOrderController`, `AdminReturnController` | customer/admin return services | `Phase1LReturnsApiTest.java` | `CONFIRMED_FROM_TEST` |
 | Admin order push | admin | WebSocket `/ws` + `/topic/admin/orders` | `WebSocketConfig`, `AdminOrderWsService`, `OrderWsEvent` | no dedicated automated WS suite reopened in this pass | `CONFIRMED_FROM_CODE` |
 | Receipt-based receiving flow | none confirmed | none confirmed | receipt tables only | none confirmed | `NOT_FOUND_IN_REPO` |
+| Dashboard revenue accuracy (gross vs paid) | admin | `AdminDashboardController` | `AdminDashboardService`, `OrderJpaRepository.sumPaidRevenueSince` | no dedicated suite | `CONFIRMED_FROM_CODE` (P-1 fix applied) |
+| Accounts Receivable | admin | proposed `AdminReceivablesController` | proposed `ReceivablesService`, `OrderJpaRepository`, `PaymentJpaRepository` | none | `PROPOSED_FOR_AR_MODULE` |

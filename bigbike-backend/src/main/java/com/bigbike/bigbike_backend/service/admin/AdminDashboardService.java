@@ -37,6 +37,9 @@ public class AdminDashboardService {
     private static final List<String> STATUS_ORDER = List.of(
             "PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "FAILED", "REFUNDED");
 
+    // Orders excluded from revenue KPIs — consistent with Reports module
+    private static final List<String> REVENUE_EXCLUDED_STATUSES = List.of("CANCELLED", "FAILED", "REFUNDED");
+
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final ProductJpaRepository productRepo;
@@ -59,11 +62,12 @@ public class AdminDashboardService {
         Instant prevDayStart = todayVn.minusDays(1).atStartOfDay(VN_ZONE).toInstant();
         Instant periodStart  = todayVn.minusDays(days - 1L).atStartOfDay(VN_ZONE).toInstant();
 
-        // ── KPI aggregates (no full entity load) ─────────────────────────────
-        BigDecimal todayRevenue = orderRepo.sumRevenueSince(todayStart);
-        BigDecimal prevRevenue  = orderRepo.sumRevenueBetween(prevDayStart, todayStart);
-        long todayOrderCount = orderRepo.countOrdersSince(todayStart);
-        long prevOrderCount  = orderRepo.countOrdersBetween(prevDayStart, todayStart);
+        // ── KPI aggregates (valid orders only — excludes CANCELLED/FAILED/REFUNDED) ─
+        BigDecimal todayRevenue     = orderRepo.sumRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
+        BigDecimal todayPaidRevenue = orderRepo.sumPaidRevenueSince(todayStart);
+        BigDecimal prevRevenue      = orderRepo.sumRevenueBetweenExcluding(prevDayStart, todayStart, REVENUE_EXCLUDED_STATUSES);
+        long todayOrderCount = orderRepo.countOrdersSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
+        long prevOrderCount  = orderRepo.countOrdersBetweenExcluding(prevDayStart, todayStart, REVENUE_EXCLUDED_STATUSES);
 
         Double revenuePct = null;
         if (prevRevenue != null && prevRevenue.compareTo(BigDecimal.ZERO) > 0) {
@@ -79,6 +83,7 @@ public class AdminDashboardService {
 
         KpiResponse kpi = new KpiResponse(
                 todayRevenue != null ? todayRevenue : BigDecimal.ZERO,
+                todayPaidRevenue != null ? todayPaidRevenue : BigDecimal.ZERO,
                 revenuePct,
                 (int) todayOrderCount,
                 (int) (todayOrderCount - prevOrderCount),
@@ -99,6 +104,7 @@ public class AdminDashboardService {
                 .map(o -> new RecentOrderItem(
                         o.getId(),
                         o.getOrderNumber(),
+                        o.getCustomerName(),
                         o.getCustomerEmail(),
                         o.getTotalAmount() != null ? o.getTotalAmount() : BigDecimal.ZERO,
                         o.getStatus(),
@@ -107,12 +113,12 @@ public class AdminDashboardService {
                 ))
                 .collect(Collectors.toList());
 
-        // ── Top products (by line item revenue, period-scoped) ────────────────
-        List<Object[]> rawTop = lineItemRepo.topProductsByRevenueSince(
-                periodStart, PageRequest.of(0, 5));
+        // ── Top products (by line item revenue, period-scoped, valid orders only) ─
+        List<Object[]> rawTop = lineItemRepo.topProductsByRevenueSinceExcluding(
+                periodStart, REVENUE_EXCLUDED_STATUSES, PageRequest.of(0, 5));
         List<TopProductItem> topProducts = rawTop.stream()
                 .map(row -> new TopProductItem(
-                        (UUID) row[0],
+                        (String) row[0],
                         (String) row[1],
                         row[2] != null ? ((BigDecimal) row[2]).setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO,
                         row[3] != null ? ((Number) row[3]).longValue() : 0L
@@ -145,7 +151,7 @@ public class AdminDashboardService {
         // Overlay with actual DB results (native query handles VN timezone).
         // Postgres' DATE column maps to either java.sql.Date or java.time.LocalDate
         // depending on driver/dialect — handle both shapes.
-        for (Object[] row : orderRepo.revenueSeriesSince(periodStart)) {
+        for (Object[] row : orderRepo.revenueSeriesSinceExcluding(periodStart, REVENUE_EXCLUDED_STATUSES)) {
             if (row[0] == null) continue;
             LocalDate d = (row[0] instanceof LocalDate ld)
                     ? ld

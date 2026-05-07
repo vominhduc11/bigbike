@@ -44,11 +44,21 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────
 
+    // Gross GMV: total order value placed regardless of payment status (includes unpaid/cancelled)
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o WHERE o.placedAt >= :from")
     BigDecimal sumRevenueSince(@Param("from") Instant from);
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o WHERE o.placedAt >= :from AND o.placedAt < :to")
     BigDecimal sumRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    // Paid revenue: actual cash collected — SUM(paidAmount) for orders where payment was received
+    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")
+    BigDecimal sumPaidRevenueSince(@Param("from") Instant from);
+
+    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")
+    BigDecimal sumPaidRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("SELECT COUNT(o) FROM OrderEntity o WHERE o.placedAt >= :from")
     long countOrdersSince(@Param("from") Instant from);
@@ -90,6 +100,32 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
+
+    // ── Dashboard: valid-order aggregates (excludes CANCELLED/FAILED/REFUNDED) ─
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.status NOT IN :excludedStatuses")
+    BigDecimal sumRevenueSinceExcluding(
+            @Param("from") Instant from,
+            @Param("excludedStatuses") List<String> excludedStatuses);
+
+    @Query("SELECT COUNT(o) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.status NOT IN :excludedStatuses")
+    long countOrdersSinceExcluding(
+            @Param("from") Instant from,
+            @Param("excludedStatuses") List<String> excludedStatuses);
+
+    @Query(value =
+        "SELECT CAST(placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE) AS report_day, " +
+        "       COALESCE(SUM(total_amount), 0) AS revenue, " +
+        "       COUNT(*) AS cnt " +
+        "FROM orders " +
+        "WHERE placed_at >= :from AND status NOT IN :excludedStatuses " +
+        "GROUP BY 1 ORDER BY 1",
+        nativeQuery = true)
+    List<Object[]> revenueSeriesSinceExcluding(
+            @Param("from") Instant from,
+            @Param("excludedStatuses") List<String> excludedStatuses);
 
     // ── Reports: period aggregation (SQL-level, avoids loading every order) ──
 

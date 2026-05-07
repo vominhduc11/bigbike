@@ -49,6 +49,21 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `POST /api/v1/orders/quick-buy` | Creates order directly from one product/variant request. | `CONFIRMED_FROM_CODE` | `CheckoutService.quickBuy` |
 | `POST /api/v1/admin/pos/orders` | Creates completed/paid in-store order immediately. | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
 
+## Dashboard Contract
+
+| Endpoint | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|
+| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED`, `FAILED`, `REFUNDED` orders. Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
+
+Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
+- `kpi`: `{ todayRevenue, todayPaidRevenue, todayRevenuePct, todayOrders, todayOrdersDelta, pendingOrders, activeProducts }`
+- `revenueData`: `[{ date (ISO yyyy-MM-dd), revenue, orders }]` — one entry per day in the period, VN timezone
+- `orderStatusBreakdown`: `[{ status, count }]` — period-scoped, all statuses with count > 0
+- `recentOrders`: last 5 orders `[{ id, orderNumber, customerName, customerEmail, total, orderStatus, currency, placedAt }]`
+- `topProducts`: top 5 by line-item revenue `[{ productId (product_pk varchar), name, revenue, units }]`
+
+Status: `CONFIRMED_FROM_CODE`
+
 ## POS Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
@@ -93,3 +108,32 @@ Status: `CONFIRMED_FROM_CODE`
 |---|---|---|
 | Search, address, contact, customer address, customer returns are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
 | Verify-email and home-videos are not currently wrapped in `api_endpoints.dart`. | `CODE_ONLY_NOT_DOCUMENTED` | backend controllers/security + `api_endpoints.dart` |
+
+## Proposed Accounts Receivable Endpoints
+
+> Status: `PROPOSED_FOR_AR_MODULE` — not yet implemented. Requires business confirmation (`AR_RULE_001`–`AR_RULE_011` in `BUSINESS_RULES.md`) and completion of Phase 1 prerequisite fixes before these endpoints are built.
+
+### Admin receivables endpoints
+
+| Method | Path | Permission | Proposed behavior |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/receivables` | `receivables.read` | Paginated list of credit orders with `outstanding > 0`, filterable by `customerId`, `dueStatus` (CURRENT / OVERDUE / ALL), date range |
+| `GET` | `/api/v1/admin/receivables/summary` | `receivables.read` | Total outstanding amount, overdue count, aging buckets (0–30, 31–60, 61–90, 90+ days) |
+| `GET` | `/api/v1/admin/receivables/customers/{customerId}` | `receivables.read` | Per-customer credit orders and payment history |
+| `POST` | `/api/v1/admin/orders/{id}/payments` | `receivables.record_payment` | Record a partial or full payment against a credit order; updates `paidAmount`, transitions `paymentStatus` to `PAID` or keeps `PARTIALLY_PAID`; creates a new `PaymentEntity` row |
+| `PATCH` | `/api/v1/admin/orders/{id}/credit-terms` | `receivables.set_credit_terms` | Set or update `due_at` and `credit_terms` on an existing order |
+| `POST` | `/api/v1/admin/orders/{id}/write-off` | `receivables.write_off` | Write off uncollectable receivable — sets `paymentStatus` to `CANCELLED` with an audit note |
+
+### POS endpoint extension (additive, same path)
+
+`POST /api/v1/admin/pos/orders` — if request body includes `paymentMethod: "CREDIT"` and the caller has `pos.credit_sale` permission:
+- Creates order with `status = COMPLETED` and `paymentStatus = UNPAID`
+- Requires `dueAt` in request body (ISO-8601 timestamp)
+- Does NOT create a `PaymentEntity` row (payment is deferred)
+- This is an additive extension to the existing POS endpoint; existing `CASH` / `CARD_TERMINAL` behavior is unchanged
+
+### Customer-facing extension (additive, existing endpoint)
+
+`GET /api/v1/customer/orders/{orderId}` — extend `OrderDetailResponse` with two additional read-only fields:
+- `outstanding`: `BigDecimal` — `totalAmount - paidAmount` (zero for fully paid orders)
+- `dueAt`: `Instant` nullable — payment due date for credit orders (null for non-credit)

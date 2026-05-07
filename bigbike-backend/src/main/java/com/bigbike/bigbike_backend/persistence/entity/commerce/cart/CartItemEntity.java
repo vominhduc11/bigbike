@@ -28,6 +28,9 @@ public class CartItemEntity {
     @Column(name = "product_id")
     private UUID productId;
 
+    @Column(name = "product_pk", length = 64)
+    private String productPk;
+
     @Column(name = "product_variant_id")
     private UUID productVariantId;
 
@@ -90,6 +93,9 @@ public class CartItemEntity {
 
     public UUID getProductId() { return productId; }
     public void setProductId(UUID productId) { this.productId = productId; }
+
+    public String getProductPk() { return productPk; }
+    public void setProductPk(String productPk) { this.productPk = productPk; }
 
     public UUID getProductVariantId() { return productVariantId; }
     public void setProductVariantId(UUID productVariantId) { this.productVariantId = productVariantId; }

@@ -65,7 +65,7 @@ function fmtIsoDateShort(isoDate) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function KpiCard({ icon, label, value, sub, subPositive, subNegative }) {
+function KpiCard({ icon, label, value, sub, subPositive, subNegative, sub2 }) {
   const subColor = subPositive
     ? 'var(--admin-color-status-success-text)'
     : subNegative
@@ -105,6 +105,11 @@ function KpiCard({ icon, label, value, sub, subPositive, subNegative }) {
         {sub && (
           <div style={{ marginTop: 4, fontSize: 'var(--admin-text-xs)', color: subColor, fontWeight: 500 }}>
             {sub}
+          </div>
+        )}
+        {sub2 && (
+          <div style={{ marginTop: 2, fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
+            {sub2}
           </div>
         )}
       </div>
@@ -339,6 +344,11 @@ export function DashboardScreen({ navigate }) {
               }
               subPositive={data.kpi.todayRevenuePct > 0}
               subNegative={data.kpi.todayRevenuePct < 0}
+              sub2={
+                data.kpi.todayPaidRevenue != null
+                  ? `Đã thu: ${fmtVndCompact(data.kpi.todayPaidRevenue)}`
+                  : undefined
+              }
             />
             <KpiCard
               icon={<IconOrders />}

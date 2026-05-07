@@ -473,13 +473,13 @@ export function HomeVideoListScreen({ canUpdate }) {
                     aria-label={t('homeVideos.removeVideo')}
                     disabled={!canUpdate}
                   >
-                    âœ•
+                    ✕
                   </button>
                 )}
               </div>
               {form.videoUrl ? (
                 <span style={{ fontSize: 11, color: 'var(--admin-color-text-success)', fontWeight: 400 }}>
-                  âœ“ {form.videoUrl.split('/').pop()}
+                  ✓ {form.videoUrl.split('/').pop()}
                 </span>
               ) : (
                 <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>

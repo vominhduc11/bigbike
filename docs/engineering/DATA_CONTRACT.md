@@ -123,3 +123,45 @@ Evidence:
 - `V53__add_stock_receipt_lines.sql`
 - `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
+
+## Proposed Accounts Receivable Data Fields
+
+> Status: `PROPOSED_FOR_AR_MODULE` — not yet implemented. Requires business confirmation of `AR_RULE_001`–`AR_RULE_011` in `docs/business/BUSINESS_RULES.md` and Phase 1 prerequisite fixes before Flyway migration is written.
+
+### Phase 2 MVP — orders table extension (Flyway V74 proposed)
+
+Outstanding balance for any order is already derivable from existing columns as `totalAmount - paidAmount` without schema change.
+
+| Column | Type | Nullable | Purpose |
+|---|---|---|---|
+| `due_at` | `TIMESTAMPTZ` | YES | Payment due date for credit orders; null for immediate cash/card sales |
+| `credit_terms` | `VARCHAR(100)` | YES | Human-readable payment terms snapshot at time of sale (e.g. `NET_30`); null for non-credit |
+
+`due_at` is computed from `placedAt + credit_terms_days` at order creation and persisted for scheduler queries (overdue detection).
+
+### Phase 3 B2B only — customer credit profiles table (Flyway V75 proposed)
+
+Only required if `AR_RULE_009` confirms B2B/dealer registered accounts. Walk-in credit does not need this table (phone-based identity is sufficient for POS).
+
+| Column | Type | Nullable | Purpose |
+|---|---|---|---|
+| `customer_id` | `UUID FK → customers.id` | NO | Customer this profile belongs to |
+| `credit_limit` | `NUMERIC(15,2)` | NO | Maximum outstanding balance allowed |
+| `payment_terms_days` | `INT` | NO | Days until payment is due after sale |
+| `is_active` | `BOOLEAN` | NO | Whether credit is currently enabled for this customer |
+| `approved_by_admin_id` | `UUID` | YES | Admin who approved or last modified the credit profile |
+| `created_at` | `TIMESTAMPTZ` | NO | Profile creation timestamp |
+| `updated_at` | `TIMESTAMPTZ` | NO | Last modification timestamp |
+
+### Dashboard KPI — new `todayPaidRevenue` field (Phase 1 P-1 fix, implemented)
+
+`AdminDashboardSummaryResponse.KpiResponse` now includes:
+
+| Field | Computation | Purpose |
+|---|---|---|
+| `todayRevenue` | `SUM(totalAmount)` no filter — gross order value placed | Gross GMV for the day |
+| `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID','PARTIALLY_PAID')` | Actual cash collected today |
+
+The delta `todayRevenue - todayPaidRevenue` equals today's receivables (unpaid/partially-paid order value).
+
+Status: `CONFIRMED_FROM_CODE` (P-1 fix applied in `AdminDashboardService.java` and `OrderJpaRepository.java`)

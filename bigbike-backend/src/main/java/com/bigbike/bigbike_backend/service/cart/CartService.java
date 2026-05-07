@@ -148,6 +148,7 @@ public class CartService {
             item = new CartItemEntity();
             item.setCart(cart);
             item.setProductId(productUuid);
+            item.setProductPk(product.getId());
             item.setProductVariantId(variantUuid);
             item.setSku(variant != null ? variant.getSku() : product.getSku());
             item.setProductName(product.getName());

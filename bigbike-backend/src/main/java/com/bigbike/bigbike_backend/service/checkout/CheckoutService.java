@@ -686,6 +686,7 @@ public class CheckoutService {
         OrderLineItemEntity item = new OrderLineItemEntity();
         item.setOrder(order);
         item.setProductId(cartItem.getProductId());
+        item.setProductPk(cartItem.getProductPk());
         item.setProductVariantId(cartItem.getProductVariantId());
         item.setSku(cartItem.getSku());
         item.setProductName(cartItem.getProductName());
@@ -717,6 +718,7 @@ public class CheckoutService {
         OrderLineItemEntity item = new OrderLineItemEntity();
         item.setOrder(order);
         item.setProductId(tryParseUUID(product.getId()));
+        item.setProductPk(product.getId());
         item.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
         item.setSku(variant != null ? variant.getSku() : product.getSku());
         item.setProductName(product.getName());

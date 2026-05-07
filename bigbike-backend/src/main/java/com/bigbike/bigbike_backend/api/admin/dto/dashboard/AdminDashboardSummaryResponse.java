@@ -14,8 +14,9 @@ public record AdminDashboardSummaryResponse(
 ) {
 
     public record KpiResponse(
-            BigDecimal todayRevenue,
-            Double todayRevenuePct,       // null when no prev-day data
+            BigDecimal todayRevenue,       // gross GMV: SUM(totalAmount) all orders placed today
+            BigDecimal todayPaidRevenue,   // actual cash collected: SUM(paidAmount) for PAID/PARTIALLY_PAID
+            Double todayRevenuePct,        // null when no prev-day data
             int todayOrders,
             int todayOrdersDelta,
             long pendingOrders,
@@ -37,16 +38,17 @@ public record AdminDashboardSummaryResponse(
     public record RecentOrderItem(
             UUID id,
             String orderNumber,
+            String customerName,
             String customerEmail,
-            BigDecimal total,             // renamed from totalAmount for FE contract
+            BigDecimal total,
             String orderStatus,
             String currency,
             Instant placedAt
     ) {}
 
     public record TopProductItem(
-            UUID productId,               // added for FE navigation
-            String name,                  // renamed from productName
+            String productId,             // product_pk (varchar) — covers admin-created products
+            String name,
             BigDecimal revenue,
             long units
     ) {}

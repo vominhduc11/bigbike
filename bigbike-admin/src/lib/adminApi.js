@@ -1854,7 +1854,7 @@ export async function fetchDashboardSummary(period = '30d') {
   } catch (error) {
     const e = normalizeError(error)
     if (!shouldFallbackToMockOnLiveError()) throw e
-    return withMockFallback(e.message, getMockDashboardSummary(period))
+    return { data: getMockDashboardSummary(period), isMock: true, warning: e.message }
   }
 }
 

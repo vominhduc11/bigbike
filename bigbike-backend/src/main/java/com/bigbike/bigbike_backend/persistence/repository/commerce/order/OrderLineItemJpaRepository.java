@@ -42,4 +42,19 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
+
+    // ── Dashboard: top products using product_pk (covers admin-created products) ─
+    // product_pk is the string PK from the products table; productId (UUID) is null
+    // for admin-created products, so we use productPk as the grouping key.
+
+    @Query("SELECT li.productPk, li.productName, SUM(li.lineTotal), SUM(li.quantity) " +
+           "FROM OrderLineItemEntity li " +
+           "WHERE li.order.placedAt >= :from AND li.productPk IS NOT NULL " +
+           "  AND li.order.status NOT IN :excludedStatuses " +
+           "GROUP BY li.productPk, li.productName " +
+           "ORDER BY SUM(li.lineTotal) DESC")
+    List<Object[]> topProductsByRevenueSinceExcluding(
+            @Param("from") Instant from,
+            @Param("excludedStatuses") List<String> excludedStatuses,
+            Pageable pageable);
 }

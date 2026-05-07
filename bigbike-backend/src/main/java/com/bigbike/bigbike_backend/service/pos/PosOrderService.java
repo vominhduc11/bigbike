@@ -199,6 +199,7 @@ public class PosOrderService {
 
             OrderLineItemEntity li = new OrderLineItemEntity();
             li.setProductId(tryParseUUID(product.getId()));
+            li.setProductPk(product.getId());
             li.setProductVariantId(tryParseUUID(variant.getId()));
             li.setSku(variant.getSku() != null ? variant.getSku() : product.getSku());
             li.setProductName(product.getName());

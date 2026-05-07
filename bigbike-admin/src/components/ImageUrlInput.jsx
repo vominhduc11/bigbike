@@ -60,7 +60,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
             disabled={disabled}
             aria-label={t('imageInput.removeImage')}
           >
-            âœ•
+            ✕
           </button>
         )}
       </div>
