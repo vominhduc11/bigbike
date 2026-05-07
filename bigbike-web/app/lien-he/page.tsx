@@ -39,8 +39,8 @@ export default async function ContactPage() {
   const email = pickSetting(publicSettings, [/email/i, /mail/i]);
   const address = pickSetting(publicSettings, [/address/i, /diachi/i, /dia_chi/i]);
   const zalo = pickSetting(publicSettings, [/zalo/i]);
-  const mapUrl = pickSetting(publicSettings, [/map/i, /iframe/i, /google_maps?/i]);
-  const canEmbedMap = /^https?:\/\//i.test(mapUrl);
+  const mapUrl = publicSettings.find((s) => s.settingKey === "google_maps_url")?.settingValue?.trim() ?? "";
+  const canEmbedMap = /^https?:\/\/(www\.)?google\.com\/maps[/?#]/.test(mapUrl);
 
   return (
     <section className="bb-page">
@@ -116,7 +116,6 @@ export default async function ContactPage() {
                     style={{ border: 0 }}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    sandbox="allow-scripts allow-same-origin"
                   />
                 </div>
               </div>

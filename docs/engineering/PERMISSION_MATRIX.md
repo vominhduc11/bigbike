@@ -17,6 +17,14 @@ Admin role-to-permission mapping is defined in `AdminRolePermissions.java`.
 | `SEO_EDITOR` | content and redirects | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | `CUSTOMER` | own profile/address/order/return APIs | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 
+## Audit Log Permission
+
+| Permission | Roles with access | Endpoint |
+|---|---|---|
+| `audit-logs.read` | `SUPER_ADMIN`, `ADMIN` | `GET /api/v1/admin/audit-logs` |
+
+`SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` do **not** have `audit-logs.read`.
+
 ## Critical Endpoint Permissions
 
 | Endpoint / surface | Required role/permission | Status | Evidence |

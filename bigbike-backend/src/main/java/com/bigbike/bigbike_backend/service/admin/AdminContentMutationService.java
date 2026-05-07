@@ -72,7 +72,7 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem createArticle(UpsertArticleRequest request) {
+    public AdminContentItem createArticle(UpsertArticleRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -89,6 +89,7 @@ public class AdminContentMutationService {
 
         applyArticlePatch(entity, request, slug, author, category, true);
         articleJpaRepository.save(entity);
+        auditLog("CONTENT_ARTICLE_CREATED", "CONTENT", adminId, null, articleJson(entity));
         revalidateArticle(entity, null);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -97,7 +98,7 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem updateArticle(String articleId, UpsertArticleRequest request) {
+    public AdminContentItem updateArticle(String articleId, UpsertArticleRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         ArticleEntity entity = articleJpaRepository.findById(articleId)
@@ -115,6 +116,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyArticlePatch(entity, request, slug, author, category, false);
         articleJpaRepository.save(entity);
+        auditLog("CONTENT_ARTICLE_UPDATED", "CONTENT", adminId, null, articleJson(entity));
         revalidateArticle(entity, previousSlug);
 
         Article article = contentReadRepository.findArticleById(entity.getId())
@@ -123,7 +125,7 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem createPage(UpsertPageRequest request) {
+    public AdminContentItem createPage(UpsertPageRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -140,6 +142,7 @@ public class AdminContentMutationService {
         AdminMutationValidators.throwIfErrors(errors);
         applyPagePatch(entity, request, slug, parent, true);
         pageJpaRepository.save(entity);
+        auditLog("CONTENT_PAGE_CREATED", "CONTENT", adminId, null, pageJson(entity));
         revalidatePage(entity, null);
 
         Page page = contentReadRepository.findPageById(entity.getId())
@@ -148,7 +151,7 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem updatePage(String pageId, UpsertPageRequest request) {
+    public AdminContentItem updatePage(String pageId, UpsertPageRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         PageEntity entity = pageJpaRepository.findById(pageId)
@@ -165,6 +168,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyPagePatch(entity, request, slug, parent, false);
         pageJpaRepository.save(entity);
+        auditLog("CONTENT_PAGE_UPDATED", "CONTENT", adminId, null, pageJson(entity));
         revalidatePage(entity, previousSlug);
 
         Page page = contentReadRepository.findPageById(entity.getId())
@@ -173,13 +177,14 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem deleteArticle(String articleId) {
+    public AdminContentItem deleteArticle(String articleId, UUID adminId) {
         requireJpaPersistenceEnabled();
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         entity.setPublishStatus(PublishStatus.ARCHIVED);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
+        auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, null, articleJson(entity));
         revalidateArticle(entity, null);
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -187,13 +192,14 @@ public class AdminContentMutationService {
     }
 
     @Transactional
-    public AdminContentItem deletePage(String pageId) {
+    public AdminContentItem deletePage(String pageId, UUID adminId) {
         requireJpaPersistenceEnabled();
         PageEntity entity = pageJpaRepository.findById(pageId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         entity.setPublishStatus(PublishStatus.ARCHIVED);
         entity.setUpdatedAt(Instant.now());
         pageJpaRepository.save(entity);
+        auditLog("CONTENT_PAGE_DELETED", "CONTENT", adminId, null, pageJson(entity));
         revalidatePage(entity, null);
         Page page = contentReadRepository.findPageById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
@@ -210,6 +216,33 @@ public class AdminContentMutationService {
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
         }
+    }
+
+    private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
+        if (auditLogRepo == null) return;
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction(action);
+        log.setResourceType(resourceType);
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setCreatedAt(Instant.now());
+        auditLogRepo.save(log);
+    }
+
+    private static String articleJson(ArticleEntity e) {
+        return "{\"id\":\"" + e.getId() + "\",\"title\":\"" + esc(e.getTitle()) +
+               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() + "\"}";
+    }
+
+    private static String pageJson(PageEntity e) {
+        return "{\"id\":\"" + e.getId() + "\",\"title\":\"" + esc(e.getTitle()) +
+               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() + "\"}";
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private String validateArticleRequest(

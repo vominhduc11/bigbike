@@ -10,9 +10,13 @@ import { formatDateTimeWithSeconds } from '../lib/formatters'
 // ── Actions that are dangerous — shown with a warning indicator ────────────────
 const DANGEROUS_ACTIONS = new Set([
   'ORDER_CANCELLED', 'ORDER_REFUNDED', 'ORDER_REFUND_CREATED',
-  'PRODUCT_DELETED', 'COUPON_DELETED', 'CUSTOMER_DELETED',
-  'CATEGORY_DELETED', 'BRAND_DELETED', 'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
+  'PRODUCT_DELETED', 'PRODUCT_SOFT_DELETED',
+  'COUPON_DELETED', 'CUSTOMER_DELETED',
+  'CATEGORY_DELETED', 'CATEGORY_SOFT_DELETED',
+  'BRAND_DELETED', 'BRAND_SOFT_DELETED',
+  'MEDIA_DELETED', 'MEDIA_HARD_DELETED',
   'MENU_ITEM_DELETED', 'ROLE_DELETED', 'REDIRECT_DELETED',
+  'CONTENT_ARTICLE_DELETED', 'CONTENT_PAGE_DELETED',
 ])
 
 // Values considered dangerous in diff table (shown with danger highlight)
@@ -83,7 +87,13 @@ function exportToCsv(items, t) {
 
 // ── Filter constants ───────────────────────────────────────────────────────────
 const ACTOR_OPTIONS    = ['ALL', 'ADMIN', 'CUSTOMER', 'SYSTEM']
-const RESOURCE_OPTIONS = ['ALL', 'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY', 'COUPON', 'CUSTOMER', 'SETTING', 'MEDIA', 'MENU', 'CONTENT', 'ROLE', 'ADMIN_USER', 'REDIRECT']
+const RESOURCE_OPTIONS = [
+  'ALL',
+  'ORDER', 'PRODUCT', 'CATEGORY', 'BRAND', 'INVENTORY',
+  'COUPON', 'CUSTOMER', 'CONTENT', 'MEDIA', 'MENU', 'MENU_ITEM',
+  'SITE_SETTING', 'ADMIN_ROLE', 'ADMIN_USER', 'REDIRECT',
+  'REVIEW', 'RECEIVABLE',
+]
 const PRESET_KEYS      = ['today', '7d', '30d', 'month']
 
 function readQueryFromUrl() {

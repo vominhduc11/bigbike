@@ -82,6 +82,32 @@ Response fields verified in `PosOrderResponse` usage:
 
 Status: `CONFIRMED_FROM_CODE`
 
+## Audit Log Contract
+
+| Endpoint | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|
+| `GET /api/v1/admin/audit-logs` | `audit-logs.read` | Paginated list (page/size), filterable by actorType, actorId, resourceType, resourceId, action, q (matches action text), from/to (LocalDate). Enriches actor display name and resource code. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
+
+**Resource types written by backend** (as of P0 fix):
+- `ORDER` — order lifecycle events (AdminOrderService, PosOrderService, RefundService)
+- `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService)
+- `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService)
+- `BRAND` — create/update/soft-delete (AdminCatalogMutationService)
+- `INVENTORY` — stock adjustments (AdminInventoryService)
+- `CONTENT` — article/page create/update/delete (AdminContentMutationService)
+- `COUPON` — AdminCouponService
+- `CUSTOMER` — AdminCustomerService
+- `MEDIA` — AdminMediaService
+- `MENU` / `MENU_ITEM` — AdminMenuService
+- `REDIRECT` — AdminRedirectService
+- `SITE_SETTING` — AdminSettingsService
+- `REVIEW` — AdminReviewService
+- `RECEIVABLE` — ReceivableService
+- `ADMIN_USER` — AdminAdminUsersService
+- `ADMIN_ROLE` — AdminRoleService (fixed in V76; previously erroneously `ADMIN_ROLE:<roleId>`)
+
+**Note:** `resource_id` column is `uuid` type. For entities with String IDs (products, categories, brands, content, roles), `resource_id = null` and the entity identifier is embedded in `afterData`/`beforeData` JSON.
+
 ## WebSocket Contract
 
 | Item | Current contract | Status | Evidence |

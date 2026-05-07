@@ -14,9 +14,13 @@ import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
 import com.bigbike.bigbike_backend.service.admin.AdminContentMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReferenceService;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -108,7 +112,7 @@ public class AdminContentController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.createArticle(payload), request);
+        return apiResponseFactory.data(adminContentMutationService.createArticle(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/articles/{id}")
@@ -118,7 +122,7 @@ public class AdminContentController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.updateArticle(id, payload), request);
+        return apiResponseFactory.data(adminContentMutationService.updateArticle(id, payload, resolveAdminId()), request);
     }
 
     @PostMapping("/pages")
@@ -127,7 +131,7 @@ public class AdminContentController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.createPage(payload), request);
+        return apiResponseFactory.data(adminContentMutationService.createPage(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/pages/{id}")
@@ -137,7 +141,7 @@ public class AdminContentController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentMutationService.updatePage(id, payload), request);
+        return apiResponseFactory.data(adminContentMutationService.updatePage(id, payload, resolveAdminId()), request);
     }
 
     @DeleteMapping("/{type}/{id}")
@@ -148,9 +152,19 @@ public class AdminContentController {
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
         if ("page".equalsIgnoreCase(type)) {
-            return apiResponseFactory.data(adminContentMutationService.deletePage(id), request);
+            return apiResponseFactory.data(adminContentMutationService.deletePage(id, resolveAdminId()), request);
         }
-        return apiResponseFactory.data(adminContentMutationService.deleteArticle(id), request);
+        return apiResponseFactory.data(adminContentMutationService.deleteArticle(id, resolveAdminId()), request);
+    }
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    private UUID resolveAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
+        }
+        return DEV_ADMIN_ID;
     }
 
     // ── Reference lists (for article/page form dropdowns) ────────────────────

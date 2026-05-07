@@ -112,6 +112,7 @@ public class AdminCatalogMutationService {
 
         applyProductPatch(entity, request, slug, category, brand, true);
         productJpaRepository.save(entity);
+        auditLog("PRODUCT_CREATED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -137,6 +138,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyProductPatch(entity, request, slug, category, brand, false);
         productJpaRepository.save(entity);
+        auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, previousSlug);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -166,6 +168,7 @@ public class AdminCatalogMutationService {
         entity.setPublishStatus(publishStatus);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
+        auditLog("PRODUCT_PUBLISH_STATUS_UPDATED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -198,6 +201,7 @@ public class AdminCatalogMutationService {
         entity.setPublishStatus(PublishStatus.TRASH);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
+        auditLog("PRODUCT_SOFT_DELETED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -229,6 +233,7 @@ public class AdminCatalogMutationService {
         entity.setPublishStatus(PublishStatus.DRAFT);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
+        auditLog("PRODUCT_RESTORED", "PRODUCT", adminId, null, productJson(entity));
         revalidateProduct(entity, null);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -245,7 +250,7 @@ public class AdminCatalogMutationService {
      * The caller must hide or re-parent children first.
      */
     @Transactional
-    public Category softDeleteCategory(String categoryId) {
+    public Category softDeleteCategory(String categoryId, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
@@ -256,6 +261,7 @@ public class AdminCatalogMutationService {
         entity.setVisible(false);
         entity.setUpdatedAt(Instant.now());
         categoryJpaRepository.save(entity);
+        auditLog("CATEGORY_SOFT_DELETED", "CATEGORY", adminId, null, categoryJson(entity));
         revalidateCategory(entity, null);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -263,7 +269,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Category createCategory(UpsertCategoryRequest request) {
+    public Category createCategory(UpsertCategoryRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -278,6 +284,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(now);
         applyCategoryPatch(entity, request, slug, parent, true);
         categoryJpaRepository.save(entity);
+        auditLog("CATEGORY_CREATED", "CATEGORY", adminId, null, categoryJson(entity));
         revalidateCategory(entity, null);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -285,7 +292,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Category updateCategory(String categoryId, UpsertCategoryRequest request) {
+    public Category updateCategory(String categoryId, UpsertCategoryRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
@@ -304,6 +311,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyCategoryPatch(entity, request, slug, parent, false);
         categoryJpaRepository.save(entity);
+        auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, null, categoryJson(entity));
         revalidateCategory(entity, previousSlug);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -311,7 +319,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Brand createBrand(UpsertBrandRequest request) {
+    public Brand createBrand(UpsertBrandRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -325,6 +333,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(now);
         applyBrandPatch(entity, request, slug, true);
         brandJpaRepository.save(entity);
+        auditLog("BRAND_CREATED", "BRAND", adminId, null, brandJson(entity));
         revalidateBrand(entity, null);
 
         return catalogReadRepository.findBrandById(entity.getId())
@@ -332,7 +341,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Brand updateBrand(String brandId, UpsertBrandRequest request) {
+    public Brand updateBrand(String brandId, UpsertBrandRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         BrandEntity entity = brandJpaRepository.findById(brandId)
@@ -346,6 +355,7 @@ public class AdminCatalogMutationService {
         entity.setUpdatedAt(Instant.now());
         applyBrandPatch(entity, request, slug, false);
         brandJpaRepository.save(entity);
+        auditLog("BRAND_UPDATED", "BRAND", adminId, null, brandJson(entity));
         revalidateBrand(entity, previousSlug);
 
         return catalogReadRepository.findBrandById(entity.getId())
@@ -353,7 +363,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Brand deleteBrand(String brandId) {
+    public Brand deleteBrand(String brandId, UUID adminId) {
         requireJpaPersistenceEnabled();
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -364,6 +374,7 @@ public class AdminCatalogMutationService {
         entity.setVisible(false);
         entity.setUpdatedAt(Instant.now());
         brandJpaRepository.save(entity);
+        auditLog("BRAND_SOFT_DELETED", "BRAND", adminId, null, brandJson(entity));
         revalidateBrand(entity, null);
         return catalogReadRepository.findBrandById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
@@ -375,6 +386,38 @@ public class AdminCatalogMutationService {
                     "Catalog mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
         }
+    }
+
+    private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
+        if (auditLogRepo == null) return;
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction(action);
+        log.setResourceType(resourceType);
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setCreatedAt(Instant.now());
+        auditLogRepo.save(log);
+    }
+
+    private static String productJson(ProductEntity e) {
+        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
+               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() + "\"}";
+    }
+
+    private static String categoryJson(CategoryEntity e) {
+        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
+               "\",\"slug\":\"" + e.getSlug() + "\",\"visible\":" + e.isVisible() + "}";
+    }
+
+    private static String brandJson(BrandEntity e) {
+        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
+               "\",\"slug\":\"" + e.getSlug() + "\",\"visible\":" + e.isVisible() + "}";
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private String validateProductRequest(

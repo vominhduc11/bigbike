@@ -12,8 +12,12 @@ import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -105,7 +109,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createProduct(payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.createProduct(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/products/{id}")
@@ -115,7 +119,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateProduct(id, payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.updateProduct(id, payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/products/{id}/publish")
@@ -126,7 +130,7 @@ public class AdminCatalogController {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return apiResponseFactory.data(
-                adminCatalogMutationService.updateProductPublishStatus(id, payload.getPublishStatus()),
+                adminCatalogMutationService.updateProductPublishStatus(id, payload.getPublishStatus(), resolveAdminId()),
                 request
         );
     }
@@ -142,7 +146,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.softDeleteProduct(id), request);
+        return apiResponseFactory.data(adminCatalogMutationService.softDeleteProduct(id, resolveAdminId()), request);
     }
 
     /**
@@ -155,7 +159,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id), request);
+        return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id, resolveAdminId()), request);
     }
 
     @GetMapping("/categories")
@@ -199,7 +203,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createCategory(payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.createCategory(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/categories/{id}")
@@ -209,7 +213,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateCategory(id, payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.updateCategory(id, payload, resolveAdminId()), request);
     }
 
     /**
@@ -223,7 +227,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id), request);
+        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id, resolveAdminId()), request);
     }
 
     @GetMapping("/brands")
@@ -267,7 +271,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.createBrand(payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.createBrand(payload, resolveAdminId()), request);
     }
 
     @PatchMapping("/brands/{id}")
@@ -277,7 +281,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.updateBrand(id, payload), request);
+        return apiResponseFactory.data(adminCatalogMutationService.updateBrand(id, payload, resolveAdminId()), request);
     }
 
     @DeleteMapping("/brands/{id}")
@@ -286,7 +290,7 @@ public class AdminCatalogController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.deleteBrand(id), request);
+        return apiResponseFactory.data(adminCatalogMutationService.deleteBrand(id, resolveAdminId()), request);
     }
 
     private static int resolveSize(Integer size, Integer pageSize) {
@@ -297,5 +301,15 @@ public class AdminCatalogController {
             return pageSize;
         }
         return 20;
+    }
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    private UUID resolveAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
+        }
+        return DEV_ADMIN_ID;
     }
 }

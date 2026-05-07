@@ -368,4 +368,15 @@ public class AdminInventoryService {
         }
         return value;
     }
+
+    private AuditLogEntity buildAudit(UUID actorId, String action, String resourceType, String afterData) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(actorId);
+        log.setAction(action);
+        log.setResourceType(resourceType);
+        log.setAfterData(afterData);
+        log.setCreatedAt(Instant.now());
+        return log;
+    }
 }

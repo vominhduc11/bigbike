@@ -508,7 +508,7 @@ export const ROLE_PERMISSION_MAP = {
     'orders.read', 'orders.update',
     'customers.read', 'customers.update',
     'media.read', 'media.update',
-    'settings.read', 'settings.update',
+    'settings.read', 'settings.write',
     'coupons.read', 'coupons.update',
     'menus.read', 'menus.write',
     'sliders.read', 'sliders.write',
