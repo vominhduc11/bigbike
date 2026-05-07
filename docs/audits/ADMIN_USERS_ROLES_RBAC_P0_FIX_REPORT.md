@@ -105,6 +105,10 @@ public class AdminPermissionService {
 | `service/admin/AdminRoleService.java` | **Modified** | Inject `AdminPermissionService`; call `evict` on all writes |
 | `config/SecurityConfig.java` | **Modified** | `/api/v1/admin/**` catch-all → `authenticated()`; remove 6 dead/shadowed role rules |
 | `test/.../RbacUrlGateIntegrationTest.java` | **New** | 7 integration tests (see §4) |
+| `test/resources/db/test-seed.sql` | **Modified** | Append all 7 system roles + full permission sets (mirrors V49/V58/V78/V79) using `WHERE NOT EXISTS` |
+| `service/auth/AdminPermissionService.java` | **Modified** | Don't cache empty results — unknown roles re-query DB on every request (prevents cache poisoning in test contexts) |
+| `test/.../AdminMediaP0Test.java` | **Modified** | Add `@Sql(test-seed.sql, BEFORE_TEST_CLASS)` — test uses isolated Spring context (`@MockitoBean`), needs own seed |
+| `test/.../AdminShippingApiTest.java` | **Modified** | `listZones_readerRole_returns403` → `listZones_readerRole_returns200`; SHOP_MANAGER has `shipping.read`, 200 is now correct |
 
 `AdminRolePermissions.java` is unchanged — it remains as a bootstrap catalog / reference. It is no longer called at runtime.
 
@@ -145,10 +149,24 @@ All 7 tests PASS.
 ### Full test suite
 
 ```
-Command: mvn test
+Command: mvn clean test
 ```
 
-*(Results appended below after full run — see §5.1)*
+```
+Tests run: 950, Failures: 0, Errors: 0, Skipped: 3
+BUILD SUCCESS
+```
+
+All 950 tests PASS. 3 skipped tests are pre-existing (unrelated to RBAC).
+
+**Additional fixes required during full-suite run:**
+
+| Issue | Root Cause | Fix |
+|---|---|---|
+| `AdminDashboardApiTest`, `AdminReceivableApiTest` getting 403 | `AdminPermissionService` was caching empty `List.of()` for roles not yet in DB (test context initializes before `@Sql` seeds any data). First request with an empty-DB context poisoned the cache. | Changed `getPermissionsForRole` to not cache empty results — unknown roles always re-query the DB on next request. |
+| `AdminMediaP0Test` getting 403 | Uses `@MockitoBean MinioClient` + `@TestPropertySource` → isolated Spring context with its own H2 DB. No `@Sql` annotation → DB empty → no ADMIN permissions. | Added `@Sql(scripts = "/db/test-seed.sql", BEFORE_TEST_CLASS)` to `AdminMediaP0Test`. |
+| `AdminShippingApiTest.listZones_readerRole_returns403` getting 200 | Test was asserting OLD URL-gate behavior (SHOP_MANAGER blocked by `hasRole("ADMIN")` catch-all). After fix, SHOP_MANAGER passes the `authenticated()` gate and hits the controller, which checks `shipping.read`. SHOP_MANAGER has `shipping.read` → 200 is now correct. | Renamed test to `listZones_readerRole_returns200` and changed assertion to `isOk()`. |
+| `AdminRedirectApiTest` compile failure (stale class) | Stale compiled `.class` file from previous build referenced `JwtRequestPostProcessor`. Source had already been updated to use `authentication()`. | `mvn clean` cleared stale classes; no source change needed. |
 
 ---
 
