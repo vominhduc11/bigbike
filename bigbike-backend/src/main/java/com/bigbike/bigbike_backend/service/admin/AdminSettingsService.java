@@ -9,13 +9,16 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
+import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinition;
+import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinitionRegistry;
+import com.bigbike.bigbike_backend.service.admin.settings.SettingValueValidator;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
@@ -26,26 +29,29 @@ public class AdminSettingsService {
 
     private static final int DEFAULT_SIZE = 50;
     private static final int MAX_SIZE = 200;
-    private static final Set<String> SENSITIVE_KEY_FRAGMENTS =
-            Set.of("secret", "password", "token", "privatekey", "private_key",
-                   "api_key", "apikey", "accesskey", "access_key",
-                   "client_secret", "clientsecret");
+    private static final String MASKED_VALUE = "********";
 
     private final SiteSettingJpaRepository settingRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
+    private final SettingDefinitionRegistry definitionRegistry;
+    private final SettingValueValidator valueValidator;
 
     public AdminSettingsService(
             SiteSettingJpaRepository settingRepo,
             AuditLogJpaRepository auditLogRepo,
             PaginationService paginationService,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            SettingDefinitionRegistry definitionRegistry,
+            SettingValueValidator valueValidator
     ) {
         this.settingRepo = settingRepo;
         this.auditLogRepo = auditLogRepo;
         this.paginationService = paginationService;
         this.webRevalidationService = webRevalidationService;
+        this.definitionRegistry = definitionRegistry;
+        this.valueValidator = valueValidator;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -100,10 +106,30 @@ public class AdminSettingsService {
         SiteSettingEntity entity = settingRepo.findBySettingKey(settingKey)
                 .orElseThrow(() -> new NotFoundException("Setting not found: " + settingKey));
 
-        // Block marking a sensitive key as public
-        if (Boolean.TRUE.equals(req.isPublic()) && isSensitiveKey(settingKey)) {
-            throw ValidationException.fromField("isPublic", "SENSITIVE_KEY",
-                    "Sensitive settings (containing 'secret', 'password', 'token', 'privateKey') cannot be made public.");
+        Optional<SettingDefinition> defOpt = definitionRegistry.find(settingKey);
+
+        // Editable gate (registry-only constraint)
+        if (defOpt.map(d -> !d.editable()).orElse(false)) {
+            throw ValidationException.fromField("settingKey", "READ_ONLY",
+                    "Setting is read-only and cannot be modified.");
+        }
+
+        // Public allowlist gate: setting isPublic=true requires explicit allowlist entry
+        if (Boolean.TRUE.equals(req.isPublic())) {
+            if (definitionRegistry.matchesSensitiveFragment(settingKey)) {
+                throw ValidationException.fromField("isPublic", "SENSITIVE_KEY",
+                        "Sensitive settings (containing 'secret', 'password', 'token', 'privateKey') cannot be made public.");
+            }
+            boolean allowed = defOpt.map(SettingDefinition::publicAllowed).orElse(false);
+            if (!allowed) {
+                throw ValidationException.fromField("isPublic", "NOT_PUBLIC_ALLOWLISTED",
+                        "Setting is not in the public allowlist; isPublic cannot be set to true.");
+            }
+        }
+
+        // Type / range / format validation (only for keys we have definitions for)
+        if (req.value() != null && defOpt.isPresent()) {
+            valueValidator.validate(settingKey, req.value(), defOpt.get());
         }
 
         String before = snapshot(entity);
@@ -133,22 +159,36 @@ public class AdminSettingsService {
 
     public List<PublicSiteSettingResponse> listPublicSettings() {
         return settingRepo.findByIsPublic(true).stream()
+                .filter(s -> isPubliclyExposable(s.getSettingKey()))
                 .map(s -> new PublicSiteSettingResponse(s.getSettingKey(), s.getSettingValue(), s.getSettingGroup()))
                 .toList();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private boolean isSensitiveKey(String key) {
-        String lower = key.toLowerCase(Locale.ROOT);
-        return SENSITIVE_KEY_FRAGMENTS.stream().anyMatch(lower::contains);
+    /**
+     * Defense-in-depth allowlist for the public endpoint. A row may have is_public=true in the DB
+     * (e.g. seeded years ago) yet not be in the registry — we still refuse to expose it. Sensitive
+     * fragments are always blocked, even if the registry ever marks one as public by mistake.
+     */
+    private boolean isPubliclyExposable(String key) {
+        if (definitionRegistry.matchesSensitiveFragment(key)) return false;
+        return definitionRegistry.find(key)
+                .map(SettingDefinition::publicAllowed)
+                .orElse(false);
     }
 
     private AdminSiteSettingResponse toAdminResponse(SiteSettingEntity s) {
+        Optional<SettingDefinition> defOpt = definitionRegistry.find(s.getSettingKey());
+        boolean sensitive = definitionRegistry.isSensitive(s.getSettingKey());
+        String valueType = defOpt.map(d -> d.type().name()).orElse(null);
+        boolean masked = sensitive && s.getSettingValue() != null && !s.getSettingValue().isEmpty();
+        String displayValue = masked ? MASKED_VALUE : s.getSettingValue();
         return new AdminSiteSettingResponse(
-                s.getId(), s.getSettingKey(), s.getSettingValue(),
+                s.getId(), s.getSettingKey(), displayValue,
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
-                s.getCreatedAt(), s.getUpdatedAt()
+                s.getCreatedAt(), s.getUpdatedAt(),
+                valueType, sensitive, masked
         );
     }
 

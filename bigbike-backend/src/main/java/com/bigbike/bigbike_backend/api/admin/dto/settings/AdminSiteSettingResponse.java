@@ -11,5 +11,8 @@ public record AdminSiteSettingResponse(
         boolean isPublic,
         String description,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String valueType,
+        boolean sensitive,
+        boolean masked
 ) {}

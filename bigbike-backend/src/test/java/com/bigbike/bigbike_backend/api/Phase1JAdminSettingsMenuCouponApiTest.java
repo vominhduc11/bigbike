@@ -139,21 +139,21 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // 7. Public settings endpoint (no auth required)
+    // 7. Public settings endpoint (no auth required) — registry-allowlisted keys are exposed,
+    // non-public keys are filtered. site_name is allowlisted; tax_enabled is registry-known but
+    // not publicly allowed.
     @Test
     void publicSettings_returnsOnlyPublicSettings() throws Exception {
-        String pubKey = "pub." + UUID.randomUUID().toString().substring(0, 8);
-        String privKey = "priv." + UUID.randomUUID().toString().substring(0, 8);
-        createTestSetting(pubKey, "public-val", "public", true);
-        createTestSetting(privKey, "private-val", "private", false);
+        createTestSetting("site_name", "BigBike", "general", true);
+        createTestSetting("tax_enabled", "false", "TAX", false);
 
         MvcResult result = mockMvc.perform(get("/api/v1/settings/public"))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String body = result.getResponse().getContentAsString();
-        assertThat(body).contains(pubKey);
-        assertThat(body).doesNotContain(privKey);
+        assertThat(body).contains("\"settingKey\":\"site_name\"");
+        assertThat(body).doesNotContain("\"settingKey\":\"tax_enabled\"");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
