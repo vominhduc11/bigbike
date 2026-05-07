@@ -7,7 +7,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchSettings, updateSetting } from '../lib/adminApi'
+import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -333,12 +333,12 @@ export function SettingsScreen({ canUpdate }) {
     setSaving(true)
     setSaveSuccess(false)
     try {
-      const results = await Promise.all(
-        dirty.map((s) => updateSetting(s.key, drafts[s.key]))
+      const result = await batchUpdateSettings(
+        dirty.map((s) => ({ key: s.key, value: drafts[s.key] }))
       )
       // Update state with fresh items from server
       setState((p) => {
-        const updated = new Map(results.map((r) => [r.item.key, r.item]))
+        const updated = new Map(result.items.map((item) => [item.key, item]))
         return { ...p, items: p.items.map((s) => updated.get(s.key) || s) }
       })
       // Clear drafts for saved keys
@@ -356,7 +356,7 @@ export function SettingsScreen({ canUpdate }) {
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (e) {
-      // Show error on all dirty fields
+      // Show error on all dirty fields — batch is all-or-nothing so mark all dirty fields
       const errMsg = e.message || t('settings.saveError')
       setErrors((p) => ({ ...p, ...Object.fromEntries(dirty.map((s) => [s.key, errMsg])) }))
     } finally {

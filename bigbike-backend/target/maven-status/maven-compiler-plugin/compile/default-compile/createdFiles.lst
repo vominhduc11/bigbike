@@ -178,6 +178,7 @@ com\bigbike\bigbike_backend\api\cart\dto\AddCartItemRequest.class
 com\bigbike\bigbike_backend\persistence\entity\commerce\order\OrderEntity.class
 com\bigbike\bigbike_backend\api\admin\dto\VariantRequest.class
 com\bigbike\bigbike_backend\config\CustomerCsrfFilter.class
+com\bigbike\bigbike_backend\service\admin\AdminSettingsService$PendingUpdate.class
 com\bigbike\bigbike_backend\api\public_\VnAddressController.class
 com\bigbike\bigbike_backend\api\error\MutationNotImplementedException.class
 com\bigbike\bigbike_backend\service\admin\AdminAuditLogService$ReviewAuditResource.class
@@ -247,6 +248,7 @@ com\bigbike\bigbike_backend\domain\commerce\OrderNoteType.class
 com\bigbike\bigbike_backend\persistence\entity\content\ContentAuthorEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\normalizer\ProductNormalizationService$NormalizationResult.class
 com\bigbike\bigbike_backend\api\admin\AdminSliderController.class
+com\bigbike\bigbike_backend\api\admin\dto\settings\BatchUpdateSettingsRequest.class
 com\bigbike\bigbike_backend\persistence\repository\auth\AdminRefreshTokenJpaRepository.class
 com\bigbike\bigbike_backend\api\admin\dto\receivable\UpdateCustomerCreditRequest.class
 com\bigbike\bigbike_backend\api\admin\dto\receivable\ReceivableListItemResponse.class
@@ -361,6 +363,7 @@ com\bigbike\bigbike_backend\service\video\YouTubeUrlParser.class
 com\bigbike\bigbike_backend\api\admin\dto\UpsertSliderRequest.class
 com\bigbike\bigbike_backend\api\admin\dto\PatchSliderRequest.class
 com\bigbike\bigbike_backend\persistence\repository\menu\MenuJpaRepository.class
+com\bigbike\bigbike_backend\api\admin\dto\settings\BatchUpdateSettingsRequest$BatchSettingUpdate.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressOrderMapper$MappedOrderItem.class
 com\bigbike\bigbike_backend\api\checkout\dto\CheckoutOptionsResponse.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressRedirectMapper$MappedRedirect.class

@@ -1181,6 +1181,54 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // PHASE C — Batch update settings
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // PC1. All valid → 200, both settings updated atomically
+    @Test
+    void adminSettings_batchUpdate_allValid_succeeds() throws Exception {
+        createTestSetting("site_name", "OldBike", "general", true);
+        createTestSetting("contact_address", "123 Old St", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"updates":[
+                                  {"key":"site_name","value":"BigBike"},
+                                  {"key":"contact_address","value":"456 New St"}
+                                ]}
+                                """)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].settingKey").value("site_name"))
+                .andExpect(jsonPath("$.data[0].settingValue").value("BigBike"))
+                .andExpect(jsonPath("$.data[1].settingKey").value("contact_address"))
+                .andExpect(jsonPath("$.data[1].settingValue").value("456 New St"));
+    }
+
+    // PC2. One invalid value → 400, no settings changed (all-or-nothing)
+    @Test
+    void adminSettings_batchUpdate_oneInvalid_rollsBack() throws Exception {
+        createTestSetting("contact_email", "original@bigbike.vn", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"updates":[
+                                  {"key":"contact_email","value":"not-an-email"}
+                                ]}
+                                """)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+
+        // Value must be unchanged
+        mockMvc.perform(get("/api/v1/admin/settings/contact_email")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.settingValue").value("original@bigbike.vn"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // PHASE B.1 — Google Maps allowlist + audit log masking
     // ══════════════════════════════════════════════════════════════════════════
 

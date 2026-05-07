@@ -66,24 +66,40 @@ public class ReceivableQueryService {
     }
 
     public ReceivableSummaryResponse getSummary() {
-        Object[] agg = receivableRepo.getSummaryAggregates();
-        BigDecimal totalOutstanding = agg[0] instanceof BigDecimal b ? b : BigDecimal.ZERO;
-        BigDecimal overdueOutstanding = agg[1] instanceof BigDecimal b ? b : BigDecimal.ZERO;
-        long countOpen = agg[2] instanceof Number n ? n.longValue() : 0L;
-        long countOverdue = agg[3] instanceof Number n ? n.longValue() : 0L;
-        BigDecimal writtenOff = receivableRepo.sumWrittenOff();
+        BigDecimal totalOutstanding = orZero(receivableRepo.sumTotalOutstanding());
+        BigDecimal overdueOutstanding = orZero(receivableRepo.sumOverdueOutstanding());
+        long countOpen = receivableRepo.countOpen();
+        long countOverdue = receivableRepo.countOverdue();
+        BigDecimal writtenOff = orZero(receivableRepo.sumWrittenOff());
 
         return new ReceivableSummaryResponse(
-                totalOutstanding, overdueOutstanding,
-                writtenOff != null ? writtenOff : BigDecimal.ZERO,
-                countOpen, countOverdue);
+                totalOutstanding, overdueOutstanding, writtenOff, countOpen, countOverdue);
     }
 
     public ReceivableAgingResponse getAging() {
-        Object[] row = receivableRepo.getAgingBuckets();
-        return new ReceivableAgingResponse(
-                toBigDecimal(row[0]), toBigDecimal(row[1]),
-                toBigDecimal(row[2]), toBigDecimal(row[3]), toBigDecimal(row[4]));
+        List<Object[]> rows = receivableRepo.findOpenReceivablesForAging();
+        LocalDate today = LocalDate.now();
+        BigDecimal notDue = BigDecimal.ZERO;
+        BigDecimal days0_30 = BigDecimal.ZERO;
+        BigDecimal days31_60 = BigDecimal.ZERO;
+        BigDecimal days61_90 = BigDecimal.ZERO;
+        BigDecimal over90 = BigDecimal.ZERO;
+
+        for (Object[] row : rows) {
+            LocalDate dueDate = row[0] instanceof LocalDate d ? d : null;
+            BigDecimal amt = toBigDecimal(row[1]);
+            if (dueDate == null || !dueDate.isBefore(today)) {
+                notDue = notDue.add(amt);
+            } else {
+                long overdueDays = today.toEpochDay() - dueDate.toEpochDay();
+                if (overdueDays <= 30) days0_30 = days0_30.add(amt);
+                else if (overdueDays <= 60) days31_60 = days31_60.add(amt);
+                else if (overdueDays <= 90) days61_90 = days61_90.add(amt);
+                else over90 = over90.add(amt);
+            }
+        }
+
+        return new ReceivableAgingResponse(notDue, days0_30, days31_60, days61_90, over90);
     }
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
@@ -118,6 +134,10 @@ public class ReceivableQueryService {
         if (dueDate == null || "CLOSED".equals(status) || "WRITTEN_OFF".equals(status)) return null;
         long days = LocalDate.now().toEpochDay() - dueDate.toEpochDay();
         return days > 0 ? (int) days : null;
+    }
+
+    private static BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     private static BigDecimal toBigDecimal(Object o) {

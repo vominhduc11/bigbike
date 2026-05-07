@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.settings.AdminSiteSettingResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.settings.BatchUpdateSettingsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.UpdateSiteSettingRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
@@ -11,6 +12,7 @@ import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,6 +67,16 @@ public class AdminSettingsController {
     ) {
         devAdminAuthService.requirePermission(request, "settings.read");
         return apiResponseFactory.data(adminSettingsService.getByKey(settingKey), request);
+    }
+
+    @PatchMapping
+    public ApiDataResponse<List<AdminSiteSettingResponse>> batchUpdateSettings(
+            @RequestBody BatchUpdateSettingsRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "settings.write");
+        return apiResponseFactory.data(
+                adminSettingsService.batchUpdateSettings(body.updates(), resolveAdminId()), request);
     }
 
     @PatchMapping("/{settingKey}")

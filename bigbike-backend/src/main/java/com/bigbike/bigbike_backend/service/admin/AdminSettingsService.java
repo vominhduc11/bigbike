@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.settings.AdminSiteSettingResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.settings.BatchUpdateSettingsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.PublicSiteSettingResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.UpdateSiteSettingRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -16,6 +17,7 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -154,6 +156,60 @@ public class AdminSettingsService {
                 snapshot(entity, definitionRegistry.isSensitive(settingKey))));
 
         return toAdminResponse(entity);
+    }
+
+    // ── Batch update ─────────────────────────────────────────────────────────
+
+    private record PendingUpdate(SiteSettingEntity entity, String newValue) {}
+
+    @Transactional
+    public List<AdminSiteSettingResponse> batchUpdateSettings(
+            List<BatchUpdateSettingsRequest.BatchSettingUpdate> updates, UUID adminId) {
+
+        if (updates == null || updates.isEmpty()) {
+            return List.of();
+        }
+
+        // Phase 1: validate every item before touching the DB
+        List<PendingUpdate> pending = new ArrayList<>(updates.size());
+        for (BatchUpdateSettingsRequest.BatchSettingUpdate upd : updates) {
+            SiteSettingEntity entity = settingRepo.findBySettingKey(upd.key())
+                    .orElseThrow(() -> new NotFoundException("Setting not found: " + upd.key()));
+
+            Optional<SettingDefinition> defOpt = definitionRegistry.find(upd.key());
+
+            if (defOpt.map(d -> !d.editable()).orElse(false)) {
+                throw ValidationException.fromField("key", "READ_ONLY",
+                        "Setting is read-only and cannot be modified: " + upd.key());
+            }
+
+            if (upd.value() != null && defOpt.isPresent()) {
+                valueValidator.validate(upd.key(), upd.value(), defOpt.get());
+            }
+
+            pending.add(new PendingUpdate(entity, upd.value()));
+        }
+
+        // Phase 2: apply mutations — all validation has passed
+        List<AdminSiteSettingResponse> results = new ArrayList<>(pending.size());
+        for (PendingUpdate p : pending) {
+            SiteSettingEntity entity = p.entity();
+            boolean sensitive = definitionRegistry.isSensitive(entity.getSettingKey());
+            String before = snapshot(entity, sensitive);
+
+            if (p.newValue() != null) {
+                entity.setSettingValue(p.newValue());
+            }
+            entity.setUpdatedAt(Instant.now());
+            settingRepo.save(entity);
+
+            auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(),
+                    before, snapshot(entity, sensitive)));
+            results.add(toAdminResponse(entity));
+        }
+
+        webRevalidationService.revalidate("settings");
+        return results;
     }
 
     // ── Public endpoint ───────────────────────────────────────────────────────

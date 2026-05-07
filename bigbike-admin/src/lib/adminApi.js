@@ -1066,6 +1066,16 @@ export async function updateSetting(key, value) {
   return { item: normalizeSetting(payload?.data || {}) }
 }
 
+export async function batchUpdateSettings(updates) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/settings', {
+    method: 'PATCH',
+    body: { updates },
+  })
+  const items = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
+  return { items }
+}
+
 // â”€â”€ Coupons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchCoupons(query) {
