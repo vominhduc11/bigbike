@@ -33,7 +33,8 @@ public final class AdminRolePermissions {
                     "redirects.read", "redirects.write",
                     "pos.read", "pos.write", "pos.price_override",
                     "receivables.read", "receivables.create", "receivables.record_payment",
-                    "receivables.write_off", "receivables.override_limit", "receivables.export"
+                    "receivables.write_off", "receivables.override_limit", "receivables.export",
+                    "reports.read", "reports.export"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
@@ -44,7 +45,8 @@ public final class AdminRolePermissions {
                     "shipping.read",
                     "reviews.read", "reviews.write",
                     "pos.read", "pos.write",
-                    "receivables.read", "receivables.record_payment"
+                    "receivables.read", "receivables.record_payment",
+                    "reports.read", "reports.export"
             ),
             "EDITOR", List.of(
                     "products.read", "catalog.read",

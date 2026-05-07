@@ -93,7 +93,7 @@ const NAV_GROUP_DEFS = [
     groupKey: 'reports',
     labelKey: 'nav.group.reports',
     items: [
-      { path: '/admin/reports',    labelKey: 'nav.reports',    permission: 'orders.read',    icon: BarChart2 },
+      { path: '/admin/reports',    labelKey: 'nav.reports',    permission: 'reports.read',   icon: BarChart2 },
     ],
   },
   {
@@ -205,7 +205,7 @@ function routePermission(routeName) {
     case 'admin-users':                  return 'admin-users.read'
     case 'settings':                     return 'settings.read'
     case 'audit-logs':                   return 'audit-logs.read'
-    case 'reports':                      return 'orders.read'
+    case 'reports':                      return 'reports.read'
     case 'inventory':                    return 'products.read'
     case 'returns':                      return 'orders.read'
     case 'receivables-list':

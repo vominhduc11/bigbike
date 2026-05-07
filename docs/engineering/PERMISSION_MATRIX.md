@@ -78,24 +78,16 @@ Evidence: `AdminRolePermissions.java`, `AdminReceivableController.java`
 
 ## Reports Permissions
 
-P0 keeps the **existing** permission checks unchanged on all report endpoints. Dedicated `reports.*` permissions are planned for P1.
+Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportController.java`, `V78__add_reports_permissions.sql`
 
-### Current (P0) — reusing existing permissions
-
-| Endpoint | Current required permission | Roles with access |
+| Endpoint | Required permission | Roles with access |
 |---|---|---|
-| `GET /api/v1/admin/reports/analytics` | `orders.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
-| `GET /api/v1/admin/reports/orders/export` | `orders.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
-| `GET /api/v1/admin/reports/customers/export` | `customers.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
-| `GET /api/v1/admin/reports/products/export` | `products.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR` |
+| `GET /api/v1/admin/reports/analytics` | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
+| `GET /api/v1/admin/reports/orders/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
+| `GET /api/v1/admin/reports/customers/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
+| `GET /api/v1/admin/reports/products/export` | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` |
 
-Status: `CONFIRMED_FROM_CODE` — `AdminReportController.java`
-
-### Planned (P1) — dedicated report permissions
-
-| Permission string | Intended roles | Purpose |
+| Permission string | Roles | Purpose |
 |---|---|---|
-| `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics endpoint and all export endpoints |
-| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Separate gate for CSV export operations (audit log, rate limit) |
-
-Status: `[PLANNED-P1]` — not yet implemented in `AdminRolePermissions.java` or any controller.
+| `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics dashboard |
+| `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports module (audit log gate) |

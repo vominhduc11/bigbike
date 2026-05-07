@@ -68,7 +68,7 @@ class AdminReportApiTest {
 
     @Test
     void analytics_editorRole_returns403() throws Exception {
-        // EDITOR has no orders.read permission
+        // EDITOR has no reports.read permission
         String editorToken = loginAs(EDITOR_EMAIL, EDITOR_PASS);
         mockMvc.perform(get("/api/v1/admin/reports/analytics")
                         .header("Authorization", "Bearer " + editorToken))

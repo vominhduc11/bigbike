@@ -56,7 +56,7 @@ public class AdminReportController {
             @RequestParam(required = false) String to,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "orders.read");
+        devAdminAuthService.requirePermission(request, "reports.read");
         validateDateRange(from, to);
         return adminReportService.getAnalytics(from, to);
     }
@@ -69,7 +69,7 @@ public class AdminReportController {
             @RequestParam(required = false) String to,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "orders.read");
+        devAdminAuthService.requirePermission(request, "reports.export");
         validateDateRange(from, to);
         if (status != null && !status.isBlank()
                 && !VALID_ORDER_STATUSES.contains(status.toUpperCase(Locale.ROOT))) {
@@ -90,7 +90,7 @@ public class AdminReportController {
             @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "customers.read");
+        devAdminAuthService.requirePermission(request, "reports.export");
         byte[] csv = adminReportService.exportCustomersCsv(status);
         return csvResponse(csv, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
@@ -100,7 +100,7 @@ public class AdminReportController {
             @RequestParam(required = false) String publishStatus,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "reports.export");
         if (publishStatus != null && !publishStatus.isBlank()
                 && !VALID_PUBLISH_STATUSES.contains(publishStatus.toUpperCase(Locale.ROOT))) {
             throw ValidationException.fromField("publishStatus", "INVALID_PUBLISH_STATUS",
