@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,15 +25,16 @@ public class DevAdminAuthService {
     private static final String HEADER_PERMISSIONS = "X-Admin-Permissions";
     private static final Set<String> DEV_MOCK_PROFILES = Set.of("dev", "mock", "test", "local");
     private static final Set<String> PROD_PROFILES = Set.of("prod", "production");
-    private static final Map<String, List<String>> ROLE_PERMISSION_MAP = AdminRolePermissions.MAP;
 
     private final Environment environment;
+    private final AdminPermissionService adminPermissionService;
 
     @Value("${bigbike.auth.dev-header-enabled:false}")
     private boolean devHeaderEnabled;
 
-    public DevAdminAuthService(Environment environment) {
+    public DevAdminAuthService(Environment environment, AdminPermissionService adminPermissionService) {
         this.environment = environment;
+        this.adminPermissionService = adminPermissionService;
     }
 
     public AdminUserProfile currentAdminUser(HttpServletRequest request) {
@@ -62,18 +62,14 @@ public class DevAdminAuthService {
     /**
      * Checks that the caller has the required permission.
      *
-     * When a real JWT principal is present in the SecurityContext (production path), the check
-     * is based on the role's default permission set — headers are ignored.
+     * When a real JWT principal is present in the SecurityContext (production path), permissions
+     * are resolved from the DB via AdminPermissionService — headers are ignored.
      * When no JWT auth exists (dev/test bypass path), the legacy header-based logic is used.
      */
     public AdminUserProfile requirePermission(HttpServletRequest request, String requiredPermission) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
-            // JWT auth is present — use role-based permissions
-            List<String> permissions = ROLE_PERMISSION_MAP.getOrDefault(
-                    principal.role().toUpperCase(Locale.ROOT),
-                    ROLE_PERMISSION_MAP.getOrDefault("ADMIN", List.of())
-            );
+            List<String> permissions = adminPermissionService.getPermissionsForRole(principal.role());
             boolean granted = permissions.contains("*") || permissions.contains(requiredPermission);
             if (!granted) {
                 throw new ForbiddenException("Permission denied.");
@@ -84,7 +80,7 @@ public class DevAdminAuthService {
                     List.of(principal.role()), permissions, "ACTIVE", now, now);
         }
 
-        // Dev/test bypass path — only active when bigbike.auth.dev-header-enabled=true (P0-3)
+        // Dev/test bypass path — only active when bigbike.auth.dev-header-enabled=true
         if (!devHeaderEnabled) {
             throw new UnauthorizedException("No authenticated admin principal.");
         }
@@ -94,11 +90,6 @@ public class DevAdminAuthService {
             throw new ForbiddenException("Permission denied.");
         }
         return user;
-    }
-
-    /** Returns default permissions for a given role string — used by other services. */
-    public static List<String> defaultPermissionsForRole(String role) {
-        return AdminRolePermissions.forRole(role);
     }
 
     private void ensureDevMockProfile() {
@@ -125,26 +116,20 @@ public class DevAdminAuthService {
         if (roleHeader == null || roleHeader.isBlank()) {
             return "ADMIN";
         }
-
-        String normalized = roleHeader.trim().toUpperCase(Locale.ROOT);
-        return ROLE_PERMISSION_MAP.containsKey(normalized) ? normalized : "ADMIN";
+        return roleHeader.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static List<String> resolvePermissions(String role, String permissionsHeader) {
-        if (permissionsHeader == null || permissionsHeader.isBlank()) {
-            return ROLE_PERMISSION_MAP.getOrDefault(role, ROLE_PERMISSION_MAP.get("ADMIN"));
+    private List<String> resolvePermissions(String role, String permissionsHeader) {
+        if (permissionsHeader != null && !permissionsHeader.isBlank()) {
+            List<String> parsed = Arrays.stream(permissionsHeader.split(","))
+                    .map(String::trim)
+                    .filter(entry -> !entry.isEmpty())
+                    .distinct()
+                    .toList();
+            if (!parsed.isEmpty()) {
+                return parsed;
+            }
         }
-
-        List<String> parsedPermissions = Arrays.stream(permissionsHeader.split(","))
-                .map(String::trim)
-                .filter(entry -> !entry.isEmpty())
-                .distinct()
-                .toList();
-
-        if (parsedPermissions.isEmpty()) {
-            return ROLE_PERMISSION_MAP.getOrDefault(role, ROLE_PERMISSION_MAP.get("ADMIN"));
-        }
-
-        return parsedPermissions;
+        return adminPermissionService.getPermissionsForRole(role);
     }
 }

@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRoleEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
+import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,10 +23,13 @@ public class AdminRoleService {
 
     private final AdminRoleJpaRepository roleRepo;
     private final AuditLogJpaRepository auditLogRepo;
+    private final AdminPermissionService adminPermissionService;
 
-    public AdminRoleService(AdminRoleJpaRepository roleRepo, AuditLogJpaRepository auditLogRepo) {
+    public AdminRoleService(AdminRoleJpaRepository roleRepo, AuditLogJpaRepository auditLogRepo,
+            AdminPermissionService adminPermissionService) {
         this.roleRepo = roleRepo;
         this.auditLogRepo = auditLogRepo;
+        this.adminPermissionService = adminPermissionService;
     }
 
     public List<Map<String, Object>> getAllRoles() {
@@ -61,6 +65,8 @@ public class AdminRoleService {
         role.setUpdatedAt(Instant.now());
         AdminRoleEntity saved = roleRepo.save(role);
 
+        adminPermissionService.evict(saved.getId());
+
         auditLogRepo.save(buildAudit(actorId, "ROLE_PERMISSIONS_UPDATED", role.getId(),
                 permissionsJson(role.getId(), before), permissionsJson(role.getId(), saved.getPermissions())));
 
@@ -91,6 +97,8 @@ public class AdminRoleService {
         role.setUpdatedAt(now);
         AdminRoleEntity saved = roleRepo.save(role);
 
+        adminPermissionService.evict(saved.getId());
+
         auditLogRepo.save(buildAudit(actorId, "ROLE_CREATED", saved.getId(),
                 null, permissionsJson(saved.getId(), saved.getPermissions())));
 
@@ -108,6 +116,8 @@ public class AdminRoleService {
 
         Set<String> before = new LinkedHashSet<>(role.getPermissions());
         roleRepo.delete(role);
+
+        adminPermissionService.evict(role.getId());
 
         auditLogRepo.save(buildAudit(actorId, "ROLE_DELETED", role.getId(),
                 permissionsJson(role.getId(), before), null));

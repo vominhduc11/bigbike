@@ -25,19 +25,22 @@ public class AdminAuthService {
     private final PasswordService passwordService;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+    private final AdminPermissionService adminPermissionService;
 
     public AdminAuthService(
             AdminUserJpaRepository adminUserRepo,
             AdminRefreshTokenJpaRepository refreshTokenRepo,
             PasswordService passwordService,
             JwtService jwtService,
-            JwtProperties jwtProperties
+            JwtProperties jwtProperties,
+            AdminPermissionService adminPermissionService
     ) {
         this.adminUserRepo = adminUserRepo;
         this.refreshTokenRepo = refreshTokenRepo;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.jwtProperties = jwtProperties;
+        this.adminPermissionService = adminPermissionService;
     }
 
     @Transactional
@@ -110,9 +113,8 @@ public class AdminAuthService {
         return toProfile(user);
     }
 
-    /** Static helper used by other services that need to map a role to its default permissions. */
-    public static List<String> permissionsForRole(String role) {
-        return AdminRolePermissions.forRole(role);
+    private List<String> permissionsForRole(String role) {
+        return adminPermissionService.getPermissionsForRole(role);
     }
 
     private String saveNewRefreshToken(UUID adminUserId, HttpServletRequest request) {

@@ -105,14 +105,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/coupons/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
                         // Dashboard: SHOP_MANAGER has orders.read — must come before the catch-all below
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/dashboard").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
-                        // Admin endpoints require ROLE_ADMIN
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // Shipping admin — covered by /api/v1/admin/** above but listed for clarity
-                        .requestMatchers("/api/v1/admin/shipping/**").hasRole("ADMIN")
-                        // Reviews admin
-                        .requestMatchers("/api/v1/admin/reviews/**").hasRole("ADMIN")
-                        // Admin-users management
-                        .requestMatchers("/api/v1/admin/admin-users/**").hasRole("ADMIN")
+                        // Admin endpoints: any authenticated admin JWT may reach the URL;
+                        // controller-level requirePermission() enforces fine-grained access.
+                        .requestMatchers("/api/v1/admin/**").authenticated()
                         // Customer order read requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/orders/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/customer/orders").hasRole("CUSTOMER")
