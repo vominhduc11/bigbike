@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerStatusRe
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEntity;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -44,8 +46,9 @@ public class AdminCustomerService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
-    private static final Set<String> ALLOWED_STATUSES =
-            Set.of("ACTIVE", "DISABLED", "PENDING", "BLOCKED");
+    // Derived from CustomerStatus enum — single source of truth for valid DB status values.
+    static final Set<String> ALLOWED_STATUSES =
+            Arrays.stream(CustomerStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
 
     private final CustomerJpaRepository customerRepo;
     private final CustomerAddressJpaRepository addressRepo;
