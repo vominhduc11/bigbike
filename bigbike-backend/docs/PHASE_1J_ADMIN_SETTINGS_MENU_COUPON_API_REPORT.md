@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Phase 1J — Admin Settings / Menu / Coupon API Report
 
 **Date:** 2026-04-21

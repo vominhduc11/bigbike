@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Phase 1F — Checkout / Quick-buy API Report
 
 ## Summary

@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # BigBike Docs Verification Report
 
 Audit date: 2026-05-04

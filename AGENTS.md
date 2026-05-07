@@ -44,10 +44,13 @@ bigbike/
 ├── README.md                       # Project overview
 ├── docker-compose.yaml             # Full stack infrastructure
 ├── docs/                           # ⚡ Source of truth (see Docs-First Contract)
-│   ├── DOCS_VERIFICATION_REPORT.md # Latest docs↔code audit + flagged risks
-│   ├── business/                   # 9 files — overview, modules, roles, processes, rules, workflows, states, AC, glossary
-│   └── engineering/                # 9 files — architecture, API, data, flow, permission, testing, deployment, integration, traceability
-│   # NOTE: docs/DECISIONS.md is referenced by older sections but presence is NEEDS_VERIFICATION
+│   ├── README.md                   # Canonical docs index + governance rules
+│   ├── DECISIONS.md                # Active decision log
+│   ├── DOCS_VERIFICATION_REPORT.md # Latest audit/report context; canonical docs win if a report is stale
+│   ├── business/                   # Canonical business docs
+│   ├── engineering/                # Canonical engineering docs
+│   ├── audits/                     # Historical module audits (not canonical)
+│   └── reports/                    # Historical implementation/verification reports (not canonical)
 ├── bigbike-web/                    # Public SEO + sales website (Next.js)
 ├── bigbike-admin/                  # Internal admin dashboard (Vite + React)
 ├── bigbike-backend/                # Spring Boot backend
@@ -98,7 +101,7 @@ Brand direction:
    - **Rồi mới sửa code** để khớp docs.
    - Cùng một PR phải có cả docs change và code change; không tách rời để "fix docs sau".
 5. **Bug fix vẫn phải cite docs.** Bug = code đang lệch docs. Trong PR ghi rõ docs/spec nào bị code làm sai, sau đó fix code về đúng docs. Nếu docs cũng sai, xem điều 4.
-6. **Audit report là gate.** Báo cáo verification mới nhất ở [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md). Đọc Section 3 (Critical Mismatches) và Section 6 (Security / Permission Risks) trước khi đụng code ở vùng liên quan để không vô tình "fix" cái đã được flag là code bug cần task riêng.
+6. **Audit report là context, canonical docs vẫn thắng.** Báo cáo verification mới nhất ở [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md). Dùng nó để đọc mismatch/risk context, nhưng nếu report đã được đánh dấu historical/stale thì phải ưu tiên current code + canonical docs đã được cập nhật.
 
 ### Mapping docs ↔ scope
 
@@ -239,6 +242,7 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 |---|---|
 | **Business overview / actors / modules / workflows / rules / states** | [docs/business/](docs/business/) — `PROJECT_OVERVIEW.md`, `MODULE_CATALOG.md`, `USER_ROLES.md`, `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md`, `GLOSSARY.md` |
 | **Technical architecture / API contract / data contract / permission / deployment** | [docs/engineering/](docs/engineering/) — `ARCHITECTURE.md`, `API_CONTRACT.md`, `DATA_CONTRACT.md`, `API_FLOW_MAP.md`, `PERMISSION_MATRIX.md`, `TESTING_GUIDE.md`, `DEPLOYMENT_GUIDE.md`, `INTEGRATION_GUIDE.md`, `TRACEABILITY_MATRIX.md` |
+| **Docs index / governance / role separation** | [docs/README.md](docs/README.md) |
 | **Latest docs↔code audit / known mismatches** | [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md) |
 | Brand identity, logo, colors, typography, copy | `Bigbike Design System/README.md` + `Bigbike Design System/colors_and_type.css` |
 | Brand assets (logos, icons, fonts, favicons) | `Bigbike Design System/assets/` + `Bigbike Design System/fonts/` |
@@ -247,7 +251,7 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 | bigbike-web UI rules (condensed) | `bigbike-web/STYLEGUIDE.md` |
 | Backend OpenAPI raw schema (machine-readable companion to `docs/engineering/API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 | Backend phase implementation reports (historical) | `bigbike-backend/docs/` |
-| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` (verify presence; some references may be planned) |
+| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` |
 | SEO redirect map | `bigbike-web/docs/` |
 | Legacy WordPress data and migration reference | `bigbike_vn__2026_04_17/` (local-only) |
 

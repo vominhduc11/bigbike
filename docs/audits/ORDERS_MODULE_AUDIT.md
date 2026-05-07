@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Orders Module Audit
 
 > **Audit date:** 2026-05-05

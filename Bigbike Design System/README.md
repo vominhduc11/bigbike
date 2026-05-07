@@ -11,7 +11,7 @@ The experience goal: when a rider lands on the site, it should feel like walking
 
 ## Sources
 
-- **Codebase** (Next.js 15 app router, Tailwind v4 + CSS tokens): `app/`, `components/`, `lib/`, `styles/brand-tokens.css`
+- **Codebase** (BigBike web uses Next.js 16.2.4 App Router, Tailwind v4 + CSS tokens): `app/`, `components/`, `lib/`, `styles/brand-tokens.css`
 - **Uploads** (logos, slogans, favicons, 48 icon set, brand guideline PDF, fonts): `uploads/`
 - **Brand guideline PDF**: `uploads/BIGBIKE_BRANDGUIDELINE.pdf`
 - Language: **Vietnamese** (vi). All user-facing copy is Vietnamese; diacritics mandatory.

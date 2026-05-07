@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Coupons Module Audit
 
 > Audit ngày 2026-05-06 — Senior Fullstack/QA review

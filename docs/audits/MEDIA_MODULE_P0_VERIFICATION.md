@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Media Module P0 — Verification Report
 
 **Date:** 2026-05-06  

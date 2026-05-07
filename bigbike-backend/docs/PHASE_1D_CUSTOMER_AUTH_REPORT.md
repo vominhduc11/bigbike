@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # Phase 1D — Customer Auth + Session + CSRF Foundation
 
 **Status:** COMPLETE  

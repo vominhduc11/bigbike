@@ -1,3 +1,5 @@
+HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canonical docs.
+
 # BigBike — Báo Cáo Đối Chiếu Docs vs Source Code
 
 **Ngày tạo:** 2026-05-05  
