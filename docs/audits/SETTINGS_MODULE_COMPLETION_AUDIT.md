@@ -247,10 +247,17 @@ External URLs trong Footer dùng `rel="noopener noreferrer"` ✅ ([SiteFooter.ts
 
 ### Payment / tax / checkout setting risk
 
-`tax_enabled`, `tax_rate`, `tax_inclusive`, `order_min_amount` được sửa qua admin nhưng **không validate type**, **không có audit cảnh báo "thay đổi thuế suất"** ngoài audit log chung.
-→ **P1** business risk nếu admin nhập sai giá trị thuế.
+✅ **FIXED Phase B/B.1** — Tax và store settings được validate backend qua `SettingDefinitionRegistry` + `SettingValueValidator`:
 
-V59 đã xoá `payment_sepay.*` settings nên hiện tại **không có credential nào trong site_settings**. Nhưng nếu sau này thêm lại (theo memo `reference_4thitek_sepay.md`), policy mask + denylist hiện tại sẽ không đủ vì ADMIN read-side vẫn thấy plaintext token.
+- `tax_rate`: type `DECIMAL`, validate range `0 ≤ value ≤ 1` — admin không thể lưu giá trị ngoài range.
+- `order_min_amount`: type `DECIMAL`, validate `value ≥ 0` — không thể lưu số âm.
+- `tax_enabled`, `tax_inclusive`: type `BOOLEAN`, chỉ nhận `"true"` / `"false"` — mọi giá trị khác bị reject 400.
+- Response API mask sensitive value (`"********"`) — ADMIN read-side không thấy plaintext credential.
+- Audit log (`snapshot()`) cũng mask sensitive value — log không chứa plaintext token.
+
+V59 đã xoá `payment_sepay.*` settings nên hiện tại không có credential nào trong `site_settings`. Nếu sau này thêm lại payment/SePay secret, **bắt buộc đăng ký vào `SettingDefinitionRegistry`** với `sensitive=true` và `publicAllowed=false` — enforcement đã có sẵn, chỉ cần đăng ký đúng.
+
+**Không còn P1 risk.** Audit-trail cảnh báo riêng khi thay đổi thuế suất là P3 (nice-to-have, xem Section 14 backlog).
 
 ---
 
@@ -366,7 +373,7 @@ Backend trả về `key/value/group` only ([PublicSiteSettingResponse.java:3-7](
 - FloatingChatLoader: dùng `setting.settingValue.trim()` thẳng — không strip quotes ([FloatingChatLoader.tsx:11](../../bigbike-web/components/layout/FloatingChatLoader.tsx#L11)). P3.
 - lien-he: dùng `pickSetting` không strip quotes ([lien-he/page.tsx:17-20](../../bigbike-web/app/lien-he/page.tsx#L17-L20)). P3.
 
-### XSS / iframe risk: xem mục 7. P1.
+### XSS / iframe risk: xem mục 7. ✅ FIXED Phase A.
 
 ---
 

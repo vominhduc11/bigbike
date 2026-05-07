@@ -28,6 +28,7 @@ com\bigbike\bigbike_backend\api\Phase2AWordPressMigrationFoundationTest.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$GuestSession.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressVariationMapperRtwpvgTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest$VariantFixture.class
+com\bigbike\bigbike_backend\api\AdminReportApiTest.class
 com\bigbike\bigbike_backend\BigbikeBackendApplicationTests.class
 com\bigbike\bigbike_backend\service\admin\VariantGalleryRoundtripTest.class
 com\bigbike\bigbike_backend\api\Phase1KInventorySerialApiTest.class
