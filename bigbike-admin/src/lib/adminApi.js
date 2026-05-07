@@ -1595,12 +1595,18 @@ export async function fetchAnalytics(from, to) {
 function normalizeAnalytics(payload) {
   const p = payload && typeof payload === 'object' ? payload : {}
   const summary = p.summary && typeof p.summary === 'object' ? p.summary : {}
+  // grossOrderValue ?? totalRevenue: backward compat with old backend shape during rollout
+  const grossOrderValue = Number(summary.grossOrderValue ?? summary.totalRevenue) || 0
+  const paidRevenue = Number(summary.paidRevenue) || 0
+  const refundAmount = Number(summary.refundAmount) || 0
   return {
     summary: {
-      totalRevenue: Number(summary.totalRevenue) || 0,
+      grossOrderValue,
+      paidRevenue,
+      refundAmount,
+      netRevenue: Number(summary.netRevenue) || (paidRevenue - refundAmount),
       orderCount: Number(summary.orderCount) || 0,
       avgOrderValue: Number(summary.avgOrderValue) || 0,
-      refundAmount: Number(summary.refundAmount) || 0,
     },
     dailyRevenue: Array.isArray(p.dailyRevenue) ? p.dailyRevenue.map((r) => ({
       date: String(r.date || ''),
@@ -1608,13 +1614,15 @@ function normalizeAnalytics(payload) {
       orders: Number(r.orders) || 0,
     })) : [],
     topProducts: Array.isArray(p.topProducts) ? p.topProducts.map((r) => ({
+      productKey: String(r.productKey || r.productId || ''),
       productName: String(r.productName || ''),
       revenue: Number(r.revenue) || 0,
       unitsSold: Number(r.unitsSold) || 0,
     })) : [],
     topCustomers: Array.isArray(p.topCustomers) ? p.topCustomers.map((r) => ({
-      email: String(r.email || ''),
-      totalSpent: Number(r.totalSpent) || 0,
+      customerKey: String(r.customerKey || r.email || ''),
+      customerEmail: String(r.customerEmail || r.email || ''),
+      revenue: Number(r.revenue ?? r.totalSpent) || 0,
       orderCount: Number(r.orderCount) || 0,
     })) : [],
   }

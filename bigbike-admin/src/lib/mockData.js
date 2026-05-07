@@ -871,35 +871,38 @@ export function queryMockAnalytics(from, to) {
     const trend = Math.round((i / days) * 6000000)
     const revenue = Math.round((base + variance + trend) / 500000) * 500000
     const orders = isWeekend ? 4 + (seed % 9) : 11 + (seed % 16)
-    return {
-      date: d.toLocaleDateString('vi-VN', { month: 'numeric', day: 'numeric' }),
-      revenue,
-      orders,
-    }
+    // ISO-8601 YYYY-MM-DD format to match backend dailyRevenueInRange output
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return { date: iso, revenue, orders }
   })
 
-  const totalRevenue = dailyRevenue.reduce((s, d) => s + d.revenue, 0)
+  const grossOrderValue = dailyRevenue.reduce((s, d) => s + d.revenue, 0)
   const orderCount = dailyRevenue.reduce((s, d) => s + d.orders, 0)
+  const refundAmount = Math.round(grossOrderValue * 0.02)
+  const paidRevenue = Math.round(grossOrderValue * 0.95)
+  const netRevenue = paidRevenue - refundAmount
 
   return {
     summary: {
-      totalRevenue,
+      grossOrderValue,
+      paidRevenue,
+      refundAmount,
+      netRevenue,
       orderCount,
-      avgOrderValue: orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0,
-      refundAmount: Math.round(totalRevenue * 0.02),
+      avgOrderValue: orderCount > 0 ? Math.round(grossOrderValue / orderCount) : 0,
     },
     dailyRevenue,
     topProducts: [
-      { productName: 'Mũ bảo hiểm LS2 FF800', revenue: 119700000, unitsSold: 42 },
-      { productName: 'Áo giáp Alpinestars V2', revenue: 100520000, unitsSold: 28 },
-      { productName: 'Intercom Cardo Spirit', revenue: 47310000, unitsSold: 19 },
-      { productName: 'Găng tay Alpinestars City', revenue: 30690000, unitsSold: 31 },
-      { productName: 'Mũ bảo hiểm LS2 Rapid', revenue: 27750000, unitsSold: 15 },
+      { productKey: 'ls2-ff800', productName: 'Mũ bảo hiểm LS2 FF800', revenue: 119700000, unitsSold: 42 },
+      { productKey: 'alpinestars-v2', productName: 'Áo giáp Alpinestars V2', revenue: 100520000, unitsSold: 28 },
+      { productKey: 'cardo-spirit', productName: 'Intercom Cardo Spirit', revenue: 47310000, unitsSold: 19 },
+      { productKey: 'alpinestars-city', productName: 'Găng tay Alpinestars City', revenue: 30690000, unitsSold: 31 },
+      { productKey: 'ls2-rapid', productName: 'Mũ bảo hiểm LS2 Rapid', revenue: 27750000, unitsSold: 15 },
     ],
     topCustomers: [
-      { email: 'nguyen.van.a@example.com', orderCount: 12, totalSpent: 48500000 },
-      { email: 'tran.thi.b@example.com', orderCount: 9, totalSpent: 31200000 },
-      { email: 'le.van.c@example.com', orderCount: 7, totalSpent: 26800000 },
+      { customerKey: 'nguyen.van.a@example.com', customerEmail: 'nguyen.van.a@example.com', orderCount: 12, revenue: 48500000 },
+      { customerKey: 'tran.thi.b@example.com', customerEmail: 'tran.thi.b@example.com', orderCount: 9, revenue: 31200000 },
+      { customerKey: 'le.van.c@example.com', customerEmail: 'le.van.c@example.com', orderCount: 7, revenue: 26800000 },
     ],
   }
 }

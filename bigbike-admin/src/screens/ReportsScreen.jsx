@@ -130,15 +130,22 @@ export function ReportsScreen() {
     const p = PRESETS.find((x) => x.value === preset) || PRESETS[1]
     return {
       from: toLocalDateString(p.days - 1),
-      to: toLocalDateString(-1),
+      to: toLocalDateString(0),  // today — BE adds plusDays(1) for exclusive end
     }
   }, [preset, customFrom, customTo])
 
   useEffect(() => {
     let active = true
+    const { from, to } = resolvedDates()
+
+    // Block invalid custom range before hitting the server
+    if (preset === 'custom' && from && to && from > to) {
+      setState({ status: 'error', data: null, warning: '', error: "'Từ ngày' không được sau 'Đến ngày'." })
+      return
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((s) => ({ ...s, status: 'loading' }))
-    const { from, to } = resolvedDates()
     fetchAnalytics(from, to)
       .then((r) => {
         if (!active) return
@@ -226,10 +233,12 @@ export function ReportsScreen() {
         <>
           {/* KPI row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
-            <KpiCard label="Tổng doanh thu" value={formatCurrencyVnd(state.data.summary.totalRevenue)} />
+            <KpiCard label="Doanh số (GMV)" value={formatCurrencyVnd(state.data.summary.grossOrderValue)} />
+            <KpiCard label="Tiền thực thu" value={formatCurrencyVnd(state.data.summary.paidRevenue)} />
+            <KpiCard label="Hoàn tiền" value={formatCurrencyVnd(state.data.summary.refundAmount)} />
+            <KpiCard label="Doanh thu thuần" value={formatCurrencyVnd(state.data.summary.netRevenue)} />
             <KpiCard label="Số đơn hàng" value={state.data.summary.orderCount.toLocaleString('vi-VN')} />
             <KpiCard label="Giá trị đơn TB (AOV)" value={formatCurrencyVnd(state.data.summary.avgOrderValue)} />
-            <KpiCard label="Hoàn tiền" value={formatCurrencyVnd(state.data.summary.refundAmount)} />
           </div>
 
           {/* Revenue trend chart */}
@@ -325,9 +334,9 @@ export function ReportsScreen() {
               title="Top khách hàng theo chi tiêu"
               rows={state.data.topCustomers}
               cols={[
-                { key: 'email', label: 'Email' },
+                { key: 'customerEmail', label: 'Email' },
                 { key: 'orderCount', label: 'Đơn', right: true },
-                { key: 'totalSpent', label: 'Chi tiêu', right: true, render: (r) => formatCurrencyVnd(r.totalSpent) },
+                { key: 'revenue', label: 'Chi tiêu', right: true, render: (r) => formatCurrencyVnd(r.revenue) },
               ]}
             />
           </div>
