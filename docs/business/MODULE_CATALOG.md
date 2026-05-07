@@ -29,6 +29,7 @@
 | POS | admin, backend | Product search, immediate POS sale (CASH/CARD_TERMINAL), and credit sale (CREDIT) with customer receivable creation | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
 | Admin order WebSocket | admin, backend | Subscribe to `/topic/admin/orders` for order events | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Accounts Receivable admin | admin, backend | Receivable list/detail, payment recording, write-off, aging report, customer credit profile management | `CONFIRMED_FROM_CODE` | `AdminReceivableController.java`, `ReceivableService.java`, `ReceivableQueryService.java`, `CreditPolicyService.java`, `V75__add_credit_and_receivables.sql` |
+| Audit logs admin | admin, backend | Read-only paginated activity log with filters (actorType, resourceType, action, date range). Enriches actor name and resource label. Permission: `audit-logs.read`. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
 
 ## Inventory And Receiving Subdomains
 
