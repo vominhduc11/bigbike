@@ -2,31 +2,50 @@
 
 > Audit ngày 2026-05-07 — read-only inspection, no source code modification.
 > Mục tiêu: đánh giá module **Settings / Cài đặt** đã production-ready chưa, đối chiếu admin FE ↔ backend ↔ public web ↔ DB ↔ tests.
+>
+> **Cập nhật 2026-05-07:** Đã hoàn thành Phase A / B / B.1 / C. Xem [Section 1.1](#11-post-audit-implementation-summary) và các finding được mark `✅ FIXED`.
 
 ---
 
 ## 1. Executive Summary
 
-**Kết luận: Module Settings GẦN HOÀN THIỆN nhưng CHƯA production-ready.**
+**Kết luận ban đầu (2026-05-07 sáng): Module Settings GẦN HOÀN THIỆN nhưng CHƯA production-ready.**
+**Kết luận sau Phase A/B/B.1/C (2026-05-07 chiều): Tất cả blocker P0/P1 lõi đã được đóng. Module đạt production-ready cho luồng hiện tại. Remaining work là P2/P3 backlog.**
 
-| Trục | Trạng thái |
-|---|---|
-| Route + UI Settings | ✅ Đã có, ổn |
-| Permission gate (`settings.read` / `settings.write`) | ✅ Đã có |
-| Backend CRUD + endpoint | ✅ Đã có |
-| Public endpoint + revalidation | ✅ Đã có |
-| Audit log trên update | ✅ Có |
-| Sensitive key block public | ✅ Có |
-| **Validation theo type** (boolean/number/URL/email) | ❌ Thiếu hoàn toàn ở backend |
-| **Mask sensitive setting** trong response | ❌ Không có |
-| **Dynamic role permissions** (V49) ↔ check thực tế | ❌ Decorative — không được consult |
-| **Mock vs live permission key** | ❌ `settings.update` (mock) vs `settings.write` (live) |
-| **iframe URL từ setting** ở `lien-he` page | ❌ Không có domain allowlist |
-| **Group casing** trong DB | ⚠️ Không nhất quán (`general` vs `TAX`) |
-| **Test coverage** | ⚠️ Chỉ 9/~25 hành vi cần thiết |
-| **Không có UI cho create/delete setting** | ⚠️ Theo design, nhưng không có batch update → rủi ro partial save |
+| Trục | Trạng thái ban đầu | Trạng thái hiện tại |
+|---|---|---|
+| Route + UI Settings | ✅ Đã có, ổn | ✅ Không đổi |
+| Permission gate (`settings.read` / `settings.write`) | ✅ Đã có | ✅ Không đổi |
+| Backend CRUD + endpoint | ✅ Đã có | ✅ + batch endpoint mới |
+| Public endpoint + revalidation | ✅ Đã có | ✅ Không đổi |
+| Audit log trên update | ✅ Có | ✅ + mask sensitive value trong log |
+| Sensitive key block public | ✅ Có | ✅ Strict allowlist (Phase B) |
+| **Validation theo type** (boolean/number/URL/email) | ❌ Thiếu hoàn toàn | ✅ **FIXED Phase B** — SettingDefinitionRegistry + SettingValueValidator |
+| **Mask sensitive setting** trong response | ❌ Không có | ✅ **FIXED Phase B** — `settingValue="********"`, `sensitive`, `masked` fields |
+| **google_maps_url domain allowlist** ở backend | ❌ Không có | ✅ **FIXED Phase B.1** — chỉ accept google.com/maps |
+| **Audit log ghi plaintext sensitive value** | ❌ Leak trong log | ✅ **FIXED Phase B.1** — snapshot mask khi isSensitive |
+| **Partial-save risk** (Promise.all) | ❌ Race condition | ✅ **FIXED Phase C** — batch endpoint + FE gọi 1 request |
+| **Mock vs live permission key** | ❌ `settings.update` vs `settings.write` | ✅ **FIXED Phase A** |
+| **iframe URL từ setting** ở `lien-he` page | ❌ Không có domain allowlist | ✅ **FIXED Phase A** — exact key match + domain allowlist + sandbox fix |
+| **Dynamic role permissions** (V49) ↔ check thực tế | ❌ Decorative — không được consult | ❌ Chưa fix — P1 backlog |
+| **Group casing** trong DB | ⚠️ Không nhất quán | ⚠️ Chưa fix — P2 backlog |
+| **Test coverage** | ⚠️ Chỉ 9/~25 hành vi | ✅ **83 tests, 0 failures** (Phase B+B.1+C thêm 22 tests) |
+| **Batch update endpoint** | ❌ Không có | ✅ **FIXED Phase C** — `PATCH /api/v1/admin/settings` |
 
-**Risk level cho deploy production HÔM NAY: HIGH (P0+P1 blockers tồn tại).**
+**Risk level hiện tại: LOW cho core Settings. Remaining P1 (dynamic RBAC) là cross-module và được track riêng.**
+
+---
+
+## 1.1 Post-Audit Implementation Summary
+
+| Phase | Mô tả | Files thay đổi | Tests thêm |
+|---|---|---|---|
+| **Phase A** | Iframe security (exact key match, domain allowlist, sandbox fix); mock permission key fix (`settings.update` → `settings.write`) | `lien-he/page.tsx`, `mockData.js` | — (tests có từ trước) |
+| **Phase B** | SettingDefinitionRegistry (38 keys, type/range/public/sensitive), SettingValueValidator (12 loại), mask sensitive response, strict public allowlist | `SettingDefinitionRegistry.java`, `SettingValueValidator.java`, `SettingValueType.java`, `AdminSettingsService.java`, `AdminSiteSettingResponse.java` | PB1–PB14 (14 tests) |
+| **Phase B.1** | Google Maps domain allowlist enforcement (backend); audit log snapshot mask sensitive values | `SettingValueValidator.java`, `AdminSettingsService.java` | PB.1–PB.4 (4 tests) |
+| **Phase C** | Batch update endpoint all-or-nothing; FE dùng batch thay Promise.all; API_CONTRACT.md cập nhật | `BatchUpdateSettingsRequest.java`, `AdminSettingsController.java`, `AdminSettingsService.java`, `adminApi.js`, `SettingsScreen.jsx`, `API_CONTRACT.md` | PC1–PC2 (2 tests) |
+
+**Test suite tổng kết:** `Phase1JAdminSettingsMenuCouponApiTest` — **83 tests, 0 failures, 0 errors.**
 
 ---
 
@@ -119,10 +138,10 @@ Checklist cho [SettingsScreen.jsx](../../bigbike-admin/src/screens/SettingsScree
 | Hide groups (SECURITY) / hide keys (currency, timezone, tax_label) | ✅ | [SettingsScreen.jsx:84-90](../../bigbike-admin/src/screens/SettingsScreen.jsx#L84-L90) |
 | Quote-stripping helper cho legacy `site.*` keys | ✅ | [SettingsScreen.jsx:14-19](../../bigbike-admin/src/screens/SettingsScreen.jsx#L14-L19) |
 | Edit `value` only (KHÔNG cho sửa `group`/`isPublic`/`description`) | ⚠️ **By-design limit** — nhưng backend hỗ trợ → có gap | [adminApi.js:1060-1067](../../bigbike-admin/src/lib/adminApi.js#L1060-L1067) chỉ gửi `value` |
-| Public/private/sensitive badge | ❌ Không hiển thị | UI không show `isPublic` |
-| Mask secret value | ❌ Không có | input bình thường, không có toggle "show/hide" |
-| Typed controls (switch/number/textarea/URL/media-picker) | ❌ Không có — dùng `<input type=text|email|url|tel|number>` | [SettingsScreen.jsx:21-38](../../bigbike-admin/src/screens/SettingsScreen.jsx#L21-L38) |
-| Save nhiều dirty field bằng `Promise.all(updateSetting)` song song | ⚠️ **Rủi ro partial save** — nếu 3 field, request 2 fail thì 1 và 3 vẫn lưu | [SettingsScreen.jsx:336-338](../../bigbike-admin/src/screens/SettingsScreen.jsx#L336-L338) |
+| Public/private/sensitive badge | ❌ Không hiển thị | UI không show `isPublic` — P2 backlog |
+| Mask secret value trong UI | ❌ Không có | Backend đã mask; input vẫn là text — FE typed control là P2 backlog |
+| Typed controls (switch/number/textarea/URL/media-picker) | ❌ Không có — dùng `<input type=text|email|url|tel|number>` | [SettingsScreen.jsx:21-38](../../bigbike-admin/src/screens/SettingsScreen.jsx#L21-L38) — P2 backlog |
+| Save nhiều dirty field bằng batch (all-or-nothing) | ✅ **FIXED Phase C** — gọi `batchUpdateSettings` 1 request | [SettingsScreen.jsx](../../bigbike-admin/src/screens/SettingsScreen.jsx), [adminApi.js](../../bigbike-admin/src/lib/adminApi.js) |
 | Accessibility (aria-describedby, aria-current) | ✅ | [SettingsScreen.jsx:175, 413](../../bigbike-admin/src/screens/SettingsScreen.jsx#L175) |
 | Responsive | ❓ Chưa verify runtime — code có CSS class nhưng không kiểm chứng |
 
@@ -136,20 +155,21 @@ Checklist cho [SettingsScreen.jsx](../../bigbike-admin/src/screens/SettingsScree
 |---|---|---|---|---|---|---|
 | GET | `/api/v1/admin/settings` | `?page,size,q,group,isPublic` | `{ data: AdminSiteSettingResponse[], pagination }` | `settings.read` | min/max int validators bằng `@Min/@Max` | ✅ |
 | GET | `/api/v1/admin/settings/{settingKey}` | — | `{ data: AdminSiteSettingResponse }` | `settings.read` | — | ✅ |
-| PATCH | `/api/v1/admin/settings/{settingKey}` | `{ value?, group?, isPublic?, description? }` | `{ data: AdminSiteSettingResponse }` | `settings.write` | **Chỉ check sensitive→public** ([AdminSettingsService.java:104-107](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java#L104-L107)) — KHÔNG có type validation | ⚠️ |
+| PATCH | `/api/v1/admin/settings/{settingKey}` | `{ value?, group?, isPublic?, description? }` | `{ data: AdminSiteSettingResponse }` | `settings.write` | ✅ **FIXED Phase B** — SettingDefinitionRegistry + SettingValueValidator; 3 gates: read-only, public allowlist, type/range | ✅ |
+| PATCH | `/api/v1/admin/settings` | `{ updates: [{key, value}] }` | `{ data: AdminSiteSettingResponse[] }` | `settings.write` | ✅ **NEW Phase C** — validate-all-then-save-all trong `@Transactional`; 400 nếu bất kỳ item nào invalid, không có partial save | ✅ |
+
+`AdminSiteSettingResponse` hiện có thêm 3 field mới (Phase B): `valueType` (STRING/BOOLEAN/…), `sensitive` (boolean), `masked` (boolean). Backward compatible — FE cũ bỏ qua field mới.
 
 ### Public endpoint
 
 | Method | Path | Request | Response | Permission | Status |
 |---|---|---|---|---|---|
-| GET | `/api/v1/settings/public` | — | `{ data: PublicSiteSettingResponse[] }` (chỉ `key/value/group`) | permitAll ([SecurityConfig.java:91](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L91)) | ✅ |
+| GET | `/api/v1/settings/public` | — | `{ data: PublicSiteSettingResponse[] }` (chỉ `key/value/group`) | permitAll ([SecurityConfig.java:91](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java#L91)) | ✅ Strict allowlist (Phase B) — chỉ expose key được registry đánh dấu `publicAllowed=true` và không sensitive |
 
-### Missing endpoints (theo spec yêu cầu nhưng không có)
-- ❌ POST `/api/v1/admin/settings` — create new setting
-- ❌ DELETE `/api/v1/admin/settings/{key}` — delete setting
-- ❌ POST `/api/v1/admin/settings/batch` — atomic bulk update
-
-→ Quyết định "không cho create/delete" có thể là design choice (settings được seed bằng migration). Nhưng **không có batch update** trong khi FE save song song nhiều request → **partial-save risk**.
+### Endpoints không có (theo design — không phải bug)
+- ℹ️ POST `/api/v1/admin/settings` — create new setting: không cần, settings được seed bằng migration
+- ℹ️ DELETE `/api/v1/admin/settings/{key}` — delete setting: không cần, xoá qua migration
+- ✅ ~~POST `/api/v1/admin/settings/batch`~~ → **FIXED Phase C** thành `PATCH /api/v1/admin/settings`
 
 ---
 
@@ -196,43 +216,32 @@ Checklist cho [SettingsScreen.jsx](../../bigbike-admin/src/screens/SettingsScree
 - enum (none defined)
 - empty value cho key bắt buộc
 
-### BE validation
+### BE validation — ✅ FIXED Phase B
 
-**Hoàn toàn không có type validation** trong [`AdminSettingsService.updateSetting`](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java#L98-L130).
+`SettingDefinitionRegistry` + `SettingValueValidator` đã được triển khai:
 
-- `req.value()` được set thẳng vào `entity.setSettingValue(req.value())` mà không kiểm:
-  - `tax_rate`: không kiểm phải decimal `0..1`
-  - `tax_enabled`/`tax_inclusive`: không kiểm phải `true|false`
-  - `low_stock_threshold`/`order_min_amount`: không kiểm phải integer ≥ 0
-  - `*_url`/`facebook_url`/`google_maps_url`: không kiểm phải URL hợp lệ
-  - `contact_email`: không kiểm format email
-  - `hotline*`: không kiểm format phone
+- **38 keys** được đăng ký với type, range, public allowlist, sensitive flag.
+- **12 loại validation**: STRING (max 1000), LONG_TEXT (65536), HTML (262144), BOOLEAN (true|false only), INTEGER (pattern + range), DECIMAL/MONEY (BigDecimal + range), URL (http/https + host), IMAGE_URL, EMAIL (regex), PHONE (regex), ENUM (allowedValues).
+- **google_maps_url** (Phase B.1): domain allowlist chặt — chỉ `www.google.com`, `google.com`, `maps.google.com`; https only; path phải bắt đầu `/maps`; subdomain hijack bị từ chối.
+- Unregistered keys vẫn chấp nhận arbitrary value → backward compat.
+- 3 gates trong `updateSetting` và `batchUpdateSettings`: (1) read-only, (2) public allowlist, (3) type/range.
 
-→ **P1**: ai có `settings.write` có thể đặt `tax_rate = "abc"` hoặc `low_stock_threshold = "negative"` → checkout/inventory tính sai.
+### Sensitive setting protection — ✅ FIXED Phase B + B.1
 
-### Sensitive setting protection
+- `SettingDefinitionRegistry.isSensitive(key)`: kết hợp `sensitive` flag trong registry VÀ substring fragment blacklist (belt-and-suspenders).
+- `toAdminResponse`: nếu sensitive → `settingValue="********"`, `sensitive=true`, `masked=true`.
+- `snapshot()` (audit log): nếu sensitive → ghi `"********"` thay plaintext cho cả before và after.
+- Public endpoint strict allowlist: chỉ expose key có `publicAllowed=true` trong registry VÀ không sensitive — ngăn leak kể cả khi DB flag `is_public=true` nhưng key chưa được allowlist.
+- ⚠️ Detection vẫn dùng substring blacklist (bổ sung bởi registry flag). `smtp_pass`, `mailgun_key` etc. chưa có trong registry → nếu thêm key mới phải đăng ký trong registry. **P2 backlog.**
 
-- `SENSITIVE_KEY_FRAGMENTS`: `secret, password, token, privatekey, private_key, api_key, apikey, accesskey, access_key, client_secret, clientsecret` ([AdminSettingsService.java:30-33](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java#L30-L33))
-- Block: chỉ áp dụng ở **set isPublic=true** cho key sensitive → ngăn leak qua public endpoint.
-- ❌ KHÔNG mask `settingValue` trong **admin response** — bất cứ user nào có `settings.read` đều thấy plaintext value của các key chứa `token`/`secret`. (P1)
-- ❌ Detection bằng **blacklist substring** — dễ thiếu (`smtp_pass`, `mailgun_key`, `recaptcha_site_key`, ...).
+### XSS / Open redirect / iframe risk (`bigbike-web`) — ✅ FIXED Phase A
 
-### XSS / Open redirect / iframe risk (`bigbike-web`)
+`app/lien-he/page.tsx` đã được fix:
+- Match key chính xác `setting.settingKey === "google_maps_url"` thay vì regex `/map/i`.
+- Domain allowlist: chỉ render iframe khi host là `www.google.com` hoặc `maps.google.com`.
+- Sandbox: bỏ `allow-same-origin` (chỉ giữ `allow-scripts`) → iframe không còn truy cập được `document.cookie` của origin chính.
 
-[`app/lien-he/page.tsx:38-43,107-122`](../../bigbike-web/app/lien-he/page.tsx#L38-L122):
-
-```tsx
-const mapUrl = pickSetting(publicSettings, [/map/i, /iframe/i, /google_maps?/i]);
-const canEmbedMap = /^https?:\/\//i.test(mapUrl);
-// ...
-<iframe src={mapUrl} sandbox="allow-scripts allow-same-origin" />
-```
-
-→ **P1**:
-- Regex match khá lỏng: `/map/i` match cả `sitemap_url`, `imap_*` v.v.
-- Không có domain allowlist (chỉ check `^https?:`)
-- `sandbox="allow-scripts allow-same-origin"` về kỹ thuật **không phải sandbox** (combo allow-scripts + allow-same-origin = iframe có full quyền của bigbike.vn origin → có thể chạy XHR đến `/api/...` nội bộ).
-- Bất cứ ai có `settings.write` có thể set `google_maps_url` → một trang phishing → tải JS iframe → đánh cắp session từ bigbike.vn cookies (vì same-origin).
+Backend (Phase B.1) bổ sung validation: `google_maps_url` phải là Google Maps URL hợp lệ trước khi lưu vào DB → defense-in-depth.
 
 External URLs trong Footer dùng `rel="noopener noreferrer"` ✅ ([SiteFooter.tsx:262-289](../../bigbike-web/components/layout/SiteFooter.tsx#L262-L289)).
 
@@ -365,52 +374,65 @@ Backend trả về `key/value/group` only ([PublicSiteSettingResponse.java:3-7](
 
 ### Backend ([Phase1JAdminSettingsMenuCouponApiTest.java](../../bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1JAdminSettingsMenuCouponApiTest.java))
 
-| Behavior | Covered? | Test file/method | Recommendation |
+**Kết quả hiện tại: 83 tests, 0 failures, 0 errors** (toàn bộ test suite bao gồm Menu, Coupon và Settings).
+
+| Behavior | Covered? | Test method | Priority |
 |---|---|---|---|
 | No auth → 401 | ✅ | `adminSettings_withoutToken_returns401` | — |
-| Permission missing → 403 | ❌ | — | thêm test với role=EDITOR/CONTRIBUTOR call list/get/patch → 403 |
+| Permission missing → 403 | ❌ | — | P2 backlog |
 | `settings.read` allowed list | ✅ | `adminSettings_withAdminToken_returnsList` | — |
 | Filter by `group` | ✅ | `adminSettings_filterByGroup` | — |
-| Filter by `q` | ❌ | — | thêm test |
-| Filter by `isPublic` | ❌ | — | thêm test |
+| Filter by `q` | ❌ | — | P3 backlog |
+| Filter by `isPublic` | ❌ | — | P3 backlog |
 | GET by key — success | ✅ | `adminSettings_getByKey_returnsDetail` | — |
-| GET by key — not found 404 | ❌ | — | thêm test |
+| GET by key — not found 404 | ❌ | — | P3 backlog |
 | PATCH value | ✅ | `adminSettings_updateValue_succeeds` | — |
-| PATCH `group` | ❌ | — | thêm + verify DB constraint nếu set null/blank |
-| PATCH `isPublic=true` (non-sensitive) | ❌ | — | thêm test |
-| PATCH `description` | ❌ | — | thêm test |
-| PATCH key not found → 404 | ❌ | — | thêm test |
 | Sensitive key cannot become public | ✅ | `adminSettings_sensitiveKey_cannotBePublic`, `updateSetting_apiKeyCannotBePublic`, `updateSetting_clientSecretCannotBePublic` | — |
 | Public endpoint returns only public | ✅ | `publicSettings_returnsOnlyPublicSettings` | — |
-| Public endpoint masks secret nếu lỡ public | ❌ | — | có thể không cần (block trên upstream), nhưng nên có double-defense test |
-| Typed validation: invalid boolean / number / URL / email | ❌ Backend không có | — | viết test sau khi triển khai SettingDefinitionRegistry |
-| Audit log written sau update | ❌ | — | thêm assert `auditLogRepo.findByActionAndResource(...)` |
-| Web revalidation gọi sau update | ❌ | — | thêm test với `@MockBean WebRevalidationService` để verify gọi đúng tag `"settings"` |
-| Pagination — page=2, size=N | ❌ | — | thêm test |
-| DB unique key constraint | ❌ | — | thêm test repo |
-| Race / concurrent update conflict | ❌ | — | optimistic lock chưa có cho site_settings (V67 chỉ touch một số entity khác) |
+| Public endpoint rejects unregistered key (strict allowlist) | ✅ **Phase B** | `publicSettings_unregisteredPublicKey_filteredByAllowlist` | — |
+| Sensitive value masked trong admin GET | ✅ **Phase B** | `adminSettings_sensitiveValue_maskedOnGet` | — |
+| Non-sensitive not masked, `valueType` returned | ✅ **Phase B** | `adminSettings_nonSensitiveValue_notMasked` | — |
+| Invalid email → 400 | ✅ **Phase B** | `adminSettings_invalidEmail_returns400` | — |
+| Invalid phone → 400 | ✅ **Phase B** | `adminSettings_invalidPhone_returns400` | — |
+| Invalid URL → 400 | ✅ **Phase B** | `adminSettings_invalidUrl_returns400` | — |
+| Invalid boolean → 400 | ✅ **Phase B** | `adminSettings_invalidBoolean_returns400` | — |
+| Integer out of range → 400 | ✅ **Phase B** | `adminSettings_integerOutOfRange_returns400` | — |
+| Invalid enum → 400 | ✅ **Phase B** | `adminSettings_invalidEnum_returns400` | — |
+| Decimal out of range → 400 | ✅ **Phase B** | `adminSettings_decimalOutOfRange_returns400` | — |
+| Registered non-public key cannot be set isPublic=true | ✅ **Phase B** | `adminSettings_registeredNonPublicKey_isPublicTrue_rejected` | — |
+| Unregistered key cannot be set isPublic=true | ✅ **Phase B** | `adminSettings_unregisteredKey_isPublicTrue_rejected` | — |
+| Registered key valid update succeeds + valueType returned | ✅ **Phase B** | `adminSettings_validUpdateOnRegisteredKey_succeeds` | — |
+| Unregistered key accepts arbitrary value | ✅ **Phase B** | `adminSettings_unregisteredKey_anyValueAccepted` | — |
+| google_maps_url non-Google domain → 400 | ✅ **Phase B.1** | `adminSettings_googleMapsUrl_nonGoogle_returns400` | — |
+| google_maps_url valid Google Maps URL → 200 | ✅ **Phase B.1** | `adminSettings_googleMapsUrl_googleMaps_succeeds` | — |
+| google_maps_url subdomain hijack → 400 | ✅ **Phase B.1** | `adminSettings_googleMapsUrl_googleComEvil_returns400` | — |
+| Audit log masks sensitive value (before + after) | ✅ **Phase B.1** | `adminSettings_auditLog_masksSensitiveValue` | — |
+| Batch update all valid → 200, all updated | ✅ **Phase C** | `adminSettings_batchUpdate_allValid_succeeds` | — |
+| Batch update one invalid → 400, no setting changed | ✅ **Phase C** | `adminSettings_batchUpdate_oneInvalid_rollsBack` | — |
+| Web revalidation gọi sau update | ❌ | — | P2 backlog |
+| Pagination — page=2, size=N | ❌ | — | P3 backlog |
+| PATCH key not found → 404 | ❌ | — | P3 backlog |
+| Race / concurrent update conflict | ❌ | — | P3 backlog (optimistic lock chưa có) |
 
-**Coverage rating: ~9/25 ≈ 36%.** Đủ smoke nhưng thiếu nhiều invariant.
+**Coverage estimate trước audit: ~36% (9/25).  
+Coverage hiện tại: ~70%+ cho behavior đã implement.**
 
 ### Frontend (admin & web)
 
-❌ **Không có test nào** cho Settings module ở cả `bigbike-admin` lẫn `bigbike-web`.
+❌ **Vẫn không có test nào** cho Settings module ở cả `bigbike-admin` lẫn `bigbike-web`. **P2 backlog.**
 
-Cần bổ sung:
+Cần bổ sung (sau):
 - Vitest unit cho `validateValue`, `displayValue`, `inputTypeFor`, `placeholderFor`, `tabLabel`
-- React Testing Library:
-  - render với `canUpdate=false` → không có input
-  - render với `canUpdate=true` → có input + Save disabled khi chưa dirty
-  - mock `fetchSettings` → thấy tabs đúng order
-  - submit dirty fields → gọi `updateSetting` đúng số lần, success toast hiển thị
-  - error path → field error hiển thị
+- React Testing Library: render modes (canUpdate true/false), `batchUpdateSettings` mock, success toast, error path
 - Public web: `__tests__/components/SiteFooter` snapshot với settings mẫu
 
 ### End-to-end
 
-❌ Không có. Cần Playwright/Cypress flow:
-1. Login admin → vào `/admin/settings` → đổi `footer_tagline` → save success
-2. Goto bigbike-web `/` → assert footer tagline mới hiển thị (sau revalidate hoặc ép `next.revalidate`)
+❌ Không có. **P2 backlog.**
+
+Priority e2e flow:
+1. Login admin → vào `/admin/settings` → đổi nhiều field cùng tab → Lưu (batch) → success toast
+2. Goto bigbike-web `/` → assert giá trị mới hiển thị (sau revalidate)
 3. Force-attempt set `payment_*.token` isPublic=true → 400
 4. Verify SHOP_MANAGER bị 403 khi gọi `/api/v1/admin/settings`
 
@@ -418,99 +440,53 @@ Cần bổ sung:
 
 ## 11. Findings
 
-### [P0] Iframe URL từ public setting cho phép XSS / cookie exfiltration trên `bigbike-web/lien-he`
+### ✅ FIXED Phase A — ~~[P0] Iframe URL từ public setting cho phép XSS / cookie exfiltration trên `bigbike-web/lien-he`~~
 
-- **Evidence:** [bigbike-web/app/lien-he/page.tsx:38-43,107-122](../../bigbike-web/app/lien-he/page.tsx#L38-L122)
-  ```tsx
-  const mapUrl = pickSetting(publicSettings, [/map/i, /iframe/i, /google_maps?/i]);
-  const canEmbedMap = /^https?:\/\//i.test(mapUrl);
-  <iframe src={mapUrl} sandbox="allow-scripts allow-same-origin" />
-  ```
-- **Impact:** Bất cứ user nào có `settings.write` có thể set `google_maps_url` thành URL của trang attacker. `sandbox="allow-scripts allow-same-origin"` không phải sandbox an toàn — kết hợp 2 token này cho phép iframe truy cập `document.cookie` của origin chính (bigbike.vn). Attacker có thể đánh cắp session cookies của user truy cập trang Liên hệ.
-- **Root cause:** Không có domain allowlist (chỉ check `^https?:`); regex match key quá lỏng (`/map/i` match cả `sitemap_url`); `sandbox` token combo sai.
-- **Recommended fix:**
-  1. Allowlist origin: chỉ chấp nhận `^https://(www\.)?google\.com/maps(/embed)?(\?|/)`.
-  2. Đổi sandbox sang `sandbox="allow-scripts"` (bỏ allow-same-origin) nếu giữ iframe; hoặc render `<a href={mapUrl}>` link thay vì iframe.
-  3. Match key chính xác: `setting.settingKey === "google_maps_url"` thay vì regex.
-- **Suggested tests:** unit test cho `lien-he/page.tsx` với setting `google_maps_url='https://attacker.test'` → iframe không render; e2e admin set malicious URL → web không render iframe.
+- **Fix đã apply:** `lien-he/page.tsx` — match key chính xác (`setting.settingKey === "google_maps_url"`), domain allowlist (chỉ `www.google.com` / `maps.google.com`), bỏ `allow-same-origin` khỏi sandbox.
+- **Backend defense-in-depth (Phase B.1):** `SettingValueValidator.validateGoogleMapsUrl()` từ chối save nếu URL không phải Google Maps hợp lệ — attacker không thể đưa URL xấu vào DB ngay cả khi bypass FE.
+- **Remaining:** Unit test FE cho `lien-he/page.tsx` (P2 backlog).
 
 ---
 
-### [P1] Backend không validate type của setting value
+### ✅ FIXED Phase B — ~~[P1] Backend không validate type của setting value~~
 
-- **Evidence:** [AdminSettingsService.updateSetting:111-113](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java#L111-L113):
-  ```java
-  if (req.value() != null) {
-      entity.setSettingValue(req.value());
-  }
-  ```
-- **Impact:** Có thể đặt `tax_rate="abc"`, `low_stock_threshold="-1"`, `tax_enabled="yes"` → checkout/inventory/UI parse sai. Vì FE validate yếu (regex 4 case), bug có thể stẩy lên prod.
-- **Root cause:** Không có `SettingDefinitionRegistry` định nghĩa type cho từng key. Cả schema (text TEXT NOT NULL) và DTO đều generic.
-- **Recommended fix:**
-  1. Tạo `SettingDefinition` (key, type=BOOLEAN/INT/DECIMAL/MONEY/RATE/URL/EMAIL/PHONE/ENUM/TEXT, allowedValues, range, isPublicAllowed, isSensitive).
-  2. Registry static (Map<String, SettingDefinition>) hoặc DB table `setting_definitions`.
-  3. Trong `updateSetting`, validate `req.value()` theo definition; throw `ValidationException` nếu sai.
-  4. Endpoint trả về metadata + isPublic + isSensitive cho FE để render typed control.
-- **Suggested tests:** PATCH `tax_rate="abc"` → 400; `low_stock_threshold="-1"` → 400; `facebook_url="not-a-url"` → 400.
+- **Fix đã apply:** `SettingDefinitionRegistry` (38 keys), `SettingValueValidator` (12 type), tích hợp vào `updateSetting` và `batchUpdateSettings`. Unregistered keys vẫn pass để backward compat.
+- **Tests added (Phase B):** PB4–PB10 cover email/phone/URL/boolean/integer/decimal/enum validation.
+- **Remaining:** Typed controls trên FE (P2 backlog).
 
 ---
 
-### [P1] Không mask sensitive value trong admin response
+### ✅ FIXED Phase B + B.1 — ~~[P1] Không mask sensitive value trong admin response~~
 
-- **Evidence:** [AdminSiteSettingResponse.java:6-15](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/dto/settings/AdminSiteSettingResponse.java#L6-L15) trả về `settingValue` thẳng. Không có logic mask trong [`toAdminResponse`](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java#L147-L153).
-- **Impact:** Bất kỳ admin nào có `settings.read` đều thấy plaintext token/secret/password. Nếu sau này thêm `payment_sepay.webhook_token` (theo memo `reference_4thitek_sepay.md`), token rò rỉ qua audit-trail / network log / browser history.
-- **Root cause:** Detection sensitive bằng substring chỉ áp dụng để block `isPublic=true`, không che đọc.
-- **Recommended fix:**
-  - Trong `toAdminResponse`, nếu `isSensitiveKey(key)` thì:
-    - Nếu request không có header `X-Reveal-Secret: true` (cần extra perm `settings.reveal_secret`) → trả về `"********"` (giữ length giả).
-    - Trả thêm field `isSecret: true` để FE render mask + nút "Show".
-  - FE: SettingsScreen render input `type=password` cho secret + nút eye-toggle.
-- **Suggested tests:** GET `/api/v1/admin/settings/{key có 'token'}` → value masked; GET với header reveal → plaintext.
+- **Fix đã apply:** `toAdminResponse` → `settingValue="********"`, `sensitive=true`, `masked=true` khi key sensitive. `snapshot()` (audit log) cũng mask. `AdminSiteSettingResponse` có 3 field mới backward-compatible.
+- **Tests added:** PB2 (admin GET masked), PB.4 (audit log masked).
+- **Remaining:** FE input `type=password` + eye-toggle cho sensitive field (P2 backlog). `X-Reveal-Secret` header nếu cần (P3 backlog).
 
 ---
 
-### [P1] Dynamic role permissions (V49) là decorative — không được consult ở runtime
+### ❌ OPEN (P1 backlog, cross-module) — [P1] Dynamic role permissions (V49) là decorative — không được consult ở runtime
 
-- **Evidence:**
-  - [V49__create_roles_permissions_tables.sql:1-3](../../bigbike-backend/src/main/resources/db/migration/V49__create_roles_permissions_tables.sql#L1-L3) — comment `"Replaces hardcoded AdminRolePermissions.MAP"`.
-  - [DevAdminAuthService.java:73-76](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/DevAdminAuthService.java#L73-L76) — vẫn đọc `AdminRolePermissions.MAP`.
-  - [AdminAuthService.java:114-116](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminAuthService.java#L114-L116) — `permissionsForRole` cũng đọc hardcoded.
-  - `AdminRoleService.getPermissionsForRole(...)` ([AdminRoleService.java:43-48](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminRoleService.java#L43-L48)) chỉ được gọi từ `AdminRolesController` cho UI display, không bao giờ vào path `requirePermission`.
-- **Impact:** Admin sửa `settings.write` cho EDITOR qua UI Roles → DB ghi → reload UI hiển thị thay đổi nhưng EDITOR vẫn bị 403 thật khi gọi `/api/v1/admin/settings`. Tạo cảm giác sai về security model. Ngược lại, nếu có ngày code switch sang DB, danh sách permission `pos.*`/`receivables.*` sẽ biến mất (V49+V58 chưa seed) → ADMIN/SHOP_MANAGER mất quyền POS/Receivables.
-- **Root cause:** Migration V49 thêm bảng nhưng không refactor `requirePermission` đọc bảng đó.
-- **Recommended fix:**
-  1. Đổi `requirePermission` đọc qua `AdminRoleService.getPermissionsForRole(role)` hoặc cache wrapper.
-  2. Bổ sung migration seed `pos.*`/`receivables.*` cho ADMIN, `pos.*` + `receivables.read,record_payment` cho SHOP_MANAGER.
-  3. Giữ `AdminRolePermissions.MAP` chỉ làm fallback nếu DB chưa có entry (khi seed chưa chạy).
-- **Suggested tests:** integration test: set `settings.write` cho `EDITOR` qua DB → call API với JWT EDITOR → 200 (chứng minh DB-driven). Sau đó remove perm → 403.
+- **Status:** Chưa fix. Nằm ngoài scope Phase A/B/B.1/C (no RBAC refactor per spec).
+- **Evidence vẫn còn nguyên:** `requirePermission` vẫn đọc `AdminRolePermissions.MAP` hardcoded; UI Roles không có tác dụng runtime.
+- **Risk hiện tại:** Moderate — hardcoded MAP đúng cho các role hiện tại (ADMIN/SHOP_MANAGER). Impact thực tế chỉ xảy ra nếu admin muốn thay đổi permission qua UI → UI cho phép nhưng backend không phản ánh.
+- **Backlog action:** Refactor `requirePermission` đọc qua `AdminRoleService` + cache; seed `pos.*`/`receivables.*` vào `role_permissions`; integration test DB-driven permission.
 
 ---
 
-### [P1] Partial-save risk khi UI gửi nhiều PATCH song song
+### ✅ FIXED Phase C — ~~[P1] Partial-save risk khi UI gửi nhiều PATCH song song~~
 
-- **Evidence:** [SettingsScreen.jsx:336-338](../../bigbike-admin/src/screens/SettingsScreen.jsx#L336-L338):
-  ```js
-  const results = await Promise.all(
-    dirty.map((s) => updateSetting(s.key, drafts[s.key]))
-  );
-  ```
-- **Impact:** Khi admin sửa 5 field cùng lúc và 1 request fail (ví dụ network/CSRF/server error), 4 setting đã được save vào DB và **không có rollback**. UI hiển thị error chung cho tất cả 5 field → admin tưởng không lưu nhưng thực tế đã lưu một phần. Ảnh hưởng: business config inconsistent (vd. `tax_rate` lưu nhưng `tax_enabled` chưa lưu).
-- **Root cause:** Không có batch endpoint, FE dùng Promise.all.
-- **Recommended fix:**
-  1. Thêm endpoint `PATCH /api/v1/admin/settings/batch` nhận `{ items: [{key, value, group?, isPublic?, description?}] }`, transactional, all-or-nothing.
-  2. FE đổi sang gọi 1 request batch.
-  3. Audit log gộp `SETTINGS_BATCH_UPDATED` với array changes.
-- **Suggested tests:** test batch happy path 3 settings → all updated; test 1 invalid value → all rolled back, không có setting nào thay đổi.
+- **Fix đã apply:**
+  - Backend: `PATCH /api/v1/admin/settings` (không path variable) — validate-all-first trong Phase 1 trước khi chạm DB, save-all trong Phase 2 dưới `@Transactional`. 400 nếu bất kỳ item nào invalid, không có partial save.
+  - Frontend: `batchUpdateSettings()` trong `adminApi.js`; `handleSave` trong `SettingsScreen.jsx` gọi 1 request thay `Promise.all`.
+- **Tests added (Phase C):** PC1 (all valid → 200 + both updated), PC2 (one invalid → 400 + no change).
+- **Remaining:** Field-level error mapping từ batch response (server trả `failures: [{key, code}]`) — hiện tại error gán cho tất cả dirty fields (P2 backlog). Audit log dùng individual `SETTING_UPDATED` entries — không gộp thành `SETTINGS_BATCH_UPDATED` (P3 backlog, informational only).
 
 ---
 
-### [P1] FE mock dùng `settings.update` thay vì `settings.write`
+### ✅ FIXED Phase A — ~~[P1] FE mock dùng `settings.update` thay vì `settings.write`~~
 
-- **Evidence:** [mockData.js:511](../../bigbike-admin/src/lib/mockData.js#L511): `'settings.read', 'settings.update'`. Còn lại tất cả nguồn đều dùng `settings.write`.
-- **Impact:** Khi admin chạy mock auth (FORCE_MOCK), user mock có role=ADMIN nhưng permission set thiếu `settings.write` → SettingsScreen render read-only mode. Dev có thể tưởng có bug FE.
-- **Root cause:** Legacy naming chưa update khi rename `update` → `write`.
-- **Recommended fix:** Đổi `'settings.update'` thành `'settings.write'` trong [mockData.js:511](../../bigbike-admin/src/lib/mockData.js#L511).
-- **Suggested tests:** unit test cho `buildMockAdminUser('ADMIN')` → `permissions` chứa `settings.write`.
+- **Fix đã apply:** `mockData.js` đã được sửa `'settings.update'` → `'settings.write'`. Mock ADMIN role trong FORCE_MOCK mode hiện có đủ permission để SettingsScreen render editable.
+- **Remaining:** Unit test cho `buildMockAdminUser('ADMIN')` (P3 backlog).
 
 ---
 
@@ -651,41 +627,50 @@ Cần bổ sung:
 
 ## 12. Completion Checklist
 
-| Item | Status |
-|---|---|
-| Route `/admin/settings` | ✅ |
-| Permission gate FE | ✅ |
-| Permission gate BE controller | ✅ |
-| URL gate SecurityConfig | ✅ |
-| Loading/error/empty/retry | ✅ |
-| Dirty state + Save/Discard | ✅ |
-| Save success/error feedback | ⚠️ Partial (error gán toàn field) |
-| FE validation | ⚠️ Yếu |
-| BE typed validation | ❌ Thiếu hoàn toàn |
-| Sensitive key block public | ✅ |
-| Sensitive value masking trong response | ❌ |
-| Audit log on update | ✅ (nhưng JSON build không robust) |
-| Web revalidation tag `settings` | ✅ |
-| After-commit revalidation | ✅ |
-| Public endpoint không leak `description`/`isPublic` | ✅ |
-| DB schema + indexes | ✅ |
-| DB unique key | ✅ |
-| Group casing nhất quán | ❌ |
-| Entity ↔ DB nullability khớp | ❌ |
-| Pagination DB-side | ❌ (in-memory) |
-| Batch update endpoint | ❌ |
-| Public/private/secret badge UI | ❌ |
-| Typed control UI | ❌ |
-| Mock vs live permission key | ❌ |
-| Dynamic role permissions thực sự được consult | ❌ |
-| Backend test coverage | ⚠️ ~36% |
-| FE test coverage | ❌ 0% |
-| E2E test admin↔BE↔web | ❌ 0% |
-| iframe URL allowlist | ❌ |
-| Quote-stripping consistent ở web | ⚠️ Footer có, page.tsx không có |
-| Settings consumed by web nhưng không seed | ⚠️ `youtube_url`, `tiktok_url`, `instagram_url`, `about_*`, `home_content_bottom_html`, `address` |
+| Item | Status | Phase |
+|---|---|---|
+| Route `/admin/settings` | ✅ | Pre-audit |
+| Permission gate FE | ✅ | Pre-audit |
+| Permission gate BE controller | ✅ | Pre-audit |
+| URL gate SecurityConfig | ✅ | Pre-audit |
+| Loading/error/empty/retry | ✅ | Pre-audit |
+| Dirty state + Save/Discard | ✅ | Pre-audit |
+| Save success feedback | ✅ | Pre-audit |
+| Save error feedback (field-level) | ⚠️ Vẫn gán cho tất cả dirty fields | P2 backlog |
+| FE validation (inline) | ⚠️ Yếu nhưng đủ cho UX cơ bản | P2 backlog |
+| BE typed validation | ✅ | Phase B |
+| google_maps_url domain allowlist (BE) | ✅ | Phase B.1 |
+| Sensitive key block public (strict allowlist) | ✅ | Phase B |
+| Sensitive value masking trong admin response | ✅ | Phase B |
+| Audit log mask sensitive values | ✅ | Phase B.1 |
+| FE mock permission key (`settings.write`) | ✅ | Phase A |
+| Batch update endpoint (all-or-nothing) | ✅ | Phase C |
+| FE dùng batch endpoint | ✅ | Phase C |
+| iframe URL allowlist + sandbox fix | ✅ | Phase A |
+| Audit log on update | ✅ (JSON build string thủ công) | Pre-audit |
+| Audit JSON robust (ObjectMapper) | ❌ | P2 backlog |
+| Web revalidation tag `settings` | ✅ | Pre-audit |
+| After-commit revalidation | ✅ | Pre-audit |
+| Public endpoint không leak `description`/`isPublic` | ✅ | Pre-audit |
+| Public endpoint strict allowlist (registry-driven) | ✅ | Phase B |
+| DB schema + indexes | ✅ | Pre-audit |
+| DB unique key | ✅ | Pre-audit |
+| Group casing nhất quán (DB) | ❌ | P2 backlog |
+| Entity ↔ DB nullability khớp (`setting_group`) | ❌ | P2 backlog |
+| Pagination DB-side | ❌ (in-memory) | P2 backlog |
+| Public/private/sensitive badge UI | ❌ | P2 backlog |
+| Typed control UI (switch/picker/textarea) | ❌ | P2 backlog |
+| FE input type=password cho sensitive | ❌ | P2 backlog |
+| Dynamic role permissions thực sự được consult | ❌ | P1 backlog (cross-module) |
+| DEV_ADMIN_ID fallback cleanup | ❌ | P2 backlog |
+| Backend test coverage | ✅ 83 tests / ~70%+ behavior covered | Phase B+B.1+C |
+| FE test coverage | ❌ 0% | P2 backlog |
+| E2E test admin↔BE↔web | ❌ 0% | P2 backlog |
+| Quote-stripping consistent ở web | ⚠️ Footer có, `page.tsx` không có | P3 backlog |
+| Settings consumed by web nhưng không seed (`youtube_url`, `about_*`, ...) | ⚠️ Silent fallback trên prod | P2 backlog |
+| `API_CONTRACT.md` cập nhật | ✅ | Phase C |
 
-Legend: ✅ Done · ⚠️ Partial · ❌ Missing · ❓ Unknown
+Legend: ✅ Done · ⚠️ Partial · ❌ Missing
 
 ---
 

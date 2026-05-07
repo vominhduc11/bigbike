@@ -57,4 +57,25 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
             @Param("from") Instant from,
             @Param("excludedStatuses") List<String> excludedStatuses,
             Pageable pageable);
+
+    // Native query: COALESCE(product_pk, product_id::text) covers both admin-created products
+    // (product_id = null, product_pk set) and regular products (both set).
+    // Filtering productId IS NOT NULL (legacy behavior) silently excluded admin-created products.
+    @Query(value =
+        "SELECT COALESCE(li.product_pk, li.product_id::text) AS product_key, " +
+        "       li.product_name, " +
+        "       COALESCE(SUM(li.line_total), 0)              AS revenue, " +
+        "       COALESCE(SUM(li.quantity), 0)                AS units_sold " +
+        "FROM order_line_items li " +
+        "JOIN orders o ON o.id = li.order_id " +
+        "WHERE o.placed_at >= :from AND o.placed_at < :to " +
+        "  AND o.status NOT IN :excludedStatuses " +
+        "  AND (li.product_pk IS NOT NULL OR li.product_id IS NOT NULL) " +
+        "GROUP BY COALESCE(li.product_pk, li.product_id::text), li.product_name " +
+        "ORDER BY COALESCE(SUM(li.line_total), 0) DESC",
+        nativeQuery = true)
+    List<Object[]> topProductsByRevenueInRangeNative(
+            @Param("from") Instant from, @Param("to") Instant to,
+            @Param("excludedStatuses") List<String> excludedStatuses,
+            Pageable pageable);
 }

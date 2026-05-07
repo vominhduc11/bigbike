@@ -10,10 +10,12 @@ public record AdminAnalyticsResponse(
         List<TopCustomerItem> topCustomers
 ) {
     public record PeriodSummary(
-            BigDecimal totalRevenue,
+            BigDecimal grossOrderValue,
+            BigDecimal paidRevenue,
+            BigDecimal refundAmount,
+            BigDecimal netRevenue,
             int orderCount,
-            BigDecimal avgOrderValue,
-            BigDecimal refundAmount
+            BigDecimal avgOrderValue
     ) {}
 
     public record DailyRevenueItem(
@@ -23,14 +25,16 @@ public record AdminAnalyticsResponse(
     ) {}
 
     public record TopProductItem(
+            String productKey,
             String productName,
             BigDecimal revenue,
             long unitsSold
     ) {}
 
     public record TopCustomerItem(
-            String email,
-            BigDecimal totalSpent,
+            String customerKey,
+            String customerEmail,
+            BigDecimal revenue,
             long orderCount
     ) {}
 }

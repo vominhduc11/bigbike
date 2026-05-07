@@ -145,6 +145,37 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
            "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.refundAmount > 0")
     BigDecimal sumRefundAmountInRange(@Param("from") Instant from, @Param("to") Instant to);
 
+    // Paid revenue including post-refund payment statuses.
+    // paidAmount is never reduced by RefundService.applyRefund() — it is the total cash collected.
+    // PARTIALLY_REFUNDED and REFUNDED statuses must be included to count orders that received refunds.
+    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from AND o.placedAt < :to " +
+           "  AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED', 'REFUNDED') " +
+           "  AND o.status NOT IN :excludedStatuses")
+    BigDecimal sumPaidRevenueBetweenExcluding(
+            @Param("from") Instant from, @Param("to") Instant to,
+            @Param("excludedStatuses") List<String> excludedStatuses);
+
+    // Top customers using COALESCE(customer_id::text, customer_email) as group key.
+    // Prevents the same customer appearing in multiple rows if their email changed.
+    // MAX(customer_email) is used as display email.
+    @Query(value =
+        "SELECT COALESCE(customer_id::text, customer_email) AS customer_key, " +
+        "       MAX(customer_email)                         AS display_email, " +
+        "       COALESCE(SUM(total_amount), 0)              AS total_revenue, " +
+        "       COUNT(*)                                     AS order_count " +
+        "FROM orders " +
+        "WHERE placed_at >= :from AND placed_at < :to " +
+        "  AND (customer_id IS NOT NULL OR customer_email IS NOT NULL) " +
+        "  AND status NOT IN :excludedStatuses " +
+        "GROUP BY COALESCE(customer_id::text, customer_email) " +
+        "ORDER BY COALESCE(SUM(total_amount), 0) DESC",
+        nativeQuery = true)
+    List<Object[]> topCustomersByRevenueInRangeCoalesce(
+            @Param("from") Instant from, @Param("to") Instant to,
+            @Param("excludedStatuses") List<String> excludedStatuses,
+            Pageable pageable);
+
     // ── Reports: daily revenue series with range + status filter ─────────────
 
     @Query(value =

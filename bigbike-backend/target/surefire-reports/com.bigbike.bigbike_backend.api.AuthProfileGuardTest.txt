@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.AuthProfileGuardTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.025 s -- in com.bigbike.bigbike_backend.api.AuthProfileGuardTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.862 s -- in com.bigbike.bigbike_backend.api.AuthProfileGuardTest
