@@ -53,6 +53,7 @@ S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\sch
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\schema\Phase1CCommerceSchemaTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\schema\SliderRepositoryTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\service\admin\AdminMutationValidatorsTest.java
+S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\service\admin\AdminReportCsvHardeningTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\service\admin\VariantGalleryRoundtripTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\service\auth\PasswordServiceTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\service\slider\SliderReadServiceTest.java

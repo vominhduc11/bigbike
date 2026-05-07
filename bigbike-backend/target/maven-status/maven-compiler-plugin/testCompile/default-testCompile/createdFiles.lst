@@ -41,6 +41,7 @@ com\bigbike\bigbike_backend\api\Phase2EProductGalleryBackfillTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest$GuestSession.class
 com\bigbike\bigbike_backend\api\Phase1MPosApiTest.class
 com\bigbike\bigbike_backend\api\HomeVideoApiTest.class
+com\bigbike\bigbike_backend\service\admin\AdminReportCsvHardeningTest.class
 com\bigbike\bigbike_backend\service\video\YouTubeUrlParserTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2D3ProductNormalizationTest.class
