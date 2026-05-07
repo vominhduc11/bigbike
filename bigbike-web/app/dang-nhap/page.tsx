@@ -14,7 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const raw = searchParams.get("tiep") ?? "";
-  const returnTo = raw.startsWith("/") ? raw : toAccountPath();
+  const returnTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : toAccountPath();
 
   const {
     register,
