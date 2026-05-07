@@ -1,4 +1,13 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
 -------------------------------------------------------------------------------
-Tests run: 41, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.512 s -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
+Tests run: 41, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 1.568 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest
+com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_concurrentRequests_onlyOneRedeemsLastCouponUse -- Time elapsed: 0.074 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "{"error":{"code":"CONFLICT","message":"Mã giảm giá đã đạt giới hạn sử dụng.","details":[]},"meta":{"requestId":"7aba6dcc-4a4b-4247-b963-0aa005592c24","timestamp":"2026-05-07T07:51:13.338468300Z"}}"
+to contain:
+  "Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng." 
+	at com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest.checkout_concurrentRequests_onlyOneRedeemsLastCouponUse(Phase1FCheckoutApiTest.java:885)
+
