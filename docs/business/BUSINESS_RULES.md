@@ -149,3 +149,43 @@ Evidence:
 - `AdminRolePermissions.java` (`receivables.*` permissions added)
 - `AdminReceivableApiTest.java`
 - `AdminRolePermissions.java` (no `receivables.*` permissions)
+
+## Reports Rules
+
+Status: `CONFIRMED_FROM_CODE` — derived from audit of `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`, `RefundService.java`, `AdminCustomerService.java`.
+
+### Metric Definitions
+
+- `REPORT_RULE_001`: **GMV (`grossOrderValue`)** = `SUM(totalAmount)` for orders where `placedAt` is within the requested range AND `status NOT IN ('CANCELLED', 'FAILED')`. REFUNDED orders are **included** in GMV — they represent real demand placed in the period. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_002`: **Paid Revenue (`paidRevenue`)** = `SUM(paidAmount)` for orders where `placedAt` is within the requested range AND `paymentStatus IN ('PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED', 'REFUNDED')` AND `status NOT IN ('CANCELLED', 'FAILED')`. `paidAmount` is never modified by `RefundService.applyRefund()` — it is the total cash collected. Including `PARTIALLY_REFUNDED` and `REFUNDED` payment statuses ensures orders that later received refunds are still counted as collected cash. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_003`: **Refund Amount (`refundAmount`)** = `SUM(refundAmount)` for orders where `placedAt` is within the requested range AND `refundAmount IS NOT NULL AND refundAmount > 0`. Anchored to `placedAt`, not `refundedAt`. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_004`: **Net Revenue (`netRevenue`)** = `paidRevenue − refundAmount`. No clamp. Negative net revenue is a valid business scenario (e.g. refunds exceed cash collected in a cohort). Display as-is. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_005`: **Order Count (`orderCount`)** = `COUNT(id)` excluding `status IN ('CANCELLED', 'FAILED')`. REFUNDED orders count. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_006`: **Average Order Value (`avgOrderValue`)** = `grossOrderValue / orderCount`. Returns zero if `orderCount = 0`. `CONFIRMED_FROM_CODE`
+
+### Excluded Status Sets
+
+- `REPORT_RULE_007`: Two separate excluded-status sets are used:
+  - **REVENUE_EXCLUDED** = `['CANCELLED', 'FAILED']` — applied to GMV, paidRevenue, orderCount, avgOrderValue, daily revenue.
+  - **RANKING_EXCLUDED** = `['CANCELLED', 'FAILED', 'REFUNDED']` — applied to topProducts and topCustomers rankings. REFUNDED orders are excluded from rankings because refunded revenue is not retained. `CONFIRMED_FROM_CODE`
+
+### Timezone
+
+- `REPORT_RULE_008`: All date boundaries (`from`, `to` params) are parsed in `Asia/Ho_Chi_Minh` timezone. Daily revenue grouping uses `AT TIME ZONE 'Asia/Ho_Chi_Minh'`. This matches `AdminDashboardService` behavior. `CONFIRMED_FROM_CODE`
+
+### Product And Customer Rankings
+
+- `REPORT_RULE_009`: **topProducts** uses `COALESCE(product_pk, product_id::text)` as group key. Admin-created products have `product_id = NULL` and `product_pk` set; regular products have both. Filtering `product_id IS NOT NULL` (legacy behavior) silently excludes admin-created products. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_010`: **topCustomers** uses `COALESCE(customer_id::text, customer_email)` as group key to prevent the same customer appearing as multiple rows if their email changed over time. Display email is `MAX(customer_email)`. `CONFIRMED_FROM_CODE`
+
+### Known Limitation
+
+- `REPORT_RULE_011`: **Refund attribution is period-inaccurate.** `refundedAt` on `OrderEntity` is overwritten on every `RefundService.applyRefund()` call — for an order with multiple partial refunds, it holds only the timestamp of the last one. Switching to `refundedAt`-based aggregation would silently drop early partial refunds and double-count in cross-period scenarios. Therefore `refundAmount` is currently attributed to the order's `placedAt` period, not the period the refund occurred. This means the Reports module cannot accurately answer "how much was refunded this week?" if the order was placed in a prior week. A `refund_transactions` table (planned P1/P2) is required for per-period refund accuracy. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `AdminReportService.java`
+- `OrderJpaRepository.java`
+- `OrderLineItemJpaRepository.java`
+- `RefundService.java`
+- `AdminCustomerService.java`

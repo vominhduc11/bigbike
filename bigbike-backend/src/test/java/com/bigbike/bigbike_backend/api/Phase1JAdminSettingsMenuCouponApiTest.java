@@ -1209,8 +1209,15 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     // PC2. One invalid value → 400, no settings changed (all-or-nothing)
     @Test
     void adminSettings_batchUpdate_oneInvalid_rollsBack() throws Exception {
-        createTestSetting("contact_email", "original@bigbike.vn", "contact", true);
+        createTestSetting("contact_email", "pc2-known@bigbike.vn", "contact", true);
+        // Force a deterministic known value regardless of test ordering (createTestSetting is no-op if key exists)
+        mockMvc.perform(patch("/api/v1/admin/settings/contact_email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"pc2-known@bigbike.vn\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
 
+        // Batch with invalid email → must fail
         mockMvc.perform(patch("/api/v1/admin/settings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -1221,11 +1228,11 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest());
 
-        // Value must be unchanged
+        // Value must be unchanged — no partial save
         mockMvc.perform(get("/api/v1/admin/settings/contact_email")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.settingValue").value("original@bigbike.vn"));
+                .andExpect(jsonPath("$.data.settingValue").value("pc2-known@bigbike.vn"));
     }
 
     // ══════════════════════════════════════════════════════════════════════════

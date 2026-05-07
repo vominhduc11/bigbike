@@ -1,13 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
 -------------------------------------------------------------------------------
-Tests run: 83, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 27.00 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
-com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminSettings_batchUpdate_oneInvalid_rollsBack -- Time elapsed: 0.059 s <<< FAILURE!
-java.lang.AssertionError: JSON path "$.data.settingValue" expected:<original@bigbike.vn> but was:<new-info@bigbike.vn>
-	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
-	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
-	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
-	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
-	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
-	at com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest.adminSettings_batchUpdate_oneInvalid_rollsBack(Phase1JAdminSettingsMenuCouponApiTest.java:1228)
-
+Tests run: 83, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 29.55 s -- in com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
