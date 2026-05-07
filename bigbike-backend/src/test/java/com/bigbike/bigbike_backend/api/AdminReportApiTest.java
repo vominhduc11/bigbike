@@ -6,14 +6,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,7 @@ class AdminReportApiTest {
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired OrderJpaRepository orderRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -235,7 +239,82 @@ class AdminReportApiTest {
         assertThat(delta).isEqualTo(-50_000.0);
     }
 
+    // ── 7. Audit log for CSV exports ──────────────────────────────────────────
+
+    @Test
+    void exportOrders_writesAuditLog() throws Exception {
+        long before = countExportAuditLogs("ORDERS");
+
+        mockMvc.perform(get("/api/v1/admin/reports/orders/export?status=COMPLETED&from=" + TODAY + "&to=" + TODAY)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        List<AuditLogEntity> logs = exportAuditLogs("ORDERS");
+        assertThat(logs).hasSizeGreaterThan((int) before);
+        AuditLogEntity log = logs.get(logs.size() - 1);
+        assertThat(log.getResourceType()).isEqualTo("REPORT");
+        assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
+        assertThat(log.getAfterData()).contains("\"exportType\":\"ORDERS\"");
+        assertThat(log.getAfterData()).contains("\"status\":\"COMPLETED\"");
+        assertThat(log.getAfterData()).contains("\"rowLimit\":10000");
+        assertThat(log.getAfterData()).doesNotContain("email");
+        assertThat(log.getAfterData()).doesNotContain("phone");
+        assertThat(log.getAfterData()).doesNotContain("name");
+    }
+
+    @Test
+    void exportCustomers_writesAuditLog() throws Exception {
+        long before = countExportAuditLogs("CUSTOMERS");
+
+        mockMvc.perform(get("/api/v1/admin/reports/customers/export?status=ACTIVE")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        List<AuditLogEntity> logs = exportAuditLogs("CUSTOMERS");
+        assertThat(logs).hasSizeGreaterThan((int) before);
+        AuditLogEntity log = logs.get(logs.size() - 1);
+        assertThat(log.getResourceType()).isEqualTo("REPORT");
+        assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
+        assertThat(log.getAfterData()).contains("\"exportType\":\"CUSTOMERS\"");
+        assertThat(log.getAfterData()).contains("\"status\":\"ACTIVE\"");
+        assertThat(log.getAfterData()).doesNotContain("email");
+        assertThat(log.getAfterData()).doesNotContain("phone");
+        assertThat(log.getAfterData()).doesNotContain("name");
+    }
+
+    @Test
+    void exportProducts_writesAuditLog() throws Exception {
+        long before = countExportAuditLogs("PRODUCTS");
+
+        mockMvc.perform(get("/api/v1/admin/reports/products/export?publishStatus=PUBLISHED")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        List<AuditLogEntity> logs = exportAuditLogs("PRODUCTS");
+        assertThat(logs).hasSizeGreaterThan((int) before);
+        AuditLogEntity log = logs.get(logs.size() - 1);
+        assertThat(log.getResourceType()).isEqualTo("REPORT");
+        assertThat(log.getAction()).isEqualTo("REPORT_EXPORT_CREATED");
+        assertThat(log.getAfterData()).contains("\"exportType\":\"PRODUCTS\"");
+        assertThat(log.getAfterData()).contains("\"publishStatus\":\"PUBLISHED\"");
+        assertThat(log.getAfterData()).doesNotContain("email");
+        assertThat(log.getAfterData()).doesNotContain("phone");
+        assertThat(log.getAfterData()).doesNotContain("name");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private List<AuditLogEntity> exportAuditLogs(String exportType) {
+        return auditLogRepo.findAll().stream()
+                .filter(l -> "REPORT_EXPORT_CREATED".equals(l.getAction())
+                        && l.getAfterData() != null
+                        && l.getAfterData().contains("\"" + exportType + "\""))
+                .toList();
+    }
+
+    private long countExportAuditLogs(String exportType) {
+        return exportAuditLogs(exportType).size();
+    }
 
     private double fetchGrossOrderValue() throws Exception {
         return fetchSummaryField("grossOrderValue");

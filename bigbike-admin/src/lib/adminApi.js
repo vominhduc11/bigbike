@@ -1631,16 +1631,35 @@ function normalizeAnalytics(payload) {
 // â”€â”€ Reports / Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function fetchCsvBlob(path, params = {}) {
-  const { accessToken } = readTokens()
   const qs = Object.entries(params)
     .filter(([, v]) => v != null && v !== '')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&')
   const url = `${API_BASE}${path}${qs ? `?${qs}` : ''}`
-  const headers = { Accept: 'text/csv' }
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
-  const response = await fetch(url, { headers })
-  if (!response.ok) throw new ApiClientError(`Export failed with status ${response.status}`, response.status, 'EXPORT_FAILED')
+
+  const doFetch = (token) => {
+    const headers = { Accept: 'text/csv' }
+    if (token) headers.Authorization = `Bearer ${token}`
+    return fetch(url, { headers })
+  }
+
+  let { accessToken } = readTokens()
+  let response = await doFetch(accessToken)
+
+  if (response.status === 401 && accessToken) {
+    const newAccess = await performTokenRefresh()
+    if (newAccess) {
+      response = await doFetch(newAccess)
+    }
+    if (response.status === 401) {
+      clearTokens()
+      if (authErrorListener) authErrorListener()
+    }
+  }
+
+  if (!response.ok) {
+    throw new ApiClientError(`Export failed with status ${response.status}`, response.status, 'EXPORT_FAILED')
+  }
   return response.blob()
 }
 

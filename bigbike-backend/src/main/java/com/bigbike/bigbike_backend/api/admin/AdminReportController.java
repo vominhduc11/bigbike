@@ -2,9 +2,12 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -41,13 +45,16 @@ public class AdminReportController {
 
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminReportController(
             AdminReportService adminReportService,
-            DevAdminAuthService devAdminAuthService
+            DevAdminAuthService devAdminAuthService,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.adminReportService = adminReportService;
         this.devAdminAuthService = devAdminAuthService;
+        this.auditLogRepo = auditLogRepo;
     }
 
     @GetMapping("/analytics")
@@ -69,7 +76,7 @@ public class AdminReportController {
             @RequestParam(required = false) String to,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "reports.export");
+        AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
         validateDateRange(from, to);
         if (status != null && !status.isBlank()
                 && !VALID_ORDER_STATUSES.contains(status.toUpperCase(Locale.ROOT))) {
@@ -82,6 +89,14 @@ public class AdminReportController {
                     "Unknown payment status: " + paymentStatus);
         }
         byte[] csv = adminReportService.exportOrdersCsv(status, paymentStatus, from, to);
+        recordExportAudit(actor, "ORDERS",
+                "{\"exportType\":\"ORDERS\",\"filters\":{"
+                        + "\"status\":" + jsonStr(status)
+                        + ",\"paymentStatus\":" + jsonStr(paymentStatus)
+                        + ",\"from\":" + jsonStr(from)
+                        + ",\"to\":" + jsonStr(to)
+                        + "},\"rowLimit\":10000}",
+                request);
         return csvResponse(csv, "orders_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -90,8 +105,13 @@ public class AdminReportController {
             @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "reports.export");
+        AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
         byte[] csv = adminReportService.exportCustomersCsv(status);
+        recordExportAudit(actor, "CUSTOMERS",
+                "{\"exportType\":\"CUSTOMERS\",\"filters\":{"
+                        + "\"status\":" + jsonStr(status)
+                        + "},\"rowLimit\":10000}",
+                request);
         return csvResponse(csv, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -100,13 +120,18 @@ public class AdminReportController {
             @RequestParam(required = false) String publishStatus,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "reports.export");
+        AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
         if (publishStatus != null && !publishStatus.isBlank()
                 && !VALID_PUBLISH_STATUSES.contains(publishStatus.toUpperCase(Locale.ROOT))) {
             throw ValidationException.fromField("publishStatus", "INVALID_PUBLISH_STATUS",
                     "Unknown publish status: " + publishStatus);
         }
         byte[] csv = adminReportService.exportProductsCsv(publishStatus);
+        recordExportAudit(actor, "PRODUCTS",
+                "{\"exportType\":\"PRODUCTS\",\"filters\":{"
+                        + "\"publishStatus\":" + jsonStr(publishStatus)
+                        + "},\"rowLimit\":10000}",
+                request);
         return csvResponse(csv, "products_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
@@ -138,5 +163,30 @@ public class AdminReportController {
         headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
         return ResponseEntity.ok().headers(headers).body(csv);
+    }
+
+    private void recordExportAudit(AdminUserProfile actor, String exportType,
+                                   String afterData, HttpServletRequest request) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(parseActorId(actor.id()));
+        log.setAction("REPORT_EXPORT_CREATED");
+        log.setResourceType("REPORT");
+        log.setAfterData(afterData);
+        log.setIpAddress(request.getRemoteAddr());
+        log.setUserAgent(request.getHeader("User-Agent"));
+        log.setCreatedAt(Instant.now());
+        auditLogRepo.save(log);
+    }
+
+    private static UUID parseActorId(String id) {
+        if (id == null) return null;
+        try { return UUID.fromString(id); }
+        catch (IllegalArgumentException e) { return null; }
+    }
+
+    private static String jsonStr(String value) {
+        if (value == null || value.isBlank()) return "null";
+        return "\"" + value + "\"";
     }
 }
