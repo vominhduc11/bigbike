@@ -262,6 +262,8 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reviews.read
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reviews.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reviews.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'admin-users.read'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='admin-users.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'admin-users.write'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='admin-users.write');
+INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'roles.read'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='roles.read');
+INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'roles.write'                 WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='roles.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'audit-logs.read'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='audit-logs.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'home_videos.read'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='home_videos.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'home_videos.write'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='home_videos.write');

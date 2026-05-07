@@ -23,14 +23,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartCount, setCartCount] = useState<number | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
+  const fetchInFlight = useRef(false);
 
   const refreshCount = useCallback(() => {
+    if (fetchInFlight.current) return;
+    fetchInFlight.current = true;
     fetchCart()
       .then((cart) => {
         const total = cart.items.reduce((sum, item) => sum + item.quantity, 0);
         setCartCount(total);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { fetchInFlight.current = false; });
   }, []);
 
   useEffect(() => {

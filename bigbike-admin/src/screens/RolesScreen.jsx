@@ -1,74 +1,133 @@
 import { useState, useEffect } from 'react'
 import { Shield, Edit2, Check, X, AlertTriangle, ChevronLeft, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { fetchRoles, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
+import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 
-// Frontend-only catalog: label + group metadata.
-// Role permissions come from the backend — this is purely for display labeling.
-const PERMISSION_CATALOG = [
+// Fallback catalog used when the backend /admin/permissions API is unavailable.
+// Keep in sync with PermissionCatalog.java groups.
+const BUILTIN_CATALOG = [
   {
     groupKey: 'roles.groupSales',
     permissions: [
-      { key: 'orders.read',      labelKey: 'roles.permOrdersRead' },
-      { key: 'orders.write',     labelKey: 'roles.permOrdersWrite' },
-      { key: 'customers.read',   labelKey: 'roles.permCustomersRead' },
-      { key: 'customers.write',  labelKey: 'roles.permCustomersWrite' },
-      { key: 'coupons.read',     labelKey: 'roles.permCouponsRead' },
-      { key: 'coupons.write',    labelKey: 'roles.permCouponsWrite' },
-      { key: 'shipping.read',    labelKey: 'roles.permShippingRead' },
-      { key: 'shipping.write',   labelKey: 'roles.permShippingWrite' },
-      { key: 'reviews.read',     labelKey: 'roles.permReviewsRead' },
-      { key: 'reviews.write',    labelKey: 'roles.permReviewsWrite' },
+      { key: 'orders.read',                  sensitive: false },
+      { key: 'orders.write',                 sensitive: false },
+      { key: 'customers.read',               sensitive: false },
+      { key: 'customers.write',              sensitive: false },
+      { key: 'coupons.read',                 sensitive: false },
+      { key: 'coupons.write',                sensitive: false },
+      { key: 'shipping.read',                sensitive: false },
+      { key: 'shipping.write',               sensitive: false },
+      { key: 'reviews.read',                 sensitive: false },
+      { key: 'reviews.write',                sensitive: false },
+      { key: 'pos.read',                     sensitive: false },
+      { key: 'pos.write',                    sensitive: false },
+      { key: 'pos.price_override',           sensitive: true  },
+      { key: 'receivables.read',             sensitive: false },
+      { key: 'receivables.create',           sensitive: false },
+      { key: 'receivables.record_payment',   sensitive: false },
+      { key: 'receivables.write_off',        sensitive: true  },
+      { key: 'receivables.override_limit',   sensitive: true  },
+      { key: 'receivables.export',           sensitive: false },
+      { key: 'reports.read',                 sensitive: false },
+      { key: 'reports.export',               sensitive: false },
     ],
   },
   {
     groupKey: 'roles.groupProducts',
     permissions: [
-      { key: 'products.read',    labelKey: 'roles.permProductsRead' },
-      { key: 'products.update',  labelKey: 'roles.permProductsUpdate' },
-      { key: 'catalog.read',     labelKey: 'roles.permCatalogRead' },
-      { key: 'catalog.update',   labelKey: 'roles.permCatalogUpdate' },
+      { key: 'products.read',    sensitive: false },
+      { key: 'products.update',  sensitive: false },
+      { key: 'catalog.read',     sensitive: false },
+      { key: 'catalog.update',   sensitive: false },
     ],
   },
   {
     groupKey: 'roles.groupContent',
     permissions: [
-      { key: 'content.read',      labelKey: 'roles.permContentRead' },
-      { key: 'content.update',    labelKey: 'roles.permContentUpdate' },
-      { key: 'media.read',        labelKey: 'roles.permMediaRead' },
-      { key: 'media.write',       labelKey: 'roles.permMediaWrite' },
-      { key: 'menus.read',        labelKey: 'roles.permMenusRead' },
-      { key: 'menus.write',       labelKey: 'roles.permMenusWrite' },
-      { key: 'sliders.read',      labelKey: 'roles.permSlidersRead' },
-      { key: 'sliders.write',     labelKey: 'roles.permSlidersWrite' },
-      { key: 'home_videos.read',  labelKey: 'roles.permHomeVideosRead' },
-      { key: 'home_videos.write', labelKey: 'roles.permHomeVideosWrite' },
-      { key: 'redirects.read',    labelKey: 'roles.permRedirectsRead' },
-      { key: 'redirects.write',   labelKey: 'roles.permRedirectsWrite' },
+      { key: 'content.read',      sensitive: false },
+      { key: 'content.update',    sensitive: false },
+      { key: 'media.read',        sensitive: false },
+      { key: 'media.write',       sensitive: false },
+      { key: 'menus.read',        sensitive: false },
+      { key: 'menus.write',       sensitive: false },
+      { key: 'sliders.read',      sensitive: false },
+      { key: 'sliders.write',     sensitive: false },
+      { key: 'home_videos.read',  sensitive: false },
+      { key: 'home_videos.write', sensitive: false },
+      { key: 'redirects.read',    sensitive: false },
+      { key: 'redirects.write',   sensitive: false },
     ],
   },
   {
     groupKey: 'roles.groupSystem',
     permissions: [
-      { key: 'settings.read',     labelKey: 'roles.permSettingsRead' },
-      { key: 'settings.write',    labelKey: 'roles.permSettingsWrite' },
-      { key: 'admin-users.read',  labelKey: 'roles.permAdminUsersRead' },
-      { key: 'admin-users.write', labelKey: 'roles.permAdminUsersWrite' },
-      { key: 'audit-logs.read',   labelKey: 'roles.permAuditLogsRead' },
+      { key: 'settings.read',     sensitive: false },
+      { key: 'settings.write',    sensitive: true  },
+      { key: 'admin-users.read',  sensitive: false },
+      { key: 'admin-users.write', sensitive: true  },
+      { key: 'roles.read',        sensitive: false },
+      { key: 'roles.write',       sensitive: true  },
+      { key: 'audit-logs.read',   sensitive: true  },
     ],
   },
 ]
 
-const KNOWN_PERM_KEYS = new Set(
-  PERMISSION_CATALOG.flatMap(g => g.permissions.map(p => p.key))
-)
+// i18n label key map — covers all keys from PermissionCatalog.GROUPS
+const PERM_LABEL_KEY_MAP = {
+  'orders.read':                'roles.permOrdersRead',
+  'orders.write':               'roles.permOrdersWrite',
+  'customers.read':             'roles.permCustomersRead',
+  'customers.write':            'roles.permCustomersWrite',
+  'coupons.read':               'roles.permCouponsRead',
+  'coupons.write':              'roles.permCouponsWrite',
+  'shipping.read':              'roles.permShippingRead',
+  'shipping.write':             'roles.permShippingWrite',
+  'reviews.read':               'roles.permReviewsRead',
+  'reviews.write':              'roles.permReviewsWrite',
+  'pos.read':                   'roles.permPosRead',
+  'pos.write':                  'roles.permPosWrite',
+  'pos.price_override':         'roles.permPosPriceOverride',
+  'receivables.read':           'roles.permReceivablesRead',
+  'receivables.create':         'roles.permReceivablesCreate',
+  'receivables.record_payment': 'roles.permReceivablesRecordPayment',
+  'receivables.write_off':      'roles.permReceivablesWriteOff',
+  'receivables.override_limit': 'roles.permReceivablesOverrideLimit',
+  'receivables.export':         'roles.permReceivablesExport',
+  'reports.read':               'roles.permReportsRead',
+  'reports.export':             'roles.permReportsExport',
+  'products.read':              'roles.permProductsRead',
+  'products.update':            'roles.permProductsUpdate',
+  'catalog.read':               'roles.permCatalogRead',
+  'catalog.update':             'roles.permCatalogUpdate',
+  'content.read':               'roles.permContentRead',
+  'content.update':             'roles.permContentUpdate',
+  'media.read':                 'roles.permMediaRead',
+  'media.write':                'roles.permMediaWrite',
+  'menus.read':                 'roles.permMenusRead',
+  'menus.write':                'roles.permMenusWrite',
+  'sliders.read':               'roles.permSlidersRead',
+  'sliders.write':              'roles.permSlidersWrite',
+  'home_videos.read':           'roles.permHomeVideosRead',
+  'home_videos.write':          'roles.permHomeVideosWrite',
+  'redirects.read':             'roles.permRedirectsRead',
+  'redirects.write':            'roles.permRedirectsWrite',
+  'settings.read':              'roles.permSettingsRead',
+  'settings.write':             'roles.permSettingsWrite',
+  'admin-users.read':           'roles.permAdminUsersRead',
+  'admin-users.write':          'roles.permAdminUsersWrite',
+  'roles.read':                 'roles.permRolesRead',
+  'roles.write':                'roles.permRolesWrite',
+  'audit-logs.read':            'roles.permAuditLogsRead',
+}
 
-const SENSITIVE_PERMS = new Set(['admin-users.write', 'settings.write', 'audit-logs.read'])
-
-// labelKey lookup for use in sensitive-perm warnings
-const PERM_LABEL_KEY_MAP = Object.fromEntries(
-  PERMISSION_CATALOG.flatMap(g => g.permissions.map(p => [p.key, p.labelKey]))
-)
+// Derived from catalog; rebuilt whenever catalog changes.
+function buildCatalogHelpers(catalog) {
+  const knownKeys = new Set(catalog.flatMap(g => g.permissions.map(p => p.key)))
+  const sensitiveKeys = new Set(
+    catalog.flatMap(g => g.permissions.filter(p => p.sensitive).map(p => p.key))
+  )
+  return { knownKeys, sensitiveKeys }
+}
 
 function formatRoleName(id) {
   if (!id) return ''
@@ -184,12 +243,12 @@ function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel }) {
 
 // ── Pre-save summary dialog ──────────────────────────────────────────────────
 
-function SaveSummaryDialog({ pending, roleName, permLabels, onConfirm, onCancel, saving }) {
+function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onConfirm, onCancel, saving }) {
   const { t } = useTranslation()
   if (!pending) return null
   const { added, removed } = pending
-  const sensitiveAdded   = added.filter(k => SENSITIVE_PERMS.has(k))
-  const sensitiveRemoved = removed.filter(k => SENSITIVE_PERMS.has(k))
+  const sensitiveAdded   = added.filter(k => sensitiveKeys.has(k))
+  const sensitiveRemoved = removed.filter(k => sensitiveKeys.has(k))
   const hasSensitive = sensitiveAdded.length > 0 || sensitiveRemoved.length > 0
   return (
     <div
@@ -219,7 +278,7 @@ function SaveSummaryDialog({ pending, roleName, permLabels, onConfirm, onCancel,
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', fontSize: 'var(--admin-text-sm)' }}>
                 <Check size={12} style={{ color: 'var(--admin-color-status-success-text)', flexShrink: 0 }} aria-hidden />
                 <span style={{ color: 'var(--admin-color-text-primary)' }}>{permLabels[k] || k}</span>
-                {SENSITIVE_PERMS.has(k) && (
+                {sensitiveKeys.has(k) && (
                   <AlertTriangle size={12} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-label={t('roles.sensitivePermNote')} />
                 )}
               </div>
@@ -236,7 +295,7 @@ function SaveSummaryDialog({ pending, roleName, permLabels, onConfirm, onCancel,
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', fontSize: 'var(--admin-text-sm)' }}>
                 <X size={12} style={{ color: 'var(--admin-color-status-danger-text)', flexShrink: 0 }} aria-hidden />
                 <span style={{ color: 'var(--admin-color-text-primary)' }}>{permLabels[k] || k}</span>
-                {SENSITIVE_PERMS.has(k) && (
+                {sensitiveKeys.has(k) && (
                   <AlertTriangle size={12} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-label={t('roles.sensitivePermNote')} />
                 )}
               </div>
@@ -528,8 +587,9 @@ function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
 
       {group.permissions.map(perm => {
         const granted = isSuperAdmin || activePerms.has(perm.key)
-        const isSensitive = SENSITIVE_PERMS.has(perm.key)
-        const label = t(perm.labelKey)
+        const isSensitive = perm.sensitive
+        const labelKey = PERM_LABEL_KEY_MAP[perm.key]
+        const label = labelKey ? t(labelKey, { defaultValue: perm.key }) : perm.key
         const permId = `perm-${perm.key.replace(/[^a-z0-9]/gi, '-')}`
         const canEdit = editMode && !isSuperAdmin
 
@@ -590,10 +650,10 @@ function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
 
 // ── Role summary card ────────────────────────────────────────────────────────
 
-function RoleSummaryCard({ activePerms, isSuperAdmin }) {
+function RoleSummaryCard({ activePerms, isSuperAdmin, sensitiveKeys }) {
   const { t } = useTranslation()
   const permCount = isSuperAdmin ? '∞' : activePerms.size
-  const hasSensitive = isSuperAdmin || [...SENSITIVE_PERMS].some(p => activePerms.has(p))
+  const hasSensitive = isSuperAdmin || [...sensitiveKeys].some(p => activePerms.has(p))
 
   return (
     <div style={{
@@ -630,12 +690,13 @@ function RoleSummaryCard({ activePerms, isSuperAdmin }) {
 // ── Role detail panel ────────────────────────────────────────────────────────
 
 function RoleDetail({
-  role, canUpdate, editMode, draft, isDirty, saving,
+  role, canUpdate, editMode, draft, isDirty, saving, catalog,
   onStartEdit, onCancelEdit, onRequestSave, onToggle, onDeleteRole,
 }) {
   const { t } = useTranslation()
   const isSuperAdmin = role.id === 'SUPER_ADMIN'
   const activePerms = (editMode && draft) ? draft : new Set(role.permissions)
+  const { knownKeys: KNOWN_PERM_KEYS, sensitiveKeys: SENSITIVE_PERMS } = buildCatalogHelpers(catalog)
   const descKey = `roles.roleDesc_${role.id}`
   const desc = t(descKey, { defaultValue: role.description || '' })
   const displayName = getRoleDisplayName(role, t)
@@ -705,7 +766,7 @@ function RoleDetail({
       </div>
 
       {/* Summary bar */}
-      <RoleSummaryCard activePerms={activePerms} isSuperAdmin={isSuperAdmin} />
+      <RoleSummaryCard activePerms={activePerms} isSuperAdmin={isSuperAdmin} sensitiveKeys={SENSITIVE_PERMS} />
 
       {/* Unsaved-changes banner */}
       {editMode && isDirty && (
@@ -751,7 +812,7 @@ function RoleDetail({
       )}
 
       {/* Permission groups */}
-      {PERMISSION_CATALOG.map(group => (
+      {catalog.map(group => (
         <PermGroup
           key={group.groupKey}
           group={group}
@@ -818,6 +879,7 @@ export function RolesScreen({ canUpdate = false }) {
   const { t } = useTranslation()
 
   const [roles, setRoles]                 = useState([])
+  const [catalog, setCatalog]             = useState(BUILTIN_CATALOG)
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)
   const [selectedId, setSelectedId]       = useState(null)
@@ -839,10 +901,14 @@ export function RolesScreen({ canUpdate = false }) {
       setLoading(true)
       setLoadError(null)
       try {
-        const result = await fetchRoles()
+        const [rolesResult, catalogResult] = await Promise.all([
+          fetchRoles(),
+          fetchPermissionCatalog(),
+        ])
         if (!cancelled) {
-          setRoles(result.items)
-          if (result.items.length > 0) setSelectedId(result.items[0].id)
+          setRoles(rolesResult.items)
+          if (rolesResult.items.length > 0) setSelectedId(rolesResult.items[0].id)
+          if (catalogResult) setCatalog(catalogResult)
         }
       } catch (e) {
         if (!cancelled) setLoadError(e.message || t('roles.loadError'))
@@ -860,14 +926,18 @@ export function RolesScreen({ canUpdate = false }) {
     return () => clearTimeout(timer)
   }, [toast])
 
+  const { knownKeys: KNOWN_PERM_KEYS, sensitiveKeys: SENSITIVE_PERMS } =
+    buildCatalogHelpers(catalog)
+
   const selected      = roles.find(r => r.id === selectedId) || null
   const originalPerms = selected ? new Set(selected.permissions) : new Set()
   const isDirty       = editMode && draft ? !setsEqual(draft, originalPerms) : false
 
   // Build label lookup for summary dialogs
   const permLabels = {}
-  PERMISSION_CATALOG.forEach(g => g.permissions.forEach(p => {
-    permLabels[p.key] = t(p.labelKey)
+  catalog.forEach(g => g.permissions.forEach(p => {
+    const lk = PERM_LABEL_KEY_MAP[p.key]
+    permLabels[p.key] = lk ? t(lk, { defaultValue: p.key }) : p.key
   }))
 
   const selectedDisplayName = selected ? getRoleDisplayName(selected, t) : ''
@@ -1001,6 +1071,7 @@ export function RolesScreen({ canUpdate = false }) {
         pending={savePending}
         roleName={selectedDisplayName}
         permLabels={permLabels}
+        sensitiveKeys={SENSITIVE_PERMS}
         onConfirm={handleSave}
         onCancel={() => setSavePending(null)}
         saving={saving}
@@ -1083,6 +1154,7 @@ export function RolesScreen({ canUpdate = false }) {
                 draft={draft}
                 isDirty={isDirty}
                 saving={saving}
+                catalog={catalog}
                 onStartEdit={handleStartEdit}
                 onCancelEdit={handleCancelEdit}
                 onRequestSave={handleRequestSave}

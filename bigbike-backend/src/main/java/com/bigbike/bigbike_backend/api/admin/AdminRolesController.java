@@ -45,18 +45,17 @@ public class AdminRolesController {
 
     @GetMapping
     public ApiDataResponse<List<Map<String, Object>>> listRoles(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "admin-users.read");
+        devAdminAuthService.requirePermission(request, "roles.read");
         return apiResponseFactory.data(adminRoleService.getAllRoles(), request);
     }
 
-    /** Phase 1 — edit permissions of an existing role */
     @PutMapping("/{id}/permissions")
     public ApiDataResponse<Map<String, Object>> updatePermissions(
             @PathVariable String id,
             @RequestBody Map<String, Object> body,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "admin-users.write");
+        devAdminAuthService.requirePermission(request, "roles.write");
 
         @SuppressWarnings("unchecked")
         List<String> permList = (List<String>) body.get("permissions");
@@ -68,14 +67,13 @@ public class AdminRolesController {
         );
     }
 
-    /** Phase 2 — create a new custom role */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Map<String, Object>> createRole(
             @RequestBody Map<String, Object> body,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "admin-users.write");
+        devAdminAuthService.requirePermission(request, "roles.write");
 
         @SuppressWarnings("unchecked")
         List<String> permList = (List<String>) body.get("permissions");
@@ -93,11 +91,10 @@ public class AdminRolesController {
         );
     }
 
-    /** Phase 2 — delete a custom role */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRole(@PathVariable String id, HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "admin-users.write");
+        devAdminAuthService.requirePermission(request, "roles.write");
         adminRoleService.deleteRole(id, resolveAdminId());
     }
 

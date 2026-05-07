@@ -2109,6 +2109,15 @@ function buildMockRoles() {
   ]
 }
 
+export async function fetchPermissionCatalog() {
+  try {
+    const payload = await requestJson('/admin/permissions')
+    return Array.isArray(payload?.data) ? payload.data : null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchRoles() {
   if (FORCE_MOCK) {
     return withMockFallback('Roles served from mock data.', { items: buildMockRoles() })

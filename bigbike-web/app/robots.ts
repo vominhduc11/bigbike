@@ -20,6 +20,8 @@ export default function robots(): MetadataRoute.Robots {
         "/dang-ky",
         "/quen-mat-khau",
         "/tim-kiem",
+        "/xac-nhan-email",
+        "/xac-nhan-email/",
       ],
     },
     sitemap: `${origin}/sitemap.xml`,

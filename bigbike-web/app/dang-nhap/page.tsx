@@ -9,12 +9,13 @@ import { loginCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
 import { loginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
+import { isSafeReturnTo } from "@/lib/utils/auth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const raw = searchParams.get("tiep") ?? "";
-  const returnTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : toAccountPath();
+  const returnTo = isSafeReturnTo(raw) ? raw : toAccountPath();
 
   const {
     register,

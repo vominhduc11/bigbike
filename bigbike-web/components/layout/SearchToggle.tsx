@@ -72,19 +72,14 @@ export function SearchToggle() {
       setSuggestLoading(true);
       try {
         const res = await fetch(
-          `${toProductListPath()}?q=${encodeURIComponent(trimmed)}&size=5&format=json`,
-        );
-        // Fall back to the public search API if the above fails or returns HTML
-        const searchRes = await fetch(
           `/api/search-suggest?q=${encodeURIComponent(trimmed)}`,
         );
-        if (searchRes.ok) {
-          const json = (await searchRes.json()) as { products?: SuggestProduct[] };
+        if (res.ok) {
+          const json = (await res.json()) as { products?: SuggestProduct[] };
           setSuggestions(json.products ?? []);
         } else {
           setSuggestions([]);
         }
-        void res; // unused but fetched above for cache warm-up
       } catch {
         setSuggestions([]);
       } finally {

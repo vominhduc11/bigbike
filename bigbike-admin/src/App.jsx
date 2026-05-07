@@ -103,7 +103,7 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/shipping',     labelKey: 'nav.shipping',    permission: 'shipping.read',     icon: Truck },
       { path: '/admin/settings',     labelKey: 'nav.settings',    permission: 'settings.read',     icon: Settings },
       { path: '/admin/admin-users',  labelKey: 'nav.adminUsers',  permission: 'admin-users.read',  icon: Shield },
-      { path: '/admin/roles',        labelKey: 'nav.roles',       permission: 'admin-users.read',  icon: KeyRound },
+      { path: '/admin/roles',        labelKey: 'nav.roles',       permission: 'roles.read',        icon: KeyRound },
       { path: '/admin/audit-logs',   labelKey: 'nav.auditLogs',   permission: 'audit-logs.read',   icon: Activity },
     ],
   },
@@ -210,7 +210,7 @@ function routePermission(routeName) {
     case 'returns':                      return 'orders.read'
     case 'receivables-list':
     case 'receivable-detail':            return 'receivables.read'
-    case 'roles':                        return 'admin-users.read'
+    case 'roles':                        return 'roles.read'
     case 'pos':                          return 'pos.read'
     default:                             return ''
   }
@@ -395,7 +395,7 @@ function AdminApp() {
     case 'returns':
       screen = <ReturnListScreen canUpdate={hasPermission('orders.write')} />; break
     case 'roles':
-      screen = <RolesScreen canUpdate={hasPermission('admin-users.write')} />; break
+      screen = <RolesScreen canUpdate={hasPermission('roles.write')} />; break
     case 'pos':
       screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} />; break
     case 'receivables-list':

@@ -21,10 +21,9 @@ export async function GET(req: Request) {
   if (q.length < 2) return NextResponse.json(EMPTY);
 
   try {
-    const url = new URL(`${BACKEND}/api/v1/products`);
+    const url = new URL(`${BACKEND}/api/v1/search-suggest`);
     url.searchParams.set("q", q);
-    url.searchParams.set("size", "6");
-    url.searchParams.set("page", "1");
+    url.searchParams.set("limit", "6");
 
     const res = await fetch(url.toString(), {
       next: { revalidate: 30 },
@@ -34,11 +33,11 @@ export async function GET(req: Request) {
     if (!res.ok) return NextResponse.json(EMPTY);
 
     const json = (await res.json()) as {
-      data?: ProductSummary[];
+      data?: { products?: ProductSummary[] };
     };
 
     return NextResponse.json(
-      { products: json.data ?? [] },
+      { products: json.data?.products ?? [] },
       { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } },
     );
   } catch {

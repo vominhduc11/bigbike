@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AdminUserJpaRepository extends JpaRepository<AdminUserEntity, UUID> {
 
     Optional<AdminUserEntity> findByEmail(String email);
+
+    long countByRole(String role);
 }

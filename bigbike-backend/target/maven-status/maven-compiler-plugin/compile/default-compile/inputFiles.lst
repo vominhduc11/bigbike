@@ -10,6 +10,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMediaController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMenuController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminOrderController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminPermissionsController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminPosController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminReceivableController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminRedirectController.java
@@ -480,6 +481,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\DevAdminAuthService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\JwtService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\PasswordService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\auth\PermissionCatalog.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\cart\CartCalculator.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\cart\CartService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\catalog\CatalogReadService.java

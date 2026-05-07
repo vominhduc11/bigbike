@@ -16,6 +16,7 @@ com\bigbike\bigbike_backend\api\checkout\CheckoutController.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\ProductSpecificationEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\FgRedirectAnalyzer.class
 com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponse.class
+com\bigbike\bigbike_backend\service\auth\PermissionCatalog.class
 com\bigbike\bigbike_backend\api\checkout\dto\OrderSummaryResponse$PriceChange.class
 com\bigbike\bigbike_backend\service\search\GlobalSearchService.class
 com\bigbike\bigbike_backend\api\admin\AdminRolesController.class
@@ -69,6 +70,7 @@ com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressProductMapper$Ma
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressReviewMapper.class
 com\bigbike\bigbike_backend\migration\wordpress\service\WordPressMappingPlanService$FieldMapping.class
 com\bigbike\bigbike_backend\api\error\UnauthorizedException.class
+com\bigbike\bigbike_backend\service\auth\PermissionCatalog$Entry.class
 com\bigbike\bigbike_backend\api\admin\dto\menu\UpdateMenuItemRequest.class
 com\bigbike\bigbike_backend\domain\catalog\CategorySummary.class
 com\bigbike\bigbike_backend\persistence\repository\commerce\cart\CartCouponJpaRepository.class
@@ -248,6 +250,7 @@ com\bigbike\bigbike_backend\api\auth\dto\TokenResponse.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\ProductVariantOptionEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\FgRedirectResolver$ResolutionResult.class
 com\bigbike\bigbike_backend\api\admin\dto\ReorderHomeVideosRequest$Item.class
+com\bigbike\bigbike_backend\service\auth\PermissionCatalog$Group.class
 com\bigbike\bigbike_backend\service\common\PageResult.class
 com\bigbike\bigbike_backend\api\auth\dto\LoginRequest.class
 com\bigbike\bigbike_backend\service\security\SafePublicLinkPolicy.class
@@ -353,6 +356,7 @@ com\bigbike\bigbike_backend\persistence\repository\media\MediaJpaRepository.clas
 com\bigbike\bigbike_backend\persistence\repository\catalog\ReviewJpaRepository$ReviewAggregate.class
 com\bigbike\bigbike_backend\api\admin\dto\VariantOptionRequest.class
 com\bigbike\bigbike_backend\service\admin\AdminRedirectService$AdminRedirectResponse.class
+com\bigbike\bigbike_backend\api\admin\AdminPermissionsController.class
 com\bigbike\bigbike_backend\api\customer\dto\CustomerLoginRequest.class
 com\bigbike\bigbike_backend\domain\content\Article.class
 com\bigbike\bigbike_backend\api\public_\dto\VnAddressItem.class
