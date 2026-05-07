@@ -1,9 +1,21 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -23,45 +35,116 @@ class PublicReadApiTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private ProductJpaRepository productRepo;
+
+    @Autowired
+    private CategoryJpaRepository categoryRepo;
+
+    @Autowired
+    private BrandJpaRepository brandRepo;
+
     @BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
+    // ── PRODINV-001 replacement: self-seeding public catalog tests ────────────────
+
     @Test
-    @Disabled("Requires V1000 catalog seed (disabled) — data not available in H2 test context")
-    void shouldReturnProductListWithPaginationAndMeta() throws Exception {
+    void publicProductList_pagination_returnsMeta() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-cat-pg-" + suffix, "Pub Cat PG " + suffix);
+        seedProduct("pub-pg-p1-" + suffix, "Pub Pg Product 1 " + suffix, cat, PublishStatus.PUBLISHED, 1_000_000L);
+        seedProduct("pub-pg-p2-" + suffix, "Pub Pg Product 2 " + suffix, cat, PublishStatus.PUBLISHED, 2_000_000L);
+        seedProduct("pub-pg-p3-" + suffix, "Pub Pg Product 3 " + suffix, cat, PublishStatus.PUBLISHED, 3_000_000L);
+
         mockMvc.perform(get("/api/v1/products")
-                        .param("page", "1")
-                        .param("size", "2")
-                .param("sort", "price:asc")
-                .param("category", "mu-bao-hiem")
-                .param("brand", "ls2"))
+                        .param("page", "1").param("size", "2")
+                        .param("category", "pub-cat-pg-" + suffix))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].image.url").exists())
-                .andExpect(jsonPath("$.data[0].gallery").isArray())
-                .andExpect(jsonPath("$.data[0].videos").isArray())
-                .andExpect(jsonPath("$.data[0].price.currency").value("VND"))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.pageSize").value(2))
+                .andExpect(jsonPath("$.pagination.totalItems").value(3))
+                .andExpect(jsonPath("$.pagination.totalPages").value(2))
                 .andExpect(jsonPath("$.meta.requestId").exists())
                 .andExpect(jsonPath("$.meta.timestamp").exists());
     }
 
     @Test
-    @Disabled("Requires V1000 catalog seed (disabled) — data not available in H2 test context")
-    void shouldFilterProductsByLegacyQueryParams() throws Exception {
+    void publicProductList_excludesNonPublished() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-cat-vis-" + suffix, "Pub Cat Vis " + suffix);
+        seedProduct("pub-vis-pub-" + suffix, "Pub Visible Published " + suffix, cat, PublishStatus.PUBLISHED, 1_500_000L);
+        seedProduct("pub-vis-dft-" + suffix, "Pub Visible Draft " + suffix, cat, PublishStatus.DRAFT, 1_500_000L);
+
         mockMvc.perform(get("/api/v1/products")
-                        .param("page", "1")
-                        .param("size", "10")
-                        .param("pwb-brand", "ls2")
-                        .param("filter_color", "do")
-                        .param("min_price", "3000000")
-                        .param("max_price", "3400000"))
+                        .param("category", "pub-cat-vis-" + suffix))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].slug").value("mu-bao-hiem-ls2-ff800"));
+                .andExpect(jsonPath("$.data[0].slug").value("pub-vis-pub-" + suffix));
+    }
+
+    @Test
+    void publicCategoryDetail_bySlug_returnsVisibleCategory() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-cat-det-" + suffix, "Pub Cat Det " + suffix);
+
+        mockMvc.perform(get("/api/v1/categories/" + cat.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(cat.getSlug()));
+    }
+
+    @Test
+    void publicBrandDetail_bySlug_returnsVisibleBrand() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        BrandEntity brand = seedBrand("pub-brand-det-" + suffix, "Pub Brand Det " + suffix);
+
+        mockMvc.perform(get("/api/v1/brands/" + brand.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(brand.getSlug()));
+    }
+
+    @Test
+    void publicCategoryList_excludesHiddenCategories() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String hiddenSlug = "pub-cat-hid-" + suffix;
+        CategoryEntity hidden = seedCategory(hiddenSlug, "Pub Cat Hid " + suffix);
+        hidden.setVisible(false);
+        categoryRepo.save(hidden);
+
+        // Fetch up to 100 categories — hidden slug must never appear
+        mockMvc.perform(get("/api/v1/categories").param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.slug == '" + hiddenSlug + "')]").doesNotExist());
+
+        // Verify it is really in DB (hidden) so this is not a false negative
+        assertThat(categoryRepo.findBySlug(hiddenSlug)).isPresent();
+    }
+
+    @Test
+    void publicProductSnapshot_publishedProduct_returnsSnapshot() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-snap-cat-" + suffix, "Pub Snap Cat " + suffix);
+        String slug = "pub-snap-prod-" + suffix;
+        seedProduct(slug, "Pub Snap Product " + suffix, cat, PublishStatus.PUBLISHED, 2_500_000L);
+
+        mockMvc.perform(get("/api/v1/products/" + slug + "/snapshot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pricing.retailPrice").value(2500000))
+                .andExpect(jsonPath("$.data.stock.stockState").isString());
+    }
+
+    @Test
+    void publicProductSnapshot_nonPublishedProduct_returns404() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-snap-cat2-" + suffix, "Pub Snap Cat2 " + suffix);
+        String slug = "pub-snap-draft-" + suffix;
+        seedProduct(slug, "Pub Snap Draft " + suffix, cat, PublishStatus.DRAFT, 1_000_000L);
+
+        mockMvc.perform(get("/api/v1/products/" + slug + "/snapshot"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -104,6 +187,54 @@ class PublicReadApiTest {
         mockMvc.perform(get("/api/v1/brands/ls2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value("ls2"));
+    }
+
+    // ── Seed helpers ─────────────────────────────────────────────────────────────
+
+    private CategoryEntity seedCategory(String slug, String name) {
+        return categoryRepo.findBySlug(slug).orElseGet(() -> {
+            CategoryEntity cat = new CategoryEntity();
+            cat.setId("pub-cat-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10));
+            cat.setSlug(slug);
+            cat.setName(name);
+            cat.setVisible(true);
+            Instant now = Instant.now();
+            cat.setCreatedAt(now);
+            cat.setUpdatedAt(now);
+            return categoryRepo.save(cat);
+        });
+    }
+
+    private void seedProduct(String slug, String name, CategoryEntity cat,
+                             PublishStatus status, long retailPriceLong) {
+        if (productRepo.findBySlug(slug).isPresent()) return;
+        ProductEntity p = new ProductEntity();
+        p.setId(UUID.randomUUID().toString());
+        p.setSlug(slug);
+        p.setName(name);
+        p.setRetailPrice(BigDecimal.valueOf(retailPriceLong));
+        p.setCurrency("VND");
+        p.setPublishStatus(status);
+        p.setStockState(ProductStockState.IN_STOCK);
+        p.setCategory(cat);
+        Instant now = Instant.now();
+        p.setCreatedAt(now);
+        p.setUpdatedAt(now);
+        productRepo.save(p);
+    }
+
+    private BrandEntity seedBrand(String slug, String name) {
+        return brandRepo.findBySlug(slug).orElseGet(() -> {
+            BrandEntity b = new BrandEntity();
+            b.setId("pub-brand-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+            b.setSlug(slug);
+            b.setName(name);
+            b.setVisible(true);
+            Instant now = Instant.now();
+            b.setCreatedAt(now);
+            b.setUpdatedAt(now);
+            return brandRepo.save(b);
+        });
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.repository.catalog;
 
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import java.util.List;
 import java.util.Optional;
@@ -33,11 +34,13 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
                OR LOWER(v.name) LIKE LOWER(CONCAT('%', :q, '%'))
                OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
           AND (:state IS NULL OR v.stockState = :state)
+          AND p.publishStatus <> :trashStatus
         ORDER BY p.name ASC, v.name ASC
         """)
     Page<ProductVariantEntity> searchStock(
             @Param("q") String q,
             @Param("state") ProductStockState state,
+            @Param("trashStatus") PublishStatus trashStatus,
             Pageable pageable
     );
 

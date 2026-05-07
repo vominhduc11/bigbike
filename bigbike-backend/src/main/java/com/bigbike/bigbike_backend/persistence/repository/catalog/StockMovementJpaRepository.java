@@ -24,6 +24,8 @@ public interface StockMovementJpaRepository extends JpaRepository<StockMovementE
 
     long countByVariantId(String variantId);
 
+    long countByProductId(String productId);
+
     @Query("""
         SELECT m FROM StockMovementEntity m LEFT JOIN FETCH m.variant v LEFT JOIN FETCH v.product
         WHERE (:movementType IS NULL OR m.movementType = :movementType)

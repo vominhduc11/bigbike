@@ -283,6 +283,92 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(jsonPath("$.error.details[0].code").value("INVALID"));
     }
 
+    // ── 10. Product-level adjust — increases stockQuantity and writes movement ───
+
+    @Test
+    void productLevelAdjust_increasesStockAndWritesMovement() throws Exception {
+        String productId = ensureTestProduct("ProdLevel Adjust " + UUID.randomUUID().toString().substring(0, 8));
+
+        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "quantityDelta": 10, "movementType": "IN", "note": "Initial stock" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantityOnHand").value(10))
+                .andExpect(jsonPath("$.variantId").doesNotExist());
+
+        ProductEntity updated = productRepo.findById(productId).orElseThrow();
+        assertThat(updated.getStockQuantity()).isEqualTo(10);
+
+        long movCount = movementRepo.countByProductId(productId);
+        assertThat(movCount).isGreaterThan(0);
+    }
+
+    // ── 11. Product-level adjust below zero returns 400 ──────────────────────────
+
+    @Test
+    void productLevelAdjust_belowZero_returns400() throws Exception {
+        String productId = ensureTestProduct("ProdLevel BelowZero " + UUID.randomUUID().toString().substring(0, 8));
+
+        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "quantityDelta": -999, "movementType": "OUT" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("BELOW_ZERO"));
+    }
+
+    // ── 12. Product-level adjust requires products.update permission ──────────────
+
+    @Test
+    void productLevelAdjust_requiresProductsUpdatePermission() throws Exception {
+        String productId = ensureTestProduct("ProdLevel Perm " + UUID.randomUUID().toString().substring(0, 8));
+
+        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+                        .header("Authorization", "Bearer " + noPermToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "quantityDelta": 1, "movementType": "ADJUSTMENT" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── 13. Adjust stock on TRASH product/variant returns 400 ────────────────────
+
+    @Test
+    void adjustStock_trashProduct_returns400() throws Exception {
+        String productId = ensureTestProduct("ProdLevel Trash " + UUID.randomUUID().toString().substring(0, 8));
+
+        // Move product to TRASH
+        ProductEntity p = productRepo.findById(productId).orElseThrow();
+        p.setPublishStatus(PublishStatus.TRASH);
+        productRepo.save(p);
+
+        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "quantityDelta": 5, "movementType": "ADJUSTMENT" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("TRASH_PRODUCT"));
+    }
+
+    // ── 14. filter_gender returns 400 UNSUPPORTED_FILTER ─────────────────────────
+
+    @Test
+    void publicProductList_filterGender_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/products")
+                        .param("filter_gender", "male"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("filter_gender"))
+                .andExpect(jsonPath("$.error.details[0].code").value("UNSUPPORTED_FILTER"));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────────
 
     private void ensureAdminUser(String email, String pass, String role) {
@@ -310,6 +396,38 @@ class Phase1KInventoryP0FixApiTest {
         String marker = "\"accessToken\":\"";
         int start = body.indexOf(marker) + marker.length();
         return body.substring(start, body.indexOf("\"", start));
+    }
+
+    /** Creates a product WITHOUT variants (product-level stock) and returns the product ID. */
+    private String ensureTestProduct(String productName) {
+        String catId = "cat-p0fix-pl-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        CategoryEntity cat = new CategoryEntity();
+        cat.setId(catId);
+        cat.setSlug("p0fix-pl-cat-" + catId);
+        cat.setName("P0Fix PL Category");
+        cat.setVisible(true);
+        Instant now = Instant.now();
+        cat.setCreatedAt(now);
+        cat.setUpdatedAt(now);
+        categoryRepo.save(cat);
+
+        String productId = UUID.randomUUID().toString();
+        ProductEntity product = new ProductEntity();
+        product.setId(productId);
+        product.setSlug("p0fix-pl-" + productId.replace("-", "").substring(0, 12));
+        product.setName(productName);
+        product.setRetailPrice(BigDecimal.valueOf(500000));
+        product.setCurrency("VND");
+        product.setPublishStatus(PublishStatus.PUBLISHED);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setStockQuantity(0);
+        product.setManageStock(true);
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
+        product.setCategory(cat);
+        productRepo.save(product);
+
+        return productId;
     }
 
     private String ensureTestVariant(String productName) {

@@ -65,6 +65,13 @@ public class CatalogController {
             @RequestParam(required = false) Boolean showOnHomepage,
             HttpServletRequest request
     ) {
+        if (filterGender != null && !filterGender.isBlank()) {
+            throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField(
+                    "filter_gender",
+                    "UNSUPPORTED_FILTER",
+                    "filter_gender is not supported. Gender filtering is not implemented."
+            );
+        }
         if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
             throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField(
                     "min_price",
@@ -74,7 +81,7 @@ public class CatalogController {
         }
         return apiResponseFactory.list(
                 catalogReadService.listProducts(
-                        page, size, sort, category, brand, q, filterColor, filterGender,
+                        page, size, sort, category, brand, q, filterColor, null,
                         minPrice, maxPrice, featured, showOnHomepage),
                 request
         );

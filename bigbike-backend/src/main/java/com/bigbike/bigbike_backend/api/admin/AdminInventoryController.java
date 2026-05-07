@@ -97,6 +97,16 @@ public class AdminInventoryController {
         return inventoryService.adjustStock(variantId, resolveAdminId(), req);
     }
 
+    @PostMapping("/products/{productId}/adjust")
+    public AdminStockItemResponse adjustProductStock(
+            @PathVariable String productId,
+            @Valid @RequestBody AdjustStockRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return inventoryService.adjustProductStock(productId, resolveAdminId(), req);
+    }
+
     private UUID resolveAdminId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {

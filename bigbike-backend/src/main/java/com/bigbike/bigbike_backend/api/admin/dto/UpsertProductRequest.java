@@ -55,8 +55,10 @@ public class UpsertProductRequest {
     private Boolean forceOutOfStock;
     private Boolean isFeatured;
     private Boolean showOnHomepage;
-    private BigDecimal rating;
-    private Integer ratingCount;
+
+    // rating and ratingCount are read-only — owned by the review moderation subsystem.
+    // They are intentionally absent from this request DTO. Sending them in JSON is ignored
+    // because Jackson will find no matching setter. Phase 2D handles rating recomputation.
 
     @Size(max = 50000, message = "Content bottom is too long.")
     private String contentBottom;
@@ -241,22 +243,6 @@ public class UpsertProductRequest {
 
     public void setShowOnHomepage(Boolean showOnHomepage) {
         this.showOnHomepage = showOnHomepage;
-    }
-
-    public BigDecimal getRating() {
-        return rating;
-    }
-
-    public void setRating(BigDecimal rating) {
-        this.rating = rating;
-    }
-
-    public Integer getRatingCount() {
-        return ratingCount;
-    }
-
-    public void setRatingCount(Integer ratingCount) {
-        this.ratingCount = ratingCount;
     }
 
     public String getContentBottom() {

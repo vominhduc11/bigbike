@@ -9,9 +9,12 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementSerialEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementSerialJpaRepository;
@@ -40,6 +43,7 @@ public class AdminInventoryService {
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_TYPES = Set.of("IN", "OUT", "ADJUSTMENT", "RETURN");
 
+    private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository movementRepo;
     private final StockMovementSerialJpaRepository serialRepo;
@@ -48,6 +52,7 @@ public class AdminInventoryService {
     private final AuditLogJpaRepository auditLogRepo;
 
     public AdminInventoryService(
+            ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository movementRepo,
             StockMovementSerialJpaRepository serialRepo,
@@ -55,6 +60,7 @@ public class AdminInventoryService {
             WebRevalidationService webRevalidationService,
             AuditLogJpaRepository auditLogRepo
     ) {
+        this.productRepo = productRepo;
         this.variantRepo = variantRepo;
         this.movementRepo = movementRepo;
         this.serialRepo = serialRepo;
@@ -79,7 +85,7 @@ public class AdminInventoryService {
             catch (IllegalArgumentException ignored) {}
         }
 
-        Page<ProductVariantEntity> dbPage = variantRepo.searchStock(qParam, stateParam, PageRequest.of(pg, sz));
+        Page<ProductVariantEntity> dbPage = variantRepo.searchStock(qParam, stateParam, PublishStatus.TRASH, PageRequest.of(pg, sz));
         List<AdminStockItemResponse> items = dbPage.getContent().stream().map(this::toStockItem).toList();
 
         return new PageResult<>(items, page, sz, (int) dbPage.getTotalElements(), dbPage.getTotalPages());
@@ -146,7 +152,7 @@ public class AdminInventoryService {
         int page = 0;
         Page<ProductVariantEntity> chunk;
         do {
-            chunk = variantRepo.searchStock("", null, PageRequest.of(page, CSV_CHUNK_SIZE));
+            chunk = variantRepo.searchStock("", null, PublishStatus.TRASH, PageRequest.of(page, CSV_CHUNK_SIZE));
             chunk.getContent().forEach(v -> writer.println(
                     csvEscape(v.getProduct().getName()) + "," +
                     csvEscape(v.getProduct().getSku()) + "," +
@@ -168,6 +174,14 @@ public class AdminInventoryService {
     public AdminStockItemResponse adjustStock(String variantId, UUID adminId, AdjustStockRequest req) {
         ProductVariantEntity variant = variantRepo.findByIdForUpdate(variantId)
                 .orElseThrow(() -> new NotFoundException("Variant not found: " + variantId));
+
+        // Guard: reject adjustment for variants belonging to TRASH products
+        if (variant.getProduct() != null
+                && variant.getProduct().getPublishStatus() != null
+                && variant.getProduct().getPublishStatus().name().equals("TRASH")) {
+            throw ValidationException.fromField("variantId", "TRASH_PRODUCT",
+                    "Cannot adjust stock for a variant belonging to a trashed product.");
+        }
 
         if (req.quantityDelta() == null) {
             throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
@@ -260,6 +274,77 @@ public class AdminInventoryService {
         return toStockItem(variant);
     }
 
+    // ── Adjust product-level (no-variant) stock ───────────────────────────────
+
+    @Transactional
+    public AdminStockItemResponse adjustProductStock(String productId, UUID adminId, AdjustStockRequest req) {
+        ProductEntity product = productRepo.findByIdForUpdate(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
+
+        if (product.getPublishStatus() != null
+                && product.getPublishStatus().name().equals("TRASH")) {
+            throw ValidationException.fromField("productId", "TRASH_PRODUCT",
+                    "Cannot adjust stock for a trashed product.");
+        }
+
+        if (req.quantityDelta() == null) {
+            throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
+        }
+
+        String type = req.movementType() != null
+                ? req.movementType().toUpperCase(Locale.ROOT) : "ADJUSTMENT";
+        if (!ALLOWED_TYPES.contains(type)) {
+            throw ValidationException.fromField("movementType", "INVALID",
+                    "movementType must be one of: IN, OUT, ADJUSTMENT, RETURN.");
+        }
+
+        // Serials are not supported for product-level (no-variant) adjustments.
+        // IN type: skip serial requirement since product-level stock doesn't track serials.
+
+        int before = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        int after = before + req.quantityDelta();
+        if (after < 0) {
+            throw ValidationException.fromField("quantityDelta", "BELOW_ZERO",
+                    "Resulting quantity would be negative. Current: " + before + ", delta: " + req.quantityDelta());
+        }
+
+        product.setStockQuantity(after);
+
+        // Recompute stockState (same logic as OrderStockRestoreService product branch).
+        int threshold = inventoryPolicyService.lowStockThreshold();
+        ProductStockState current = product.getStockState();
+        if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
+            if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
+            else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
+            else product.setStockState(ProductStockState.IN_STOCK);
+        }
+
+        productRepo.save(product);
+
+        StockMovementEntity movement = new StockMovementEntity();
+        movement.setProductId(product.getId());
+        movement.setMovementType(type);
+        movement.setQuantityDelta(req.quantityDelta());
+        movement.setQuantityBefore(before);
+        movement.setQuantityAfter(after);
+        movement.setReferenceType("MANUAL");
+        movement.setNote(req.note());
+        movement.setAdminId(adminId);
+        movement.setCreatedAt(Instant.now());
+        movementRepo.save(movement);
+
+        auditLogRepo.save(buildAudit(adminId, "INVENTORY_PRODUCT_STOCK_ADJUSTED", "INVENTORY",
+                "{\"productId\":\"" + productId + "\",\"type\":\"" + type + "\"" +
+                ",\"delta\":" + req.quantityDelta() + ",\"before\":" + before + ",\"after\":" + after + "}"));
+
+        String slug = product.getSlug();
+        if (slug != null && !slug.isBlank()) {
+            webRevalidationService.revalidate("product:" + slug, "products");
+        }
+
+        return toProductStockItem(product);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
@@ -283,6 +368,33 @@ public class AdminInventoryService {
             result.add(trimmed);
         }
         return result;
+    }
+
+    private AdminStockItemResponse toProductStockItem(ProductEntity p) {
+        AdminStockItemResponse.ImageRef img = null;
+        String url = trimToNull(p.getImageUrl());
+        if (url != null) {
+            img = new AdminStockItemResponse.ImageRef(
+                    trimToNull(p.getImageId()),
+                    url,
+                    trimToNull(p.getImageAlt()),
+                    p.getImageWidth(),
+                    p.getImageHeight(),
+                    trimToNull(p.getImageMimeType())
+            );
+        }
+        return new AdminStockItemResponse(
+                p.getId(),
+                p.getName(),
+                p.getSku(),
+                img,
+                null,          // variantId — null for product-level
+                null,          // variantName — null for product-level
+                null,          // variantSku — null for product-level
+                p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
+                p.getStockQuantity() != null ? p.getStockQuantity() : 0,
+                p.getRetailPrice()
+        );
     }
 
     private AdminStockItemResponse toStockItem(ProductVariantEntity v) {

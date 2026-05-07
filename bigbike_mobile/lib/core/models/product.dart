@@ -71,7 +71,11 @@ class ProductVariant {
         .toList(),
     price: ProductPrice.fromJson(j['price'] as Map<String, dynamic>? ?? {}),
     stockState: StockState.fromString(j['stockState'] as String?),
-    image: j['image'] as String?,
+    // Backend serializes image as an object {url, alt, width, height, mimeType}.
+    // Fall back to flat string for forward-compat.
+    image: j['image'] is Map
+        ? (j['image'] as Map)['url'] as String?
+        : j['image'] as String? ?? j['imageUrl'] as String?,
   );
 }
 
