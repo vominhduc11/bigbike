@@ -58,6 +58,7 @@ com\bigbike\bigbike_backend\api\Phase1IAdminManagementApiTest.class
 com\bigbike\bigbike_backend\api\PublicReadApiTest.class
 com\bigbike\bigbike_backend\api\AdminShippingApiTest.class
 com\bigbike\bigbike_backend\service\slider\SliderReadServiceTest.class
+com\bigbike\bigbike_backend\api\AdminReportRepositoryQueryTest.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
 com\bigbike\bigbike_backend\api\AdminReceivableApiTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class

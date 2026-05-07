@@ -8,6 +8,7 @@ S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminReceivableApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminRedirectApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminReportApiTest.java
+S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminReportRepositoryQueryTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminShippingApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminUsersApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AuthProfileGuardTest.java
