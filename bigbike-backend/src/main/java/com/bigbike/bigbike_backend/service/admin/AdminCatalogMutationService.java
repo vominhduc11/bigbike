@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,6 +70,7 @@ public class AdminCatalogMutationService {
     private final CatalogReadRepository catalogReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -77,7 +80,8 @@ public class AdminCatalogMutationService {
             ObjectProvider<AttributeValueJpaRepository> attributeValueJpaRepositoryProvider,
             CatalogReadRepository catalogReadRepository,
             MediaUrlProperties mediaUrlProperties,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
@@ -87,10 +91,11 @@ public class AdminCatalogMutationService {
         this.catalogReadRepository = catalogReadRepository;
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
+        this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
     }
 
     @Transactional
-    public Product createProduct(UpsertProductRequest request) {
+    public Product createProduct(UpsertProductRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
@@ -114,7 +119,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Product updateProduct(String productId, UpsertProductRequest request) {
+    public Product updateProduct(String productId, UpsertProductRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         ProductEntity entity = productJpaRepository.findById(productId)
@@ -139,7 +144,7 @@ public class AdminCatalogMutationService {
     }
 
     @Transactional
-    public Product updateProductPublishStatus(String productId, PublishStatus publishStatus) {
+    public Product updateProductPublishStatus(String productId, PublishStatus publishStatus, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         ProductEntity entity = productJpaRepository.findById(productId)
@@ -174,7 +179,7 @@ public class AdminCatalogMutationService {
      * Idempotent: re-deleting a TRASH product is a no-op.
      */
     @Transactional
-    public Product softDeleteProduct(String productId) {
+    public Product softDeleteProduct(String productId, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         ProductEntity entity = productJpaRepository.findById(productId)
@@ -205,7 +210,7 @@ public class AdminCatalogMutationService {
      * jump back to PUBLISHED without an explicit publish action.
      */
     @Transactional
-    public Product restoreProduct(String productId) {
+    public Product restoreProduct(String productId, UUID adminId) {
         requireJpaPersistenceEnabled();
 
         ProductEntity entity = productJpaRepository.findById(productId)

@@ -16,12 +16,14 @@ import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService;
 import com.bigbike.bigbike_backend.service.receivable.ReceivableQueryService;
 import com.bigbike.bigbike_backend.service.receivable.ReceivableService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +46,7 @@ public class AdminReceivableController {
 
     private final ReceivableQueryService queryService;
     private final ReceivableService receivableService;
+    private final CreditPolicyService creditPolicyService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
     private final CustomerJpaRepository customerRepo;
@@ -51,12 +54,14 @@ public class AdminReceivableController {
     public AdminReceivableController(
             ReceivableQueryService queryService,
             ReceivableService receivableService,
+            CreditPolicyService creditPolicyService,
             DevAdminAuthService devAdminAuthService,
             ApiResponseFactory apiResponseFactory,
             CustomerJpaRepository customerRepo
     ) {
         this.queryService = queryService;
         this.receivableService = receivableService;
+        this.creditPolicyService = creditPolicyService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
         this.customerRepo = customerRepo;
@@ -188,7 +193,7 @@ public class AdminReceivableController {
 
     private static UUID resolveAdminId(Object principal) {
         if (principal instanceof AdminPrincipal ap) {
-            try { return UUID.fromString(ap.getId()); } catch (Exception ignored) {}
+            try { return UUID.fromString(ap.id()); } catch (Exception ignored) {}
         }
         return null;
     }
@@ -196,15 +201,22 @@ public class AdminReceivableController {
     private record CustomerCreditProfile(
             UUID customerId,
             boolean creditEnabled,
-            java.math.BigDecimal creditLimit,
+            BigDecimal creditLimit,
             Integer paymentTermsDays,
             String creditStatus,
-            String creditNote
+            String creditNote,
+            BigDecimal currentOutstanding,
+            BigDecimal availableCredit
     ) {}
 
     private CustomerCreditProfile toCustomerCreditProfile(CustomerEntity c) {
+        BigDecimal outstanding = creditPolicyService.getCurrentOutstanding(c.getId());
+        BigDecimal available = c.getCreditLimit() != null
+                ? c.getCreditLimit().subtract(outstanding)
+                : null;
         return new CustomerCreditProfile(
                 c.getId(), c.isCreditEnabled(), c.getCreditLimit(),
-                c.getPaymentTermsDays(), c.getCreditStatus(), c.getCreditNote());
+                c.getPaymentTermsDays(), c.getCreditStatus(), c.getCreditNote(),
+                outstanding, available);
     }
 }

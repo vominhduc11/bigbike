@@ -48,6 +48,7 @@ com\bigbike\bigbike_backend\api\ContentPublicApiTest.class
 com\bigbike\bigbike_backend\api\Phase2DWordPressMigrationWritePlanImportTest.class
 com\bigbike\bigbike_backend\config\CorsConfigTest.class
 com\bigbike\bigbike_backend\api\AdminAuthApiTest.class
+com\bigbike\bigbike_backend\api\AdminDashboardApiTest.class
 com\bigbike\bigbike_backend\service\auth\PasswordServiceTest.class
 com\bigbike\bigbike_backend\api\AdminReadApiTest.class
 com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponseTest.class
@@ -57,6 +58,7 @@ com\bigbike\bigbike_backend\api\PublicReadApiTest.class
 com\bigbike\bigbike_backend\api\AdminShippingApiTest.class
 com\bigbike\bigbike_backend\service\slider\SliderReadServiceTest.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
+com\bigbike\bigbike_backend\api\AdminReceivableApiTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase1K1ContractHardeningTest.class
 com\bigbike\bigbike_backend\api\Phase1MPosApiTest$TestVariant.class

@@ -1,9 +1,11 @@
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminAuthApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminContentApiTest.java
+S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminDashboardApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminMediaP0Test.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminMutationApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminReadApiTest.java
+S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminReceivableApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminRedirectApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminShippingApiTest.java
 S:\project\bigbike\bigbike-backend\src\test\java\com\bigbike\bigbike_backend\api\AdminUsersApiTest.java

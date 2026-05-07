@@ -62,7 +62,7 @@ public class AdminRoleService {
         AdminRoleEntity saved = roleRepo.save(role);
 
         auditLogRepo.save(buildAudit(actorId, "ROLE_PERMISSIONS_UPDATED", role.getId(),
-                permissionsJson(before), permissionsJson(saved.getPermissions())));
+                permissionsJson(role.getId(), before), permissionsJson(role.getId(), saved.getPermissions())));
 
         return toMap(saved);
     }
@@ -92,7 +92,7 @@ public class AdminRoleService {
         AdminRoleEntity saved = roleRepo.save(role);
 
         auditLogRepo.save(buildAudit(actorId, "ROLE_CREATED", saved.getId(),
-                null, permissionsJson(saved.getPermissions())));
+                null, permissionsJson(saved.getId(), saved.getPermissions())));
 
         return toMap(saved);
     }
@@ -110,7 +110,7 @@ public class AdminRoleService {
         roleRepo.delete(role);
 
         auditLogRepo.save(buildAudit(actorId, "ROLE_DELETED", role.getId(),
-                permissionsJson(before), null));
+                permissionsJson(role.getId(), before), null));
     }
 
     private Map<String, Object> toMap(AdminRoleEntity r) {
@@ -125,8 +125,8 @@ public class AdminRoleService {
         );
     }
 
-    private String permissionsJson(Set<String> perms) {
-        return "{\"permissions\":[" +
+    private String permissionsJson(String roleId, Set<String> perms) {
+        return "{\"roleId\":\"" + roleId + "\",\"permissions\":[" +
                 perms.stream().map(p -> "\"" + p + "\"").collect(Collectors.joining(",")) +
                 "]}";
     }
@@ -137,7 +137,8 @@ public class AdminRoleService {
         log.setActorType("ADMIN");
         log.setActorId(actorId);
         log.setAction(action);
-        log.setResourceType("ADMIN_ROLE:" + roleId);
+        log.setResourceType("ADMIN_ROLE");
+        // resource_id stays null: role IDs are String, not UUID
         log.setBeforeData(before);
         log.setAfterData(after);
         log.setCreatedAt(Instant.now());

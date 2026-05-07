@@ -60,7 +60,7 @@ class AdminReceivableApiTest {
         if (adminUserRepo.findByEmail(ADMIN_EMAIL).isEmpty()) {
             AdminUserEntity admin = new AdminUserEntity();
             admin.setEmail(ADMIN_EMAIL);
-            admin.setPasswordHash(passwordService.encode(ADMIN_PASS));
+            admin.setPasswordHash(passwordService.hash(ADMIN_PASS));
             admin.setDisplayName("AR Test Admin");
             admin.setRole("ADMIN");
             admin.setStatus("ACTIVE");
@@ -258,5 +258,108 @@ class AdminReceivableApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paymentTermsDays").value(15));
+    }
+
+    // ── currentOutstanding / availableCredit contract tests ───────────────────
+
+    @Test
+    void customerCredit_noReceivables_currentOutstandingIsZero() throws Exception {
+        CustomerEntity customer = createCreditCustomer(); // credit_limit = 10_000_000
+
+        mockMvc.perform(get("/api/v1/admin/customers/" + customer.getId() + "/credit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentOutstanding").value(0))
+                .andExpect(jsonPath("$.data.availableCredit").value(10000000));
+    }
+
+    @Test
+    void customerCredit_withOpenReceivable_currentOutstandingIsCorrect() throws Exception {
+        CustomerEntity customer = createCreditCustomer(); // credit_limit = 10_000_000
+        OrderEntity order = createOrder("UNPAID", new BigDecimal("2000000"), BigDecimal.ZERO, customer.getId());
+        createReceivable(order, customer, new BigDecimal("2000000")); // OPEN, outstanding = 2_000_000
+
+        mockMvc.perform(get("/api/v1/admin/customers/" + customer.getId() + "/credit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentOutstanding").value(2000000))
+                .andExpect(jsonPath("$.data.availableCredit").value(8000000));
+    }
+
+    @Test
+    void customerCredit_withPartiallyPaidReceivable_currentOutstandingIsCorrect() throws Exception {
+        CustomerEntity customer = createCreditCustomer(); // credit_limit = 10_000_000
+        OrderEntity order = createOrder("PARTIALLY_PAID", new BigDecimal("3000000"), new BigDecimal("1000000"), customer.getId());
+
+        ReceivableEntity ar = new ReceivableEntity();
+        ar.setOrderId(order.getId());
+        ar.setCustomerId(customer.getId());
+        ar.setCustomerName(customer.getDisplayName());
+        ar.setOriginalAmount(new BigDecimal("3000000"));
+        ar.setPaidAmount(new BigDecimal("1000000"));
+        ar.setOutstandingAmount(new BigDecimal("2000000")); // 3M - 1M paid
+        ar.setWrittenOffAmount(BigDecimal.ZERO);
+        ar.setStatus("PARTIALLY_PAID");
+        ar.setCreatedFrom("POS");
+        ar.setDueDate(LocalDate.now().plusDays(30));
+        ar.setPaymentTermsDays(30);
+        ar.setCreatedAt(Instant.now());
+        ar.setUpdatedAt(Instant.now());
+        receivableRepo.save(ar);
+
+        mockMvc.perform(get("/api/v1/admin/customers/" + customer.getId() + "/credit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentOutstanding").value(2000000))
+                .andExpect(jsonPath("$.data.availableCredit").value(8000000));
+    }
+
+    @Test
+    void customerCredit_closedAndWrittenOffReceivables_notCountedInOutstanding() throws Exception {
+        CustomerEntity customer = createCreditCustomer(); // credit_limit = 10_000_000
+
+        // CLOSED receivable — should NOT count
+        OrderEntity closedOrder = createOrder("PAID", new BigDecimal("1000000"), new BigDecimal("1000000"), customer.getId());
+        ReceivableEntity closedAr = createReceivable(closedOrder, customer, BigDecimal.ZERO);
+        closedAr.setStatus("CLOSED");
+        closedAr.setPaidAmount(new BigDecimal("1000000"));
+        closedAr.setOutstandingAmount(BigDecimal.ZERO);
+        receivableRepo.save(closedAr);
+
+        // WRITTEN_OFF receivable — should NOT count
+        OrderEntity writtenOrder = createOrder("UNPAID", new BigDecimal("500000"), BigDecimal.ZERO, customer.getId());
+        ReceivableEntity writtenAr = createReceivable(writtenOrder, customer, new BigDecimal("500000"));
+        writtenAr.setStatus("WRITTEN_OFF");
+        writtenAr.setWrittenOffAmount(new BigDecimal("500000"));
+        writtenAr.setOutstandingAmount(BigDecimal.ZERO);
+        receivableRepo.save(writtenAr);
+
+        mockMvc.perform(get("/api/v1/admin/customers/" + customer.getId() + "/credit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentOutstanding").value(0))
+                .andExpect(jsonPath("$.data.availableCredit").value(10000000));
+    }
+
+    @Test
+    void customerCredit_nullCreditLimit_availableCreditIsNull() throws Exception {
+        CustomerEntity customer = new CustomerEntity();
+        customer.setEmail("no-limit-" + UUID.randomUUID() + "@test.com");
+        customer.setPhone("0912345001");
+        customer.setDisplayName("No Limit Customer");
+        customer.setStatus("ACTIVE");
+        customer.setSynthetic(false);
+        customer.setCreditEnabled(true);
+        customer.setCreditLimit(null); // no limit
+        customer.setCreditStatus("ACTIVE");
+        customer.setCreatedAt(Instant.now());
+        customer.setUpdatedAt(Instant.now());
+        customer = customerRepo.save(customer);
+
+        mockMvc.perform(get("/api/v1/admin/customers/" + customer.getId() + "/credit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentOutstanding").value(0))
+                .andExpect(jsonPath("$.data.availableCredit").doesNotExist());
     }
 }

@@ -2002,18 +2002,23 @@ export async function writeOffReceivable(receivableId, reason) {
   return { item: normalizeReceivable(payload?.data || {}) }
 }
 
+function normalizeCustomerCredit(d, fallbackCustomerId) {
+  return {
+    customerId: d.customerId || fallbackCustomerId,
+    creditEnabled: d.creditEnabled === true,
+    creditLimit: d.creditLimit ?? null,
+    paymentTermsDays: d.paymentTermsDays ?? null,
+    creditStatus: d.creditStatus || 'ACTIVE',
+    creditNote: d.creditNote || null,
+    currentOutstanding: d.currentOutstanding ?? 0,
+    availableCredit: d.availableCredit ?? null,
+  }
+}
+
 export async function fetchCustomerCredit(customerId) {
   try {
     const payload = await requestJson(`/admin/customers/${customerId}/credit`)
-    const d = payload?.data || {}
-    return {
-      customerId: d.customerId || customerId,
-      creditEnabled: d.creditEnabled === true,
-      creditLimit: d.creditLimit ?? null,
-      paymentTermsDays: d.paymentTermsDays ?? null,
-      creditStatus: d.creditStatus || 'ACTIVE',
-      creditNote: d.creditNote || null,
-    }
+    return normalizeCustomerCredit(payload?.data || {}, customerId)
   } catch {
     return null
   }
@@ -2025,15 +2030,7 @@ export async function updateCustomerCredit(customerId, input) {
     method: 'PATCH',
     body: input,
   })
-  const d = payload?.data || {}
-  return {
-    customerId: d.customerId || customerId,
-    creditEnabled: d.creditEnabled === true,
-    creditLimit: d.creditLimit ?? null,
-    paymentTermsDays: d.paymentTermsDays ?? null,
-    creditStatus: d.creditStatus || 'ACTIVE',
-    creditNote: d.creditNote || null,
-  }
+  return normalizeCustomerCredit(payload?.data || {}, customerId)
 }
 
 // ── Roles & Permissions ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

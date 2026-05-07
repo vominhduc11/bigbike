@@ -26,16 +26,16 @@ public interface ReceivableJpaRepository extends JpaRepository<ReceivableEntity,
             """)
     BigDecimal sumOutstandingByCustomerId(@Param("customerId") UUID customerId);
 
-    /** Summary aggregates for the AR overview panel. */
-    @Query("""
+    /** Summary aggregates for the AR overview panel. Native query ensures a single row even on empty table. */
+    @Query(value = """
             SELECT
-                COALESCE(SUM(r.outstandingAmount), 0),
-                COALESCE(SUM(CASE WHEN r.status = 'OVERDUE' THEN r.outstandingAmount ELSE 0 END), 0),
-                COUNT(CASE WHEN r.status IN ('OPEN','PARTIALLY_PAID','OVERDUE') THEN 1 END),
-                COUNT(CASE WHEN r.status = 'OVERDUE' THEN 1 END)
-            FROM ReceivableEntity r
-            WHERE r.status NOT IN ('CLOSED', 'WRITTEN_OFF')
-            """)
+                COALESCE(SUM(outstanding_amount), 0) AS total_outstanding,
+                COALESCE(SUM(CASE WHEN status = 'OVERDUE' THEN outstanding_amount ELSE 0 END), 0) AS overdue_outstanding,
+                COUNT(CASE WHEN status IN ('OPEN','PARTIALLY_PAID','OVERDUE') THEN 1 END) AS count_open,
+                COUNT(CASE WHEN status = 'OVERDUE' THEN 1 END) AS count_overdue
+            FROM accounts_receivable
+            WHERE status NOT IN ('CLOSED', 'WRITTEN_OFF')
+            """, nativeQuery = true)
     Object[] getSummaryAggregates();
 
     @Query("""

@@ -6,6 +6,8 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryRespo
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
@@ -43,19 +45,22 @@ public class AdminInventoryService {
     private final StockMovementSerialJpaRepository serialRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminInventoryService(
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository movementRepo,
             StockMovementSerialJpaRepository serialRepo,
             InventoryPolicyService inventoryPolicyService,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.variantRepo = variantRepo;
         this.movementRepo = movementRepo;
         this.serialRepo = serialRepo;
         this.inventoryPolicyService = inventoryPolicyService;
         this.webRevalidationService = webRevalidationService;
+        this.auditLogRepo = auditLogRepo;
     }
 
     // ── List stock (DB-side filter + sort + pagination) ───────────────────────
@@ -230,6 +235,10 @@ public class AdminInventoryService {
         movement.setAdminId(adminId);
         movement.setCreatedAt(Instant.now());
         movementRepo.save(movement);
+
+        auditLogRepo.save(buildAudit(adminId, "INVENTORY_STOCK_ADJUSTED", "INVENTORY",
+                "{\"variantId\":\"" + variantId + "\",\"type\":\"" + type + "\"" +
+                ",\"delta\":" + req.quantityDelta() + ",\"before\":" + before + ",\"after\":" + after + "}"));
 
         // ── Persist serials (same transaction — rollback if this fails) ────────
         if (!serials.isEmpty()) {

@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +47,7 @@ public class AdminContentMutationService {
     private final ContentReadRepository contentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -53,7 +57,8 @@ public class AdminContentMutationService {
             ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
             MediaUrlProperties mediaUrlProperties,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
@@ -63,6 +68,7 @@ public class AdminContentMutationService {
         this.contentReadRepository = contentReadRepository;
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
+        this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
     }
 
     @Transactional
