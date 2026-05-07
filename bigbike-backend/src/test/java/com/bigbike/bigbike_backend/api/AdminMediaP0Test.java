@@ -37,6 +37,9 @@ import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
 @TestPropertySource(properties = "bigbike.auth.dev-header-enabled=false")
+@org.springframework.test.context.jdbc.Sql(
+        scripts = "/db/test-seed.sql",
+        executionPhase = org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class AdminMediaP0Test {
 
     // Minimal PNG: 8-byte signature + IHDR — enough for Tika magic-byte detection

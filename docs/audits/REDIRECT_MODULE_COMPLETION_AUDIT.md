@@ -656,3 +656,67 @@ test('admin creates redirect, user gets 301', async ({ page, request }) => {
 | Open redirect | ❌ Không kiểm soát external target | ✅ Chỉ allow internal path + same-site absolute URL |
 | Test coverage | ⚠️ 3 test, bypass springSecurity() | ✅ 8 test, springSecurity() thật |
 | **Overall score** | **62/100** | **~81/100** |
+
+---
+
+## 17. Final Verification Before Merge
+
+> Ngày thực hiện: **2026-05-07**
+> Role: Senior QA / Release Engineer
+> Branch: `main`
+
+### Commands chạy
+
+```bash
+# Backend redirect tests
+./mvnw test -Dtest="AdminRedirectApiTest,Phase2D4RedirectMappingTest"
+```
+
+### Kết quả thực tế
+
+| Test class | Tests | Failures | Errors | Skipped | Result |
+|---|---|---|---|---|---|
+| `AdminRedirectApiTest` | 8 | 0 | 0 | 0 | ✅ PASS |
+| `Phase2D4RedirectMappingTest` | 20 | 0 | 0 | 0 | ✅ PASS |
+| **Tổng** | **28** | **0** | **0** | **0** | ✅ **ALL GREEN** |
+
+### Verification checklist (15 điểm)
+
+| # | Checkpoint | Kết quả |
+|---|---|---|
+| 1 | SecurityConfig dùng `.authenticated()` thay `.hasRole("ADMIN")` | ✅ Confirmed |
+| 2 | `DevAdminAuthService` có 2 path: AdminPrincipal (DB-backed) và header bypass (dev) | ✅ Confirmed |
+| 3 | `ensureDevMockProfile()` block non-dev profile | ✅ Confirmed |
+| 4 | V80 migration tồn tại và có cleanup logic an toàn trước khi ADD CONSTRAINT | ✅ File present, SQL correct |
+| 5 | `InternalRedirectController` check `X-Internal-Token` header; return 401 nếu fail | ✅ Confirmed |
+| 6 | Token empty → open access (backward compat) | ✅ `isAuthorized()` returns `true` when blank |
+| 7 | `application.properties` có `bigbike.internal.token=${BIGBIKE_INTERNAL_TOKEN:}` | ✅ Present |
+| 8 | `validateTargetUrl()` block external domains, protocol-relative `//`, dangerous schemes | ✅ Test `shouldRejectExternalTarget` passes |
+| 9 | Self-loop validation (`/a` → `/a`) rejected | ✅ Test `shouldValidateRedirectInput` passes |
+| 10 | Invalid status code (e.g. 200) rejected | ✅ Test `shouldRejectInvalidStatusCode` passes |
+| 11 | Duplicate `sourcePattern` rejected with 409 CONFLICT | ✅ Test `shouldRejectDuplicateSourcePattern` passes |
+| 12 | `RedirectLookupResponse` includes `redirectId` field | ✅ Confirmed in InternalRedirectController |
+| 13 | `proxy.ts` gọi `void recordHit(rule.redirectId)` sau mỗi redirect (fire-and-forget) | ✅ Confirmed |
+| 14 | `BIGBIKE_REDIRECT_CACHE_TTL_SECONDS` default 30s; comment về revalidateTag limitation | ✅ .env.example updated |
+| 15 | SEO_EDITOR có thể list và create redirect (DB-backed permission check) | ✅ Test `shouldAllowSeoEditorToListAndCreateRedirects` passes |
+
+### BLOCKERs còn lại
+
+**Không có BLOCKER.** Tất cả 8 mandatory fix đã hoàn thành và verified bằng test.
+
+### Tech debt (non-blocking)
+
+| Item | Mức độ | Ghi chú |
+|---|---|---|
+| `InternalRedirectController` chưa có integration test riêng cho token validation | LOW | Hiện cover gián tiếp qua service; token flow khá đơn giản |
+| `proxy.ts` chưa có unit test cho `recordHit` và cache TTL behavior | LOW | Cần Next.js test env; không block production |
+| L1 in-process redirect cache trong `proxy.ts` không được invalidate bởi `revalidateTag("redirects")` | KNOWN / DOCUMENTED | Đã documented trong `.env.example` và comment trong code. Behavior expected; TTL=30s là chấp nhận được |
+| External redirect allowlist chưa có (nếu cần partner domain redirect trong tương lai) | FUTURE | Không cần cho MVP |
+| `adminApi.js` mock fallback `shouldFallbackToMockOnLiveError` có thể che lỗi production | LOW | Flag từ audit ban đầu, không scope của redirect fix |
+
+### Final verdict
+
+> ## ✅ PASS — SẴN SÀNG MERGE VÀO STAGING
+>
+> Tất cả 8 mandatory fix đã implement và verified. 28/28 test xanh. Không có BLOCKER.
+> Trước khi deploy production cần set `BIGBIKE_INTERNAL_TOKEN` (backend) và `INTERNAL_API_TOKEN` (web) thành random secret khớp nhau.

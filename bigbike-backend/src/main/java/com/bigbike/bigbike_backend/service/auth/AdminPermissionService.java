@@ -25,15 +25,21 @@ public class AdminPermissionService {
     /**
      * Returns the permission list for the given role, loading from DB on first access.
      * Unknown roles return an empty list — no fallback to any other role.
+     * Empty results are not cached so that a role created after the first miss is picked up
+     * without requiring an explicit evict() call.
      */
     public List<String> getPermissionsForRole(String roleId) {
         if (roleId == null) return List.of();
         String key = roleId.toUpperCase(Locale.ROOT);
-        return cache.computeIfAbsent(key, k ->
-                roleRepo.findById(k)
-                        .map(r -> List.copyOf(r.getPermissions()))
-                        .orElse(List.of())
-        );
+        List<String> cached = cache.get(key);
+        if (cached != null) return cached;
+        return roleRepo.findById(key)
+                .map(r -> {
+                    List<String> perms = List.copyOf(r.getPermissions());
+                    cache.put(key, perms);
+                    return perms;
+                })
+                .orElse(List.of());
     }
 
     /** Removes a role's cached permissions, forcing a DB re-read on next access. */

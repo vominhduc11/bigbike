@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.bigbike.bigbike_backend.api.Phase2D1StagingImportRehearsalTest
--------------------------------------------------------------------------------
-Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.099 s -- in com.bigbike.bigbike_backend.api.Phase2D1StagingImportRehearsalTest

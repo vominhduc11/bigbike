@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,7 +13,6 @@ import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +22,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -61,8 +58,11 @@ class AdminRedirectApiTest {
      * but does NOT set an AdminPrincipal — so DevAdminAuthService falls through to the
      * X-Admin-Permissions header bypass (dev/test path).
      */
-    private static JwtRequestPostProcessor devAuth() {
-        return jwt();
+    private static RequestPostProcessor devAuth() {
+        return authentication(new UsernamePasswordAuthenticationToken(
+                "dev-test-user", null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        ));
     }
 
     /**

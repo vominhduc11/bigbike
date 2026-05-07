@@ -106,12 +106,12 @@ class AdminShippingApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // 3. SHOP_MANAGER is blocked by Spring Security (hasRole("ADMIN") on /api/v1/admin/**)
+    // 3. SHOP_MANAGER has shipping.read → read endpoint returns 200 (URL gate is authenticated() now)
     @Test
-    void listZones_readerRole_returns403() throws Exception {
+    void listZones_readerRole_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/admin/shipping/zones")
                         .header("Authorization", "Bearer " + readerToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     // 4. SHOP_MANAGER cannot create zone → 403
