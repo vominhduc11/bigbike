@@ -4169,7 +4169,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Analytics report"
+            "description": "Analytics report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -6415,6 +6425,118 @@
       }
     },
     "schemas": {
+      "AdminAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/AdminAnalyticsPeriodSummary"
+          },
+          "dailyRevenue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsDailyRevenue"
+            }
+          },
+          "topProducts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsTopProduct"
+            }
+          },
+          "topCustomers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsTopCustomer"
+            }
+          }
+        }
+      },
+      "AdminAnalyticsPeriodSummary": {
+        "type": "object",
+        "description": "Aggregate revenue metrics for the requested date range. All amounts in VND (BigDecimal serialized with scale 2).",
+        "properties": {
+          "grossOrderValue": {
+            "type": "number",
+            "description": "GMV: SUM(totalAmount) excluding CANCELLED and FAILED orders. REFUNDED orders included."
+          },
+          "paidRevenue": {
+            "type": "number",
+            "description": "Cash collected: SUM(paidAmount) where paymentStatus IN (PAID, PARTIALLY_PAID, PARTIALLY_REFUNDED, REFUNDED), excluding CANCELLED/FAILED orders."
+          },
+          "refundAmount": {
+            "type": "number",
+            "description": "Cumulative refunds: SUM(refundAmount) for orders placed in range. Anchored to placedAt, not refundedAt. May not match period refund events — see REPORT_RULE_011."
+          },
+          "netRevenue": {
+            "type": "number",
+            "description": "paidRevenue minus refundAmount. May be negative."
+          },
+          "orderCount": {
+            "type": "integer",
+            "description": "COUNT of orders excluding CANCELLED and FAILED."
+          },
+          "avgOrderValue": {
+            "type": "number",
+            "description": "grossOrderValue / orderCount. Zero when orderCount is 0."
+          }
+        }
+      },
+      "AdminAnalyticsDailyRevenue": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "ISO-8601 date YYYY-MM-DD in Asia/Ho_Chi_Minh timezone."
+          },
+          "revenue": {
+            "type": "number",
+            "description": "Daily grossOrderValue (same REVENUE_EXCLUDED set as summary)."
+          }
+        }
+      },
+      "AdminAnalyticsTopProduct": {
+        "type": "object",
+        "properties": {
+          "productKey": {
+            "type": "string",
+            "description": "COALESCE(product_pk, product_id::text). Stable identifier covering both admin-created and regular products."
+          },
+          "productName": {
+            "type": "string",
+            "description": "Product name snapshot from order line item."
+          },
+          "revenue": {
+            "type": "number",
+            "description": "SUM(lineTotal) excluding RANKING_EXCLUDED order statuses (CANCELLED, FAILED, REFUNDED)."
+          },
+          "unitsSold": {
+            "type": "integer",
+            "description": "SUM(quantity) excluding RANKING_EXCLUDED order statuses."
+          }
+        }
+      },
+      "AdminAnalyticsTopCustomer": {
+        "type": "object",
+        "properties": {
+          "customerKey": {
+            "type": "string",
+            "description": "COALESCE(customer_id::text, customer_email). Stable group key preventing split rows on email change."
+          },
+          "customerEmail": {
+            "type": "string",
+            "description": "MAX(customer_email) — display email."
+          },
+          "revenue": {
+            "type": "number",
+            "description": "SUM(totalAmount) excluding RANKING_EXCLUDED order statuses."
+          },
+          "orderCount": {
+            "type": "integer",
+            "description": "COUNT of orders excluding RANKING_EXCLUDED order statuses."
+          }
+        }
+      },
       "ApiMeta": {
         "type": "object",
         "properties": {

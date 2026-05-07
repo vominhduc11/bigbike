@@ -202,3 +202,66 @@ Status: `CONFIRMED_FROM_CODE`
 Evidence: `AdminDashboardService.java`, `AdminDashboardSummaryResponse.java`
 
 Status: `CONFIRMED_FROM_CODE` (P-1 fix applied in `AdminDashboardService.java` and `OrderJpaRepository.java`)
+
+## Customer Status Enum
+
+The customer `status` column is a `VARCHAR(50)` string in the `customers` table. The authoritative set of valid values is defined in `AdminCustomerService.ALLOWED_STATUSES` (line 48).
+
+| Value | Meaning |
+|---|---|
+| `ACTIVE` | Normal active customer |
+| `DISABLED` | Account disabled by admin |
+| `PENDING` | Registration pending verification |
+| `BLOCKED` | Account permanently blocked |
+
+**Note:** `INACTIVE` is NOT a valid database status value. It is a computed segment label returned by `AdminCustomerService.deriveSegment()` for display purposes only. Filtering by `status = 'INACTIVE'` at the database level will return zero results.
+
+A `CustomerStatus` Java enum (`domain/customer/CustomerStatus.java`) codifies these values for type-safe use in service and repository layers.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
+
+## Reports Analytics Response Shape
+
+`GET /api/v1/admin/reports/analytics` returns `AdminAnalyticsResponse`.
+
+### PeriodSummary (summary field)
+
+| Field | Type | Description |
+|---|---|---|
+| `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED/FAILED (REFUNDED included) |
+| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus IN (PAID, PARTIALLY_PAID, PARTIALLY_REFUNDED, REFUNDED) excl CANCELLED/FAILED orders |
+| `refundAmount` | `BigDecimal` | SUM(refundAmount) for orders placed in range (placedAt-anchored) |
+| `netRevenue` | `BigDecimal` | paidRevenue − refundAmount; may be negative |
+| `orderCount` | `int` | COUNT excl CANCELLED/FAILED |
+| `avgOrderValue` | `BigDecimal` | grossOrderValue / orderCount; zero if orderCount = 0 |
+
+### DailyRevenue item (dailyRevenue[] array)
+
+| Field | Type | Description |
+|---|---|---|
+| `date` | `String` | ISO-8601 date string `YYYY-MM-DD` in Asia/Ho_Chi_Minh timezone |
+| `revenue` | `BigDecimal` | Daily grossOrderValue (same exclusion set as summary) |
+
+### TopProduct item (topProducts[] array)
+
+| Field | Type | Description |
+|---|---|---|
+| `productKey` | `String` | COALESCE(product_pk, product_id::text) — stable identifier across admin-created and regular products |
+| `productName` | `String` | Product name snapshot from order line item |
+| `revenue` | `BigDecimal` | SUM(lineTotal) excl RANKING_EXCLUDED statuses |
+| `unitsSold` | `long` | SUM(quantity) excl RANKING_EXCLUDED statuses |
+
+### TopCustomer item (topCustomers[] array)
+
+| Field | Type | Description |
+|---|---|---|
+| `customerKey` | `String` | COALESCE(customer_id::text, customer_email) — stable group key |
+| `customerEmail` | `String` | MAX(customer_email) — display email |
+| `revenue` | `BigDecimal` | SUM(totalAmount) excl RANKING_EXCLUDED statuses |
+| `orderCount` | `int` | COUNT of orders excl RANKING_EXCLUDED statuses |
+
+Status: `CONFIRMED_FROM_CODE` — shape confirmed from `AdminAnalyticsResponse.java` audit; fields updated per P0 plan.
+
+Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`
