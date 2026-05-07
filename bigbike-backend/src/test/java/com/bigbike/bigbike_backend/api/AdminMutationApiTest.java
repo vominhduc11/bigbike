@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,7 @@ import org.springframework.web.context.WebApplicationContext;
 class AdminMutationApiTest {
 
     private static final String MEDIA_PUBLIC_BASE_URL = "http://localhost:9000/bigbike-media";
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private MockMvc mockMvc;
 
@@ -353,7 +355,7 @@ class AdminMutationApiTest {
         variant.setGallery(List.of());
         create.setVariants(List.of(variant));
 
-        var saved = adminCatalogMutationService.createProduct(create);
+        var saved = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
         String productId = saved.id();
         String variantId = saved.variants().get(0).id();
 

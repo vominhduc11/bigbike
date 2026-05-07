@@ -767,6 +767,188 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // PHASE B — Settings registry: validation, masking, public allowlist
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // PB1. Public endpoint filters out is_public=true rows whose key is not registry-allowlisted.
+    @Test
+    void publicSettings_unregisteredPublicKey_filteredByAllowlist() throws Exception {
+        String key = "unreg_pub_" + UUID.randomUUID().toString().substring(0, 8);
+        createTestSetting(key, "leakable", "misc", true);
+
+        MvcResult result = mockMvc.perform(get("/api/v1/settings/public"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(body).doesNotContain("\"settingKey\":\"" + key + "\"");
+    }
+
+    // PB2. Admin GET on a sensitive key returns a masked value, with sensitive=true masked=true.
+    @Test
+    void adminSettings_sensitiveValue_maskedOnGet() throws Exception {
+        String key = "service.api_key." + UUID.randomUUID().toString().substring(0, 6);
+        createTestSetting(key, "sk_live_DO_NOT_LEAK", "payment", false);
+
+        mockMvc.perform(get("/api/v1/admin/settings/" + key)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.settingValue").value("********"))
+                .andExpect(jsonPath("$.data.sensitive").value(true))
+                .andExpect(jsonPath("$.data.masked").value(true));
+    }
+
+    // PB3. Non-sensitive registered keys are not masked and report sensitive=false.
+    @Test
+    void adminSettings_nonSensitiveValue_notMasked() throws Exception {
+        createTestSetting("site_name", "BigBike", "general", true);
+
+        mockMvc.perform(get("/api/v1/admin/settings/site_name")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sensitive").value(false))
+                .andExpect(jsonPath("$.data.masked").value(false))
+                .andExpect(jsonPath("$.data.valueType").value("STRING"));
+    }
+
+    // PB4. PATCH email key with malformed value → 400.
+    @Test
+    void adminSettings_invalidEmail_returns400() throws Exception {
+        createTestSetting("contact_email", "info@bigbike.vn", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/contact_email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"not-an-email\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB5. PATCH phone key with non-numeric value → 400.
+    @Test
+    void adminSettings_invalidPhone_returns400() throws Exception {
+        createTestSetting("hotline", "0906.90.2404", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/hotline")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"call-me-maybe\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB6. PATCH URL key with non-URL value → 400.
+    @Test
+    void adminSettings_invalidUrl_returns400() throws Exception {
+        createTestSetting("facebook_url", "https://www.facebook.com/bigbikegear", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/facebook_url")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"not a url\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB7. PATCH boolean key with non-boolean value → 400.
+    @Test
+    void adminSettings_invalidBoolean_returns400() throws Exception {
+        createTestSetting("tax_enabled", "false", "TAX", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/tax_enabled")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"yes-please\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB8. PATCH integer key with out-of-range value → 400.
+    @Test
+    void adminSettings_integerOutOfRange_returns400() throws Exception {
+        createTestSetting("login_max_attempts", "5", "SECURITY", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/login_max_attempts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"99999\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB9. PATCH enum key with disallowed value → 400.
+    @Test
+    void adminSettings_invalidEnum_returns400() throws Exception {
+        createTestSetting("store_currency", "VND", "STORE", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/store_currency")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"GBP\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB10. PATCH decimal key with out-of-range value → 400.
+    @Test
+    void adminSettings_decimalOutOfRange_returns400() throws Exception {
+        createTestSetting("tax_rate", "0.10", "TAX", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/tax_rate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"2\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB11. PATCH a registry-known but non-publicly-allowed key with isPublic=true → 400.
+    @Test
+    void adminSettings_registeredNonPublicKey_isPublicTrue_rejected() throws Exception {
+        createTestSetting("tax_enabled", "false", "TAX", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/tax_enabled")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isPublic\":true}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB12. PATCH an unregistered key (no sensitive fragment) with isPublic=true → 400.
+    @Test
+    void adminSettings_unregisteredKey_isPublicTrue_rejected() throws Exception {
+        String key = "wild_key_" + UUID.randomUUID().toString().substring(0, 8);
+        createTestSetting(key, "v", "misc", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/" + key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isPublic\":true}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB13. PATCH known publicly-allowed key with valid value succeeds.
+    @Test
+    void adminSettings_validUpdateOnRegisteredKey_succeeds() throws Exception {
+        createTestSetting("contact_email", "info@bigbike.vn", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/contact_email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"new-info@bigbike.vn\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.settingValue").value("new-info@bigbike.vn"))
+                .andExpect(jsonPath("$.data.valueType").value("EMAIL"));
+    }
+
+    // PB14. Unregistered keys still accept arbitrary value updates (backward compat).
+    @Test
+    void adminSettings_unregisteredKey_anyValueAccepted() throws Exception {
+        String key = "legacy_key_" + UUID.randomUUID().toString().substring(0, 8);
+        createTestSetting(key, "old", "misc", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/" + key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"anything goes\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.settingValue").value("anything goes"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // REGRESSION TESTS (44–53)
     // ══════════════════════════════════════════════════════════════════════════
 

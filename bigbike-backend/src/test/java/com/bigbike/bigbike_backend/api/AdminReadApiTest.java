@@ -20,10 +20,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class AdminReadApiTest {
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private MockMvc mockMvc;
 
@@ -100,7 +103,7 @@ class AdminReadApiTest {
         seo.setOgImage(ogImage);
         create.setSeo(seo);
 
-        Product created = adminCatalogMutationService.createProduct(create);
+        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
 
         mockMvc.perform(get("/api/v1/admin/products/{id}", created.id())
                         .header("X-Admin-Permissions", "products.read"))
@@ -127,8 +130,8 @@ class AdminReadApiTest {
         create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(PublishStatus.DRAFT);
 
-        Product created = adminCatalogMutationService.createProduct(create);
-        adminCatalogMutationService.softDeleteProduct(created.id());
+        Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);
+        adminCatalogMutationService.softDeleteProduct(created.id(), DEV_ADMIN_ID);
 
         mockMvc.perform(get("/api/v1/admin/products")
                         .param("q", slug)

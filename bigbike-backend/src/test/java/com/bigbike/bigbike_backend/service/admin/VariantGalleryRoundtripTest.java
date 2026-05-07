@@ -20,6 +20,7 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Transactional
 class VariantGalleryRoundtripTest {
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Autowired AdminCatalogMutationService mutationService;
     @Autowired CatalogReadRepository readRepository;
@@ -79,7 +82,7 @@ class VariantGalleryRoundtripTest {
         ));
         create.setVariants(List.of(variant));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         assertThat(saved.variants()).hasSize(1);
         assertThat(saved.variants().get(0).gallery())
                 .as("gallery present on the immediate save response")
@@ -119,7 +122,7 @@ class VariantGalleryRoundtripTest {
         ));
         create.setVariants(List.of(v1));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String variantId = saved.variants().get(0).id();
 
         // ── Update with 4 different images, reusing the same variant ID ──
@@ -145,7 +148,7 @@ class VariantGalleryRoundtripTest {
         ));
         update.setVariants(List.of(v2));
 
-        mutationService.updateProduct(saved.id(), update);
+        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
 
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
         var gallery = reread.variants().get(0).gallery();
@@ -181,7 +184,7 @@ class VariantGalleryRoundtripTest {
         blueS.setGallery(List.of(galleryItem("https://cdn.example.com/blue-1.jpg", "Blue 1", 0)));
         create.setVariants(List.of(redS, redM, blueS));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
         assertThat(saved.variants().get(0).gallery().stream().map(g -> g.url()).toList())
@@ -210,7 +213,7 @@ class VariantGalleryRoundtripTest {
         blueL.setImageUrl("https://cdn.example.com/blue-main.jpg");
         create.setVariants(List.of(redS, redM, blueL));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
         assertThat(saved.variants().get(0).image().url())
@@ -239,7 +242,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest greenM = variant("Green / M", "Green", "M");
         create.setVariants(List.of(greenS, greenM));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String idS = saved.variants().get(0).id();
         String idM = saved.variants().get(1).id();
 
@@ -259,7 +262,7 @@ class VariantGalleryRoundtripTest {
         updatedM.setImageUrl("https://cdn.example.com/green-v2.jpg");
         update.setVariants(List.of(updatedS, updatedM));
 
-        mutationService.updateProduct(saved.id(), update);
+        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
 
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
         assertThat(reread.variants().get(0).image().url())
@@ -288,7 +291,7 @@ class VariantGalleryRoundtripTest {
         sizeOnly.setImageUrl("https://cdn.example.com/ignored.jpg");
         create.setVariants(List.of(sizeOnly));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants().get(0).image())
                 .as("imageUrl on a no-color variant must be ignored by the backend")
@@ -319,7 +322,7 @@ class VariantGalleryRoundtripTest {
         VariantRequest yellowL = variant("Yellow / L", "Yellow", "L");
         create.setVariants(List.of(yellowS, yellowM, yellowL));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String idS = saved.variants().get(0).id();
         String idM = saved.variants().get(1).id();
         String idL = saved.variants().get(2).id();
@@ -373,7 +376,7 @@ class VariantGalleryRoundtripTest {
         sizeOnly.setOptions(List.of(option("Size", "XL")));
         create.setVariants(List.of(sizeOnly));
 
-        Product saved = mutationService.createProduct(create);
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String variantId = saved.variants().get(0).id();
 
         // Plant a stray imageUrl on a no-color variant (e.g., from a legacy
@@ -408,7 +411,7 @@ class VariantGalleryRoundtripTest {
         sizeOnly.setGallery(List.of(galleryItem("https://cdn.example.com/size-m.jpg", "Size M", 0)));
         create.setVariants(List.of(sizeOnly));
 
-        assertThatThrownBy(() -> mutationService.createProduct(create))
+        assertThatThrownBy(() -> mutationService.createProduct(create, DEV_ADMIN_ID))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Validation failed");
     }
