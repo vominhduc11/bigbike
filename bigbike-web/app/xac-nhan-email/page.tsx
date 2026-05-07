@@ -15,10 +15,7 @@ export default function VerifyEmailPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    if (!token) {
-      setStatus("missing");
-      return;
-    }
+    if (!token) return;
 
     // POST token in body — keeps it out of server access logs and Referer headers.
     fetch(`${API_BASE_URL}/api/v1/customer/auth/verify-email?token=${encodeURIComponent(token)}`, {

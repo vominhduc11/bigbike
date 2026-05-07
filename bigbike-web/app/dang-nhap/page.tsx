@@ -13,7 +13,8 @@ import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("tiep") ?? toAccountPath();
+  const raw = searchParams.get("tiep") ?? "";
+  const returnTo = raw.startsWith("/") ? raw : toAccountPath();
 
   const {
     register,

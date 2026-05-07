@@ -19,7 +19,6 @@ export default function RegisterPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-    getValues,
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });

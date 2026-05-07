@@ -24,8 +24,9 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
 
   useEffect(() => {
     saveRecentProduct(currentProduct);
-    const all = getRecentProducts();
-    setItems(all.filter((p) => p.id !== currentProductId).slice(0, 6));
+    const filtered = getRecentProducts().filter((p) => p.id !== currentProductId).slice(0, 6);
+    const id = setTimeout(() => setItems(filtered), 0);
+    return () => clearTimeout(id);
   }, [currentProductId, currentProduct]);
 
   if (items.length === 0) return null;

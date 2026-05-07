@@ -42,7 +42,6 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setLoading(true);
     fetchMyReturn(id)
       .then((d) => { setDetail(d); setError(""); })
       .catch((e: Error | undefined) => setError(e?.message ?? "Không tải được chi tiết."))
@@ -472,7 +471,7 @@ function ReturnsContent() {
           </div>
 
           {selectedId && (
-            <ReturnDetailPanel id={selectedId} onClose={() => setSelectedId(null)} />
+            <ReturnDetailPanel key={selectedId} id={selectedId} onClose={() => setSelectedId(null)} />
           )}
         </>
       )}

@@ -79,6 +79,12 @@ export type CheckoutOptions = {
   shippingMethods: ShippingMethodOption[]
 }
 
+export type PriceChange = {
+  productName: string
+  oldPrice: number
+  newPrice: number
+}
+
 export type OrderSummary = {
   id: string
   orderNumber: string
@@ -91,6 +97,7 @@ export type OrderSummary = {
   discountAmount: number
   totalAmount: number
   currency: string
+  priceChanges?: PriceChange[]
 }
 
 export type OrderLineItem = {

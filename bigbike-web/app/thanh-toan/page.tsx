@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
 import { useCartQuery, useCheckoutOptions } from "@/lib/query/hooks";
-import type { CartItem } from "@/lib/contracts/commerce";
+import type { CartItem, PriceChange } from "@/lib/contracts/commerce";
 import { checkoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
@@ -89,6 +89,8 @@ export default function CheckoutPage() {
   const [customerNote, setCustomerNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
+  const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [gtmFired, setGtmFired] = useState(false);
   const idempotencyKey = useRef<string>(crypto.randomUUID());
 
@@ -150,7 +152,12 @@ export default function CheckoutPage() {
         customerNote: customerNote.trim() || undefined,
       }, idempotencyKey.current);
       refreshCount();
-      router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
+      if (order.priceChanges && order.priceChanges.length > 0) {
+        setPriceChanges(order.priceChanges);
+        setPendingOrderNav({ orderNumber: order.orderNumber, orderKey: order.orderKey });
+      } else {
+        router.push(toOrderConfirmPath(order.orderNumber, order.orderKey));
+      }
     } catch (err: unknown) {
       setSubmitError((err as Error).message);
     } finally {
@@ -491,6 +498,28 @@ export default function CheckoutPage() {
                 <Link href="/chinh-sach-doi-tra">Chính sách đổi trả</Link>
                 {" "}của BigBike.
               </div>
+
+              {priceChanges.length > 0 && pendingOrderNav && (
+                <div className="wp-alert-warning" style={{ marginBottom: 12 }}>
+                  <p style={{ fontWeight: 600, marginBottom: 6 }}>
+                    ⚠️ Giá một số sản phẩm đã thay đổi khi đặt hàng:
+                  </p>
+                  <ul style={{ margin: "0 0 8px 16px", fontSize: "0.9em" }}>
+                    {priceChanges.map((pc, i) => (
+                      <li key={i}>
+                        {pc.productName}: {formatVnd(pc.oldPrice)} → {formatVnd(pc.newPrice)}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="wp-btn-primary wp-btn-sm"
+                    onClick={() => router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey))}
+                  >
+                    Xem xác nhận đặt hàng
+                  </button>
+                </div>
+              )}
 
               {submitError && <p className="wp-error-text">{submitError}</p>}
 

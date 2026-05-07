@@ -3,30 +3,30 @@
 // This version keeps the redirect lookup logic but resolves rules through the
 // backend and a small in-process cache.
 
-import { NextResponse, type NextRequest } from “next/server”;
+import { NextResponse, type NextRequest } from "next/server";
 
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  “http://localhost:8080”;
+  "http://localhost:8080";
 
 // TTL for the in-process L1 cache. Default is 30 s — low enough that stale
 // entries after an admin change expire quickly.
-// NOTE: WebRevalidationService calls revalidateTag(“redirects”) after each admin
+// NOTE: WebRevalidationService calls revalidateTag("redirects") after each admin
 // mutation, but that only clears Next.js ISR/fetch cache, NOT this in-process Map.
 // The only way to force-expire an entry is to wait for TTL or restart the worker.
 const TTL_SECONDS = Number.parseInt(
-  process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? “30”,
+  process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? "30",
   10,
 );
 
 // Shared secret sent to backend internal endpoints.
 // Must match BIGBIKE_INTERNAL_TOKEN on the backend side.
-const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? “”;
+const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? "";
 
 const INTERNAL_HEADERS: Record<string, string> = {
-  Accept: “application/json”,
-  ...(INTERNAL_TOKEN ? { “X-Internal-Token”: INTERNAL_TOKEN } : {}),
+  Accept: "application/json",
+  ...(INTERNAL_TOKEN ? { "X-Internal-Token": INTERNAL_TOKEN } : {}),
 };
 
 // L1 in-process cache — prevents redundant backend hits within the same
@@ -60,12 +60,12 @@ type RedirectLookup = {
 };
 
 async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
-  const url = new URL(“/api/internal/redirect”, API_BASE_URL);
-  url.searchParams.set(“path”, path);
+  const url = new URL("/api/internal/redirect", API_BASE_URL);
+  url.searchParams.set("path", path);
   try {
     const response = await fetch(url, {
       headers: INTERNAL_HEADERS,
-      cache: “no-store”,
+      cache: "no-store",
       signal: AbortSignal.timeout(2_000),
     });
     if (response.status === 404) return null;
@@ -81,7 +81,7 @@ async function recordHit(redirectId: string): Promise<void> {
   const url = new URL(`/api/internal/redirects/hit/${redirectId}`, API_BASE_URL);
   try {
     await fetch(url, {
-      method: “POST”,
+      method: "POST",
       headers: INTERNAL_HEADERS,
       signal: AbortSignal.timeout(2_000),
     });
@@ -95,7 +95,7 @@ async function lookupRedirect(path: string): Promise<RedirectLookup | null> {
   if (l1 !== undefined) return l1;
 
   // WordPress source paths are stored without trailing slashes.
-  // Next.js trailingSlash:true may normalize /old-path â†’ /old-path/, so try
+  // Next.js trailingSlash:true may normalize /old-path â†' /old-path/, so try
   // the de-trailed variant when the exact path yields no result.
   const deslashed =
     path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
@@ -128,7 +128,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     const sessionCookie = request.cookies.get("bb_session");
     if (!sessionCookie?.value) {
       const loginUrl = new URL("/dang-nhap", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("tiep", pathname);
       return NextResponse.redirect(loginUrl);
     }
   }

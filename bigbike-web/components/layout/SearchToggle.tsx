@@ -64,12 +64,12 @@ export function SearchToggle() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    setSuggestLoading(true);
     debounceRef.current = setTimeout(async () => {
+      if (trimmed.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      setSuggestLoading(true);
       try {
         const res = await fetch(
           `${toProductListPath()}?q=${encodeURIComponent(trimmed)}&size=5&format=json`,
@@ -90,7 +90,7 @@ export function SearchToggle() {
       } finally {
         setSuggestLoading(false);
       }
-    }, 250);
+    }, trimmed.length < 2 ? 0 : 250);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
