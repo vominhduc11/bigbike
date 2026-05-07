@@ -99,14 +99,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor
                         .requestMatchers("/ws/**").permitAll()
-                        // POS endpoints are accessible to SHOP_MANAGER as well as ADMIN
-                        .requestMatchers("/api/v1/admin/pos/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
-                        // Coupon endpoints: SHOP_MANAGER granted by V49 migration and AdminRolePermissions
-                        .requestMatchers("/api/v1/admin/coupons/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
-                        // Dashboard: SHOP_MANAGER has orders.read — must come before the catch-all below
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/dashboard").hasAnyRole("ADMIN", "SUPER_ADMIN", "SHOP_MANAGER")
-                        // Admin endpoints: any authenticated admin JWT may reach the URL;
-                        // controller-level requirePermission() enforces fine-grained access.
+                        // All admin endpoints: any valid JWT may reach the URL.
+                        // Fine-grained permission enforcement is done by controller-level
+                        // requirePermission() backed by AdminPermissionService (DB-driven).
                         .requestMatchers("/api/v1/admin/**").authenticated()
                         // Customer order read requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/orders/**").hasRole("CUSTOMER")

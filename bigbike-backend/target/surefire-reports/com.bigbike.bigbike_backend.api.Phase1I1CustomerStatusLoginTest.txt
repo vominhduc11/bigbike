@@ -1,4 +1,20 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.819 s -- in com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
+Tests run: 8, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 1.137 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
+com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest.adminCanDisableCustomer_thenCustomerLoginRejected -- Time elapsed: 0.178 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest.adminCanDisableCustomer_thenCustomerLoginRejected(Phase1I1CustomerStatusLoginTest.java:169)
+
+com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest.adminDisable_existingSessionCookie_isRejected -- Time elapsed: 0.147 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest.adminDisable_existingSessionCookie_isRejected(Phase1I1CustomerStatusLoginTest.java:220)
+

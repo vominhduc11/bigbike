@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpeci
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,9 @@ public class AdminRedirectService {
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
+
+    @Value("${bigbike.site.base-url:https://bigbike.vn}")
+    private String siteBaseUrl;
 
     public AdminRedirectService(
             RedirectJpaRepository redirectRepo,
@@ -119,6 +124,7 @@ public class AdminRedirectService {
     public AdminRedirectResponse createRedirect(UUID adminId, CreateRedirectRequest request) {
         String sourcePattern = normalizeSourcePattern(request.sourcePattern());
         String targetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
+        validateTargetUrl(targetUrl);
         validateNoSelfLoop(sourcePattern, targetUrl);
         ensureUniqueSourcePattern(sourcePattern, null);
 
@@ -140,6 +146,8 @@ public class AdminRedirectService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         entity = redirectRepo.save(entity);
+        // uq_redirects_source_pattern is the DB-level safety net for concurrent inserts
+        // that race past the ensureUniqueSourcePattern application-level check above.
 
         auditLogRepo.save(buildAudit(adminId, "REDIRECT_CREATED", entity.getId(), null, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
@@ -160,6 +168,7 @@ public class AdminRedirectService {
         String nextTargetUrl = entity.getTargetUrl();
         if (request.targetUrl() != null) {
             nextTargetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
+            validateTargetUrl(nextTargetUrl);
         }
         validateNoSelfLoop(nextSourcePattern, nextTargetUrl);
         ensureUniqueSourcePattern(nextSourcePattern, id);
@@ -278,6 +287,46 @@ public class AdminRedirectService {
 
     private String defaultRedirectType(int statusCode) {
         return DEFAULT_TYPE_BY_STATUS.getOrDefault(statusCode, "PERMANENT");
+    }
+
+    private void validateTargetUrl(String targetUrl) {
+        if (targetUrl == null || targetUrl.isBlank()) return;
+
+        // Relative internal paths are always allowed
+        if (targetUrl.startsWith("/") && !targetUrl.startsWith("//")) return;
+
+        // Protocol-relative URLs (//evil.com) are an open-redirect vector
+        if (targetUrl.startsWith("//")) {
+            throw ValidationException.fromField("targetUrl", "UNSAFE_TARGET",
+                    "Protocol-relative URLs are not allowed as redirect targets. Use a path starting with '/'.");
+        }
+
+        URI uri;
+        try {
+            uri = URI.create(targetUrl);
+        } catch (IllegalArgumentException e) {
+            throw ValidationException.fromField("targetUrl", "INVALID_TARGET", "Target URL is not valid.");
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("https") && !scheme.equalsIgnoreCase("http"))) {
+            throw ValidationException.fromField("targetUrl", "UNSAFE_TARGET",
+                    "Target URL protocol is not allowed. Use a relative path starting with '/'.");
+        }
+
+        // Allow absolute URLs only when the host matches the configured site base URL
+        String targetHost = uri.getHost();
+        if (targetHost != null && !targetHost.isBlank()) {
+            try {
+                URI base = URI.create(siteBaseUrl);
+                if (targetHost.equalsIgnoreCase(base.getHost())) return;
+            } catch (IllegalArgumentException ignored) {
+                // misconfigured siteBaseUrl — fail safe by blocking external
+            }
+        }
+
+        throw ValidationException.fromField("targetUrl", "EXTERNAL_TARGET",
+                "External redirect targets are not allowed. Use a relative path starting with '/'.");
     }
 
     private void validateNoSelfLoop(String sourcePattern, String targetUrl) {

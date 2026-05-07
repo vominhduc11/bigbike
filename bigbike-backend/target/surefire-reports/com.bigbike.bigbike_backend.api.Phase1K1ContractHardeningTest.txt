@@ -1,4 +1,36 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest
 -------------------------------------------------------------------------------
-Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.786 s -- in com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest
+Tests run: 10, Failures: 4, Errors: 0, Skipped: 0, Time elapsed: 0.621 s <<< FAILURE! -- in com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest
+com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_clientsecretCannotBePublic -- Time elapsed: 0.058 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<400> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_clientsecretCannotBePublic(Phase1K1ContractHardeningTest.java:128)
+
+com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.reorderMenuItems_invalidGraph_doesNotPersistPartialChanges -- Time elapsed: 0.057 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<400> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.reorderMenuItems_invalidGraph_doesNotPersistPartialChanges(Phase1K1ContractHardeningTest.java:90)
+
+com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_privateSensitiveValueCanStillBeUpdated -- Time elapsed: 0.045 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_privateSensitiveValueCanStillBeUpdated(Phase1K1ContractHardeningTest.java:142)
+
+com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_privateKeyCannotBePublic -- Time elapsed: 0.050 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<400> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:62)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:129)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$0(StatusResultMatchers.java:600)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:212)
+	at com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest.updateSetting_privateKeyCannotBePublic(Phase1K1ContractHardeningTest.java:115)
+

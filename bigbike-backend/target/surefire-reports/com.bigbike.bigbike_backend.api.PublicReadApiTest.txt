@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.PublicReadApiTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 3, Time elapsed: 0.133 s -- in com.bigbike.bigbike_backend.api.PublicReadApiTest
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 3, Time elapsed: 0.070 s -- in com.bigbike.bigbike_backend.api.PublicReadApiTest

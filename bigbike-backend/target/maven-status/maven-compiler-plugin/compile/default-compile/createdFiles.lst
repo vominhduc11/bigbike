@@ -22,6 +22,7 @@ com\bigbike\bigbike_backend\api\admin\AdminRolesController.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RankMathRedirectImporter$ImportResult.class
 com\bigbike\bigbike_backend\api\order\dto\OrderShippingItemResponse.class
 com\bigbike\bigbike_backend\api\order\CustomerOrderController.class
+com\bigbike\bigbike_backend\service\auth\AdminPermissionService.class
 com\bigbike\bigbike_backend\persistence\repository\content\ArticleJpaRepository.class
 com\bigbike\bigbike_backend\service\admin\AdminInventoryService.class
 com\bigbike\bigbike_backend\service\auth\DevAdminAuthService.class

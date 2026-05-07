@@ -3,19 +3,33 @@
 // This version keeps the redirect lookup logic but resolves rules through the
 // backend and a small in-process cache.
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from “next/server”;
 
 const API_BASE_URL =
   process.env.BIGBIKE_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://localhost:8080";
+  “http://localhost:8080”;
 
+// TTL for the in-process L1 cache. Default is 30 s — low enough that stale
+// entries after an admin change expire quickly.
+// NOTE: WebRevalidationService calls revalidateTag(“redirects”) after each admin
+// mutation, but that only clears Next.js ISR/fetch cache, NOT this in-process Map.
+// The only way to force-expire an entry is to wait for TTL or restart the worker.
 const TTL_SECONDS = Number.parseInt(
-  process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? "300",
+  process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? “30”,
   10,
 );
 
-// L1 in-process cache â€” prevents redundant backend hits within the same
+// Shared secret sent to backend internal endpoints.
+// Must match BIGBIKE_INTERNAL_TOKEN on the backend side.
+const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? “”;
+
+const INTERNAL_HEADERS: Record<string, string> = {
+  Accept: “application/json”,
+  ...(INTERNAL_TOKEN ? { “X-Internal-Token”: INTERNAL_TOKEN } : {}),
+};
+
+// L1 in-process cache — prevents redundant backend hits within the same
 // worker process. Capped to avoid unbounded growth across many redirect entries.
 const L1_MAX = 10_000;
 type L1Entry = { value: RedirectLookup | null; expiresAt: number };
@@ -40,25 +54,39 @@ function l1Set(key: string, value: RedirectLookup | null): void {
 }
 
 type RedirectLookup = {
+  redirectId: string;
   target: string;
   statusCode: number;
 };
 
 async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
-  const url = new URL("/api/internal/redirect", API_BASE_URL);
-  url.searchParams.set("path", path);
+  const url = new URL(“/api/internal/redirect”, API_BASE_URL);
+  url.searchParams.set(“path”, path);
   try {
     const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
+      headers: INTERNAL_HEADERS,
+      cache: “no-store”,
       signal: AbortSignal.timeout(2_000),
     });
     if (response.status === 404) return null;
     if (!response.ok) return null;
     return (await response.json()) as RedirectLookup;
   } catch {
-    // Network error or 2 s timeout â€” let the request continue normally.
+    // Network error or 2 s timeout — let the request continue normally.
     return null;
+  }
+}
+
+async function recordHit(redirectId: string): Promise<void> {
+  const url = new URL(`/api/internal/redirects/hit/${redirectId}`, API_BASE_URL);
+  try {
+    await fetch(url, {
+      method: “POST”,
+      headers: INTERNAL_HEADERS,
+      signal: AbortSignal.timeout(2_000),
+    });
+  } catch {
+    // Non-critical — ignore errors silently.
   }
 }
 
@@ -131,6 +159,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const destination = rule.target.startsWith("/")
     ? new URL(rule.target, request.url)
     : new URL(rule.target);
+
+  // Fire-and-forget: increment hit counter; response is already prepared.
+  void recordHit(rule.redirectId);
 
   return NextResponse.redirect(destination, rule.statusCode || 301);
 }

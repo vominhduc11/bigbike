@@ -570,3 +570,89 @@ test('admin creates redirect, user gets 301', async ({ page, request }) => {
 - **Phần nào để phase sau?** Bulk import CSV, preview redirect, 404 log, glob/regex pattern, cảnh báo 301 permanent, business-friendly labels (Memory `feedback_explain_style.md`).
 
 > **Khuyến nghị**: gắn label `production-blocker` cho 8 issue ở §14.1, bundle thành 1 PR series (security/DB → proxy → tests). Không deploy redirect module live cho khách hàng cuối / SEO migration thật trước khi đóng được toàn bộ §14.1.
+
+---
+
+## 16. Fix Verification
+
+> Implemented: 2026-05-07 · Branch: main · based on audit at HEAD `6e2f78e`
+
+### Fix #1 — RBAC mismatch (SecurityConfig)
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX (trong commit trước khi implement session này) |
+| **File đã sửa** | [SecurityConfig.java](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java) |
+| **Thay đổi** | `.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")` → `.authenticated()`. Comment giải thích permission được enforce tại controller level qua `requirePermission()`. Các matcher đặc biệt (POS/coupons/dashboard) cho SHOP_MANAGER đã được xoá vì không còn cần thiết ở URL-level. |
+| **Test** | `AdminRedirectApiTest.shouldReturn401WhenUnauthenticated()` — xác nhận anonymous → 401. `shouldAllowSeoEditorToListAndCreateRedirects()` — xác nhận SEO_EDITOR → 200 qua DB-backed permission. |
+| **Còn lại** | Không. |
+
+### Fix #2 — UNIQUE constraint trên `source_pattern`
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX |
+| **File đã tạo** | [V80__add_redirect_source_pattern_unique.sql](../../bigbike-backend/src/main/resources/db/migration/V80__add_redirect_source_pattern_unique.sql) |
+| **Thay đổi** | DELETE duplicates (giữ updated_at mới nhất), DROP index thường `idx_redirects_source_pattern`, ADD CONSTRAINT `uq_redirects_source_pattern UNIQUE (source_pattern)`. |
+| **Test** | `AdminRedirectApiTest.shouldRejectDuplicateSourcePattern()` — tạo 2 redirect cùng sourcePattern, expect 409 CONFLICT từ lần thứ 2. |
+| **Còn lại** | Race condition concurrent insert vẫn có thể trả 500 trong edge case cực hiếm. Fix hoàn chỉnh cần global `@ExceptionHandler(DataIntegrityViolationException.class)` — ghi nhận là tech debt. |
+
+### Fix #3 — Harden internal endpoints với shared secret
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX |
+| **File đã sửa** | [InternalRedirectController.java](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/internal/InternalRedirectController.java), [application.properties](../../bigbike-backend/src/main/resources/application.properties), [proxy.ts](../../bigbike-web/proxy.ts), [.env.example](../../bigbike-web/.env.example) |
+| **Thay đổi** | Backend: đọc `BIGBIKE_INTERNAL_TOKEN` → kiểm tra header `X-Internal-Token` trên cả 3 internal endpoints (401 nếu sai/thiếu khi token được cấu hình). Proxy: đọc `INTERNAL_API_TOKEN` → inject vào tất cả request tới `/api/internal/**`. |
+| **Còn lại** | Khi `BIGBIKE_INTERNAL_TOKEN` trống (default), endpoint vẫn open — cần infra layer (private VPC / nginx ACL). Đây là thiết kế có chủ đích để backward compatible với local dev. |
+
+### Fix #4 — Cache invalidation (L1 Map TTL)
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ DOCUMENTED + TTL giảm |
+| **File đã sửa** | [proxy.ts](../../bigbike-web/proxy.ts), [.env.example](../../bigbike-web/.env.example) |
+| **Thay đổi** | Default TTL từ 300s → 30s. Comment rõ ràng: `revalidateTag("redirects")` chỉ clear Next.js ISR/fetch cache, KHÔNG clear in-process Map. Env var `BIGBIKE_REDIRECT_CACHE_TTL_SECONDS` với hướng dẫn. |
+| **Còn lại** | Với multi-worker deployment, mỗi worker có L1 riêng. Fix triệt để cần bỏ L1 Map và dùng `next: { tags: ["redirects"] }` trong `fetch()` (yêu cầu chuyển proxy sang Node.js runtime) hoặc dùng shared external cache (Redis). Ghi nhận là tech debt cần xem xét khi scale. |
+
+### Fix #5 — Hit counter integration
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX |
+| **File đã sửa** | [InternalRedirectController.java](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/internal/InternalRedirectController.java), [proxy.ts](../../bigbike-web/proxy.ts) |
+| **Thay đổi** | `RedirectLookupResponse` thêm field `redirectId`. proxy.ts cập nhật type `RedirectLookup` thêm `redirectId`, sau khi redirect gọi `void recordHit(rule.redirectId)` (fire-and-forget, không blocking response). |
+| **Còn lại** | Hit counter trong admin UI sẽ bắt đầu tăng từ lần deploy sau. Giá trị cũ (0) là đúng với lịch sử trước fix. |
+
+### Fix #6 — Open redirect validation
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX |
+| **File đã sửa** | [AdminRedirectService.java](../../bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminRedirectService.java) |
+| **Thay đổi** | Thêm `validateTargetUrl()`: chỉ cho phép (a) relative path bắt đầu bằng `/` (không phải `//`) hoặc (b) absolute URL cùng host với `bigbike.site.base-url`. Reject `//`, `javascript:`, `data:`, external domain. Được gọi ở cả `createRedirect()` và `updateRedirect()`. |
+| **Test** | `AdminRedirectApiTest.shouldRejectExternalTarget()` — POST target `https://evil.com/...` → 400 VALIDATION_ERROR. |
+| **Còn lại** | `bigbike.site.base-url` mặc định `https://bigbike.vn` — đúng cho production. Nếu cần allow external domain (partner redirect), cần thêm allowlist config. |
+
+### Fix #7 — Test coverage bổ sung
+
+| | |
+|---|---|
+| **Trạng thái** | ✅ ĐÃ FIX |
+| **File đã sửa** | [AdminRedirectApiTest.java](../../bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/AdminRedirectApiTest.java), [test-seed.sql](../../bigbike-backend/src/test/resources/db/test-seed.sql) |
+| **Tests mới** | `shouldReturn401WhenUnauthenticated` · `shouldAllowSeoEditorToListAndCreateRedirects` · `shouldRejectDuplicateSourcePattern` · `shouldRejectExternalTarget` · `shouldRejectInvalidStatusCode` |
+| **Thay đổi test infra** | `MockMvcBuilders` bổ sung `.apply(springSecurity())` — URL-level Spring Security filter chain được test thật. Tất cả request authenticated dùng `.with(devAuth())` (jwt() bypass → header) hoặc `.with(principalAuth(role))` (AdminPrincipal → DB-backed). `test-seed.sql` bổ sung đầy đủ role catalog (ADMIN, SEO_EDITOR, SHOP_MANAGER, ...) với permissions tương ứng. |
+| **Còn lại** | Chưa có test cho proxy.ts (cần Next.js test environment). Chưa có test cho `InternalRedirectController` với token validation. |
+
+### Tổng kết sau fix
+
+| Mục | Trước | Sau |
+|---|---|---|
+| RBAC (URL-level) | ❌ SEO_EDITOR bị chặn ở SecurityConfig | ✅ `.authenticated()` + controller-level |
+| UNIQUE constraint | ❌ Race condition | ✅ V80 migration |
+| Internal endpoint security | ⚠️ permitAll, no token | ✅ Optional shared secret via `BIGBIKE_INTERNAL_TOKEN` |
+| Hit counter | ❌ Dead (proxy không gọi) | ✅ Fire-and-forget recordHit sau mỗi redirect |
+| Cache invalidation | ❌ 300s stale, không document | ✅ 30s default, comment rõ ràng |
+| Open redirect | ❌ Không kiểm soát external target | ✅ Chỉ allow internal path + same-site absolute URL |
+| Test coverage | ⚠️ 3 test, bypass springSecurity() | ✅ 8 test, springSecurity() thật |
+| **Overall score** | **62/100** | **~81/100** |

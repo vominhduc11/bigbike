@@ -14,6 +14,7 @@ com\bigbike\bigbike_backend\api\Phase1JAdminSettingsMenuCouponApiTest.class
 com\bigbike\bigbike_backend\api\Phase1HAdminOrderApiTest$OrderInfo.class
 com\bigbike\bigbike_backend\schema\Phase1BSchemaTest.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest.class
+com\bigbike\bigbike_backend\api\RbacUrlGateIntegrationTest.class
 com\bigbike\bigbike_backend\api\Phase1DCustomerAuthTest.class
 com\bigbike\bigbike_backend\api\HomepagePublicApiTest.class
 com\bigbike\bigbike_backend\api\Phase1KInventoryP0FixApiTest.class
