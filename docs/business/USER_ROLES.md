@@ -169,7 +169,7 @@ Admin default role has broad business access to read/update many admin modules. 
 | Wildcard permission | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` | `SUPER_ADMIN` maps to `*`. |
 | Cannot demote self from Super Admin | `CONFIRMED_FROM_CODE` | `AdminAdminUsersService.java` | Rejects self-demotion. |
 | Cannot demote last active Super Admin | `CONFIRMED_FROM_CODE` | `AdminAdminUsersService.java` | Counts active Super Admins. |
-| Can manage roles/permissions if has admin-users.write | `CONFIRMED_FROM_CODE` | `AdminRolesController.java` | Role permission update/create/delete. |
+| Can manage roles/permissions if has roles.write | `CONFIRMED_FROM_CODE` | `AdminRolesController.java` | Role permission update/create/delete. Gate changed from admin-users.write → roles.write in P1 hardening (V81). |
 
 #### Needs Verification
 
