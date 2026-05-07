@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminReportService {
 
     private static final int EXPORT_MAX_ROWS = 10_000;
+    private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 
     // Vietnam timezone — all date boundary parsing and CSV timestamp formatting use this zone
     // to match AdminDashboardService and the AT TIME ZONE 'Asia/Ho_Chi_Minh' used in native queries.
@@ -184,8 +185,8 @@ public class AdminReportService {
                         o.getOrderNumber(),
                         o.getStatus(),
                         o.getPaymentStatus(),
-                        o.getCustomerEmail(),
-                        o.getCustomerPhone(),
+                        escape(nvl(o.getCustomerEmail())),
+                        escape(nvl(o.getCustomerPhone())),
                         o.getCurrency(),
                         formatDecimal(o.getSubtotalAmount()),
                         formatDecimal(o.getDiscountAmount()),
@@ -204,7 +205,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate CSV export.", e);
         }
 
-        return sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     public byte[] exportCustomersCsv(String status) {
@@ -235,13 +236,13 @@ public class AdminReportService {
             for (CustomerEntity c : customers) {
                 printer.printRecord(
                         c.getId(),
-                        nvl(c.getEmail()),
-                        nvl(c.getPhone()),
-                        nvl(c.getDisplayName()),
-                        nvl(c.getFirstName()),
-                        nvl(c.getLastName()),
+                        escape(nvl(c.getEmail())),
+                        escape(nvl(c.getPhone())),
+                        escape(nvl(c.getDisplayName())),
+                        escape(nvl(c.getFirstName())),
+                        escape(nvl(c.getLastName())),
                         c.getStatus(),
-                        nvl(c.getGender()),
+                        escape(nvl(c.getGender())),
                         formatInstant(c.getEmailVerifiedAt()),
                         formatInstant(c.getLastLoginAt()),
                         formatInstant(c.getCreatedAt())
@@ -251,7 +252,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate customer CSV export.", e);
         }
 
-        return sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     public byte[] exportProductsCsv(String publishStatus) {
@@ -280,17 +281,17 @@ public class AdminReportService {
             for (ProductEntity p : products) {
                 printer.printRecord(
                         p.getId(),
-                        nvl(p.getSku()),
-                        p.getSlug(),
-                        p.getName(),
-                        p.getCategory() != null ? p.getCategory().getName() : "",
-                        p.getBrand() != null ? p.getBrand().getName() : "",
+                        escape(nvl(p.getSku())),
+                        escape(p.getSlug()),
+                        escape(p.getName()),
+                        escape(p.getCategory() != null ? p.getCategory().getName() : ""),
+                        escape(p.getBrand() != null ? p.getBrand().getName() : ""),
                         formatDecimal(p.getRetailPrice()),
                         formatDecimal(p.getSalePrice()),
                         p.getCurrency(),
                         p.getStockState() != null ? p.getStockState().name() : "",
                         p.getPublishStatus() != null ? p.getPublishStatus().name() : "",
-                        p.getFeatured() != null ? p.getFeatured() : false,
+                        Boolean.TRUE.equals(p.getFeatured()),
                         formatInstant(p.getCreatedAt())
                 );
             }
@@ -298,7 +299,7 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate product CSV export.", e);
         }
 
-        return sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }
@@ -309,6 +310,25 @@ public class AdminReportService {
 
     private String formatInstant(Instant instant) {
         return instant != null ? DT_FORMAT.format(instant) : "";
+    }
+
+    // Prefix dangerous leading characters with a single quote to prevent spreadsheet formula injection.
+    // Triggers: = + - @ and ASCII control chars \t \r (per OWASP CSV injection guidance).
+    static String escape(String v) {
+        if (v == null || v.isEmpty()) return v;
+        char first = v.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@'
+                || first == '\t' || first == '\r') {
+            return "'" + v;
+        }
+        return v;
+    }
+
+    static byte[] withBom(byte[] csv) {
+        byte[] result = new byte[UTF8_BOM.length + csv.length];
+        System.arraycopy(UTF8_BOM, 0, result, 0, UTF8_BOM.length);
+        System.arraycopy(csv, 0, result, UTF8_BOM.length, csv.length);
+        return result;
     }
 
     // Parse YYYY-MM-DD as start-of-day in Vietnam timezone.
