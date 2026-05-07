@@ -129,7 +129,7 @@ public class PosOrderService {
 
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
-                                        boolean canOverrideCreditLimit) {
+                                        boolean canOverrideCreditLimit, String clientIp, String userAgent) {
         if (req.items() == null || req.items().isEmpty()) {
             throw new ConflictException("POS order must have at least one item.");
         }
@@ -388,10 +388,12 @@ public class PosOrderService {
         if (staffId != null) {
             try { auditLog.setActorId(UUID.fromString(staffId)); } catch (IllegalArgumentException ignored) {}
         }
-        auditLog.setAction("POS_ORDER_CREATED");
+        auditLog.setAction(isCreditOrder ? "POS_CREDIT_ORDER_CREATED" : "POS_ORDER_CREATED");
         auditLog.setResourceType("ORDER");
         auditLog.setResourceId(savedOrder.getId());
         auditLog.setAfterData(auditPayload);
+        auditLog.setIpAddress(clientIp);
+        auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(now);
         auditLogRepo.save(auditLog);
 
@@ -417,7 +419,14 @@ public class PosOrderService {
     // Backward-compatible overload for existing callers without credit params
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice) {
-        return createOrder(req, staffId, canOverridePrice, false);
+        return createOrder(req, staffId, canOverridePrice, false, null, null);
+    }
+
+    // Backward-compatible overload for callers without IP/UA
+    @Transactional
+    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
+                                        boolean canOverrideCreditLimit) {
+        return createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit, null, null);
     }
 
     private void decrementStock(

@@ -99,6 +99,7 @@ com\bigbike\bigbike_backend\api\admin\dto\UpsertPageRequest.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\ProductVariationImporter.class
 com\bigbike\bigbike_backend\api\admin\dto\ReorderSlidersRequest.class
 com\bigbike\bigbike_backend\persistence\entity\catalog\StockMovementEntity.class
+com\bigbike\bigbike_backend\service\receivable\ReceivableOverdueScheduler.class
 com\bigbike\bigbike_backend\api\public_\PublicSettingsController.class
 com\bigbike\bigbike_backend\api\admin\dto\report\AdminAnalyticsResponse$PeriodSummary.class
 com\bigbike\bigbike_backend\BigbikeBackendApplication.class

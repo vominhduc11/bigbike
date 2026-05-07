@@ -63,7 +63,19 @@ public class AdminPosController {
                 || admin.permissions().contains("pos.price_override");
         boolean canOverrideCreditLimit = admin.permissions().contains("*")
                 || admin.permissions().contains("receivables.override_limit");
+        String clientIp = extractClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
         return apiResponseFactory.data(
-                posOrderService.createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit), request);
+                posOrderService.createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit,
+                        clientIp, userAgent),
+                request);
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

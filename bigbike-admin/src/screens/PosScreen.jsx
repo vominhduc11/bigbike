@@ -3,10 +3,10 @@ import { Minus, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
-import { posCreateOrder, posSearchProducts } from '../lib/adminApi'
+import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posSearchProducts } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 
-const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL']
+const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']
 
 function priceOf(priceObj) {
   if (priceObj == null) return 0
@@ -19,7 +19,7 @@ function summarizeOptions(options) {
   return options.map((o) => o.value ?? o.name ?? '').filter(Boolean).join(' / ')
 }
 
-function PaymentModal({ cart, total, onClose, onSuccess }) {
+function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit }) {
   const { t } = useTranslation()
   const [method, setMethod] = useState('CASH')
   const [customerName, setCustomerName] = useState('')
@@ -33,31 +33,100 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
     typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
   )
 
+  // CREDIT state
+  const [customerQuery, setCustomerQuery] = useState('')
+  const [customerResults, setCustomerResults] = useState([])
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [customerCredit, setCustomerCredit] = useState(null)
+  const [creditLoading, setCreditLoading] = useState(false)
+  const [downPayment, setDownPayment] = useState('')
+
   const tenderedNum = tendered === '' ? 0 : Number(String(tendered).replace(/\D/g, ''))
   const change = method === 'CASH' && tenderedNum > 0 ? tenderedNum - total : null
   const insufficientTendered = method === 'CASH' && tendered !== '' && tenderedNum < total
 
+  const downPaymentNum = downPayment === '' ? 0 : Number(downPayment)
+  const downPaymentInvalid = method === 'CREDIT' && downPayment !== '' && (downPaymentNum < 0 || downPaymentNum > total)
+
+  // Credit eligibility checks
+  const creditEnabled = customerCredit?.creditEnabled === true
+  const creditActive = customerCredit?.creditStatus === 'ACTIVE'
+  const availableCredit = customerCredit?.availableCredit ?? null
+  const overLimit = method === 'CREDIT' && availableCredit !== null && total > availableCredit
+  const creditBlocked = method === 'CREDIT' && selectedCustomer && customerCredit && (!creditEnabled || !creditActive)
+  const creditOverLimitBlocked = overLimit && !canOverrideCreditLimit
+  const submitDisabled = submitting || insufficientTendered || downPaymentInvalid || creditBlocked || creditOverLimitBlocked
+      || (method === 'CREDIT' && !selectedCustomer)
+
+  function handleMethodChange(m) {
+    setMethod(m)
+    if (m !== 'CREDIT') {
+      setSelectedCustomer(null)
+      setCustomerCredit(null)
+      setDownPayment('')
+      setCustomerResults([])
+      setCustomerQuery('')
+    }
+  }
+
+  async function searchCustomers(q) {
+    if (!q || q.length < 2) { setCustomerResults([]); return }
+    try {
+      const res = await fetchCustomers({ search: q, page: 1, pageSize: 10 })
+      setCustomerResults(res.items || [])
+    } catch { setCustomerResults([]) }
+  }
+
+  async function loadCustomerCredit(customerId) {
+    setCreditLoading(true)
+    try {
+      const credit = await fetchCustomerCredit(customerId)
+      setCustomerCredit(credit)
+    } catch { setCustomerCredit(null) }
+    finally { setCreditLoading(false) }
+  }
+
+  function handleSelectCustomer(c) {
+    setSelectedCustomer(c)
+    setCustomerResults([])
+    setCustomerQuery(c.displayName || c.email || '')
+    loadCustomerCredit(c.id)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (insufficientTendered) return
+    if (submitDisabled) return
     setError('')
     setSubmitting(true)
     try {
-      const result = await posCreateOrder({
+      const basePayload = {
         paymentMethod: method,
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
         staffNote: staffNote.trim() || undefined,
-        tenderedAmount: method === 'CASH' && tenderedNum > 0 ? tenderedNum : undefined,
-        cardReferenceNumber: method === 'CARD_TERMINAL' && cardRef.trim() ? cardRef.trim() : undefined,
         posIdempotencyKey: idempotencyKey,
         items: cart.map((item) => ({
           productId: item.productId,
           productVariantId: item.variantId,
           quantity: item.qty,
         })),
-      })
-      onSuccess(result)
+      }
+      let payload
+      if (method === 'CASH') {
+        payload = { ...basePayload, tenderedAmount: tenderedNum > 0 ? tenderedNum : undefined }
+      } else if (method === 'CARD_TERMINAL') {
+        payload = { ...basePayload, cardReferenceNumber: cardRef.trim() || undefined }
+      } else if (method === 'CREDIT') {
+        payload = {
+          ...basePayload,
+          customerId: selectedCustomer.id,
+          ...(downPaymentNum > 0 ? { downPayment: downPaymentNum } : {}),
+        }
+      } else {
+        payload = basePayload
+      }
+      const result = await posCreateOrder(payload)
+      onSuccess(result, method)
     } catch (err) {
       setError(err.message || 'Lỗi khi tạo đơn hàng.')
     } finally {
@@ -103,7 +172,7 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
                 key={m}
                 type="button"
                 className={`pos-method-btn${method === m ? ' active' : ''}`}
-                onClick={() => setMethod(m)}
+                onClick={() => handleMethodChange(m)}
               >
                 {t(`pos.method.${m}`, { defaultValue: m })}
               </button>
@@ -146,6 +215,134 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
             </div>
           )}
 
+          {method === 'CREDIT' && (
+            <div style={{ marginTop: 12 }}>
+              <label className="field-label">Tìm khách hàng *</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="control-input"
+                  style={{ width: '100%' }}
+                  placeholder="Nhập tên hoặc email khách hàng..."
+                  value={customerQuery}
+                  onChange={(e) => {
+                    setCustomerQuery(e.target.value)
+                    setSelectedCustomer(null)
+                    setCustomerCredit(null)
+                    searchCustomers(e.target.value)
+                  }}
+                  autoComplete="off"
+                />
+                {customerResults.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                    background: 'var(--admin-color-surface-raised)',
+                    border: '1px solid var(--admin-color-border-subtle)',
+                    borderRadius: 'var(--admin-radius-md)',
+                    boxShadow: 'var(--admin-shadow-md)',
+                    maxHeight: 200, overflowY: 'auto',
+                  }}>
+                    {customerResults.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        style={{
+                          display: 'block', width: '100%', textAlign: 'left',
+                          padding: '8px 12px', background: 'none', border: 'none',
+                          cursor: 'pointer', fontSize: '0.875rem',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--admin-color-surface-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                        onClick={() => handleSelectCustomer(c)}
+                      >
+                        <strong>{c.displayName || c.email}</strong>
+                        {c.email && c.displayName && <span style={{ color: 'var(--admin-color-text-muted)', marginLeft: 8, fontSize: '0.75rem' }}>{c.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {creditLoading && <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginTop: 6 }}>Đang tải thông tin tín dụng...</p>}
+
+              {selectedCustomer && customerCredit && !creditLoading && (
+                <div style={{
+                  marginTop: 10, padding: '10px 12px',
+                  background: 'var(--admin-color-surface-base)',
+                  border: '1px solid var(--admin-color-border-subtle)',
+                  borderRadius: 'var(--admin-radius-md)',
+                  fontSize: '0.85rem',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>Bán chịu:</span>
+                    <strong style={{ color: creditEnabled ? 'var(--admin-color-success, #22c55e)' : 'var(--admin-color-danger, #ef4444)' }}>
+                      {creditEnabled ? 'Được phép' : 'Bị tắt'}
+                    </strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>Trạng thái:</span>
+                    <strong>{customerCredit.creditStatus}</strong>
+                  </div>
+                  {customerCredit.creditLimit != null && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span>Hạn mức:</span>
+                        <span>{formatCurrencyVnd(customerCredit.creditLimit)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span>Đang nợ:</span>
+                        <span>{formatCurrencyVnd(customerCredit.currentOutstanding)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Còn có thể bán chịu:</span>
+                        <strong style={{ color: availableCredit >= total ? 'var(--admin-color-success, #22c55e)' : 'var(--admin-color-warning, #f59e0b)' }}>
+                          {formatCurrencyVnd(availableCredit)}
+                        </strong>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {creditBlocked && (
+                <p className="field-error" style={{ marginTop: 6 }}>
+                  Khách hàng không đủ điều kiện bán chịu
+                  {!creditEnabled ? ' (chưa được bật tín dụng)' : ` (trạng thái: ${customerCredit?.creditStatus})`}.
+                </p>
+              )}
+
+              {overLimit && canOverrideCreditLimit && (
+                <p style={{ marginTop: 6, fontSize: '0.85rem', color: 'var(--admin-color-warning, #f59e0b)' }}>
+                  Vượt hạn mức tín dụng — sẽ override (bạn có quyền).
+                </p>
+              )}
+
+              {creditOverLimitBlocked && (
+                <p className="field-error" style={{ marginTop: 6 }}>
+                  Vượt hạn mức tín dụng ({formatCurrencyVnd(total)} &gt; còn lại {formatCurrencyVnd(availableCredit)}). Bạn không có quyền override.
+                </p>
+              )}
+
+              {selectedCustomer && !creditBlocked && (
+                <div style={{ marginTop: 10 }}>
+                  <label className="field-label">Thanh toán trước (tùy chọn)</label>
+                  <input
+                    className="control-input"
+                    style={{ width: '100%' }}
+                    type="number"
+                    min={0}
+                    max={total}
+                    placeholder="0 = ghi nợ toàn bộ"
+                    value={downPayment}
+                    onChange={(e) => setDownPayment(e.target.value)}
+                  />
+                  {downPaymentInvalid && (
+                    <p className="field-error" style={{ marginTop: 4 }}>Thanh toán trước phải từ 0 đến {formatCurrencyVnd(total)}.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ marginTop: 12 }}>
             <label className="field-label">{t('pos.note')}</label>
             <input
@@ -168,7 +365,7 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
             type="submit"
             className="btn btn-primary"
             style={{ width: '100%' }}
-            disabled={submitting || insufficientTendered}
+            disabled={submitDisabled}
           >
             {submitting ? t('common.saving') : t('pos.confirmPayment')}
           </button>
@@ -178,8 +375,9 @@ function PaymentModal({ cart, total, onClose, onSuccess }) {
   )
 }
 
-function ReceiptModal({ order, onClose }) {
+function ReceiptModal({ order, paymentMethod, onClose }) {
   const { t } = useTranslation()
+  const isCreditOrder = paymentMethod === 'CREDIT' || order?.paymentMethod === 'CREDIT'
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
       <div className="pos-modal" onClick={(e) => e.stopPropagation()}>
@@ -194,7 +392,12 @@ function ReceiptModal({ order, onClose }) {
           <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>
             {t('pos.orderNumber')}: <strong>{order?.orderNumber || '—'}</strong>
           </p>
-          {order?.changeAmount != null && order.changeAmount > 0 && (
+          {isCreditOrder && (
+            <p style={{ fontSize: '0.85rem', marginTop: 4, color: 'var(--admin-color-warning, #f59e0b)' }}>
+              Công nợ: <strong>{order?.paymentStatus || 'UNPAID'}</strong>
+            </p>
+          )}
+          {!isCreditOrder && order?.changeAmount != null && order.changeAmount > 0 && (
             <p style={{ fontSize: '0.85rem', marginTop: 4 }}>
               Tiền thừa: <strong style={{ color: 'var(--admin-color-success, #22c55e)' }}>{formatCurrencyVnd(order.changeAmount)}</strong>
             </p>
@@ -211,7 +414,7 @@ function ReceiptModal({ order, onClose }) {
 const POS_CART_KEY = 'pos_cart'
 const POS_CART_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours
 
-export function PosScreen({ canUpdate, userId }) {
+export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
   const dq = useDebounce(q, 200)
@@ -418,9 +621,10 @@ export function PosScreen({ canUpdate, userId }) {
         <PaymentModal
           cart={cart}
           total={total}
+          canOverrideCreditLimit={canOverrideCreditLimit}
           onClose={() => setModal(null)}
-          onSuccess={(order) => {
-            setLastOrder(order)
+          onSuccess={(order, usedMethod) => {
+            setLastOrder({ ...order, usedMethod })
             setCart([])
             try { localStorage.removeItem('pos_cart') } catch { /* ignore */ }
             setQ('')
@@ -431,7 +635,7 @@ export function PosScreen({ canUpdate, userId }) {
       )}
 
       {modal === 'receipt' && (
-        <ReceiptModal order={lastOrder} onClose={() => setModal(null)} />
+        <ReceiptModal order={lastOrder} paymentMethod={lastOrder?.usedMethod} onClose={() => setModal(null)} />
       )}
 
     </section>

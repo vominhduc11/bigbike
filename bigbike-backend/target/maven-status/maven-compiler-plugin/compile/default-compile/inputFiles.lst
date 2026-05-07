@@ -515,6 +515,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\pos\PosOrderService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\public_\PublicReviewService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\receivable\CreditPolicyService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\receivable\ReceivableOverdueScheduler.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\receivable\ReceivableQueryService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\receivable\ReceivableService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\search\GlobalSearchService.java

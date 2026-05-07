@@ -81,7 +81,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   useEffect(() => {
     if (!canReadReceivables) return
     let active = true
-    setCreditLoading(true)
+    queueMicrotask(() => { if (active) setCreditLoading(true) })
     fetchCustomerCredit(customerId)
       .then((r) => {
         if (!active) return

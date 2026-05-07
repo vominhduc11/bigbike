@@ -99,6 +99,17 @@ public class ReceivableService {
             RecordReceivablePaymentRequest req,
             UUID adminId
     ) {
+        return recordPayment(receivableId, req, adminId, null, null);
+    }
+
+    @Transactional
+    public ReceivableDetailResponse recordPayment(
+            UUID receivableId,
+            RecordReceivablePaymentRequest req,
+            UUID adminId,
+            String clientIp,
+            String userAgent
+    ) {
         ReceivableEntity ar = receivableRepo.findById(receivableId)
                 .orElseThrow(() -> new NotFoundException("Công nợ không tồn tại: " + receivableId));
 
@@ -164,7 +175,8 @@ public class ReceivableService {
                 "RECEIVABLE", ar.getId(), adminId,
                 String.format("{\"receivableId\":\"%s\",\"amount\":%s,\"paymentMethod\":\"%s\",\"remaining\":%s}",
                         ar.getId(), amount.setScale(0, RoundingMode.HALF_UP),
-                        req.paymentMethod(), ar.getOutstandingAmount().setScale(0, RoundingMode.HALF_UP)));
+                        req.paymentMethod(), ar.getOutstandingAmount().setScale(0, RoundingMode.HALF_UP)),
+                clientIp, userAgent);
 
         receivableRepo.save(ar);
         return queryService.toDetail(ar, order.getOrderNumber());
@@ -176,6 +188,12 @@ public class ReceivableService {
      */
     @Transactional
     public ReceivableDetailResponse writeOff(UUID receivableId, WriteOffReceivableRequest req, UUID adminId) {
+        return writeOff(receivableId, req, adminId, null, null);
+    }
+
+    @Transactional
+    public ReceivableDetailResponse writeOff(UUID receivableId, WriteOffReceivableRequest req, UUID adminId,
+                                             String clientIp, String userAgent) {
         ReceivableEntity ar = receivableRepo.findById(receivableId)
                 .orElseThrow(() -> new NotFoundException("Công nợ không tồn tại: " + receivableId));
 
@@ -192,41 +210,49 @@ public class ReceivableService {
         ar.setUpdatedAt(now);
         receivableRepo.save(ar);
 
+        // Update order paymentStatus to WRITTEN_OFF (POSREC-006)
+        OrderEntity order = orderRepo.findById(ar.getOrderId()).orElse(null);
+        String orderNumber = null;
+        if (order != null) {
+            orderNumber = order.getOrderNumber();
+            order.setPaymentStatus("WRITTEN_OFF");
+            order.setUpdatedAt(now);
+            orderRepo.save(order);
+        }
+
         auditLog("RECEIVABLE_WRITTEN_OFF",
                 "RECEIVABLE", ar.getId(), adminId,
                 String.format("{\"receivableId\":\"%s\",\"reason\":\"%s\",\"writtenOffAmount\":%s}",
                         ar.getId(), req.reason().replace("\"", "'"),
-                        ar.getWrittenOffAmount().setScale(0, RoundingMode.HALF_UP)));
+                        ar.getWrittenOffAmount().setScale(0, RoundingMode.HALF_UP)),
+                clientIp, userAgent);
 
-        String orderNumber = orderRepo.findById(ar.getOrderId())
-                .map(OrderEntity::getOrderNumber).orElse(null);
         return queryService.toDetail(ar, orderNumber);
     }
 
     /**
      * Refreshes overdue status for all OPEN/PARTIALLY_PAID receivables past their due date.
      * Intended to be called by a scheduled task (or manually).
+     * AR_RULE_008: Overdue receivables are flagged by scheduler.
      */
     @Transactional
     public int refreshOverdueStatus() {
         LocalDate today = LocalDate.now();
-        List<ReceivableEntity> candidates = receivableRepo.findByCustomerIdAndStatusNotIn(
-                null, List.of("CLOSED", "WRITTEN_OFF", "OVERDUE"));
-        // The above query is by customer_id which isn't what we want here; use a bulk approach instead
-        // For simplicity, load all open/partially_paid and check in memory — acceptable for moderate data volumes
-        List<ReceivableEntity> all = receivableRepo.findAll().stream()
-                .filter(r -> List.of("OPEN", "PARTIALLY_PAID").contains(r.getStatus())
-                        && r.getDueDate() != null && r.getDueDate().isBefore(today))
-                .toList();
-        for (ReceivableEntity ar : all) {
+        List<ReceivableEntity> candidates = receivableRepo.findOverdueCandidates(today);
+        for (ReceivableEntity ar : candidates) {
             ar.setStatus("OVERDUE");
             ar.setUpdatedAt(Instant.now());
             receivableRepo.save(ar);
         }
-        return all.size();
+        return candidates.size();
     }
 
     private void auditLog(String action, String resourceType, UUID resourceId, UUID adminId, String afterData) {
+        auditLog(action, resourceType, resourceId, adminId, afterData, null, null);
+    }
+
+    private void auditLog(String action, String resourceType, UUID resourceId, UUID adminId, String afterData,
+                          String clientIp, String userAgent) {
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(adminId);
@@ -234,6 +260,8 @@ public class ReceivableService {
         log.setResourceType(resourceType);
         log.setResourceId(resourceId);
         log.setAfterData(afterData);
+        if (clientIp != null) log.setIpAddress(clientIp);
+        if (userAgent != null) log.setUserAgent(userAgent);
         log.setCreatedAt(Instant.now());
         auditLogRepo.save(log);
     }

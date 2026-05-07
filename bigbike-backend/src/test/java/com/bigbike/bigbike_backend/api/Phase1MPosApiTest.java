@@ -19,8 +19,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -56,6 +59,8 @@ class Phase1MPosApiTest {
     @Autowired PaymentJpaRepository paymentRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
+    @Autowired ReceivableJpaRepository receivableRepo;
+    @Autowired CustomerJpaRepository customerRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -402,9 +407,302 @@ class Phase1MPosApiTest {
         assertThat(logs.get(0).getAction()).isEqualTo("POS_ORDER_CREATED");
     }
 
+    // ── CREDIT tests (POSREC-003) ─────────────────────────────────────────────
+
+    @Test
+    void createPosCreditOrder_withoutDownPayment_createsCompletedUnpaidOrderAndReceivable() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 200000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(idempotencyKey, customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"))
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var arOpt = receivableRepo.findByOrderId(UUID.fromString(orderId));
+        assertThat(arOpt).isPresent();
+        assertThat(arOpt.get().getStatus()).isEqualTo("OPEN");
+        assertThat(arOpt.get().getOutstandingAmount()).isEqualByComparingTo(new BigDecimal("200000"));
+    }
+
+    @Test
+    void createPosCreditOrder_withDownPayment_createsPartiallyPaidOrderPaymentAndReceivable() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 1000000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "downPayment": 300000,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(idempotencyKey, customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_PAID"))
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        // Receivable outstanding = 1000000 - 300000 = 700000
+        var arOpt = receivableRepo.findByOrderId(UUID.fromString(orderId));
+        assertThat(arOpt).isPresent();
+        assertThat(arOpt.get().getOutstandingAmount()).isEqualByComparingTo(new BigDecimal("700000"));
+        assertThat(arOpt.get().getPaidAmount()).isEqualByComparingTo(new BigDecimal("300000"));
+        // Payment record created for down payment
+        var payments = paymentRepo.findByOrderId(UUID.fromString(orderId));
+        assertThat(payments).isNotEmpty();
+        assertThat(payments.get(0).getAmount()).isEqualByComparingTo(new BigDecimal("300000"));
+    }
+
+    @Test
+    void createPosCreditOrder_requiresCustomerId_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void createPosCreditOrder_rejectsCreditDisabledCustomer_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+        customer.setCreditEnabled(false);
+        customerRepo.save(customer);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void createPosCreditOrder_rejectsCreditLimitExceeded_returns409() throws Exception {
+        // Credit limit = 50000, order total = 100000 -> exceeds
+        // Must use SHOP_MANAGER token (no override_limit permission)
+        String shopMgrToken = loginShopManager();
+        TestVariant tv = createProductWithVariant(5, 100000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("50000"));
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + shopMgrToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    // POSREC-009 — override_limit permission tests
+    @Test
+    void creditSale_shopManager_overCreditLimit_returns409() throws Exception {
+        String shopMgrToken = loginShopManager();
+        // Credit limit = 50000, order total = 100000 -> SHOP_MANAGER cannot override
+        TestVariant tv = createProductWithVariant(5, 100000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("50000"));
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + shopMgrToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void creditSale_admin_overCreditLimit_withOverridePerm_returns200() throws Exception {
+        // ADMIN has receivables.override_limit permission -> allowed even over limit
+        TestVariant tv = createProductWithVariant(5, 100000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("50000"));
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void createPosCreditOrder_decrementsStock_andWritesMovement() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 200000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 3}]
+                                }
+                                """.formatted(idempotencyKey, customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        int qtyAfter = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfter).isEqualTo(7); // 10 - 3
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("ORDER", UUID.fromString(orderId))).isTrue();
+    }
+
+    @Test
+    void createPosCreditOrder_idempotency_doesNotCreateDuplicateReceivable() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 300000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        String body = """
+                {
+                  "paymentMethod": "CREDIT",
+                  "posIdempotencyKey": "%s",
+                  "customerId": "%s",
+                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                }
+                """.formatted(idempotencyKey, customer.getId(), tv.productId, tv.variantId);
+
+        MvcResult result1 = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Retry with same key
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
+
+        String orderId = extractJsonString(result1.getResponse().getContentAsString(), "orderId");
+        // Only one receivable should exist for this order
+        long arCount = receivableRepo.findAll().stream()
+                .filter(ar -> ar.getOrderId().equals(UUID.fromString(orderId)))
+                .count();
+        assertThat(arCount).isEqualTo(1);
+    }
+
+    // POSREC-010 — Audit afterData has paymentMethod field
+    @Test
+    void createPosCashOrder_auditAfterDataHasPaymentMethod() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var logs = auditLogRepo.findByResourceTypeAndResourceId("ORDER", UUID.fromString(orderId));
+        assertThat(logs).isNotEmpty();
+        assertThat(logs.get(0).getAfterData()).contains("\"paymentMethod\"");
+        assertThat(logs.get(0).getAfterData()).contains("CASH");
+    }
+
+    @Test
+    void createPosCreditOrder_auditAfterDataHasPaymentMethodCredit() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var logs = auditLogRepo.findByResourceTypeAndResourceId("ORDER", UUID.fromString(orderId));
+        assertThat(logs).isNotEmpty();
+        assertThat(logs.get(0).getAfterData()).contains("\"paymentMethod\"");
+        assertThat(logs.get(0).getAfterData()).contains("CREDIT");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private record TestVariant(String productId, String variantId) {}
+
+    private CustomerEntity createCreditCustomer(BigDecimal creditLimit) {
+        CustomerEntity c = new CustomerEntity();
+        c.setEmail("credit-pos-" + UUID.randomUUID() + "@bigbike.test");
+        c.setPhone("090" + (int)(Math.random() * 10000000));
+        c.setDisplayName("Credit POS Customer");
+        c.setStatus("ACTIVE");
+        c.setSynthetic(false);
+        c.setCreditEnabled(true);
+        c.setCreditLimit(creditLimit);
+        c.setPaymentTermsDays(30);
+        c.setCreditStatus("ACTIVE");
+        c.setCreatedAt(Instant.now());
+        c.setUpdatedAt(Instant.now());
+        return customerRepo.save(c);
+    }
 
     private TestVariant createProductWithVariant(int stock, int price) {
         Instant now = Instant.now();

@@ -36,8 +36,10 @@ import org.springframework.web.context.WebApplicationContext;
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class AdminReceivableApiTest {
 
-    private static final String ADMIN_EMAIL = "ar-admin-" + UUID.randomUUID() + "@bigbike.test";
-    private static final String ADMIN_PASS  = "Admin@AR12345678";
+    private static final String ADMIN_EMAIL    = "ar-admin-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String ADMIN_PASS     = "Admin@AR12345678";
+    private static final String SHOP_MGR_EMAIL = "ar-shopmgr-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String SHOP_MGR_PASS  = "ShopMgr@AR12345678";
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
@@ -67,6 +69,19 @@ class AdminReceivableApiTest {
             admin.setCreatedAt(Instant.now());
             admin.setUpdatedAt(Instant.now());
             adminUserRepo.save(admin);
+        }
+
+        // Create shop manager (does NOT have receivables.write_off)
+        if (adminUserRepo.findByEmail(SHOP_MGR_EMAIL).isEmpty()) {
+            AdminUserEntity mgr = new AdminUserEntity();
+            mgr.setEmail(SHOP_MGR_EMAIL);
+            mgr.setPasswordHash(passwordService.hash(SHOP_MGR_PASS));
+            mgr.setDisplayName("AR Test ShopManager");
+            mgr.setRole("SHOP_MANAGER");
+            mgr.setStatus("ACTIVE");
+            mgr.setCreatedAt(Instant.now());
+            mgr.setUpdatedAt(Instant.now());
+            adminUserRepo.save(mgr);
         }
 
         // Login
@@ -361,5 +376,57 @@ class AdminReceivableApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.currentOutstanding").value(0))
                 .andExpect(jsonPath("$.data.availableCredit").doesNotExist());
+    }
+
+    // ── POSREC-008: write-off permission test ─────────────────────────────────
+
+    @Test
+    void writeOff_shopManager_withoutWriteOffPermission_returns403() throws Exception {
+        String shopMgrToken = loginShopManager();
+
+        CustomerEntity customer = createCreditCustomer();
+        OrderEntity order = createOrder("UNPAID", new BigDecimal("500000"), BigDecimal.ZERO, customer.getId());
+        ReceivableEntity ar = createReceivable(order, customer, new BigDecimal("500000"));
+
+        // SHOP_MANAGER does not have receivables.write_off — should get 403
+        mockMvc.perform(post("/api/v1/admin/receivables/" + ar.getId() + "/write-off")
+                        .header("Authorization", "Bearer " + shopMgrToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Khách không trả nổi\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── POSREC-006: write-off updates order.paymentStatus ────────────────────
+
+    @Test
+    void writeOff_updatesOrderPaymentStatusToWrittenOff() throws Exception {
+        CustomerEntity customer = createCreditCustomer();
+        OrderEntity order = createOrder("UNPAID", new BigDecimal("400000"), BigDecimal.ZERO, customer.getId());
+        ReceivableEntity ar = createReceivable(order, customer, new BigDecimal("400000"));
+
+        mockMvc.perform(post("/api/v1/admin/receivables/" + ar.getId() + "/write-off")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Không thu được\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("WRITTEN_OFF"));
+
+        // Verify order paymentStatus updated
+        OrderEntity refreshedOrder = orderRepo.findById(order.getId()).orElseThrow();
+        assertThat(refreshedOrder.getPaymentStatus()).isEqualTo("WRITTEN_OFF");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String loginShopManager() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + SHOP_MGR_EMAIL + "\",\"password\":\"" + SHOP_MGR_PASS + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String body = result.getResponse().getContentAsString();
+        int start = body.indexOf("\"accessToken\":\"") + 15;
+        int end = body.indexOf("\"", start);
+        return body.substring(start, end);
     }
 }

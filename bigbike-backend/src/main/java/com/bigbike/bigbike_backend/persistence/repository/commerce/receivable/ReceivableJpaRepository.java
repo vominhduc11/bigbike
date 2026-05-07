@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.persistence.repository.commerce.receivable;
 
 import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,4 +65,17 @@ public interface ReceivableJpaRepository extends JpaRepository<ReceivableEntity,
             Pageable pageable);
 
     List<ReceivableEntity> findByCustomerIdAndStatusNotIn(UUID customerId, List<String> statuses);
+
+    /**
+     * Returns all OPEN or PARTIALLY_PAID receivables whose dueDate is before the given date.
+     * Used by the overdue scheduler.
+     */
+    @Query("""
+            SELECT r FROM ReceivableEntity r
+            WHERE r.status IN ('OPEN', 'PARTIALLY_PAID')
+              AND r.dueDate IS NOT NULL
+              AND r.dueDate < :today
+              AND r.outstandingAmount > 0
+            """)
+    List<ReceivableEntity> findOverdueCandidates(@Param("today") LocalDate today);
 }

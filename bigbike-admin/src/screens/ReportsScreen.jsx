@@ -140,12 +140,15 @@ export function ReportsScreen() {
 
     // Block invalid custom range before hitting the server
     if (preset === 'custom' && from && to && from > to) {
-      setState({ status: 'error', data: null, warning: '', error: "'Từ ngày' không được sau 'Đến ngày'." })
-      return
+      queueMicrotask(() => {
+        if (active) setState({ status: 'error', data: null, warning: '', error: "'Từ ngày' không được sau 'Đến ngày'." })
+      })
+      return () => { active = false }
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState((s) => ({ ...s, status: 'loading' }))
+    queueMicrotask(() => {
+      if (active) setState((s) => ({ ...s, status: 'loading' }))
+    })
     fetchAnalytics(from, to)
       .then((r) => {
         if (!active) return
@@ -156,7 +159,7 @@ export function ReportsScreen() {
         setState({ status: 'error', data: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [resolvedDates])
+  }, [resolvedDates, preset])
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
 

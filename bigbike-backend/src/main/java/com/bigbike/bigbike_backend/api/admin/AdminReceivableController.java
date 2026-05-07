@@ -133,7 +133,9 @@ public class AdminReceivableController {
     ) {
         var admin = devAdminAuthService.requirePermission(request, "receivables.record_payment");
         UUID adminId = resolveAdminId(admin);
-        return apiResponseFactory.data(receivableService.recordPayment(id, req, adminId), request);
+        String clientIp = extractClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        return apiResponseFactory.data(receivableService.recordPayment(id, req, adminId, clientIp, userAgent), request);
     }
 
     // ── Write-off ─────────────────────────────────────────────────────────────
@@ -146,7 +148,9 @@ public class AdminReceivableController {
     ) {
         var admin = devAdminAuthService.requirePermission(request, "receivables.write_off");
         UUID adminId = resolveAdminId(admin);
-        return apiResponseFactory.data(receivableService.writeOff(id, req, adminId), request);
+        String clientIp = extractClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        return apiResponseFactory.data(receivableService.writeOff(id, req, adminId, clientIp, userAgent), request);
     }
 
     // ── Customer credit profile management ───────────────────────────────────
@@ -190,6 +194,14 @@ public class AdminReceivableController {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String extractClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
 
     private static UUID resolveAdminId(Object principal) {
         if (principal instanceof AdminPrincipal ap) {

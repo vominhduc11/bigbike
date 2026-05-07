@@ -397,7 +397,7 @@ function AdminApp() {
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} />; break
     case 'pos':
-      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} />; break
+      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} canOverrideCreditLimit={hasPermission('receivables.override_limit')} />; break
     case 'receivables-list':
       screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'receivable-detail':

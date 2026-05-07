@@ -4,7 +4,6 @@ import { AlertTriangle, CheckCircle, Clock, DollarSign, FileX, X } from 'lucide-
 import {
   fetchReceivables,
   fetchReceivableSummary,
-  fetchReceivableAging,
   recordReceivablePayment,
   writeOffReceivable,
 } from '../lib/adminApi'
