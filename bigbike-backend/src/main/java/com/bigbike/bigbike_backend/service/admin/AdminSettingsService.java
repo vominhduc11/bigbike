@@ -132,7 +132,7 @@ public class AdminSettingsService {
             valueValidator.validate(settingKey, req.value(), defOpt.get());
         }
 
-        String before = snapshot(entity);
+        String before = snapshot(entity, definitionRegistry.isSensitive(settingKey));
 
         if (req.value() != null) {
             entity.setSettingValue(req.value());
@@ -150,7 +150,8 @@ public class AdminSettingsService {
         settingRepo.save(entity);
 
         webRevalidationService.revalidate("settings");
-        auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before, snapshot(entity)));
+        auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before,
+                snapshot(entity, definitionRegistry.isSensitive(settingKey))));
 
         return toAdminResponse(entity);
     }
@@ -206,9 +207,11 @@ public class AdminSettingsService {
         return log;
     }
 
-    private static String snapshot(SiteSettingEntity s) {
+    private static String snapshot(SiteSettingEntity s, boolean sensitive) {
+        String value = (sensitive && s.getSettingValue() != null && !s.getSettingValue().isEmpty())
+                ? MASKED_VALUE : s.getSettingValue();
         return "{\"key\":\"" + escapeJson(s.getSettingKey()) +
-               "\",\"value\":\"" + escapeJson(s.getSettingValue()) +
+               "\",\"value\":\"" + escapeJson(value) +
                "\",\"group\":\"" + escapeJson(s.getSettingGroup()) +
                "\",\"isPublic\":" + s.isPublic() + "}";
     }

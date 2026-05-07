@@ -60,8 +60,7 @@ public class PosOrderService {
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
             String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
             String customerId,           // Required for CREDIT payment method
-            Long downPayment,            // Optional: partial upfront payment for CREDIT orders
-            boolean overrideCreditLimit  // Requires receivables.override_limit permission
+            Long downPayment             // Optional: partial upfront payment for CREDIT orders
     ) {}
 
     public record PosOrderResponse(

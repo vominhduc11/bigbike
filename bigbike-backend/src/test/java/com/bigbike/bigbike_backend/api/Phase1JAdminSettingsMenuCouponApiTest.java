@@ -8,11 +8,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaRepository;
@@ -44,6 +46,7 @@ class Phase1JAdminSettingsMenuCouponApiTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
+    @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired SiteSettingJpaRepository settingRepo;
     @Autowired MenuJpaRepository menuRepo;
     @Autowired MenuItemJpaRepository menuItemRepo;
@@ -1175,6 +1178,69 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                         .cookie(cookies)
                         .header("X-CSRF-Token", csrf))
                 .andExpect(status().isConflict());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PHASE B.1 — Google Maps allowlist + audit log masking
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // PB.1 Non-Google host → 400
+    @Test
+    void adminSettings_googleMapsUrl_nonGoogle_returns400() throws Exception {
+        createTestSetting("google_maps_url", "https://www.google.com/maps/embed", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/google_maps_url")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"https://evil.com/maps/embed\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB.2 Valid Google Maps URL → 200
+    @Test
+    void adminSettings_googleMapsUrl_googleMaps_succeeds() throws Exception {
+        createTestSetting("google_maps_url", "https://www.google.com/maps/embed", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/google_maps_url")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"https://www.google.com/maps/embed?pb=abc\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
+    // PB.3 google.com.evil.com (subdomain hijack) → 400
+    @Test
+    void adminSettings_googleMapsUrl_googleComEvil_returns400() throws Exception {
+        createTestSetting("google_maps_url", "https://www.google.com/maps/embed", "contact", true);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/google_maps_url")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"https://www.google.com.evil.com/maps/embed\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // PB.4 PATCH sensitive key → audit log records "********" not plaintext
+    @Test
+    void adminSettings_auditLog_masksSensitiveValue() throws Exception {
+        String key = "stripe.api_key.audit." + UUID.randomUUID().toString().substring(0, 6);
+        String plaintext = "sk_live_SUPER_SECRET_VALUE";
+        SiteSettingEntity setting = createTestSetting(key, plaintext, "payment", false);
+
+        mockMvc.perform(patch("/api/v1/admin/settings/" + key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":\"sk_live_NEW_SECRET_VALUE\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        java.util.List<AuditLogEntity> logs =
+                auditLogRepo.findByResourceTypeAndResourceId("SITE_SETTING", setting.getId());
+        assertThat(logs).isNotEmpty();
+        AuditLogEntity log = logs.get(logs.size() - 1);
+        assertThat(log.getBeforeData()).contains("********");
+        assertThat(log.getBeforeData()).doesNotContain(plaintext);
+        assertThat(log.getAfterData()).contains("********");
+        assertThat(log.getAfterData()).doesNotContain("sk_live_NEW_SECRET_VALUE");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
