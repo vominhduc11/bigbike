@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.990 s -- in com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.397 s -- in com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest

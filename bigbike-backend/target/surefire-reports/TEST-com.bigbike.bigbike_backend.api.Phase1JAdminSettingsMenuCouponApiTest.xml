@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="31.469" tests="77" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="5.04" tests="77" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -16,10 +16,9 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="A:\jdk17\bin"/>
-    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire16391443738937014\surefirebooter-20260507114939528_3.jar C:\Users\vomin\AppData\Local\Temp\surefire16391443738937014 2026-05-07T11-49-39_225-jvmRun1 surefire-20260507114939528_1tmp surefire_0-20260507114939528_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\vomin\AppData\Local\Temp\surefire5602550076916332087\surefirebooter-20260507115048752_3.jar C:\Users\vomin\AppData\Local\Temp\surefire5602550076916332087 2026-05-07T11-50-48_534-jvmRun1 surefire-20260507115048752_1tmp surefire_0-20260507115048752_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="S:\project\bigbike\bigbike-backend\target\test-classes;S:\project\bigbike\bigbike-backend\target\classes;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.5\spring-boot-starter-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.5\spring-boot-starter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.5\spring-boot-starter-logging-4.0.5.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\vomin\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\vomin\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\vomin\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.5\spring-boot-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\vomin\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.5\spring-boot-starter-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.5\spring-boot-micrometer-metrics-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.5\spring-boot-micrometer-observation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.5\spring-boot-actuator-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.5\spring-boot-actuator-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-health\4.0.5\spring-boot-health-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot\4.0.5\spring-boot-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context\7.0.6\spring-context-7.0.6.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation\1.16.4\micrometer-observation-1.16.4.jar;C:\Users\vomin\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-commons\1.16.4\micrometer-commons-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.4\micrometer-jakarta9-1.16.4.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-core\1.16.4\micrometer-core-1.16.4.jar;C:\Users\vomin\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\vomin\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.5\spring-boot-starter-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.5\spring-boot-starter-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.5\spring-boot-data-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.5\spring-boot-data-commons-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.5\spring-boot-persistence-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-commons\4.0.4\spring-data-commons-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.5\spring-boot-hibernate-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.5\spring-boot-jpa-4.0.5.jar;C:\Users\vomin\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\vomin\.m2\repository\org\hibernate\orm\hibernate-core\7.2.7.Final\hibernate-core-7.2.7.Final.jar;C:\Users\vomin\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\vomin\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\vomin\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\vomin\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-orm\7.0.6\spring-orm-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\data\spring-data-jpa\4.0.4\spring-data-jpa-4.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-tx\7.0.6\spring-tx-7.0.6.jar;C:\Users\vomin\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aspects\7.0.6\spring-aspects-7.0.6.jar;C:\Users\vomin\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.5\spring-boot-jdbc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.5\spring-boot-sql-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.5\spring-boot-transaction-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-jdbc\7.0.6\spring-jdbc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.5\spring-boot-starter-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.5\spring-boot-flyway-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail\4.0.5\spring-boot-starter-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-mail\4.0.5\spring-boot-mail-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-context-support\7.0.6\spring-context-support-7.0.6.jar;C:\Users\vomin\.m2\repository\jakarta\mail\jakarta.mail-api\2.1.5\jakarta.mail-api-2.1.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-mail\2.0.5\angus-mail-2.0.5.jar;C:\Users\vomin\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.5\spring-boot-starter-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security\4.0.5\spring-boot-security-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-config\7.0.4\spring-security-config-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-core\7.0.4\spring-security-core-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-crypto\7.0.4\spring-security-crypto-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-web\7.0.4\spring-security-web-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-expression\7.0.6\spring-expression-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-aop\7.0.6\spring-aop-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-beans\7.0.6\spring-beans-7.0.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-api\0.12.6\jjwt-api-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-impl\0.12.6\jjwt-impl-0.12.6.jar;C:\Users\vomin\.m2\repository\io\jsonwebtoken\jjwt-jackson\0.12.6\jjwt-jackson-0.12.6.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\vomin\.m2\repository\org\bouncycastle\bcprov-jdk18on\1.80\bcprov-jdk18on-1.80.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf\4.0.5\spring-boot-starter-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-thymeleaf\4.0.5\spring-boot-thymeleaf-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-web\7.0.6\spring-web-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.5\spring-boot-starter-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.5\spring-boot-starter-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.5\spring-boot-jackson-4.0.5.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-databind\3.1.0\jackson-databind-3.1.0.jar;C:\Users\vomin\.m2\repository\tools\jackson\core\jackson-core\3.1.0\jackson-core-3.1.0.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.5\spring-boot-starter-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.5\spring-boot-starter-tomcat-runtime-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.20\tomcat-embed-core-11.0.20.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.20\tomcat-embed-websocket-11.0.20.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.5\spring-boot-tomcat-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.5\spring-boot-http-converter-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.5\spring-boot-webmvc-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.5\spring-boot-servlet-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-webmvc\7.0.6\spring-webmvc-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.5\spring-boot-starter-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.5\spring-boot-validation-4.0.5.jar;C:\Users\vomin\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.20\tomcat-embed-el-11.0.20.jar;C:\Users\vomin\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\vomin\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\vomin\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\vomin\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket\4.0.5\spring-boot-starter-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-websocket\4.0.5\spring-boot-websocket-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-messaging\7.0.6\spring-messaging-7.0.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-websocket\7.0.6\spring-websocket-7.0.6.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\vomin\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\extras\thymeleaf-extras-springsecurity6\3.1.3.RELEASE\thymeleaf-extras-springsecurity6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf-spring6\3.1.3.RELEASE\thymeleaf-spring6-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\thymeleaf\thymeleaf\3.1.3.RELEASE\thymeleaf-3.1.3.RELEASE.jar;C:\Users\vomin\.m2\repository\org\attoparser\attoparser\2.0.7.RELEASE\attoparser-2.0.7.RELEASE.jar;C:\Users\vomin\.m2\repository\org\unbescape\unbescape\1.1.6.RELEASE\unbescape-1.1.6.RELEASE.jar;C:\Users\vomin\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\vomin\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\vomin\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\vomin\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\vomin\.m2\repository\io\minio\minio\8.5.17\minio-8.5.17.jar;C:\Users\vomin\.m2\repository\com\carrotsearch\thirdparty\simple-xml-safe\2.7.1\simple-xml-safe-2.7.1.jar;C:\Users\vomin\.m2\repository\com\google\guava\guava\33.3.1-jre\guava-33.3.1-jre.jar;C:\Users\vomin\.m2\repository\com\google\guava\failureaccess\1.0.2\failureaccess-1.0.2.jar;C:\Users\vomin\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\vomin\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\vomin\.m2\repository\com\google\errorprone\error_prone_annotations\2.28.0\error_prone_annotations-2.28.0.jar;C:\Users\vomin\.m2\repository\com\google\j2objc\j2objc-annotations\3.0.0\j2objc-annotations-3.0.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okhttp3\okhttp\4.12.0\okhttp-4.12.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio\3.6.0\okio-3.6.0.jar;C:\Users\vomin\.m2\repository\com\squareup\okio\okio-jvm\3.6.0\okio-jvm-3.6.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-common\1.9.10\kotlin-stdlib-common-1.9.10.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk8\2.2.21\kotlin-stdlib-jdk8-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib\2.2.21\kotlin-stdlib-2.2.21.jar;C:\Users\vomin\.m2\repository\org\jetbrains\annotations\13.0\annotations-13.0.jar;C:\Users\vomin\.m2\repository\org\jetbrains\kotlin\kotlin-stdlib-jdk7\2.2.21\kotlin-stdlib-jdk7-2.2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\vomin\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-compress\1.27.1\commons-compress-1.27.1.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-lang3\3.19.0\commons-lang3-3.19.0.jar;C:\Users\vomin\.m2\repository\commons-codec\commons-codec\1.19.0\commons-codec-1.19.0.jar;C:\Users\vomin\.m2\repository\org\xerial\snappy\snappy-java\1.1.10.7\snappy-java-1.1.10.7.jar;C:\Users\vomin\.m2\repository\org\apache\tika\tika-core\2.9.2\tika-core-2.9.2.jar;C:\Users\vomin\.m2\repository\commons-io\commons-io\2.15.1\commons-io-2.15.1.jar;C:\Users\vomin\.m2\repository\com\bucket4j\bucket4j-core\8.10.1\bucket4j-core-8.10.1.jar;C:\Users\vomin\.m2\repository\net\logstash\logback\logstash-logback-encoder\8.0\logstash-logback-encoder-8.0.jar;C:\Users\vomin\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\vomin\.m2\repository\org\projectlombok\lombok\1.18.44\lombok-1.18.44.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-actuator-test\4.0.5\spring-boot-starter-actuator-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics-test\4.0.5\spring-boot-starter-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics-test\4.0.5\spring-boot-micrometer-metrics-test-4.0.5.jar;C:\Users\vomin\.m2\repository\io\micrometer\micrometer-observation-test\1.16.4\micrometer-observation-test-1.16.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-configuration-processor\4.0.5\spring-boot-configuration-processor-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.5\spring-boot-starter-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test\4.0.5\spring-boot-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.5\spring-boot-test-autoconfigure-4.0.5.jar;C:\Users\vomin\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\vomin\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\vomin\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\vomin\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\vomin\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\vomin\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\vomin\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\vomin\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\vomin\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\vomin\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\vomin\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\vomin\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\vomin\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\vomin\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\vomin\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-core\7.0.6\spring-core-7.0.6.jar;C:\Users\vomin\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\vomin\.m2\repository\org\springframework\spring-test\7.0.6\spring-test-7.0.6.jar;C:\Users\vomin\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.5\spring-boot-starter-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.5\spring-boot-starter-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.5\spring-boot-jdbc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.5\spring-boot-data-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.5\spring-boot-jpa-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-flyway-test\4.0.5\spring-boot-starter-flyway-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-mail-test\4.0.5\spring-boot-starter-mail-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.5\spring-boot-starter-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.5\spring-boot-security-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\security\spring-security-test\7.0.4\spring-security-test-7.0.4.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-thymeleaf-test\4.0.5\spring-boot-starter-thymeleaf-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.5\spring-boot-starter-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.5\spring-boot-starter-jackson-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.5\spring-boot-webmvc-test-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.5\spring-boot-web-server-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.5\spring-boot-resttestclient-4.0.5.jar;C:\Users\vomin\.m2\repository\org\springframework\boot\spring-boot-starter-websocket-test\4.0.5\spring-boot-starter-websocket-test-4.0.5.jar;"/>
-    <property name="test" value="Phase1JAdminSettingsMenuCouponApiTest"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\vomin"/>
     <property name="user.language" value="en"/>
@@ -34,7 +33,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire16391443738937014\surefirebooter-20260507114939528_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\vomin\AppData\Local\Temp\surefire5602550076916332087\surefirebooter-20260507115048752_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.12+8-LTS-286"/>
@@ -47,12 +46,12 @@
     <property name="localRepository" value="C:\Users\vomin\.m2\repository"/>
     <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
     <property name="java.io.tmpdir" value="C:\Users\vomin\AppData\Local\Temp\"/>
-    <property name="com.zaxxer.hikari.pool_number" value="1"/>
+    <property name="com.zaxxer.hikari.pool_number" value="3"/>
     <property name="java.version" value="17.0.12"/>
     <property name="user.dir" value="S:\project\bigbike\bigbike-backend"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="16804"/>
+    <property name="PID" value="30052"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="windows-1258"/>
     <property name="native.encoding" value="Cp1258"/>
@@ -63,942 +62,81 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="adminSettings_nonSensitiveValue_notMasked" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="1.483">
-    <system-out><![CDATA[11:49:41.833 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest]: Phase1JAdminSettingsMenuCouponApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-11:49:42.177 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
-11:49:42.323 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest]: Phase1JAdminSettingsMenuCouponApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-11:49:42.327 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bigbike.bigbike_backend.BigbikeBackendApplication for test class com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.5)
-
-11:49:43.013 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Starting Phase1JAdminSettingsMenuCouponApiTest using Java 17.0.12 with PID 16804 (started by vomin in S:\project\bigbike\bigbike-backend)
-11:49:43.015 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Running with Spring Boot v4.0.5, Spring v7.0.6
-11:49:43.016 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - No active profile set, falling back to 1 default profile: "default"
-11:49:43.608 &amp#27;[34mINFO &amp#27;[0;39m [background-preinit] &amp#27;[36mo.h.validator.internal.util.Version&amp#27;[0;39m - HV000001: Hibernate Validator 9.0.1.Final
-11:49:45.895 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.r.c.RepositoryConfigurationDelegate&amp#27;[0;39m - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-11:49:46.493 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.r.c.RepositoryConfigurationDelegate&amp#27;[0;39m - Finished Spring Data repository scanning in 565 ms. Found 51 JPA repository interfaces.
-11:49:48.609 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.jpa&amp#27;[0;39m - HHH008540: Processing PersistenceUnitInfo [name: default]
-11:49:48.785 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.core&amp#27;[0;39m - HHH000001: Hibernate ORM core version 7.2.7.Final
-11:49:49.412 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.o.j.p.SpringPersistenceUnitInfo&amp#27;[0;39m - No LoadTimeWeaver setup: ignoring JPA class transformer
-11:49:49.454 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.HikariDataSource&amp#27;[0;39m - HikariPool-1 - Starting...
-11:49:49.704 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.pool.HikariPool&amp#27;[0;39m - HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:bigbike user=SA
-11:49:49.707 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mcom.zaxxer.hikari.HikariDataSource&amp#27;[0;39m - HikariPool-1 - Start completed.
-11:49:49.834 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.hibernate.orm.connections.pooling&amp#27;[0;39m - HHH10001005: Database info:
-	Database JDBC URL [jdbc:h2:mem:bigbike]
-	Database driver: H2 JDBC Driver
-	Database dialect: H2Dialect
-	Database version: 2.4.240
-	Default catalog/schema: bigbike/public
-	Autocommit mode: undefined/unknown
-	Isolation level: READ_COMMITTED [default READ_COMMITTED]
-	JDBC fetch size: 100
-	Pool: DataSourceConnectionProvider
-	Minimum pool size: undefined/unknown
-	Maximum pool size: undefined/unknown
-11:49:53.620 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36morg.hibernate.orm.core&amp#27;[0;39m - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-11:49:53.806 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.o.j.LocalContainerEntityManagerFactoryBean&amp#27;[0;39m - Initialized JPA EntityManagerFactory for persistence unit 'default'
-11:49:53.986 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.d.j.r.q.QueryEnhancerFactories&amp#27;[0;39m - Hibernate is in classpath; If applicable, HQL parser will be used.
-11:49:56.992 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.s.web.WebRevalidationService&amp#27;[0;39m - WebRevalidationService enabled=false url=
-11:50:02.152 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36mo.s.b.s.a.UserDetailsServiceAutoConfiguration&amp#27;[0;39m - 
-
-Using generated security password: b7aac5ca-1290-4eb0-b3e0-00e2ab5400ec
-
-This generated password is for development use only. Your security configuration must be updated before running your application in production.
-
-11:50:02.170 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer&amp#27;[0;39m - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
-11:50:02.513 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.web.DefaultSecurityFilterChain&amp#27;[0;39m - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, SecurityHeadersFilter, CustomerSessionFilter, RateLimitingFilter, JwtAuthFilter, CustomerCsrfFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
-11:50:04.117 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.a.e.web.EndpointLinksResolver&amp#27;[0;39m - Exposing 1 endpoint beneath base path '/actuator'
-11:50:04.247 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - Starting...
-11:50:04.248 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@524a42a0]]
-11:50:04.250 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.m.s.b.SimpleBrokerMessageHandler&amp#27;[0;39m - Started.
-11:50:04.274 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mc.b.b.a.Phase1JAdminSettingsMenuCouponApiTest&amp#27;[0;39m - Started Phase1JAdminSettingsMenuCouponApiTest in 21.728 seconds (process running for 24.47)
-11:50:04.720 &amp#27;[31mWARN &amp#27;[0;39m [main] &amp#27;[36mc.b.b.config.DataInitializer&amp#27;[0;39m - Seeded default admin user: admin@bigbike.vn — change the password immediately!
-11:50:05.440 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:05.440 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:05.444 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:05.668 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:05.699 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:05.708 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:06.082 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings/site_name
-11:50:06.163 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings/site_name
-]]></system-out>
-  </testcase>
-  <testcase name="publicSettings_unregisteredPublicKey_filteredByAllowlist" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.224">
-    <system-out><![CDATA[11:50:06.293 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:06.294 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:06.300 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 6 ms
-11:50:06.304 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:06.306 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.306 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:06.389 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/settings/public
-11:50:06.392 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.393 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/settings/public
-]]></system-out>
-  </testcase>
-  <testcase name="publicMenu_inactiveMenu_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.129">
-    <system-out><![CDATA[11:50:06.518 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:06.518 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:06.522 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:06.534 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:06.536 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.536 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:06.621 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/inactive-pub-fd227fa8
-11:50:06.622 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.622 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/inactive-pub-fd227fa8
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_deleteMenu_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.169">
-    <system-out><![CDATA[11:50:06.650 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:06.650 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:06.653 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:06.657 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:06.658 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.659 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:06.767 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/19c52aac-dce9-4e73-8bce-0ac4f24fb248
-11:50:06.770 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/19c52aac-dce9-4e73-8bce-0ac4f24fb248
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_registeredNonPublicKey_isPublicTrue_rejected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.114">
-    <system-out><![CDATA[11:50:06.820 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:06.821 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:06.824 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:06.830 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:06.830 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.831 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:06.908 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/tax_enabled
-11:50:06.910 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/tax_enabled
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_update_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.117">
-    <system-out><![CDATA[11:50:06.937 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:06.937 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:06.941 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:06.946 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:06.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:06.948 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.017 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/6ab9ac64-fa55-49a0-8cdf-a548169dea95
-11:50:07.020 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/6ab9ac64-fa55-49a0-8cdf-a548169dea95
-]]></system-out>
-  </testcase>
-  <testcase name="updateMenuItem_clearParentId_movesToRoot" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.134">
-    <system-out><![CDATA[11:50:07.056 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.056 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.060 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:07.065 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.067 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.067 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.137 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/07c76e58-1c6e-41a7-9f7f-2b13eee2df9b/items/bcc74855-c742-4a98-bf03-881159e490b4
-11:50:07.139 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/07c76e58-1c6e-41a7-9f7f-2b13eee2df9b/items/bcc74855-c742-4a98-bf03-881159e490b4
-]]></system-out>
-  </testcase>
-  <testcase name="createMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.097">
-    <system-out><![CDATA[11:50:07.190 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.191 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.194 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:07.198 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.198 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.199 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.256 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
-11:50:07.258 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069">
-    <system-out><![CDATA[11:50:07.290 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.290 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.293 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:07.297 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.298 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.299 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.346 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
-11:50:07.347 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_getByKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.079">
-    <system-out><![CDATA[11:50:07.359 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.360 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.362 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:07.366 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.366 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.367 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.424 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings/key-2f26715b
-11:50:07.427 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings/key-2f26715b
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_createPercent_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.131">
-    <system-out><![CDATA[11:50:07.441 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.441 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.444 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:07.447 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.448 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.448 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.518 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:07.521 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_invalidUrl_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.118">
-    <system-out><![CDATA[11:50:07.573 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.574 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.578 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:07.581 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.583 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.583 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.675 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/facebook_url
-11:50:07.677 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/facebook_url
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.125">
-    <system-out><![CDATA[11:50:07.696 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.696 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.700 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:07.704 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.705 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.706 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.757 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons
-11:50:07.760 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="updateSetting_apiKeyCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.072">
-    <system-out><![CDATA[11:50:07.822 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.822 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.824 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:07.827 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.828 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.828 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.870 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/stripe.api_key.032be1
-11:50:07.872 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/stripe.api_key.032be1
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_invalidDiscountType_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.091">
-    <system-out><![CDATA[11:50:07.897 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.897 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.901 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:07.906 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.908 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.908 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:07.965 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:07.967 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_deleteItem_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.083">
-    <system-out><![CDATA[11:50:07.988 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:07.988 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:07.990 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:07.994 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:07.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:07.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.052 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/b4371694-3524-4a75-af89-861abd0d9ef1/items/b91057e2-677e-4d86-9588-348234dc508e
-11:50:08.053 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/b4371694-3524-4a75-af89-861abd0d9ef1/items/b91057e2-677e-4d86-9588-348234dc508e
-]]></system-out>
-  </testcase>
-  <testcase name="updateCoupon_fixedToPercent_withHighAmount_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.062">
-    <system-out><![CDATA[11:50:08.073 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.073 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.076 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:08.079 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.080 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.081 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.120 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/9fc98ce3-9bf1-4c98-b0f1-99ebd13079a8
-11:50:08.122 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/9fc98ce3-9bf1-4c98-b0f1-99ebd13079a8
-]]></system-out>
-  </testcase>
-  <testcase name="reorderMenuItems_parentFromOtherMenu_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.101">
-    <system-out><![CDATA[11:50:08.135 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.136 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.140 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:08.143 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.144 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.144 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.211 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/5ce7e657-4ad9-4653-a8be-1b15036d0aa8/items/reorder
-11:50:08.213 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/5ce7e657-4ad9-4653-a8be-1b15036d0aa8/items/reorder
-]]></system-out>
-  </testcase>
-  <testcase name="updateMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.075">
-    <system-out><![CDATA[11:50:08.239 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.239 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.243 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:08.246 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.246 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.247 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.298 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/2aeaad3a-3c49-411c-a127-3cf156fea60c/items/79b14bff-c08a-4158-9d21-552f12da3d99
-11:50:08.300 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/2aeaad3a-3c49-411c-a127-3cf156fea60c/items/79b14bff-c08a-4158-9d21-552f12da3d99
-]]></system-out>
-  </testcase>
-  <testcase name="updateMenuItem_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.075">
-    <system-out><![CDATA[11:50:08.315 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.315 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.318 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:08.322 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.323 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.323 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.371 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/8500a3f0-1e8c-4b3f-a12f-d98cbdc2712d/items/c305c8d1-07d5-4298-8fc0-d1d23b139b40
-11:50:08.373 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/8500a3f0-1e8c-4b3f-a12f-d98cbdc2712d/items/c305c8d1-07d5-4298-8fc0-d1d23b139b40
-]]></system-out>
-  </testcase>
-  <testcase name="publicMenu_byLocation_returnsActiveItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.085">
-    <system-out><![CDATA[11:50:08.392 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.392 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.394 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:08.397 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.398 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.398 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.458 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/pub-menu-ac3b2cf2
-11:50:08.458 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.459 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/pub-menu-ac3b2cf2
-]]></system-out>
-  </testcase>
-  <testcase name="customerOrders_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071">
-    <system-out><![CDATA[11:50:08.478 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.478 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.482 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:08.485 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.486 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.487 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.541 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/customer/orders
-11:50:08.542 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_filterByGroup" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.092">
-    <system-out><![CDATA[11:50:08.552 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.552 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.555 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:08.558 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.558 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.559 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.618 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
-11:50:08.620 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_unregisteredKey_isPublicTrue_rejected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.078">
-    <system-out><![CDATA[11:50:08.644 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.644 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.649 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 5 ms
-11:50:08.652 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.653 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.653 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.708 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/wild_key_166c499a
-11:50:08.709 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/wild_key_166c499a
-]]></system-out>
-  </testcase>
-  <testcase name="adminCustomers_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.089">
-    <system-out><![CDATA[11:50:08.724 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.724 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.727 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:08.732 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.733 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.733 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.787 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/customers
-11:50:08.789 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/customers
-]]></system-out>
-  </testcase>
-  <testcase name="updateMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.084">
-    <system-out><![CDATA[11:50:08.814 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.814 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.816 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:08.820 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.821 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.821 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.882 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/menus/0dae18ce-1e10-4b0a-b20e-41b033e80607
-11:50:08.884 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/menus/0dae18ce-1e10-4b0a-b20e-41b033e80607
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_createDuplicateLocation_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.087">
-    <system-out><![CDATA[11:50:08.900 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.901 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.904 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:08.908 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:08.909 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:08.909 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:08.970 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
-11:50:08.973 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
-]]></system-out>
-  </testcase>
-  <testcase name="reorderMenuItems_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.11">
-    <system-out><![CDATA[11:50:08.990 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:08.990 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:08.996 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 6 ms
-11:50:09.000 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.001 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.002 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.076 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/be5cb091-2a4e-4fb1-a482-e8d998f11922/items/reorder
-11:50:09.078 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/be5cb091-2a4e-4fb1-a482-e8d998f11922/items/reorder
-]]></system-out>
-  </testcase>
-  <testcase name="applyCoupon_nonexistentCode_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.127">
-    <system-out><![CDATA[11:50:09.105 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.105 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.110 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 5 ms
-11:50:09.114 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.115 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.115 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.165 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:09.165 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.165 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-11:50:09.200 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:09.202 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.202 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_getById_returnsMenuWithItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.083">
-    <system-out><![CDATA[11:50:09.230 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.230 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.232 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:09.235 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.235 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.235 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.291 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus/2c2cf208-9184-4c4f-8173-46185f3e91e8
-11:50:09.293 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/menus/2c2cf208-9184-4c4f-8173-46185f3e91e8
-]]></system-out>
-  </testcase>
-  <testcase name="updateSetting_clientSecretCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.073">
-    <system-out><![CDATA[11:50:09.317 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.317 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.319 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:09.324 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.325 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.326 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.378 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/oauth.client_secret.a2cff4
-11:50:09.379 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/oauth.client_secret.a2cff4
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_sensitiveKey_cannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.08">
-    <system-out><![CDATA[11:50:09.391 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.391 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.393 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:09.397 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.397 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.397 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.455 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/app.secret.key.76dc2c2f
-11:50:09.458 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/app.secret.key.76dc2c2f
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_create_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.078">
-    <system-out><![CDATA[11:50:09.473 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.473 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.477 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:09.479 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.480 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.480 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.536 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus
-11:50:09.537 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.084">
-    <system-out><![CDATA[11:50:09.554 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.554 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.557 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:09.560 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.561 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.561 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.619 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings
-11:50:09.622 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_percentOver100_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076">
-    <system-out><![CDATA[11:50:09.638 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.639 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.642 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:09.645 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.646 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.646 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.698 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:09.699 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_invalidPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.084">
-    <system-out><![CDATA[11:50:09.716 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.716 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.720 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:09.725 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.726 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.726 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.785 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/hotline
-11:50:09.787 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/hotline
-]]></system-out>
-  </testcase>
-  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.091">
-    <system-out><![CDATA[11:50:09.802 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.803 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.806 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:09.810 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.811 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.812 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.859 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/products
-11:50:09.860 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.860 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/products
-]]></system-out>
-  </testcase>
-  <testcase name="applyCoupon_validActiveCoupon_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.11">
-    <system-out><![CDATA[11:50:09.893 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:09.893 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:09.897 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:09.899 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:09.901 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.901 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:09.955 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:09.955 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.956 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-11:50:09.965 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:09.966 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:09.966 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_invalidEnum_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.074">
-    <system-out><![CDATA[11:50:10.007 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.007 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.009 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.013 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.013 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.014 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.067 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/store_currency
-11:50:10.068 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/store_currency
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_validUpdateOnRegisteredKey_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.065">
-    <system-out><![CDATA[11:50:10.082 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.082 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.085 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:10.089 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.090 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.090 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.132 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/contact_email
-11:50:10.133 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/contact_email
-]]></system-out>
-  </testcase>
-  <testcase name="publicSettings_returnsOnlyPublicSettings" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055">
-    <system-out><![CDATA[11:50:10.146 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.147 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.149 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.151 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.152 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.152 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.193 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/settings/public
-11:50:10.194 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.194 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/settings/public
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_reorderItems_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.082">
-    <system-out><![CDATA[11:50:10.202 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.202 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.204 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.206 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.206 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.206 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.259 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/b5821f26-a7cc-4f17-9eca-16d617dc0869/items/reorder
-11:50:10.262 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/b5821f26-a7cc-4f17-9eca-16d617dc0869/items/reorder
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_duplicateCode_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.085">
-    <system-out><![CDATA[11:50:10.286 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.287 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.289 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.293 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.294 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.294 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.360 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:10.363 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_sensitiveValue_maskedOnGet" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055">
-    <system-out><![CDATA[11:50:10.372 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.372 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.374 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.376 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.376 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.376 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.418 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/settings/service.api_key.ecb713
-11:50:10.420 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/settings/service.api_key.ecb713
-]]></system-out>
-  </testcase>
-  <testcase name="adminOrders_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058">
-    <system-out><![CDATA[11:50:10.429 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.429 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.431 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.432 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.433 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.433 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.469 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/orders
-11:50:10.469 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/orders
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_updateValue_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.051">
-    <system-out><![CDATA[11:50:10.487 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.487 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.489 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.490 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.527 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/upd-a15607c7
-11:50:10.529 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/upd-a15607c7
-]]></system-out>
-  </testcase>
-  <testcase name="deleteMenu_deepHierarchy_returns204AndCleansDb" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.074">
-    <system-out><![CDATA[11:50:10.539 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.539 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.541 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.543 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.544 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.598 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/f7b8bf57-78db-48f6-b711-ef1a4a6db13a
-11:50:10.600 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/f7b8bf57-78db-48f6-b711-ef1a4a6db13a
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_unregisteredKey_anyValueAccepted" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.07">
-    <system-out><![CDATA[11:50:10.615 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.615 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.617 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.619 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.619 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.620 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.672 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/legacy_key_573a64d7
-11:50:10.674 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/legacy_key_573a64d7
-]]></system-out>
-  </testcase>
-  <testcase name="applyCoupon_inactiveCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061">
-    <system-out><![CDATA[11:50:10.685 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.685 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.687 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.689 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.690 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.690 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.725 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:10.725 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.726 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-11:50:10.733 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:10.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="reorderMenuItems_selfParent_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066">
-    <system-out><![CDATA[11:50:10.747 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.747 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.749 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.751 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.751 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.751 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.802 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/ecfa1dad-6e7e-4f2b-8efb-c8f26d8bceb2/items/reorder
-11:50:10.803 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/ecfa1dad-6e7e-4f2b-8efb-c8f26d8bceb2/items/reorder
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_getById_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061">
-    <system-out><![CDATA[11:50:10.816 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.816 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.818 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.822 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.822 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.822 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.866 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons/c310ab43-2894-49e3-8d73-394ff76841ca
-11:50:10.867 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/coupons/c310ab43-2894-49e3-8d73-394ff76841ca
-]]></system-out>
-  </testcase>
-  <testcase name="adminMedia_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063">
-    <system-out><![CDATA[11:50:10.878 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.878 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.881 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:10.883 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.883 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.883 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.922 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/media
-11:50:10.923 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/media
-]]></system-out>
-  </testcase>
-  <testcase name="checkoutOptions_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.07">
-    <system-out><![CDATA[11:50:10.942 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:10.942 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:10.944 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:10.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:10.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.947 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:10.994 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/checkout/options
-11:50:10.994 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:10.995 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/checkout/options
-]]></system-out>
-  </testcase>
-  <testcase name="createCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055">
-    <system-out><![CDATA[11:50:11.015 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.015 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.018 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:11.020 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.020 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.021 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.059 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:11.062 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_decimalOutOfRange_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063">
-    <system-out><![CDATA[11:50:11.072 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.072 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.075 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:11.079 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.079 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.079 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.124 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/tax_rate
-11:50:11.126 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/tax_rate
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_updateName_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061">
-    <system-out><![CDATA[11:50:11.136 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.136 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.138 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.141 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.141 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.142 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.184 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/036ca8e4-b372-4487-9558-3457793dd500
-11:50:11.185 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/036ca8e4-b372-4487-9558-3457793dd500
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_invalidEmail_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.075">
-    <system-out><![CDATA[11:50:11.198 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.198 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.200 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-11:50:11.204 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.205 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.205 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.264 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/contact_email
-11:50:11.265 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/contact_email
-]]></system-out>
-  </testcase>
-  <testcase name="updateCouponStatus_archived_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.065">
-    <system-out><![CDATA[11:50:11.273 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.273 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.276 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:11.278 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.278 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.278 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.320 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/4abb1088-bd74-4b2b-ac6b-f7d49947de2c/status
-11:50:11.321 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/4abb1088-bd74-4b2b-ac6b-f7d49947de2c/status
-]]></system-out>
-  </testcase>
-  <testcase name="updateCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068">
-    <system-out><![CDATA[11:50:11.339 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.340 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.343 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:11.346 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.346 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.347 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.394 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/fd352d45-4cff-47f4-88b7-29659c005f87
-11:50:11.396 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/fd352d45-4cff-47f4-88b7-29659c005f87
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068">
-    <system-out><![CDATA[11:50:11.409 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.409 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.413 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 4 ms
-11:50:11.415 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.416 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.416 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.470 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons
-11:50:11.471 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="updateCoupon_fixedToPercent_withValidAmount_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059">
-    <system-out><![CDATA[11:50:11.477 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.477 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.479 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.482 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.482 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.483 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.524 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/2f2ab9b9-4aa2-4984-b5b8-cb64b5dfe04c
-11:50:11.526 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/2f2ab9b9-4aa2-4984-b5b8-cb64b5dfe04c
-]]></system-out>
-  </testcase>
-  <testcase name="applyCoupon_expiredCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.064">
-    <system-out><![CDATA[11:50:11.538 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.538 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.540 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.542 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.542 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.542 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.586 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:11.586 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.586 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-11:50:11.593 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:11.593 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.593 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="deleteMenuItem_withChildren_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066">
-    <system-out><![CDATA[11:50:11.603 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.603 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.605 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.607 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.607 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.608 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.659 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing DELETE /api/v1/admin/menus/ccfd5399-97ef-417e-870a-c0e901a90c52/items/1b11d47c-d213-4176-a12c-bb5b15cb563f
-11:50:11.660 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured DELETE /api/v1/admin/menus/ccfd5399-97ef-417e-870a-c0e901a90c52/items/1b11d47c-d213-4176-a12c-bb5b15cb563f
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.053">
-    <system-out><![CDATA[11:50:11.672 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.672 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.675 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:11.677 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.678 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.678 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.720 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus
-11:50:11.720 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-]]></system-out>
-  </testcase>
-  <testcase name="shopManager_canListCoupons" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.137">
-    <system-out><![CDATA[11:50:11.727 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.728 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.730 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.734 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.811 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.811 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.811 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.851 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/coupons
-11:50:11.852 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_createItem_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06">
-    <system-out><![CDATA[11:50:11.866 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.866 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.868 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.870 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.871 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.871 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.908 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/6aefc813-20e0-4ff5-8b2e-d1f94ce80336/items
-11:50:11.909 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/6aefc813-20e0-4ff5-8b2e-d1f94ce80336/items
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_updateStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057">
-    <system-out><![CDATA[11:50:11.924 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.924 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.926 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:11.928 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.929 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.929 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:11.972 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/coupons/aa4fd697-c6e6-4ec6-8feb-2169000b5cb1/status
-11:50:11.973 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/coupons/aa4fd697-c6e6-4ec6-8feb-2169000b5cb1/status
-]]></system-out>
-  </testcase>
-  <testcase name="applyCoupon_secondCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.092">
-    <system-out><![CDATA[11:50:11.984 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:11.984 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:11.985 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-11:50:11.987 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:11.988 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:11.988 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.042 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:12.042 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.042 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-11:50:12.049 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:12.049 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.050 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-11:50:12.063 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/cart/coupons
-11:50:12.063 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.065 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/cart/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="createCoupon_archivedStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076">
-    <system-out><![CDATA[11:50:12.077 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.077 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.079 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:12.082 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.082 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.082 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.138 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:12.139 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_integerOutOfRange_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.121">
-    <system-out><![CDATA[11:50:12.155 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.155 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.158 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:12.161 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.162 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.162 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.260 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/login_max_attempts
-11:50:12.262 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/login_max_attempts
-]]></system-out>
-  </testcase>
-  <testcase name="publicMenu_isAccessibleWithoutAuth" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.075">
-    <system-out><![CDATA[11:50:12.276 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.276 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.279 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:12.283 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.284 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.284 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/menus/pub-reg-071a67e7
-11:50:12.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.342 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/menus/pub-reg-071a67e7
-]]></system-out>
-  </testcase>
-  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063">
-    <system-out><![CDATA[11:50:12.353 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.353 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.355 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:12.357 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.357 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.357 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.406 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/cart
-11:50:12.406 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.406 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/cart
-]]></system-out>
-  </testcase>
-  <testcase name="adminCoupons_createFixed_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.051">
-    <system-out><![CDATA[11:50:12.416 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.416 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.418 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:12.420 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.420 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.420 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.456 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/coupons
-11:50:12.457 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/coupons
-]]></system-out>
-  </testcase>
-  <testcase name="adminSettings_invalidBoolean_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.054">
-    <system-out><![CDATA[11:50:12.469 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.469 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.470 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 1 ms
-11:50:12.472 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.473 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.473 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.515 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing PATCH /api/v1/admin/settings/tax_enabled
-11:50:12.517 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured PATCH /api/v1/admin/settings/tax_enabled
-]]></system-out>
-  </testcase>
-  <testcase name="createMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071">
-    <system-out><![CDATA[11:50:12.526 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.526 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.529 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:12.531 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.531 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.533 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.587 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/admin/menus/818b60a8-db73-498e-8681-84f08c2e5385/items
-11:50:12.588 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/admin/menus/818b60a8-db73-498e-8681-84f08c2e5385/items
-]]></system-out>
-  </testcase>
-  <testcase name="adminMenus_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.09">
-    <system-out><![CDATA[11:50:12.599 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.599 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.601 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 2 ms
-11:50:12.603 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.605 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.605 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.654 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/admin/menus
-11:50:12.655 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/admin/menus
-]]></system-out>
-  </testcase>
-  <testcase name="guestOrderLookup_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.062">
-    <system-out><![CDATA[11:50:12.690 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.b.t.m.w.SpringBootMockServletContext&amp#27;[0;39m - Initializing Spring TestDispatcherServlet ''
-11:50:12.691 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Initializing Servlet ''
-11:50:12.694 &amp#27;[34mINFO &amp#27;[0;39m [main] &amp#27;[36mo.s.t.w.s.TestDispatcherServlet&amp#27;[0;39m - Completed initialization in 3 ms
-11:50:12.695 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing POST /api/v1/auth/login
-11:50:12.696 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.696 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured POST /api/v1/auth/login
-11:50:12.740 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Securing GET /api/v1/orders/lookup
-11:50:12.740 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.s.w.a.AnonymousAuthenticationFilter&amp#27;[0;39m - Set SecurityContextHolder to anonymous SecurityContext
-11:50:12.741 &amp#27;[39mDEBUG&amp#27;[0;39m [main] &amp#27;[36mo.s.security.web.FilterChainProxy&amp#27;[0;39m - Secured GET /api/v1/orders/lookup
-]]></system-out>
-  </testcase>
+  <testcase name="adminSettings_nonSensitiveValue_notMasked" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.116"/>
+  <testcase name="publicSettings_unregisteredPublicKey_filteredByAllowlist" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058"/>
+  <testcase name="publicMenu_inactiveMenu_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="adminMenus_deleteMenu_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.077"/>
+  <testcase name="adminSettings_registeredNonPublicKey_isPublicTrue_rejected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.072"/>
+  <testcase name="adminMenus_update_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
+  <testcase name="updateMenuItem_clearParentId_movesToRoot" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.065"/>
+  <testcase name="createMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066"/>
+  <testcase name="adminSettings_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058"/>
+  <testcase name="adminSettings_getByKey_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068"/>
+  <testcase name="adminCoupons_createPercent_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.077"/>
+  <testcase name="adminSettings_invalidUrl_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.062"/>
+  <testcase name="adminCoupons_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="updateSetting_apiKeyCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.072"/>
+  <testcase name="adminCoupons_invalidDiscountType_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.072"/>
+  <testcase name="adminMenus_deleteItem_returns204" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.07"/>
+  <testcase name="updateCoupon_fixedToPercent_withHighAmount_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="reorderMenuItems_parentFromOtherMenu_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063"/>
+  <testcase name="updateMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="updateMenuItem_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.062"/>
+  <testcase name="publicMenu_byLocation_returnsActiveItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="customerOrders_stillProtected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055"/>
+  <testcase name="adminSettings_filterByGroup" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.054"/>
+  <testcase name="adminSettings_unregisteredKey_isPublicTrue_rejected" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="adminCustomers_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="updateMenu_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
+  <testcase name="adminMenus_createDuplicateLocation_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
+  <testcase name="reorderMenuItems_deepCycle_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.053"/>
+  <testcase name="applyCoupon_nonexistentCode_returns404" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
+  <testcase name="adminMenus_getById_returnsMenuWithItems" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068"/>
+  <testcase name="updateSetting_clientSecretCannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.084"/>
+  <testcase name="adminSettings_sensitiveKey_cannotBePublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.082"/>
+  <testcase name="adminMenus_create_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.071"/>
+  <testcase name="adminSettings_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.065"/>
+  <testcase name="adminCoupons_percentOver100_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.047"/>
+  <testcase name="adminSettings_invalidPhone_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="publicCatalog_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.076"/>
+  <testcase name="applyCoupon_validActiveCoupon_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.068"/>
+  <testcase name="adminSettings_invalidEnum_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059"/>
+  <testcase name="adminSettings_validUpdateOnRegisteredKey_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.065"/>
+  <testcase name="publicSettings_returnsOnlyPublicSettings" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.053"/>
+  <testcase name="adminMenus_reorderItems_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061"/>
+  <testcase name="adminCoupons_duplicateCode_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066"/>
+  <testcase name="adminSettings_sensitiveValue_maskedOnGet" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063"/>
+  <testcase name="adminOrders_stillWork" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="adminSettings_updateValue_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
+  <testcase name="deleteMenu_deepHierarchy_returns204AndCleansDb" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="adminSettings_unregisteredKey_anyValueAccepted" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="applyCoupon_inactiveCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="reorderMenuItems_selfParent_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066"/>
+  <testcase name="adminCoupons_getById_returnsDetail" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.049"/>
+  <testcase name="adminMedia_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="checkoutOptions_stillPublic" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="createCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
+  <testcase name="adminSettings_decimalOutOfRange_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="adminCoupons_updateName_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.052"/>
+  <testcase name="adminSettings_invalidEmail_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="updateCouponStatus_archived_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.069"/>
+  <testcase name="updateCoupon_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.063"/>
+  <testcase name="adminCoupons_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061"/>
+  <testcase name="updateCoupon_fixedToPercent_withValidAmount_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059"/>
+  <testcase name="applyCoupon_expiredCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.067"/>
+  <testcase name="deleteMenuItem_withChildren_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059"/>
+  <testcase name="adminMenus_withoutToken_returns401" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.055"/>
+  <testcase name="shopManager_canListCoupons" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.158"/>
+  <testcase name="adminMenus_createItem_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.052"/>
+  <testcase name="adminCoupons_updateStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.059"/>
+  <testcase name="applyCoupon_secondCoupon_returns409" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.066"/>
+  <testcase name="createCoupon_archivedStatus_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.062"/>
+  <testcase name="adminSettings_integerOutOfRange_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.056"/>
+  <testcase name="publicMenu_isAccessibleWithoutAuth" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.061"/>
+  <testcase name="cartApi_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.054"/>
+  <testcase name="adminCoupons_createFixed_succeeds" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.064"/>
+  <testcase name="adminSettings_invalidBoolean_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.06"/>
+  <testcase name="createMenuItem_invalidStatus_returns400" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.058"/>
+  <testcase name="adminMenus_withAdminToken_returnsList" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.073"/>
+  <testcase name="guestOrderLookup_stillWorks" classname="com.bigbike.bigbike_backend.api.Phase1JAdminSettingsMenuCouponApiTest" time="0.057"/>
 </testsuite>

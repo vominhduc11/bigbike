@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,10 @@ public class SettingValueValidator {
     private static final int MAX_LONG_TEXT_LENGTH = 65_536;
     private static final int MAX_HTML_LENGTH = 262_144;
 
+    private static final Set<String> GOOGLE_MAPS_ONLY_KEYS = Set.of("google_maps_url");
+    private static final Set<String> GOOGLE_MAPS_ALLOWED_HOSTS = Set.of(
+            "www.google.com", "google.com", "maps.google.com");
+
     public void validate(String key, String rawValue, SettingDefinition def) {
         if (rawValue == null) return;
 
@@ -35,7 +40,13 @@ public class SettingValueValidator {
             case BOOLEAN -> validateBoolean(key, rawValue);
             case INTEGER -> validateInteger(key, rawValue, def);
             case DECIMAL, MONEY -> validateDecimal(key, rawValue, def);
-            case URL -> validateUrl(key, rawValue, true);
+            case URL -> {
+                if (GOOGLE_MAPS_ONLY_KEYS.contains(key)) {
+                    validateGoogleMapsUrl(key, rawValue);
+                } else {
+                    validateUrl(key, rawValue, true);
+                }
+            }
             case IMAGE_URL -> validateUrl(key, rawValue, false);
             case EMAIL -> validateEmail(key, rawValue);
             case PHONE -> validatePhone(key, rawValue);
@@ -86,6 +97,29 @@ public class SettingValueValidator {
         }
         if (def.max() != null && n.compareTo(def.max()) > 0) {
             throw fail(key, "ABOVE_MAX", "Value must be <= " + def.max().toPlainString() + ".");
+        }
+    }
+
+    private void validateGoogleMapsUrl(String key, String value) {
+        String trimmed = value.trim();
+        try {
+            URI uri = new URI(trimmed);
+            if (!"https".equalsIgnoreCase(uri.getScheme())) {
+                throw fail(key, "INVALID_GOOGLE_MAPS_URL",
+                        "Google Maps URL must use https:// scheme.");
+            }
+            String host = uri.getHost();
+            if (host == null || !GOOGLE_MAPS_ALLOWED_HOSTS.contains(host.toLowerCase())) {
+                throw fail(key, "INVALID_GOOGLE_MAPS_URL",
+                        "URL must be a Google Maps embed URL (www.google.com, google.com, or maps.google.com).");
+            }
+            String path = uri.getPath();
+            if (path == null || !path.startsWith("/maps")) {
+                throw fail(key, "INVALID_GOOGLE_MAPS_URL",
+                        "Google Maps URL path must start with /maps.");
+            }
+        } catch (URISyntaxException e) {
+            throw fail(key, "INVALID_GOOGLE_MAPS_URL", "Value is not a valid URL.");
         }
     }
 
