@@ -61,6 +61,9 @@ public class AdminPosController {
         String staffId = admin.id();
         boolean canOverridePrice = admin.permissions().contains("*")
                 || admin.permissions().contains("pos.price_override");
-        return apiResponseFactory.data(posOrderService.createOrder(req, staffId, canOverridePrice), request);
+        boolean canOverrideCreditLimit = admin.permissions().contains("*")
+                || admin.permissions().contains("receivables.override_limit");
+        return apiResponseFactory.data(
+                posOrderService.createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit), request);
     }
 }

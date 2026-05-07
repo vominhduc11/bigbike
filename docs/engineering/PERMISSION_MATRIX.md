@@ -53,14 +53,17 @@ Evidence:
 
 - `SecurityConfig.java`
 
-## Proposed Accounts Receivable Permissions
+## Accounts Receivable Permissions
 
-> Status: `PROPOSED_FOR_AR_MODULE` — not yet implemented in `AdminRolePermissions.java`. Requires business confirmation of AR rules (`AR_RULE_001`–`AR_RULE_011`) in `docs/business/BUSINESS_RULES.md` before addition.
+Status: `CONFIRMED_FROM_CODE` — implemented in `AdminRolePermissions.java`.
 
-| Permission string | Proposed roles | Purpose |
+| Permission string | Granted roles | Purpose |
 |---|---|---|
-| `receivables.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | View receivables list, per-customer outstanding balance, aging report |
-| `receivables.record_payment` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Record a partial or full payment against a credit order |
-| `receivables.write_off` | `SUPER_ADMIN`, `ADMIN` | Write off an uncollectable receivable |
-| `receivables.set_credit_terms` | `SUPER_ADMIN`, `ADMIN` | Set or modify credit limit and payment terms on a customer profile |
-| `pos.credit_sale` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Create a credit (paymentStatus `UNPAID`) POS order instead of requiring immediate payment |
+| `receivables.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | View receivables list, per-customer outstanding balance, aging report, customer credit profile |
+| `receivables.create` | `SUPER_ADMIN`, `ADMIN` | Update customer credit profile (creditEnabled, limit, terms, status) |
+| `receivables.record_payment` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Record a partial or full payment against a credit receivable |
+| `receivables.write_off` | `SUPER_ADMIN`, `ADMIN` | Write off an uncollectable receivable (mandatory reason required) |
+| `receivables.override_limit` | `SUPER_ADMIN`, `ADMIN` | Bypass credit limit check when creating a POS credit sale |
+| `receivables.export` | `SUPER_ADMIN`, `ADMIN` | Reserved for future CSV/PDF export of receivables |
+
+Evidence: `AdminRolePermissions.java`, `AdminReceivableController.java`

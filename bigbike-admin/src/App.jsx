@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
   Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Store, Tag, Ticket,
-  Truck, Users,
+  Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -47,7 +47,9 @@ const ReportsScreen      = lazyScreen(() => import('./screens/ReportsScreen'),  
 const InventoryScreen    = lazyScreen(() => import('./screens/InventoryScreen'),    'InventoryScreen')
 const ReturnListScreen   = lazyScreen(() => import('./screens/ReturnListScreen'),   'ReturnListScreen')
 const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),        'RolesScreen')
-const PosScreen          = lazyScreen(() => import('./screens/PosScreen'),          'PosScreen')
+const PosScreen              = lazyScreen(() => import('./screens/PosScreen'),              'PosScreen')
+const ReceivablesListScreen  = lazyScreen(() => import('./screens/ReceivablesListScreen'),  'ReceivablesListScreen')
+const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDetailScreen'), 'ReceivableDetailScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -59,7 +61,8 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
       { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'pos.read',       icon: Store },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
-      { path: '/admin/returns',    labelKey: 'nav.returns',    permission: 'orders.read',    icon: RotateCcw },
+      { path: '/admin/returns',      labelKey: 'nav.returns',      permission: 'orders.read',       icon: RotateCcw },
+      { path: '/admin/receivables', labelKey: 'nav.receivables', permission: 'receivables.read', icon: Wallet },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
       { path: '/admin/coupons',    labelKey: 'nav.coupons',    permission: 'coupons.read',   icon: Ticket },
     ],
@@ -162,7 +165,9 @@ function parseRoute(pathname) {
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
   if (module === 'inventory')   return { kind: 'screen', name: 'inventory' }
-  if (module === 'returns')     return { kind: 'screen', name: 'returns' }
+  if (module === 'returns')       return { kind: 'screen', name: 'returns' }
+  if (module === 'receivables' && !id) return { kind: 'screen', name: 'receivables-list' }
+  if (module === 'receivables' && id) return { kind: 'screen', name: 'receivable-detail', receivableId: id }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
   if (module === 'pos')         return { kind: 'screen', name: 'pos' }
 
@@ -203,6 +208,8 @@ function routePermission(routeName) {
     case 'reports':                      return 'orders.read'
     case 'inventory':                    return 'products.read'
     case 'returns':                      return 'orders.read'
+    case 'receivables-list':
+    case 'receivable-detail':            return 'receivables.read'
     case 'roles':                        return 'admin-users.read'
     case 'pos':                          return 'pos.read'
     default:                             return ''
@@ -356,7 +363,7 @@ function AdminApp() {
     case 'customers-list':
       screen = <CustomerListScreen navigate={navigate} />; break
     case 'customer-detail':
-      screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} />; break
+      screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} hasPermission={hasPermission} />; break
     case 'media-library':
       screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} />; break
     case 'coupons-list':
@@ -391,6 +398,10 @@ function AdminApp() {
       screen = <RolesScreen canUpdate={hasPermission('admin-users.write')} />; break
     case 'pos':
       screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} />; break
+    case 'receivables-list':
+      screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
+    case 'receivable-detail':
+      screen = <ReceivableDetailScreen key={route.receivableId} receivableId={route.receivableId} navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

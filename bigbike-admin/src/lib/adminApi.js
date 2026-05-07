@@ -1879,7 +1879,164 @@ export async function posCreateOrder(body) {
   return payload?.data ?? null
 }
 
-// â”€â”€ Roles & Permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Receivables / Công nợ ──────────────────────────────────────────────────────
+
+function normalizeReceivable(input) {
+  const r = input && typeof input === 'object' ? input : {}
+  return {
+    id: String(r.id || ''),
+    orderId: String(r.orderId || ''),
+    orderNumber: r.orderNumber || null,
+    customerId: r.customerId || null,
+    customerName: r.customerName || '',
+    customerPhone: r.customerPhone || '',
+    originalAmount: Number(r.originalAmount ?? 0),
+    paidAmount: Number(r.paidAmount ?? 0),
+    outstandingAmount: Number(r.outstandingAmount ?? 0),
+    writtenOffAmount: Number(r.writtenOffAmount ?? 0),
+    status: String(r.status || 'OPEN'),
+    dueDate: r.dueDate || null,
+    paymentTermsDays: r.paymentTermsDays ?? null,
+    overdueDays: r.overdueDays ?? null,
+    creditLimitSnapshot: r.creditLimitSnapshot ?? null,
+    createdFrom: r.createdFrom || '',
+    note: r.note || null,
+    writeOffReason: r.writeOffReason || null,
+    writtenOffAt: r.writtenOffAt || null,
+    createdByAdminId: r.createdByAdminId || null,
+    createdAt: r.createdAt || '',
+    updatedAt: r.updatedAt || '',
+  }
+}
+
+export async function fetchReceivables(query = {}) {
+  try {
+    const payload = await requestJson('/admin/receivables', {
+      query: {
+        page: query.page,
+        size: query.pageSize,
+        status: query.status && query.status !== 'ALL' ? query.status : undefined,
+        customerId: query.customerId || undefined,
+        q: query.search || undefined,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeReceivable, Number(query.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 }, 20) })
+  }
+}
+
+export async function fetchReceivableDetail(receivableId) {
+  try {
+    const payload = await requestJson(`/admin/receivables/${receivableId}`)
+    return withLiveData({ item: normalizeReceivable(payload?.data || {}) })
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { item: null })
+  }
+}
+
+export async function fetchReceivableSummary() {
+  try {
+    const payload = await requestJson('/admin/receivables/summary')
+    const d = payload?.data || {}
+    return {
+      totalOutstanding: Number(d.totalOutstanding ?? 0),
+      overdueOutstanding: Number(d.overdueOutstanding ?? 0),
+      writtenOffTotal: Number(d.writtenOffTotal ?? 0),
+      countOpen: Number(d.countOpen ?? 0),
+      countOverdue: Number(d.countOverdue ?? 0),
+    }
+  } catch {
+    return { totalOutstanding: 0, overdueOutstanding: 0, writtenOffTotal: 0, countOpen: 0, countOverdue: 0 }
+  }
+}
+
+export async function fetchReceivableAging() {
+  try {
+    const payload = await requestJson('/admin/receivables/aging')
+    const d = payload?.data || {}
+    return {
+      notDue: Number(d.notDue ?? 0),
+      days0To30: Number(d.days0To30 ?? 0),
+      days31To60: Number(d.days31To60 ?? 0),
+      days61To90: Number(d.days61To90 ?? 0),
+      over90: Number(d.over90 ?? 0),
+    }
+  } catch {
+    return { notDue: 0, days0To30: 0, days31To60: 0, days61To90: 0, over90: 0 }
+  }
+}
+
+export async function fetchCustomerReceivables(customerId, query = {}) {
+  try {
+    const payload = await requestJson(`/admin/customers/${customerId}/receivables`, {
+      query: { page: query.page, size: query.pageSize || 20 },
+    })
+    return withLiveData(parseListPayload(payload, normalizeReceivable, 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 }, 20) })
+  }
+}
+
+export async function recordReceivablePayment(receivableId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/receivables/${receivableId}/payments`, {
+    method: 'POST',
+    body: input,
+  })
+  return { item: normalizeReceivable(payload?.data || {}) }
+}
+
+export async function writeOffReceivable(receivableId, reason) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/receivables/${receivableId}/write-off`, {
+    method: 'POST',
+    body: { reason },
+  })
+  return { item: normalizeReceivable(payload?.data || {}) }
+}
+
+export async function fetchCustomerCredit(customerId) {
+  try {
+    const payload = await requestJson(`/admin/customers/${customerId}/credit`)
+    const d = payload?.data || {}
+    return {
+      customerId: d.customerId || customerId,
+      creditEnabled: d.creditEnabled === true,
+      creditLimit: d.creditLimit ?? null,
+      paymentTermsDays: d.paymentTermsDays ?? null,
+      creditStatus: d.creditStatus || 'ACTIVE',
+      creditNote: d.creditNote || null,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function updateCustomerCredit(customerId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/customers/${customerId}/credit`, {
+    method: 'PATCH',
+    body: input,
+  })
+  const d = payload?.data || {}
+  return {
+    customerId: d.customerId || customerId,
+    creditEnabled: d.creditEnabled === true,
+    creditLimit: d.creditLimit ?? null,
+    paymentTermsDays: d.paymentTermsDays ?? null,
+    creditStatus: d.creditStatus || 'ACTIVE',
+    creditNote: d.creditNote || null,
+  }
+}
+
+// ── Roles & Permissions ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function normalizeRole(input) {
   const r = input && typeof input === 'object' ? input : {}

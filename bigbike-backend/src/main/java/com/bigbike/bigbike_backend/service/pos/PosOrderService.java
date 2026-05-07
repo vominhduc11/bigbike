@@ -19,9 +19,14 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
+import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderKeyGenerator;
 import com.bigbike.bigbike_backend.service.checkout.OrderNumberGenerator;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
+import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService;
+import com.bigbike.bigbike_backend.service.receivable.ReceivableService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -49,11 +54,14 @@ public class PosOrderService {
             String customerName,
             String customerPhone,
             String customerNote,
-            String paymentMethod,        // CASH | CARD_TERMINAL
-            Long tenderedAmount,         // Tiền khách đưa (cho CASH), null cho CARD
+            String paymentMethod,        // CASH | CARD_TERMINAL | CREDIT
+            Long tenderedAmount,         // Tiền khách đưa (cho CASH), null cho CARD/CREDIT
             String staffNote,
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
-            String cardReferenceNumber   // Optional: mã giao dịch thẻ / terminal ref
+            String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
+            String customerId,           // Required for CREDIT payment method
+            Long downPayment,            // Optional: partial upfront payment for CREDIT orders
+            boolean overrideCreditLimit  // Requires receivables.override_limit permission
     ) {}
 
     public record PosOrderResponse(
@@ -82,6 +90,9 @@ public class PosOrderService {
     private final OrderKeyGenerator orderKeyGenerator;
     private final AdminOrderWsService wsService;
     private final InventoryPolicyService inventoryPolicyService;
+    private final CreditPolicyService creditPolicyService;
+    private final ReceivableService receivableService;
+    private final CustomerJpaRepository customerRepo;
 
     public PosOrderService(
             ProductJpaRepository productRepo,
@@ -95,7 +106,10 @@ public class PosOrderService {
             OrderNumberGenerator orderNumberGenerator,
             OrderKeyGenerator orderKeyGenerator,
             AdminOrderWsService wsService,
-            InventoryPolicyService inventoryPolicyService
+            InventoryPolicyService inventoryPolicyService,
+            CreditPolicyService creditPolicyService,
+            ReceivableService receivableService,
+            CustomerJpaRepository customerRepo
     ) {
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
@@ -109,14 +123,30 @@ public class PosOrderService {
         this.orderKeyGenerator = orderKeyGenerator;
         this.wsService = wsService;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.creditPolicyService = creditPolicyService;
+        this.receivableService = receivableService;
+        this.customerRepo = customerRepo;
     }
 
     @Transactional
-    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice) {
+    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
+                                        boolean canOverrideCreditLimit) {
         if (req.items() == null || req.items().isEmpty()) {
             throw new ConflictException("POS order must have at least one item.");
         }
         validatePaymentMethod(req.paymentMethod());
+
+        // Credit validation must happen before idempotency check (need customer entity below)
+        CustomerEntity creditCustomer = null;
+        if ("CREDIT".equals(req.paymentMethod())) {
+            if (req.customerId() == null || req.customerId().isBlank()) {
+                throw new ConflictException("customerId là bắt buộc khi thanh toán bằng CREDIT.");
+            }
+            UUID custId = UUID.fromString(req.customerId());
+            // Amount unknown yet — we validate after totaling; store customer for later
+            creditCustomer = customerRepo.findById(custId)
+                    .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
+        }
 
         // Idempotency: return existing order if client retries with same key
         if (req.posIdempotencyKey() != null && !req.posIdempotencyKey().isBlank()) {
@@ -217,6 +247,12 @@ public class PosOrderService {
             lineItems.add(li);
         }
 
+        // Validate credit limit now that we know subtotal
+        if ("CREDIT".equals(req.paymentMethod()) && creditCustomer != null) {
+            creditPolicyService.validateCreditEligibility(
+                    creditCustomer.getId(), subtotal, canOverrideCreditLimit);
+        }
+
         // Validate tiền mặt đủ nếu được gửi lên
         if ("CASH".equals(req.paymentMethod()) && req.tenderedAmount() != null) {
             long totalLong = subtotal.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
@@ -226,7 +262,12 @@ public class PosOrderService {
             }
         }
 
-        // POS: không có phí ship, trả tiền ngay
+        boolean isCreditOrder = "CREDIT".equals(req.paymentMethod());
+        BigDecimal downPayment = isCreditOrder && req.downPayment() != null
+                ? BigDecimal.valueOf(req.downPayment()).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // POS: không có phí ship; CREDIT = bán chịu, CASH/CARD = trả tiền ngay
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
         order.setOrderKey(req.posIdempotencyKey() != null && !req.posIdempotencyKey().isBlank()
@@ -235,8 +276,13 @@ public class PosOrderService {
         order.setChannel(CHANNEL_IN_STORE);
         order.setFulfillmentType(FULFILLMENT_IN_STORE);
         order.setPaymentMethod(req.paymentMethod());
-        order.setStatus("COMPLETED");
-        order.setPaymentStatus("PAID");
+        order.setStatus("COMPLETED");  // Hàng giao ngay tại POS dù CREDIT hay không
+        order.setPaymentStatus(isCreditOrder
+                ? (downPayment.compareTo(BigDecimal.ZERO) > 0 ? "PARTIALLY_PAID" : "UNPAID")
+                : "PAID");
+        if (creditCustomer != null) {
+            order.setCustomerId(creditCustomer.getId());
+        }
         order.setCustomerPhone(req.customerPhone());
         order.setCustomerNote(req.customerNote());
         // P0 #2: persist customerName
@@ -248,9 +294,9 @@ public class PosOrderService {
         order.setFeeAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTaxAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTotalAmount(subtotal);
-        order.setPaidAmount(subtotal);
+        order.setPaidAmount(isCreditOrder ? downPayment : subtotal);
         order.setSource("pos");
-        order.setPaidAt(now);
+        if (!isCreditOrder) order.setPaidAt(now);
         order.setCompletedAt(now);
         order.setPlacedAt(now);
         order.setCreatedAt(now);
@@ -289,18 +335,33 @@ public class PosOrderService {
         // Decrement stock immediately (POS = goods leave the shelf now)
         decrementStock(req.items(), savedOrder.getId(), now);
 
-        // Payment record
-        PaymentEntity payment = new PaymentEntity();
-        payment.setOrder(savedOrder);
-        payment.setPaymentMethod(req.paymentMethod());
-        payment.setProvider("POS");
-        payment.setStatus("PAID");
-        payment.setAmount(subtotal);
-        payment.setCurrency("VND");
-        payment.setPaidAt(now);
-        payment.setCreatedAt(now);
-        payment.setUpdatedAt(now);
-        paymentRepo.save(payment);
+        // Payment record (only create if money was actually collected)
+        if (!isCreditOrder || downPayment.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal collected = isCreditOrder ? downPayment : subtotal;
+            PaymentEntity payment = new PaymentEntity();
+            payment.setOrder(savedOrder);
+            payment.setPaymentMethod(isCreditOrder ? "CASH" : req.paymentMethod());
+            payment.setProvider("POS");
+            payment.setStatus("PAID");
+            payment.setAmount(collected);
+            payment.setCurrency("VND");
+            payment.setPaidAt(now);
+            payment.setCreatedAt(now);
+            payment.setUpdatedAt(now);
+            paymentRepo.save(payment);
+        }
+
+        // Create receivable for CREDIT orders
+        if (isCreditOrder && creditCustomer != null) {
+            try {
+                receivableService.createReceivableForOrder(
+                        savedOrder, creditCustomer, downPayment, "POS",
+                        staffId != null ? tryParseUUID(staffId) : null);
+            } catch (Exception e) {
+                // Receivable creation failure must not silently succeed — rethrow so TX rolls back
+                throw new ConflictException("Tạo công nợ thất bại: " + e.getMessage());
+            }
+        }
 
         // System note
         String noteExtra = (req.staffNote() != null && !req.staffNote().isBlank() ? " Ghi chú: " + req.staffNote() + "." : "")
@@ -354,6 +415,12 @@ public class PosOrderService {
         );
     }
 
+    // Backward-compatible overload for existing callers without credit params
+    @Transactional
+    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice) {
+        return createOrder(req, staffId, canOverridePrice, false);
+    }
+
     private void decrementStock(
             List<PosLineItemRequest> items,
             UUID orderId,
@@ -392,8 +459,8 @@ public class PosOrderService {
     }
 
     private void validatePaymentMethod(String method) {
-        if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method)) {
-            throw new ConflictException("POS payment method must be CASH or CARD_TERMINAL.");
+        if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method) && !"CREDIT".equals(method)) {
+            throw new ConflictException("POS payment method must be CASH, CARD_TERMINAL, or CREDIT.");
         }
     }
 

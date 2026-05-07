@@ -26,8 +26,9 @@
 | Inventory admin | admin, backend | Inventory list, summary, movement list, manual adjustment, CSV export | `CONFIRMED_FROM_CODE` | `AdminInventoryController.java`, `AdminInventoryService.java` |
 | Returns admin | admin, backend | Return list/detail/status update | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |
 | Redirect admin | admin, backend | Redirect CRUD and internal redirect support | `CONFIRMED_FROM_CODE` | `AdminRedirectController.java`, `SecurityConfig.java` |
-| POS | admin, backend | Product search and immediate POS order creation | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
+| POS | admin, backend | Product search, immediate POS sale (CASH/CARD_TERMINAL), and credit sale (CREDIT) with customer receivable creation | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
 | Admin order WebSocket | admin, backend | Subscribe to `/topic/admin/orders` for order events | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java`, `adminWebSocket.js` |
+| Accounts Receivable admin | admin, backend | Receivable list/detail, payment recording, write-off, aging report, customer credit profile management | `CONFIRMED_FROM_CODE` | `AdminReceivableController.java`, `ReceivableService.java`, `ReceivableQueryService.java`, `CreditPolicyService.java`, `V75__add_credit_and_receivables.sql` |
 
 ## Inventory And Receiving Subdomains
 

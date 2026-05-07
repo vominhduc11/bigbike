@@ -60,6 +60,22 @@ public class CustomerEntity {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    // Credit profile (V75)
+    @Column(name = "credit_enabled", nullable = false)
+    private boolean creditEnabled = false;
+
+    @Column(name = "credit_limit", precision = 19, scale = 2)
+    private java.math.BigDecimal creditLimit;
+
+    @Column(name = "payment_terms_days")
+    private Integer paymentTermsDays;
+
+    @Column(name = "credit_status", nullable = false, length = 50)
+    private String creditStatus = "ACTIVE";
+
+    @Column(name = "credit_note", columnDefinition = "text")
+    private String creditNote;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -110,6 +126,21 @@ public class CustomerEntity {
 
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+
+    public boolean isCreditEnabled() { return creditEnabled; }
+    public void setCreditEnabled(boolean creditEnabled) { this.creditEnabled = creditEnabled; }
+
+    public java.math.BigDecimal getCreditLimit() { return creditLimit; }
+    public void setCreditLimit(java.math.BigDecimal creditLimit) { this.creditLimit = creditLimit; }
+
+    public Integer getPaymentTermsDays() { return paymentTermsDays; }
+    public void setPaymentTermsDays(Integer paymentTermsDays) { this.paymentTermsDays = paymentTermsDays; }
+
+    public String getCreditStatus() { return creditStatus; }
+    public void setCreditStatus(String creditStatus) { this.creditStatus = creditStatus; }
+
+    public String getCreditNote() { return creditNote; }
+    public void setCreditNote(String creditNote) { this.creditNote = creditNote; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

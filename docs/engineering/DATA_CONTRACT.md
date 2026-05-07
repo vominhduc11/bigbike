@@ -124,44 +124,81 @@ Evidence:
 - `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
 
-## Proposed Accounts Receivable Data Fields
+## Accounts Receivable Data Fields
 
-> Status: `PROPOSED_FOR_AR_MODULE` — not yet implemented. Requires business confirmation of `AR_RULE_001`–`AR_RULE_011` in `docs/business/BUSINESS_RULES.md` and Phase 1 prerequisite fixes before Flyway migration is written.
+Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivables.sql`.
 
-### Phase 2 MVP — orders table extension (Flyway V74 proposed)
+### customers table — credit columns added (V75)
 
-Outstanding balance for any order is already derivable from existing columns as `totalAmount - paidAmount` without schema change.
+| Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|
+| `credit_enabled` | `BOOLEAN` | NO | `false` | Whether this customer is allowed to purchase on credit |
+| `credit_limit` | `NUMERIC(19,2)` | YES | `null` | Maximum outstanding balance; null = uncapped |
+| `payment_terms_days` | `INTEGER` | YES | `null` | Days until payment is due after credit sale |
+| `credit_status` | `VARCHAR(50)` | NO | `'ACTIVE'` | `ACTIVE` / `SUSPENDED` / `BLOCKED` |
+| `credit_note` | `TEXT` | YES | `null` | Internal admin note on credit profile |
 
-| Column | Type | Nullable | Purpose |
-|---|---|---|---|
-| `due_at` | `TIMESTAMPTZ` | YES | Payment due date for credit orders; null for immediate cash/card sales |
-| `credit_terms` | `VARCHAR(100)` | YES | Human-readable payment terms snapshot at time of sale (e.g. `NET_30`); null for non-credit |
-
-`due_at` is computed from `placedAt + credit_terms_days` at order creation and persisted for scheduler queries (overdue detection).
-
-### Phase 3 B2B only — customer credit profiles table (Flyway V75 proposed)
-
-Only required if `AR_RULE_009` confirms B2B/dealer registered accounts. Walk-in credit does not need this table (phone-based identity is sufficient for POS).
+### accounts_receivable table (V75)
 
 | Column | Type | Nullable | Purpose |
 |---|---|---|---|
-| `customer_id` | `UUID FK → customers.id` | NO | Customer this profile belongs to |
-| `credit_limit` | `NUMERIC(15,2)` | NO | Maximum outstanding balance allowed |
-| `payment_terms_days` | `INT` | NO | Days until payment is due after sale |
-| `is_active` | `BOOLEAN` | NO | Whether credit is currently enabled for this customer |
-| `approved_by_admin_id` | `UUID` | YES | Admin who approved or last modified the credit profile |
-| `created_at` | `TIMESTAMPTZ` | NO | Profile creation timestamp |
-| `updated_at` | `TIMESTAMPTZ` | NO | Last modification timestamp |
+| `id` | `UUID PK` | NO | Primary key |
+| `order_id` | `UUID FK → orders.id UNIQUE` | NO | One receivable per order |
+| `customer_id` | `UUID FK → customers.id` | YES | Null for walk-in without account |
+| `customer_name` | `VARCHAR(200)` | YES | Name snapshot at creation |
+| `customer_phone` | `VARCHAR(30)` | YES | Phone snapshot at creation |
+| `original_amount` | `NUMERIC(19,2)` | NO | Total order amount at time of credit sale |
+| `paid_amount` | `NUMERIC(19,2)` | NO | Cumulative amount received so far |
+| `outstanding_amount` | `NUMERIC(19,2)` | NO | `original_amount - paid_amount` (maintained in-sync) |
+| `written_off_amount` | `NUMERIC(19,2)` | NO | Amount written off (0 unless WRITTEN_OFF) |
+| `status` | `VARCHAR(50)` | NO | `OPEN` / `PARTIALLY_PAID` / `OVERDUE` / `CLOSED` / `WRITTEN_OFF` |
+| `due_date` | `DATE` | YES | `placedAt + paymentTermsDays`; null if terms not set |
+| `payment_terms_days` | `INTEGER` | YES | Snapshot of terms at time of sale |
+| `credit_limit_snapshot` | `NUMERIC(19,2)` | YES | Snapshot of customer credit_limit at time of sale |
+| `created_from` | `VARCHAR(50)` | YES | Origin channel (e.g. `POS`) |
+| `note` | `TEXT` | YES | Staff note |
+| `write_off_reason` | `TEXT` | YES | Mandatory when WRITTEN_OFF |
+| `written_off_at` | `TIMESTAMPTZ` | YES | Timestamp of write-off |
+| `created_by_admin_id` | `UUID` | YES | Admin who created the receivable |
+| `created_at` | `TIMESTAMPTZ` | NO | Creation timestamp |
+| `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp |
+| `version` | `BIGINT` | NO | Optimistic locking version |
 
-### Dashboard KPI — new `todayPaidRevenue` field (Phase 1 P-1 fix, implemented)
+Constraints: `UNIQUE(order_id)`, `CHECK status IN (...)`, `CHECK outstanding_amount >= 0`, `CHECK paid_amount >= 0`.
 
-`AdminDashboardSummaryResponse.KpiResponse` now includes:
+Indexes: `(customer_id)`, `(status)`, `(due_date)`, `(created_at DESC)`.
+
+### API response shapes
+
+#### ReceivableListItemResponse
+
+`id`, `orderId`, `orderNumber`, `customerId`, `customerName`, `customerPhone`, `originalAmount`, `paidAmount`, `outstandingAmount`, `status`, `dueDate`, `overdueDays`, `createdFrom`, `createdAt`
+
+#### ReceivableDetailResponse
+
+All list fields plus: `writtenOffAmount`, `paymentTermsDays`, `creditLimitSnapshot`, `note`, `writeOffReason`, `writtenOffAt`, `updatedAt`
+
+#### ReceivableSummaryResponse
+
+`totalOutstanding`, `overdueOutstanding`, `writtenOffTotal`, `countOpen`, `countOverdue`
+
+#### ReceivableAgingResponse
+
+`notDue`, `days0To30`, `days31To60`, `days61To90`, `over90` (all BigDecimal outstanding amounts)
+
+### Dashboard KPI — `todayPaidRevenue` field
+
+`AdminDashboardSummaryResponse.KpiResponse` includes:
 
 | Field | Computation | Purpose |
 |---|---|---|
-| `todayRevenue` | `SUM(totalAmount)` no filter — gross order value placed | Gross GMV for the day |
+| `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED/REFUNDED | Gross GMV placed today |
 | `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID','PARTIALLY_PAID')` | Actual cash collected today |
 
-The delta `todayRevenue - todayPaidRevenue` equals today's receivables (unpaid/partially-paid order value).
+Credit (CREDIT) orders contribute to `todayRevenue` but NOT to `todayPaidRevenue` (until payment is recorded), preserving accurate cash-vs-credit separation.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminDashboardService.java`, `AdminDashboardSummaryResponse.java`
 
 Status: `CONFIRMED_FROM_CODE` (P-1 fix applied in `AdminDashboardService.java` and `OrderJpaRepository.java`)

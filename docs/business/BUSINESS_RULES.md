@@ -106,36 +106,46 @@ Evidence:
 
 ## Accounts Receivable Rules
 
-Current confirmed state (no AR module exists):
+AR module implemented in V75 (Flyway). Rules below are `CONFIRMED_FROM_CODE`.
 
-- The concept of a "credit sale" (bán chịu / công nợ) does not exist in the system. `CONFIRMED_FROM_CODE`
-- All POS sales are immediately `COMPLETED` and paymentStatus `PAID`. Credit POS sales are not supported. `CONFIRMED_FROM_CODE`
-- No `CREDIT` payment method exists in any whitelist. POS accepts only `CASH` and `CARD_TERMINAL`; web/mobile checkout accepts only `COD` and `BACS`. `CONFIRMED_FROM_CODE`
-- `OrderEntity` carries `paidAmount`, `totalAmount`, and `refundAmount`; outstanding balance is derivable as `totalAmount - paidAmount` without schema change. `CONFIRMED_FROM_CODE`
-- `PaymentEntity` is 1-N per order, supporting multiple partial payment records per order already. `CONFIRMED_FROM_CODE`
-- No customer credit profile, credit limit, or payment terms fields exist on `CustomerEntity`. `CONFIRMED_FROM_CODE`
-- Dashboard KPI `todayRevenue` currently sums `totalAmount` for ALL orders regardless of status or paymentStatus — inflates reported revenue. `CONFIRMED_FROM_CODE` (P-1 fix applied, see `AdminDashboardService.java`)
-- No `receivables.*` permission strings exist in `AdminRolePermissions.java`. `CONFIRMED_FROM_CODE`
+- `AR_RULE_001`: Credit sale (bán chịu) is supported via POS CREDIT payment method. Only customers with `creditEnabled=true` and `creditStatus=ACTIVE` may purchase on credit. ADMIN role can create and manage all receivables; SHOP_MANAGER can read and record payments. `CONFIRMED_FROM_CODE`
+- `AR_RULE_002`: Credit limit is configurable per customer (`credit_limit` column on `customers` table). A null limit means no cap. ADMIN with `receivables.override_limit` permission may override the limit at point of sale. `CONFIRMED_FROM_CODE`
+- `AR_RULE_003`: Payment terms are configurable per customer (`payment_terms_days`). Due date = `placedAt + paymentTermsDays` days, persisted on `accounts_receivable.due_date`. `CONFIRMED_FROM_CODE`
+- `AR_RULE_004`: Credit sales are POS-only (walk-in). Web/mobile checkout does not support CREDIT payment. `CONFIRMED_FROM_CODE`
+- `AR_RULE_005`: Exceeding credit limit blocks the POS sale with HTTP 422. ADMIN with `receivables.override_limit` permission can bypass. `CONFIRMED_FROM_CODE`
+- `AR_RULE_006`: Partial payments are supported. Each `POST /admin/receivables/{id}/payments` call records a PaymentEntity and updates `paidAmount`. `paymentStatus` transitions: UNPAID → PARTIALLY_PAID → PAID. `CONFIRMED_FROM_CODE`
+- `AR_RULE_007`: Write-off is supported via `POST /admin/receivables/{id}/write-off` with mandatory reason. Requires `receivables.write_off` permission (ADMIN only). Sets status=WRITTEN_OFF, records audit log. `CONFIRMED_FROM_CODE`
+- `AR_RULE_008`: Overdue receivables are flagged by scheduler (`ReceivableService.refreshOverdueStatus()`). No auto-cancellation — status becomes OVERDUE for staff attention. `CONFIRMED_FROM_CODE`
+- `AR_RULE_009`: Target is registered customers (UUID FK on `accounts_receivable.customer_id`). Walk-in without system account: `customer_id` is nullable; `customer_name` and `customer_phone` are snapshotted at creation. `CONFIRMED_FROM_CODE`
+- `AR_RULE_010`: No customer-facing SOA in web/mobile portal. Receivables are admin-only. `CONFIRMED_FROM_CODE`
+- `AR_RULE_011`: Aging report implemented: buckets are notDue, 0–30 days, 31–60 days, 61–90 days, 90+ days. Also: total outstanding, overdue outstanding, written-off total, open/overdue count. `CONFIRMED_FROM_CODE`
 
-Rules pending business confirmation before any AR implementation:
+### Customer credit status state machine
 
-- `AR_RULE_001`: Is "bán chịu" (credit sale) a required feature? Who can approve (ADMIN only, or SHOP_MANAGER too)? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_002`: What is the maximum credit limit per customer — fixed system-wide or configurable per customer? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_003`: What is the payment due window (e.g. NET_7, NET_30)? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_004`: Is POS the only channel for credit sales, or can web/mobile customers also buy on credit? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_005`: What happens when a credit customer exceeds their limit — block the sale or warn and require override? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_006`: Are partial payments allowed after the credit sale (e.g. customer pays 50% today, 50% next week)? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_007`: Is write-off (xóa nợ xấu) a required operation? Who can perform it? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_008`: Should overdue receivables auto-cancel the order or only send a notification to staff? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_009`: Is the target customer walk-in regulars (no system account) or registered B2B accounts? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_010`: Is a Statement of Account (sao kê nợ) needed for customers to view via the web/mobile portal? `NEEDS_BUSINESS_CONFIRMATION`
-- `AR_RULE_011`: What receivables reporting is required — aging report (0–30, 31–60, 61–90, 90+ days overdue) or simple outstanding balance per customer? `NEEDS_BUSINESS_CONFIRMATION`
+`ACTIVE` → `SUSPENDED` (admin manual) → `ACTIVE` (reinstate)
+`ACTIVE` → `BLOCKED` (admin manual, permanent — requires credit clear)
+
+### Receivable payment status state machine
+
+`UNPAID` → `PARTIALLY_PAID` (paidAmount > 0 and < outstanding) → `PAID` (paidAmount ≥ outstanding)
+
+### Receivable status state machine
+
+`OPEN` → `PARTIALLY_PAID` → `CLOSED` (fully paid)
+`OPEN` / `PARTIALLY_PAID` → `OVERDUE` (past due date, not closed)
+`OPEN` / `PARTIALLY_PAID` / `OVERDUE` → `WRITTEN_OFF` (admin write-off with reason)
 
 Evidence:
 
-- `OrderEntity.java` (`paidAmount`, `totalAmount`, `refundAmount`)
-- `PaymentEntity.java` (1-N per order)
-- `CustomerEntity.java` (no credit profile fields)
-- `PosOrderService.java` line 394 (`CASH`/`CARD_TERMINAL` whitelist)
-- `AdminDashboardService.java` (`sumRevenueSince` — no status filter)
+- `V75__add_credit_and_receivables.sql`
+- `CustomerEntity.java` (credit fields added)
+- `ReceivableEntity.java`
+- `ReceivableJpaRepository.java`
+- `CreditPolicyService.java`
+- `ReceivableService.java`
+- `ReceivableQueryService.java`
+- `AdminReceivableController.java`
+- `PosOrderService.java` (CREDIT branch)
+- `AdminRolePermissions.java` (`receivables.*` permissions added)
+- `AdminReceivableApiTest.java`
 - `AdminRolePermissions.java` (no `receivables.*` permissions)
