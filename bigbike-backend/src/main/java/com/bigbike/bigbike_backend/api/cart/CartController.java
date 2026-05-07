@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -40,6 +41,9 @@ public class CartController {
     public static final String GUEST_COOKIE = "bb_guest_id";
     private static final String CSRF_COOKIE = "bb_csrf";
     private static final int GUEST_TTL = 60 * 60 * 24 * 30; // 30 days
+
+    @Value("${bigbike.cookies.secure:false}")
+    private boolean secureCookies;
 
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
@@ -164,7 +168,7 @@ public class CartController {
     private void setGuestCookie(HttpServletResponse response, String guestId) {
         ResponseCookie cookie = ResponseCookie.from(GUEST_COOKIE, guestId)
                 .httpOnly(false)
-                .secure(false)
+                .secure(secureCookies)
                 .path("/")
                 .maxAge(GUEST_TTL)
                 .sameSite("Strict")
@@ -175,7 +179,7 @@ public class CartController {
     private void setCsrfCookie(HttpServletResponse response, String csrfValue) {
         ResponseCookie cookie = ResponseCookie.from(CSRF_COOKIE, csrfValue)
                 .httpOnly(false)
-                .secure(false)
+                .secure(secureCookies)
                 .path("/")
                 .maxAge(GUEST_TTL)
                 .sameSite("Strict")

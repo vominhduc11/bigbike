@@ -14,9 +14,13 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEnti
 import com.bigbike.bigbike_backend.service.cart.CartService;
 import com.bigbike.bigbike_backend.service.checkout.CheckoutService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +34,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class CheckoutController {
 
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
+    private static final int GUEST_TTL = 60 * 60 * 24 * 30; // 30 days
+
+    @Value("${bigbike.cookies.secure:false}")
+    private boolean secureCookies;
 
     private final CheckoutService checkoutService;
     private final CartService cartService;
@@ -66,11 +74,12 @@ public class CheckoutController {
     @PostMapping("/orders/quick-buy")
     public ApiDataResponse<OrderSummaryResponse> quickBuy(
             @Valid @RequestBody QuickBuyRequest req,
-            HttpServletRequest request
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         CustomerPrincipal cp = resolveCustomerPrincipal();
         UUID customerId = cp != null ? cp.customerId() : null;
-        String guestSessionId = cp == null ? CustomerSessionFilter.extractCookie(request, CartController.GUEST_COOKIE) : null;
+        String guestSessionId = cp == null ? resolveOrCreateGuestId(request, response) : null;
         String idempotencyKey = request.getHeader(IDEMPOTENCY_HEADER);
         String clientIp = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
@@ -104,6 +113,22 @@ public class CheckoutController {
             guestId = UUID.randomUUID().toString();
         }
         return cartService.getOrCreateGuestCart(guestId);
+    }
+
+    private String resolveOrCreateGuestId(HttpServletRequest request, HttpServletResponse response) {
+        String guestId = CustomerSessionFilter.extractCookie(request, CartController.GUEST_COOKIE);
+        if (guestId == null) {
+            guestId = UUID.randomUUID().toString();
+            ResponseCookie cookie = ResponseCookie.from(CartController.GUEST_COOKIE, guestId)
+                    .httpOnly(false)
+                    .secure(secureCookies)
+                    .path("/")
+                    .maxAge(GUEST_TTL)
+                    .sameSite("Strict")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+        return guestId;
     }
 
     private String extractClientIp(HttpServletRequest request) {
