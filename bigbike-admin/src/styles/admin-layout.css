@@ -1,0 +1,427 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   admin-layout.css
+
+   Layout primitives consumed by /components/layout/*.jsx React components.
+   Reuses tokens from admin-tokens.css. Builds on classes already defined in
+   index.css (.screen, .screen-header, .filter-bar, .modal-*, .btn-*, etc.).
+
+   Adds:
+     - .summary-card* (KPI cards, optionally clickable)
+     - .seg-tabs*    (segmented tabs)
+     - .mobile-card* (mobile list-as-card layout)
+     - .sticky-action-bar (sticky bottom action bar for forms / detail screens)
+     - .form-field*  (label + control + helper text for modals)
+     - .info-grid    (label/value grid inside detail sections)
+     - .show-on-*, .hide-on-* responsive utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Breakpoints (consumed via media queries below) ─────────────────────────
+   --bp-tablet:  ≤1024px  (compact tables, sidebar overlay)
+   --bp-mobile:  ≤640px   (cards replace tables)
+   ───────────────────────────────────────────────────────────────────────────*/
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Summary card grid (KPI cards)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.summary-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--admin-space-4);
+}
+
+.summary-card {
+  background: var(--admin-color-surface-base);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-4) var(--admin-space-5);
+  box-shadow: var(--admin-shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2);
+  transition: border-color var(--admin-transition-fast),
+              box-shadow var(--admin-transition-fast),
+              transform var(--admin-transition-fast);
+}
+
+button.summary-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+button.summary-card:hover,
+button.summary-card:focus-visible {
+  border-color: var(--admin-color-brand-red);
+  box-shadow: var(--admin-shadow-sm);
+  outline: none;
+}
+
+button.summary-card:focus-visible {
+  box-shadow: 0 0 0 3px var(--admin-color-brand-red-muted);
+}
+
+.summary-card.is-active {
+  border-color: var(--admin-color-brand-red);
+  background: var(--admin-color-surface-selected);
+}
+
+.summary-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2);
+  font-size: var(--admin-text-sm);
+  font-weight: 600;
+  color: var(--admin-color-text-secondary);
+}
+
+.summary-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-color-surface-muted);
+  color: var(--admin-color-text-secondary);
+  flex-shrink: 0;
+}
+
+.summary-card-icon--brand   { background: var(--admin-color-brand-red-subtle);    color: var(--admin-color-brand-red); }
+.summary-card-icon--success { background: var(--admin-color-status-success-bg);   color: var(--admin-color-status-success-text); }
+.summary-card-icon--warning { background: var(--admin-color-status-warning-bg);   color: var(--admin-color-status-warning-text); }
+.summary-card-icon--danger  { background: var(--admin-color-status-danger-bg);    color: var(--admin-color-status-danger-text); }
+.summary-card-icon--info    { background: var(--admin-color-status-info-bg);      color: var(--admin-color-status-info-text); }
+.summary-card-icon--neutral { background: var(--admin-color-status-neutral-bg);   color: var(--admin-color-status-neutral-text); }
+
+.summary-card-value {
+  font-size: var(--admin-text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--admin-color-text-primary);
+  line-height: 1.15;
+}
+
+.summary-card-hint {
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .summary-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--admin-space-3);
+  }
+  .summary-card {
+    padding: var(--admin-space-3);
+  }
+  .summary-card-value { font-size: var(--admin-text-xl); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Segmented tabs
+   ═══════════════════════════════════════════════════════════════════════════ */
+.seg-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: var(--admin-color-surface-muted);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  max-width: 100%;
+}
+
+.seg-tabs-tab {
+  border: none;
+  background: transparent;
+  color: var(--admin-color-text-secondary);
+  font-size: var(--admin-text-sm);
+  font-weight: 600;
+  padding: 6px var(--admin-space-3);
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--admin-transition-fast),
+              color var(--admin-transition-fast);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg-tabs-tab:hover:not(.is-active) {
+  background: var(--admin-color-surface-hover);
+  color: var(--admin-color-text-primary);
+}
+
+.seg-tabs-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-color-brand-red-muted);
+}
+
+.seg-tabs-tab.is-active {
+  background: var(--admin-color-surface-base);
+  color: var(--admin-color-text-primary);
+  box-shadow: var(--admin-shadow-xs);
+}
+
+.seg-tabs-count {
+  font-weight: 700;
+  color: var(--admin-color-text-muted);
+  font-size: var(--admin-text-xs);
+  background: var(--admin-color-surface-base);
+  border-radius: var(--admin-radius-full);
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.seg-tabs-tab.is-active .seg-tabs-count {
+  background: var(--admin-color-brand-red-subtle);
+  color: var(--admin-color-brand-red);
+}
+
+@media (max-width: 640px) {
+  .seg-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .seg-tabs::-webkit-scrollbar { display: none; }
+  .seg-tabs-tab { white-space: nowrap; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile card list — replaces tables on narrow screens
+   ═══════════════════════════════════════════════════════════════════════════ */
+.mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-3);
+}
+
+.mobile-card {
+  background: var(--admin-color-surface-base);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-4);
+  box-shadow: var(--admin-shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2);
+}
+
+.mobile-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-2);
+}
+
+.mobile-card-title {
+  font-weight: 600;
+  font-size: var(--admin-text-base);
+  color: var(--admin-color-text-primary);
+  margin: 0;
+}
+
+.mobile-card-subtitle {
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-muted);
+  margin: 2px 0 0;
+}
+
+.mobile-card-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-2) var(--admin-space-3);
+  font-size: var(--admin-text-sm);
+}
+
+.mobile-card-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mobile-card-meta-label {
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.mobile-card-meta-value {
+  color: var(--admin-color-text-primary);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.mobile-card-meta-value--strong {
+  font-weight: 700;
+}
+
+.mobile-card-meta-value--danger {
+  color: var(--admin-color-status-danger-text);
+  font-weight: 700;
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: var(--admin-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--admin-space-2);
+  padding-top: var(--admin-space-2);
+  border-top: 1px solid var(--admin-color-border-subtle);
+}
+
+.mobile-card-actions .btn { flex: 1; min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Responsive table → cards switch
+   Desktop & tablet show tables; mobile shows cards.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.show-on-mobile { display: none; }
+.show-on-tablet { display: none; }
+
+@media (max-width: 1024px) {
+  .show-on-tablet { display: revert; }
+  .hide-on-tablet { display: none !important; }
+}
+
+@media (max-width: 640px) {
+  .show-on-mobile { display: revert; }
+  .hide-on-mobile { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Sticky action bar — used on long forms and detail screens
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sticky-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--admin-color-surface-base);
+  border-top: 1px solid var(--admin-color-border-subtle);
+  padding: var(--admin-space-3) var(--admin-space-4);
+  margin: var(--admin-space-4) calc(-1 * var(--admin-space-6)) calc(-1 * var(--admin-space-6));
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--admin-space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.sticky-action-bar-info {
+  flex: 1;
+  min-width: 200px;
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .sticky-action-bar {
+    margin: var(--admin-space-3) calc(-1 * var(--admin-space-4)) calc(-1 * var(--admin-space-4));
+    padding: var(--admin-space-3);
+  }
+  .sticky-action-bar .btn { flex: 1; }
+  .sticky-action-bar-info { flex-basis: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Form field — label + control + helper/error
+   Used inside modals and detail forms.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--admin-space-3);
+}
+
+.form-field-label {
+  font-size: var(--admin-text-sm);
+  font-weight: 600;
+  color: var(--admin-color-text-primary);
+}
+
+.form-field-required {
+  color: var(--admin-color-status-danger-text);
+  margin-left: 2px;
+}
+
+.form-field-helper {
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-text-muted);
+  line-height: 1.4;
+}
+
+.form-field-error {
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-status-danger-text);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Info grid — label/value pairs inside detail sections
+   ═══════════════════════════════════════════════════════════════════════════ */
+.info-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr;
+  gap: var(--admin-space-2) var(--admin-space-4);
+  font-size: var(--admin-text-sm);
+}
+
+.info-grid-label {
+  color: var(--admin-color-text-muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-color-border-subtle);
+}
+
+.info-grid-value {
+  color: var(--admin-color-text-primary);
+  font-weight: 500;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-color-border-subtle);
+  word-break: break-word;
+}
+
+.info-grid-value--strong { font-weight: 700; }
+.info-grid-value--danger { color: var(--admin-color-status-danger-text); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .info-grid-label {
+    padding: var(--admin-space-2) 0 0;
+    border-bottom: none;
+    font-size: var(--admin-text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .info-grid-value {
+    padding: 0 0 var(--admin-space-2);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Receivables-specific status badge palette
+   Reuses generic .status-badge layout from index.css; just adds the tones.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.status-badge--ar-OPEN           { background: var(--admin-color-status-info-bg);    color: var(--admin-color-status-info-text);    border: 1px solid var(--admin-color-status-info-border); }
+.status-badge--ar-PARTIALLY_PAID { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); border: 1px solid var(--admin-color-status-warning-border); }
+.status-badge--ar-OVERDUE        { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text);  border: 1px solid var(--admin-color-status-danger-border); }
+.status-badge--ar-CLOSED         { background: var(--admin-color-status-success-bg); color: var(--admin-color-status-success-text); border: 1px solid var(--admin-color-status-success-border); }
+.status-badge--ar-WRITTEN_OFF    { background: var(--admin-color-status-neutral-bg); color: var(--admin-color-status-neutral-text); border: 1px solid var(--admin-color-border-subtle); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tooltip-on-button helper (uses native title= for now;
+   this class only ensures the cursor signals "more info").
+   ═══════════════════════════════════════════════════════════════════════════ */
+.has-tooltip { cursor: help; }

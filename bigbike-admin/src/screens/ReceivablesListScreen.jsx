@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Clock, DollarSign, FileX, X } from 'lucide-react'
+import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
 import {
   fetchReceivables,
   fetchReceivableSummary,
@@ -10,184 +10,39 @@ import {
 } from '../lib/adminApi'
 import { useUrlQuery } from '../lib/useUrlQuery'
 import { StatePanel } from '../components/StatePanel'
+import {
+  Screen,
+  ScreenHeader,
+  FilterBar,
+  FilterField,
+  SummaryCard,
+  SummaryCardGrid,
+  Tabs,
+  Modal,
+  FormField,
+  MobileCardList,
+  MobileCard,
+} from '../components/layout'
 
-const STATUS_OPTION_KEYS = ['ALL', 'OPEN', 'PARTIALLY_PAID', 'OVERDUE', 'CLOSED', 'WRITTEN_OFF']
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
+const TAB_KEYS = ['ALL', 'OPEN', 'OVERDUE', 'CLOSED']
 
-const STATUS_COLOR_MAP = {
-  OPEN:           '#3b82f6',
-  PARTIALLY_PAID: '#f59e0b',
-  OVERDUE:        '#ef4444',
-  CLOSED:         '#10b981',
-  WRITTEN_OFF:    '#6b7280',
-}
-
-function formatCurrency(amount, locale = 'vi-VN') {
+function formatCurrency(amount, locale) {
   if (amount == null) return '—'
   return Number(amount).toLocaleString(locale) + ' ₫'
 }
 
-function statusBadge(status, t) {
-  const bg = STATUS_COLOR_MAP[status] ?? '#6b7280'
-  const label = t(`receivables.statusLabel.${status}`, { defaultValue: status })
+function StatusBadge({ status, t }) {
   return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 8px',
-      borderRadius: 12,
-      background: bg,
-      color: '#fff',
-      fontSize: 12,
-      fontWeight: 600,
-      whiteSpace: 'nowrap',
-    }}>{label}</span>
+    <span className={`status-badge status-badge--ar-${status}`}>
+      {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
+    </span>
   )
 }
 
-function RecordPaymentModal({ receivable, onClose, onSuccess }) {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
-  const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('CASH')
-  const [ref, setRef] = useState('')
-  const [note, setNote] = useState('')
-  const [error, setError] = useState(null)
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: () => recordReceivablePayment(receivable.id, {
-      amount: Number(amount),
-      paymentMethod: method,
-      referenceNumber: ref || undefined,
-      note: note || undefined,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['receivables'] })
-      queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
-      onSuccess()
-    },
-    onError: (e) => setError(e.message),
-  })
-
-  const outstanding = receivable.outstandingAmount
-
-  return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>{t('receivables.recordPayment.title')}</h3>
-          <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
-        </div>
-
-        <p style={{ margin: '0 0 12px', color: 'var(--admin-text-secondary)' }}>
-          {t('receivables.recordPayment.outstanding')} <strong>{formatCurrency(outstanding, locale)}</strong>
-        </p>
-
-        {error && <div style={errorStyle}>{error}</div>}
-
-        <label style={labelStyle}>{t('receivables.recordPayment.amountLabel')}</label>
-        <input
-          type="number"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
-          style={inputStyle}
-          min="1"
-          max={outstanding}
-        />
-
-        <label style={labelStyle}>{t('receivables.recordPayment.methodLabel')}</label>
-        <select value={method} onChange={e => setMethod(e.target.value)} style={inputStyle}>
-          {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
-
-        <label style={labelStyle}>{t('receivables.recordPayment.refLabel')}</label>
-        <input type="text" value={ref} onChange={e => setRef(e.target.value)} style={inputStyle} />
-
-        <label style={labelStyle}>{t('receivables.recordPayment.noteLabel')}</label>
-        <textarea value={note} onChange={e => setNote(e.target.value)} style={{ ...inputStyle, height: 72, resize: 'vertical' }} />
-
-        {amount > 0 && (
-          <div style={{ background: 'var(--admin-bg-subtle)', borderRadius: 6, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-            {t('receivables.recordPayment.afterCollection', { amount: formatCurrency(outstanding - Number(amount), locale) })}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.recordPayment.cancel')}</button>
-          <button
-            type="button"
-            disabled={!amount || Number(amount) <= 0 || mutation.isPending}
-            onClick={() => mutation.mutate()}
-            style={primaryBtnStyle}
-          >
-            {mutation.isPending ? t('receivables.recordPayment.saving') : t('receivables.recordPayment.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function WriteOffModal({ receivable, onClose, onSuccess }) {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
-  const [reason, setReason] = useState('')
-  const [error, setError] = useState(null)
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: () => writeOffReceivable(receivable.id, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['receivables'] })
-      queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
-      onSuccess()
-    },
-    onError: (e) => setError(e.message),
-  })
-
-  return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, color: '#dc2626' }}>{t('receivables.writeOff.title')}</h3>
-          <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
-        </div>
-
-        <p style={{ margin: '0 0 12px' }}>
-          {t('receivables.writeOff.subject', {
-            orderNumber: receivable.orderNumber,
-            amount: formatCurrency(receivable.outstandingAmount, locale),
-          })}
-        </p>
-        <p style={{ margin: '0 0 12px', color: '#dc2626', fontSize: 13 }}>
-          {t('receivables.writeOff.irreversibleList')}
-        </p>
-
-        {error && <div style={errorStyle}>{error}</div>}
-
-        <label style={labelStyle}>{t('receivables.writeOff.reasonLabel')}</label>
-        <textarea
-          value={reason}
-          onChange={e => setReason(e.target.value)}
-          placeholder={t('receivables.writeOff.reasonPlaceholder')}
-          style={{ ...inputStyle, height: 80, resize: 'vertical' }}
-        />
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.writeOff.cancel')}</button>
-          <button
-            type="button"
-            disabled={!reason.trim() || mutation.isPending}
-            onClick={() => mutation.mutate()}
-            style={{ ...primaryBtnStyle, background: '#dc2626' }}
-          >
-            {mutation.isPending ? t('receivables.writeOff.processing') : t('receivables.writeOff.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+function tabKeyFromStatus(status) {
+  if (TAB_KEYS.includes(status)) return status
+  return 'ALL'
 }
 
 export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff }) {
@@ -197,10 +52,10 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
   const [urlQuery, setUrlQuery] = useUrlQuery({
     page: 1, pageSize: 20, status: 'ALL', search: '',
   })
-  const [paymentModal, setPaymentModal] = useState(null)
-  const [writeOffModal, setWriteOffModal] = useState(null)
+  const [paymentTarget, setPaymentTarget] = useState(null)
+  const [writeOffTarget, setWriteOffTarget] = useState(null)
 
-  const { data: summaryData } = useQuery({
+  const { data: summary = {} } = useQuery({
     queryKey: ['receivable-summary'],
     queryFn: fetchReceivableSummary,
   })
@@ -217,141 +72,251 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
     setUrlQuery({ search: e.target.value, page: 1 })
   }, [setUrlQuery])
 
-  const handleStatusChange = useCallback((e) => {
-    setUrlQuery({ status: e.target.value, page: 1 })
+  const handleTabChange = useCallback((key) => {
+    setUrlQuery({ status: key, page: 1 })
   }, [setUrlQuery])
 
   const handlePage = useCallback((p) => setUrlQuery({ page: p }), [setUrlQuery])
 
-  const summary = summaryData || {}
+  const tabs = useMemo(() => TAB_KEYS.map((key) => ({
+    key,
+    label: t(`receivables.tabs.${key}`),
+  })), [t])
 
-  const TABLE_HEADERS = [
-    'col.orderNumber', 'col.customer', 'col.phone',
-    'col.originalAmount', 'col.paidAmount', 'col.outstandingAmount',
-    'col.dueDate', 'col.overdueDays', 'col.status', 'col.actions',
-  ]
+  const activeTab = tabKeyFromStatus(urlQuery.status)
 
   return (
-    <div className="page-inner">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>{t('receivables.title')}</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-secondary)', fontSize: 14 }}>
-            {t('receivables.description')}
-          </p>
-        </div>
-      </div>
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('receivables.eyebrow')}
+        title={t('receivables.title')}
+        description={t('receivables.description')}
+      />
 
-      {/* KPI Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <SummaryCard label={t('receivables.kpi.totalOutstanding')} value={formatCurrency(summary.totalOutstanding, locale)} icon={<DollarSign size={20} />} color="#3b82f6" />
-        <SummaryCard label={t('receivables.kpi.overdueOutstanding')} value={formatCurrency(summary.overdueOutstanding, locale)} icon={<AlertTriangle size={20} />} color="#ef4444" />
-        <SummaryCard label={t('receivables.kpi.countOpen')} value={summary.countOpen ?? 0} icon={<Clock size={20} />} color="#f59e0b" />
-        <SummaryCard label={t('receivables.kpi.writtenOffTotal')} value={formatCurrency(summary.writtenOffTotal, locale)} icon={<FileX size={20} />} color="#6b7280" />
-      </div>
-
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input
-          type="text"
-          placeholder={t('receivables.searchPlaceholder')}
-          value={urlQuery.search || ''}
-          onChange={handleSearch}
-          style={{ ...inputStyle, width: 240 }}
+      <SummaryCardGrid>
+        <SummaryCard
+          tone="brand"
+          icon={<Wallet size={16} />}
+          label={t('receivables.kpi.totalOutstanding')}
+          value={formatCurrency(summary.totalOutstanding, locale)}
+          hint={t('receivables.kpi.totalOutstandingHint')}
+          active={urlQuery.status === 'ALL'}
+          onClick={() => handleTabChange('ALL')}
         />
-        <select value={urlQuery.status || 'ALL'} onChange={handleStatusChange} style={{ ...inputStyle, width: 'auto' }}>
-          {STATUS_OPTION_KEYS.map(key => (
-            <option key={key} value={key}>{t(`receivables.statusLabel.${key}`)}</option>
-          ))}
-        </select>
-      </div>
+        <SummaryCard
+          tone="danger"
+          icon={<AlertTriangle size={16} />}
+          label={t('receivables.kpi.overdueOutstanding')}
+          value={formatCurrency(summary.overdueOutstanding, locale)}
+          hint={t('receivables.kpi.overdueOutstandingHint')}
+          active={urlQuery.status === 'OVERDUE'}
+          onClick={() => handleTabChange('OVERDUE')}
+        />
+        <SummaryCard
+          tone="warning"
+          icon={<Clock size={16} />}
+          label={t('receivables.kpi.countOpen')}
+          value={summary.countOpen ?? 0}
+          hint={t('receivables.kpi.countOpenHint')}
+          active={urlQuery.status === 'OPEN'}
+          onClick={() => handleTabChange('OPEN')}
+        />
+        <SummaryCard
+          tone="neutral"
+          icon={<FileX size={16} />}
+          label={t('receivables.kpi.writtenOffTotal')}
+          value={formatCurrency(summary.writtenOffTotal, locale)}
+          hint={t('receivables.kpi.writtenOffTotalHint')}
+          active={urlQuery.status === 'WRITTEN_OFF'}
+          onClick={() => setUrlQuery({ status: 'WRITTEN_OFF', page: 1 })}
+        />
+      </SummaryCardGrid>
+
+      <Tabs
+        items={tabs}
+        value={activeTab}
+        onChange={handleTabChange}
+        ariaLabel={t('receivables.title')}
+      />
+
+      <FilterBar>
+        <FilterField label={t('receivables.filterSearchLabel')}>
+          <input
+            type="text"
+            className="control-input"
+            placeholder={t('receivables.filterSearchPlaceholder')}
+            value={urlQuery.search || ''}
+            onChange={handleSearch}
+          />
+        </FilterField>
+      </FilterBar>
 
       {isLoading && <StatePanel tone="info" title={t('receivables.loading')} />}
       {isError && <StatePanel tone="danger" title={t('receivables.loadError')} description={error?.message} />}
 
-      {!isLoading && !isError && (
+      {!isLoading && !isError && items.length === 0 && (
+        <StatePanel tone="neutral" title={t('receivables.empty')} description={t('receivables.emptyDesc')} />
+      )}
+
+      {!isLoading && !isError && items.length > 0 && (
         <>
-          {items.length === 0 ? (
-            <StatePanel tone="neutral" title={t('receivables.empty')} description={t('receivables.emptyDesc')} />
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    {TABLE_HEADERS.map(key => (
-                      <th key={key} style={thStyle}>{t(`receivables.${key}`)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(item => (
-                    <tr key={item.id} style={trStyle}>
-                      <td style={tdStyle}>
+          {/* Desktop / tablet table */}
+          <div className="table-wrap hide-on-mobile">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('receivables.col.orderNumber')}</th>
+                  <th scope="col">{t('receivables.col.customer')}</th>
+                  <th scope="col" className="hide-on-tablet">{t('receivables.col.phone')}</th>
+                  <th scope="col" className="align-right hide-on-tablet">{t('receivables.col.originalAmount')}</th>
+                  <th scope="col" className="align-right hide-on-tablet">{t('receivables.col.paidAmount')}</th>
+                  <th scope="col" className="align-right">{t('receivables.col.outstandingAmount')}</th>
+                  <th scope="col">{t('receivables.col.dueDate')}</th>
+                  <th scope="col">{t('receivables.col.status')}</th>
+                  <th scope="col">{t('receivables.col.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+                  return (
+                    <tr key={item.id}>
+                      <td>
                         <button
                           type="button"
+                          className="btn btn-link"
                           onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                          style={linkBtnStyle}
+                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--admin-color-brand-red)', fontWeight: 600, cursor: 'pointer' }}
                         >
-                          {item.orderNumber || item.orderId?.slice(0, 8)}
+                          {item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}
                         </button>
                       </td>
-                      <td style={tdStyle}>{item.customerName || '—'}</td>
-                      <td style={tdStyle}>{item.customerPhone || '—'}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.originalAmount, locale)}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.paidAmount, locale)}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: item.outstandingAmount > 0 ? '#ef4444' : 'inherit' }}>
-                        {formatCurrency(item.outstandingAmount, locale)}
+                      <td>{item.customerName || '—'}</td>
+                      <td className="hide-on-tablet">{item.customerPhone || '—'}</td>
+                      <td className="align-right hide-on-tablet">{formatCurrency(item.originalAmount, locale)}</td>
+                      <td className="align-right hide-on-tablet">{formatCurrency(item.paidAmount, locale)}</td>
+                      <td className="align-right">
+                        <strong style={{ color: item.outstandingAmount > 0 ? 'var(--admin-color-status-danger-text)' : 'inherit' }}>
+                          {formatCurrency(item.outstandingAmount, locale)}
+                        </strong>
                       </td>
-                      <td style={tdStyle}>{item.dueDate || '—'}</td>
-                      <td style={tdStyle}>
-                        {item.overdueDays != null ? (
-                          <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                      <td>
+                        <div>{item.dueDate || '—'}</div>
+                        {item.overdueDays != null && (
+                          <div style={{ fontSize: 12, color: 'var(--admin-color-status-danger-text)', fontWeight: 600 }}>
                             {t('receivables.overdueDays', { days: item.overdueDays })}
-                          </span>
-                        ) : '—'}
+                          </div>
+                        )}
                       </td>
-                      <td style={tdStyle}>{statusBadge(item.status, t)}</td>
-                      <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                        {canRecordPayment && !['CLOSED', 'WRITTEN_OFF'].includes(item.status) && (
+                      <td><StatusBadge status={item.status} t={t} /></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {canRecordPayment && !closed && (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              onClick={() => setPaymentTarget(item)}
+                            >
+                              {t('receivables.btn.recordPayment')}
+                            </button>
+                          )}
+                          {canWriteOff && !closed && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost-danger btn-sm has-tooltip"
+                              onClick={() => setWriteOffTarget(item)}
+                              title={t('receivables.btn.writeOffTooltip')}
+                            >
+                              {t('receivables.btn.writeOff')}
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => setPaymentModal(item)}
-                            style={{ ...actionBtnStyle, background: '#3b82f6', marginRight: 4 }}
+                            className="btn btn-secondary-ghost btn-sm"
+                            onClick={() => navigate(`/admin/receivables/${item.id}`)}
                           >
-                            {t('receivables.btn.recordPayment')}
+                            {t('receivables.btn.detail')}
                           </button>
-                        )}
-                        {canWriteOff && !['CLOSED', 'WRITTEN_OFF'].includes(item.status) && (
-                          <button
-                            type="button"
-                            onClick={() => setWriteOffModal(item)}
-                            style={{ ...actionBtnStyle, background: '#dc2626' }}
-                          >
-                            {t('receivables.btn.writeOff')}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                          style={{ ...actionBtnStyle, background: '#6b7280', marginLeft: 4 }}
-                        >
-                          {t('receivables.btn.detail')}
-                        </button>
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <MobileCardList>
+            {items.map((item) => {
+              const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+              return (
+                <MobileCard
+                  key={item.id}
+                  title={item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}
+                  subtitle={item.customerName || t('receivables.mobileCard.noPhone')}
+                  status={<StatusBadge status={item.status} t={t} />}
+                  meta={[
+                    {
+                      label: t('receivables.mobileCard.outstandingLabel'),
+                      value: formatCurrency(item.outstandingAmount, locale),
+                      tone: item.outstandingAmount > 0 ? 'danger' : 'strong',
+                    },
+                    {
+                      label: t('receivables.mobileCard.dueDateLabel'),
+                      value: item.overdueDays != null
+                        ? `${item.dueDate || '—'} · ${t('receivables.overdueDays', { days: item.overdueDays })}`
+                        : (item.dueDate || '—'),
+                    },
+                    {
+                      label: t('receivables.mobileCard.totalLabel'),
+                      value: formatCurrency(item.originalAmount, locale),
+                    },
+                    {
+                      label: t('receivables.mobileCard.paidLabel'),
+                      value: formatCurrency(item.paidAmount, locale),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      {canRecordPayment && !closed && (
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setPaymentTarget(item)}>
+                          {t('receivables.btn.recordPayment')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-secondary-ghost btn-sm"
+                        onClick={() => navigate(`/admin/receivables/${item.id}`)}
+                      >
+                        {t('receivables.btn.detail')}
+                      </button>
+                    </>
+                  }
+                />
+              )
+            })}
+          </MobileCardList>
 
           {pagination && pagination.totalPages > 1 && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
-              <button type="button" disabled={pagination.page <= 1} onClick={() => handlePage(pagination.page - 1)} style={pageBtnStyle}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={pagination.page <= 1}
+                onClick={() => handlePage(pagination.page - 1)}
+              >
                 {t('receivables.paginationPrev')}
               </button>
-              <span style={{ lineHeight: '32px', fontSize: 13 }}>{pagination.page} / {pagination.totalPages}</span>
-              <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => handlePage(pagination.page + 1)} style={pageBtnStyle}>
+              <span style={{ fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)' }}>
+                {t('receivables.paginationOf', { page: pagination.page, total: pagination.totalPages })}
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => handlePage(pagination.page + 1)}
+              >
                 {t('receivables.paginationNext')}
               </button>
             </div>
@@ -359,53 +324,221 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
         </>
       )}
 
-      {paymentModal && (
-        <RecordPaymentModal
-          receivable={paymentModal}
-          onClose={() => setPaymentModal(null)}
-          onSuccess={() => setPaymentModal(null)}
-        />
-      )}
-      {writeOffModal && (
-        <WriteOffModal
-          receivable={writeOffModal}
-          onClose={() => setWriteOffModal(null)}
-          onSuccess={() => setWriteOffModal(null)}
-        />
-      )}
-    </div>
+      <RecordPaymentModal
+        receivable={paymentTarget}
+        onClose={() => setPaymentTarget(null)}
+      />
+      <WriteOffModal
+        receivable={writeOffTarget}
+        onClose={() => setWriteOffTarget(null)}
+      />
+    </Screen>
   )
 }
 
-function SummaryCard({ label, value, icon, color }) {
+// ─── Modals (shared with detail screen via export) ──────────────────────────
+export function RecordPaymentModal({ receivable, onClose }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const [amount, setAmount] = useState('')
+  const [method, setMethod] = useState('CASH')
+  const [ref, setRef] = useState('')
+  const [note, setNote] = useState('')
+  const [error, setError] = useState(null)
+  const queryClient = useQueryClient()
+
+  const open = !!receivable
+
+  const mutation = useMutation({
+    mutationFn: () => recordReceivablePayment(receivable.id, {
+      amount: Number(amount),
+      paymentMethod: method,
+      referenceNumber: ref || undefined,
+      note: note || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receivable', receivable.id] })
+      queryClient.invalidateQueries({ queryKey: ['receivables'] })
+      queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
+      handleClose()
+    },
+    onError: (e) => setError(e.message),
+  })
+
+  function handleClose() {
+    setAmount('')
+    setMethod('CASH')
+    setRef('')
+    setNote('')
+    setError(null)
+    onClose?.()
+  }
+
+  if (!open) return null
+  const outstanding = receivable.outstandingAmount
+
+  const numericAmount = Number(amount)
+  const validAmount = numericAmount > 0 && numericAmount <= outstanding
+
   return (
-    <div style={{ background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: '16px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color, marginBottom: 8 }}>{icon}<span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span></div>
-      <div style={{ fontSize: 20, fontWeight: 700 }}>{value}</div>
-    </div>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      closeLabel={t('receivables.recordPayment.cancel')}
+      title={
+        <>
+          <div>{t('receivables.recordPayment.title')}</div>
+          <div style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 400, color: 'var(--admin-color-text-muted)', marginTop: 2 }}>
+            {t('receivables.recordPayment.subtitle', { orderNumber: receivable.orderNumber || receivable.orderId?.slice(0, 8) })}
+          </div>
+        </>
+      }
+      actions={
+        <>
+          <button type="button" className="btn btn-secondary" onClick={handleClose}>
+            {t('receivables.recordPayment.cancel')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!validAmount || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? t('receivables.recordPayment.saving') : t('receivables.recordPayment.confirm')}
+          </button>
+        </>
+      }
+    >
+      <p style={{ margin: '0 0 16px', color: 'var(--admin-color-text-secondary)' }}>
+        {t('receivables.recordPayment.outstanding')}{' '}
+        <strong style={{ color: 'var(--admin-color-status-danger-text)' }}>{formatCurrency(outstanding, locale)}</strong>
+      </p>
+
+      {error && <div className="modal-note modal-note--error">{error}</div>}
+
+      <FormField label={t('receivables.recordPayment.amountLabel')} required>
+        <input
+          type="number"
+          className="control-input"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
+          min="1"
+          max={outstanding}
+        />
+      </FormField>
+
+      <FormField label={t('receivables.recordPayment.methodLabel')} required>
+        <select className="control-select" value={method} onChange={(e) => setMethod(e.target.value)}>
+          {PAYMENT_METHODS.map((m) => (
+            <option key={m} value={m}>{t(`receivables.paymentMethod.${m}`)}</option>
+          ))}
+        </select>
+      </FormField>
+
+      <FormField label={t('receivables.recordPayment.refLabel')} helper={t('receivables.recordPayment.refHelper')}>
+        <input
+          type="text"
+          className="control-input"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+        />
+      </FormField>
+
+      <FormField label={t('receivables.recordPayment.noteLabel')}>
+        <textarea
+          className="control-input control-textarea"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      </FormField>
+
+      {validAmount && (
+        <div className="modal-note">
+          {t('receivables.recordPayment.afterCollection', {
+            amount: formatCurrency(outstanding - numericAmount, locale),
+          })}
+        </div>
+      )}
+    </Modal>
   )
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
-const inputStyle = {
-  padding: '6px 10px',
-  border: '1px solid var(--admin-border)',
-  borderRadius: 6,
-  background: 'var(--admin-bg-input)',
-  color: 'var(--admin-text)',
-  fontSize: 14,
+export function WriteOffModal({ receivable, onClose }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState(null)
+  const queryClient = useQueryClient()
+
+  const open = !!receivable
+
+  const mutation = useMutation({
+    mutationFn: () => writeOffReceivable(receivable.id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receivable', receivable.id] })
+      queryClient.invalidateQueries({ queryKey: ['receivables'] })
+      queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
+      handleClose()
+    },
+    onError: (e) => setError(e.message),
+  })
+
+  function handleClose() {
+    setReason('')
+    setError(null)
+    onClose?.()
+  }
+
+  if (!open) return null
+
+  return (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      closeLabel={t('receivables.writeOff.cancel')}
+      title={
+        <>
+          <div>{t('receivables.writeOff.title')}</div>
+          <div style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 400, color: 'var(--admin-color-text-muted)', marginTop: 2 }}>
+            {t('receivables.writeOff.subtitle', { orderNumber: receivable.orderNumber || receivable.orderId?.slice(0, 8) })}
+          </div>
+        </>
+      }
+      actions={
+        <>
+          <button type="button" className="btn btn-secondary" onClick={handleClose}>
+            {t('receivables.writeOff.cancel')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            disabled={!reason.trim() || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? t('receivables.writeOff.processing') : t('receivables.writeOff.confirm')}
+          </button>
+        </>
+      }
+    >
+      <p style={{ margin: '0 0 8px' }}>{t('receivables.writeOff.intro')}</p>
+      <p style={{ margin: '0 0 16px', color: 'var(--admin-color-text-secondary)' }}>
+        {t('receivables.writeOff.outstanding')}{' '}
+        <strong style={{ color: 'var(--admin-color-status-danger-text)' }}>{formatCurrency(receivable.outstandingAmount, locale)}</strong>
+      </p>
+
+      <div className="modal-note modal-note--warn">{t('receivables.writeOff.irreversible')}</div>
+
+      {error && <div className="modal-note modal-note--error">{error}</div>}
+
+      <FormField label={t('receivables.writeOff.reasonLabel')} required>
+        <textarea
+          className="control-input control-textarea"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={t('receivables.writeOff.reasonPlaceholder')}
+        />
+      </FormField>
+    </Modal>
+  )
 }
-const tableStyle = { width: '100%', borderCollapse: 'collapse', fontSize: 13 }
-const thStyle = { padding: '8px 12px', background: 'var(--admin-bg-subtle)', fontWeight: 600, textAlign: 'left', borderBottom: '1px solid var(--admin-border)', whiteSpace: 'nowrap' }
-const tdStyle = { padding: '10px 12px', borderBottom: '1px solid var(--admin-border)', verticalAlign: 'middle' }
-const trStyle = { transition: 'background 0.1s' }
-const actionBtnStyle = { padding: '3px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }
-const linkBtnStyle = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--admin-accent)', fontWeight: 600, padding: 0, fontSize: 13, textDecoration: 'underline' }
-const pageBtnStyle = { padding: '4px 12px', borderRadius: 4, border: '1px solid var(--admin-border)', cursor: 'pointer', background: 'var(--admin-bg-card)', fontSize: 13 }
-const overlayStyle = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }
-const modalStyle = { background: 'var(--admin-bg-card)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }
-const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4, marginTop: 12 }
-const primaryBtnStyle = { padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#3b82f6', color: '#fff', fontWeight: 600, fontSize: 14 }
-const secondaryBtnStyle = { padding: '8px 16px', borderRadius: 6, border: '1px solid var(--admin-border)', cursor: 'pointer', background: 'transparent', fontSize: 14 }
-const errorStyle = { background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: 6, padding: '8px 12px', fontSize: 13, marginBottom: 12 }
-const iconBtnStyle = { background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }
