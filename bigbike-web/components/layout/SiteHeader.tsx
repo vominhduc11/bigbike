@@ -12,13 +12,6 @@ import type { PublicMenuItem } from "@/lib/contracts/public";
 const DEFAULT_SITE_NAME = "BigBike";
 const PRIMARY_MENU_LOCATION = "primary";
 
-const FALLBACK_MENU_TREE: HeaderNavNode[] = [
-  { id: "fb-1", parentId: null, label: "Sản phẩm", url: "/san-pham/", sortOrder: 1, openInNewTab: false, cssClass: null, children: [] },
-  { id: "fb-2", parentId: null, label: "Danh mục", url: "/danh-muc-san-pham/", sortOrder: 2, openInNewTab: false, cssClass: null, children: [] },
-  { id: "fb-3", parentId: null, label: "Thương hiệu", url: "/brands/", sortOrder: 3, openInNewTab: false, cssClass: null, children: [] },
-  { id: "fb-4", parentId: null, label: "Tin tức", url: "/tin-tuc/", sortOrder: 4, openInNewTab: false, cssClass: null, children: [] },
-  { id: "fb-5", parentId: null, label: "Liên hệ", url: "/lien-he/", sortOrder: 5, openInNewTab: false, cssClass: null, children: [] },
-];
 
 function buildMenuTree(items: PublicMenuItem[]): HeaderNavNode[] {
   const map = new Map<string, HeaderNavNode>();
@@ -100,8 +93,7 @@ export async function SiteHeader() {
     );
   }
 
-  const menuTree = buildMenuTree(menuResult.data?.items ?? []);
-  const resolvedMenuTree = menuTree.length > 0 ? menuTree : FALLBACK_MENU_TREE;
+  const resolvedMenuTree = menuResult.data ? buildMenuTree(menuResult.data.items) : [];
 
   return (
     <StickyHeaderShell>

@@ -35,6 +35,30 @@ a {
   min-height: 100dvh;
 }
 
+/* ─── Global scrollbar ───────────────────────────────────────────────────────*/
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-scrollbar-thumb) var(--admin-scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--admin-scrollbar-size);
+  height: var(--admin-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--admin-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--admin-scrollbar-thumb);
+  border-radius: var(--admin-radius-full);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-scrollbar-thumb-hover);
+}
+
 /* ─── App shell ──────────────────────────────────────────────────────────────*/
 .full-page-state {
   min-height: 100dvh;
@@ -60,6 +84,14 @@ a {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .sidebar-brand {
@@ -1924,25 +1956,6 @@ a {
 /* Table */
 .menu-table-wrap {
   overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--admin-color-border-default) transparent;
-}
-
-.menu-table-wrap::-webkit-scrollbar {
-  height: 6px;
-}
-
-.menu-table-wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.menu-table-wrap::-webkit-scrollbar-thumb {
-  background: var(--admin-color-border-default);
-  border-radius: var(--admin-radius-full);
-}
-
-.menu-table-wrap::-webkit-scrollbar-thumb:hover {
-  background: var(--admin-color-border-strong);
 }
 
 .menu-table {

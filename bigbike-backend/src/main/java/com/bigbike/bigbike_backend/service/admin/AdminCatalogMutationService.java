@@ -1366,7 +1366,7 @@ public class AdminCatalogMutationService {
     }
 
     private void revalidateCategory(CategoryEntity entity, String previousSlug) {
-        revalidateEntityTags("categories", "category:", previousSlug, entity.getSlug(), "products", "menu:primary");
+        revalidateEntityTags("categories", "category:", previousSlug, entity.getSlug(), "products", "menus");
     }
 
     private void revalidateBrand(BrandEntity entity, String previousSlug) {

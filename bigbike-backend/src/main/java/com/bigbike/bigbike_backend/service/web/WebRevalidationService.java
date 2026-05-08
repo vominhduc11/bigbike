@@ -63,17 +63,33 @@ public class WebRevalidationService {
 
     private void dispatch(List<String> tagList) {
         CompletableFuture.runAsync(() -> {
-            try {
-                restClient.post()
-                        .uri(revalidateUrl)
-                        .header("x-revalidate-secret", secret)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(new RevalidateBody(tagList))
-                        .retrieve()
-                        .toBodilessEntity();
-                log.info("Web revalidation succeeded for tags {}", tagList);
-            } catch (Exception e) {
-                log.warn("Web revalidation failed for tags {}: {}", tagList, e.getMessage());
+            int[] delaysMs = {1_000, 3_000};
+            for (int attempt = 0; attempt <= delaysMs.length; attempt++) {
+                try {
+                    restClient.post()
+                            .uri(revalidateUrl)
+                            .header("x-revalidate-secret", secret)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(new RevalidateBody(tagList))
+                            .retrieve()
+                            .toBodilessEntity();
+                    log.info("Web revalidation succeeded for tags {} (attempt {})", tagList, attempt + 1);
+                    return;
+                } catch (Exception e) {
+                    if (attempt < delaysMs.length) {
+                        log.warn("Web revalidation attempt {}/{} failed for tags {}: {} — retrying in {}ms",
+                                attempt + 1, delaysMs.length + 1, tagList, e.getMessage(), delaysMs[attempt]);
+                        try {
+                            Thread.sleep(delaysMs[attempt]);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    } else {
+                        log.error("Web revalidation failed after {} attempts for tags {}: {}",
+                                delaysMs.length + 1, tagList, e.getMessage());
+                    }
+                }
             }
         });
     }

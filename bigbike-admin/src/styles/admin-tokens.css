@@ -109,6 +109,12 @@
   --admin-transition-fast: 100ms ease;
   --admin-transition-base: 160ms ease;
 
+  /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+  --admin-scrollbar-size:        6px;
+  --admin-scrollbar-thumb:       var(--admin-color-border-default);
+  --admin-scrollbar-thumb-hover: var(--admin-color-border-strong);
+  --admin-scrollbar-track:       transparent;
+
   /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
   --c-text-primary:  var(--admin-color-text-primary);
   --c-text-muted:    var(--admin-color-text-muted);

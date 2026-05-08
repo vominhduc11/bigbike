@@ -84,7 +84,7 @@ services:
       # Defaults to localhost:9000 (port-mapped MinIO). Override in production with a CDN URL.
       BIGBIKE_MEDIA_PUBLIC_BASE_URL: "${BIGBIKE_MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/bigbike-media}"
       WEB_REVALIDATE_URL: "http://bigbike-web:3000/api/revalidate"
-      WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-}"
+      WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       # Transactional email (optional — empty BIGBIKE_MAIL_HOST disables sending).
       BIGBIKE_MAIL_HOST: "${BIGBIKE_MAIL_HOST:-}"
       BIGBIKE_MAIL_PORT: "${BIGBIKE_MAIL_PORT:-587}"
@@ -136,7 +136,7 @@ services:
       BIGBIKE_SITE_URL: ${BIGBIKE_SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       BIGBIKE_DISABLE_DEV_FALLBACK: "true"
-      REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-}"
+      REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: "${BIGBIKE_REDIRECT_CACHE_TTL_SECONDS:-300}"
       # Google Tag Manager — leave empty in staging to avoid GA4 pollution.
       NEXT_PUBLIC_GTM_ID: "${NEXT_PUBLIC_GTM_ID:-}"

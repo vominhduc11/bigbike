@@ -103,7 +103,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
           </div>
         )}
 
-        {order?.paymentMethod === "bacs" && (bankNumber || bankName) && (
+        {order?.payments?.[0]?.paymentMethod === "bacs" && (bankNumber || bankName) && (
           <div className="wp-info-card" style={{ maxWidth: 560, margin: "0 auto 22px", textAlign: "left" }}>
             <p className="wp-info-label">Thông tin chuyển khoản</p>
             {bankName && (
