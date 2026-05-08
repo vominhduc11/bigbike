@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import UnderlineExt from '@tiptap/extension-underline'
-import LinkExt from '@tiptap/extension-link'
 import ImageExt from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
@@ -59,11 +57,10 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       StarterKit.configure({
         heading: { levels: [2, 3] },
         codeBlock: { languageClassPrefix: 'language-' },
-      }),
-      UnderlineExt,
-      LinkExt.configure({
-        openOnClick: false,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        link: {
+          openOnClick: false,
+          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        },
       }),
       ImageExt.configure({
         HTMLAttributes: { class: 'rte-image' },
