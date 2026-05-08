@@ -122,21 +122,55 @@
     "mockWarning": "Showing mock data. Backend connection failed or not configured.",
     "kpi": {
       "todayRevenue": "Today's Revenue",
+      "todayRevenueHint": "vs same time yesterday",
       "todayOrders": "Today's Orders",
+      "todayOrdersHint": "All statuses included",
       "pendingOrders": "Pending Orders",
+      "pendingOrdersHint": "Orders awaiting confirmation",
       "activeProducts": "Active Products",
+      "activeProductsHint": "Published and in stock",
       "vsPrev": "vs yesterday",
       "newVsPrev": "vs yesterday",
       "awaitingAction": "awaiting action",
-      "published": "published"
+      "published": "published",
+      "todayPaid": "Collected: {{amount}}"
+    },
+    "attention": {
+      "title": "Needs your attention",
+      "description": "Items waiting on your decision.",
+      "empty": "All clear! Nothing is waiting.",
+      "viewAction": "Handle now",
+      "pendingOrders": {
+        "label": "Pending orders",
+        "value": "{{count}} orders",
+        "hint": "New orders not yet confirmed"
+      },
+      "overdueReceivables": {
+        "label": "Overdue receivables",
+        "value": "{{count}} invoices",
+        "hint": "Past due — {{amount}}"
+      },
+      "pendingReturns": {
+        "label": "Returns to review",
+        "value": "{{count}} requests",
+        "hint": "Customer-initiated requests"
+      },
+      "lowStock": {
+        "label": "Low stock alerts",
+        "value": "{{count}} SKUs",
+        "hint": "Low or out of stock"
+      }
     },
     "revenueChart": {
       "title": "Daily Revenue",
-      "revenue": "Revenue"
+      "revenue": "Revenue",
+      "ordersAxis": "orders"
     },
     "orderStatusChart": {
       "title": "Order Breakdown",
-      "total": "Total orders"
+      "total": "Total orders",
+      "orderUnit": "orders",
+      "viewAll": "View all orders"
     },
     "recentOrders": {
       "title": "Recent Orders",
@@ -149,6 +183,7 @@
     "topProducts": {
       "title": "Top Products",
       "viewAll": "View all",
+      "rank": "#",
       "product": "Product",
       "units": "Units sold",
       "revenue": "Revenue"

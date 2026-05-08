@@ -122,21 +122,55 @@
     "mockWarning": "Đang hiển thị dữ liệu mẫu. Kết nối backend thất bại hoặc chưa được cấu hình.",
     "kpi": {
       "todayRevenue": "Doanh thu hôm nay",
+      "todayRevenueHint": "So với cùng giờ hôm qua",
       "todayOrders": "Đơn hàng hôm nay",
+      "todayOrdersHint": "Bao gồm tất cả trạng thái",
       "pendingOrders": "Đơn chờ xử lý",
+      "pendingOrdersHint": "Đơn cần xác nhận",
       "activeProducts": "Sản phẩm đang bán",
+      "activeProductsHint": "Đang xuất bản và còn hàng",
       "vsPrev": "so hôm qua",
       "newVsPrev": "so hôm qua",
       "awaitingAction": "cần xử lý",
-      "published": "đang xuất bản"
+      "published": "đang xuất bản",
+      "todayPaid": "Đã thu: {{amount}}"
+    },
+    "attention": {
+      "title": "Việc cần xử lý",
+      "description": "Các đầu việc đang chờ bạn quyết định.",
+      "empty": "Tuyệt vời! Không có việc nào tồn đọng.",
+      "viewAction": "Xử lý ngay",
+      "pendingOrders": {
+        "label": "Đơn chờ xác nhận",
+        "value": "{{count}} đơn",
+        "hint": "Đơn mới chưa được xác nhận"
+      },
+      "overdueReceivables": {
+        "label": "Công nợ quá hạn",
+        "value": "{{count}} phiếu",
+        "hint": "Đã quá hạn — {{amount}}"
+      },
+      "pendingReturns": {
+        "label": "Đổi trả chờ duyệt",
+        "value": "{{count}} yêu cầu",
+        "hint": "Khách yêu cầu xử lý"
+      },
+      "lowStock": {
+        "label": "Tồn kho cảnh báo",
+        "value": "{{count}} mã hàng",
+        "hint": "Sắp hết hoặc đã hết"
+      }
     },
     "revenueChart": {
       "title": "Doanh thu theo ngày",
-      "revenue": "Doanh thu"
+      "revenue": "Doanh thu",
+      "ordersAxis": "đơn"
     },
     "orderStatusChart": {
       "title": "Cơ cấu đơn hàng",
-      "total": "Tổng đơn"
+      "total": "Tổng đơn",
+      "orderUnit": "đơn",
+      "viewAll": "Xem tất cả đơn"
     },
     "recentOrders": {
       "title": "Đơn hàng gần nhất",
@@ -149,6 +183,7 @@
     "topProducts": {
       "title": "Sản phẩm bán chạy",
       "viewAll": "Xem tất cả",
+      "rank": "#",
       "product": "Sản phẩm",
       "units": "Đã bán",
       "revenue": "Doanh thu"

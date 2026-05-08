@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { CircleDollarSign, Clock, Package, ShoppingBag } from 'lucide-react'
+import {
+  AlertTriangle,
+  CircleDollarSign,
+  Clock,
+  Package,
+  PackageOpen,
+  RotateCcw,
+  ShoppingBag,
+} from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -15,12 +23,22 @@ import {
   YAxis,
 } from 'recharts'
 import { StatePanel } from '../components/StatePanel'
-import { fetchDashboardSummary } from '../lib/adminApi'
+import {
+  fetchDashboardSummary,
+  fetchReceivableSummary,
+  fetchInventorySummary,
+  fetchReturns,
+} from '../lib/adminApi'
+import {
+  Screen,
+  ScreenHeader,
+  SummaryCard,
+  SummaryCardGrid,
+  Tabs,
+} from '../components/layout'
 
-// Orders with >PENDING_WARN_THRESHOLD pending get a red sub-line on the KPI card
 const PENDING_WARN_THRESHOLD = 5
 
-// Tone mapping — matches real OrderStatus enum values only
 const ORDER_STATUS_TONES = {
   PENDING:    'warning',
   ON_HOLD:    'neutral',
@@ -31,7 +49,6 @@ const ORDER_STATUS_TONES = {
   REFUNDED:   'neutral',
 }
 
-// Pie chart fill colours (UI-only, never sent from BE)
 const ORDER_STATUS_COLORS = {
   PENDING:    '#f59e0b',
   ON_HOLD:    '#6b7280',
@@ -56,7 +73,6 @@ function fmtVndCompact(value) {
   return new Intl.NumberFormat('vi-VN').format(value) + ' ₫'
 }
 
-// ISO "yyyy-MM-dd" → "29/4" for chart axis labels
 function fmtIsoDateShort(isoDate) {
   if (!isoDate) return ''
   const [, m, d] = isoDate.split('-')
@@ -65,98 +81,30 @@ function fmtIsoDateShort(isoDate) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function KpiCard({ icon, label, value, sub, subPositive, subNegative, sub2 }) {
-  const subColor = subPositive
-    ? 'var(--admin-color-status-success-text)'
-    : subNegative
-      ? 'var(--admin-color-status-danger-text)'
-      : 'var(--admin-color-text-muted)'
-
-  return (
-    <div style={{
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-lg)',
-      padding: '20px 24px',
-      boxShadow: 'var(--admin-shadow-sm)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 12,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)', fontWeight: 500 }}>
-          {label}
-        </span>
-        <span style={{
-          width: 36, height: 36,
-          borderRadius: 'var(--admin-radius-md)',
-          background: 'var(--admin-color-brand-red-subtle)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--admin-color-brand-red)',
-          flexShrink: 0,
-        }}>
-          {icon}
-        </span>
-      </div>
-      <div>
-        <div style={{ fontSize: 'var(--admin-text-2xl)', fontWeight: 700, color: 'var(--admin-color-text-primary)', lineHeight: 1.2 }}>
-          {value}
-        </div>
-        {sub && (
-          <div style={{ marginTop: 4, fontSize: 'var(--admin-text-xs)', color: subColor, fontWeight: 500 }}>
-            {sub}
-          </div>
-        )}
-        {sub2 && (
-          <div style={{ marginTop: 2, fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
-            {sub2}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function RevenueTooltip({ active, payload, label }) {
+function RevenueTooltip({ active, payload, label, ordersUnit }) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-md)',
-      padding: '10px 14px',
-      boxShadow: 'var(--admin-shadow-md)',
-      fontSize: 'var(--admin-text-sm)',
-    }}>
-      <div style={{ marginBottom: 4, color: 'var(--admin-color-text-muted)', fontWeight: 500 }}>
-        {fmtIsoDateShort(label)}
-      </div>
+    <div className="dash-tooltip">
+      <div className="dash-tooltip-date">{fmtIsoDateShort(label)}</div>
       {payload.map((p) => (
-        <div key={p.dataKey} style={{ color: 'var(--admin-color-text-primary)', fontWeight: 600 }}>
-          {p.name}: {p.dataKey === 'revenue' ? fmtVndCompact(p.value) : p.value + ' đơn'}
+        <div key={p.dataKey} className="dash-tooltip-row">
+          {p.name}: {p.dataKey === 'revenue' ? fmtVndCompact(p.value) : `${p.value} ${ordersUnit}`}
         </div>
       ))}
     </div>
   )
 }
 
-function PieTooltip({ active, payload }) {
+function PieTooltip({ active, payload, orderUnit }) {
   if (!active || !payload?.length) return null
   const d = payload[0]
   const total = d.payload?.total || 1
   const pct = Math.round((d.value / total) * 100)
   return (
-    <div style={{
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-md)',
-      padding: '10px 14px',
-      boxShadow: 'var(--admin-shadow-md)',
-      fontSize: 'var(--admin-text-sm)',
-    }}>
-      <div style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>{d.name}</div>
-      <div style={{ color: 'var(--admin-color-text-muted)', marginTop: 2 }}>
-        {d.value} đơn ({pct}%)
+    <div className="dash-tooltip">
+      <div className="dash-tooltip-name">{d.name}</div>
+      <div className="dash-tooltip-meta">
+        {d.value} {orderUnit} ({pct}%)
       </div>
     </div>
   )
@@ -174,45 +122,27 @@ function OrderStatusBadge({ status }) {
 
 function SectionCard({ title, action, children }) {
   return (
-    <div style={{
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-lg)',
-      boxShadow: 'var(--admin-shadow-sm)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 20px',
-        borderBottom: '1.5px solid var(--admin-color-border-subtle)',
-        background: 'var(--admin-color-surface-muted)',
-      }}>
-        <span style={{ fontWeight: 700, fontSize: 'var(--admin-text-base)', color: 'var(--admin-color-text-primary)' }}>
-          {title}
-        </span>
+    <section className="dash-section">
+      <header className="dash-section-head">
+        <span className="dash-section-title">{title}</span>
         {action}
-      </div>
+      </header>
       {children}
-    </div>
+    </section>
+  )
+}
+
+function ViewAllLink({ label, onClick }) {
+  return (
+    <button type="button" className="dash-view-all" onClick={onClick}>
+      {label} →
+    </button>
   )
 }
 
 function SkeletonBlock({ height = 280 }) {
-  return (
-    <div style={{
-      height,
-      borderRadius: 'var(--admin-radius-lg)',
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      animation: 'pulse 1.4s ease-in-out infinite',
-    }} />
-  )
+  return <div className="dash-skeleton-block" style={{ height }} />
 }
-
-const IconRevenue  = () => <CircleDollarSign size={18} />
-const IconOrders   = () => <ShoppingBag size={18} />
-const IconPending  = () => <Clock size={18} />
-const IconProducts = () => <Package size={18} />
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -226,6 +156,25 @@ export function DashboardScreen({ navigate }) {
     staleTime: 60_000,
   })
 
+  // Side-fetches for the "attention" section. Each is independent and tolerates
+  // failure (returns 0). Cache keys match Receivables/Inventory/Returns screens
+  // so visiting Dashboard warms their caches and vice-versa.
+  const { data: arSummary } = useQuery({
+    queryKey: ['receivable-summary'],
+    queryFn: fetchReceivableSummary,
+    staleTime: 60_000,
+  })
+  const { data: invSummary } = useQuery({
+    queryKey: ['inventory-summary'],
+    queryFn: fetchInventorySummary,
+    staleTime: 60_000,
+  })
+  const { data: pendingReturns } = useQuery({
+    queryKey: ['returns-pending-count'],
+    queryFn: () => fetchReturns({ status: 'REQUESTED', page: 1, pageSize: 1 }),
+    staleTime: 60_000,
+  })
+
   const state = {
     status: isLoading ? 'loading' : isError ? 'error' : 'ok',
     data: dashResult?.data ?? null,
@@ -233,10 +182,10 @@ export function DashboardScreen({ navigate }) {
   }
   const { data } = state
 
-  const periodOptions = [
-    { value: '7d',  label: t('dashboard.period7d')  },
-    { value: '30d', label: t('dashboard.period30d') },
-    { value: '90d', label: t('dashboard.period90d') },
+  const periodTabs = [
+    { key: '7d',  label: t('dashboard.period7d')  },
+    { key: '30d', label: t('dashboard.period30d') },
+    { key: '90d', label: t('dashboard.period90d') },
   ]
 
   const pieTotal = data
@@ -252,50 +201,70 @@ export function DashboardScreen({ navigate }) {
       }))
     : []
 
-  return (
-    <div className="dash-page">
+  // Attention items: only render the ones with count > 0.
+  const pendingOrdersCount = data?.kpi.pendingOrders ?? 0
+  const overdueCount = arSummary?.countOverdue ?? 0
+  const overdueAmount = arSummary?.overdueOutstanding ?? 0
+  const lowStockCount = (invSummary?.lowStockCount ?? 0) + (invSummary?.outOfStockCount ?? 0)
+  const pendingReturnsCount = pendingReturns?.pagination?.total ?? 0
 
-      {/* Page header */}
-      <div className="dash-header">
-        <div>
-          <div style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-color-brand-red)', marginBottom: 4 }}>
-            {t('dashboard.eyebrow')}
-          </div>
-          <h1 style={{ margin: 0, fontSize: 'var(--admin-text-xl)', fontWeight: 800, color: 'var(--admin-color-text-primary)', lineHeight: 1.2 }}>
-            {t('dashboard.title')}
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)' }}>
-            {t('dashboard.subtitle')}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 4, background: 'var(--admin-color-surface-muted)', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-md)', padding: 3 }}>
-          {periodOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setPeriod(opt.value)}
-              style={{
-                padding: '5px 14px',
-                borderRadius: 7,
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 'var(--admin-text-sm)',
-                fontWeight: 600,
-                transition: 'var(--admin-transition-fast)',
-                background: period === opt.value ? 'var(--admin-color-surface-base)' : 'transparent',
-                color: period === opt.value ? 'var(--admin-color-text-primary)' : 'var(--admin-color-text-muted)',
-                boxShadow: period === opt.value ? 'var(--admin-shadow-xs)' : 'none',
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+  const attentionItems = [
+    pendingOrdersCount > 0 && {
+      key: 'pendingOrders',
+      tone: 'warning',
+      icon: <Clock size={16} />,
+      label: t('dashboard.attention.pendingOrders.label'),
+      value: t('dashboard.attention.pendingOrders.value', { count: pendingOrdersCount }),
+      hint: t('dashboard.attention.pendingOrders.hint'),
+      onClick: () => navigate('/admin/orders'),
+    },
+    overdueCount > 0 && {
+      key: 'overdueReceivables',
+      tone: 'danger',
+      icon: <AlertTriangle size={16} />,
+      label: t('dashboard.attention.overdueReceivables.label'),
+      value: t('dashboard.attention.overdueReceivables.value', { count: overdueCount }),
+      hint: t('dashboard.attention.overdueReceivables.hint', { amount: fmtVndCompact(overdueAmount) }),
+      onClick: () => navigate('/admin/receivables'),
+    },
+    pendingReturnsCount > 0 && {
+      key: 'pendingReturns',
+      tone: 'info',
+      icon: <RotateCcw size={16} />,
+      label: t('dashboard.attention.pendingReturns.label'),
+      value: t('dashboard.attention.pendingReturns.value', { count: pendingReturnsCount }),
+      hint: t('dashboard.attention.pendingReturns.hint'),
+      onClick: () => navigate('/admin/returns'),
+    },
+    lowStockCount > 0 && {
+      key: 'lowStock',
+      tone: 'warning',
+      icon: <PackageOpen size={16} />,
+      label: t('dashboard.attention.lowStock.label'),
+      value: t('dashboard.attention.lowStock.value', { count: lowStockCount }),
+      hint: t('dashboard.attention.lowStock.hint'),
+      onClick: () => navigate('/admin/inventory'),
+    },
+  ].filter(Boolean)
+
+  return (
+    <Screen>
+      <ScreenHeader
+        eyebrow={t('dashboard.eyebrow')}
+        title={t('dashboard.title')}
+        description={t('dashboard.subtitle')}
+        actions={
+          <Tabs
+            items={periodTabs}
+            value={period}
+            onChange={setPeriod}
+            ariaLabel={t('dashboard.title')}
+          />
+        }
+      />
 
       {state.isMock && (
-        <div style={{ marginBottom: 16 }}>
-          <StatePanel tone="warning" title={t('readOnly.prefix')} description={t('dashboard.mockWarning')} />
-        </div>
+        <StatePanel tone="warning" title={t('readOnly.prefix')} description={t('dashboard.mockWarning')} />
       )}
 
       {state.status === 'error' && (
@@ -320,77 +289,91 @@ export function DashboardScreen({ navigate }) {
             <SkeletonBlock height={300} />
             <SkeletonBlock height={300} />
           </div>
-          <div className="dash-tables-grid">
-            <SkeletonBlock height={260} />
-            <SkeletonBlock height={260} />
-          </div>
         </>
       )}
 
       {data && (
         <>
-          {/* KPI Cards */}
-          <div className="dash-kpi-grid">
-            <KpiCard
-              icon={<IconRevenue />}
+          {/* Attention section — always rendered; shows "all clear" if empty */}
+          <section className="dash-section">
+            <header className="dash-section-head">
+              <div>
+                <span className="dash-section-title">{t('dashboard.attention.title')}</span>
+                <p className="dash-section-desc">{t('dashboard.attention.description')}</p>
+              </div>
+            </header>
+            <div className="dash-section-body">
+              {attentionItems.length === 0 ? (
+                <StatePanel tone="success" title={t('dashboard.attention.empty')} />
+              ) : (
+                <SummaryCardGrid>
+                  {attentionItems.map((item) => (
+                    <SummaryCard
+                      key={item.key}
+                      tone={item.tone}
+                      icon={item.icon}
+                      label={item.label}
+                      value={item.value}
+                      hint={item.hint}
+                      onClick={item.onClick}
+                      ariaLabel={`${item.label}: ${item.value}. ${t('dashboard.attention.viewAction')}`}
+                    />
+                  ))}
+                </SummaryCardGrid>
+              )}
+            </div>
+          </section>
+
+          {/* KPI cards — clickable shortcuts */}
+          <SummaryCardGrid>
+            <SummaryCard
+              tone="brand"
+              icon={<CircleDollarSign size={16} />}
               label={t('dashboard.kpi.todayRevenue')}
               value={fmtVndCompact(data.kpi.todayRevenue)}
-              sub={
-                data.kpi.todayRevenuePct > 0
-                  ? `▲ ${data.kpi.todayRevenuePct}% ${t('dashboard.kpi.vsPrev')}`
-                  : data.kpi.todayRevenuePct < 0
-                    ? `▼ ${Math.abs(data.kpi.todayRevenuePct)}% ${t('dashboard.kpi.vsPrev')}`
-                    : undefined
-              }
-              subPositive={data.kpi.todayRevenuePct > 0}
-              subNegative={data.kpi.todayRevenuePct < 0}
-              sub2={
+              hint={
                 data.kpi.todayPaidRevenue != null
-                  ? `Đã thu: ${fmtVndCompact(data.kpi.todayPaidRevenue)}`
-                  : undefined
+                  ? t('dashboard.kpi.todayPaid', { amount: fmtVndCompact(data.kpi.todayPaidRevenue) })
+                  : t('dashboard.kpi.todayRevenueHint')
               }
+              onClick={() => navigate('/admin/reports')}
             />
-            <KpiCard
-              icon={<IconOrders />}
+            <SummaryCard
+              tone="info"
+              icon={<ShoppingBag size={16} />}
               label={t('dashboard.kpi.todayOrders')}
               value={data.kpi.todayOrders}
-              sub={
-                data.kpi.todayOrdersDelta > 0
-                  ? `+${data.kpi.todayOrdersDelta} ${t('dashboard.kpi.newVsPrev')}`
-                  : data.kpi.todayOrdersDelta < 0
-                    ? `${data.kpi.todayOrdersDelta} ${t('dashboard.kpi.newVsPrev')}`
-                    : undefined
-              }
-              subPositive={data.kpi.todayOrdersDelta > 0}
-              subNegative={data.kpi.todayOrdersDelta < 0}
+              hint={t('dashboard.kpi.todayOrdersHint')}
+              onClick={() => navigate('/admin/orders')}
             />
-            <KpiCard
-              icon={<IconPending />}
+            <SummaryCard
+              tone={data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}
+              icon={<Clock size={16} />}
               label={t('dashboard.kpi.pendingOrders')}
               value={data.kpi.pendingOrders}
-              sub={data.kpi.pendingOrders > 0 ? t('dashboard.kpi.awaitingAction') : undefined}
-              subNegative={data.kpi.pendingOrders > PENDING_WARN_THRESHOLD}
+              hint={t('dashboard.kpi.pendingOrdersHint')}
+              onClick={() => navigate('/admin/orders')}
             />
-            <KpiCard
-              icon={<IconProducts />}
+            <SummaryCard
+              tone="success"
+              icon={<Package size={16} />}
               label={t('dashboard.kpi.activeProducts')}
               value={data.kpi.activeProducts}
-              sub={t('dashboard.kpi.published')}
+              hint={t('dashboard.kpi.activeProductsHint')}
+              onClick={() => navigate('/admin/products')}
             />
-          </div>
+          </SummaryCardGrid>
 
           {/* Charts row */}
           <div className="dash-charts-grid">
-
-            {/* Revenue area chart */}
             <SectionCard title={t('dashboard.revenueChart.title')}>
-              <div style={{ padding: '20px 8px 8px' }}>
+              <div className="dash-chart-box">
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={data.revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
                     <defs>
                       <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#e8281e" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="#e8281e" stopOpacity={0.01} />
+                        <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.01} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
@@ -409,12 +392,12 @@ export function DashboardScreen({ navigate }) {
                       tickFormatter={fmtMillions}
                       width={48}
                     />
-                    <Tooltip content={<RevenueTooltip />} />
+                    <Tooltip content={<RevenueTooltip ordersUnit={t('dashboard.revenueChart.ordersAxis')} />} />
                     <Area
                       type="monotone"
                       dataKey="revenue"
                       name={t('dashboard.revenueChart.revenue')}
-                      stroke="#e8281e"
+                      stroke="var(--admin-color-brand-red)"
                       strokeWidth={2}
                       fill="url(#grad-revenue)"
                       dot={false}
@@ -425,9 +408,11 @@ export function DashboardScreen({ navigate }) {
               </div>
             </SectionCard>
 
-            {/* Order status pie */}
-            <SectionCard title={t('dashboard.orderStatusChart.title')}>
-              <div style={{ padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <SectionCard
+              title={t('dashboard.orderStatusChart.title')}
+              action={<ViewAllLink label={t('dashboard.orderStatusChart.viewAll')} onClick={() => navigate('/admin/orders')} />}
+            >
+              <div className="dash-pie-box">
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
@@ -443,24 +428,32 @@ export function DashboardScreen({ navigate }) {
                         <Cell key={entry.status} fill={entry.color} stroke="transparent" />
                       ))}
                     </Pie>
-                    <Tooltip content={<PieTooltip />} />
+                    <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div style={{ width: '100%', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="dash-pie-legend">
                   {pieDataWithTotal.map((d) => (
-                    <div key={d.status} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--admin-text-xs)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                        <span style={{ color: 'var(--admin-color-text-secondary)' }}>{d.name}</span>
-                      </div>
-                      <span style={{ fontWeight: 700, color: 'var(--admin-color-text-primary)' }}>
-                        {d.count} <span style={{ fontWeight: 400, color: 'var(--admin-color-text-muted)' }}>({pieTotal > 0 ? Math.round((d.count / pieTotal) * 100) : 0}%)</span>
+                    <button
+                      key={d.status}
+                      type="button"
+                      className="dash-pie-legend-row"
+                      onClick={() => navigate('/admin/orders')}
+                    >
+                      <span className="dash-pie-legend-label">
+                        <span className="dash-pie-legend-dot" style={{ background: d.color }} />
+                        <span>{d.name}</span>
                       </span>
-                    </div>
+                      <span className="dash-pie-legend-count">
+                        {d.count}
+                        <span className="dash-pie-legend-pct">
+                          ({pieTotal > 0 ? Math.round((d.count / pieTotal) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </button>
                   ))}
-                  <div style={{ marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--admin-color-border-subtle)', display: 'flex', justifyContent: 'space-between', fontSize: 'var(--admin-text-xs)' }}>
-                    <span style={{ color: 'var(--admin-color-text-muted)' }}>{t('dashboard.orderStatusChart.total')}</span>
-                    <span style={{ fontWeight: 700, color: 'var(--admin-color-text-primary)' }}>{pieTotal}</span>
+                  <div className="dash-pie-legend-total">
+                    <span>{t('dashboard.orderStatusChart.total')}</span>
+                    <strong>{pieTotal}</strong>
                   </div>
                 </div>
               </div>
@@ -469,118 +462,77 @@ export function DashboardScreen({ navigate }) {
 
           {/* Tables row */}
           <div className="dash-tables-grid">
-
-            {/* Recent orders */}
             <SectionCard
               title={t('dashboard.recentOrders.title')}
-              action={
-                <button
-                  onClick={() => navigate('/admin/orders')}
-                  style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 600, color: 'var(--admin-color-brand-red)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
-                >
-                  {t('dashboard.recentOrders.viewAll')} →
-                </button>
-              }
+              action={<ViewAllLink label={t('dashboard.recentOrders.viewAll')} onClick={() => navigate('/admin/orders')} />}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--admin-text-sm)' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1.5px solid var(--admin-color-border-subtle)' }}>
-                    {[
-                      t('dashboard.recentOrders.orderNumber'),
-                      t('dashboard.recentOrders.customer'),
-                      t('dashboard.recentOrders.total'),
-                      t('dashboard.recentOrders.status'),
-                    ].map((h) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recentOrders.map((order) => (
-                    <tr
-                      key={order.id}
-                      onClick={() => navigate(`/admin/orders/${order.id}`)}
-                      className="dash-hoverable-row"
-                    >
-                      <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--admin-color-brand-red)', whiteSpace: 'nowrap' }}>
-                        {order.orderNumber}
-                      </td>
-                      <td style={{ padding: '11px 16px', color: 'var(--admin-color-text-secondary)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {order.customerName || order.customerEmail}
-                      </td>
-                      <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--admin-color-text-primary)', whiteSpace: 'nowrap' }}>
-                        {fmtVndCompact(order.total)}
-                      </td>
-                      <td style={{ padding: '11px 16px' }}>
-                        <OrderStatusBadge status={order.orderStatus} />
-                      </td>
+              <div className="table-wrap">
+                <table className="admin-table dash-compact-table">
+                  <thead>
+                    <tr>
+                      <th>{t('dashboard.recentOrders.orderNumber')}</th>
+                      <th>{t('dashboard.recentOrders.customer')}</th>
+                      <th>{t('dashboard.recentOrders.total')}</th>
+                      <th>{t('dashboard.recentOrders.status')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.recentOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
+                        className="table-row-clickable"
+                      >
+                        <td className="dash-cell-strong">{order.orderNumber}</td>
+                        <td className="dash-cell-truncate">{order.customerName || order.customerEmail}</td>
+                        <td className="dash-cell-strong">{fmtVndCompact(order.total)}</td>
+                        <td><OrderStatusBadge status={order.orderStatus} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </SectionCard>
 
-            {/* Top products */}
             <SectionCard
               title={t('dashboard.topProducts.title')}
-              action={
-                <button
-                  onClick={() => navigate('/admin/products')}
-                  style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 600, color: 'var(--admin-color-brand-red)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
-                >
-                  {t('dashboard.topProducts.viewAll')} →
-                </button>
-              }
+              action={<ViewAllLink label={t('dashboard.topProducts.viewAll')} onClick={() => navigate('/admin/products')} />}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--admin-text-sm)' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1.5px solid var(--admin-color-border-subtle)' }}>
-                    {[
-                      '#',
-                      t('dashboard.topProducts.product'),
-                      t('dashboard.topProducts.units'),
-                      t('dashboard.topProducts.revenue'),
-                    ].map((h) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topProducts.map((product, idx) => (
-                    <tr
-                      key={product.productId}
-                      onClick={() => navigate(`/admin/products/${product.productId}`)}
-                      className="dash-hoverable-row"
-                    >
-                      <td style={{ padding: '11px 16px', width: 32 }}>
-                        <span className={`rank-badge rank-${idx < 3 ? idx + 1 : 'n'}`}>
-                          {idx + 1}
-                        </span>
-                      </td>
-                      <td style={{ padding: '11px 16px' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', fontSize: 'var(--admin-text-sm)', lineHeight: 1.3 }}>
-                          {product.name}
-                        </div>
-                      </td>
-                      <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--admin-color-text-primary)', whiteSpace: 'nowrap' }}>
-                        {product.units}
-                      </td>
-                      <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--admin-color-text-primary)', whiteSpace: 'nowrap' }}>
-                        {fmtMillions(product.revenue)}
-                      </td>
+              <div className="table-wrap">
+                <table className="admin-table dash-compact-table">
+                  <thead>
+                    <tr>
+                      <th>{t('dashboard.topProducts.rank')}</th>
+                      <th>{t('dashboard.topProducts.product')}</th>
+                      <th>{t('dashboard.topProducts.units')}</th>
+                      <th>{t('dashboard.topProducts.revenue')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.topProducts.map((product, idx) => (
+                      <tr
+                        key={product.productId}
+                        onClick={() => navigate(`/admin/products/${product.productId}`)}
+                        className="table-row-clickable"
+                      >
+                        <td>
+                          <span className={`rank-badge rank-${idx < 3 ? idx + 1 : 'n'}`}>
+                            {idx + 1}
+                          </span>
+                        </td>
+                        <td className="dash-cell-product">{product.name}</td>
+                        <td className="dash-cell-strong">{product.units}</td>
+                        <td className="dash-cell-strong">{fmtMillions(product.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </SectionCard>
           </div>
         </>
       )}
-
-    </div>
+    </Screen>
   )
 }
+
