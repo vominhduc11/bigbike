@@ -16,9 +16,11 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -125,7 +127,7 @@ public class AdminRedirectService {
         String sourcePattern = normalizeSourcePattern(request.sourcePattern());
         String targetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
         validateTargetUrl(targetUrl);
-        validateNoSelfLoop(sourcePattern, targetUrl);
+        validateNoRedirectLoop(sourcePattern, targetUrl, null);
         ensureUniqueSourcePattern(sourcePattern, null);
 
         int statusCode = normalizeStatusCode(request.statusCode());
@@ -170,7 +172,7 @@ public class AdminRedirectService {
             nextTargetUrl = normalizeRequiredUrl(request.targetUrl(), "targetUrl");
             validateTargetUrl(nextTargetUrl);
         }
-        validateNoSelfLoop(nextSourcePattern, nextTargetUrl);
+        validateNoRedirectLoop(nextSourcePattern, nextTargetUrl, id);
         ensureUniqueSourcePattern(nextSourcePattern, id);
 
         if (request.sourcePattern() != null) {
@@ -329,14 +331,76 @@ public class AdminRedirectService {
                 "External redirect targets are not allowed. Use a relative path starting with '/'.");
     }
 
-    private void validateNoSelfLoop(String sourcePattern, String targetUrl) {
-        if (sourcePattern.equals(targetUrl)) {
+    /**
+     * Validates that creating/updating a redirect from {@code sourcePattern} to {@code targetUrl}
+     * does not create a redirect loop (direct self-loop or multi-hop A→B→A chains).
+     *
+     * @param sourcePattern the source path of the redirect being created/updated
+     * @param targetUrl     the target URL of the redirect being created/updated
+     * @param excludeId     for updates: the ID of the redirect being updated (excluded from chain
+     *                      walk so the current rule doesn't falsely detect a loop with itself);
+     *                      pass {@code null} for new redirects
+     */
+    private void validateNoRedirectLoop(String sourcePattern, String targetUrl, UUID excludeId) {
+        String normalizedSource = normalizeRedirectPath(sourcePattern);
+        String normalizedTarget = normalizeRedirectPath(targetUrl);
+
+        // Direct self-loop
+        if (normalizedSource.equals(normalizedTarget)) {
             throw ValidationException.fromField(
                     "targetUrl",
                     "SELF_LOOP",
                     "Redirect target must differ from the source pattern."
             );
         }
+
+        // Multi-hop loop detection: walk the chain from normalizedTarget forward.
+        // If we ever reach normalizedSource, adding this redirect would create a loop.
+        // Stop early if: target is external (no chain to follow), or max depth reached.
+        Set<String> visited = new HashSet<>();
+        visited.add(normalizedSource);
+
+        String current = normalizedTarget;
+        int maxDepth = 20; // guard against pathological data in DB
+
+        while (maxDepth-- > 0) {
+            // External URLs break the internal chain — no further hops possible
+            if (isExternalUrl(current)) break;
+
+            if (visited.contains(current)) {
+                throw ValidationException.fromField(
+                        "targetUrl",
+                        "REDIRECT_LOOP",
+                        "Redirect would create a loop: " + sourcePattern + " → … → " + current
+                );
+            }
+            visited.add(current);
+
+            // Look up the next hop in the chain (skip the redirect being updated)
+            Optional<RedirectEntity> next = excludeId != null
+                    ? redirectRepo.findBySourcePatternAndIdNot(current, excludeId)
+                    : redirectRepo.findBySourcePattern(current);
+
+            if (next.isEmpty()) break; // chain ends here — no loop
+            current = normalizeRedirectPath(next.get().getTargetUrl());
+        }
+    }
+
+    /** Normalizes an internal path for loop comparison: lowercase, trim, remove trailing slash. */
+    private static String normalizeRedirectPath(String path) {
+        if (path == null) return "";
+        path = path.trim().toLowerCase(Locale.ROOT);
+        if (path.length() > 1 && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
+    /** Returns true if the given URL is an external (non-relative) URL. */
+    private static boolean isExternalUrl(String url) {
+        if (url == null) return false;
+        String lower = url.toLowerCase(Locale.ROOT);
+        return lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("//");
     }
 
     private void ensureUniqueSourcePattern(String sourcePattern, UUID currentId) {

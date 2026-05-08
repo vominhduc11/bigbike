@@ -39,6 +39,9 @@ export async function POST(request: NextRequest) {
   }
 
   for (const tag of tags) {
+    // Next.js 16.x changed revalidateTag to require a second `profile: string | CacheLifeConfig`
+    // argument. We pass { expire: 0 } to force immediate cache expiry on the next request —
+    // this is the correct form for this version of the framework.
     revalidateTag(tag, { expire: 0 });
   }
 

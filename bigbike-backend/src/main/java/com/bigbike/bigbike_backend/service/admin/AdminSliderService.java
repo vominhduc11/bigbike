@@ -6,10 +6,13 @@ import com.bigbike.bigbike_backend.api.admin.dto.ReorderSlidersRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertSliderRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.slider.Slider;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
@@ -24,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,19 +40,22 @@ public class AdminSliderService {
     private final SliderReadService sliderReadService;
     private final WebRevalidationService webRevalidationService;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminSliderService(
             SliderJpaRepository sliderJpaRepository,
             ProductJpaRepository productJpaRepository,
             SliderReadService sliderReadService,
             WebRevalidationService webRevalidationService,
-            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy
+            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.sliderJpaRepository = sliderJpaRepository;
         this.productJpaRepository = productJpaRepository;
         this.sliderReadService = sliderReadService;
         this.webRevalidationService = webRevalidationService;
         this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
+        this.auditLogRepo = auditLogRepo;
     }
 
     @Transactional(readOnly = true)
@@ -64,8 +72,10 @@ public class AdminSliderService {
     public void delete(String sliderId) {
         SliderEntity entity = sliderJpaRepository.findById(sliderId)
                 .orElseThrow(() -> new NotFoundException("Slider not found."));
+        String before = sliderSnapshot(entity);
         sliderJpaRepository.delete(entity);
         webRevalidationService.revalidate("sliders");
+        auditLog("SLIDER_DELETED", sliderId, before, null);
     }
 
     @Transactional
@@ -115,6 +125,7 @@ public class AdminSliderService {
 
         sliderJpaRepository.save(entity);
         webRevalidationService.revalidate("sliders");
+        auditLog("SLIDER_CREATED", entity.getId(), null, sliderSnapshot(entity));
         return entity.getId();
     }
 
@@ -159,6 +170,8 @@ public class AdminSliderService {
         }
 
         webRevalidationService.revalidate("sliders");
+        auditLog("SLIDER_REORDERED", location,
+                null, "{\"location\":\"" + esc(location) + "\",\"itemCount\":" + items.size() + "}");
         // NOTE: caller (controller) fetches the updated list in a fresh read-only transaction
         // after this write transaction commits, avoiding lazy-loading within a write context.
     }
@@ -220,6 +233,7 @@ public class AdminSliderService {
         entity.setUpdatedAt(now);
         sliderJpaRepository.save(entity);
         webRevalidationService.revalidate("sliders");
+        auditLog("SLIDER_UPDATED", sliderId, null, sliderSnapshot(entity));
     }
 
     private static ImageAsset toImageAsset(ImageAssetRequest request) {
@@ -244,5 +258,42 @@ public class AdminSliderService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    // ── Audit helpers (CMS-010) ───────────────────────────────────────────────
+
+    private void auditLog(String action, String sliderId, String before, String after) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(resolveActorId());
+        log.setAction(action);
+        log.setResourceType("SLIDER");
+        // Slider IDs are strings (not UUIDs); store in before/after JSON, leave resourceId null.
+        log.setResourceId(null);
+        log.setBeforeData(before);
+        log.setAfterData(after != null ? after : "{\"id\":\"" + esc(sliderId) + "\"}");
+        log.setCreatedAt(Instant.now());
+        auditLogRepo.save(log);
+    }
+
+    private static String sliderSnapshot(SliderEntity e) {
+        return "{\"id\":\"" + esc(e.getId())
+                + "\",\"location\":\"" + esc(e.getLocation())
+                + "\",\"sortOrder\":" + e.getSortOrder()
+                + ",\"active\":" + e.isActive() + "}";
+    }
+
+    /** Resolves the authenticated admin's UUID from the Spring Security context, or null. */
+    private static UUID resolveActorId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
+        }
+        return null;
+    }
+
+    private static String esc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

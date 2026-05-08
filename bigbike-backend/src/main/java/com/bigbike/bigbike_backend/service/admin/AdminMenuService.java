@@ -193,6 +193,9 @@ public class AdminMenuService {
                     "Menu item status must be ACTIVE or INACTIVE.");
         }
 
+        // URL scheme validation — block dangerous/unexpected schemes
+        validateMenuItemUrl(req.url());
+
         // Parent validation: must exist in same menu; new items can't create cycles
         if (req.parentId() != null) {
             List<MenuItemEntity> allItems = menuItemRepo.findByMenuId(menuId);
@@ -250,6 +253,7 @@ public class AdminMenuService {
             item.setLabel(req.label().trim());
         }
         if (req.url() != null) {
+            validateMenuItemUrl(req.url());
             item.setUrl(req.url());
         }
         if (req.targetType() != null) {
@@ -433,6 +437,38 @@ public class AdminMenuService {
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
+
+    /**
+     * Validates that a menu item URL uses only safe schemes.
+     * Null/blank is allowed (group/header items with no destination).
+     * Allowed: relative paths starting with {@code /}, {@code https://}, {@code http://},
+     * {@code mailto:}, {@code tel:}, and in-page anchors starting with {@code #}.
+     * Blocked: {@code javascript:}, {@code data:}, {@code vbscript:}, protocol-relative {@code //},
+     * and any value containing CRLF characters.
+     */
+    private void validateMenuItemUrl(String url) {
+        if (url == null || url.isBlank()) return;
+        // Block CRLF injection
+        if (url.contains("\n") || url.contains("\r")) {
+            throw ValidationException.fromField("url", "INVALID_MENU_ITEM_URL",
+                    "Menu item URL contains invalid characters.");
+        }
+        String lower = url.trim().toLowerCase(Locale.ROOT);
+        // Block dangerous schemes
+        if (lower.startsWith("javascript:") || lower.startsWith("data:")
+                || lower.startsWith("vbscript:") || lower.startsWith("//")) {
+            throw ValidationException.fromField("url", "INVALID_MENU_ITEM_URL",
+                    "Menu item URL has an unsafe scheme.");
+        }
+        // Allow safe schemes and relative paths
+        boolean valid = lower.startsWith("/") || lower.startsWith("https://")
+                || lower.startsWith("http://") || lower.startsWith("mailto:")
+                || lower.startsWith("tel:") || lower.startsWith("#");
+        if (!valid) {
+            throw ValidationException.fromField("url", "INVALID_MENU_ITEM_URL",
+                    "Menu item URL must start with /, https://, http://, mailto:, tel:, or #.");
+        }
+    }
 
     private void validateParentBelongsToMenu(List<MenuItemEntity> allItems, UUID parentId, UUID menuId) {
         boolean exists = allItems.stream().anyMatch(i -> i.getId().equals(parentId));

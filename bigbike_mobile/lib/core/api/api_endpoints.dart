@@ -22,6 +22,8 @@ class ApiEndpoints {
   static String menu(String location) => '/api/v1/menus/$location';
   static const String publicSettings = '/api/v1/settings/public';
   static const String sliders = '/api/v1/sliders';
+  // CMS-004: home videos endpoint — UI integration pending (widget not yet implemented).
+  static const String homeVideos = '/api/v1/home-videos';
 
   // Search
   static const String search = '/api/v1/search';

@@ -11,11 +11,13 @@ import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.ContentAuthorItem;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
 import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.service.admin.AdminContentMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReferenceService;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import org.springframework.beans.factory.annotation.Value;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
@@ -53,6 +55,19 @@ public class AdminContentController {
     private final AdminContentReferenceService adminContentReferenceService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+
+    /**
+     * When dev-header auth is enabled (local dev/test), content mutations that pass the
+     * permission check via X-Admin-Permissions header have no JWT principal in the
+     * SecurityContext. We fall back to the sentinel dev-admin UUID so audit logs are
+     * populated. In production (devHeaderEnabled=false) the permission check requires a
+     * real JWT, so a principal is always present and the fallback is never reached.
+     */
+    @Value("${bigbike.auth.dev-header-enabled:false}")
+    private boolean devHeaderEnabled;
+
+    /** Sentinel UUID used for audit attribution when dev-header auth is active. */
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     public AdminContentController(
             AdminContentReadService adminContentReadService,
@@ -157,14 +172,28 @@ public class AdminContentController {
         return apiResponseFactory.data(adminContentMutationService.deleteArticle(id, resolveAdminId()), request);
     }
 
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
+    /**
+     * Resolves the authenticated admin's UUID from the security context.
+     *
+     * <p>Production path: a JWT-authenticated {@link AdminPrincipal} is always in the
+     * SecurityContext after {@link DevAdminAuthService#requirePermission} passes, so the
+     * principal branch is taken and the dev fallback is never reached.
+     *
+     * <p>Dev/test path: when {@code bigbike.auth.dev-header-enabled=true} the permission
+     * check passes via {@code X-Admin-Permissions} header without placing a principal in the
+     * SecurityContext. We fall back to the sentinel dev-admin UUID so audit logs are populated.
+     * If dev-header auth is disabled and no principal is present, we throw
+     * {@link UnauthorizedException} — this is the secure default for production.
+     */
     private UUID resolveAdminId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
             try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
         }
-        return DEV_ADMIN_ID;
+        if (devHeaderEnabled) {
+            return DEV_ADMIN_ID;
+        }
+        throw new UnauthorizedException("No authenticated admin principal.");
     }
 
     // ── Reference lists (for article/page form dropdowns) ────────────────────

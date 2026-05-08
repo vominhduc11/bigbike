@@ -183,6 +183,12 @@ public class AdminSettingsService {
                         "Setting is read-only and cannot be modified: " + upd.key());
             }
 
+            // CMS-008: The batch DTO (BatchSettingUpdate) carries only key+value and does NOT
+            // expose an isPublic field, so the batch endpoint cannot accidentally set
+            // isPublic=true. The sensitive-key guard in the single-update path is therefore
+            // already the only entry-point for that mutation. No additional guard needed here;
+            // the risk is structurally excluded by the DTO design.
+
             if (upd.value() != null && defOpt.isPresent()) {
                 valueValidator.validate(upd.key(), upd.value(), defOpt.get());
             }

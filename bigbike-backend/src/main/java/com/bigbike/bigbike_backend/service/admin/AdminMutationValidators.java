@@ -201,9 +201,22 @@ final class AdminMutationValidators {
             return;
         }
 
+        // CMS-009: PENDING and PRIVATE are WordPress-import artifacts reserved for
+        // historical data. They are NOT valid target states for admin API mutations.
+        // Use DRAFT for unpublished content and HIDDEN for suppressed published content.
+        if (to == PublishStatus.PENDING || to == PublishStatus.PRIVATE) {
+            errors.add(new ApiErrorDetail(
+                    field,
+                    "RESERVED_PUBLISH_STATUS",
+                    "Publish status " + to + " is reserved and cannot be set via the admin API. " +
+                    "Use DRAFT for unpublished content or HIDDEN for suppressed content."
+            ));
+            return;
+        }
+
         // Soft-delete (→ TRASH) is allowed from any active state. Restoring out
         // of TRASH lands in DRAFT (parity with WordPress trash semantics).
-        // PENDING/PRIVATE are WP-imported review states with limited transitions.
+        // PENDING/PRIVATE are WP-imported review states with limited transitions (source only).
         boolean allowed = switch (from) {
             case DRAFT -> to == PublishStatus.PUBLISHED
                     || to == PublishStatus.ARCHIVED

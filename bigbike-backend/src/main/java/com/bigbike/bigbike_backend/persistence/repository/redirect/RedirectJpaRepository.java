@@ -15,6 +15,13 @@ public interface RedirectJpaRepository extends JpaRepository<RedirectEntity, UUI
 
     Optional<RedirectEntity> findBySourcePattern(String sourcePattern);
 
+    /**
+     * Find an active redirect rule by source pattern, excluding the redirect with the given ID.
+     * Used by multi-hop loop detection during create/update to walk the redirect chain
+     * without treating the redirect being edited as part of the chain.
+     */
+    Optional<RedirectEntity> findBySourcePatternAndIdNot(String sourcePattern, UUID excludeId);
+
     List<RedirectEntity> findByEnabled(boolean enabled);
 
     @Modifying

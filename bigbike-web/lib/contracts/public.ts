@@ -64,7 +64,19 @@ export type HomeSlider = {
   mobileImage?: SliderImage | null;
   productId?: string | null;
   externalLink?: string | null;
+  /**
+   * Computed by the backend from the linked product's slug: `/san-pham/<slug>`.
+   * Populated only when `productId` is set and the product exists.
+   * Consumers (e.g. `app/page.tsx#toHeroSlide`) prefer `link` first, then fall back
+   * to `productLink`, then `externalLink`.
+   */
   productLink?: string | null;
+  /**
+   * Legacy/imported field: a pre-computed absolute or relative URL that overrides
+   * both `productLink` and `externalLink`. Set during WordPress data extraction
+   * (`scripts/extract-wp-data/extract.ts`) and may be absent on sliders created
+   * via the admin API. Consumers should check this field first.
+   */
   link?: string | null;
   product?: unknown | null;
 };

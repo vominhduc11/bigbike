@@ -24,10 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
  * Intentionally bypasses the standard ApiDataResponse envelope: the proxy is on the
  * hot request path and benefits from the smallest possible JSON shape.
  *
- * Security: when BIGBIKE_INTERNAL_TOKEN is set, all three endpoints require the
- * matching value in the X-Internal-Token request header (returns 401 otherwise).
- * When the property is empty (default), the endpoints are open — lock down at the
- * network layer (private VPC / nginx ACL) for production.
+ * Security policy (deny-by-default):
+ * - When {@code bigbike.internal.token} is set: all three endpoints require the matching
+ *   value in the {@code X-Internal-Token} request header (returns 401 otherwise).
+ * - When token is blank AND {@code bigbike.internal.allow-open=true}: endpoints are open.
+ *   Use only in local dev or test environments; never set in staging/production.
+ * - When token is blank AND {@code bigbike.internal.allow-open=false} (default): endpoints
+ *   return 401. This is the safe default — set a token in staging/prod via
+ *   {@code BIGBIKE_INTERNAL_TOKEN}, or enable allow-open=true only in dev.
  */
 @RestController
 @RequestMapping("/api/internal")
@@ -39,6 +43,14 @@ public class InternalRedirectController {
 
     @Value("${bigbike.internal.token:}")
     private String internalToken;
+
+    /**
+     * When true and internalToken is blank, endpoints are open without a token check.
+     * Set to true only in local dev (application-dev.properties) or test environments.
+     * Defaults to false (deny) so production without a token configured is safe.
+     */
+    @Value("${bigbike.internal.allow-open:false}")
+    private boolean allowOpen;
 
     public InternalRedirectController(RedirectJpaRepository redirectRepo) {
         this.redirectRepo = redirectRepo;
@@ -100,7 +112,11 @@ public class InternalRedirectController {
     }
 
     private boolean isAuthorized(HttpServletRequest request) {
-        if (internalToken == null || internalToken.isBlank()) return true;
+        if (internalToken == null || internalToken.isBlank()) {
+            // No token configured: allow only when explicitly opted in (e.g. local dev)
+            return allowOpen;
+        }
+        // Token configured: require matching header value
         return internalToken.equals(request.getHeader(TOKEN_HEADER));
     }
 }

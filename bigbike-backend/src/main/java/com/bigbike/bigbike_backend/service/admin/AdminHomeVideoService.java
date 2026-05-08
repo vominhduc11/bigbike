@@ -6,9 +6,12 @@ import com.bigbike.bigbike_backend.api.admin.dto.ReorderHomeVideosRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertHomeVideoRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.video.HomeVideo;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
@@ -23,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,19 +39,22 @@ public class AdminHomeVideoService {
     private final WebRevalidationService webRevalidationService;
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminHomeVideoService(
             HomeVideoJpaRepository homeVideoJpaRepository,
             HomeVideoReadService homeVideoReadService,
             WebRevalidationService webRevalidationService,
             HomeVideoUrlPolicy homeVideoUrlPolicy,
-            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy
+            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.homeVideoJpaRepository = homeVideoJpaRepository;
         this.homeVideoReadService = homeVideoReadService;
         this.webRevalidationService = webRevalidationService;
         this.homeVideoUrlPolicy = homeVideoUrlPolicy;
         this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
+        this.auditLogRepo = auditLogRepo;
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +81,7 @@ public class AdminHomeVideoService {
         entity.setUpdatedAt(now);
         homeVideoJpaRepository.save(entity);
         webRevalidationService.revalidate("home-videos");
+        auditLog("HOME_VIDEO_CREATED", entity.getId(), null, videoSnapshot(entity));
         return homeVideoReadService.findById(entity.getId());
     }
 
@@ -110,6 +119,7 @@ public class AdminHomeVideoService {
         entity.setUpdatedAt(Instant.now());
         homeVideoJpaRepository.save(entity);
         webRevalidationService.revalidate("home-videos");
+        auditLog("HOME_VIDEO_UPDATED", id, null, videoSnapshot(entity));
         return homeVideoReadService.findById(entity.getId());
     }
 
@@ -117,8 +127,10 @@ public class AdminHomeVideoService {
     public void delete(String id) {
         HomeVideoEntity entity = homeVideoJpaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Home video not found."));
+        String before = videoSnapshot(entity);
         homeVideoJpaRepository.delete(entity);
         webRevalidationService.revalidate("home-videos");
+        auditLog("HOME_VIDEO_DELETED", id, before, null);
     }
 
     @Transactional
@@ -159,6 +171,8 @@ public class AdminHomeVideoService {
         }
 
         webRevalidationService.revalidate("home-videos");
+        auditLog("HOME_VIDEO_REORDERED", "batch",
+                null, "{\"itemCount\":" + items.size() + "}");
         return list();
     }
 
@@ -187,5 +201,42 @@ public class AdminHomeVideoService {
         if (req.getHeight() != null && req.getHeight() < 0) {
             throw ValidationException.fromField("thumbnail.height", "INVALID_VALUE", "Thumbnail height must be >= 0.");
         }
+    }
+
+    // ── Audit helpers (CMS-010) ───────────────────────────────────────────────
+
+    private void auditLog(String action, String videoId, String before, String after) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(resolveActorId());
+        log.setAction(action);
+        log.setResourceType("HOME_VIDEO");
+        // HomeVideo IDs are strings (not UUIDs); store in before/after JSON, leave resourceId null.
+        log.setResourceId(null);
+        log.setBeforeData(before);
+        log.setAfterData(after != null ? after : "{\"id\":\"" + esc(videoId) + "\"}");
+        log.setCreatedAt(Instant.now());
+        auditLogRepo.save(log);
+    }
+
+    private static String videoSnapshot(HomeVideoEntity e) {
+        return "{\"id\":\"" + esc(e.getId())
+                + "\",\"title\":\"" + esc(e.getTitle())
+                + "\",\"sortOrder\":" + e.getSortOrder()
+                + ",\"active\":" + e.isActive() + "}";
+    }
+
+    /** Resolves the authenticated admin's UUID from the Spring Security context, or null. */
+    private static UUID resolveActorId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
+        }
+        return null;
+    }
+
+    private static String esc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }
