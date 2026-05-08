@@ -1160,22 +1160,10 @@ export async function deleteMenuItem(menuId, itemId) {
   await requestJson(`/admin/menus/${menuId}/items/${itemId}`, { method: 'DELETE' })
 }
 
-export async function createMenu(input) {
-  assertMutationEnabled()
-  const payload = await requestJson('/admin/menus', { method: 'POST', body: input })
-  return parseDetailPayload(payload, normalizeMenu)
-}
-
-export async function updateMenu(menuId, input) {
-  assertMutationEnabled()
-  const payload = await requestJson(`/admin/menus/${menuId}`, { method: 'PATCH', body: input })
-  return parseDetailPayload(payload, normalizeMenu)
-}
-
-export async function deleteMenu(menuId) {
-  assertMutationEnabled()
-  await requestJson(`/admin/menus/${menuId}`, { method: 'DELETE' })
-}
+// NOTE: createMenu / updateMenu / deleteMenu admin endpoints exist on the
+// backend but are intentionally not exposed here. Menu containers are
+// system-defined slots (primary, footer, guide) seeded by Flyway and the
+// admin UI manages only the items inside them.
 
 export async function updateMenuItem(menuId, itemId, input) {
   assertMutationEnabled()

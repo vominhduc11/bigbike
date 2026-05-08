@@ -196,7 +196,7 @@ services:
       - >-
         curl -sf -L -X POST http://bigbike-web:3000/api/revalidate
         -H "Content-Type: application/json"
-        -H "x-revalidate-secret: ${WEB_REVALIDATE_SECRET:-}"
+        -H "x-revalidate-secret: ${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
         -d '{"tags":["products","sliders","categories","articles","brands","settings","menus","pages"]}'
     deploy:
       resources:

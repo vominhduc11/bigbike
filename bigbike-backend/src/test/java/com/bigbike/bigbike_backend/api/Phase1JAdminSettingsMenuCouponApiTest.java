@@ -184,30 +184,46 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                 .andExpect(jsonPath("$.pagination.page").value(1));
     }
 
-    // 10. Create menu
+    // 10. Create menu (system slot, after cleanup)
     @Test
-    void adminMenus_create_succeeds() throws Exception {
-        String location = "loc-" + UUID.randomUUID().toString().substring(0, 8);
+    void adminMenus_create_systemLocation_succeeds() throws Exception {
+        // System slots are pre-seeded by test-seed.sql; clear `primary` first
+        // so the create endpoint exercises the success path.
+        cleanSystemMenu("primary");
 
         mockMvc.perform(post("/api/v1/admin/menus")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"location\":\"" + location + "\",\"name\":\"Test Menu\"}")
+                        .content("{\"location\":\"primary\",\"name\":\"Test Menu\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.location").value(location))
+                .andExpect(jsonPath("$.data.location").value("primary"))
                 .andExpect(jsonPath("$.data.name").value("Test Menu"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
 
-    // 11. Create duplicate location → 409
+    // 10b. Create with non-whitelisted location → 400 INVALID_MENU_LOCATION
     @Test
-    void adminMenus_createDuplicateLocation_returns409() throws Exception {
-        String location = "dup-loc-" + UUID.randomUUID().toString().substring(0, 8);
-        createTestMenu(location, "First Menu");
+    void adminMenus_create_unsupportedLocation_returns400() throws Exception {
+        String location = "sale-menu-" + UUID.randomUUID().toString().substring(0, 6);
 
         mockMvc.perform(post("/api/v1/admin/menus")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"location\":\"" + location + "\",\"name\":\"Second Menu\"}")
+                        .content("{\"location\":\"" + location + "\",\"name\":\"Sale Menu\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("location"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_MENU_LOCATION"));
+    }
+
+    // 11. Create duplicate system location → 409
+    @Test
+    void adminMenus_createDuplicateLocation_returns409() throws Exception {
+        // `footer` is seeded by test-seed.sql; re-creating it must conflict.
+        ensureSystemMenu("footer");
+
+        mockMvc.perform(post("/api/v1/admin/menus")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"location\":\"footer\",\"name\":\"Second Footer\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isConflict());
     }
@@ -533,13 +549,54 @@ class Phase1JAdminSettingsMenuCouponApiTest {
     // 33. Create menu with invalid status → 400
     @Test
     void createMenu_invalidStatus_returns400() throws Exception {
-        String location = "sts-invalid-" + UUID.randomUUID().toString().substring(0, 8);
+        // Whitelisted location so the failure is attributable to the bad status,
+        // not to the location guard. Pre-clean so the create reaches status validation.
+        cleanSystemMenu("guide");
 
         mockMvc.perform(post("/api/v1/admin/menus")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"location\":\"" + location + "\",\"name\":\"Bad Status\",\"status\":\"DELETED\"}")
+                        .content("{\"location\":\"guide\",\"name\":\"Bad Status\",\"status\":\"DELETED\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest());
+    }
+
+    // 33b. Delete system menu primary → 409 SYSTEM_MENU_CANNOT_BE_DELETED
+    @Test
+    void deleteSystemMenu_primary_returns409() throws Exception {
+        MenuEntity primary = ensureSystemMenu("primary");
+
+        mockMvc.perform(delete("/api/v1/admin/menus/" + primary.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SYSTEM_MENU_CANNOT_BE_DELETED"));
+
+        assertThat(menuRepo.findById(primary.getId())).isPresent();
+    }
+
+    // 33c. Delete system menu footer → 409
+    @Test
+    void deleteSystemMenu_footer_returns409() throws Exception {
+        MenuEntity footer = ensureSystemMenu("footer");
+
+        mockMvc.perform(delete("/api/v1/admin/menus/" + footer.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SYSTEM_MENU_CANNOT_BE_DELETED"));
+
+        assertThat(menuRepo.findById(footer.getId())).isPresent();
+    }
+
+    // 33d. Delete system menu guide → 409
+    @Test
+    void deleteSystemMenu_guide_returns409() throws Exception {
+        MenuEntity guide = ensureSystemMenu("guide");
+
+        mockMvc.perform(delete("/api/v1/admin/menus/" + guide.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SYSTEM_MENU_CANNOT_BE_DELETED"));
+
+        assertThat(menuRepo.findById(guide.getId())).isPresent();
     }
 
     // 34. Update menu with invalid status → 400
@@ -1377,6 +1434,27 @@ class Phase1JAdminSettingsMenuCouponApiTest {
             m.setUpdatedAt(now);
             return menuRepo.save(m);
         });
+    }
+
+    /**
+     * Test helper that bypasses the API-level whitelist + delete guard so a
+     * test can drop a system menu (and its items) before exercising a
+     * create-from-scratch path. Use sparingly.
+     */
+    private void cleanSystemMenu(String location) {
+        menuRepo.findByLocation(location).ifPresent(m -> {
+            menuItemRepo.deleteAll(menuItemRepo.findByMenuId(m.getId()));
+            menuRepo.delete(m);
+        });
+    }
+
+    /**
+     * Ensures a system menu slot exists in the test DB. test-seed.sql already
+     * seeds the three system slots, but earlier tests can drop them via
+     * {@link #cleanSystemMenu(String)}, so this guarantees a baseline.
+     */
+    private MenuEntity ensureSystemMenu(String location) {
+        return createTestMenu(location, "System " + location);
     }
 
     private MenuItemEntity createTestMenuItem(MenuEntity menu, String label, String url,

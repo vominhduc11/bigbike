@@ -25,6 +25,7 @@ HISTORICAL_REPORT_ONLY - Not canonical. Validate against current code and canoni
 | MNU-001 | PATCH menu item không move-to-root (`clearParentId`) | **RESOLVED** |
 | MNU-002 | Footer `normalizeMenuUrl` local — sai với external URL, không block `javascript:` | **RESOLVED** |
 | MNU-003 | Delete hierarchy: `deleteMenuItem` không guard child → silent cascade/FK violation; `deleteMenu` flat `deleteAll` → FK violation với cây nhiều cấp | **RESOLVED** |
+| MNU-004 | Admin có thể tạo location rác và xoá system slot — storefront không có cách nào hiển thị các custom location, và xoá `primary/footer/guide` làm header/footer biến mất. Fixed 2026-05-08 — see `MENUS_SYSTEM_SLOT_FIX_REPORT.md`. | **RESOLVED** |
 
 ### Test evidence
 

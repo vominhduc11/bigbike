@@ -109,6 +109,7 @@ com\bigbike\bigbike_backend\persistence\repository\catalog\BrandJpaRepository.cl
 com\bigbike\bigbike_backend\service\receivable\CreditPolicyService.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\DomainImporter.class
 com\bigbike\bigbike_backend\api\error\ConflictException.class
+com\bigbike\bigbike_backend\domain\menu\MenuLocations.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressRedirectMapper.class
 com\bigbike\bigbike_backend\persistence\entity\shipping\ShippingZoneEntity.class
 com\bigbike\bigbike_backend\service\checkout\CheckoutService.class

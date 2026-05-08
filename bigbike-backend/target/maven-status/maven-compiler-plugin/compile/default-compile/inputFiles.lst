@@ -234,6 +234,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\dom
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\customer\CustomerPrincipal.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\customer\CustomerSessionStatus.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\customer\CustomerStatus.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\menu\MenuLocations.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\slider\Slider.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\domain\video\HomeVideo.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\migration\wordpress\config\WordPressMigrationProperties.java

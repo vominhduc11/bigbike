@@ -216,6 +216,19 @@ function isValidCustomUrl(url) {
   try { new URL(v); return true } catch { return false }
 }
 
+function isItemFormValid(data) {
+  const targetType = normalizeTargetType(data.targetType)
+  if (!data.label.trim()) return false
+  if (targetType === 'CUSTOM') return data.url.trim() !== '' && isValidCustomUrl(data.url)
+  return data.targetId !== ''
+}
+
+const SLOT_CONTEXT_NOTES = {
+  primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  footer:  'Mục này sẽ xuất hiện ở menu footer (cuối trang). Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  guide:   'Mục này sẽ xuất hiện trong widget Hướng dẫn mua hàng ở footer. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+}
+
 function targetTypeLabel(t, targetType) {
   switch (normalizeTargetType(targetType)) {
     case 'CATEGORY': return t('menus.targetCategory')
@@ -276,6 +289,15 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   )
 }
 
+const TARGET_TYPE_OPTIONS = (t) => [
+  { value: 'CATEGORY', label: t('menus.targetCategory') },
+  { value: 'PRODUCT',  label: t('menus.targetProduct') },
+  { value: 'BRAND',    label: t('menus.targetBrand') },
+  { value: 'PAGE',     label: t('menus.targetPage') },
+  { value: 'ARTICLE',  label: t('menus.targetArticle') },
+  { value: 'CUSTOM',   label: t('menus.targetCustom') },
+]
+
 function MenuTargetFields({ value, onChange, t }) {
   const targetType = normalizeTargetType(value.targetType)
   const [search, setSearch] = useState('')
@@ -306,41 +328,45 @@ function MenuTargetFields({ value, onChange, t }) {
 
   return (
     <>
-      <label className="form-field">
-        {t('menus.targetType')}
-        <select
-          className="control-select"
-          value={targetType}
-          onChange={(e) => updateTargetType(e.target.value)}
-        >
-          <option value="CATEGORY">{t('menus.targetCategory')}</option>
-          <option value="PRODUCT">{t('menus.targetProduct')}</option>
-          <option value="BRAND">{t('menus.targetBrand')}</option>
-          <option value="PAGE">{t('menus.targetPage')}</option>
-          <option value="ARTICLE">{t('menus.targetArticle')}</option>
-          <option value="CUSTOM">{t('menus.targetCustom')}</option>
-        </select>
-      </label>
+      {/* Target type — chip row */}
+      <div className="form-field form-field-wide">
+        <span>{t('menus.targetType')}</span>
+        <div className="menu-target-chips" role="group" aria-label={t('menus.targetType')}>
+          {TARGET_TYPE_OPTIONS(t).map(({ value: v, label }) => (
+            <button
+              key={v}
+              type="button"
+              className={`menu-target-chip${targetType === v ? ' is-active' : ''}`}
+              onClick={() => updateTargetType(v)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {targetType === 'CUSTOM' ? (
-        <label className="form-field">
+        <label className="form-field form-field-wide">
           {t('menus.itemUrlCustom')}
           <input
             className="control-input"
             value={value.url}
             onChange={(e) => onChange({ url: e.target.value, targetId: '' })}
             placeholder="/danh-muc-san-pham/... hoặc https://..."
-            required
           />
-          {value.url.trim() && !isValidCustomUrl(value.url) && (
-            <small style={{ color: 'var(--admin-color-status-danger-text)', marginTop: 2 }}>
-              URL không hợp lệ. Dùng đường dẫn bắt đầu bằng / hoặc URL đầy đủ.
-            </small>
+          {value.url.trim() ? (
+            !isValidCustomUrl(value.url) && (
+              <small className="menu-form-hint menu-form-hint--danger">
+                URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com
+              </small>
+            )
+          ) : (
+            <small className="menu-form-hint">{t('menus.urlHint')}</small>
           )}
         </label>
       ) : (
         <>
-          <label className="form-field">
+          <label className="form-field form-field-wide">
             {t('menus.targetSearch')}
             <input
               className="control-input"
@@ -350,13 +376,12 @@ function MenuTargetFields({ value, onChange, t }) {
               placeholder={t('menus.targetSearchPlaceholder')}
             />
           </label>
-          <label className="form-field">
+          <label className="form-field form-field-wide">
             {t('menus.targetRecord')}
             <select
               className="control-select"
               value={value.targetId}
               onChange={(e) => updateTargetId(e.target.value)}
-              required
             >
               <option value="">
                 {targetQuery.isLoading ? t('menus.targetLoading') : t('menus.targetSelectPlaceholder')}
@@ -369,12 +394,14 @@ function MenuTargetFields({ value, onChange, t }) {
               ))}
             </select>
           </label>
-          <label className="form-field">
-            {t('menus.targetUrlPreview')}
-            <input className="control-input" value={value.url} readOnly />
-          </label>
+          {value.targetId && value.url && (
+            <label className="form-field form-field-wide">
+              {t('menus.targetUrlPreview')}
+              <input className="control-input" value={value.url} readOnly />
+            </label>
+          )}
           {!targetQuery.isLoading && options.length === 0 && (
-            <small style={{ color: 'var(--admin-color-text-muted)' }}>
+            <small className="menu-form-hint form-field-wide">
               {t('menus.targetEmpty')}
             </small>
           )}
@@ -387,18 +414,22 @@ function MenuTargetFields({ value, onChange, t }) {
 function ItemForm({ value, onChange, parentOptions, t, isNew }) {
   return (
     <div className="form-grid">
-      <label className="form-field">
+      {/* Label — required */}
+      <label className="form-field form-field-wide">
         {t('menus.itemLabel')}
         <input
           className="control-input"
           value={value.label}
           onChange={(e) => onChange({ label: e.target.value })}
-          placeholder="Tên hiển thị"
-          required
+          placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
         />
       </label>
+
+      {/* Target type + link fields */}
       <MenuTargetFields value={value} t={t} onChange={onChange} />
+
+      {/* Parent */}
       <MenuParentSelect
         label={t('menus.itemParent')}
         rootLabel={t('menus.parentRoot')}
@@ -406,25 +437,8 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
         options={parentOptions}
         onChange={(v) => onChange({ parentId: v })}
       />
-      <label className="form-field">
-        {t('menus.formSortOrder')}
-        <input
-          className="control-input"
-          type="number"
-          min="0"
-          value={value.sortOrder}
-          onChange={(e) => onChange({ sortOrder: e.target.value })}
-        />
-      </label>
-      <label className="form-field">
-        {t('menus.itemCssClass')}
-        <input
-          className="control-input"
-          value={value.cssClass}
-          placeholder="highlight"
-          onChange={(e) => onChange({ cssClass: e.target.value })}
-        />
-      </label>
+
+      {/* Status */}
       <label className="form-field">
         {t('menus.itemStatus')}
         <select
@@ -432,10 +446,15 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
           value={value.status}
           onChange={(e) => onChange({ status: e.target.value })}
         >
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
+          <option value="ACTIVE">{t('menus.statusActive')}</option>
+          <option value="INACTIVE">{t('menus.statusInactive')}</option>
         </select>
+        {value.status === 'INACTIVE' && (
+          <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
+        )}
       </label>
+
+      {/* Open in new tab */}
       <label className="form-checkbox">
         <input
           type="checkbox"
@@ -444,6 +463,34 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
         />
         {t('menus.itemOpenInNewTab')}
       </label>
+
+      {/* Advanced: sort order + CSS class (hidden by default) */}
+      <details className="menu-item-advanced form-field-wide">
+        <summary>{t('menus.advancedSection')}</summary>
+        <div className="menu-item-advanced-body">
+          <label className="form-field">
+            {t('menus.formSortOrder')}
+            <input
+              className="control-input"
+              type="number"
+              min="0"
+              value={value.sortOrder}
+              onChange={(e) => onChange({ sortOrder: e.target.value })}
+            />
+            <small className="menu-form-hint">{t('menus.sortOrderHint')}</small>
+          </label>
+          <label className="form-field">
+            {t('menus.itemCssClass')}
+            <input
+              className="control-input"
+              value={value.cssClass}
+              placeholder="highlight"
+              onChange={(e) => onChange({ cssClass: e.target.value })}
+            />
+            <small className="menu-form-hint">{t('menus.cssClassHint')}</small>
+          </label>
+        </div>
+      </details>
     </div>
   )
 }
@@ -1013,7 +1060,7 @@ export function MenuScreen({ canUpdate }) {
                 type="submit"
                 form="add-item-form"
                 className="btn btn-primary"
-                disabled={addItemMutation.isPending}
+                disabled={addItemMutation.isPending || !isItemFormValid(newItem)}
               >
                 {addItemMutation.isPending ? t('common.saving') : t('common.add')}
               </button>
@@ -1021,6 +1068,11 @@ export function MenuScreen({ canUpdate }) {
           }
         >
           <form id="add-item-form" onSubmit={handleAddItem}>
+            {SLOT_CONTEXT_NOTES[selectedLocation] && (
+              <div className="menu-form-context-note">
+                {SLOT_CONTEXT_NOTES[selectedLocation]}
+              </div>
+            )}
             {itemError && (
               <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12, fontSize: 'var(--admin-text-sm)' }}>
                 {itemError}
@@ -1055,7 +1107,7 @@ export function MenuScreen({ canUpdate }) {
                 type="submit"
                 form="edit-item-form"
                 className="btn btn-primary"
-                disabled={updateItemMutation.isPending}
+                disabled={updateItemMutation.isPending || !isItemFormValid(editItemForm)}
               >
                 {updateItemMutation.isPending ? t('common.saving') : t('menus.saveMenu')}
               </button>

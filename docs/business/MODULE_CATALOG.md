@@ -21,7 +21,7 @@
 | Customer admin | admin, backend | Customer list/detail/update | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 | Media admin | admin, backend | Upload/list/detail/update/delete/restore media | `CONFIRMED_FROM_CODE` | `AdminMediaController.java`, `AdminMediaService.java` |
 | Settings admin | admin, backend | Site settings read/update | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, tests |
-| Menu admin | admin, backend | Menu/menu-item CRUD and reorder | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, tests |
+| Menu admin | admin, backend | Menu-item CRUD and reorder inside the three system slots (`primary`, `footer`, `guide`). Menu containers themselves are system-defined — admins cannot create new locations or delete the system slots. See `MENUS_SYSTEM_SLOT_FIX_REPORT.md`. | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, `MenuLocations.java`, `V84__seed_system_menu_slots.sql`, tests |
 | Coupon admin | admin, backend | Coupon CRUD and lifecycle management | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, tests |
 | Inventory admin | admin, backend | Inventory list, summary, movement list, manual adjustment, CSV export | `CONFIRMED_FROM_CODE` | `AdminInventoryController.java`, `AdminInventoryService.java` |
 | Returns admin | admin, backend | Return list/detail/status update | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |
