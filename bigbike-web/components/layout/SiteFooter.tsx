@@ -144,6 +144,9 @@ export async function SiteFooter() {
   const tiktokUrl = getSettingValue(settings, ["tiktok_url"], "");
   const instagramUrl = getSettingValue(settings, ["instagram_url"], "");
   const bctUrl = getSettingValue(settings, ["bct_url"], "");
+  const businessLicenseNo = getSettingValue(settings, ["business_license_no"], "");
+  const businessLicenseDate = getSettingValue(settings, ["business_license_date"], "");
+  const businessLicenseAuthority = getSettingValue(settings, ["business_license_authority"], "");
 
   const footerLinksRaw = groupMenuItems(footerMenuResult.data?.items ?? []);
   const guideLinksRaw = groupMenuItems(guideMenuResult.data?.items ?? []);
@@ -315,19 +318,27 @@ export async function SiteFooter() {
             />
           </div>
           <div className="bb-footer-bottom-copy">
-            <p>© {new Date().getFullYear()} BigBike. Mã ĐKKD: 41K8017383.</p>
-            <p>Ngày cấp: 8/3/2016. Nơi cấp: Ủy Ban Nhân Dân Quận 11, TP.HCM.</p>
+            <p>© {new Date().getFullYear()} {siteName}.</p>
+            {businessLicenseNo && (
+              <p>
+                Mã ĐKKD: {businessLicenseNo}.
+                {businessLicenseDate ? ` Ngày cấp: ${businessLicenseDate}.` : ""}
+                {businessLicenseAuthority ? ` Nơi cấp: ${businessLicenseAuthority}.` : ""}
+              </p>
+            )}
           </div>
-          <div className="bb-footer-bottom-bct">
-            <a
-              href={bctUrl || "https://online.gov.vn/"}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Đã thông báo Bộ Công Thương"
-            >
-              <BctBadge alt="Đã thông báo Bộ Công Thương" height={36} />
-            </a>
-          </div>
+          {bctUrl && (
+            <div className="bb-footer-bottom-bct">
+              <a
+                href={bctUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Đã thông báo Bộ Công Thương"
+              >
+                <BctBadge alt="Đã thông báo Bộ Công Thương" height={36} />
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </footer>

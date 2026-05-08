@@ -17,12 +17,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Pencil, Trash2, Search, X, Plus } from 'lucide-react'
+import { GripVertical, Pencil, Trash2, Search, X, Plus, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  createMenu,
   createMenuItem,
-  deleteMenu,
   deleteMenuItem,
   fetchBrands,
   fetchCategories,
@@ -31,7 +29,6 @@ import {
   fetchMenus,
   fetchProducts,
   reorderMenuItems,
-  updateMenu,
   updateMenuItem,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -39,6 +36,32 @@ import { formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+
+// ── System slots ───────────────────────────────────────────────────────────────
+// Mirrors backend `MenuLocations.SYSTEM_LOCATIONS`. The storefront only renders
+// menus at these locations, so the admin UI exposes them as fixed tabs and never
+// allows creating/deleting menu containers.
+
+const SYSTEM_SLOTS = [
+  {
+    location: 'primary',
+    titleKey: 'menus.slotPrimaryTitle',
+    descKey: 'menus.slotPrimaryDesc',
+    fallbackName: 'Header Menu',
+  },
+  {
+    location: 'footer',
+    titleKey: 'menus.slotFooterTitle',
+    descKey: 'menus.slotFooterDesc',
+    fallbackName: 'Footer Navigation',
+  },
+  {
+    location: 'guide',
+    titleKey: 'menus.slotGuideTitle',
+    descKey: 'menus.slotGuideDesc',
+    fallbackName: 'Buying Guide Menu',
+  },
+]
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -55,8 +78,6 @@ const EMPTY_ITEM = {
   cssClass: '',
   status: 'ACTIVE',
 }
-
-const EMPTY_MENU_FORM = { name: '', location: 'primary', status: 'ACTIVE' }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -511,22 +532,18 @@ export function MenuScreen({ canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
-  // Menu selection
-  const [selectedMenuId, setSelectedMenuId] = useState(null)
+  // Tab selection (always one of SYSTEM_SLOTS.location)
+  const [selectedLocation, setSelectedLocation] = useState(SYSTEM_SLOTS[0].location)
 
   // Modals
-  const [showItemModal, setShowItemModal] = useState(false)  // add item
-  const [showMenuModal, setShowMenuModal] = useState(false)  // add/edit menu
-  const [editMenuId, setEditMenuId] = useState(null)
+  const [showItemModal, setShowItemModal] = useState(false)
+  const [editItem, setEditItem] = useState(null)
 
   // Forms
   const [newItem, setNewItem] = useState(EMPTY_ITEM)
   const [itemError, setItemError] = useState('')
-  const [editItem, setEditItem] = useState(null)             // item being edited
   const [editItemForm, setEditItemForm] = useState(EMPTY_ITEM)
   const [editItemError, setEditItemError] = useState('')
-  const [menuForm, setMenuForm] = useState(EMPTY_MENU_FORM)
-  const [menuFormError, setMenuFormError] = useState('')
 
   // Search
   const [search, setSearch] = useState('')
@@ -535,20 +552,26 @@ export function MenuScreen({ canUpdate }) {
   const [deletingItemId, setDeletingItemId] = useState(null)
 
   // ── Queries ────────────────────────────────────────────────────────────────
+  // Pull the full menu list once so we can map location → menuId without
+  // adding a dedicated by-location admin endpoint.
   const { data: menusData, isLoading, isError, error } = useQuery({
     queryKey: ['menus'],
     queryFn: fetchMenus,
   })
 
-  useEffect(() => {
-    if (!selectedMenuId && menusData?.items?.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedMenuId(menusData.items[0].id)
-    }
-  }, [menusData, selectedMenuId])
-
   const menus = menusData?.items ?? []
   const warning = menusData?.mode === 'mock' ? (menusData?.warning ?? '') : ''
+
+  const menuByLocation = useMemo(() => {
+    const map = new Map()
+    menus.forEach((m) => {
+      if (m.location) map.set(m.location, m)
+    })
+    return map
+  }, [menus])
+
+  const selectedMenuSummary = menuByLocation.get(selectedLocation) ?? null
+  const selectedMenuId = selectedMenuSummary?.id ?? null
 
   const { data: detailData, isLoading: detailLoading } = useQuery({
     queryKey: ['menu-detail', selectedMenuId],
@@ -649,29 +672,6 @@ export function MenuScreen({ canUpdate }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] }),
     onError: (e) => toast.error(e.message || t('common.error')),
     onSettled: () => setDeletingItemId(null),
-  })
-
-  const menuFormMutation = useMutation({
-    mutationFn: (payload) =>
-      editMenuId ? updateMenu(editMenuId, payload) : createMenu(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menus'] })
-      setShowMenuModal(false)
-      setMenuForm(EMPTY_MENU_FORM)
-      setEditMenuId(null)
-      toast.success(editMenuId ? t('menus.saveMenu') : t('common.create'))
-    },
-    onError: (e) => setMenuFormError(e.message || t('menus.saveError')),
-  })
-
-  const deleteMenuMutation = useMutation({
-    mutationFn: (menuId) => deleteMenu(menuId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menus'] })
-      setSelectedMenuId(null)
-      setEditItem(null)
-    },
-    onError: (e) => toast.error(e.message || t('common.error')),
   })
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -789,45 +789,14 @@ export function MenuScreen({ canUpdate }) {
     setEditItemError('')
   }
 
-  function handleMenuFormSubmit(e) {
-    e.preventDefault()
-    if (!menuForm.name.trim()) { setMenuFormError(t('menus.errNameRequired')); return }
-    setMenuFormError('')
-    menuFormMutation.mutate({
-      name: menuForm.name.trim(),
-      location: menuForm.location.trim() || undefined,
-      status: menuForm.status || 'ACTIVE',
-    })
-  }
-
-  async function handleDeleteMenu(menuId) {
-    const confirmed = await showConfirm(t('menus.deleteMenuConfirm'), t('menus.deleteMenuTitle'))
-    if (!confirmed) return
-    deleteMenuMutation.mutate(menuId)
-  }
-
-  function openAddMenu() {
-    setEditMenuId(null)
-    setMenuForm(EMPTY_MENU_FORM)
-    setMenuFormError('')
-    setShowMenuModal(true)
-  }
-
-  function openEditMenu(menu) {
-    setEditMenuId(menu.id)
-    setMenuForm({ name: menu.name || '', location: menu.location || '', status: menu.status || 'ACTIVE' })
-    setMenuFormError('')
-    setShowMenuModal(true)
-  }
-
   function openAddItem() {
     setNewItem(EMPTY_ITEM)
     setItemError('')
     setShowItemModal(true)
   }
 
-  function selectMenu(menuId) {
-    setSelectedMenuId(menuId)
+  function selectSlot(location) {
+    setSelectedLocation(location)
     setShowItemModal(false)
     setNewItem(EMPTY_ITEM)
     setItemError('')
@@ -848,297 +817,183 @@ export function MenuScreen({ canUpdate }) {
     />
   )
 
+  const selectedSlot = SYSTEM_SLOTS.find((s) => s.location === selectedLocation) ?? SYSTEM_SLOTS[0]
+  const slotMissing = !selectedMenuSummary
+
   return (
     <section className="screen">
-      {/* ── Header ── */}
+      {/* ── Header (no create-menu CTA — slots are fixed) ── */}
       <header className="screen-header">
         <div>
           <p className="eyebrow">{t('menus.eyebrow')}</p>
           <h1>{t('menus.title')}</h1>
           <p>{t('menus.description')}</p>
         </div>
-        {canUpdate && (
-          <button type="button" className="btn btn-primary" onClick={openAddMenu}>
-            <Plus size={15} />
-            {t('common.create')}
-          </button>
-        )}
       </header>
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
-      {/* ── Empty: no menus ── */}
-      {menus.length === 0 ? (
-        <StatePanel
-          tone="neutral"
-          title={t('menus.empty')}
-          description={t('menus.emptyDesc')}
-          actionLabel={canUpdate ? t('common.create') : undefined}
-          onAction={canUpdate ? openAddMenu : undefined}
-        />
-      ) : (
-        <div className="menu-layout">
-          {/* ── Sidebar: menu list ── */}
-          <aside className="menu-sidebar">
-            <p className="menu-sidebar-label">{t('menus.selectMenu')}</p>
-            <div className="menu-sidebar-list">
-              {menus.map((menu) => (
-                <div key={menu.id} className="menu-sidebar-item">
-                  <button
-                    type="button"
-                    className={`menu-sidebar-btn${selectedMenuId === menu.id ? ' is-active' : ''}`}
-                    onClick={() => selectMenu(menu.id)}
-                  >
-                    {formatText(menu.name)}
-                    {menu.location && (
-                      <span className="menu-sidebar-loc">{menu.location}</span>
-                    )}
-                  </button>
-                  {canUpdate && (
-                    <div className="menu-sidebar-item-actions">
-                      <button
-                        type="button"
-                        className="menu-sidebar-icon-btn"
-                        title={`Chỉnh sửa "${menu.name}"`}
-                        onClick={() => openEditMenu(menu)}
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className="menu-sidebar-icon-btn is-danger"
-                        title={`Xoá "${menu.name}"`}
-                        onClick={() => handleDeleteMenu(menu.id)}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+      {/* ── Slot tabs ── */}
+      <div className="menu-slot-tabs" role="tablist" aria-label={t('menus.selectMenu')}>
+        {SYSTEM_SLOTS.map((slot) => {
+          const summary = menuByLocation.get(slot.location)
+          const isActive = slot.location === selectedLocation
+          const missing = !summary
+          const inactive = summary && summary.status !== 'ACTIVE'
+          return (
+            <button
+              key={slot.location}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`menu-slot-tab${isActive ? ' is-active' : ''}${missing ? ' is-missing' : ''}`}
+              onClick={() => selectSlot(slot.location)}
+            >
+              <span className="menu-slot-tab-title">
+                {summary?.name?.trim() ? formatText(summary.name) : t(slot.titleKey)}
+              </span>
+              <span className="menu-slot-tab-meta">
+                <span className="menu-slot-tab-loc">{slot.location}</span>
+                {missing && (
+                  <span className="menu-slot-tab-flag is-missing">{t('menus.slotMissingBadge')}</span>
+                )}
+                {inactive && (
+                  <span className="menu-slot-tab-flag is-inactive">{t('menus.slotInactiveBadge')}</span>
+                )}
+              </span>
+              <span className="menu-slot-tab-desc">{t(slot.descKey)}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── Panel: items for the selected slot ── */}
+      <main className="menu-panel">
+        {slotMissing ? (
+          <div className="menu-slot-missing">
+            <AlertTriangle size={18} />
+            <div>
+              <strong>{t('menus.slotMissingTitle', { location: selectedSlot.location })}</strong>
+              <p>{t('menus.slotMissingDesc')}</p>
+            </div>
+          </div>
+        ) : detailLoading ? (
+          <div style={{ padding: 24 }}>
+            <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
+          </div>
+        ) : menuDetail ? (
+          <>
+            {/* Panel header */}
+            <div className="menu-panel-head">
+              <div className="menu-panel-head-info">
+                <h2>{formatText(menuDetail.name)}</h2>
+                <span className="menu-panel-head-loc">{menuDetail.location}</span>
+              </div>
+              {canUpdate && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ flexShrink: 0 }}
+                  onClick={openAddItem}
+                >
+                  <Plus size={14} />
+                  {t('menus.addItem')}
+                </button>
+              )}
             </div>
 
-          </aside>
-
-          {/* ── Panel: menu items ── */}
-          <main className="menu-panel">
-            {detailLoading && (
-              <div style={{ padding: 24 }}>
-                <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
-              </div>
-            )}
-            {!detailLoading && menuDetail && (
-              <>
-                {/* Panel header */}
-                <div className="menu-panel-head">
-                  <h2>{formatText(menuDetail.name)}</h2>
-                  {canUpdate && (
+            {/* Search toolbar */}
+            {menuItems.length > 0 && (
+              <div className="menu-panel-toolbar">
+                <div className="menu-search-box">
+                  <span className="menu-search-icon"><Search size={14} /></span>
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Tìm theo tên hoặc URL..."
+                    aria-label="Tìm kiếm mục menu"
+                  />
+                  {search && (
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      style={{ flexShrink: 0 }}
-                      onClick={openAddItem}
+                      className="menu-search-clear"
+                      onClick={() => setSearch('')}
+                      aria-label="Xóa tìm kiếm"
                     >
-                      <Plus size={14} />
-                      {t('menus.addItem')}
+                      <X size={13} />
                     </button>
                   )}
                 </div>
-
-                {/* Search toolbar */}
-                {menuItems.length > 0 && (
-                  <div className="menu-panel-toolbar">
-                    <div className="menu-search-box">
-                      <span className="menu-search-icon"><Search size={14} /></span>
-                      <input
-                        type="search"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Tìm theo tên hoặc URL..."
-                        aria-label="Tìm kiếm mục menu"
-                      />
-                      {search && (
-                        <button
-                          type="button"
-                          className="menu-search-clear"
-                          onClick={() => setSearch('')}
-                          aria-label="Xóa tìm kiếm"
-                        >
-                          <X size={13} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Items table */}
-                {menuItems.length === 0 ? (
-                  <div style={{ padding: '32px 20px', textAlign: 'center' }}>
-                    <p style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)', marginBottom: 12 }}>
-                      {t('menus.noItems')}
-                    </p>
-                    {canUpdate && (
-                      <button type="button" className="btn btn-primary" onClick={openAddItem}>
-                        <Plus size={14} />
-                        {t('menus.addItem')}
-                      </button>
-                    )}
-                  </div>
-                ) : filteredFlatItems.length === 0 ? (
-                  <div style={{ padding: '24px 20px', color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)' }}>
-                    Không tìm thấy mục nào phù hợp với &ldquo;{search}&rdquo;.
-                  </div>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={filteredFlatItems.map((i) => i.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="menu-table-wrap">
-                        <table className="menu-table">
-                          <colgroup>
-                            <col /><col /><col /><col /><col />
-                            {canUpdate && <col />}
-                          </colgroup>
-                          <thead>
-                            <tr>
-                              <th className="menu-grip-cell" />
-                              <th>{t('menus.itemLabel')}</th>
-                              <th>{t('menus.itemParent')}</th>
-                              <th>{t('menus.itemUrl')}</th>
-                              <th>{t('menus.itemTarget')}</th>
-                              {canUpdate && <th />}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredFlatItems.map((item) => (
-                              <SortableMenuItem
-                                key={item.id}
-                                item={item}
-                                parentLabel={item.parentId ? (itemById.get(item.parentId)?.label || t('menus.parentMissing')) : ''}
-                                rootLabel={t('menus.parentRoot')}
-                                typeLabel={targetTypeLabel(t, item.targetType)}
-                                canUpdate={canUpdate}
-                                onEdit={openEditItem}
-                                onDelete={handleDeleteItem}
-                                isDeleting={deletingItemId === item.id}
-                              />
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </>
+              </div>
             )}
-          </main>
-        </div>
-      )}
 
-      {/* ── Modal: Add/Edit Menu ── */}
-      {showMenuModal && (
-        <Modal
-          title={editMenuId ? t('common.edit') : `${t('common.create')} menu`}
-          onClose={() => { setShowMenuModal(false); setEditMenuId(null) }}
-          footer={
-            <>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => { setShowMenuModal(false); setEditMenuId(null) }}
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="submit"
-                form="menu-meta-form"
-                className="btn btn-primary"
-                disabled={menuFormMutation.isPending}
-              >
-                {menuFormMutation.isPending ? t('common.saving') : (editMenuId ? t('menus.saveMenu') : t('common.create'))}
-              </button>
-            </>
-          }
-        >
-          <form id="menu-meta-form" onSubmit={handleMenuFormSubmit}>
-            {menuFormError && (
-              <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12, fontSize: 'var(--admin-text-sm)' }}>
-                {menuFormError}
-              </p>
-            )}
-            <div className="form-grid">
-              <label className="form-field">
-                {t('menus.formName')}
-                <input
-                  className="control-input"
-                  required
-                  autoFocus
-                  value={menuForm.name}
-                  onChange={(e) => setMenuForm((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Tên menu"
-                />
-              </label>
-              <label className="form-field">
-                {t('menus.formLocation')}
-                {editMenuId ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      className="control-input"
-                      value={menuForm.location}
-                      readOnly
-                      disabled
-                      style={{ flex: 1, cursor: 'not-allowed', opacity: 0.7 }}
-                    />
-                    <span style={{
-                      fontSize: 'var(--admin-text-xs)',
-                      fontWeight: 600,
-                      color: 'var(--admin-color-text-muted)',
-                      background: 'var(--admin-color-surface-muted)',
-                      border: '1px solid var(--admin-color-border-subtle)',
-                      borderRadius: 'var(--admin-radius-sm)',
-                      padding: '3px 8px',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      Cố định
-                    </span>
-                  </div>
-                ) : (
-                  <select
-                    className="control-select"
-                    value={menuForm.location}
-                    onChange={(e) => setMenuForm((p) => ({ ...p, location: e.target.value }))}
-                  >
-                    <option value="primary">primary — Header chính</option>
-                    <option value="footer">footer — Footer</option>
-                    <option value="guide">guide — Hướng dẫn (Footer)</option>
-                  </select>
+            {/* Items table */}
+            {menuItems.length === 0 ? (
+              <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+                <p style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)', marginBottom: 12 }}>
+                  {t('menus.noItems')}
+                </p>
+                {canUpdate && (
+                  <button type="button" className="btn btn-primary" onClick={openAddItem}>
+                    <Plus size={14} />
+                    {t('menus.addItem')}
+                  </button>
                 )}
-                <small style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
-                  {editMenuId
-                    ? 'Location không thể thay đổi sau khi tạo.'
-                    : 'Vị trí web sẽ dùng để hiển thị menu này.'}
-                </small>
-              </label>
-              <label className="form-field">
-                {t('menus.formStatus')}
-                <select
-                  className="control-select"
-                  value={menuForm.status}
-                  onChange={(e) => setMenuForm((p) => ({ ...p, status: e.target.value }))}
+              </div>
+            ) : filteredFlatItems.length === 0 ? (
+              <div style={{ padding: '24px 20px', color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)' }}>
+                Không tìm thấy mục nào phù hợp với &ldquo;{search}&rdquo;.
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={filteredFlatItems.map((i) => i.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
-              </label>
-            </div>
-          </form>
-        </Modal>
-      )}
+                  <div className="menu-table-wrap">
+                    <table className="menu-table">
+                      <colgroup>
+                        <col /><col /><col /><col /><col />
+                        {canUpdate && <col />}
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th className="menu-grip-cell" />
+                          <th>{t('menus.itemLabel')}</th>
+                          <th>{t('menus.itemParent')}</th>
+                          <th>{t('menus.itemUrl')}</th>
+                          <th>{t('menus.itemTarget')}</th>
+                          {canUpdate && <th />}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredFlatItems.map((item) => (
+                          <SortableMenuItem
+                            key={item.id}
+                            item={item}
+                            parentLabel={item.parentId ? (itemById.get(item.parentId)?.label || t('menus.parentMissing')) : ''}
+                            rootLabel={t('menus.parentRoot')}
+                            typeLabel={targetTypeLabel(t, item.targetType)}
+                            canUpdate={canUpdate}
+                            onEdit={openEditItem}
+                            onDelete={handleDeleteItem}
+                            isDeleting={deletingItemId === item.id}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </>
+        ) : null}
+      </main>
 
       {/* ── Modal: Add Item ── */}
       {showItemModal && (

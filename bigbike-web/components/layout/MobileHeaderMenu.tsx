@@ -269,15 +269,21 @@ export function MobileHeaderMenu({
               )}
             </div>
 
-            <div className="wp-mobile-drawer-contact">
-              <span>HOTLINE</span>
-              <b>{hotline || "0903 123 456"}</b>
-              {zaloUrl && (
-                <a href={zaloUrl} target="_blank" rel="noreferrer">
-                  Zalo hỗ trợ nhanh
-                </a>
-              )}
-            </div>
+            {(hotline || zaloUrl) && (
+              <div className="wp-mobile-drawer-contact">
+                {hotline && (
+                  <>
+                    <span>HOTLINE</span>
+                    <b>{hotline}</b>
+                  </>
+                )}
+                {zaloUrl && (
+                  <a href={zaloUrl} target="_blank" rel="noreferrer">
+                    Zalo hỗ trợ nhanh
+                  </a>
+                )}
+              </div>
+            )}
           </aside>
         </>
       )}

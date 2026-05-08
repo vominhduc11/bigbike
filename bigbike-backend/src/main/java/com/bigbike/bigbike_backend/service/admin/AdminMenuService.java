@@ -10,9 +10,11 @@ import com.bigbike.bigbike_backend.api.admin.dto.menu.ReorderMenuItemRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.menu.ReorderMenuItemsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.menu.UpdateMenuItemRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.menu.UpdateMenuRequest;
+import com.bigbike.bigbike_backend.api.error.ApiException;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.domain.menu.MenuLocations;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
@@ -33,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,8 +112,17 @@ public class AdminMenuService {
 
     @Transactional
     public AdminMenuResponse createMenu(UUID adminId, CreateMenuRequest req) {
-        menuRepo.findByLocation(req.location()).ifPresent(existing -> {
-            throw new ConflictException("A menu at location '" + req.location() + "' already exists.");
+        // Menu containers are system-defined slots — admins can only (re)create
+        // one of the whitelisted locations the storefront knows how to render.
+        // Anything else would become orphan data.
+        String locationStr = req.location() == null ? "" : req.location().trim().toLowerCase(Locale.ROOT);
+        if (!MenuLocations.SYSTEM_LOCATIONS.contains(locationStr)) {
+            throw ValidationException.fromField("location", "INVALID_MENU_LOCATION",
+                    "Menu location must be one of " + MenuLocations.SYSTEM_LOCATIONS + ".");
+        }
+
+        menuRepo.findByLocation(locationStr).ifPresent(existing -> {
+            throw new ConflictException("A menu at location '" + locationStr + "' already exists.");
         });
 
         String statusStr = req.status() != null ? req.status().trim().toUpperCase(Locale.ROOT) : "ACTIVE";
@@ -121,7 +133,7 @@ public class AdminMenuService {
 
         Instant now = Instant.now();
         MenuEntity entity = new MenuEntity();
-        entity.setLocation(req.location().trim());
+        entity.setLocation(locationStr);
         entity.setName(req.name().trim());
         entity.setStatus(statusStr);
         entity.setCreatedAt(now);
@@ -170,6 +182,18 @@ public class AdminMenuService {
     public void deleteMenu(UUID menuId, UUID adminId) {
         MenuEntity entity = menuRepo.findById(menuId)
                 .orElseThrow(() -> new NotFoundException("Menu not found."));
+
+        // System menu slots are required by the storefront. Removing one would
+        // leave the public site with an empty header/footer/guide. Admins must
+        // empty/disable items instead of dropping the container.
+        if (MenuLocations.isSystem(entity.getLocation())) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "SYSTEM_MENU_CANNOT_BE_DELETED",
+                    "System menu '" + entity.getLocation() + "' cannot be deleted.",
+                    java.util.List.of()
+            );
+        }
 
         String before = menuSnapshot(entity);
         List<MenuItemEntity> items = menuItemRepo.findByMenuId(menuId);

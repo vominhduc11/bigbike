@@ -53,8 +53,6 @@ function PromoStrip({
   hotline: string;
   zaloUrl: string;
 }) {
-  const supportLabel = hotline || "0903 123 456";
-
   return (
     <div className="wp-promo-strip-wrap">
       <div className="bb-container wp-promo-strip">
@@ -63,8 +61,8 @@ function PromoStrip({
           từng cung đường
         </span>
         <span>
-          Hotline {supportLabel}
-          {zaloUrl ? " · Zalo hỗ trợ nhanh" : " · Giao hàng toàn quốc"}
+          {hotline ? `Hotline ${hotline} · ` : ""}
+          {zaloUrl ? "Zalo hỗ trợ nhanh" : "Giao hàng toàn quốc"}
         </span>
       </div>
     </div>
