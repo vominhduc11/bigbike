@@ -35,4 +35,11 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Email production deliverability | Code path confirmed; runtime not tested. | `NEEDS_PRODUCTION_RUNTIME_VERIFICATION` |
 | WebSocket per-subscribe topic-level authz | CONNECT auth confirmed; per-subscribe authz not verified. | `NEEDS_VERIFICATION` |
 
-> **Production-ready verdict:** ❌ NOT_READY. See `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` Section 7 for the 15-blocker production gate. Code path business chính đã `PASS`; production gap chủ yếu ở **operational reality** (invoice, bank reconciliation, support, notification center) và **legal/compliance** (Bộ Công Thương đăng ký + content) và **infra config** (5 PROD_CONFIG).
+> **Production-ready verdict:** ❌ NOT_READY. See `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` Section 7 for the 15-blocker production gate (Section 7.0 group taxonomy + Section 7.1 register + Section 7.2 ownership matrix). Code path business chính đã `PASS`; 15 blocker chia 4 nhóm:
+>
+> - **Business / Operational** (5 — B01 invoice, B05 bank reconciliation, B06 refund history, B08 verify-email POST drift, B12 customer support).
+> - **Legal / Compliance** (3 — B02 Bộ Công Thương registration, B03 policy content, B04 customer-data export/delete).
+> - **Ops / Security / Infra** (4 — B07 PROD_CONFIG bundle, B09 SUPER_ADMIN seed, B10 MinIO/SMTP smoke, B11 backup runbook).
+> - **Strategic Business Decisions** (3 — B13 payment provider, B14 shipping carrier, B15 receiving + warranty + serial).
+>
+> Mức phạt và phạm vi nghĩa vụ pháp lý cụ thể cần legal counsel xác nhận theo hành vi vi phạm hiện hành; audit không thay thế tư vấn pháp lý chính thức.

@@ -16,16 +16,16 @@
 |---|---|
 | **Đủ để code tiếp bằng AI agent chưa?** | ✅ `READY_FOR_AGENT_IMPLEMENTATION`. Docs canonical + audit trail đủ chi tiết, status label nhất quán, evidence path đầy đủ. (Đồng ý với verdict trong `DOCS_VERIFICATION_REPORT.md`.) |
 | **Đủ để staging / UAT chưa?** | 🟡 `CONDITIONAL_GO_FOR_STAGING`. Backend test suite 1016/1017 pass, code path business chính đầy đủ. Trước khi UAT cần: (a) seed first SUPER_ADMIN; (b) staging env config đủ (JWT secret, internal token, revalidate); (c) verify một workflow chuyển khoản BACS vận hành thật bằng người trả tiền + admin reconcile thủ công; (d) email SMTP staging deliverability test. |
-| **Đủ để production / vận hành thật chưa?** | ❌ `NOT_READY_FOR_PRODUCTION`. Còn **15 production blocker** ở Section 7 — chia 3 nhóm: **Operational reality** (invoice / e-invoice / shipping carrier / payment reconciliation flow / customer support / refund history / serial-warranty), **Legal / compliance** (Bộ Công Thương đăng ký / TMĐT, privacy policy nội dung, terms, return-refund policy nội dung, complaint handling), **Infra / config** (5 PROD_CONFIG đã được `PRODUCTION_READINESS_GATE.md` flag). |
+| **Đủ để production / vận hành thật chưa?** | ❌ `NOT_READY_FOR_PRODUCTION`. Còn **đúng 15 production blocker** liệt kê ở Section 7, chia thành **4 nhóm** (tổng = 15, không double count): **Business/Operational** (5 — B01, B05, B06, B08, B12), **Legal/Compliance** (3 — B02, B03, B04), **Ops/Security/Infra** (4 — B07, B09, B10, B11), **Strategic Business Decisions** (3 — B13, B14, B15). |
 
 ### 1.2 Top 5 production blockers
 
 | # | Blocker | Type | Tác động |
 |---|---|---|---|
-| 1 | **Invoice / hóa đơn điện tử**: Không có `invoice` entity, không có service xuất hóa đơn sau checkout/POS, không có integration với e-invoice provider (VNPT / Misa / Easyinvoice / Viettel SInvoice). | `NOT_FOUND_IN_REPO` | Vi phạm Nghị định 123/2020/NĐ-CP về hóa đơn điện tử bắt buộc. Bán B2B/B2C không xuất được hóa đơn hợp lệ. |
+| 1 | **Invoice / hóa đơn điện tử**: Không có `invoice` entity, không có service xuất hóa đơn sau checkout/POS, không có integration với e-invoice provider (VNPT / Misa / Easyinvoice / Viettel SInvoice). | `NOT_FOUND_IN_REPO` | Có thể không đáp ứng nghĩa vụ xuất hoá đơn điện tử theo quy định hiện hành (Nghị định 123/2020/NĐ-CP và văn bản hướng dẫn) — **mức phạt và phạm vi áp dụng cụ thể cần legal counsel xác nhận theo hành vi vi phạm và loại hình doanh nghiệp**. Bán B2B/B2C không xuất được hoá đơn hợp lệ ảnh hưởng kế toán & nghĩa vụ thuế. |
 | 2 | **External payment reconciliation**: Online checkout chỉ có `COD` và `BACS` (chuyển khoản thủ công, provider `INTERNAL`). Không có VNPAY / MoMo / SePay webhook auto-reconciliation. Bank-transfer phải đối soát tay. | `NOT_FOUND_IN_REPO` (online provider) | Khách chuyển khoản → admin phải tay update payment status. Lỗi do người làm tay. Không có signature verification, idempotency, payment correction audit trail riêng cho online provider. |
 | 3 | **Shipping carrier integration & fulfillment lifecycle**: `OrderEntity.fulfillmentStatus` field tồn tại nhưng không có transition map, không có tracking number table, không có GHN/GHTK/ViettelPost integration, không có failed-delivery / return-to-sender / COD reconciliation. | `NOT_FOUND_IN_REPO` | Shop hiện chỉ có shipping zone/method (cấu hình giá). Không tự tạo vận đơn, không tracking, không xử lý hàng hoàn về. Phải vận hành tay 100% qua Excel/Zalo. |
-| 4 | **Legal / compliance — Bộ Công Thương + nội dung pháp lý**: Không có evidence về (a) đã đăng ký/thông báo website TMĐT với Bộ Công Thương (logo "Đã đăng ký Bộ Công Thương" trên footer), (b) nội dung Privacy Policy / Terms / Return Policy / Shipping Policy / Complaint Handling là CMS-driven (`/chinh-sach/[slug]`) — chưa biết content thực tế đã có và đầy đủ chưa. | `NEEDS_LEGAL_CONFIRMATION` | Vi phạm Nghị định 52/2013/NĐ-CP, sửa đổi 85/2021/NĐ-CP về TMĐT. Có thể bị phạt 20–80 triệu VNĐ và bị buộc gỡ bỏ thông tin. |
+| 4 | **Legal / compliance — Bộ Công Thương + nội dung pháp lý**: Không có evidence về (a) đã đăng ký/thông báo website TMĐT với Bộ Công Thương (logo "Đã đăng ký Bộ Công Thương" trên footer), (b) nội dung Privacy Policy / Terms / Return Policy / Shipping Policy / Complaint Handling là CMS-driven (`/chinh-sach/[slug]`) — chưa biết content thực tế đã có và đầy đủ chưa. | `NEEDS_LEGAL_CONFIRMATION` | Có thể không đáp ứng quy định về TMĐT (Nghị định 52/2013/NĐ-CP và sửa đổi 85/2021/NĐ-CP). **Mức phạt cụ thể, phạm vi áp dụng, và biện pháp khắc phục (gỡ bỏ thông tin / đăng ký bổ sung) cần legal counsel xác nhận theo hành vi vi phạm hiện hành và quy định mới nhất.** |
 | 5 | **Refund per-period accuracy (REPORT_RULE_011)**: `refundedAt` bị overwrite mỗi lần partial refund. Không có `refund_transactions` history table. Reports không trả lời chính xác câu hỏi "tuần này refund bao nhiêu" nếu order placed tuần trước. | `CODE_DEFECT` (đã được docs flag) | Sai lệch số liệu kế toán/báo cáo refund. Không truy được history từng lần partial refund. |
 
 ### 1.3 Top 5 risks (nếu vận hành luôn không sửa)
@@ -38,11 +38,29 @@
 | R4 | **POS không có flow refund / hoàn tiền tại quầy** | POS sale → COMPLETED + PAID. Không có service "POS refund" hay "POS return tại quầy". Hoàn tiền POS đi qua đường refund Order ở admin → mismatch hành vi vận hành thực tế của shop. | Medium-High |
 | R5 | **Notification center không persist** | Admin có toast + WS event nhưng không có `notifications` table hay read/unread API. Admin offline 1 giờ sẽ miss event mãi mãi. | Medium |
 
-### 1.4 Top blocker summary
+### 1.4 Top blocker summary (15 blockers — 4 groups, no double count)
 
-- **5 Operational reality blockers** (P0): Invoice, Shipping carrier, Receiving workflow, Notification center, Refund history.
-- **5 Legal/compliance blockers** (P0): Bộ Công Thương registration, Privacy/Terms/Return/Shipping/Complaint policy content.
-- **5 Infra/config blockers** (P1, đã được `PRODUCTION_READINESS_GATE.md` Section 8 list): JWT secret, Internal token, Revalidate URL/secret, Nginx ACL `/api/internal/**`, SSL/TLS termination.
+- **Business / Operational** (5 — B01, B05, B06, B08, B12):
+  - B01 Invoice / e-invoice
+  - B05 Bank transfer reconciliation flow
+  - B06 Refund history table (`refund_transactions`)
+  - B08 Verify-email POST drift (customer-flow code bug)
+  - B12 Customer support / dispute handling SOP + tooling
+- **Legal / Compliance** (3 — B02, B03, B04):
+  - B02 Bộ Công Thương TMĐT registration + footer badge
+  - B03 Privacy / Terms / Return / Shipping / Complaint policy content
+  - B04 Customer-data export + delete (Nghị định 13/2023)
+- **Ops / Security / Infra** (4 — B07, B09, B10, B11):
+  - B07 5 PROD_CONFIG infra (JWT secret, internal token, revalidate URL/secret pair, Nginx ACL `/api/internal/**`, SSL/TLS) — counted as a single bundled blocker per `PRODUCTION_READINESS_GATE.md` Section 8
+  - B09 First SUPER_ADMIN seeding runbook
+  - B10 MinIO / SMTP staging smoke test
+  - B11 Backup / restore runbook + retention policy
+- **Strategic Business Decisions** (3 — B13, B14, B15):
+  - B13 External payment provider strategy (VNPAY / MoMo / SePay)
+  - B14 External shipping carrier strategy (GHN / GHTK / VNPost)
+  - B15 Stock receiving + warranty + product-serial lifecycle strategy
+
+> **Sanity check:** 5 + 3 + 4 + 3 = **15**. Mỗi blocker ID xuất hiện đúng 1 lần. Section 7 và Section 7.1 (Ownership Matrix) phải khớp con số này.
 
 ---
 
@@ -454,17 +472,19 @@ Toàn bộ 67 module trong `E2E_WORKFLOW_MASTER_INVENTORY.md` Section 3 (M01–M
 
 ### 6.1 Legal / compliance — Việt Nam
 
+> **Đọc lưu ý**: Phần này chỉ liệt kê các nghĩa vụ pháp lý phổ biến đối với hoạt động TMĐT tại Việt Nam và đối chiếu với evidence trong repo. **Mức phạt cụ thể, phạm vi áp dụng, và biện pháp khắc phục cần legal counsel xác nhận theo hành vi vi phạm hiện hành** và quy định mới nhất tại thời điểm vận hành. Không treat các con số / tên văn bản trong cột "Tác động" như tư vấn pháp lý chính thức.
+
 | Topic | Status | Tác động | Recommendation |
 |---|---|---|---|
-| Đăng ký TMĐT với Bộ Công Thương | NLC | Vi phạm Nghị định 52/2013/NĐ-CP, sửa đổi 85/2021/NĐ-CP. Phạt 20–80 triệu. | NEEDS_LEGAL_CONFIRMATION + business action: đăng ký + footer badge "Đã đăng ký Bộ Công Thương" |
-| Privacy Policy nội dung | NLC | Luật An ninh mạng, Nghị định 13/2023/NĐ-CP về dữ liệu cá nhân | Confirm content via CMS (`/chinh-sach/privacy-policy` or similar) |
-| Terms & Conditions | NLC | Bắt buộc với TMĐT | Confirm content |
-| Return / Refund Policy | NLC | Bắt buộc với TMĐT B2C | Confirm content + Article 8 Luật Bảo vệ quyền lợi người tiêu dùng |
-| Shipping Policy | NLC | Bắt buộc với TMĐT | Confirm content |
-| Payment Policy | NLC | Bắt buộc | Confirm content |
-| Complaint / Dispute Handling Policy | NLC | Bắt buộc per Nghị định 85/2021 | Confirm content + provide complaint email/hotline |
-| Thông tin thương nhân (legal footer) | NLC | Tên DN, Mã số thuế, Địa chỉ, Số ĐKKD, Email, Hotline | Confirm site_settings configured |
-| Customer-data export / data deletion (right to be forgotten) | NFIR | Nghị định 13/2023/NĐ-CP | Add `GET /api/v1/customer/me/export` + `DELETE /api/v1/customer/me` (or anonymize). Document trong Privacy. |
+| Đăng ký / thông báo website TMĐT với Bộ Công Thương + footer badge | NLC | Có thể không đáp ứng quy định TMĐT (Nghị định 52/2013/NĐ-CP và sửa đổi 85/2021/NĐ-CP); mức phạt và biện pháp khắc phục cần legal counsel xác nhận. | Business action: hoàn tất đăng ký trên `online.gov.vn`; gắn logo "Đã đăng ký Bộ Công Thương" vào footer. |
+| Privacy Policy nội dung | NLC | Có thể không đáp ứng nghĩa vụ về xử lý dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP) và Luật An ninh mạng; mức phạt cụ thể cần legal counsel xác nhận. | Confirm content via CMS (`/chinh-sach/privacy-policy` or similar). |
+| Terms & Conditions | NLC | Có thể không đáp ứng quy định TMĐT B2C; mức phạt cần legal counsel xác nhận. | Confirm content. |
+| Return / Refund Policy | NLC | Liên quan Luật Bảo vệ quyền lợi người tiêu dùng và quy định TMĐT B2C; mức phạt cần legal counsel xác nhận. | Confirm content + reference quyền của người tiêu dùng. |
+| Shipping Policy | NLC | Liên quan quy định TMĐT; mức phạt cần legal counsel xác nhận. | Confirm content. |
+| Payment Policy | NLC | Liên quan quy định TMĐT và quy định thanh toán; mức phạt cần legal counsel xác nhận. | Confirm content. |
+| Complaint / Dispute Handling Policy | NLC | Liên quan Nghị định 85/2021 về xử lý khiếu nại TMĐT; mức phạt cần legal counsel xác nhận. | Confirm content + provide complaint email/hotline. |
+| Thông tin thương nhân (legal footer) | NLC | Tên DN, Mã số thuế, Địa chỉ, Số ĐKKD, Email, Hotline — bắt buộc/khuyến nghị tuỳ loại hình; cần legal counsel xác nhận. | Confirm `site_settings` đã configured đầy đủ. |
+| Customer-data export / data deletion (right to be forgotten) | NFIR | Liên quan Nghị định 13/2023/NĐ-CP; phạm vi nghĩa vụ và mức phạt cần legal counsel xác nhận. | Add `GET /api/v1/customer/me/export` + `DELETE /api/v1/customer/me` (hoặc anonymize). Document trong Privacy. |
 
 ### 6.2 E-commerce notification / registration
 
@@ -488,7 +508,7 @@ Toàn bộ 67 module trong `E2E_WORKFLOW_MASTER_INVENTORY.md` Section 3 (M01–M
 | Invoice entity / state DRAFT/ISSUED/ADJUSTED/CANCELLED | **NFIR** | **P0**: Add `invoice` entity + service + provider integration |
 | E-invoice provider (VNPT eInvoice / Misa MeInvoice / Easyinvoice / Viettel SInvoice / Bkav) | **NFIR** | **P0**: Choose 1, integrate API |
 | Refund / write-off / cancel impact on invoice | n/a (no invoice) | Document trong Refund/Return flow |
-| **Vi phạm Nghị định 123/2020/NĐ-CP nếu shop là pháp nhân** | NLC | NEEDS_LEGAL_CONFIRMATION |
+| Nghĩa vụ xuất hoá đơn điện tử theo quy định hiện hành (Nghị định 123/2020/NĐ-CP và văn bản hướng dẫn) | NLC | **Phạm vi áp dụng cho loại hình doanh nghiệp BigBike, mức phạt cụ thể và lộ trình khắc phục cần legal counsel xác nhận.** NEEDS_LEGAL_CONFIRMATION + NEEDS_BUSINESS_CONFIRMATION (chọn provider). |
 
 ### 6.5 External payment reconciliation
 
@@ -560,25 +580,63 @@ Toàn bộ 67 module trong `E2E_WORKFLOW_MASTER_INVENTORY.md` Section 3 (M01–M
 
 ## 7. Production Blockers
 
-> Chỉ liệt kê những thứ nếu không sửa thì **không nên vận hành thật**.
+> Chỉ liệt kê những thứ nếu không sửa thì **không nên vận hành thật**. **Tổng = 15**, chia thành **4 nhóm**, mỗi blocker xuất hiện đúng 1 lần (no double count).
 
-| # | Blocker | Type | Owner | Reasoning |
+### 7.0 Group taxonomy
+
+| Group | Count | Blocker IDs |
+|---|---:|---|
+| **Business / Operational** | 5 | B01, B05, B06, B08, B12 |
+| **Legal / Compliance** | 3 | B02, B03, B04 |
+| **Ops / Security / Infra** | 4 | B07, B09, B10, B11 |
+| **Strategic Business Decisions** | 3 | B13, B14, B15 |
+| **Total** | **15** | (đối chiếu lại Section 1.4 và 7.1) |
+
+### 7.1 Blocker register
+
+| # | Group | Blocker | Type | Reasoning |
 |---|---|---|---|---|
-| **B01** | **Hóa đơn điện tử (e-invoice)** integration | NFIR — Code | Backend + Business | Nghị định 123/2020. Pháp nhân bán retail bắt buộc. |
-| **B02** | **Đăng ký TMĐT với Bộ Công Thương** + footer badge | NLC — Legal | Legal + Business | Nghị định 52/2013, 85/2021. Phạt 20–80 triệu. |
-| **B03** | **Privacy / Terms / Return / Shipping / Complaint policy content** đầy đủ + đúng quy định | NLC — Content | Legal + Business + CMS | Bắt buộc với TMĐT B2C. |
-| **B04** | **Customer-data export + delete** endpoint per Nghị định 13/2023 | NFIR — Code | Backend | Bắt buộc nếu shop có khách cá nhân (PII). |
-| **B05** | **Bank transfer reconciliation flow** (chuyển thiếu/dư/sai nội dung) — admin có UI + audit + correction record | DNE — Code/UX | Backend + Admin FE | Hiện chỉ có `paidAmount` patch tay; mismatch không có lifecycle. Lỗi nhân viên = mất tiền. |
-| **B06** | **Refund history table (`refund_transactions`)** — REPORT_RULE_011 | Code defect | Backend | Mất history cho partial refund; sai số liệu. |
-| **B07** | **5 PROD_CONFIG infra** từ `PRODUCTION_READINESS_GATE.md` Section 8: JWT secret, Internal token pairing, Revalidate URL/secret, Nginx ACL `/api/internal/**`, SSL/TLS termination | Infra | DevOps | Deploy mặc định = unsafe (dev secret, redirect fail, ISR cache stale, internal endpoint open, cookie rejected). |
-| **B08** | **Verify-email POST drift** — backend bug | Code bug | Backend | Customer email-verification link sẽ fail in prod. |
-| **B09** | **First SUPER_ADMIN seeding runbook** | Ops | DevOps + Backend | Without it, admin portal unusable on first deploy. |
-| **B10** | **MinIO / SMTP staging smoke test** | Ops | DevOps | Without it, media upload + email vận hành không kiểm chứng. |
-| **B11** | **Backup / restore runbook** + retention policy | Ops doc | DevOps | Risk data loss vĩnh viễn. |
-| **B12** | **Customer support / dispute handling SOP + tooling** | Process | Business + Ops | Bắt buộc cho TMĐT B2C; ảnh hưởng vận hành thực tế. |
-| **B13** | **Decision: External payment provider** (VNPAY/MoMo/SePay)? Nếu yes → P0 implement; nếu no → tăng cường BACS reconciliation flow (B05) | Decision | Business + Backend | Hiện chỉ COD/BACS manual; quyết định strategy quan trọng. |
-| **B14** | **Decision: External shipping carrier** (GHN/GHTK/VNPost)? Nếu yes → P0/P1 implement; nếu no → publicly disclose "ship handled offline" | Decision | Business + Backend | Hiện không có. |
-| **B15** | **Decision: Stock receiving workflow + warranty + serial lifecycle** — nếu shop bán helmet, warranty thường yêu cầu | Decision | Business + Backend | Hiện movement-log only; warranty NFIR. |
+| **B01** | Business / Operational | **Hóa đơn điện tử (e-invoice)** integration | NFIR — Code | Có thể không đáp ứng nghĩa vụ xuất hoá đơn điện tử theo quy định hiện hành (Nghị định 123/2020/NĐ-CP và văn bản hướng dẫn); ảnh hưởng kế toán & nghĩa vụ thuế. **Mức phạt và phạm vi áp dụng cụ thể cần legal counsel xác nhận.** |
+| **B02** | Legal / Compliance | **Đăng ký / thông báo TMĐT với Bộ Công Thương** + footer badge | NLC — Legal | Có thể không đáp ứng quy định TMĐT (Nghị định 52/2013, sửa đổi 85/2021); **mức phạt và biện pháp khắc phục cần legal counsel xác nhận theo hành vi vi phạm hiện hành**. |
+| **B03** | Legal / Compliance | **Privacy / Terms / Return / Shipping / Complaint policy content** đầy đủ + đúng quy định | NLC — Content | Quy định TMĐT B2C; mức phạt và phạm vi nội dung tối thiểu cần legal counsel xác nhận. |
+| **B04** | Legal / Compliance | **Customer-data export + delete** endpoint per Nghị định 13/2023 | NFIR — Code | Liên quan nghĩa vụ về dữ liệu cá nhân; phạm vi và mức phạt cần legal counsel xác nhận. |
+| **B05** | Business / Operational | **Bank transfer reconciliation flow** (chuyển thiếu/dư/sai nội dung) — admin có UI + audit + correction record | DNE — Code/UX | Hiện chỉ có `paidAmount` patch tay; mismatch không có lifecycle riêng → rủi ro thất thoát do thao tác tay. |
+| **B06** | Business / Operational | **Refund history table (`refund_transactions`)** — REPORT_RULE_011 | Code defect | `refundedAt` bị overwrite; mất per-event partial refund history → sai số liệu kế toán/báo cáo. |
+| **B07** | Ops / Security / Infra | **5 PROD_CONFIG infra (counted as 1 bundled blocker)** từ `PRODUCTION_READINESS_GATE.md` Section 8: (a) JWT secret strong, (b) Internal token pairing, (c) Revalidate URL/secret pair, (d) Nginx ACL `/api/internal/**`, (e) SSL/TLS termination | Infra | Deploy mặc định = unsafe (dev secret, redirect fail, ISR cache stale, internal endpoint open, cookie rejected). |
+| **B08** | Business / Operational | **Verify-email POST drift** — `SecurityConfig` permitAll cho GET nhưng controller `@PostMapping` | Code bug | Customer email-verification link sẽ trả 401 in prod → khách không complete được verify-email. |
+| **B09** | Ops / Security / Infra | **First SUPER_ADMIN seeding runbook** | Ops | Without it, admin portal unusable on first deploy. |
+| **B10** | Ops / Security / Infra | **MinIO / SMTP staging smoke test** | Ops | Without it, media upload + email vận hành không kiểm chứng. |
+| **B11** | Ops / Security / Infra | **Backup / restore runbook** + retention policy | Ops doc | Risk data loss vĩnh viễn nếu sự cố. |
+| **B12** | Business / Operational | **Customer support / dispute handling SOP + tooling** | Process | Yêu cầu vận hành B2C; ảnh hưởng experience + complaint resolution. |
+| **B13** | Strategic Business Decisions | **Decision: External payment provider** (VNPAY/MoMo/SePay)? Nếu yes → implement P1; nếu no → đầu tư mạnh BACS reconciliation flow (B05) | Decision | Hiện chỉ COD/BACS manual; quyết định strategy ảnh hưởng nhiều downstream. |
+| **B14** | Strategic Business Decisions | **Decision: External shipping carrier** (GHN/GHTK/VNPost)? Nếu yes → implement P1; nếu no → publicly disclose "ship handled offline" trong policy | Decision | Hiện không có; ship 100% offline qua Excel/Zalo. |
+| **B15** | Strategic Business Decisions | **Decision: Stock receiving workflow + warranty + product-serial lifecycle** — nếu BigBike bán helmet/gear có warranty | Decision | Hiện movement-log only; warranty NFIR. Quyết định ảnh hưởng inventory + customer service strategy. |
+
+> **Sanity check**: 15 rows. Group counts: 5 (B/O) + 3 (L/C) + 4 (O/S/I) + 3 (SBD) = 15. Mỗi B-ID xuất hiện đúng 1 lần.
+
+### 7.2 Ownership Matrix
+
+> Per blocker — owner, evidence required khi đóng, exit criteria, go-live impact. AI agent / engineering manager dùng bảng này làm gate-checklist.
+
+| Blocker ID | Group | Owner (primary) | Owner (support) | Evidence required to close | Exit criteria | Go-live impact if open |
+|---|---|---|---|---|---|---|
+| **B01** | Business / Operational | Backend Lead | Business Owner; Accounting | Provider chosen + signed contract; `invoice` entity migration merged; service + controller + admin UI + at least 1 issued e-invoice on staging | E-invoice issued on real test order in staging → cancel + adjusted issued cleanly; refund/return reflected on invoice | **HIGH** — không xuất được hoá đơn hợp lệ; ảnh hưởng kế toán & nghĩa vụ thuế. |
+| **B02** | Legal / Compliance | Business Owner | Legal Counsel | Confirmation of registration / notification trên `online.gov.vn`; footer badge wired vào layout với link active | "Đã đăng ký Bộ Công Thương" badge live trên public site, link verify được | **HIGH** — quy định TMĐT có thể không được đáp ứng; legal counsel review trước go-live. |
+| **B03** | Legal / Compliance | Business Owner | Legal Counsel; Content/Editor | Approved policy text (PDF/Doc) + CMS pages published cho từng slug (`privacy-policy`, `terms`, `return-policy`, `shipping-policy`, `payment-policy`, `complaint-handling`); footer link active | All 6 policy pages PUBLISHED, content reviewed by legal counsel | **HIGH** — quy định TMĐT B2C có thể không được đáp ứng. |
+| **B04** | Legal / Compliance | Backend Lead | Legal Counsel; Customer Success | `GET /api/v1/customer/me/export` returns customer's data (orders, addresses, returns, profile); `DELETE /api/v1/customer/me` anonymizes per documented retention; integration test pass | Customer test account export + delete (or anonymize) end-to-end | **MEDIUM-HIGH** — nghĩa vụ Nghị định 13/2023 có thể không được đáp ứng (legal counsel xác nhận phạm vi). |
+| **B05** | Business / Operational | Backend Lead | Admin FE Lead; Finance Ops | New entity `bank_transfer_record` + `payment_correction`; admin reconcile UI; audit fields IP/UA/reason; integration test for over-paid / under-paid / wrong-content scenarios | Finance ops can record mismatch case + reconcile + audit visible | **HIGH** — manual reconcile sai = thất thoát. |
+| **B06** | Business / Operational | Backend Lead | Reports/Analytics | New `refund_transactions` table migration + `RefundService` writes per-event row; `AdminReportService` switches refund attribution to per-event; report query updated; tests | Reports answer "tuần này refund bao nhiêu" chính xác từ table mới | **MEDIUM** — sai số liệu kế toán refund (nhưng đang được docs flag rõ). |
+| **B07** | Ops / Security / Infra | DevOps Lead | Security; Backend Lead | All 5 sub-config evidence: (a) `BIGBIKE_JWT_SECRET` ≥32 char random; (b) `BIGBIKE_INTERNAL_TOKEN`+`INTERNAL_API_TOKEN` matched; (c) `WEB_REVALIDATE_URL`+`*_SECRET`+`REVALIDATE_SECRET` set & matched; (d) Nginx config audit shows `/api/internal/**` IP-restricted; (e) HTTPS cert valid, browser test cookie Secure | Production smoke: admin login OK, redirect rule applied, ISR purges, cookies persist | **CRITICAL** — deploy without it = forgeable JWT, redirect fail, stale catalog, open internal endpoint, cookie rejected. |
+| **B08** | Business / Operational | Backend Lead | QA | `SecurityConfig` permits POST `/api/v1/customer/auth/verify-email` (or controller switched to GET, with rate-limit); `Phase1DCustomerAuthTest` adds verify-email POST coverage | Customer registers → receives email → click link → email verified, no 401 | **HIGH** — customer flow tổng-thể fail in prod. |
+| **B09** | Ops / Security / Infra | DevOps Lead | Backend Lead | Documented runbook trong `DEPLOYMENT_GUIDE.md` hoặc `RUNBOOK.md`; tested on staging; first SUPER_ADMIN account created via `DataInitializer` migration or controlled SQL | Production DB: at least 1 ACTIVE SUPER_ADMIN exists; admin login confirmed | **CRITICAL** — không có thì admin portal không mở được. |
+| **B10** | Ops / Security / Infra | DevOps Lead | Backend; Admin/Web FE | Smoke test runbook with checklist (upload PNG → URL accessible; verify-email send + receive; reset-password send + receive); evidence saved | Real PNG uploaded on prod-like env, URL public; real email sent + received | **HIGH** — không kiểm chứng = lỗi runtime sau go-live. |
+| **B11** | Ops / Security / Infra | DevOps Lead | Backend Lead | Daily DB dump cron job; first restore drill done & documented; retention period chosen (e.g. 30 days) | Restore drill runbook executed once, restored DB matches source | **HIGH** — risk data loss vĩnh viễn nếu sự cố. |
+| **B12** | Business / Operational | Business Owner | Customer Success; DevOps | Tooling chosen (Crisp / Zendesk / Help Scout / in-house); SOP doc; SLA matrix; complaint email/hotline live | Customer can submit complaint via documented channel; ticket gets assigned within SLA | **MEDIUM-HIGH** — yêu cầu vận hành B2C; complaint resolution không có sẽ gây dispute leak. |
+| **B13** | Strategic Business Decisions | Business Owner | Backend Lead; Finance Ops | Decision documented (`docs/DECISIONS.md`): "implement <provider>" hoặc "stay BACS-only and harden B05"; if implement → architecture spike | Decision recorded; if implement → roadmap P1 ticket created | **MEDIUM** — không phải bắt buộc trước go-live; nhưng quyết định ảnh hưởng B05 scope. |
+| **B14** | Strategic Business Decisions | Business Owner | Backend Lead; Operations | Decision documented: "implement <carrier>" hoặc "ship offline, disclose in shipping policy"; if implement → architecture spike | Decision recorded; if "offline", shipping policy (B03) nói rõ; if implement → roadmap P1 | **MEDIUM** — ship offline OK nếu công bố trong policy. |
+| **B15** | Strategic Business Decisions | Business Owner | Backend Lead; Inventory Ops | Decision documented for 3 sub-domains: (a) stock receiving workflow scope; (b) warranty product/customer-facing? (c) full product-serial lifecycle (RECEIVED→IN_STOCK→SOLD→…) hay giữ movement-log? | Decision recorded; if implement → roadmap P1/P2; if defer → docs note "movement-log only" | **MEDIUM** — phụ thuộc business model (motorcycle gear thường có warranty). |
+
+> Khi đóng từng blocker, update Section 1.1 verdict + Section 7.0 group taxonomy + add note here với date + commit hash. Khi tất cả 15 đóng → đổi top-level verdict thành `READY_FOR_PRODUCTION`.
 
 ---
 
@@ -805,28 +863,30 @@ Toàn bộ 67 module trong `E2E_WORKFLOW_MASTER_INVENTORY.md` Section 3 (M01–M
 
 ### 12.2 Vì sao chưa?
 
-**3 nhóm gap chính**:
+**4 nhóm gap (tổng = 15 blocker, đối chiếu Section 7.0):**
 
-#### a) Operational Reality Gap (5 P0)
-- Invoice / e-invoice (B01) → vi phạm Nghị định 123/2020.
-- Bank transfer reconciliation (B05) → mất tiền do lỗi nhân viên đối soát tay.
-- Refund history (B06) → sai số liệu kế toán refund.
-- First SUPER_ADMIN seed (B09) → admin portal không dùng được.
-- Backup runbook (B11) → risk mất data vĩnh viễn.
+#### a) Business / Operational (5 — B01, B05, B06, B08, B12)
+- B01 Invoice / e-invoice — có thể không đáp ứng nghĩa vụ xuất hoá đơn điện tử (Nghị định 123/2020 và văn bản hướng dẫn — **mức phạt + phạm vi cần legal counsel xác nhận**).
+- B05 Bank transfer reconciliation — mất tiền do lỗi nhân viên đối soát tay khi không có lifecycle.
+- B06 Refund history — sai số liệu kế toán refund (REPORT_RULE_011).
+- B08 Verify-email POST drift — customer flow tổng-thể không complete được trong prod.
+- B12 Customer support / dispute handling SOP + tooling — yêu cầu vận hành B2C.
 
-#### b) Legal / Compliance Gap (5 NLC)
-- Bộ Công Thương TMĐT registration + footer badge (B02).
-- Privacy / Terms / Return / Shipping / Complaint policy content (B03).
-- Customer-data export/delete per Nghị định 13/2023 (B04).
-- Customer support / dispute handling SOP + tooling (B12).
-- Email/MinIO production smoke (B10).
+#### b) Legal / Compliance (3 — B02, B03, B04)
+- B02 Bộ Công Thương TMĐT registration + footer badge (Nghị định 52/2013, 85/2021 — **legal counsel xác nhận**).
+- B03 Privacy / Terms / Return / Shipping / Complaint policy content (legal counsel xác nhận content tối thiểu).
+- B04 Customer-data export/delete (Nghị định 13/2023 — **legal counsel xác nhận phạm vi**).
 
-#### c) Infra / Config Gap (5 P1)
-- JWT secret strong (B07a)
-- Internal token pairing (B07b)
-- Revalidate URL/secret pair (B07c)
-- Nginx ACL `/api/internal/**` (B07d)
-- SSL/TLS termination (B07e)
+#### c) Ops / Security / Infra (4 — B07, B09, B10, B11)
+- B07 5 PROD_CONFIG bundled blocker (JWT secret, internal token pair, revalidate URL/secret pair, Nginx ACL `/api/internal/**`, SSL/TLS).
+- B09 First SUPER_ADMIN seeding runbook.
+- B10 MinIO + SMTP staging smoke test.
+- B11 Backup / restore runbook + retention policy.
+
+#### d) Strategic Business Decisions (3 — B13, B14, B15)
+- B13 External payment provider (VNPAY/MoMo/SePay) — quyết định strategic; nếu skip thì B05 scope phải mở rộng.
+- B14 External shipping carrier (GHN/GHTK/VNPost) — quyết định strategic; nếu skip thì B03 (shipping policy) phải nói rõ ship offline.
+- B15 Stock receiving + warranty + product-serial lifecycle — phụ thuộc business model.
 
 ### 12.3 Cần sửa những gì trước? (theo P0 roadmap Section 10)
 
@@ -846,26 +906,26 @@ Toàn bộ 67 module trong `E2E_WORKFLOW_MASTER_INVENTORY.md` Section 3 (M01–M
 9. Decision + commit: invoice provider, payment provider strategy, shipping carrier strategy, warranty/serial strategy
 10. Backup runbook + first restore drill (DevOps — 1–2 ngày)
 
-### 12.4 Phân loại final
+### 12.4 Phân loại final (đối chiếu Section 7.0 + 12.2)
 
-| Loại gap | Số lượng | Tác động |
-|---|---|---|
-| Code gap | 4 (B01, B05, B06, B08) + 5 P1 follow-ups | Functionality hoặc data integrity |
-| Docs gap | ~10 row corrections | Docs hơi lệch code (không nghiêm trọng) |
-| Legal / business confirmation gap | 5 | NEEDS_LEGAL_CONFIRMATION + NEEDS_BUSINESS_CONFIRMATION |
-| Infra / ops gap | 5 PROD_CONFIG + 3 ops runbook | Deploy mặc định = unsafe |
-| **Total production blockers** | **15** | **Cần giải quyết trước go-live** |
+| Group | Số lượng | Blocker IDs | Tác động chính |
+|---|---:|---|---|
+| Business / Operational | 5 | B01, B05, B06, B08, B12 | Functionality, data integrity, customer flow, vận hành B2C |
+| Legal / Compliance | 3 | B02, B03, B04 | NEEDS_LEGAL_CONFIRMATION cho phạm vi nghĩa vụ và mức phạt; **không kết luận pháp lý trong audit này** |
+| Ops / Security / Infra | 4 | B07, B09, B10, B11 | Deploy mặc định = unsafe; runbook cần thiết |
+| Strategic Business Decisions | 3 | B13, B14, B15 | Decision required từ business owner |
+| **Total production blockers** | **15** | (no double count) | **Cần giải quyết trước go-live** |
 
 ### 12.5 Lời cuối
 
 BigBike codebase ở mức **kỹ thuật engineering đã rất chỉn chu**: 41 controller, 70 service, 82 migration, 1016 test pass, status label nhất quán, audit trail rõ ràng. Cycle 10 audit (`PRODUCTION_READINESS_GATE.md`) đã commit "CONDITIONAL GO" — đúng cho mức kỹ thuật.
 
-Tuy nhiên **e-commerce vận hành thật không dừng ở code-pass**. Phần còn lại (invoice / Bộ Công Thương / shipping carrier / customer support / payment reconciliation / data privacy) là **operational + legal**, không thể giải bằng code-fix nhanh. Một số yêu cầu **business decision** (provider chọn cái nào, warranty có cần không, payment online có cần không), nên cần product/business team commit trước khi engineer code tiếp.
+Tuy nhiên **e-commerce vận hành thật không dừng ở code-pass**. Phần còn lại (invoice / Bộ Công Thương / shipping carrier / customer support / payment reconciliation / data privacy) là **operational + legal + strategic**, không thể giải bằng code-fix nhanh.
 
 **Khuyến nghị**:
-- **Không** ép go-live "soft launch" trên domain bigbike.vn nếu chưa giải quyết B01, B02, B03 (3 blocker pháp lý).
+- Trước khi go-live trên domain bigbike.vn, **legal counsel phải review** phạm vi nghĩa vụ pháp lý hiện hành đối với loại hình doanh nghiệp BigBike (B01, B02, B03, B04) — audit này chỉ nhận diện rủi ro, **không thay thế tư vấn pháp lý chính thức**.
 - Có thể go-live "internal staging" (UAT cho team nội bộ + 1–2 đại lý gần) ngay sau khi xử lý U01–U08.
-- Lập "production checklist" gồm 15 blocker ở Section 7, treo lên dashboard, gate go-live theo % completion.
+- Lập "production checklist" gồm 15 blocker ở Section 7.1 + Ownership Matrix ở Section 7.2, treo lên dashboard, gate go-live theo % completion (group-by-group).
 
 ---
 
