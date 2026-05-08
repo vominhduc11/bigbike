@@ -21,7 +21,18 @@ This file captures measurable acceptance criteria that can be verified from curr
 
 | Topic | Current limitation | Status |
 |---|---|---|
-| External payment gateway | No confirmed live provider/webhook contract. | `NOT_FOUND_IN_REPO` |
-| External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. | `NOT_FOUND_IN_REPO` |
+| External payment gateway | No confirmed live provider/webhook contract. Online checkout uses provider `INTERNAL` (COD/BACS only). | `NOT_FOUND_IN_REPO` |
+| External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. `fulfillmentStatus` field is exposed but has no carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` |
 | Mobile release ownership | Real client exists, but production support scope is still not formalized. | `NEEDS_VERIFICATION` |
-| Receipt-based receiving flow | Schema exists without confirmed active API/service workflow. | `NEEDS_VERIFICATION` |
+| Receipt-based receiving flow | Schema exists without confirmed active API/service workflow. | `SCHEMA_ONLY` |
+| Invoice / e-invoice (hóa đơn điện tử) | No invoice entity, no e-invoice provider integration. | `NOT_FOUND_IN_REPO` |
+| Bank-transfer reconciliation (mismatch handling) | Manual via `paymentStatus`/`paidAmount` patches; no structured "bank transfer record" / "payment correction" entity. | `DOCUMENTED_NOT_ENFORCED` |
+| Customer-data export / delete (Nghị định 13/2023) | No customer-facing data export or delete endpoint. | `NOT_FOUND_IN_REPO` |
+| Customer support / ticketing | Only public contact form exists; no ticketing/SLA/escalation. | `NOT_FOUND_IN_REPO` |
+| Notification center (admin read/unread) | WS toast + email only; no persistent notifications table. | `NOT_FOUND_IN_REPO` |
+| Refund history per partial refund | `refundedAt` is overwritten; no `refund_transactions` table (REPORT_RULE_011). | `CODE_DEFECT` |
+| Legal / compliance content (Privacy / Terms / Return / Shipping / Complaint policy + Bộ Công Thương registration / footer badge) | CMS-driven (`/chinh-sach/[slug]`); content correctness depends on what admin published. | `NEEDS_LEGAL_CONFIRMATION` |
+| Email production deliverability | Code path confirmed; runtime not tested. | `NEEDS_PRODUCTION_RUNTIME_VERIFICATION` |
+| WebSocket per-subscribe topic-level authz | CONNECT auth confirmed; per-subscribe authz not verified. | `NEEDS_VERIFICATION` |
+
+> **Production-ready verdict:** ❌ NOT_READY. See `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` Section 7 for the 15-blocker production gate. Code path business chính đã `PASS`; production gap chủ yếu ở **operational reality** (invoice, bank reconciliation, support, notification center) và **legal/compliance** (Bộ Công Thương đăng ký + content) và **infra config** (5 PROD_CONFIG).

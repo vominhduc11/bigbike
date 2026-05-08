@@ -4,7 +4,11 @@
 **Auditor:** Senior Backend Architect + QA Auditor
 **Scope:** POS + Receivables / Công nợ
 **Phase:** 5 (follows ORDER_PAYMENT_REFUND_WS_FIX_REPORT)
-**Status:** FINAL
+**Status:** SUPERSEDED — see postscript below.
+
+---
+
+> **Postscript 2026-05-08 (BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT):** The CRITICAL "no scheduler calls `refreshOverdueStatus()`" item below has been **RESOLVED**. Current code includes `service/receivable/ReceivableOverdueScheduler.java` with `@Scheduled(cron = "0 5 0 * * ?")` (daily 00:05) that calls `receivableService.refreshOverdueStatus()`; `BigbikeBackendApplication.java` declares `@EnableScheduling`. The HIGH "POS frontend missing CREDIT" item has also been **RESOLVED**: `bigbike-admin/src/screens/PosScreen.jsx` line 9 declares `PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']` with full customer-selector / availableCredit / downPayment / creditEnabled gates. Subsequent fix history is captured in `POS_RECEIVABLES_FIX_REPORT.md` and `PRODUCTION_READINESS_GATE.md` (cycle 10, 2026-05-08, all 10 POSREC issues marked resolved).
 
 ---
 

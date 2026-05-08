@@ -29,9 +29,16 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 
 | Topic | Current finding | Status | Evidence |
 |---|---|---|---|
-| External payment gateway | No live provider/webhook implementation was confirmed. Checkout currently records provider `INTERNAL`; POS records provider `POS`. | `NOT_FOUND_IN_REPO` | `CheckoutService.java`, `PosOrderService.java`, search for `webhook`, `VNPAY`, `MoMo`, `SEPAY` |
-| External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
-| Stock receipt workflow | Receipt tables exist in Flyway, but no confirmed Java controller/service was found for a receiving workflow. | `NOT_FOUND_IN_REPO` in active service layer | `V52__add_stock_receipts.sql`, `V53__add_stock_receipt_lines.sql`, `V55__add_receipt_serials.sql`, source search |
+| External payment gateway | No live provider/webhook implementation was confirmed. Checkout currently records provider `INTERNAL` (COD/BACS only); POS records provider `POS`. | `NOT_FOUND_IN_REPO` | `CheckoutService.java`, `PosOrderService.java`, search for `webhook`, `VNPAY`, `MoMo`, `SEPAY` |
+| External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. `OrderEntity.fulfillmentStatus` field exists without carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
+| Stock receipt workflow | Receipt tables exist in Flyway, but no confirmed Java controller/service was found for a receiving workflow. | `SCHEMA_ONLY` | `V52__add_stock_receipts.sql`, `V53__add_stock_receipt_lines.sql`, `V55__add_receipt_serials.sql`, source search |
+| Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020 for legal entities; NEEDS_BUSINESS_CONFIRMATION on provider |
+| Customer-data export / delete (Nghị định 13/2023) | No customer-facing data-portability endpoint. | `NOT_FOUND_IN_REPO` | repo search |
+| Customer support / ticketing | Only public `ContactController POST /contact`; no ticketing / SLA / escalation. | `NOT_FOUND_IN_REPO` | repo search |
+| Notification center (admin read/unread) | WS event + email only; no persistent `notifications` table. | `NOT_FOUND_IN_REPO` | `NotificationBell` consumes WS only |
+| Bộ Công Thương TMĐT registration / legal-content footer badge | CMS-driven legal pages; registration status outside repo. | `NEEDS_LEGAL_CONFIRMATION` | `app/chinh-sach/[slug]`, `app/huong-dan/[...sub]` |
+
+> Production-readiness verdict and the 15-blocker production gate live in `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md`.
 
 ## Operational Notes
 

@@ -41,3 +41,22 @@ Status: `CONFIRMED_FROM_CODE`
 Receipt schema exists in Flyway, but a receiving process built on top of `stock_receipts` was not confirmed in the current Java service/controller layer.
 
 Status: `NOT_FOUND_IN_REPO`
+
+## Operational Reality Gaps (for production)
+
+These business processes are **expected to exist** for a Vietnamese e-commerce + walk-in shop running real operations, but are **not present in the current repo**. Listed here so AI agents and humans do not assume they exist.
+
+| Process | Current finding | Status | Evidence / Note |
+|---|---|---|---|
+| Invoice / e-invoice (hóa đơn điện tử) | No `invoice` entity, no service, no provider integration (Misa/VNPT/SInvoice/Easyinvoice). Refund/cancel does not affect any invoice. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020/NĐ-CP for legal entities selling retail. NEEDS_BUSINESS_CONFIRMATION on which provider to integrate. |
+| Bank-transfer manual reconcile (BACS) | Online checkout supports `COD` and `BACS` only (`CheckoutService.ALLOWED_PAYMENT_METHODS`); provider is `INTERNAL`. Admin can patch `paymentStatus`/`paidAmount` manually, but there is no entity for "bank transfer record" / "unallocated payment" / "overpaid/underpaid correction" with audit trail. | `DOCUMENTED_NOT_ENFORCED` (manual workflow only) | Risk: data-entry errors. NEEDS_BUSINESS_CONFIRMATION on whether to integrate SePay / VNPAY / MoMo, or to add a manual-reconcile sub-process with structured audit. |
+| External payment provider / webhook | None. No `webhook|VNPAY|MoMo|SePay` references in active backend Java. | `NOT_FOUND_IN_REPO` | Memory `project_sepay_manual.md` is outdated — V59 removed SePay artifacts. |
+| External shipping carrier (GHN/GHTK/ViettelPost) | `fulfillmentStatus` field exists on `OrderEntity` but no transition map, no tracking number entity, no carrier integration code. Internal shipping limited to zones/methods (price config). | `NOT_FOUND_IN_REPO` | Without integration, fulfillment runs 100% offline (Excel/Zalo). |
+| Stock receiving workflow | Tables `stock_receipts`, `stock_receipt_lines`, `receipt_serials` exist (V52/V53/V55) without active Java service/controller/UI. | `SCHEMA_ONLY` | Decide: implement vs. defer. |
+| Warranty / product-serial lifecycle | Serials are stored on stock movements (`StockMovementSerialEntity`); there is no `product_serial` lifecycle table (RECEIVED → IN_STOCK → RESERVED → SOLD → RETURNED → WARRANTY_ACTIVE). No warranty activation/claim/repair flow. | `NOT_FOUND_IN_REPO` (full lifecycle) | NEEDS_BUSINESS_CONFIRMATION whether warranty is required for motorcycle gear. |
+| Customer-data export / delete (right to be forgotten) | No `GET /api/v1/customer/me/export` or `DELETE /api/v1/customer/me`; no anonymize-on-request endpoint. | `NOT_FOUND_IN_REPO` | Required by Nghị định 13/2023/NĐ-CP về dữ liệu cá nhân. |
+| Customer support / dispute / complaint handling | Public `ContactController POST /api/v1/contact` exists (rate-limited). No ticketing system, no SLA, no escalation, no complaint resolution workflow. | `NOT_FOUND_IN_REPO` | Required for B2C TMĐT per Nghị định 85/2021. NEEDS_BUSINESS_CONFIRMATION on tooling (Crisp/Zendesk/in-house). |
+| Notification center (admin read/unread) | Admin has WebSocket toast (`NEW_ORDER`) and email notifications, but no persistent `notifications` table and no read/unread state. Admin offline during a WS event will permanently miss it. | `NOT_FOUND_IN_REPO` | `NotificationBell` component shows count only when WS connected. |
+| Refund history (per partial refund) | `refundedAt` column is overwritten on every `RefundService.applyRefund()` call. No `refund_transactions` table. | `CODE_DEFECT` (REPORT_RULE_011) | Tracked as ORD-007 in `ORDER_PAYMENT_REFUND_WS_AUDIT.md`. |
+| POS refund / hoàn tiền tại quầy | POS sales create `COMPLETED + PAID`. There is no POS-specific refund/return-at-counter service. POS refunds must go through admin order refund flow. | `NOT_FOUND_IN_REPO` | NEEDS_BUSINESS_CONFIRMATION. |
+| Backup / restore / data retention runbook | Out of repo (DevOps concern). | `NEEDS_PRODUCTION_RUNTIME_VERIFICATION` | Document in deployment runbook before production. |

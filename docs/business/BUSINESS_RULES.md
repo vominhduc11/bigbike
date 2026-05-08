@@ -115,7 +115,7 @@ AR module implemented in V75 (Flyway). Rules below are `CONFIRMED_FROM_CODE`.
 - `AR_RULE_005`: Exceeding credit limit blocks the POS sale with HTTP 422. ADMIN with `receivables.override_limit` permission can bypass. `CONFIRMED_FROM_CODE`
 - `AR_RULE_006`: Partial payments are supported. Each `POST /admin/receivables/{id}/payments` call records a PaymentEntity and updates `paidAmount`. `paymentStatus` transitions: UNPAID → PARTIALLY_PAID → PAID. `CONFIRMED_FROM_CODE`
 - `AR_RULE_007`: Write-off is supported via `POST /admin/receivables/{id}/write-off` with mandatory reason. Requires `receivables.write_off` permission (ADMIN only). Sets status=WRITTEN_OFF, records audit log. `CONFIRMED_FROM_CODE`
-- `AR_RULE_008`: Overdue receivables are flagged by scheduler (`ReceivableService.refreshOverdueStatus()`). No auto-cancellation — status becomes OVERDUE for staff attention. `CONFIRMED_FROM_CODE`
+- `AR_RULE_008`: Overdue receivables are flagged by scheduler. `ReceivableOverdueScheduler` runs daily at 00:05 (`@Scheduled(cron = "0 5 0 * * ?")`) and calls `ReceivableService.refreshOverdueStatus()`, which transitions OPEN/PARTIALLY_PAID receivables past `dueDate` to OVERDUE. No auto-cancellation — status becomes OVERDUE for staff attention. `CONFIRMED_FROM_CODE`
 - `AR_RULE_009`: Target is registered customers (UUID FK on `accounts_receivable.customer_id`). Walk-in without system account: `customer_id` is nullable; `customer_name` and `customer_phone` are snapshotted at creation. `CONFIRMED_FROM_CODE`
 - `AR_RULE_010`: No customer-facing SOA in web/mobile portal. Receivables are admin-only. `CONFIRMED_FROM_CODE`
 - `AR_RULE_011`: Aging report implemented: buckets are notDue, 0–30 days, 31–60 days, 61–90 days, 90+ days. Also: total outstanding, overdue outstanding, written-off total, open/overdue count. `CONFIRMED_FROM_CODE`
@@ -144,11 +144,11 @@ Evidence:
 - `CreditPolicyService.java`
 - `ReceivableService.java`
 - `ReceivableQueryService.java`
+- `ReceivableOverdueScheduler.java` (cron `0 5 0 * * ?` daily 00:05; verifies `@EnableScheduling` in `BigbikeBackendApplication.java`)
 - `AdminReceivableController.java`
 - `PosOrderService.java` (CREDIT branch)
 - `AdminRolePermissions.java` (`receivables.*` permissions added)
 - `AdminReceivableApiTest.java`
-- `AdminRolePermissions.java` (no `receivables.*` permissions)
 
 ## Reports Rules
 

@@ -15,4 +15,9 @@
 | Admin order push | admin | WebSocket `/ws` + `/topic/admin/orders` | `WebSocketConfig`, `AdminOrderWsService`, `OrderWsEvent` | no dedicated automated WS suite reopened in this pass | `CONFIRMED_FROM_CODE` |
 | Receipt-based receiving flow | none confirmed | none confirmed | receipt tables only | none confirmed | `NOT_FOUND_IN_REPO` |
 | Dashboard revenue accuracy (gross vs paid) | admin | `AdminDashboardController` | `AdminDashboardService`, `OrderJpaRepository.sumPaidRevenueSince` | no dedicated suite | `CONFIRMED_FROM_CODE` (P-1 fix applied) |
-| Accounts Receivable | admin | proposed `AdminReceivablesController` | proposed `ReceivablesService`, `OrderJpaRepository`, `PaymentJpaRepository` | none | `PROPOSED_FOR_AR_MODULE` |
+| Accounts Receivable | admin | `AdminReceivableController` | `ReceivableService`, `ReceivableQueryService`, `CreditPolicyService`, `ReceivableOverdueScheduler` (cron `0 5 0 * * ?`), `ReceivableJpaRepository` | `AdminReceivableApiTest.java` | `CONFIRMED_FROM_TEST` |
+| POS credit sale (CREDIT) | admin | `AdminPosController` (CREDIT branch) | `PosOrderService` + `CreditPolicyService` + `ReceivableService.createReceivableForOrder` | `Phase1MPosApiTest.java` (credit branch) + `AdminReceivableApiTest.java` | `CONFIRMED_FROM_TEST` |
+| External payment provider / webhook | none confirmed | none confirmed | none confirmed (online checkout uses provider `INTERNAL` for COD/BACS only) | none | `NOT_FOUND_IN_REPO` |
+| External shipping carrier | none confirmed | none confirmed | none confirmed (`fulfillmentStatus` field exposed on order detail; no carrier integration / waybill / tracking code) | none | `NOT_FOUND_IN_REPO` |
+| Invoice / e-invoice | none | none | none | none | `NOT_FOUND_IN_REPO` |
+| Stock receiving workflow | none confirmed | none confirmed | schema only (`stock_receipts`, `stock_receipt_lines`, `receipt_serials` from V52/V53/V55); no Java service/controller | none | `SCHEMA_ONLY` |
