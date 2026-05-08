@@ -10,5 +10,6 @@ public record CustomerSummary(
         String displayName,
         String status,
         String gender,
-        LocalDate dob
+        LocalDate dob,
+        boolean emailVerified
 ) {}

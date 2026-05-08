@@ -62,13 +62,22 @@ public class CustomerOrderController {
      * Declared BEFORE /{orderId} so Spring doesn't try to parse "returns" as a UUID.
      */
     @GetMapping("/returns")
-    public List<CustomerReturnResponse> listReturns() {
-        return customerReturnService.listCustomerReturns(requireCustomerId());
+    public ApiDataResponse<List<CustomerReturnResponse>> listReturns(HttpServletRequest request) {
+        return apiResponseFactory.data(
+                customerReturnService.listCustomerReturns(requireCustomerId()),
+                request
+        );
     }
 
     @GetMapping("/returns/{returnId}")
-    public CustomerReturnResponse getReturn(@PathVariable UUID returnId) {
-        return customerReturnService.getCustomerReturn(requireCustomerId(), returnId);
+    public ApiDataResponse<CustomerReturnResponse> getReturn(
+            @PathVariable UUID returnId,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(
+                customerReturnService.getCustomerReturn(requireCustomerId(), returnId),
+                request
+        );
     }
 
     @GetMapping("/{orderId}")
@@ -85,11 +94,15 @@ public class CustomerOrderController {
 
     @PostMapping("/{orderId}/returns")
     @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.CREATED)
-    public CustomerReturnResponse createReturn(
+    public ApiDataResponse<CustomerReturnResponse> createReturn(
             @PathVariable UUID orderId,
-            @Valid @RequestBody CreateReturnRequest req
+            @Valid @RequestBody CreateReturnRequest req,
+            HttpServletRequest request
     ) {
-        return customerReturnService.createReturn(requireCustomerId(), orderId, req);
+        return apiResponseFactory.data(
+                customerReturnService.createReturn(requireCustomerId(), orderId, req),
+                request
+        );
     }
 
     private UUID requireCustomerId() {

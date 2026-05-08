@@ -430,7 +430,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
               <div className="wp-timeline">
                 {order.notes.map((note) => (
                   <div key={note.id} className="wp-timeline-item">
-                    <p className="wp-timeline-meta">{note.type ? safeText(note.type, "Ghi chú") : "Ghi chú"} · {formatDate(note.createdAt)}</p>
+                    <p className="wp-timeline-meta">{note.noteType ? safeText(note.noteType, "Ghi chú") : "Ghi chú"} · {formatDate(note.createdAt)}</p>
                     <p className="wp-note-text">{note.content}</p>
                   </div>
                 ))}

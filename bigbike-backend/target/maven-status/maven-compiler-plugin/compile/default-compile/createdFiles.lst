@@ -609,6 +609,7 @@ com\bigbike\bigbike_backend\api\admin\AdminHomeVideoController.class
 com\bigbike\bigbike_backend\api\admin\AdminPosController.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressMenuMapper.class
 com\bigbike\bigbike_backend\api\admin\AdminOrderController.class
+com\bigbike\bigbike_backend\config\ClientIpResolver.class
 com\bigbike\bigbike_backend\migration\wordpress\importer\MigrationExecutionReport.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressPermalinkManagerMapper.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressArticleMapper$MappedArticle.class

@@ -180,6 +180,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\PublicSliderController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\VnAddressController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\BigbikeBackendApplication.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\config\ClientIpResolver.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\config\CorsConfig.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\config\CustomerCsrfFilter.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\config\CustomerSessionFilter.java

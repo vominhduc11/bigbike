@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -29,8 +30,14 @@ import org.springframework.web.context.WebApplicationContext;
 /**
  * Phase 1I.1 — Verifies that DISABLED/BLOCKED/PENDING customers cannot login
  * and that no session is created on rejected login.
+ *
+ * The @Sql annotation seeds role/permission data (admin_roles + role_permissions tables)
+ * that Flyway migrations would normally populate but are disabled in the H2 test environment.
+ * Without this seed, AdminPermissionService.getPermissionsForRole("ADMIN") returns an
+ * empty set, causing all admin JWT calls to return 403 (CUSTRET-001 fix).
  */
 @SpringBootTest
+@Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class Phase1I1CustomerStatusLoginTest {
 
     private static final String ADMIN_EMAIL = "1i1-admin-" + UUID.randomUUID() + "@bigbike.test";

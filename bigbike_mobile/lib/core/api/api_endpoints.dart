@@ -47,6 +47,7 @@ class ApiEndpoints {
   static const String logout = '/api/v1/customer/auth/logout';
   static const String forgotPassword = '/api/v1/customer/auth/password/forgot';
   static const String resetPassword = '/api/v1/customer/auth/password/reset';
+  static const String verifyEmail = '/api/v1/customer/auth/verify-email';
 
   // Customer
   static const String me = '/api/v1/customer/me';

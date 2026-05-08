@@ -145,7 +145,7 @@ export type OrderPayment = {
 
 export type OrderNote = {
   id: string
-  type?: string  // backend CustomerOrderReadService does not return type; admin-visible only
+  noteType?: string
   content: string
   createdAt: string
 }
@@ -187,6 +187,7 @@ export type CustomerProfile = {
   status: string
   gender?: string | null
   dob?: string | null
+  emailVerified?: boolean
 }
 
 export type CustomerAuthData = {

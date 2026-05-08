@@ -242,7 +242,7 @@ public class CustomerAuthService {
 
     private CustomerSummary toSummary(CustomerEntity c) {
         return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
-                c.getGender(), c.getDob());
+                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null);
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {

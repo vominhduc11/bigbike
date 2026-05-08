@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.customer.dto.CustomerLoginRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerResetPasswordRequest;
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerRegisterRequest;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthResult;
@@ -45,6 +46,7 @@ public class CustomerAuthController {
     private final CustomerPasswordResetService passwordResetService;
     private final ApiResponseFactory apiResponseFactory;
     private final EmailVerificationService emailVerificationService;
+    private final ClientIpResolver clientIpResolver;
 
     public CustomerAuthController(
             @Value("${bigbike.cookies.secure:true}") boolean cookiesSecure,
@@ -52,13 +54,15 @@ public class CustomerAuthController {
             CustomerSessionService sessionService,
             CustomerPasswordResetService passwordResetService,
             ApiResponseFactory apiResponseFactory,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            ClientIpResolver clientIpResolver) {
         this.cookiesSecure = cookiesSecure;
         this.authService = authService;
         this.sessionService = sessionService;
         this.passwordResetService = passwordResetService;
         this.apiResponseFactory = apiResponseFactory;
         this.emailVerificationService = emailVerificationService;
+        this.clientIpResolver = clientIpResolver;
     }
 
     /** Token arrives in POST body to keep it out of server access logs and Referer headers. */
@@ -169,9 +173,6 @@ public class CustomerAuthController {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        // Only trust X-Forwarded-For when the direct caller is a known reverse-proxy.
-        // Without a trusted-proxy allowlist, XFF can be spoofed to bypass rate limits.
-        // In production, configure a load-balancer/proxy that strips/rewrites XFF.
-        return request.getRemoteAddr();
+        return clientIpResolver.resolve(request);
     }
 }

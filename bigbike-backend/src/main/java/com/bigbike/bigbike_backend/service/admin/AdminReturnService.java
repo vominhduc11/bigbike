@@ -13,6 +13,8 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineIt
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnHistoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnItemEntity;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
@@ -61,6 +63,7 @@ public class AdminReturnService {
     private final ReturnHistoryJpaRepository historyRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
+    private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository stockMovementRepo;
     private final InventoryPolicyService inventoryPolicyService;
@@ -73,6 +76,7 @@ public class AdminReturnService {
             ReturnHistoryJpaRepository historyRepo,
             OrderJpaRepository orderRepo,
             OrderLineItemJpaRepository lineItemRepo,
+            ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository stockMovementRepo,
             InventoryPolicyService inventoryPolicyService,
@@ -84,6 +88,7 @@ public class AdminReturnService {
         this.historyRepo = historyRepo;
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
+        this.productRepo = productRepo;
         this.variantRepo = variantRepo;
         this.stockMovementRepo = stockMovementRepo;
         this.inventoryPolicyService = inventoryPolicyService;
@@ -211,29 +216,61 @@ public class AdminReturnService {
     // ── Stock restore ─────────────────────────────────────────────────────────
 
     private void restoreStockForReturn(UUID returnId) {
+        // Idempotency guard: if stock movements have already been written for this return, skip.
+        if (stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnId)) return;
+
         List<ReturnItemEntity> returnItems = itemRepo.findByReturnId(returnId);
         Instant now = Instant.now();
+        int threshold = inventoryPolicyService.lowStockThreshold();
+
         for (ReturnItemEntity ri : returnItems) {
             if (ri.getOrderLineItemId() == null) continue;
             lineItemRepo.findById(ri.getOrderLineItemId()).ifPresent((OrderLineItemEntity li) -> {
-                if (li.getProductVariantId() == null) return;
-                variantRepo.findByIdForUpdate(li.getProductVariantId().toString()).ifPresent(variant -> {
-                    int before = variant.getQuantityOnHand();
-                    int after = before + ri.getQuantity();
-                    variant.setQuantityOnHand(after);
-                    inventoryPolicyService.recomputeStockState(variant);
-                    variantRepo.save(variant);
-                    StockMovementEntity m = new StockMovementEntity();
-                    m.setVariant(variant);
-                    m.setMovementType("IN");
-                    m.setQuantityDelta(ri.getQuantity());
-                    m.setQuantityBefore(before);
-                    m.setQuantityAfter(after);
-                    m.setReferenceType("RETURN");
-                    m.setReferenceId(returnId);
-                    m.setCreatedAt(now);
-                    stockMovementRepo.save(m);
-                });
+                if (li.getProductVariantId() != null) {
+                    // Variant-level restore
+                    variantRepo.findByIdForUpdate(li.getProductVariantId().toString()).ifPresent(variant -> {
+                        int before = variant.getQuantityOnHand();
+                        int after = before + ri.getQuantity();
+                        variant.setQuantityOnHand(after);
+                        inventoryPolicyService.recomputeStockState(variant);
+                        variantRepo.save(variant);
+                        StockMovementEntity m = new StockMovementEntity();
+                        m.setVariant(variant);
+                        m.setMovementType("IN");
+                        m.setQuantityDelta(ri.getQuantity());
+                        m.setQuantityBefore(before);
+                        m.setQuantityAfter(after);
+                        m.setReferenceType("RETURN");
+                        m.setReferenceId(returnId);
+                        m.setCreatedAt(now);
+                        stockMovementRepo.save(m);
+                    });
+                } else if (li.getProductId() != null) {
+                    // Product-level restore (no-variant product) — mirrors OrderStockRestoreService
+                    productRepo.findByIdForUpdate(li.getProductId().toString()).ifPresent(product -> {
+                        if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
+                        int before = product.getStockQuantity();
+                        int after = before + ri.getQuantity();
+                        product.setStockQuantity(after);
+                        ProductStockState current = product.getStockState();
+                        if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
+                            if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
+                            else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
+                            else product.setStockState(ProductStockState.IN_STOCK);
+                        }
+                        productRepo.save(product);
+                        StockMovementEntity m = new StockMovementEntity();
+                        m.setProductId(product.getId());
+                        m.setMovementType("IN");
+                        m.setQuantityDelta(ri.getQuantity());
+                        m.setQuantityBefore(before);
+                        m.setQuantityAfter(after);
+                        m.setReferenceType("RETURN");
+                        m.setReferenceId(returnId);
+                        m.setCreatedAt(now);
+                        stockMovementRepo.save(m);
+                    });
+                }
             });
         }
     }

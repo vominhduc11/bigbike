@@ -95,7 +95,7 @@ class Phase1LReturnsApiTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        // Endpoint returns List<CustomerReturnResponse> directly â€" expect empty JSON array
+        // Endpoint returns ApiDataResponse<List<CustomerReturnResponse>> — data field is an empty array
         assertThat(result.getResponse().getContentAsString()).contains("[]");
     }
 
@@ -149,10 +149,10 @@ class Phase1LReturnsApiTest {
                         .content(buildReturnRequest("DEFECTIVE", "Product is broken", session.lineItemId))
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isCreated())
-                // CustomerReturnResponse returned directly (not wrapped in {data:})
-                .andExpect(jsonPath("$.returnNumber").isString())
-                .andExpect(jsonPath("$.status").value("PENDING"))
-                .andExpect(jsonPath("$.reason").value("DEFECTIVE"))
+                // CustomerReturnResponse is wrapped in ApiDataResponse envelope {success, data}
+                .andExpect(jsonPath("$.data.returnNumber").isString())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.reason").value("DEFECTIVE"))
                 .andReturn();
 
         String returnNumber = extractJsonValue(result.getResponse().getContentAsString(), "returnNumber");
@@ -194,14 +194,14 @@ class Phase1LReturnsApiTest {
 
         String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
 
-        // CustomerReturnResponse returned directly (not wrapped)
+        // CustomerReturnResponse is wrapped in ApiDataResponse envelope {success, data}
         mockMvc.perform(get("/api/v1/customer/orders/returns/" + returnId).cookie(session.cookies))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(returnId))
-                .andExpect(jsonPath("$.reason").value("NOT_AS_DESCRIBED"))
-                .andExpect(jsonPath("$.customerNote").value("Looks different"))
-                .andExpect(jsonPath("$.items").isArray())
-                .andExpect(jsonPath("$.history").isArray());
+                .andExpect(jsonPath("$.data.id").value(returnId))
+                .andExpect(jsonPath("$.data.reason").value("NOT_AS_DESCRIBED"))
+                .andExpect(jsonPath("$.data.customerNote").value("Looks different"))
+                .andExpect(jsonPath("$.data.items").isArray())
+                .andExpect(jsonPath("$.data.history").isArray());
     }
 
     // â"€â"€ 9. Another customer cannot fetch return by ID â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
@@ -527,7 +527,8 @@ class Phase1LReturnsApiTest {
                         .content(buildReturnRequest("DEFECTIVE", null, lineItemId))
                         .cookie(cookies).header("X-CSRF-Token", csrf))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.items[0].productName").value(uniqueName))
+                // CustomerReturnResponse is wrapped in ApiDataResponse envelope {success, data}
+                .andExpect(jsonPath("$.data.items[0].productName").value(uniqueName))
                 .andReturn();
 
         assertThat(createResult.getResponse().getContentAsString()).contains(uniqueName);

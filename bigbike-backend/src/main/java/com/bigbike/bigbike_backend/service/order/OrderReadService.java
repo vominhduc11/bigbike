@@ -265,6 +265,7 @@ public class OrderReadService {
     private OrderNoteResponse toNote(OrderNoteEntity e) {
         return new OrderNoteResponse(
                 e.getId(),
+                e.getNoteType(),
                 e.getContent(),
                 e.getCreatedAt()
         );

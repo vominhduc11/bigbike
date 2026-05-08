@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record OrderNoteResponse(
         UUID id,
+        String noteType,
         String content,
         Instant createdAt
 ) {}
