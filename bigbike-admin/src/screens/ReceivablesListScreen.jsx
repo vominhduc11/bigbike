@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle, Clock, DollarSign, FileX, X } from 'lucide-react'
+import { AlertTriangle, Clock, DollarSign, FileX, X } from 'lucide-react'
 import {
   fetchReceivables,
   fetchReceivableSummary,
@@ -10,46 +11,42 @@ import {
 import { useUrlQuery } from '../lib/useUrlQuery'
 import { StatePanel } from '../components/StatePanel'
 
-const STATUS_OPTIONS = [
-  { value: 'ALL',          label: 'Tất cả' },
-  { value: 'OPEN',         label: 'Đang nợ' },
-  { value: 'PARTIALLY_PAID', label: 'Trả một phần' },
-  { value: 'OVERDUE',      label: 'Quá hạn' },
-  { value: 'CLOSED',       label: 'Đã thu đủ' },
-  { value: 'WRITTEN_OFF',  label: 'Đã xóa nợ' },
-]
-
+const STATUS_OPTION_KEYS = ['ALL', 'OPEN', 'PARTIALLY_PAID', 'OVERDUE', 'CLOSED', 'WRITTEN_OFF']
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
 
-function statusBadge(status) {
-  const styles = {
-    OPEN:          { bg: '#3b82f6', label: 'Đang nợ' },
-    PARTIALLY_PAID:{ bg: '#f59e0b', label: 'Trả một phần' },
-    OVERDUE:       { bg: '#ef4444', label: 'Quá hạn' },
-    CLOSED:        { bg: '#10b981', label: 'Đã thu đủ' },
-    WRITTEN_OFF:   { bg: '#6b7280', label: 'Xóa nợ' },
-  }
-  const s = styles[status] || { bg: '#6b7280', label: status }
+const STATUS_COLOR_MAP = {
+  OPEN:           '#3b82f6',
+  PARTIALLY_PAID: '#f59e0b',
+  OVERDUE:        '#ef4444',
+  CLOSED:         '#10b981',
+  WRITTEN_OFF:    '#6b7280',
+}
+
+function formatCurrency(amount, locale = 'vi-VN') {
+  if (amount == null) return '—'
+  return Number(amount).toLocaleString(locale) + ' ₫'
+}
+
+function statusBadge(status, t) {
+  const bg = STATUS_COLOR_MAP[status] ?? '#6b7280'
+  const label = t(`receivables.statusLabel.${status}`, { defaultValue: status })
   return (
     <span style={{
       display: 'inline-block',
       padding: '2px 8px',
       borderRadius: 12,
-      background: s.bg,
+      background: bg,
       color: '#fff',
       fontSize: 12,
       fontWeight: 600,
       whiteSpace: 'nowrap',
-    }}>{s.label}</span>
+    }}>{label}</span>
   )
 }
 
-function formatCurrency(amount) {
-  if (amount == null) return '—'
-  return Number(amount).toLocaleString('vi-VN') + ' ₫'
-}
-
 function RecordPaymentModal({ receivable, onClose, onSuccess }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('CASH')
   const [ref, setRef] = useState('')
@@ -78,53 +75,53 @@ function RecordPaymentModal({ receivable, onClose, onSuccess }) {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Ghi nhận thanh toán</h3>
+          <h3 style={{ margin: 0 }}>{t('receivables.recordPayment.title')}</h3>
           <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
 
         <p style={{ margin: '0 0 12px', color: 'var(--admin-text-secondary)' }}>
-          Còn nợ: <strong>{formatCurrency(outstanding)}</strong>
+          {t('receivables.recordPayment.outstanding')} <strong>{formatCurrency(outstanding, locale)}</strong>
         </p>
 
         {error && <div style={errorStyle}>{error}</div>}
 
-        <label style={labelStyle}>Số tiền thu *</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.amountLabel')}</label>
         <input
           type="number"
           value={amount}
           onChange={e => setAmount(e.target.value)}
-          placeholder={`Tối đa ${Number(outstanding).toLocaleString('vi-VN')}`}
+          placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
           style={inputStyle}
           min="1"
           max={outstanding}
         />
 
-        <label style={labelStyle}>Phương thức thanh toán *</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.methodLabel')}</label>
         <select value={method} onChange={e => setMethod(e.target.value)} style={inputStyle}>
           {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
 
-        <label style={labelStyle}>Mã giao dịch / Reference</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.refLabel')}</label>
         <input type="text" value={ref} onChange={e => setRef(e.target.value)} style={inputStyle} />
 
-        <label style={labelStyle}>Ghi chú</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.noteLabel')}</label>
         <textarea value={note} onChange={e => setNote(e.target.value)} style={{ ...inputStyle, height: 72, resize: 'vertical' }} />
 
         {amount > 0 && (
           <div style={{ background: 'var(--admin-bg-subtle)', borderRadius: 6, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-            Sau khi thu: còn nợ {formatCurrency(outstanding - Number(amount))}
+            {t('receivables.recordPayment.afterCollection', { amount: formatCurrency(outstanding - Number(amount), locale) })}
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>Hủy</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.recordPayment.cancel')}</button>
           <button
             type="button"
             disabled={!amount || Number(amount) <= 0 || mutation.isPending}
             onClick={() => mutation.mutate()}
             style={primaryBtnStyle}
           >
-            {mutation.isPending ? 'Đang lưu…' : 'Xác nhận thu tiền'}
+            {mutation.isPending ? t('receivables.recordPayment.saving') : t('receivables.recordPayment.confirm')}
           </button>
         </div>
       </div>
@@ -133,6 +130,8 @@ function RecordPaymentModal({ receivable, onClose, onSuccess }) {
 }
 
 function WriteOffModal({ receivable, onClose, onSuccess }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   const [reason, setReason] = useState('')
   const [error, setError] = useState(null)
   const queryClient = useQueryClient()
@@ -151,36 +150,39 @@ function WriteOffModal({ receivable, onClose, onSuccess }) {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, color: '#dc2626' }}>Xóa nợ (Write-off)</h3>
+          <h3 style={{ margin: 0, color: '#dc2626' }}>{t('receivables.writeOff.title')}</h3>
           <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
 
         <p style={{ margin: '0 0 12px' }}>
-          Công nợ <strong>{receivable.orderNumber}</strong> — {formatCurrency(receivable.outstandingAmount)}
+          {t('receivables.writeOff.subject', {
+            orderNumber: receivable.orderNumber,
+            amount: formatCurrency(receivable.outstandingAmount, locale),
+          })}
         </p>
         <p style={{ margin: '0 0 12px', color: '#dc2626', fontSize: 13 }}>
-          Hành động này không thể hoàn tác. Công nợ sẽ chuyển trạng thái WRITTEN_OFF.
+          {t('receivables.writeOff.irreversibleList')}
         </p>
 
         {error && <div style={errorStyle}>{error}</div>}
 
-        <label style={labelStyle}>Lý do xóa nợ *</label>
+        <label style={labelStyle}>{t('receivables.writeOff.reasonLabel')}</label>
         <textarea
           value={reason}
           onChange={e => setReason(e.target.value)}
-          placeholder="Nhập lý do xóa nợ..."
+          placeholder={t('receivables.writeOff.reasonPlaceholder')}
           style={{ ...inputStyle, height: 80, resize: 'vertical' }}
         />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>Hủy</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.writeOff.cancel')}</button>
           <button
             type="button"
             disabled={!reason.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
             style={{ ...primaryBtnStyle, background: '#dc2626' }}
           >
-            {mutation.isPending ? 'Đang xử lý…' : 'Xác nhận xóa nợ'}
+            {mutation.isPending ? t('receivables.writeOff.processing') : t('receivables.writeOff.confirm')}
           </button>
         </div>
       </div>
@@ -189,6 +191,9 @@ function WriteOffModal({ receivable, onClose, onSuccess }) {
 }
 
 export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+
   const [urlQuery, setUrlQuery] = useUrlQuery({
     page: 1, pageSize: 20, status: 'ALL', search: '',
   })
@@ -220,53 +225,61 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 
   const summary = summaryData || {}
 
+  const TABLE_HEADERS = [
+    'col.orderNumber', 'col.customer', 'col.phone',
+    'col.originalAmount', 'col.paidAmount', 'col.outstandingAmount',
+    'col.dueDate', 'col.overdueDays', 'col.status', 'col.actions',
+  ]
+
   return (
     <div className="page-inner">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0 }}>Công nợ</h2>
+          <h2 style={{ margin: 0 }}>{t('receivables.title')}</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-secondary)', fontSize: 14 }}>
-            Quản lý bán chịu và thu hồi công nợ
+            {t('receivables.description')}
           </p>
         </div>
       </div>
 
       {/* KPI Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <SummaryCard label="Tổng còn nợ" value={formatCurrency(summary.totalOutstanding)} icon={<DollarSign size={20} />} color="#3b82f6" />
-        <SummaryCard label="Quá hạn" value={formatCurrency(summary.overdueOutstanding)} icon={<AlertTriangle size={20} />} color="#ef4444" />
-        <SummaryCard label="Số phiếu mở" value={summary.countOpen ?? 0} icon={<Clock size={20} />} color="#f59e0b" />
-        <SummaryCard label="Đã xóa nợ" value={formatCurrency(summary.writtenOffTotal)} icon={<FileX size={20} />} color="#6b7280" />
+        <SummaryCard label={t('receivables.kpi.totalOutstanding')} value={formatCurrency(summary.totalOutstanding, locale)} icon={<DollarSign size={20} />} color="#3b82f6" />
+        <SummaryCard label={t('receivables.kpi.overdueOutstanding')} value={formatCurrency(summary.overdueOutstanding, locale)} icon={<AlertTriangle size={20} />} color="#ef4444" />
+        <SummaryCard label={t('receivables.kpi.countOpen')} value={summary.countOpen ?? 0} icon={<Clock size={20} />} color="#f59e0b" />
+        <SummaryCard label={t('receivables.kpi.writtenOffTotal')} value={formatCurrency(summary.writtenOffTotal, locale)} icon={<FileX size={20} />} color="#6b7280" />
       </div>
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <input
           type="text"
-          placeholder="Tìm tên, SĐT khách..."
+          placeholder={t('receivables.searchPlaceholder')}
           value={urlQuery.search || ''}
           onChange={handleSearch}
           style={{ ...inputStyle, width: 240 }}
         />
         <select value={urlQuery.status || 'ALL'} onChange={handleStatusChange} style={{ ...inputStyle, width: 'auto' }}>
-          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {STATUS_OPTION_KEYS.map(key => (
+            <option key={key} value={key}>{t(`receivables.statusLabel.${key}`)}</option>
+          ))}
         </select>
       </div>
 
-      {isLoading && <StatePanel tone="info" title="Đang tải..." />}
-      {isError && <StatePanel tone="danger" title="Lỗi tải dữ liệu" description={error?.message} />}
+      {isLoading && <StatePanel tone="info" title={t('receivables.loading')} />}
+      {isError && <StatePanel tone="danger" title={t('receivables.loadError')} description={error?.message} />}
 
       {!isLoading && !isError && (
         <>
           {items.length === 0 ? (
-            <StatePanel tone="neutral" title="Không có công nợ nào" description="Thử thay đổi bộ lọc hoặc tạo đơn bán chịu từ POS." />
+            <StatePanel tone="neutral" title={t('receivables.empty')} description={t('receivables.emptyDesc')} />
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={tableStyle}>
                 <thead>
                   <tr>
-                    {['Mã đơn', 'Khách hàng', 'SĐT', 'Tổng tiền', 'Đã thu', 'Còn nợ', 'Hạn TT', 'Quá hạn', 'Trạng thái', 'Thao tác'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
+                    {TABLE_HEADERS.map(key => (
+                      <th key={key} style={thStyle}>{t(`receivables.${key}`)}</th>
                     ))}
                   </tr>
                 </thead>
@@ -284,18 +297,20 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                       </td>
                       <td style={tdStyle}>{item.customerName || '—'}</td>
                       <td style={tdStyle}>{item.customerPhone || '—'}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.originalAmount)}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.paidAmount)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.originalAmount, locale)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatCurrency(item.paidAmount, locale)}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: item.outstandingAmount > 0 ? '#ef4444' : 'inherit' }}>
-                        {formatCurrency(item.outstandingAmount)}
+                        {formatCurrency(item.outstandingAmount, locale)}
                       </td>
                       <td style={tdStyle}>{item.dueDate || '—'}</td>
                       <td style={tdStyle}>
                         {item.overdueDays != null ? (
-                          <span style={{ color: '#ef4444', fontWeight: 600 }}>+{item.overdueDays} ngày</span>
+                          <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                            {t('receivables.overdueDays', { days: item.overdueDays })}
+                          </span>
                         ) : '—'}
                       </td>
-                      <td style={tdStyle}>{statusBadge(item.status)}</td>
+                      <td style={tdStyle}>{statusBadge(item.status, t)}</td>
                       <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                         {canRecordPayment && !['CLOSED', 'WRITTEN_OFF'].includes(item.status) && (
                           <button
@@ -303,7 +318,7 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                             onClick={() => setPaymentModal(item)}
                             style={{ ...actionBtnStyle, background: '#3b82f6', marginRight: 4 }}
                           >
-                            Thu tiền
+                            {t('receivables.btn.recordPayment')}
                           </button>
                         )}
                         {canWriteOff && !['CLOSED', 'WRITTEN_OFF'].includes(item.status) && (
@@ -312,7 +327,7 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                             onClick={() => setWriteOffModal(item)}
                             style={{ ...actionBtnStyle, background: '#dc2626' }}
                           >
-                            Xóa nợ
+                            {t('receivables.btn.writeOff')}
                           </button>
                         )}
                         <button
@@ -320,7 +335,7 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                           onClick={() => navigate(`/admin/receivables/${item.id}`)}
                           style={{ ...actionBtnStyle, background: '#6b7280', marginLeft: 4 }}
                         >
-                          Chi tiết
+                          {t('receivables.btn.detail')}
                         </button>
                       </td>
                     </tr>
@@ -332,9 +347,13 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 
           {pagination && pagination.totalPages > 1 && (
             <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
-              <button type="button" disabled={pagination.page <= 1} onClick={() => handlePage(pagination.page - 1)} style={pageBtnStyle}>← Trước</button>
+              <button type="button" disabled={pagination.page <= 1} onClick={() => handlePage(pagination.page - 1)} style={pageBtnStyle}>
+                {t('receivables.paginationPrev')}
+              </button>
               <span style={{ lineHeight: '32px', fontSize: 13 }}>{pagination.page} / {pagination.totalPages}</span>
-              <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => handlePage(pagination.page + 1)} style={pageBtnStyle}>Sau →</button>
+              <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => handlePage(pagination.page + 1)} style={pageBtnStyle}>
+                {t('receivables.paginationNext')}
+              </button>
             </div>
           )}
         </>

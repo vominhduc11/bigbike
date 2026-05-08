@@ -51,12 +51,15 @@ public interface ReceivableJpaRepository extends JpaRepository<ReceivableEntity,
     List<Object[]> findOpenReceivablesForAging();
 
     /** Filtered paginated list. */
+    // CAST(:keyword AS string) is required so PostgreSQL infers `text` for the bind parameter;
+    // without it, a null keyword becomes `bytea` and `lower(bytea)` errors out at runtime.
     @Query("""
             SELECT r FROM ReceivableEntity r
             WHERE (:status IS NULL OR r.status = :status)
               AND (:customerId IS NULL OR r.customerId = :customerId)
-              AND (:keyword IS NULL OR LOWER(r.customerName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                   OR LOWER(r.customerPhone) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (CAST(:keyword AS string) IS NULL
+                   OR LOWER(r.customerName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
+                   OR LOWER(r.customerPhone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
             """)
     Page<ReceivableEntity> findFiltered(
             @Param("status") String status,

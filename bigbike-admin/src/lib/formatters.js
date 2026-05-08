@@ -1,11 +1,9 @@
-const VND_FORMATTER = new Intl.NumberFormat('vi-VN')
-
-export function formatCurrencyVnd(amount) {
+export function formatCurrencyVnd(amount, locale = 'vi-VN') {
   if (!Number.isInteger(amount)) {
     return '—'
   }
 
-  return `${VND_FORMATTER.format(amount)} VND`
+  return `${new Intl.NumberFormat(locale).format(amount)} VND`
 }
 
 export function formatDateTime(value) {

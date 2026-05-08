@@ -13,7 +13,7 @@ function isRouteActive(activePath, candidatePath) {
   )
 }
 
-function Breadcrumb({ activePath, navGroups, navigate }) {
+function Breadcrumb({ activePath, navGroups, navigate, t }) {
   let match = null
   for (const group of navGroups) {
     for (const item of group.items) {
@@ -35,7 +35,7 @@ function Breadcrumb({ activePath, navGroups, navigate }) {
       <ol>
         <li>
           <a href="/admin/dashboard" onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}>
-            Tổng quan
+            {t('app.overview')}
           </a>
         </li>
         <li aria-current={!isDetail ? 'page' : undefined}>
@@ -49,7 +49,7 @@ function Breadcrumb({ activePath, navGroups, navigate }) {
         </li>
         {isDetail && (
           <li aria-current="page">
-            <span>{isCreate ? 'Tạo mới' : 'Chi tiết'}</span>
+            <span>{isCreate ? t('app.createNew') : t('app.detail')}</span>
           </li>
         )}
       </ol>
@@ -107,13 +107,13 @@ export function AdminShell({
           aria-hidden="true"
         />
 
-        <aside className="sidebar" aria-label={t('nav.group.sales')}>
+        <aside className="sidebar" aria-label={t('nav.sidebarLabel')}>
           <div className="sidebar-brand">
             <p className="brand-eyebrow">BigBike</p>
             <h1>Admin</h1>
           </div>
 
-          <nav className="sidebar-nav" aria-label="Main navigation">
+          <nav className="sidebar-nav" aria-label={t('nav.mainNav')}>
             {navGroups.map((group) => (
               <div key={group.groupKey} className="sidebar-group">
                 <p className="sidebar-group-label">{group.label}</p>
@@ -160,7 +160,7 @@ export function AdminShell({
                 type="button"
                 className="hamburger-btn"
                 onClick={() => setSidebarOpen((v) => !v)}
-                aria-label={sidebarOpen ? t('common.close') : 'Menu'}
+                aria-label={sidebarOpen ? t('common.close') : t('nav.openMenu')}
                 aria-expanded={sidebarOpen}
               >
                 {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
@@ -226,7 +226,7 @@ export function AdminShell({
           </header>
 
           {/* Breadcrumb */}
-          <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} />
+          <Breadcrumb activePath={activePath} navGroups={navGroups} navigate={navigate} t={t} />
 
           <main className="page-content">{children}</main>
         </div>

@@ -138,7 +138,7 @@ Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivable
 | `credit_status` | `VARCHAR(50)` | NO | `'ACTIVE'` | `ACTIVE` / `SUSPENDED` / `BLOCKED` |
 | `credit_note` | `TEXT` | YES | `null` | Internal admin note on credit profile |
 
-### accounts_receivable table (V75)
+### accounts_receivable table (V75; `version` column added in V83)
 
 | Column | Type | Nullable | Purpose |
 |---|---|---|---|

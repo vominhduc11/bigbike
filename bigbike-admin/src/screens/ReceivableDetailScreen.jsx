@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, X } from 'lucide-react'
 import {
@@ -10,29 +11,33 @@ import { StatePanel } from '../components/StatePanel'
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
 
-function formatCurrency(amount) {
-  if (amount == null) return '—'
-  return Number(amount).toLocaleString('vi-VN') + ' ₫'
+const STATUS_COLOR_MAP = {
+  OPEN:           '#3b82f6',
+  PARTIALLY_PAID: '#f59e0b',
+  OVERDUE:        '#ef4444',
+  CLOSED:         '#10b981',
+  WRITTEN_OFF:    '#6b7280',
 }
 
-function statusBadge(status) {
-  const styles = {
-    OPEN:           { bg: '#3b82f6', label: 'Đang nợ' },
-    PARTIALLY_PAID: { bg: '#f59e0b', label: 'Trả một phần' },
-    OVERDUE:        { bg: '#ef4444', label: 'Quá hạn' },
-    CLOSED:         { bg: '#10b981', label: 'Đã thu đủ' },
-    WRITTEN_OFF:    { bg: '#6b7280', label: 'Đã xóa nợ' },
-  }
-  const s = styles[status] || { bg: '#6b7280', label: status }
+function formatCurrency(amount, locale = 'vi-VN') {
+  if (amount == null) return '—'
+  return Number(amount).toLocaleString(locale) + ' ₫'
+}
+
+function statusBadge(status, t) {
+  const bg = STATUS_COLOR_MAP[status] ?? '#6b7280'
+  const label = t(`receivables.statusLabel.${status}`, { defaultValue: status })
   return (
     <span style={{
       display: 'inline-block', padding: '3px 10px', borderRadius: 12,
-      background: s.bg, color: '#fff', fontSize: 13, fontWeight: 600,
-    }}>{s.label}</span>
+      background: bg, color: '#fff', fontSize: 13, fontWeight: 600,
+    }}>{label}</span>
   )
 }
 
 function RecordPaymentModal({ receivable, onClose, onSuccess }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('CASH')
   const [ref, setRef] = useState('')
@@ -62,53 +67,53 @@ function RecordPaymentModal({ receivable, onClose, onSuccess }) {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Ghi nhận thanh toán</h3>
+          <h3 style={{ margin: 0 }}>{t('receivables.recordPayment.title')}</h3>
           <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
 
         <p style={{ margin: '0 0 12px', color: 'var(--admin-text-secondary)' }}>
-          Còn nợ: <strong>{formatCurrency(outstanding)}</strong>
+          {t('receivables.recordPayment.outstanding')} <strong>{formatCurrency(outstanding, locale)}</strong>
         </p>
 
         {error && <div style={errorStyle}>{error}</div>}
 
-        <label style={labelStyle}>Số tiền thu *</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.amountLabel')}</label>
         <input
           type="number"
           value={amount}
           onChange={e => setAmount(e.target.value)}
-          placeholder={`Tối đa ${Number(outstanding).toLocaleString('vi-VN')}`}
+          placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
           style={inputStyle}
           min="1"
           max={outstanding}
         />
 
-        <label style={labelStyle}>Phương thức *</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.methodLabelShort')}</label>
         <select value={method} onChange={e => setMethod(e.target.value)} style={inputStyle}>
           {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
 
-        <label style={labelStyle}>Mã giao dịch</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.refLabelShort')}</label>
         <input type="text" value={ref} onChange={e => setRef(e.target.value)} style={inputStyle} />
 
-        <label style={labelStyle}>Ghi chú</label>
+        <label style={labelStyle}>{t('receivables.recordPayment.noteLabel')}</label>
         <textarea value={note} onChange={e => setNote(e.target.value)} style={{ ...inputStyle, height: 64, resize: 'vertical' }} />
 
         {amount > 0 && Number(amount) <= outstanding && (
           <div style={{ background: 'var(--admin-bg-subtle)', borderRadius: 6, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-            Sau khi thu: còn nợ <strong>{formatCurrency(outstanding - Number(amount))}</strong>
+            {t('receivables.recordPayment.afterCollection', { amount: formatCurrency(outstanding - Number(amount), locale) })}
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>Hủy</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.recordPayment.cancel')}</button>
           <button
             type="button"
             disabled={!amount || Number(amount) <= 0 || mutation.isPending}
             onClick={() => mutation.mutate()}
             style={primaryBtnStyle}
           >
-            {mutation.isPending ? 'Đang lưu…' : 'Xác nhận thu tiền'}
+            {mutation.isPending ? t('receivables.recordPayment.saving') : t('receivables.recordPayment.confirm')}
           </button>
         </div>
       </div>
@@ -117,6 +122,8 @@ function RecordPaymentModal({ receivable, onClose, onSuccess }) {
 }
 
 function WriteOffModal({ receivable, onClose, onSuccess }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   const [reason, setReason] = useState('')
   const [error, setError] = useState(null)
   const queryClient = useQueryClient()
@@ -135,32 +142,36 @@ function WriteOffModal({ receivable, onClose, onSuccess }) {
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, color: '#dc2626' }}>Xóa nợ (Write-off)</h3>
+          <h3 style={{ margin: 0, color: '#dc2626' }}>{t('receivables.writeOff.title')}</h3>
           <button type="button" onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
 
-        <p style={{ margin: '0 0 8px' }}>Còn nợ: <strong>{formatCurrency(receivable.outstandingAmount)}</strong></p>
-        <p style={{ margin: '0 0 12px', color: '#dc2626', fontSize: 13 }}>Hành động này không thể hoàn tác.</p>
+        <p style={{ margin: '0 0 8px' }}>
+          {t('receivables.writeOff.outstanding')} <strong>{formatCurrency(receivable.outstandingAmount, locale)}</strong>
+        </p>
+        <p style={{ margin: '0 0 12px', color: '#dc2626', fontSize: 13 }}>
+          {t('receivables.writeOff.irreversible')}
+        </p>
 
         {error && <div style={errorStyle}>{error}</div>}
 
-        <label style={labelStyle}>Lý do xóa nợ *</label>
+        <label style={labelStyle}>{t('receivables.writeOff.reasonLabel')}</label>
         <textarea
           value={reason}
           onChange={e => setReason(e.target.value)}
-          placeholder="Nhập lý do..."
+          placeholder={t('receivables.writeOff.reasonPlaceholderShort')}
           style={{ ...inputStyle, height: 80, resize: 'vertical' }}
         />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle}>Hủy</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>{t('receivables.writeOff.cancel')}</button>
           <button
             type="button"
             disabled={!reason.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
             style={{ ...primaryBtnStyle, background: '#dc2626' }}
           >
-            {mutation.isPending ? 'Đang xử lý…' : 'Xác nhận xóa nợ'}
+            {mutation.isPending ? t('receivables.writeOff.processing') : t('receivables.writeOff.confirm')}
           </button>
         </div>
       </div>
@@ -169,6 +180,8 @@ function WriteOffModal({ receivable, onClose, onSuccess }) {
 }
 
 export function ReceivableDetailScreen({ receivableId, navigate, canRecordPayment, canWriteOff }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
   const [paymentModal, setPaymentModal] = useState(false)
   const [writeOffModal, setWriteOffModal] = useState(false)
 
@@ -180,78 +193,75 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
 
   const ar = data?.item
 
-  if (isLoading) return <StatePanel tone="info" title="Đang tải..." />
-  if (isError)   return <StatePanel tone="danger" title="Lỗi" description={error?.message} />
-  if (!ar)       return <StatePanel tone="neutral" title="Không tìm thấy công nợ" />
+  if (isLoading) return <StatePanel tone="info" title={t('receivables.detail.loading')} />
+  if (isError)   return <StatePanel tone="danger" title={t('receivables.detail.loadError')} description={error?.message} />
+  if (!ar)       return <StatePanel tone="neutral" title={t('receivables.detail.notFound')} />
 
   const canAct = !['CLOSED', 'WRITTEN_OFF'].includes(ar.status)
 
   return (
     <div className="page-inner">
       <button type="button" onClick={() => navigate('/admin/receivables')} style={backBtnStyle}>
-        <ArrowLeft size={16} /> Quay lại Công nợ
+        <ArrowLeft size={16} /> {t('receivables.detail.backToList')}
       </button>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 16, marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0 }}>Công nợ — {ar.orderNumber || ar.orderId?.slice(0, 8)}</h2>
-          <div style={{ marginTop: 6 }}>{statusBadge(ar.status)}</div>
+          <h2 style={{ margin: 0 }}>{t('receivables.title')} — {ar.orderNumber || ar.orderId?.slice(0, 8)}</h2>
+          <div style={{ marginTop: 6 }}>{statusBadge(ar.status, t)}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {canRecordPayment && canAct && (
             <button type="button" onClick={() => setPaymentModal(true)} style={primaryBtnStyle}>
-              Thu tiền
+              {t('receivables.detail.recordPaymentBtn')}
             </button>
           )}
           {canWriteOff && canAct && (
             <button type="button" onClick={() => setWriteOffModal(true)} style={{ ...primaryBtnStyle, background: '#dc2626' }}>
-              Xóa nợ
+              {t('receivables.detail.writeOffBtn')}
             </button>
           )}
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* Thông tin tài chính */}
-        <Section title="Thông tin công nợ">
-          <Row label="Tổng tiền gốc" value={formatCurrency(ar.originalAmount)} />
-          <Row label="Đã thu" value={formatCurrency(ar.paidAmount)} />
-          <Row label="Còn nợ" value={<span style={{ color: ar.outstandingAmount > 0 ? '#ef4444' : 'inherit', fontWeight: 700 }}>{formatCurrency(ar.outstandingAmount)}</span>} />
-          {ar.writtenOffAmount > 0 && <Row label="Đã xóa nợ" value={formatCurrency(ar.writtenOffAmount)} />}
-          <Row label="Hạn thanh toán" value={ar.dueDate || '—'} />
+        <Section title={t('receivables.detail.sectionFinancial')}>
+          <Row label={t('receivables.detail.rowOriginalAmount')} value={formatCurrency(ar.originalAmount, locale)} />
+          <Row label={t('receivables.detail.rowPaidAmount')} value={formatCurrency(ar.paidAmount, locale)} />
+          <Row label={t('receivables.detail.rowOutstandingAmount')} value={<span style={{ color: ar.outstandingAmount > 0 ? '#ef4444' : 'inherit', fontWeight: 700 }}>{formatCurrency(ar.outstandingAmount, locale)}</span>} />
+          {ar.writtenOffAmount > 0 && <Row label={t('receivables.detail.rowWrittenOffAmount')} value={formatCurrency(ar.writtenOffAmount, locale)} />}
+          <Row label={t('receivables.detail.rowDueDate')} value={ar.dueDate || '—'} />
           {ar.overdueDays != null && (
-            <Row label="Quá hạn" value={<span style={{ color: '#ef4444', fontWeight: 600 }}>+{ar.overdueDays} ngày</span>} />
+            <Row label={t('receivables.detail.rowOverdueDays')} value={<span style={{ color: '#ef4444', fontWeight: 600 }}>{t('receivables.detail.overdueDays', { days: ar.overdueDays })}</span>} />
           )}
-          <Row label="Số ngày tín dụng" value={ar.paymentTermsDays != null ? `${ar.paymentTermsDays} ngày` : '—'} />
-          <Row label="Hạn mức tín dụng (lúc tạo)" value={ar.creditLimitSnapshot != null ? formatCurrency(ar.creditLimitSnapshot) : '—'} />
-          <Row label="Nguồn tạo" value={ar.createdFrom} />
+          <Row label={t('receivables.detail.rowPaymentTermsDays')} value={ar.paymentTermsDays != null ? t('receivables.detail.paymentTermsDays', { days: ar.paymentTermsDays }) : '—'} />
+          <Row label={t('receivables.detail.rowCreditLimitSnapshot')} value={ar.creditLimitSnapshot != null ? formatCurrency(ar.creditLimitSnapshot, locale) : '—'} />
+          <Row label={t('receivables.detail.rowCreatedFrom')} value={ar.createdFrom} />
         </Section>
 
-        {/* Thông tin khách hàng */}
-        <Section title="Khách hàng">
-          <Row label="Tên" value={ar.customerName || '—'} />
-          <Row label="SĐT" value={ar.customerPhone || '—'} />
+        <Section title={t('receivables.detail.sectionCustomer')}>
+          <Row label={t('receivables.detail.rowCustomerName')} value={ar.customerName || '—'} />
+          <Row label={t('receivables.detail.rowCustomerPhone')} value={ar.customerPhone || '—'} />
           {ar.customerId && (
-            <Row label="Mã KH" value={
+            <Row label={t('receivables.detail.rowCustomerId')} value={
               <button type="button" onClick={() => navigate(`/admin/customers/${ar.customerId}`)} style={linkStyle}>
-                Xem hồ sơ →
+                {t('receivables.detail.viewProfile')}
               </button>
             } />
           )}
-          <Row label="Mã đơn hàng" value={
+          <Row label={t('receivables.detail.rowOrderId')} value={
             <button type="button" onClick={() => navigate(`/admin/orders/${ar.orderId}`)} style={linkStyle}>
               {ar.orderNumber || ar.orderId}
             </button>
           } />
         </Section>
 
-        {/* Ghi chú / Write-off */}
         {(ar.note || ar.writeOffReason) && (
-          <Section title="Ghi chú" style={{ gridColumn: '1 / -1' }}>
+          <Section title={t('receivables.detail.sectionNotes')} style={{ gridColumn: '1 / -1' }}>
             {ar.note && <p style={{ margin: '0 0 8px' }}>{ar.note}</p>}
             {ar.writeOffReason && (
               <div style={{ background: '#fef2f2', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: '#dc2626' }}>
-                <strong>Lý do xóa nợ:</strong> {ar.writeOffReason}
+                <strong>{t('receivables.detail.writeOffReason')}</strong> {ar.writeOffReason}
               </div>
             )}
           </Section>

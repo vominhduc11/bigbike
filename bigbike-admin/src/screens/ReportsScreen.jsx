@@ -10,10 +10,10 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchAnalytics, exportOrdersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 
-const PRESETS = [
-  { label: '7 ngày', value: '7d', days: 7 },
-  { label: '30 ngày', value: '30d', days: 30 },
-  { label: '90 ngày', value: '90d', days: 90 },
+const PRESET_VALUES = [
+  { key: 'preset7d',  value: '7d',  days: 7 },
+  { key: 'preset30d', value: '30d', days: 30 },
+  { key: 'preset90d', value: '90d', days: 90 },
 ]
 
 function kpiStyle() {
@@ -61,7 +61,7 @@ function ChartCard({ title, children }) {
   )
 }
 
-function RevenueTooltip({ active, payload, label }) {
+function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
   return (
     <div style={{
@@ -75,14 +75,14 @@ function RevenueTooltip({ active, payload, label }) {
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
       {payload.map((p) => (
         <div key={p.dataKey} style={{ color: p.color }}>
-          {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value) : p.value}
+          {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value, locale) : p.value}
         </div>
       ))}
     </div>
   )
 }
 
-function RankTable({ title, rows, cols }) {
+function RankTable({ title, rows, cols, noDataLabel }) {
   return (
     <div className="table-wrap" style={{ flex: 1 }}>
       <p style={{ padding: '12px 16px', fontWeight: 600, borderBottom: '1px solid var(--admin-color-border-subtle)', margin: 0 }}>{title}</p>
@@ -95,7 +95,7 @@ function RankTable({ title, rows, cols }) {
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={cols.length + 1} style={{ textAlign: 'center', color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>Không có dữ liệu</td></tr>
+            <tr><td colSpan={cols.length + 1} style={{ textAlign: 'center', color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>{noDataLabel}</td></tr>
           ) : rows.map((row, idx) => (
             <tr key={idx}>
               <td style={{ color: 'var(--admin-color-text-muted)', width: 36 }}>{idx + 1}</td>
@@ -117,7 +117,9 @@ function toLocalDateString(daysAgo) {
 }
 
 export function ReportsScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+
   const [preset, setPreset] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
@@ -127,10 +129,10 @@ export function ReportsScreen() {
     if (preset === 'custom') {
       return { from: customFrom, to: customTo }
     }
-    const p = PRESETS.find((x) => x.value === preset) || PRESETS[1]
+    const p = PRESET_VALUES.find((x) => x.value === preset) || PRESET_VALUES[1]
     return {
       from: toLocalDateString(p.days - 1),
-      to: toLocalDateString(0),  // today — BE adds plusDays(1) for exclusive end
+      to: toLocalDateString(0),
     }
   }, [preset, customFrom, customTo])
 
@@ -138,10 +140,9 @@ export function ReportsScreen() {
     let active = true
     const { from, to } = resolvedDates()
 
-    // Block invalid custom range before hitting the server
     if (preset === 'custom' && from && to && from > to) {
       queueMicrotask(() => {
-        if (active) setState({ status: 'error', data: null, warning: '', error: "'Từ ngày' không được sau 'Đến ngày'." })
+        if (active) setState({ status: 'error', data: null, warning: '', error: t('reports.dateRangeError') })
       })
       return () => { active = false }
     }
@@ -159,7 +160,7 @@ export function ReportsScreen() {
         setState({ status: 'error', data: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [resolvedDates, preset])
+  }, [resolvedDates, preset, t])
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
 
@@ -169,12 +170,12 @@ export function ReportsScreen() {
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Phân tích</p>
-          <h1>Báo cáo doanh thu</h1>
-          <p>Doanh thu, sản phẩm và khách hàng theo khoảng thời gian</p>
+          <p className="eyebrow">{t('reports.eyebrow')}</p>
+          <h1>{t('reports.title')}</h1>
+          <p>{t('reports.description')}</p>
         </div>
         <ExportButton
-          label="Xuất đơn hàng (CSV)"
+          label={t('reports.exportOrders')}
           filename={`orders_${exportFrom}_${exportTo}.csv`}
           onExport={() => exportOrdersCsv({ from: exportFrom, to: exportTo })}
         />
@@ -184,7 +185,7 @@ export function ReportsScreen() {
 
       {/* Date range controls */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-        {PRESETS.map((p) => (
+        {PRESET_VALUES.map((p) => (
           <button
             key={p.value}
             type="button"
@@ -192,7 +193,7 @@ export function ReportsScreen() {
             style={{ fontSize: '0.8rem' }}
             onClick={() => setPreset(p.value)}
           >
-            {p.label}
+            {t(`reports.${p.key}`)}
           </button>
         ))}
         <button
@@ -201,7 +202,7 @@ export function ReportsScreen() {
           style={{ fontSize: '0.8rem' }}
           onClick={() => setPreset('custom')}
         >
-          Tuỳ chọn
+          {t('reports.presetCustom')}
         </button>
         {preset === 'custom' && (
           <>
@@ -236,17 +237,17 @@ export function ReportsScreen() {
         <>
           {/* KPI row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
-            <KpiCard label="Doanh số (GMV)" value={formatCurrencyVnd(state.data.summary.grossOrderValue)} />
-            <KpiCard label="Tiền thực thu" value={formatCurrencyVnd(state.data.summary.paidRevenue)} />
-            <KpiCard label="Hoàn tiền" value={formatCurrencyVnd(state.data.summary.refundAmount)} />
-            <KpiCard label="Doanh thu thuần" value={formatCurrencyVnd(state.data.summary.netRevenue)} />
-            <KpiCard label="Số đơn hàng" value={state.data.summary.orderCount.toLocaleString('vi-VN')} />
-            <KpiCard label="Giá trị đơn TB (AOV)" value={formatCurrencyVnd(state.data.summary.avgOrderValue)} />
+            <KpiCard label={t('reports.kpiGmv')} value={formatCurrencyVnd(state.data.summary.grossOrderValue, locale)} />
+            <KpiCard label={t('reports.kpiPaidRevenue')} value={formatCurrencyVnd(state.data.summary.paidRevenue, locale)} />
+            <KpiCard label={t('reports.kpiRefund')} value={formatCurrencyVnd(state.data.summary.refundAmount, locale)} />
+            <KpiCard label={t('reports.kpiNetRevenue')} value={formatCurrencyVnd(state.data.summary.netRevenue, locale)} />
+            <KpiCard label={t('reports.kpiOrderCount')} value={state.data.summary.orderCount.toLocaleString(locale)} />
+            <KpiCard label={t('reports.kpiAov')} value={formatCurrencyVnd(state.data.summary.avgOrderValue, locale)} />
           </div>
 
           {/* Revenue trend chart */}
           {state.data.dailyRevenue?.length > 1 && (
-            <ChartCard title="Doanh thu theo ngày">
+            <ChartCard title={t('reports.chartDailyRevenue')}>
               <ResponsiveContainer width="100%" height={240}>
                 <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                   <defs>
@@ -270,11 +271,11 @@ export function ReportsScreen() {
                     axisLine={false}
                     width={48}
                   />
-                  <Tooltip content={<RevenueTooltip />} />
+                  <Tooltip content={<RevenueTooltip locale={locale} />} />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    name="Doanh thu"
+                    name={t('reports.chartRevenueSeries')}
                     stroke="#e8281e"
                     strokeWidth={2}
                     fill="url(#revenueGrad)"
@@ -288,7 +289,7 @@ export function ReportsScreen() {
 
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
-            <ChartCard title="Top sản phẩm theo doanh thu">
+            <ChartCard title={t('reports.chartTopProducts')}>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
                   data={state.data.topProducts.slice(0, 5)}
@@ -313,7 +314,7 @@ export function ReportsScreen() {
                     tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}…` : v}
                   />
                   <Tooltip
-                    formatter={(v) => [formatCurrencyVnd(v), 'Doanh thu']}
+                    formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
                     cursor={{ fill: 'var(--admin-color-surface-hover)' }}
                   />
                   <Bar dataKey="revenue" fill="#e8281e" radius={[0, 3, 3, 0]} maxBarSize={20} />
@@ -325,21 +326,23 @@ export function ReportsScreen() {
           {/* Tables row */}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <RankTable
-              title="Top sản phẩm theo doanh thu"
+              title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}
+              noDataLabel={t('reports.noData')}
               cols={[
-                { key: 'productName', label: 'Sản phẩm' },
-                { key: 'unitsSold', label: 'SL bán', right: true },
-                { key: 'revenue', label: 'Doanh thu', right: true, render: (r) => formatCurrencyVnd(r.revenue) },
+                { key: 'productName', label: t('reports.colProduct') },
+                { key: 'unitsSold', label: t('reports.colUnitsSold'), right: true },
+                { key: 'revenue', label: t('reports.colRevenue'), right: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
               ]}
             />
             <RankTable
-              title="Top khách hàng theo chi tiêu"
+              title={t('reports.chartTopCustomers')}
               rows={state.data.topCustomers}
+              noDataLabel={t('reports.noData')}
               cols={[
-                { key: 'customerEmail', label: 'Email' },
-                { key: 'orderCount', label: 'Đơn', right: true },
-                { key: 'revenue', label: 'Chi tiêu', right: true, render: (r) => formatCurrencyVnd(r.revenue) },
+                { key: 'customerEmail', label: t('reports.colEmail') },
+                { key: 'orderCount', label: t('reports.colOrders'), right: true },
+                { key: 'revenue', label: t('reports.colSpend'), right: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
               ]}
             />
           </div>
