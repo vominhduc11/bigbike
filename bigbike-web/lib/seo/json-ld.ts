@@ -88,7 +88,7 @@ export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
-      name: "Trang chu",
+      name: "Trang chủ",
       item: toCanonicalUrl(toHomePath()),
     },
   ];
@@ -121,7 +121,7 @@ export function buildArticleBreadcrumbJsonLd(article: Article): JsonLdObject {
   const items: Array<{ position: number; name: string; item: string }> = [
     {
       position: 1,
-      name: "Trang chu",
+      name: "Trang chủ",
       item: toCanonicalUrl(toHomePath()),
     },
     {

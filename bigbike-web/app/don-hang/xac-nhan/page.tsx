@@ -1,10 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getOrderLookup } from "@/lib/api/public-api";
+import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatVnd, orderStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
+
+function pickSetting(
+  settings: { settingKey: string; settingValue: string }[],
+  keys: string[],
+): string {
+  for (const key of keys) {
+    const v = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
+    if (v) return v;
+  }
+  return "";
+}
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đặt hàng thành công",
@@ -17,9 +28,16 @@ type Props = { searchParams: Promise<{ so?: string; key?: string }> };
 
 export default async function OrderConfirmPage({ searchParams }: Props) {
   const { so: orderNumber, key: orderKey } = await searchParams;
-  const orderLookup =
-    orderNumber && orderKey ? await getOrderLookup(orderNumber, orderKey) : { data: null, error: null };
+  const [orderLookup, settingsResult] = await Promise.all([
+    orderNumber && orderKey ? getOrderLookup(orderNumber, orderKey) : Promise.resolve({ data: null, error: null }),
+    listPublicSettings(),
+  ]);
   const order = orderLookup.data;
+  const settings = settingsResult.data ?? [];
+  const bankName = pickSetting(settings, ["bank_name"]);
+  const bankNumber = pickSetting(settings, ["bank_account_number", "bank_number"]);
+  const bankHolder = pickSetting(settings, ["bank_account_holder", "bank_holder"]);
+  const bankBranch = pickSetting(settings, ["bank_branch"]);
 
   return (
     <>
@@ -81,6 +99,42 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
             ))}
             {order.customerNote && (
               <p className="wp-muted-text" style={{ marginTop: 10 }}>Ghi chú: {order.customerNote}</p>
+            )}
+          </div>
+        )}
+
+        {order?.paymentMethod === "bacs" && (bankNumber || bankName) && (
+          <div className="wp-info-card" style={{ maxWidth: 560, margin: "0 auto 22px", textAlign: "left" }}>
+            <p className="wp-info-label">Thông tin chuyển khoản</p>
+            {bankName && (
+              <div className="wp-order-confirm-row">
+                <span className="wp-checkout-address">Ngân hàng</span>
+                <b className="wp-order-confirm-total">{bankName}</b>
+              </div>
+            )}
+            {bankNumber && (
+              <div className="wp-order-confirm-row">
+                <span className="wp-checkout-address">Số tài khoản</span>
+                <b className="wp-order-confirm-total">{bankNumber}</b>
+              </div>
+            )}
+            {bankHolder && (
+              <div className="wp-order-confirm-row">
+                <span className="wp-checkout-address">Chủ tài khoản</span>
+                <b className="wp-order-confirm-total">{bankHolder}</b>
+              </div>
+            )}
+            {bankBranch && (
+              <div className="wp-order-confirm-row">
+                <span className="wp-checkout-address">Chi nhánh</span>
+                <b className="wp-order-confirm-total">{bankBranch}</b>
+              </div>
+            )}
+            {order.orderNumber && (
+              <div className="wp-order-confirm-row">
+                <span className="wp-checkout-address">Nội dung chuyển khoản</span>
+                <b className="wp-order-confirm-total">BIGBIKE {order.orderNumber}</b>
+              </div>
             )}
           </div>
         )}

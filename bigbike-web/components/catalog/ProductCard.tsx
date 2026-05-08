@@ -44,7 +44,11 @@ export function ProductCard({ product }: ProductCardProps) {
           width={480}
           height={480}
         />
-        <ProductCardAddBar productId={product.id} />
+        <ProductCardAddBar
+          productId={product.id}
+          hasVariants={!!product.variants?.length}
+          slug={product.slug}
+        />
       </div>
 
       <div className="wp-product-body">

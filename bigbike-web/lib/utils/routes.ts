@@ -3,6 +3,15 @@ const SITE_ORIGIN =
   process.env.BIGBIKE_SITE_URL?.trim() ||
   "https://bigbike.vn";
 
+if (
+  process.env.NODE_ENV === "production" &&
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\b/i.test(SITE_ORIGIN)
+) {
+  console.error(
+    `[routes] SITE_ORIGIN is "${SITE_ORIGIN}" in production. Set NEXT_PUBLIC_SITE_URL or BIGBIKE_SITE_URL to the canonical domain to prevent localhost URLs in sitemap/canonical tags.`,
+  );
+}
+
 export function toProductPath(slug: string): string {
   return `/product/${slug}/`;
 }

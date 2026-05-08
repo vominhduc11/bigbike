@@ -8,6 +8,22 @@ import { BctBadge } from "./BctBadge";
 
 const DEFAULT_SITE_NAME = "BigBike";
 
+type FallbackLink = { id: string; parentId: null; label: string; url: string; children: never[] };
+
+const FALLBACK_FOOTER_LINKS: FallbackLink[] = [
+  { id: "fbf-1", parentId: null, label: "Sản phẩm", url: "/san-pham/", children: [] },
+  { id: "fbf-2", parentId: null, label: "Thương hiệu", url: "/brands/", children: [] },
+  { id: "fbf-3", parentId: null, label: "Giới thiệu", url: "/gioi-thieu/", children: [] },
+  { id: "fbf-4", parentId: null, label: "Liên hệ", url: "/lien-he/", children: [] },
+];
+
+const FALLBACK_GUIDE_LINKS: FallbackLink[] = [
+  { id: "fbg-1", parentId: null, label: "Hướng dẫn mua hàng", url: "/huong-dan-mua-hang/", children: [] },
+  { id: "fbg-2", parentId: null, label: "Chính sách đổi trả", url: "/chinh-sach-doi-tra/", children: [] },
+  { id: "fbg-3", parentId: null, label: "Chính sách bảo hành", url: "/chinh-sach-bao-hanh/", children: [] },
+  { id: "fbg-4", parentId: null, label: "Chính sách vận chuyển", url: "/chinh-sach-van-chuyen/", children: [] },
+];
+
 function getSettingValue(
   settings: { settingKey: string; settingValue: string }[],
   keys: string[],
@@ -129,10 +145,13 @@ export async function SiteFooter() {
   const instagramUrl = getSettingValue(settings, ["instagram_url"], "");
   const bctUrl = getSettingValue(settings, ["bct_url"], "");
 
-  const footerLinks = groupMenuItems(footerMenuResult.data?.items ?? []);
-  const guideLinks = groupMenuItems(guideMenuResult.data?.items ?? []);
-  const importedGuideLinks = groupMenuItems(importedGuideMenuResult.data?.items ?? []);
-  const visibleGuideLinks = guideLinks.length > 0 ? guideLinks : importedGuideLinks;
+  const footerLinksRaw = groupMenuItems(footerMenuResult.data?.items ?? []);
+  const guideLinksRaw = groupMenuItems(guideMenuResult.data?.items ?? []);
+  const importedGuideLinksRaw = groupMenuItems(importedGuideMenuResult.data?.items ?? []);
+  const visibleGuideLinksRaw = guideLinksRaw.length > 0 ? guideLinksRaw : importedGuideLinksRaw;
+
+  const footerLinks = footerLinksRaw.length > 0 ? footerLinksRaw : FALLBACK_FOOTER_LINKS;
+  const visibleGuideLinks = visibleGuideLinksRaw.length > 0 ? visibleGuideLinksRaw : FALLBACK_GUIDE_LINKS;
 
   return (
     <footer className="bb-footer">
@@ -169,54 +188,46 @@ export async function SiteFooter() {
 
         <section className="bb-footer-col">
           <h3>{footerMenuResult.data?.name || "Menu"}</h3>
-          {footerLinks.length > 0 ? (
-            <nav className="bb-footer-links">
-              {footerLinks.map((item) => (
-                <div key={item.id} className="bb-footer-group">
-                  <Link href={normalizeMenuUrl(item.url)} className="bb-footer-link">
-                    {safeText(item.label, "Liên kết")}
-                  </Link>
-                  {item.children.length > 0 ? (
-                    <div className="bb-footer-sublinks">
-                      {item.children.map((child) => (
-                        <Link key={child.id} href={normalizeMenuUrl(child.url)} className="bb-footer-sublink">
-                          {safeText(child.label, "Liên kết")}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </nav>
-          ) : (
-            <p className="bb-footer-muted">Đang cập nhật.</p>
-          )}
+          <nav className="bb-footer-links">
+            {footerLinks.map((item) => (
+              <div key={item.id} className="bb-footer-group">
+                <Link href={normalizeMenuUrl(item.url)} className="bb-footer-link">
+                  {safeText(item.label, "Liên kết")}
+                </Link>
+                {item.children.length > 0 ? (
+                  <div className="bb-footer-sublinks">
+                    {item.children.map((child) => (
+                      <Link key={child.id} href={normalizeMenuUrl(child.url)} className="bb-footer-sublink">
+                        {safeText(child.label, "Liên kết")}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </nav>
         </section>
 
         <section className="bb-footer-col">
           <h3>Hướng dẫn</h3>
-          {visibleGuideLinks.length > 0 ? (
-            <nav className="bb-footer-links">
-              {visibleGuideLinks.map((item) => (
-                <div key={item.id} className="bb-footer-group">
-                  <Link href={normalizeMenuUrl(item.url)} className="bb-footer-link">
-                    {safeText(item.label, "Hướng dẫn")}
-                  </Link>
-                  {item.children.length > 0 ? (
-                    <div className="bb-footer-sublinks">
-                      {item.children.map((child) => (
-                        <Link key={child.id} href={normalizeMenuUrl(child.url)} className="bb-footer-sublink">
-                          {safeText(child.label, "Hướng dẫn")}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </nav>
-          ) : (
-            <p className="bb-footer-muted">Đang cập nhật.</p>
-          )}
+          <nav className="bb-footer-links">
+            {visibleGuideLinks.map((item) => (
+              <div key={item.id} className="bb-footer-group">
+                <Link href={normalizeMenuUrl(item.url)} className="bb-footer-link">
+                  {safeText(item.label, "Hướng dẫn")}
+                </Link>
+                {item.children.length > 0 ? (
+                  <div className="bb-footer-sublinks">
+                    {item.children.map((child) => (
+                      <Link key={child.id} href={normalizeMenuUrl(child.url)} className="bb-footer-sublink">
+                        {safeText(child.label, "Hướng dẫn")}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </nav>
         </section>
 
         <section className="bb-footer-col">
