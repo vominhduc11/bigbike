@@ -22,7 +22,19 @@ const TTL_SECONDS = Number.parseInt(
 
 // Shared secret sent to backend internal endpoints.
 // Must match BIGBIKE_INTERNAL_TOKEN on the backend side.
+// Required in production (backend defaults to deny-by-default when token not configured).
 const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? "";
+
+// Warn once at module load time so the issue appears in deploy logs, not per-request.
+// Suppress in test/dev because backend uses bigbike.internal.allow-open=true there.
+if (!INTERNAL_TOKEN && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[proxy] INTERNAL_API_TOKEN is not set. Redirect lookups will silently fail because " +
+    "the backend requires authentication on /api/internal/** in production " +
+    "(bigbike.internal.allow-open defaults to false). " +
+    "Set INTERNAL_API_TOKEN to the same value as BIGBIKE_INTERNAL_TOKEN on the backend."
+  );
+}
 
 const INTERNAL_HEADERS: Record<string, string> = {
   Accept: "application/json",
@@ -69,6 +81,16 @@ async function fetchFromBackend(path: string): Promise<RedirectLookup | null> {
       signal: AbortSignal.timeout(2_000),
     });
     if (response.status === 404) return null;
+    // 401/403 means the backend denied the request — almost certainly a missing/wrong token.
+    // Log explicitly so the issue is visible in server logs rather than silently failing.
+    if (response.status === 401 || response.status === 403) {
+      console.error(
+        `[proxy] Backend returned ${response.status} for redirect lookup on "${path}". ` +
+        "Verify INTERNAL_API_TOKEN matches BIGBIKE_INTERNAL_TOKEN on the backend. " +
+        "Redirects will not function until this is resolved."
+      );
+      return null;
+    }
     if (!response.ok) return null;
     return (await response.json()) as RedirectLookup;
   } catch {
