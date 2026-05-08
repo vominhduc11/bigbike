@@ -65,7 +65,8 @@ public class AdminRoleService {
     }
 
     @Transactional
-    public Map<String, Object> updateRolePermissions(String roleId, Set<String> permissions, UUID actorId) {
+    public Map<String, Object> updateRolePermissions(String roleId, Set<String> permissions,
+            UUID actorId, String clientIp, String userAgent) {
         AdminRoleEntity role = roleRepo.findById(roleId.toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new NotFoundException("Role not found: " + roleId));
 
@@ -82,14 +83,15 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogRepo.save(buildAudit(actorId, "ROLE_PERMISSIONS_UPDATED",
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_PERMISSIONS_UPDATED",
                 permissionsJson(role.getId(), before), permissionsJson(role.getId(), saved.getPermissions())));
 
         return toMap(saved);
     }
 
     @Transactional
-    public Map<String, Object> createRole(String id, String name, String description, Set<String> permissions, UUID actorId) {
+    public Map<String, Object> createRole(String id, String name, String description, Set<String> permissions,
+            UUID actorId, String clientIp, String userAgent) {
         if (id == null || id.isBlank()) {
             throw new ValidationException("Role ID must not be blank.",
                     List.of(new ApiErrorDetail("id", "REQUIRED", "Role ID is required.")));
@@ -126,14 +128,14 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogRepo.save(buildAudit(actorId, "ROLE_CREATED",
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_CREATED",
                 null, permissionsJson(saved.getId(), saved.getPermissions())));
 
         return toMap(saved);
     }
 
     @Transactional
-    public void deleteRole(String roleId, UUID actorId) {
+    public void deleteRole(String roleId, UUID actorId, String clientIp, String userAgent) {
         AdminRoleEntity role = roleRepo.findById(roleId.toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new NotFoundException("Role not found: " + roleId));
 
@@ -152,7 +154,7 @@ public class AdminRoleService {
 
         adminPermissionService.evict(role.getId());
 
-        auditLogRepo.save(buildAudit(actorId, "ROLE_DELETED",
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_DELETED",
                 permissionsJson(role.getId(), before), null));
     }
 
@@ -189,8 +191,8 @@ public class AdminRoleService {
                 "]}";
     }
 
-    private AuditLogEntity buildAudit(UUID actorId, String action,
-            String before, String after) {
+    private AuditLogEntity buildAudit(UUID actorId, String clientIp, String userAgent,
+            String action, String before, String after) {
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(actorId);
@@ -199,6 +201,8 @@ public class AdminRoleService {
         // resource_id stays null: role IDs are String, not UUID
         log.setBeforeData(before);
         log.setAfterData(after);
+        log.setIpAddress(clientIp);
+        log.setUserAgent(userAgent);
         log.setCreatedAt(Instant.now());
         return log;
     }

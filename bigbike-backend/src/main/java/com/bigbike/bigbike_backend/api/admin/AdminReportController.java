@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.report.AdminAnalyticsResponse;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
@@ -46,15 +47,18 @@ public class AdminReportController {
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
     private final AuditLogJpaRepository auditLogRepo;
+    private final ClientIpResolver clientIpResolver;
 
     public AdminReportController(
             AdminReportService adminReportService,
             DevAdminAuthService devAdminAuthService,
-            AuditLogJpaRepository auditLogRepo
+            AuditLogJpaRepository auditLogRepo,
+            ClientIpResolver clientIpResolver
     ) {
         this.adminReportService = adminReportService;
         this.devAdminAuthService = devAdminAuthService;
         this.auditLogRepo = auditLogRepo;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @GetMapping("/analytics")
@@ -88,7 +92,7 @@ public class AdminReportController {
             throw ValidationException.fromField("paymentStatus", "INVALID_PAYMENT_STATUS",
                     "Unknown payment status: " + paymentStatus);
         }
-        byte[] csv = adminReportService.exportOrdersCsv(status, paymentStatus, from, to);
+        AdminReportService.ExportResult ordersResult = adminReportService.exportOrdersCsv(status, paymentStatus, from, to);
         recordExportAudit(actor, "ORDERS",
                 "{\"exportType\":\"ORDERS\",\"filters\":{"
                         + "\"status\":" + jsonStr(status)
@@ -97,7 +101,7 @@ public class AdminReportController {
                         + ",\"to\":" + jsonStr(to)
                         + "},\"rowLimit\":10000}",
                 request);
-        return csvResponse(csv, "orders_" + LocalDate.now().format(FILE_DATE) + ".csv");
+        return csvResponse(ordersResult, "orders_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
     @GetMapping("/customers/export")
@@ -106,13 +110,13 @@ public class AdminReportController {
             HttpServletRequest request
     ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
-        byte[] csv = adminReportService.exportCustomersCsv(status);
+        AdminReportService.ExportResult customersResult = adminReportService.exportCustomersCsv(status);
         recordExportAudit(actor, "CUSTOMERS",
                 "{\"exportType\":\"CUSTOMERS\",\"filters\":{"
                         + "\"status\":" + jsonStr(status)
                         + "},\"rowLimit\":10000}",
                 request);
-        return csvResponse(csv, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
+        return csvResponse(customersResult, "customers_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
     @GetMapping("/products/export")
@@ -126,13 +130,13 @@ public class AdminReportController {
             throw ValidationException.fromField("publishStatus", "INVALID_PUBLISH_STATUS",
                     "Unknown publish status: " + publishStatus);
         }
-        byte[] csv = adminReportService.exportProductsCsv(publishStatus);
+        AdminReportService.ExportResult productsResult = adminReportService.exportProductsCsv(publishStatus);
         recordExportAudit(actor, "PRODUCTS",
                 "{\"exportType\":\"PRODUCTS\",\"filters\":{"
                         + "\"publishStatus\":" + jsonStr(publishStatus)
                         + "},\"rowLimit\":10000}",
                 request);
-        return csvResponse(csv, "products_" + LocalDate.now().format(FILE_DATE) + ".csv");
+        return csvResponse(productsResult, "products_" + LocalDate.now().format(FILE_DATE) + ".csv");
     }
 
     private void validateDateRange(String from, String to) {
@@ -144,10 +148,14 @@ public class AdminReportController {
         }
     }
 
+    // REPORT_RULE_008: date validation uses VN timezone for start-of-day boundary,
+    // consistent with AdminReportService which parses dates in Asia/Ho_Chi_Minh.
+    private static final java.time.ZoneId VN_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+
     private Instant parseDate(String value, String fieldName) {
         if (value == null || value.isBlank()) return null;
         try {
-            return LocalDate.parse(value).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+            return LocalDate.parse(value).atStartOfDay(VN_ZONE).toInstant();
         } catch (Exception e) {
             try {
                 return Instant.parse(value);
@@ -158,11 +166,16 @@ public class AdminReportController {
         }
     }
 
-    private ResponseEntity<byte[]> csvResponse(byte[] csv, String filename) {
+    // RBAUD-005: set X-Export-Truncated: true when result was capped at EXPORT_MAX_ROWS
+    private ResponseEntity<byte[]> csvResponse(AdminReportService.ExportResult result, String filename) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
-        return ResponseEntity.ok().headers(headers).body(csv);
+        headers.set("X-Export-Max-Rows", String.valueOf(AdminReportService.EXPORT_MAX_ROWS));
+        if (result.truncated()) {
+            headers.set("X-Export-Truncated", "true");
+        }
+        return ResponseEntity.ok().headers(headers).body(result.csv());
     }
 
     private void recordExportAudit(AdminUserProfile actor, String exportType,
@@ -173,7 +186,7 @@ public class AdminReportController {
         log.setAction("REPORT_EXPORT_CREATED");
         log.setResourceType("REPORT");
         log.setAfterData(afterData);
-        log.setIpAddress(request.getRemoteAddr());
+        log.setIpAddress(clientIpResolver.resolve(request));
         log.setUserAgent(request.getHeader("User-Agent"));
         log.setCreatedAt(Instant.now());
         auditLogRepo.save(log);

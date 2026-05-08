@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminRoleService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
@@ -10,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,18 +32,26 @@ public class AdminRolesController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    // RBAUD-009: devHeaderEnabled controls whether missing principal falls back to DEV_ADMIN_ID
+    // (test/dev only) or throws UnauthorizedException (production default).
+    @Value("${bigbike.auth.dev-header-enabled:false}")
+    private boolean devHeaderEnabled;
+
     private final AdminRoleService adminRoleService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final ClientIpResolver clientIpResolver;
 
     public AdminRolesController(
             AdminRoleService adminRoleService,
             DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
+            ApiResponseFactory apiResponseFactory,
+            ClientIpResolver clientIpResolver
     ) {
         this.adminRoleService = adminRoleService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @GetMapping
@@ -56,13 +67,15 @@ public class AdminRolesController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "roles.write");
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
 
         @SuppressWarnings("unchecked")
         List<String> permList = (List<String>) body.get("permissions");
         var permissions = new LinkedHashSet<>(permList != null ? permList : List.of());
 
         return apiResponseFactory.data(
-                adminRoleService.updateRolePermissions(id, permissions, resolveAdminId()),
+                adminRoleService.updateRolePermissions(id, permissions, resolveAdminId(), clientIp, userAgent),
                 request
         );
     }
@@ -74,6 +87,8 @@ public class AdminRolesController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "roles.write");
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
 
         @SuppressWarnings("unchecked")
         List<String> permList = (List<String>) body.get("permissions");
@@ -85,7 +100,9 @@ public class AdminRolesController {
                         (String) body.get("name"),
                         (String) body.getOrDefault("description", ""),
                         permissions,
-                        resolveAdminId()
+                        resolveAdminId(),
+                        clientIp,
+                        userAgent
                 ),
                 request
         );
@@ -95,9 +112,17 @@ public class AdminRolesController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRole(@PathVariable String id, HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "roles.write");
-        adminRoleService.deleteRole(id, resolveAdminId());
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
+        adminRoleService.deleteRole(id, resolveAdminId(), clientIp, userAgent);
     }
 
+    /**
+     * RBAUD-009: Resolves the authenticated admin UUID.
+     * - Real JWT principal → use UUID from AdminPrincipal.
+     * - devHeaderEnabled=true (test/dev) and no principal → fallback to DEV_ADMIN_ID.
+     * - devHeaderEnabled=false (production) and no principal → throw UnauthorizedException.
+     */
     private UUID resolveAdminId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
@@ -105,6 +130,9 @@ public class AdminRolesController {
                 return UUID.fromString(principal.id());
             } catch (IllegalArgumentException ignored) {}
         }
-        return DEV_ADMIN_ID;
+        if (devHeaderEnabled) {
+            return DEV_ADMIN_ID;
+        }
+        throw new UnauthorizedException("No authenticated admin principal.");
     }
 }

@@ -39,7 +39,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminReportService {
 
-    private static final int EXPORT_MAX_ROWS = 10_000;
+    /** Maximum rows returned per CSV export. Exposed so controller can set X-Export-Truncated header. */
+    public static final int EXPORT_MAX_ROWS = 10_000;
+
+    /** Wraps a CSV byte array with a flag indicating whether the result was truncated at EXPORT_MAX_ROWS. */
+    public record ExportResult(byte[] csv, boolean truncated) {}
     private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 
     // Vietnam timezone — all date boundary parsing and CSV timestamp formatting use this zone
@@ -145,7 +149,7 @@ public class AdminReportService {
         return new AdminAnalyticsResponse(summary, dailyRevenue, topProducts, topCustomers);
     }
 
-    public byte[] exportOrdersCsv(String status, String paymentStatus, String from, String to) {
+    public ExportResult exportOrdersCsv(String status, String paymentStatus, String from, String to) {
         Instant fromInstant = parseFromDate(from);
         Instant toInstant = parseToDate(to);
 
@@ -205,10 +209,11 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate CSV export.", e);
         }
 
-        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return new ExportResult(csv, orders.size() == EXPORT_MAX_ROWS);
     }
 
-    public byte[] exportCustomersCsv(String status) {
+    public ExportResult exportCustomersCsv(String status) {
         // Filter status at DB level via JpaSpecificationExecutor to avoid loading all customers
         // and then filtering in memory (which would silently miss customers beyond EXPORT_MAX_ROWS).
         Specification<CustomerEntity> spec = (root, query, cb) -> {
@@ -252,10 +257,11 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate customer CSV export.", e);
         }
 
-        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return new ExportResult(csv, customers.size() == EXPORT_MAX_ROWS);
     }
 
-    public byte[] exportProductsCsv(String publishStatus) {
+    public ExportResult exportProductsCsv(String publishStatus) {
         Specification<ProductEntity> spec = (root, query, cb) -> {
             if (publishStatus == null || publishStatus.isBlank()) return cb.conjunction();
             return cb.equal(
@@ -299,7 +305,8 @@ public class AdminReportService {
             throw new RuntimeException("Failed to generate product CSV export.", e);
         }
 
-        return withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] csv = withBom(sw.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return new ExportResult(csv, products.size() == EXPORT_MAX_ROWS);
     }
 
     private static String nvl(String s) { return s != null ? s : ""; }
@@ -313,9 +320,30 @@ public class AdminReportService {
     }
 
     // Prefix dangerous leading characters with a single quote to prevent spreadsheet formula injection.
-    // Triggers: = + - @ and ASCII control chars \t \r (per OWASP CSV injection guidance).
+    // Triggers: = + - @ \t \r (OWASP CSV injection — prepend apostrophe).
+    // LF (\n) is stripped because it creates a new CSV row in spreadsheet parsers (RBAUD-002).
+    // After stripping leading LFs, a remaining formula trigger is also apostrophe-escaped.
     static String escape(String v) {
         if (v == null || v.isEmpty()) return v;
+        // Strip all leading LF chars (\n).  \r\n together also stripped so \r\n=formula is safe.
+        int start = 0;
+        while (start < v.length() && v.charAt(start) == '\n') {
+            start++;
+        }
+        // If we consumed leading LFs, also consume a trailing \r that was part of \r\n
+        // (handles \r\n=formula → strip both \r and \n then recurse).
+        // Actually: handle \r\n by stripping \r immediately before another \n or at end of stripped prefix.
+        // Simplest: strip leading (\r?\n)+ sequences.
+        if (start > 0) {
+            // Re-strip from index 0 for \r that preceded the \n we already skipped
+            // by restarting with a full scan of (\r\n|\n)+ prefix.
+            String stripped = v.substring(start);
+            return escape(stripped);
+        }
+        // Strip a leading \r only when it is followed by \n (i.e., \r\n sequence).
+        if (v.charAt(0) == '\r' && v.length() > 1 && v.charAt(1) == '\n') {
+            return escape(v.substring(2));
+        }
         char first = v.charAt(0);
         if (first == '=' || first == '+' || first == '-' || first == '@'
                 || first == '\t' || first == '\r') {

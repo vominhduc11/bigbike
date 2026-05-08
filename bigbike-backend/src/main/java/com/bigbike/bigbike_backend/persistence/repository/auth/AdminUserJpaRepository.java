@@ -10,4 +10,7 @@ public interface AdminUserJpaRepository extends JpaRepository<AdminUserEntity, U
     Optional<AdminUserEntity> findByEmail(String email);
 
     long countByRole(String role);
+
+    // RBAUD-008: targeted count for SUPER_ADMIN guard — avoids full table scan via findAll()
+    long countByRoleAndStatus(String role, String status);
 }

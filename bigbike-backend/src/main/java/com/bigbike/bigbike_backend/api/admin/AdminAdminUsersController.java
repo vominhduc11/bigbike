@@ -3,6 +3,8 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminAdminUsersService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
@@ -11,6 +13,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,18 +35,26 @@ public class AdminAdminUsersController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    // RBAUD-009: devHeaderEnabled controls whether missing principal falls back to DEV_ADMIN_ID
+    // (test/dev only) or throws UnauthorizedException (production default).
+    @Value("${bigbike.auth.dev-header-enabled:false}")
+    private boolean devHeaderEnabled;
+
     private final AdminAdminUsersService adminAdminUsersService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final ClientIpResolver clientIpResolver;
 
     public AdminAdminUsersController(
             AdminAdminUsersService adminAdminUsersService,
             DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
+            ApiResponseFactory apiResponseFactory,
+            ClientIpResolver clientIpResolver
     ) {
         this.adminAdminUsersService = adminAdminUsersService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @GetMapping
@@ -75,9 +86,13 @@ public class AdminAdminUsersController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.write");
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
         return apiResponseFactory.data(
                 adminAdminUsersService.createAdminUser(
                         resolveAdminId(),
+                        clientIp,
+                        userAgent,
                         body.get("email"),
                         body.get("displayName"),
                         body.get("role"),
@@ -94,9 +109,13 @@ public class AdminAdminUsersController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "admin-users.write");
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
         return apiResponseFactory.data(
                 adminAdminUsersService.updateAdminUser(
                         resolveAdminId(),
+                        clientIp,
+                        userAgent,
                         id,
                         body.get("displayName"),
                         body.get("status"),
@@ -107,6 +126,12 @@ public class AdminAdminUsersController {
         );
     }
 
+    /**
+     * RBAUD-009: Resolves the authenticated admin UUID.
+     * - Real JWT principal → use UUID from AdminPrincipal.
+     * - devHeaderEnabled=true (test/dev) and no principal → fallback to DEV_ADMIN_ID.
+     * - devHeaderEnabled=false (production) and no principal → throw UnauthorizedException.
+     */
     private UUID resolveAdminId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
@@ -114,6 +139,9 @@ public class AdminAdminUsersController {
                 return UUID.fromString(principal.id());
             } catch (IllegalArgumentException ignored) {}
         }
-        return DEV_ADMIN_ID;
+        if (devHeaderEnabled) {
+            return DEV_ADMIN_ID;
+        }
+        throw new UnauthorizedException("No authenticated admin principal.");
     }
 }

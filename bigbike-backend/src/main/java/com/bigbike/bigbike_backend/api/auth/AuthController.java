@@ -120,7 +120,7 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/api/v1/auth");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "None");
+        cookie.setAttribute("SameSite", "Lax"); // must match setRefreshCookie (RBAUD-010)
         response.addCookie(cookie);
     }
 

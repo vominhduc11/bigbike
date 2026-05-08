@@ -52,9 +52,21 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     BigDecimal sumRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     // Paid revenue: actual cash collected — SUM(paidAmount) for orders where payment was received
+    // Legacy — kept for backward compat; use sumPaidRevenueSinceExcluding for canonical revenue.
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")
     BigDecimal sumPaidRevenueSince(@Param("from") Instant from);
+
+    // Canonical paid revenue per REPORT_RULE_002: includes PARTIALLY_REFUNDED and REFUNDED payment statuses
+    // because paidAmount is never reduced by RefundService — it is the total cash collected.
+    // Must match sumPaidRevenueBetweenExcluding() to ensure Dashboard and Reports agree.
+    @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
+           "WHERE o.placedAt >= :from " +
+           "  AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED', 'REFUNDED') " +
+           "  AND o.status NOT IN :excludedStatuses")
+    BigDecimal sumPaidRevenueSinceExcluding(
+            @Param("from") Instant from,
+            @Param("excludedStatuses") List<String> excludedStatuses);
 
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")

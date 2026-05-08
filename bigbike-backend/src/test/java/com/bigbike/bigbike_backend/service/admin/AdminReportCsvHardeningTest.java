@@ -71,6 +71,39 @@ class AdminReportCsvHardeningTest {
         assertThat(AdminReportService.escape("\rcell")).isEqualTo("'\rcell");
     }
 
+    // ── RBAUD-002: LF injection vector ────────────────────────────────────────
+
+    @Test
+    void escape_leadingLinefeed_isStripped() {
+        // \ncell → leading LF stripped; no formula trigger left → "cell"
+        assertThat(AdminReportService.escape("\ncell")).isEqualTo("cell");
+    }
+
+    @Test
+    void escape_leadingLinefeedFormula_isStripped() {
+        // \n=formula → LF stripped, then = triggers apostrophe prefix
+        String result = AdminReportService.escape("\n=SUM(A1)");
+        assertThat(result).doesNotStartWith("\n");
+        assertThat(result).startsWith("'=");
+    }
+
+    @Test
+    void escape_leadingCrLfFormula_isStripped() {
+        // \r\n=formula → both control chars stripped, = triggers apostrophe
+        String result = AdminReportService.escape("\r\n=HYPERLINK(\"evil.com\")");
+        assertThat(result).doesNotStartWith("\r");
+        assertThat(result).doesNotStartWith("\n");
+        assertThat(result).startsWith("'=");
+    }
+
+    @Test
+    void escape_multipleLeadingLinefeeds_allStripped() {
+        // \n\n\n=formula → all LFs stripped before formula escape
+        String result = AdminReportService.escape("\n\n\n=formula");
+        assertThat(result).startsWith("'=");
+        assertThat(result).doesNotContain("\n");
+    }
+
     // Safe values must pass through unchanged
 
     @ParameterizedTest

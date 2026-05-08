@@ -26,6 +26,7 @@ com\bigbike\bigbike_backend\schema\HomeVideoRepositoryTest.class
 com\bigbike\bigbike_backend\api\Phase1FCheckoutApiTest$GuestSession.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$AuthSession.class
 com\bigbike\bigbike_backend\api\Phase2B1RealDumpDryRunCalibrationTest.class
+com\bigbike\bigbike_backend\api\AdminAuditLogApiTest.class
 com\bigbike\bigbike_backend\api\Phase2AWordPressMigrationFoundationTest.class
 com\bigbike\bigbike_backend\api\Phase1GOrderReadApiTest$GuestSession.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressVariationMapperRtwpvgTest.class

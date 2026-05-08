@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,10 @@ public class AdminAuditLogService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().findAndAddModules().build();
+
+    // REPORT_RULE_008: all date boundaries parsed in Asia/Ho_Chi_Minh (UTC+7),
+    // consistent with AdminDashboardService and AdminReportService.
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final AuditLogJpaRepository auditLogRepo;
     private final AdminUserJpaRepository adminUserRepo;
@@ -219,7 +224,8 @@ public class AdminAuditLogService {
     private Instant parseFromDate(String from) {
         if (from == null || from.isBlank()) return null;
         try {
-            return LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant();
+            // REPORT_RULE_008: parse in VN timezone so "2026-05-08" → 2026-05-07T17:00:00Z
+            return LocalDate.parse(from).atStartOfDay(VN_ZONE).toInstant();
         } catch (Exception e) {
             try { return Instant.parse(from); } catch (Exception ignored) { return null; }
         }
@@ -228,7 +234,8 @@ public class AdminAuditLogService {
     private Instant parseToDate(String to) {
         if (to == null || to.isBlank()) return null;
         try {
-            return LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            // REPORT_RULE_008: exclusive end boundary — next day start in VN timezone
+            return LocalDate.parse(to).plusDays(1).atStartOfDay(VN_ZONE).toInstant();
         } catch (Exception e) {
             try { return Instant.parse(to); } catch (Exception ignored) { return null; }
         }

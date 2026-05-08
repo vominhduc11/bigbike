@@ -83,7 +83,8 @@ public class AdminAdminUsersService {
     }
 
     @Transactional
-    public Map<String, Object> createAdminUser(UUID actorId, String email, String displayName, String role, String password) {
+    public Map<String, Object> createAdminUser(UUID actorId, String clientIp, String userAgent,
+            String email, String displayName, String role, String password) {
         if (email == null || email.isBlank()) {
             throw new ConflictException("Email is required.");
         }
@@ -126,13 +127,14 @@ public class AdminAdminUsersService {
         String afterData = "{\"email\":\"" + escapeJson(saved.getEmail())
                 + "\",\"role\":\"" + saved.getRole()
                 + "\",\"status\":\"ACTIVE\"}";
-        auditLogRepo.save(buildAudit(actorId, "ADMIN_USER_CREATED", saved.getId(), null, afterData, now));
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_CREATED", saved.getId(), null, afterData, now));
 
         return toMap(saved);
     }
 
     @Transactional
-    public Map<String, Object> updateAdminUser(UUID actorId, UUID id, String displayName, String status, String newPassword, String role) {
+    public Map<String, Object> updateAdminUser(UUID actorId, String clientIp, String userAgent,
+            UUID id, String displayName, String status, String newPassword, String role) {
         AdminUserEntity entity = adminUserRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
 
@@ -159,9 +161,8 @@ public class AdminAdminUsersService {
                 throw new ConflictException("SUPER_ADMIN cannot demote themselves.");
             }
             if ("SUPER_ADMIN".equals(entity.getRole()) && !"SUPER_ADMIN".equals(normalizedRole)) {
-                long superAdminCount = adminUserRepo.findAll().stream()
-                        .filter(u -> "SUPER_ADMIN".equals(u.getRole()) && "ACTIVE".equals(u.getStatus()))
-                        .count();
+                // RBAUD-008: use targeted DB count instead of findAll() full table scan
+                long superAdminCount = adminUserRepo.countByRoleAndStatus("SUPER_ADMIN", "ACTIVE");
                 if (superAdminCount <= 1) {
                     throw new ConflictException("Cannot demote the last active SUPER_ADMIN.");
                 }
@@ -202,7 +203,7 @@ public class AdminAdminUsersService {
         beforeSb.append("}");
         afterSb.append("}");
 
-        auditLogRepo.save(buildAudit(actorId, "ADMIN_USER_UPDATED", id,
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
                 beforeSb.toString(), afterSb.toString(), now));
 
         return toMap(saved);
@@ -234,8 +235,8 @@ public class AdminAdminUsersService {
         );
     }
 
-    private AuditLogEntity buildAudit(UUID actorId, String action, UUID resourceId,
-            String before, String after, Instant now) {
+    private AuditLogEntity buildAudit(UUID actorId, String clientIp, String userAgent,
+            String action, UUID resourceId, String before, String after, Instant now) {
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(actorId);
@@ -244,6 +245,8 @@ public class AdminAdminUsersService {
         log.setResourceId(resourceId);
         log.setBeforeData(before);
         log.setAfterData(after);
+        log.setIpAddress(clientIp);
+        log.setUserAgent(userAgent);
         log.setCreatedAt(now);
         return log;
     }

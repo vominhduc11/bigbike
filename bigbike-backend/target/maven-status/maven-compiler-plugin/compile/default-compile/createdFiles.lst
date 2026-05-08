@@ -553,6 +553,7 @@ com\bigbike\bigbike_backend\migration\wordpress\mapper\WordPressMediaMapper.clas
 com\bigbike\bigbike_backend\migration\wordpress\service\WordPressCustomerOrderCouponDryRunService.class
 com\bigbike\bigbike_backend\domain\video\HomeVideo.class
 com\bigbike\bigbike_backend\persistence\repository\customer\CustomerJpaRepository.class
+com\bigbike\bigbike_backend\service\admin\AdminReportService$ExportResult.class
 com\bigbike\bigbike_backend\persistence\entity\customer\CustomerEntity.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\RedirectResolverService$ResolutionSummary.class
 com\bigbike\bigbike_backend\migration\wordpress\mapper\CapabilityMapper$Mapped.class
