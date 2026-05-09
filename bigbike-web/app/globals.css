@@ -717,17 +717,10 @@ textarea.bb-input {
   border-color: var(--bb-state-warning-border);
 }
 
-.bb-stock-out,
-.bb-stock-contact {
+.bb-stock-out {
   background: rgba(129, 129, 137, 0.14);
   color: var(--bb-product-stock-out);
   border-color: rgba(129, 129, 137, 0.34);
-}
-
-.bb-stock-preorder {
-  background: var(--bb-state-info-bg);
-  color: var(--bb-product-preorder);
-  border-color: var(--bb-state-info-border);
 }
 
 .bb-empty-state,
@@ -4173,7 +4166,6 @@ body.wp-mobile-menu-open {
 .wp-stock-in { background: var(--bb-state-success-bg); color: var(--bb-state-success); }
 .wp-stock-low { background: var(--bb-state-warning-bg); color: var(--bb-state-warning); }
 .wp-stock-out { background: var(--bb-state-danger-bg); color: var(--bb-brand-primary); }
-.wp-stock-preorder { background: var(--bb-state-info-bg); color: var(--bb-state-info); }
 
 /* ── Brand strip ─────────────────────────────────────────── */
 .wp-brand-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }

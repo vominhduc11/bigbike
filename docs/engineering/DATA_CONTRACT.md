@@ -29,6 +29,31 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
+### SKU fields
+
+`product.sku` and `variant.sku` are two different things despite sharing a name.
+
+| Field | DB column | Role | Required? |
+|---|---|---|---|
+| `product.sku` | `products.sku varchar(100)` | **Model code / group code** — optional descriptive identifier for the product family. Not used as the selling code when variants exist. | Optional (nullable, no unique constraint) |
+| `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit sold. | Optional (nullable, no unique constraint) |
+
+When snapshotting line items into cart/order/POS, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and variants that were created without a SKU.
+
+Inventory and serial-tracking views surface both fields (`product_sku`, `variant_sku`) so admin tools can locate units by either code.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ProductEntity.java` (line 34)
+- `ProductVariantEntity.java` (line 29)
+- `PosOrderService.java` (line 233)
+- `CartService.java` (line 153)
+- `CheckoutService.java` (line 723)
+- `V1__create_catalog_content_tables.sql` (lines 65, 166)
+- `V51__add_serial_tracking.sql` (lines 123, 127)
+
 ### Address fields
 
 `CustomerAddressResponse` currently contains:

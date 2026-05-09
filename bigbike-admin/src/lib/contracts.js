@@ -3,13 +3,11 @@
  * These helpers normalize unknown backend payloads to the documented contract.
  */
 
-export const PUBLISH_STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'HIDDEN', 'ARCHIVED', 'TRASH']
+export const PUBLISH_STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH']
 export const STOCK_STATE_VALUES = [
   'IN_STOCK',
   'LOW_STOCK',
   'OUT_OF_STOCK',
-  'PREORDER',
-  'CONTACT_FOR_STOCK',
 ]
 export const CONTENT_TYPE_VALUES = ['ARTICLE', 'PAGE']
 
@@ -542,9 +540,21 @@ export function normalizeMediaItem(input) {
     title: toTrimmedStringLocal(s.title) || undefined,
     caption: toTrimmedStringLocal(s.caption) || undefined,
     storageProvider: (toTrimmedStringLocal(s.storageProvider) || 'UNKNOWN').toUpperCase(),
+    status: toTrimmedStringLocal(s.status) || 'ACTIVE',
     createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+    usageCount: typeof s.usageCount === 'number' ? s.usageCount : 0,
+    references: Array.isArray(s.references) ? s.references : [],
+    folderId: toTrimmedStringLocal(s.folderId) || null,
+    tags: Array.isArray(s.tags) ? s.tags : [],
+    sizes: parseSizesJson(s.sizes),
   }
+}
+
+function parseSizesJson(raw) {
+  if (!raw) return null
+  if (typeof raw === 'object') return raw
+  try { return JSON.parse(raw) } catch { return null }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

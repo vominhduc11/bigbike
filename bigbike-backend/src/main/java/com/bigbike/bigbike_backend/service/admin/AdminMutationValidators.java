@@ -201,10 +201,10 @@ final class AdminMutationValidators {
             return;
         }
 
-        // CMS-009: PENDING and PRIVATE are WordPress-import artifacts reserved for
-        // historical data. They are NOT valid target states for admin API mutations.
-        // Use DRAFT for unpublished content and HIDDEN for suppressed published content.
-        if (to == PublishStatus.PENDING || to == PublishStatus.PRIVATE) {
+        // ARCHIVED, PENDING and PRIVATE are legacy/WordPress-import values.
+        // They are NOT valid target states for admin API mutations.
+        // Use HIDDEN for non-public products/content, DRAFT for unpublished.
+        if (to == PublishStatus.ARCHIVED || to == PublishStatus.PENDING || to == PublishStatus.PRIVATE) {
             errors.add(new ApiErrorDetail(
                     field,
                     "RESERVED_PUBLISH_STATUS",
@@ -214,20 +214,22 @@ final class AdminMutationValidators {
             return;
         }
 
-        // Soft-delete (→ TRASH) is allowed from any active state. Restoring out
-        // of TRASH lands in DRAFT (parity with WordPress trash semantics).
-        // PENDING/PRIVATE are WP-imported review states with limited transitions (source only).
+        // Active transitions: DRAFT ↔ PUBLISHED ↔ HIDDEN, all → TRASH, TRASH → DRAFT.
+        // Legacy source states (ARCHIVED/PENDING/PRIVATE) still have escape paths so
+        // any remaining DB records can be moved to active states.
         boolean allowed = switch (from) {
             case DRAFT -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.ARCHIVED
+                    || to == PublishStatus.HIDDEN
                     || to == PublishStatus.TRASH;
             case PUBLISHED -> to == PublishStatus.HIDDEN
-                    || to == PublishStatus.ARCHIVED
                     || to == PublishStatus.TRASH;
             case HIDDEN -> to == PublishStatus.PUBLISHED
-                    || to == PublishStatus.ARCHIVED
+                    || to == PublishStatus.DRAFT
                     || to == PublishStatus.TRASH;
-            case ARCHIVED -> to == PublishStatus.DRAFT
+            case TRASH -> to == PublishStatus.DRAFT;
+            // Legacy escape paths — allow moving remaining DB records to active states
+            case ARCHIVED -> to == PublishStatus.HIDDEN
+                    || to == PublishStatus.DRAFT
                     || to == PublishStatus.TRASH;
             case PENDING -> to == PublishStatus.PUBLISHED
                     || to == PublishStatus.DRAFT
@@ -236,7 +238,6 @@ final class AdminMutationValidators {
                     || to == PublishStatus.DRAFT
                     || to == PublishStatus.HIDDEN
                     || to == PublishStatus.TRASH;
-            case TRASH -> to == PublishStatus.DRAFT;
         };
 
         if (!allowed) {

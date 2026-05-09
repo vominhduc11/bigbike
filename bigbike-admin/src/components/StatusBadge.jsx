@@ -6,7 +6,6 @@ function toneFromPublish(status) {
     case 'PUBLISHED': return 'success'
     case 'DRAFT':     return 'info'
     case 'HIDDEN':    return 'warning'
-    case 'ARCHIVED':  return 'neutral'
     case 'TRASH':     return 'danger'
     default:          return 'neutral'
   }
@@ -14,12 +13,10 @@ function toneFromPublish(status) {
 
 function toneFromStock(status) {
   switch (status) {
-    case 'IN_STOCK':          return 'success'
-    case 'LOW_STOCK':         return 'warning'
-    case 'PREORDER':          return 'info'
-    case 'OUT_OF_STOCK':      return 'danger'
-    case 'CONTACT_FOR_STOCK': return 'neutral'
-    default:                  return 'neutral'
+    case 'IN_STOCK':     return 'success'
+    case 'LOW_STOCK':    return 'warning'
+    case 'OUT_OF_STOCK': return 'danger'
+    default:             return 'neutral'
   }
 }
 

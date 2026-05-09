@@ -115,6 +115,12 @@
   --admin-scrollbar-thumb-hover: var(--admin-color-border-strong);
   --admin-scrollbar-track:       transparent;
 
+  /* ─── Semantic aliases — let new screens reference one canonical name
+     instead of repeating brand/status primitives. Picked deliberately so
+     dark-mode overrides flow through automatically. ──────────────────── */
+  --admin-color-primary:        var(--admin-color-brand-red);
+  --admin-color-primary-hover:  var(--admin-color-brand-red-hover);
+
   /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
   --c-text-primary:  var(--admin-color-text-primary);
   --c-text-muted:    var(--admin-color-text-muted);

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
@@ -61,6 +63,8 @@ public class AdminCatalogMutationService {
     private static final Set<String> COLOR_ATTRIBUTE_KEYS = Set.of(
             "color", "colour", "mau", "mau sac", "pa color", "pa mau", "pa mau sac"
     );
+
+    private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper();
 
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
@@ -256,6 +260,11 @@ public class AdminCatalogMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
+        if (!entity.isVisible()) {
+            return catalogReadRepository.findCategoryById(entity.getId())
+                    .orElseThrow(() -> new NotFoundException("Category not found."));
+        }
+
         assertNoVisibleChildren(categoryId);
 
         entity.setVisible(false);
@@ -402,22 +411,44 @@ public class AdminCatalogMutationService {
     }
 
     private static String productJson(ProductEntity e) {
-        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
-               "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() + "\"}";
+        return writeAuditJson(Map.of(
+                "id", nullSafe(e.getId()),
+                "name", nullSafe(e.getName()),
+                "slug", nullSafe(e.getSlug()),
+                "publishStatus", e.getPublishStatus() == null ? "" : e.getPublishStatus().toString()
+        ));
     }
 
     private static String categoryJson(CategoryEntity e) {
-        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
-               "\",\"slug\":\"" + e.getSlug() + "\",\"visible\":" + e.isVisible() + "}";
+        return writeAuditJson(Map.of(
+                "id", nullSafe(e.getId()),
+                "name", nullSafe(e.getName()),
+                "slug", nullSafe(e.getSlug()),
+                "visible", e.isVisible()
+        ));
     }
 
     private static String brandJson(BrandEntity e) {
-        return "{\"id\":\"" + e.getId() + "\",\"name\":\"" + esc(e.getName()) +
-               "\",\"slug\":\"" + e.getSlug() + "\",\"visible\":" + e.isVisible() + "}";
+        return writeAuditJson(Map.of(
+                "id", nullSafe(e.getId()),
+                "name", nullSafe(e.getName()),
+                "slug", nullSafe(e.getSlug()),
+                "visible", e.isVisible()
+        ));
     }
 
-    private static String esc(String s) {
-        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+    private static String writeAuditJson(Map<String, Object> fields) {
+        try {
+            return AUDIT_MAPPER.writeValueAsString(fields);
+        } catch (JsonProcessingException ex) {
+            // Audit logging is best-effort; if serialization fails we still want
+            // the mutation to succeed. Fall back to a minimal marker.
+            return "{\"_serialization_error\":true}";
+        }
+    }
+
+    private static String nullSafe(String s) {
+        return s == null ? "" : s;
     }
 
     private String validateProductRequest(
@@ -649,21 +680,19 @@ public class AdminCatalogMutationService {
             return null;
         }
         if (currentCategoryId != null) {
-            List<CategoryEntity> allCategories = categoryJpaRepository.findAll();
-            Map<String, String> parentIdMap = new HashMap<>();
-            for (CategoryEntity c : allCategories) {
-                if (c.getParentId() != null) {
-                    parentIdMap.put(c.getId(), c.getParentId());
-                }
-            }
-            String cursor = parentId;
-            int safety = allCategories.size() + 1;
+            // Walk the proposed parent's ancestors via PK lookups instead of
+            // loading the full table. Each hop is an O(1) indexed read; a
+            // realistic catalog tree only goes a handful of levels deep.
+            CategoryEntity cursor = category;
+            int safety = 32;
             while (cursor != null && safety-- > 0) {
-                cursor = parentIdMap.get(cursor);
-                if (currentCategoryId.equals(cursor)) {
+                if (currentCategoryId.equals(cursor.getId())) {
                     errors.add(new ApiErrorDetail("parentId", "INVALID_VALUE", "Setting this parent would create a circular reference."));
                     return null;
                 }
+                String nextId = cursor.getParentId();
+                if (nextId == null) break;
+                cursor = categoryJpaRepository.findById(nextId).orElse(null);
             }
         }
         return category;
@@ -1408,10 +1437,53 @@ public class AdminCatalogMutationService {
         return prefix + "_" + UUID.randomUUID().toString().replace("-", "");
     }
 
+    /**
+     * Hard-delete with cascade: removes the category and all its descendants
+     * (any depth, any visibility) from the database in leaf-first order.
+     * Rejects with 409 if any category in the subtree has products assigned
+     * to it as their primary category — those products must be reassigned first.
+     * Secondary category links (product_category_map) are removed by JPA cascade.
+     */
+    @Transactional
+    public void hardDeleteCategory(String categoryId, UUID adminId) {
+        requireJpaPersistenceEnabled();
+
+        CategoryEntity root = categoryJpaRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        // Collect entire subtree (leaves first so FK constraints are satisfied)
+        List<CategoryEntity> toDelete = new ArrayList<>();
+        collectDescendantsLeafFirst(categoryId, toDelete);
+        toDelete.add(root);
+
+        // Reject if any node in the subtree has products using it as primary category
+        for (CategoryEntity cat : toDelete) {
+            long productCount = productJpaRepository.countByCategory_Id(cat.getId());
+            if (productCount > 0) {
+                throw new ConflictException(
+                        "Cannot delete: " + productCount +
+                        " product" + (productCount == 1 ? " uses" : "s use") +
+                        " category \"" + cat.getName() + "\" as primary category. Reassign them first."
+                );
+            }
+        }
+
+        for (CategoryEntity cat : toDelete) {
+            auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(cat), null);
+            categoryJpaRepository.delete(cat);
+        }
+    }
+
+    private void collectDescendantsLeafFirst(String parentId, List<CategoryEntity> result) {
+        List<CategoryEntity> children = categoryJpaRepository.findByParent_Id(parentId);
+        for (CategoryEntity child : children) {
+            collectDescendantsLeafFirst(child.getId(), result);
+            result.add(child);
+        }
+    }
+
     private void assertNoVisibleChildren(String categoryId) {
-        long visibleChildCount = categoryJpaRepository.findAll().stream()
-                .filter(c -> categoryId.equals(c.getParentId()) && c.isVisible())
-                .count();
+        long visibleChildCount = categoryJpaRepository.countByParent_IdAndIsVisibleTrue(categoryId);
         if (visibleChildCount > 0) {
             throw new ConflictException(
                     "Cannot hide category: it has " + visibleChildCount +

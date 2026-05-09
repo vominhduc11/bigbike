@@ -97,14 +97,12 @@ export type SeoMeta = {
   noIndex?: boolean | null;
 };
 
-export type PublishStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "ARCHIVED";
+export type PublishStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "TRASH";
 
 export type ProductStockState =
   | "IN_STOCK"
   | "LOW_STOCK"
-  | "OUT_OF_STOCK"
-  | "PREORDER"
-  | "CONTACT_FOR_STOCK";
+  | "OUT_OF_STOCK";
 
 export type ProductPrice = {
   retailPrice: number;

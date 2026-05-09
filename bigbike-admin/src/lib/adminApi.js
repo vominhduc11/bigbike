@@ -128,8 +128,13 @@ async function dispatch(method, url, body, accessToken) {
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
   const init = { method, headers }
   if (body !== undefined) {
-    headers['Content-Type'] = 'application/json'
-    init.body = JSON.stringify(body)
+    if (body instanceof FormData) {
+      // Let the browser set multipart boundary automatically — do not set Content-Type
+      init.body = body
+    } else {
+      headers['Content-Type'] = 'application/json'
+      init.body = JSON.stringify(body)
+    }
   }
   const response = await fetch(url, init)
   let payload = null
@@ -534,10 +539,6 @@ export async function restoreProduct(productId) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
-export async function softDeleteCategory(categoryId) {
-  assertMutationEnabled()
-  await requestJson(`/admin/categories/${categoryId}`, { method: 'DELETE' })
-}
 
 export async function fetchCategories(query) {
   if (FORCE_MOCK) {
@@ -557,6 +558,37 @@ export async function fetchCategories(query) {
     }
 
     return withMockFallback(normalizedError.message, queryMockCategories(query))
+  }
+}
+
+/**
+ * Fetch the entire category set in a single request, sorted in tree-friendly
+ * order. Used by the list screen's tree-view and the detail screen's parent
+ * picker — both need every category to render correctly, and the paginated
+ * list endpoint caps pageSize at 100, which silently truncates the tree as
+ * the catalog grows.
+ */
+export async function fetchCategoryTree() {
+  if (FORCE_MOCK) {
+    return withMockFallback(
+      'Category tree is served from typed mock layer (mock mode enabled).',
+      { items: queryMockCategories({ page: 1, pageSize: 1000 }).items },
+    )
+  }
+
+  try {
+    const payload = await requestJson('/admin/categories/tree')
+    const items = Array.isArray(payload?.data) ? payload.data.map(normalizeCategory) : []
+    return withLiveData({ items })
+  } catch (error) {
+    const normalizedError = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) {
+      throw normalizedError
+    }
+    return withMockFallback(
+      normalizedError.message,
+      { items: queryMockCategories({ page: 1, pageSize: 1000 }).items },
+    )
   }
 }
 
@@ -597,6 +629,11 @@ export async function updateCategory(categoryId, input) {
     body: input,
   })
   return parseDetailPayload(payload, normalizeCategory)
+}
+
+export async function hardDeleteCategory(categoryId) {
+  assertMutationEnabled()
+  await requestJson(`/admin/categories/${categoryId}`, { method: 'DELETE' })
 }
 
 export async function fetchBrands(query) {
@@ -960,14 +997,9 @@ export async function fetchMedia(query) {
     return withMockFallback('Media list served from mock.', queryMockMedia(query))
   }
   try {
-    const q = {
-      page: query?.page,
-      size: query?.pageSize,
-      q: query?.search || undefined,
-      mimeType: query?.mimeType && query.mimeType !== 'ALL' ? query.mimeType : undefined,
-      status: query?.status && query.status !== 'ALL' ? query.status : undefined,
-      storageProvider: query?.storageProvider && query.storageProvider !== 'ALL' ? query.storageProvider : undefined,
-    }
+    const q = buildMediaQueryParams(query)
+    q.page = query?.page
+    q.size = query?.pageSize
     const payload = await requestJson('/admin/media', { query: q })
     return withLiveData(parseListPayload(payload, normalizeMediaItem, Number(query?.pageSize) || 20))
   } catch (error) {
@@ -975,6 +1007,120 @@ export async function fetchMedia(query) {
     if (!shouldFallbackToMockOnLiveError()) throw e
     return withMockFallback(e.message, queryMockMedia(query))
   }
+}
+
+function buildMediaQueryParams(query) {
+  return {
+    q: query?.search || undefined,
+    mimeType: query?.mimeType && query.mimeType !== 'ALL' ? query.mimeType : undefined,
+    status: query?.status && query.status !== 'ALL' ? query.status : undefined,
+    usageFilter: query?.usageFilter && query.usageFilter !== 'ALL' ? query.usageFilter : undefined,
+    uploadedFrom: query?.uploadedFrom || undefined,
+    uploadedTo: query?.uploadedTo || undefined,
+    minSize: query?.minSize ? Number(query.minSize) : undefined,
+    maxSize: query?.maxSize ? Number(query.maxSize) : undefined,
+    minWidth: query?.minWidth ? Number(query.minWidth) : undefined,
+    minHeight: query?.minHeight ? Number(query.minHeight) : undefined,
+    sort: query?.sort && query.sort !== 'createdAt' ? query.sort : undefined,
+    dir: query?.dir && query.dir !== 'desc' ? query.dir : undefined,
+    folderFilter: query?.folderFilter || undefined,
+    tag: query?.tag || undefined,
+  }
+}
+
+export async function fetchMediaStats(query) {
+  try {
+    const q = buildMediaQueryParams(query)
+    delete q.sort; delete q.dir; delete q.usageFilter
+    const payload = await requestJson('/admin/media/stats', { query: q })
+    return payload?.data ?? null
+  } catch (error) {
+    return null
+  }
+}
+
+export async function bulkDeleteMedia(ids) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/media/bulk-delete', {
+    method: 'POST',
+    body: { ids },
+  })
+  return payload?.data?.affected ?? 0
+}
+
+export async function bulkRestoreMedia(ids) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/media/bulk-restore', {
+    method: 'POST',
+    body: { ids },
+  })
+  return payload?.data?.affected ?? 0
+}
+
+export async function bulkHardDeleteMedia(ids) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/media/bulk-hard-delete', {
+    method: 'POST',
+    body: { ids },
+  })
+  return payload?.data ?? { deleted: 0, missing: 0, blocked: 0 }
+}
+
+export async function bulkMoveMedia(ids, folderId) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/media/bulk-move', {
+    method: 'POST',
+    body: { ids, folderId },
+  })
+  return payload?.data?.affected ?? 0
+}
+
+export async function fetchMediaFolders() {
+  try {
+    const payload = await requestJson('/admin/media-folders')
+    return Array.isArray(payload?.data) ? payload.data : []
+  } catch { return [] }
+}
+
+export async function createMediaFolder(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/media-folders', { method: 'POST', body: input })
+  return payload?.data
+}
+
+export async function updateMediaFolder(id, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/media-folders/${id}`, { method: 'PATCH', body: input })
+  return payload?.data
+}
+
+export async function deleteMediaFolder(id) {
+  assertMutationEnabled()
+  await requestJson(`/admin/media-folders/${id}`, { method: 'DELETE' })
+}
+
+export async function replaceMediaFile(mediaId, file) {
+  assertMutationEnabled()
+  const form = new FormData()
+  form.append('file', file)
+  const payload = await requestJson(`/admin/media/${mediaId}/replace`, {
+    method: 'POST',
+    body: form,
+  })
+  return { item: normalizeMediaItem(payload?.data || {}) }
+}
+
+export async function fetchMediaTags(prefix) {
+  try {
+    const q = prefix ? { prefix, limit: 20 } : { limit: 50 }
+    const payload = await requestJson('/admin/media/tags', { query: q })
+    return Array.isArray(payload?.data) ? payload.data : []
+  } catch { return [] }
+}
+
+export async function fetchMediaReferences(mediaId) {
+  const payload = await requestJson(`/admin/media/${mediaId}/references`)
+  return Array.isArray(payload?.data) ? payload.data : []
 }
 
 export async function deleteMedia(mediaId) {
@@ -1001,43 +1147,57 @@ export async function updateMedia(mediaId, body) {
 
 export async function uploadMedia(file, altText = '', onProgress = null) {
   assertMutationEnabled()
-  const { accessToken } = readTokens()
-  const formData = new FormData()
-  formData.append('file', file)
-  if (altText) formData.append('altText', altText)
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
+  // First attempt with current access token; if 401, refresh once and retry.
+  // We must use XHR (not fetch) because XHR exposes upload progress events.
+  async function attempt(token) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const formData = new FormData()
+      formData.append('file', file)
+      if (altText) formData.append('altText', altText)
 
-    if (typeof onProgress === 'function') {
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
-      })
-    }
-
-    xhr.open('POST', `${API_BASE}/admin/media`)
-    xhr.setRequestHeader('Accept', 'application/json')
-    if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
-
-    xhr.onload = () => {
-      let payload = null
-      try { payload = JSON.parse(xhr.responseText) } catch { /* ignore */ }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve({ item: normalizeMediaItem(payload?.data || {}) })
-      } else {
-        const error = payload?.error || {}
-        reject(new ApiClientError(
-          error.message || `Upload failed with status ${xhr.status}`,
-          xhr.status,
-          error.code || 'UPLOAD_FAILED',
-          error.details || [],
-        ))
+      if (typeof onProgress === 'function') {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+        })
       }
+
+      xhr.open('POST', `${API_BASE}/admin/media`)
+      xhr.setRequestHeader('Accept', 'application/json')
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+
+      xhr.onload = () => {
+        let payload = null
+        try { payload = JSON.parse(xhr.responseText) } catch { /* ignore */ }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ item: normalizeMediaItem(payload?.data || {}) })
+        } else {
+          const error = payload?.error || {}
+          reject(new ApiClientError(
+            error.message || `Upload failed with status ${xhr.status}`,
+            xhr.status,
+            error.code || 'UPLOAD_FAILED',
+            error.details || [],
+          ))
+        }
+      }
+      xhr.onerror = () => reject(new ApiClientError('Network error during upload', 0, 'NETWORK_ERROR'))
+      xhr.onabort = () => reject(new ApiClientError('Upload aborted', 0, 'ABORTED'))
+      xhr.send(formData)
+    })
+  }
+
+  const { accessToken } = readTokens()
+  try {
+    return await attempt(accessToken)
+  } catch (err) {
+    if (err?.status === 401 && accessToken) {
+      const refreshed = await performTokenRefresh()
+      if (refreshed) return await attempt(refreshed)
     }
-    xhr.onerror = () => reject(new ApiClientError('Network error during upload', 0, 'NETWORK_ERROR'))
-    xhr.onabort = () => reject(new ApiClientError('Upload aborted', 0, 'ABORTED'))
-    xhr.send(formData)
-  })
+    throw err
+  }
 }
 
 // â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

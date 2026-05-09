@@ -152,7 +152,7 @@ const PRODUCTS_DATA = [
     videos: [],
     price: { retailPrice: 3590000, currency: 'VND' },
     publishStatus: 'PUBLISHED',
-    stockState: 'PREORDER',
+    stockState: 'LOW_STOCK',
     createdAt: '2026-04-11T03:00:00Z',
     updatedAt: ISO_NOW,
   },
@@ -209,8 +209,8 @@ const PRODUCTS_DATA = [
     gallery: [],
     videos: [],
     price: { retailPrice: 990000, currency: 'VND' },
-    publishStatus: 'ARCHIVED',
-    stockState: 'CONTACT_FOR_STOCK',
+    publishStatus: 'HIDDEN',
+    stockState: 'OUT_OF_STOCK',
     createdAt: '2026-04-12T03:00:00Z',
     updatedAt: ISO_NOW,
   },
@@ -583,9 +583,9 @@ export function queryMockCustomers(query) {
 // ── Mock Media ───────────────────────────────────────────────────────────────
 
 const MEDIA_DATA = [
-  { id: 'med-001', filename: '2024/05/mu-bao-hiem.jpg', publicUrl: 'https://images.unsplash.com/photo-1610642372651-3e0e4af7fcd2?w=400', mimeType: 'image/jpeg', fileSize: 245000, width: 800, height: 600, altText: 'Mũ bảo hiểm', storageProvider: 'MINIO', createdAt: '2024-05-10T00:00:00Z', updatedAt: ISO_NOW },
-  { id: 'med-002', filename: '2024/06/ao-giap.jpg', publicUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', mimeType: 'image/jpeg', fileSize: 189000, width: 800, height: 600, altText: 'Áo giáp biker', storageProvider: 'MINIO', createdAt: '2024-06-01T00:00:00Z', updatedAt: ISO_NOW },
-  { id: 'med-003', filename: '2024/07/gang-tay.jpg', publicUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400', mimeType: 'image/jpeg', fileSize: 123000, width: 600, height: 400, altText: 'Găng tay', storageProvider: 'LEGACY_WP', createdAt: '2024-07-15T00:00:00Z', updatedAt: ISO_NOW },
+  { id: 'med-001', filename: '2024/05/mu-bao-hiem.jpg', publicUrl: 'https://images.unsplash.com/photo-1610642372651-3e0e4af7fcd2?w=400', mimeType: 'image/jpeg', fileSize: 245000, width: 800, height: 600, altText: 'Mũ bảo hiểm', storageProvider: 'MINIO', status: 'ACTIVE', createdAt: '2024-05-10T00:00:00Z', updatedAt: ISO_NOW, folderId: null, tags: ['accessories', 'helmet'], sizes: null, usageCount: 0, references: [] },
+  { id: 'med-002', filename: '2024/06/ao-giap.jpg', publicUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', mimeType: 'image/jpeg', fileSize: 189000, width: 800, height: 600, altText: 'Áo giáp biker', storageProvider: 'MINIO', status: 'ACTIVE', createdAt: '2024-06-01T00:00:00Z', updatedAt: ISO_NOW, folderId: null, tags: ['gear'], sizes: null, usageCount: 0, references: [] },
+  { id: 'med-003', filename: '2024/07/gang-tay.jpg', publicUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400', mimeType: 'image/jpeg', fileSize: 123000, width: 600, height: 400, altText: 'Găng tay', storageProvider: 'LEGACY_WP', status: 'ACTIVE', createdAt: '2024-07-15T00:00:00Z', updatedAt: ISO_NOW, folderId: null, tags: [], sizes: null, usageCount: 0, references: [] },
 ]
 
 export function queryMockMedia(query) {

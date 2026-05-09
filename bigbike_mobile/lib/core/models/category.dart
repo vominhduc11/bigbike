@@ -31,7 +31,7 @@ class CategorySummary {
     this.icon,
   });
 
-  String? get imageUrl => image?.url?.isNotEmpty == true ? image!.url : icon?.url;
+  String? get imageUrl => image?.url?.isNotEmpty == true ? image!.url : null;
 
   factory CategorySummary.fromJson(Map<String, dynamic> j) => CategorySummary(
         id: j['id'].toString(),

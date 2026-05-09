@@ -140,6 +140,13 @@
 			<version>2.9.2</version>
 		</dependency>
 
+		<!-- Thumbnailator: image resize for variant generation on upload -->
+		<dependency>
+			<groupId>net.coobird</groupId>
+			<artifactId>thumbnailator</artifactId>
+			<version>0.4.20</version>
+		</dependency>
+
 		<!-- Bucket4j: in-process rate limiting per IP -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

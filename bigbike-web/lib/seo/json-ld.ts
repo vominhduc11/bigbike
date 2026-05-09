@@ -312,10 +312,7 @@ function stockStateToAvailability(stockState: Product["stockState"]): string {
       return "https://schema.org/InStock";
     case "LOW_STOCK":
       return "https://schema.org/LimitedAvailability";
-    case "PREORDER":
-      return "https://schema.org/PreOrder";
     case "OUT_OF_STOCK":
-    case "CONTACT_FOR_STOCK":
     default:
       return "https://schema.org/OutOfStock";
   }

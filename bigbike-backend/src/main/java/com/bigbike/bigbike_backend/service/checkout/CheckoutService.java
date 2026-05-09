@@ -884,11 +884,8 @@ public class CheckoutService {
                     if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
                     int newQty = product.getStockQuantity() - cartItem.getQuantity();
                     product.setStockQuantity(newQty);
-                    ProductStockState current = product.getStockState();
-                    if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
-                        product.setStockState(newQty <= 0 ? ProductStockState.OUT_OF_STOCK
-                                : (newQty <= threshold ? ProductStockState.LOW_STOCK : ProductStockState.IN_STOCK));
-                    }
+                    product.setStockState(newQty <= 0 ? ProductStockState.OUT_OF_STOCK
+                            : (newQty <= threshold ? ProductStockState.LOW_STOCK : ProductStockState.IN_STOCK));
                     productRepo.save(product);
                 });
             }

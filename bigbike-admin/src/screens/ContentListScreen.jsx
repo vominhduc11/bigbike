@@ -185,7 +185,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
             <option value="DRAFT">{t('status.publish.DRAFT')}</option>
             <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
             <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-            <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
+            <option value="TRASH">{t('status.publish.TRASH')}</option>
           </select>
         </label>
       </section>

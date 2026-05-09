@@ -25,9 +25,7 @@ function badgeClass(state: string): string {
   switch (state) {
     case "IN_STOCK": return "wp-stock-in";
     case "LOW_STOCK": return "wp-stock-low";
-    case "PREORDER": return "wp-stock-preorder";
     case "OUT_OF_STOCK": return "wp-stock-out";
-    case "CONTACT_FOR_STOCK": return "wp-stock-contact";
     default: return "";
   }
 }

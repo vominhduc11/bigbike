@@ -226,14 +226,18 @@ function AdminApp() {
   )
 
   const navigate = useCallback((nextPath, options = {}) => {
-    const normalized = normalizePath(nextPath)
-    if (normalized === pathname) return
+    const qIdx = nextPath.indexOf('?')
+    const pathPart = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx)
+    const queryPart = qIdx === -1 ? '' : nextPath.slice(qIdx)
+    const normalizedPath = normalizePath(pathPart)
+    const fullUrl = normalizedPath + queryPart
+    if (normalizedPath === pathname && !queryPart) return
     if (options.replace) {
-      window.history.replaceState({}, '', normalized)
+      window.history.replaceState({}, '', fullUrl)
     } else {
-      window.history.pushState({}, '', normalized)
+      window.history.pushState({}, '', fullUrl)
     }
-    setPathname(normalized)
+    setPathname(normalizedPath)
   }, [pathname])
 
   useEffect(() => {
@@ -365,7 +369,7 @@ function AdminApp() {
     case 'customer-detail':
       screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} hasPermission={hasPermission} />; break
     case 'media-library':
-      screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} />; break
+      screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} canHardDelete={hasPermission('*')} />; break
     case 'coupons-list':
       screen = <CouponListScreen canUpdate={hasPermission('coupons.write')} />; break
     case 'menus':

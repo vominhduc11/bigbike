@@ -14,6 +14,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     Optional<ProductEntity> findBySlug(String slug);
     Optional<ProductEntity> findByLegacyId(String legacyId);
     long countByPublishStatus(PublishStatus publishStatus);
+    long countByCategory_Id(String categoryId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")

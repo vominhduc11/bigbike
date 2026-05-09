@@ -8,7 +8,7 @@ import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
-import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategories, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
+import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
 
 const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
 import { ExportButton } from '../components/ExportButton'
@@ -44,7 +44,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const state = useAdminList(['products', query], () => fetchProducts(query))
 
   const { data: brandsData } = useQuery({ queryKey: ['brands-all'], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
-  const { data: categoriesData } = useQuery({ queryKey: ['categories-all'], queryFn: () => fetchCategories({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
+  const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree'], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
   const brands = brandsData?.items ?? []
   const categories = categoriesData?.items ?? []
 
@@ -301,7 +301,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
               <option value="DRAFT">{t('status.publish.DRAFT')}</option>
               <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
               <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-              <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
               <option value="TRASH">{t('status.publish.TRASH')}</option>
             </select>
           </label>
@@ -319,8 +318,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
             <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
             <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
             <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
-            <option value="PREORDER">{t('status.stock.PREORDER')}</option>
-            <option value="CONTACT_FOR_STOCK">{t('status.stock.CONTACT_FOR_STOCK')}</option>
           </select>
         </label>
 

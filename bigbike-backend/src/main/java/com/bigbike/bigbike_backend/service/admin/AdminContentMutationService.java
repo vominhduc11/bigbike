@@ -181,7 +181,7 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
         ArticleEntity entity = articleJpaRepository.findById(articleId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        entity.setPublishStatus(PublishStatus.ARCHIVED);
+        entity.setPublishStatus(PublishStatus.TRASH);
         entity.setUpdatedAt(Instant.now());
         articleJpaRepository.save(entity);
         auditLog("CONTENT_ARTICLE_DELETED", "CONTENT", adminId, null, articleJson(entity));
@@ -196,7 +196,7 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
         PageEntity entity = pageJpaRepository.findById(pageId)
                 .orElseThrow(() -> new NotFoundException("Content not found."));
-        entity.setPublishStatus(PublishStatus.ARCHIVED);
+        entity.setPublishStatus(PublishStatus.TRASH);
         entity.setUpdatedAt(Instant.now());
         pageJpaRepository.save(entity);
         auditLog("CONTENT_PAGE_DELETED", "CONTENT", adminId, null, pageJson(entity));

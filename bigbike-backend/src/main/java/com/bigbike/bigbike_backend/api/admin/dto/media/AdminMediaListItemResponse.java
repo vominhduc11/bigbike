@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin.dto.media;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record AdminMediaListItemResponse(
@@ -18,5 +19,8 @@ public record AdminMediaListItemResponse(
         String caption,
         String status,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        int usageCount,
+        UUID folderId,
+        List<String> tags
 ) {}

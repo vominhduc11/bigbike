@@ -252,12 +252,9 @@ public class AdminReturnService {
                         int before = product.getStockQuantity();
                         int after = before + ri.getQuantity();
                         product.setStockQuantity(after);
-                        ProductStockState current = product.getStockState();
-                        if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
-                            if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
-                            else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
-                            else product.setStockState(ProductStockState.IN_STOCK);
-                        }
+                        if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
+                        else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
+                        else product.setStockState(ProductStockState.IN_STOCK);
                         productRepo.save(product);
                         StockMovementEntity m = new StockMovementEntity();
                         m.setProductId(product.getId());

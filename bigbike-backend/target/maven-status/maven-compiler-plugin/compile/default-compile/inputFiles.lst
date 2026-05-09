@@ -8,6 +8,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminHomeVideoController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminInventoryController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMediaController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMediaFolderController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminMenuController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminOrderController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminPermissionsController.java
@@ -42,7 +43,12 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\inventory\StockMovementResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\AdminMediaDetailResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\AdminMediaListItemResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\AdminMediaStatsResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\MediaFolderResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\MediaListQuery.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\MediaReferenceItem.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\UpdateMediaRequest.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\media\UpsertMediaFolderRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\menu\AdminMenuItemResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\menu\AdminMenuResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\menu\CreateMenuItemRequest.java
@@ -379,6 +385,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\customer\CustomerPasswordResetTokenEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\customer\CustomerSessionEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\media\MediaEntity.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\media\MediaFolderEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\menu\MenuEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\menu\MenuItemEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\redirect\RedirectEntity.java
@@ -430,8 +437,10 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\customer\CustomerJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\customer\CustomerPasswordResetTokenJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\customer\CustomerSessionJpaRepository.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\media\MediaFolderJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\media\MediaJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\media\MediaSpecifications.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\media\MediaTagJdbc.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\menu\MenuItemJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\menu\MenuJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\redirect\RedirectJpaRepository.java
@@ -460,6 +469,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminDashboardService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminHomeVideoService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminInventoryService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMediaFolderService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMediaService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMenuService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminMutationValidators.java
@@ -472,6 +482,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminSettingsService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminShippingService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminSliderService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\ImageVariantService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\MediaReferenceService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\settings\SettingDefinition.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\settings\SettingDefinitionRegistry.java

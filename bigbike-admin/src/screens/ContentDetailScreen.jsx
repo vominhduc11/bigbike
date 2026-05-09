@@ -413,7 +413,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 <option value="DRAFT">{t('status.publish.DRAFT')}</option>
                 <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
                 <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-                <option value="ARCHIVED">{t('status.publish.ARCHIVED')}</option>
               </select>
               {validationErrors.publishStatus ? (
                 <small className="field-error">{validationErrors.publishStatus}</small>

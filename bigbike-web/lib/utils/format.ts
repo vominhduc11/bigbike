@@ -135,12 +135,8 @@ export function stockStateLabel(stockState: string | null | undefined): string {
       return "Còn hàng";
     case "LOW_STOCK":
       return "Sắp hết hàng";
-    case "PREORDER":
-      return "Đặt trước";
     case "OUT_OF_STOCK":
       return "Hết hàng";
-    case "CONTACT_FOR_STOCK":
-      return "Liên hệ tồn kho";
     default:
       return "Đang cập nhật";
   }

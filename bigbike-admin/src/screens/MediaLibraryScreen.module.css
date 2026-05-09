@@ -1,0 +1,545 @@
+/* Media Library — extracted from inline styles for maintainability and design-token consistency */
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.mainCol {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+}
+
+/* Reserve room on the right when the detail panel is open so the grid doesn't slide under it */
+.panelOpen {
+  padding-right: 432px;
+  transition: padding-right 0.18s ease-out;
+}
+
+@media (max-width: 1100px) {
+  .panelOpen {
+    padding-right: 0;
+  }
+}
+
+.dropzone {
+  position: relative;
+}
+
+.dropzoneActive::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px dashed var(--c-primary);
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.05);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.uploadOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  z-index: 100;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.filterBar label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.searchWrap {
+  position: relative;
+}
+
+.searchClear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.searchClear:hover {
+  color: var(--c-text);
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.resultSummary {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.resultSummary strong {
+  color: var(--c-text);
+  font-weight: 700;
+}
+
+.viewSwitcher {
+  display: inline-flex;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.viewSwitcher button {
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.viewSwitcher button.active {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.gridCompact {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.card {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--c-surface);
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  border-color: var(--c-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card.selected {
+  border-color: var(--c-primary);
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.card.focused {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+.card.focused .actionOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cardDeleted {
+  background: var(--c-bg-subtle);
+  opacity: 0.85;
+}
+
+.thumbWrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--c-bg-subtle);
+  overflow: hidden;
+  cursor: zoom-in;
+  border: none;
+  padding: 0;
+  width: 100%;
+  display: block;
+}
+
+.thumbWrap:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+}
+
+.thumbWrap img,
+.thumbWrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-muted);
+}
+
+.cardCheckbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--c-primary);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.cardBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cardBadgeDeleted {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.cardBody {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.cardName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  color: var(--c-text);
+}
+
+.cardMeta {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+.cardUsageBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.cardUsageBadge.used {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.cardUsageBadge.unused {
+  background: var(--c-bg-subtle);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+}
+
+/* Hover overlay actions — keeps card sparse */
+.actionOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 8px;
+  pointer-events: none;
+}
+
+.card:hover .actionOverlay,
+.card:focus-within .actionOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.overlayActions {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+/* Default: translucent white-stroked icon button — sits on the dark gradient overlay */
+.iconBtn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Destructive variants override the default with translucent red so the danger
+   level is visible without breaking the overall white-on-dark look. */
+.danger {
+  background: rgba(220, 38, 38, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.danger:hover {
+  background: rgba(220, 38, 38, 0.75);
+  border-color: rgba(255, 200, 200, 0.8);
+}
+
+.dangerSolid {
+  background: rgba(127, 29, 29, 0.7);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.dangerSolid:hover {
+  background: rgba(127, 29, 29, 0.95);
+  border-color: rgba(255, 200, 200, 0.85);
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Light variant — used in list-view actions where the background is the surface,
+   not a dark gradient. Same shape, dark icon, subtle border. */
+.iconBtnLight {
+  flex: none;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.iconBtnLight:hover {
+  background: var(--c-bg-subtle);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+.iconBtnLight.danger {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-danger);
+}
+
+.iconBtnLight.danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: var(--c-danger);
+}
+
+.iconBtnLight.dangerSolid {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: #7f1d1d;
+}
+
+.iconBtnLight.dangerSolid:hover {
+  background: rgba(127, 29, 29, 0.1);
+  border-color: #7f1d1d;
+}
+
+.iconBtnLight:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* List view */
+.list {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--c-surface);
+}
+
+.listRow {
+  display: grid;
+  grid-template-columns: 32px 64px 1fr 100px 100px 100px 80px 160px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--c-border);
+  transition: background 0.1s;
+}
+
+.listRow:last-child { border-bottom: none; }
+.listRow:hover { background: var(--c-bg-subtle); }
+.listRow.selected { background: rgba(99, 102, 241, 0.08); }
+
+.listThumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--c-bg-subtle);
+  cursor: zoom-in;
+  border: 1px solid var(--c-border);
+}
+
+.listThumb img,
+.listThumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.listName .primary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listName .secondary {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.listHeader {
+  display: grid;
+  grid-template-columns: 32px 64px 1fr 100px 100px 100px 80px 160px;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--c-bg-subtle);
+  border-bottom: 1px solid var(--c-border);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--c-text-muted);
+}
+
+/* Pagination wrapper */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.pageSizeWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.pageSizeWrap select {
+  min-width: 80px;
+}

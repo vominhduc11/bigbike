@@ -15,6 +15,24 @@ Evidence:
 - `Phase1ECartApiTest.java`
 - `Phase1FCheckoutApiTest.java`
 
+## SKU Roles
+
+- `product.sku` is a **model/group code** — an optional descriptive identifier for the product family. It is not the selling code when variants exist. `CONFIRMED_FROM_CODE`
+- `variant.sku` is the **selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit being sold. `CONFIRMED_FROM_CODE`
+- Both fields are nullable in DB (`products.sku varchar(100)`, `product_variants.sku varchar(100)`). No DB-level uniqueness constraint on either. `CONFIRMED_FROM_CODE`
+- When snapshotting line items into cart/order, the system uses `variant.sku` if present, otherwise falls back to `product.sku`. This fallback covers single-variant or no-variant products where the parent SKU is the selling code. `CONFIRMED_FROM_CODE`
+- Inventory search and serial-tracking views read both `p.sku` and `v.sku` so admin tools can locate units by either code. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ProductEntity.java` (line 34)
+- `ProductVariantEntity.java` (line 29)
+- `PosOrderService.java` (line 233 — fallback `variant.getSku() != null ? variant.getSku() : product.getSku()`)
+- `CartService.java` (line 153 — same fallback)
+- `CheckoutService.java` (line 723 — same fallback)
+- `V51__add_serial_tracking.sql` (lines 123, 127 — `variant_sku`, `product_sku` in `serial_inventory_view`)
+- `V1__create_catalog_content_tables.sql` (lines 65, 166)
+
 ## Coupon Rules
 
 - One coupon per cart is enforced in service logic and backed by DB uniqueness. `CONFIRMED_FROM_CODE`

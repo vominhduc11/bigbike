@@ -25,6 +25,40 @@ export function formatDateTime(value) {
   })
 }
 
+/**
+ * Relative time like "2 phút trước", "3 ngày trước". Falls back to absolute
+ * date for anything older than ~30 days because relative time gets fuzzy.
+ * @param {string|Date} value
+ * @param {(key: string, opts?: object) => string} [t]  i18next translator
+ */
+export function formatRelativeTime(value, t) {
+  if (!value) return '—'
+  const parsed = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+
+  const diffMs = Date.now() - parsed.getTime()
+  const sec = Math.round(diffMs / 1000)
+  const min = Math.round(sec / 60)
+  const hr = Math.round(min / 60)
+  const day = Math.round(hr / 24)
+
+  const tt = t || ((k, o) => {
+    const map = {
+      'time.justNow': 'vừa xong',
+      'time.minutesAgo': `${o?.count} phút trước`,
+      'time.hoursAgo': `${o?.count} giờ trước`,
+      'time.daysAgo': `${o?.count} ngày trước`,
+    }
+    return map[k] || k
+  })
+
+  if (sec < 60) return tt('time.justNow')
+  if (min < 60) return tt('time.minutesAgo', { count: min })
+  if (hr < 24) return tt('time.hoursAgo', { count: hr })
+  if (day < 30) return tt('time.daysAgo', { count: day })
+  return formatDateTime(parsed)
+}
+
 export function formatText(value, fallback = '—') {
   if (typeof value !== 'string') {
     return fallback

@@ -2,7 +2,14 @@ package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaListItemResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.media.AdminMediaStatsResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.media.MediaListQuery;
+import com.bigbike.bigbike_backend.api.admin.dto.media.MediaReferenceItem;
 import com.bigbike.bigbike_backend.api.admin.dto.media.UpdateMediaRequest;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import com.bigbike.bigbike_backend.service.admin.MediaReferenceService;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -40,15 +47,21 @@ public class AdminMediaController {
     private final AdminMediaService adminMediaService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final MediaReferenceService mediaReferenceService;
+    private final com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc tagJdbc;
 
     public AdminMediaController(
             AdminMediaService adminMediaService,
             DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
+            ApiResponseFactory apiResponseFactory,
+            MediaReferenceService mediaReferenceService,
+            com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc tagJdbc
     ) {
         this.adminMediaService = adminMediaService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
+        this.mediaReferenceService = mediaReferenceService;
+        this.tagJdbc = tagJdbc;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -71,11 +84,129 @@ public class AdminMediaController {
             @RequestParam(required = false) String mimeType,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String storageProvider,
+            @RequestParam(required = false) String usageFilter,
+            @RequestParam(required = false) String uploadedFrom,
+            @RequestParam(required = false) String uploadedTo,
+            @RequestParam(required = false) Long minSize,
+            @RequestParam(required = false) Long maxSize,
+            @RequestParam(required = false) Integer minWidth,
+            @RequestParam(required = false) Integer minHeight,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String dir,
+            @RequestParam(required = false) String folderFilter,
+            @RequestParam(required = false) String tag,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.read");
-        return apiResponseFactory.list(
-                adminMediaService.listMedia(page, size, q, mimeType, status, storageProvider), request);
+        MediaListQuery query = new MediaListQuery(
+                page, size, q, mimeType, status, storageProvider, usageFilter,
+                parseInstant(uploadedFrom), parseInstant(uploadedTo),
+                minSize, maxSize, minWidth, minHeight, sort, dir,
+                folderFilter, tag);
+        return apiResponseFactory.list(adminMediaService.listMedia(query), request);
+    }
+
+    @GetMapping("/stats")
+    public ApiDataResponse<AdminMediaStatsResponse> getStats(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String mimeType,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String storageProvider,
+            @RequestParam(required = false) String uploadedFrom,
+            @RequestParam(required = false) String uploadedTo,
+            @RequestParam(required = false) Long minSize,
+            @RequestParam(required = false) Long maxSize,
+            @RequestParam(required = false) Integer minWidth,
+            @RequestParam(required = false) Integer minHeight,
+            @RequestParam(required = false) String folderFilter,
+            @RequestParam(required = false) String tag,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.read");
+        MediaListQuery query = new MediaListQuery(
+                1, 1, q, mimeType, status, storageProvider, null,
+                parseInstant(uploadedFrom), parseInstant(uploadedTo),
+                minSize, maxSize, minWidth, minHeight, null, null,
+                folderFilter, tag);
+        return apiResponseFactory.data(adminMediaService.getStats(query), request);
+    }
+
+    @GetMapping("/tags")
+    public ApiDataResponse<List<String>> listTags(
+            @RequestParam(required = false) String prefix,
+            @RequestParam(defaultValue = "20") int limit,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.read");
+        return apiResponseFactory.data(tagJdbc.findByPrefix(prefix, limit), request);
+    }
+
+    @PostMapping("/bulk-move")
+    public ApiDataResponse<java.util.Map<String, Object>> bulkMove(
+            @RequestBody BulkMoveRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        int affected = adminMediaService.bulkMoveToFolder(body.ids(), body.folderId(), resolveAdminId());
+        return apiResponseFactory.data(java.util.Map.of("affected", affected), request);
+    }
+
+    public record BulkMoveRequest(List<UUID> ids, UUID folderId) {}
+
+    @PostMapping("/bulk-delete")
+    public ApiDataResponse<java.util.Map<String, Object>> bulkDelete(
+            @RequestBody BulkIdsRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        int affected = adminMediaService.bulkSoftDelete(body.ids(), resolveAdminId());
+        return apiResponseFactory.data(java.util.Map.of("affected", affected), request);
+    }
+
+    @PostMapping("/bulk-restore")
+    public ApiDataResponse<java.util.Map<String, Object>> bulkRestore(
+            @RequestBody BulkIdsRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        int affected = adminMediaService.bulkRestore(body.ids(), resolveAdminId());
+        return apiResponseFactory.data(java.util.Map.of("affected", affected), request);
+    }
+
+    @PostMapping("/bulk-hard-delete")
+    public ApiDataResponse<java.util.Map<String, Object>> bulkHardDelete(
+            @RequestBody BulkIdsRequest body,
+            HttpServletRequest request
+    ) {
+        // Hard delete is irreversible — gated to roles with the wildcard permission.
+        devAdminAuthService.requirePermission(request, "*");
+        AdminMediaService.BulkHardDeleteResult result =
+                adminMediaService.bulkHardDelete(body.ids(), resolveAdminId());
+        return apiResponseFactory.data(java.util.Map.of(
+                "deleted", result.deleted(),
+                "missing", result.missing(),
+                "blocked", result.blocked()
+        ), request);
+    }
+
+    public record BulkIdsRequest(List<UUID> ids) {}
+
+    private static Instant parseInstant(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Instant.parse(value);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    @GetMapping("/{mediaId}/references")
+    public ApiDataResponse<java.util.List<MediaReferenceItem>> getMediaReferences(
+            @PathVariable UUID mediaId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.read");
+        return apiResponseFactory.data(adminMediaService.getMediaReferences(mediaId), request);
     }
 
     @GetMapping("/{mediaId}")
@@ -96,6 +227,17 @@ public class AdminMediaController {
         devAdminAuthService.requirePermission(request, "media.write");
         return apiResponseFactory.data(
                 adminMediaService.updateMedia(mediaId, resolveAdminId(), body), request);
+    }
+
+    @PostMapping(value = "/{mediaId}/replace", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiDataResponse<AdminMediaDetailResponse> replaceFile(
+            @PathVariable UUID mediaId,
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "media.write");
+        return apiResponseFactory.data(
+                adminMediaService.replaceFile(mediaId, file, resolveAdminId()), request);
     }
 
     @DeleteMapping("/{mediaId}")

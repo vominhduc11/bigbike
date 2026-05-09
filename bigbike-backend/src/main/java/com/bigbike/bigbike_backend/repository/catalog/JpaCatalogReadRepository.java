@@ -207,6 +207,62 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public CategoryPage findCategoriesPaged(
+            String query,
+            String visibility,
+            String sortField,
+            boolean sortAsc,
+            int page,
+            int pageSize
+    ) {
+        Specification<CategoryEntity> spec = (root, cq, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (visibility != null && !visibility.isBlank()) {
+                if ("VISIBLE".equals(visibility)) {
+                    predicates.add(cb.isTrue(root.get("isVisible")));
+                } else if ("HIDDEN".equals(visibility)) {
+                    predicates.add(cb.isFalse(root.get("isVisible")));
+                }
+            }
+            if (query != null && !query.isBlank()) {
+                String like = "%" + query.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(root.get("slug")), like)
+                ));
+            }
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // Map domain sort field → entity property. sortOrder may be null in DB,
+        // so push that to the end regardless of direction (matches old in-memory
+        // behaviour where null became Integer.MAX_VALUE).
+        String entityField = switch (sortField) {
+            case "name" -> "name";
+            case "createdAt" -> "createdAt";
+            case "updatedAt" -> "updatedAt";
+            case "sortOrder" -> "sortOrder";
+            default -> "updatedAt";
+        };
+        org.springframework.data.domain.Sort.Direction dir = sortAsc
+                ? org.springframework.data.domain.Sort.Direction.ASC
+                : org.springframework.data.domain.Sort.Direction.DESC;
+        org.springframework.data.domain.Sort sort = "sortOrder".equals(entityField)
+                ? org.springframework.data.domain.Sort.by(
+                        new org.springframework.data.domain.Sort.Order(dir, entityField).nullsLast())
+                : org.springframework.data.domain.Sort.by(dir, entityField);
+
+        org.springframework.data.domain.PageRequest pageRequest =
+                org.springframework.data.domain.PageRequest.of(Math.max(0, page - 1), Math.max(1, pageSize), sort);
+
+        org.springframework.data.domain.Page<CategoryEntity> result =
+                categoryJpaRepository.findAll(spec, pageRequest);
+
+        List<Category> items = result.getContent().stream().map(this::toDomain).toList();
+        return new CategoryPage(items, result.getTotalElements());
+    }
+
+    @Override
     public Optional<Category> findCategoryBySlug(String slug) {
         return categoryJpaRepository.findBySlug(slug).map(this::toDomain);
     }

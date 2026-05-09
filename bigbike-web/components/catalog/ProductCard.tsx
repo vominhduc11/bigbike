@@ -85,10 +85,6 @@ function mapStockState(state: Product["stockState"]) {
       return { label: "Sắp hết hàng", className: "wp-stock-low" };
     case "OUT_OF_STOCK":
       return { label: "Hết hàng", className: "wp-stock-out" };
-    case "PREORDER":
-      return { label: "Đặt trước", className: "wp-stock-preorder" };
-    case "CONTACT_FOR_STOCK":
-      return { label: "Liên hệ tồn kho", className: "wp-stock-out" };
     default:
       return { label: "Đang cập nhật", className: "wp-stock-out" };
   }

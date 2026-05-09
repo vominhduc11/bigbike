@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   createProduct,
   fetchBrands,
-  fetchCategories,
+  fetchCategoryTree,
   fetchProductDetail,
   mapValidationErrors,
   updateProduct,
@@ -158,15 +158,16 @@ function slugify(text) {
 // Mirrors AdminMutationValidators.validatePublishTransition on the backend.
 function getAllowedPublishStatuses(from) {
   const RULES = {
-    DRAFT:     ['DRAFT', 'PUBLISHED', 'ARCHIVED'],
-    PUBLISHED: ['PUBLISHED', 'HIDDEN', 'ARCHIVED'],
-    HIDDEN:    ['HIDDEN', 'PUBLISHED', 'ARCHIVED'],
-    ARCHIVED:  ['ARCHIVED', 'DRAFT'],
-    PENDING:   ['PENDING', 'PUBLISHED', 'DRAFT'],
-    PRIVATE:   ['PRIVATE', 'PUBLISHED', 'DRAFT', 'HIDDEN'],
+    DRAFT:     ['DRAFT', 'PUBLISHED', 'HIDDEN'],
+    PUBLISHED: ['PUBLISHED', 'HIDDEN'],
+    HIDDEN:    ['HIDDEN', 'PUBLISHED', 'DRAFT'],
     TRASH:     ['TRASH', 'DRAFT'],
+    // Legacy escape paths for any remaining DB records before migration
+    ARCHIVED:  ['HIDDEN', 'DRAFT'],
+    PENDING:   ['PUBLISHED', 'DRAFT'],
+    PRIVATE:   ['PUBLISHED', 'DRAFT', 'HIDDEN'],
   }
-  return RULES[from] ?? ['DRAFT', 'PUBLISHED', 'HIDDEN', 'ARCHIVED']
+  return RULES[from] ?? ['DRAFT', 'PUBLISHED', 'HIDDEN']
 }
 
 // Format a raw digit string as Vietnamese price (e.g. "6300000" → "6.300.000").
@@ -1023,8 +1024,6 @@ function VariantCard({
               <option value="IN_STOCK">Còn hàng</option>
               <option value="LOW_STOCK">Còn ít</option>
               <option value="OUT_OF_STOCK">Hết hàng</option>
-              <option value="PREORDER">Đặt trước</option>
-              <option value="CONTACT_FOR_STOCK">Liên hệ</option>
             </select>
           </label>
 
@@ -1541,8 +1540,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   })
 
   const { data: categoriesResult } = useQuery({
-    queryKey: ['categories-all'],
-    queryFn: () => fetchCategories({ pageSize: 100 }),
+    queryKey: ['categories', 'tree'],
+    queryFn: () => fetchCategoryTree(),
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResult } = useQuery({
@@ -1913,6 +1912,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 disabled={isReadOnly}
                 maxLength={100}
               />
+              <small className="detail-section-desc" style={{ marginTop: 2 }}>
+                {t('products.detail.skuHint')}
+              </small>
             </label>
 
             <label className="form-field">
@@ -2144,16 +2146,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onChange={(e) => updateField('stockState', e.target.value)}
                 disabled={isReadOnly || form.forceOutOfStock}
               >
-                {!['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK', 'PREORDER', 'CONTACT_FOR_STOCK'].includes(form.stockState) && (
-                  <option value={form.stockState} disabled>
-                    {t('products.detail.specialStockNote', { state: form.stockState })}
-                  </option>
-                )}
                 <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
                 <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
                 <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
-                <option value="PREORDER">{t('status.stock.PREORDER')}</option>
-                <option value="CONTACT_FOR_STOCK">{t('status.stock.CONTACT_FOR_STOCK')}</option>
               </select>
               {validationErrors.stockState ? (
                 <small className="field-error">{validationErrors.stockState}</small>
@@ -2168,7 +2163,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onChange={(e) => updateField('publishStatus', e.target.value)}
                 disabled={isReadOnly}
               >
-                {!['DRAFT', 'PUBLISHED', 'HIDDEN', 'ARCHIVED'].includes(form.publishStatus) && (
+                {!['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
                   <option value={form.publishStatus} disabled>
                     {t('products.detail.specialPublishNote', { state: form.publishStatus })}
                   </option>
@@ -2176,7 +2171,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <option value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</option>
                 <option value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</option>
                 <option value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</option>
-                <option value="ARCHIVED" disabled={!allowedPublishStatuses.includes('ARCHIVED')}>{t('status.publish.ARCHIVED')}</option>
               </select>
               {validationErrors.publishStatus ? (
                 <small className="field-error">{validationErrors.publishStatus}</small>

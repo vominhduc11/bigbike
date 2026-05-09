@@ -48,7 +48,7 @@ public class AdminContentController {
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
     private static final String CONTENT_TYPE_REGEX = "^(?i)(ARTICLE|PAGE)$";
     private static final String CONTENT_PATH_TYPE_REGEX = "^(?i)(article|page)$";
-    private static final String PUBLISH_STATUS_REGEX = "^(DRAFT|PUBLISHED|HIDDEN|ARCHIVED)$";
+    private static final String PUBLISH_STATUS_REGEX = "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
 
     private final AdminContentReadService adminContentReadService;
     private final AdminContentMutationService adminContentMutationService;

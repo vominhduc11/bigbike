@@ -60,6 +60,9 @@ public class MediaEntity {
     @Column(nullable = false, length = 50)
     private String status;
 
+    @Column(name = "folder_id")
+    private UUID folderId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -68,6 +71,9 @@ public class MediaEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    public UUID getFolderId() { return folderId; }
+    public void setFolderId(UUID folderId) { this.folderId = folderId; }
 
     public Long getLegacyId() { return legacyId; }
     public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }

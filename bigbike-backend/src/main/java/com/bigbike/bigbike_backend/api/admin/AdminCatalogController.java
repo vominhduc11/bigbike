@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import java.util.List;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
@@ -41,8 +42,8 @@ public class AdminCatalogController {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
     private static final String PUBLISH_STATUS_REGEX =
-            "^(DRAFT|PUBLISHED|HIDDEN|ARCHIVED|PENDING|PRIVATE|TRASH)$";
-    private static final String STOCK_STATE_REGEX = "^(IN_STOCK|LOW_STOCK|OUT_OF_STOCK|PREORDER|CONTACT_FOR_STOCK)$";
+            "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
+    private static final String STOCK_STATE_REGEX = "^(IN_STOCK|LOW_STOCK|OUT_OF_STOCK)$";
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
@@ -188,6 +189,19 @@ public class AdminCatalogController {
         );
     }
 
+    /**
+     * Returns every category in a single response (no pagination).
+     * The list endpoint above caps pageSize at 100, which silently truncates
+     * the tree once the catalog grows. The admin tree-view and the parent
+     * picker need the full set to render correctly, so they call this
+     * endpoint instead. Sorted by parent_id NULLS FIRST, sortOrder, name.
+     */
+    @GetMapping("/categories/tree")
+    public ApiDataResponse<List<Category>> listCategoryTree(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "catalog.read");
+        return apiResponseFactory.data(adminCatalogReadService.listAllCategoriesForTree(), request);
+    }
+
     @GetMapping("/categories/{id}")
     public ApiDataResponse<Category> getCategoryById(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
@@ -217,17 +231,19 @@ public class AdminCatalogController {
     }
 
     /**
-     * Soft-delete: there is no publish_status column on categories, so the
-     * closest equivalent is flipping is_visible=false. The category row is
-     * preserved (restoration = re-enable visibility via PATCH).
+     * Hard-delete: physically removes the category from the database.
+     * Rejected if the category has any children or if any product uses it
+     * as its primary category. Secondary product_category_map links are
+     * removed automatically by JPA cascade.
      */
     @DeleteMapping("/categories/{id}")
-    public ApiDataResponse<Category> softDeleteCategory(
+    public org.springframework.http.ResponseEntity<Void> hardDeleteCategory(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.update");
-        return apiResponseFactory.data(adminCatalogMutationService.softDeleteCategory(id, resolveAdminId()), request);
+        adminCatalogMutationService.hardDeleteCategory(id, resolveAdminId());
+        return org.springframework.http.ResponseEntity.noContent().build();
     }
 
     @GetMapping("/brands")

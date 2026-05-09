@@ -2,20 +2,42 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { AlertTriangle, Check, ChevronDown, Copy, ExternalLink, FolderOpen, Hash, Package, Search, X as XIcon } from 'lucide-react'
 import {
   createCategory,
-  fetchCategories,
   fetchCategoryDetail,
+  fetchCategoryTree,
+  fetchProducts,
+  hardDeleteCategory,
   mapValidationErrors,
-  softDeleteCategory,
   updateCategory,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
-import { formatDateTime } from '../lib/formatters'
+import { formatDateTime, formatRelativeTime } from '../lib/formatters'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
+
+const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
+const MENU_NOTICE_DISMISSED_KEY = 'bigbike-admin-cat-menu-notice-dismissed'
+
+function countDescendants(rootId, allCategories) {
+  let count = 0
+  const queue = [rootId]
+  while (queue.length > 0) {
+    const parentId = queue.shift()
+    const children = allCategories.filter((c) => c.parentId === parentId)
+    count += children.length
+    children.forEach((c) => queue.push(c.id))
+  }
+  return count
+}
+
+// Google search result truncation limits — used by SEO char counters and
+// the Google preview snippet so editors see exactly what the public will see.
+const SEO_TITLE_RECOMMENDED = 60
+const SEO_DESCRIPTION_RECOMMENDED = 155
 
 function toSlug(text) {
   return text
@@ -29,6 +51,24 @@ function toSlug(text) {
     .replace(/-+/g, '-')
 }
 
+function localizePublishStatus(status, t) {
+  switch (status) {
+    case 'PUBLISHED':
+      return t('categories.detail.productStatusPublished')
+    case 'DRAFT':
+      return t('categories.detail.productStatusDraft')
+    case 'HIDDEN':
+    case 'PRIVATE':
+      return t('categories.detail.productStatusHidden')
+    case 'ARCHIVED':
+      return t('categories.detail.productStatusArchived')
+    case 'TRASH':
+      return t('categories.detail.productStatusTrash')
+    default:
+      return t('categories.detail.productStatusUnknown')
+  }
+}
+
 function buildEmptyForm() {
   return {
     slug: '',
@@ -39,9 +79,6 @@ function buildEmptyForm() {
     showOnHomepage: false,
     sortOrder: '',
     imageUrl: '',
-    imageAlt: '',
-    iconUrl: '',
-    iconAlt: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -62,9 +99,6 @@ function buildFormFromItem(item) {
     showOnHomepage: Boolean(item.showOnHomepage),
     sortOrder: item.sortOrder != null ? String(item.sortOrder) : '',
     imageUrl: item.image?.url || '',
-    imageAlt: item.image?.alt || '',
-    iconUrl: item.icon?.url || '',
-    iconAlt: item.icon?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -87,10 +121,7 @@ function toPayload(form) {
   }
 
   const imageUrl = form.imageUrl.trim()
-  payload.image = imageUrl ? { url: imageUrl, alt: form.imageAlt.trim() || undefined } : { url: null }
-
-  const iconUrl = form.iconUrl.trim()
-  payload.icon = iconUrl ? { url: iconUrl, alt: form.iconAlt.trim() || undefined } : { url: null }
+  payload.image = imageUrl ? { url: imageUrl, alt: form.name.trim() || undefined } : { url: null }
 
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()
@@ -104,10 +135,20 @@ function toPayload(form) {
     ogImage: seoOgImageUrl
       ? { url: seoOgImageUrl, alt: seoOgImageAlt || undefined }
       : null,
-    noIndex: form.seoNoIndex || undefined,
+    noIndex: Boolean(form.seoNoIndex),
   }
 
   return payload
+}
+
+function CharCounter({ value, max }) {
+  const len = (value || '').trim().length
+  const tone = len === 0 ? 'empty' : len > max ? 'over' : len > max * 0.9 ? 'near' : 'ok'
+  return (
+    <span className={`char-counter is-${tone}`} aria-live="polite">
+      {len}/{max}
+    </span>
+  )
 }
 
 export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
@@ -118,6 +159,15 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  // SEO is collapsed by default to keep the basic-info above the fold.
+  // Auto-expand once we detect existing SEO data so editors of legacy
+  // entries don't miss filled fields hidden under the toggle.
+  const [seoExpanded, setSeoExpanded] = useState(false)
+  const [idCopied, setIdCopied] = useState(false)
+  const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
+    try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
+    catch { return false }
+  })
 
   const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
     queryKey: ['category', categoryId],
@@ -126,9 +176,20 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   })
 
   const { data: categoriesResult } = useQuery({
-    queryKey: ['categories', { page: 1, pageSize: 100, sort: 'sortOrder:asc' }],
-    queryFn: () => fetchCategories({ page: 1, pageSize: 100, sort: 'sortOrder:asc' }),
+    queryKey: ['categories', 'tree'],
+    queryFn: () => fetchCategoryTree(),
   })
+
+  // Top products in this category — surfaced in a sidebar so editors know
+  // who depends on the category before they hide / re-parent it.
+  const { data: productsInCat } = useQuery({
+    queryKey: ['products', 'by-category', categoryId, 'top5'],
+    queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc' }),
+    enabled: !isCreate && Boolean(categoryId),
+    staleTime: 30 * 1000,
+  })
+  const productsList = productsInCat?.items ?? []
+  const productsTotal = productsInCat?.pagination?.totalItems ?? 0
 
   const currentItem = fetchResult?.item ?? null
 
@@ -191,6 +252,15 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
       setSlugManuallyEdited(true)
+      // Auto-open the SEO panel only when there is something to see;
+      // an editor opening a legacy entry shouldn't have to discover that
+      // hidden fields contain data.
+      const hasSeo = Boolean(
+        nextForm.seoTitle || nextForm.seoDescription || nextForm.seoCanonicalUrl
+        || nextForm.seoOgImageUrl || nextForm.seoNoIndex
+      )
+      if (hasSeo) setSeoExpanded(true)
+      if (nextForm.slug) setSeoExpanded(true)
     })
     return () => { cancelled = true }
   }, [fetchResult])
@@ -227,27 +297,40 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       if (isCreate && savedItem?.id) navigate(`/admin/categories/${savedItem.id}`, { replace: true })
     },
     onError: (error) => {
-      setValidationErrors(mapValidationErrors(error))
+      const errs = mapValidationErrors(error)
+      setValidationErrors(errs)
+      if (errs.slug) setSeoExpanded(true)
       toast.error(error.message || t('common.error'))
       setIsSubmitting(false)
     },
   })
 
-  const disableMutation = useMutation({
-    mutationFn: () => softDeleteCategory(categoryId),
+  const hardDeleteMutation = useMutation({
+    mutationFn: () => hardDeleteCategory(categoryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      toast.success(t('categories.detail.disableSuccess'))
+      toast.success(t('categories.detail.hardDeleteSuccess'))
       navigate('/admin/categories')
     },
     onError: (error) => {
-      const msg = error.code === 'CONFLICT'
-        ? (error.message || t('categories.detail.conflictHideError'))
+      const msg = error?.status === 409
+        ? t('categories.detail.hardDeleteConflict')
         : (error.message || t('common.error'))
       toast.error(msg)
-      setIsSubmitting(false)
     },
   })
+
+  async function handleHardDelete() {
+    const name = form.name || categoryId
+    const allCategories = categoriesResult?.items ?? []
+    const descendantCount = countDescendants(categoryId, allCategories)
+    const message = descendantCount > 0
+      ? t('categories.detail.hardDeleteConfirmWithChildren', { name, count: descendantCount })
+      : t('categories.detail.hardDeleteConfirm', { name })
+    const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'))
+    if (!confirmed) return
+    hardDeleteMutation.mutate()
+  }
 
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
@@ -280,6 +363,21 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
+      if (clientErrors.slug) setSeoExpanded(true)
+      // Scroll the first error into view + focus its control. Without this,
+      // submitting from the bottom of a long form leaves the user staring at
+      // a frozen Save button while the actual error is offscreen above.
+      requestAnimationFrame(() => {
+        const firstField = Object.keys(clientErrors)[0]
+        if (!firstField || !formRef.current) return
+        const target = formRef.current.querySelector(`[name="${firstField}"], [data-field="${firstField}"]`)
+          || formRef.current.querySelector('.field-error')?.closest('label, .form-field')
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          const focusable = target.querySelector('input, select, textarea, [contenteditable="true"]')
+          focusable?.focus({ preventScroll: true })
+        }
+      })
       return
     }
 
@@ -287,6 +385,56 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setValidationErrors({})
     saveMutation.mutate(toPayload(form))
   }
+
+  function handleDismissMenuNotice() {
+    try { localStorage.setItem(MENU_NOTICE_DISMISSED_KEY, '1') } catch { /* storage may be unavailable */ }
+    setMenuNoticeDismissed(true)
+  }
+
+  function handleDiscardChanges() {
+    if (!isDirty) return
+    const item = fetchResult?.item || null
+    const nextForm = buildFormFromItem(item)
+    setForm(nextForm)
+    setValidationErrors({})
+  }
+
+  function handleCopyId() {
+    if (!state.item?.id) return
+    const id = state.item.id
+    const ok = () => { setIdCopied(true); setTimeout(() => setIdCopied(false), 1500) }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(id).then(ok).catch(() => {})
+    } else {
+      // Older browsers / non-secure contexts — fall back to execCommand.
+      const ta = document.createElement('textarea')
+      ta.value = id; document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy'); ok() } catch { /* ignore */ }
+      ta.remove()
+    }
+  }
+
+  // Esc → back to list. Confirms when the form is dirty.
+  useEffect(() => {
+    const handler = async (e) => {
+      if (e.key !== 'Escape' || isSubmitting) return
+      // Don't hijack Esc when the user is dismissing a menu/select/dialog.
+      const target = e.target
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (target?.isContentEditable) return
+      if (isDirty) {
+        const ok = await showConfirm(
+          t('categories.detail.discardConfirm'),
+          t('categories.detail.discardConfirmTitle'),
+        )
+        if (!ok) return
+      }
+      navigate('/admin/categories')
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isDirty, isSubmitting, navigate, t])
 
   if (state.status === 'loading') {
     return (
@@ -335,9 +483,52 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <strong>{state.item?.name}</strong>
             </p>
           )}
+          {!isCreate && state.item && (
+            <div className="cat-detail-meta">
+              <span className={`status-badge ${state.item.isVisible ? 'status-success' : 'status-neutral'}`}>
+                {state.item.isVisible ? t('categories.visibleLabel') : t('categories.hiddenLabel')}
+              </span>
+              {productsTotal > 0 && (
+                <span className="cat-detail-meta-item" title={t('categories.detail.productCountTitle')}>
+                  <Package size={13} aria-hidden="true" />
+                  {t('categories.detail.productCount', { count: productsTotal })}
+                </span>
+              )}
+              {state.item.updatedAt && (
+                <span
+                  className="cat-detail-meta-item"
+                  title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}
+                >
+                  {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
+                </span>
+              )}
+              <button
+                type="button"
+                className="cat-detail-meta-item cat-detail-id"
+                onClick={handleCopyId}
+                title={t('categories.detail.copyId')}
+              >
+                <Hash size={12} aria-hidden="true" />
+                <code>{state.item.id}</code>
+                {idCopied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+              </button>
+            </div>
+          )}
           <p>{isCreate ? t('categories.detail.createDesc') : t('categories.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
+          {!isCreate && state.item?.slug && (
+            <a
+              className="btn btn-ghost"
+              href={`${STOREFRONT_BASE}/${state.item.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t('categories.detail.viewOnSiteTitle')}
+            >
+              <ExternalLink size={14} aria-hidden="true" />
+              <span>{t('categories.detail.viewOnSite')}</span>
+            </a>
+          )}
           <button
             type="button"
             className="btn btn-secondary"
@@ -360,14 +551,37 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         />
       ) : null}
 
-      {!isCreate && (
-        <StatePanel
-          tone="info"
-          title={t('categories.detail.menuNoticeTitle')}
-          description={t('categories.detail.menuNoticeDesc')}
-          actionLabel={t('categories.detail.menuNoticeAction')}
-          onAction={() => navigate('/admin/menus')}
-        />
+      {!isCreate && canUpdate && !menuNoticeDismissed && (
+        <div className="dismissible-banner dismissible-banner--info">
+          <div className="dismissible-banner-body">
+            <strong>{t('categories.detail.menuNoticeTitle')}</strong>
+            <p>{t('categories.detail.menuNoticeDesc')}</p>
+            <div className="dismissible-banner-actions">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => navigate('/admin/menus')}
+              >
+                {t('categories.detail.menuNoticeAction')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleDismissMenuNotice}
+              >
+                {t('categories.detail.menuNoticeDismiss')}
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="dismissible-banner-close"
+            aria-label={t('categories.detail.menuNoticeDismiss')}
+            onClick={handleDismissMenuNotice}
+          >
+            <XIcon size={16} aria-hidden="true" />
+          </button>
+        </div>
       )}
 
       <form
@@ -381,11 +595,19 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         }}
       >
         <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>
+              <FolderOpen size={16} aria-hidden="true" className="detail-section-icon" />
+              {t('categories.sectionBasic')}
+            </h2>
+            <p className="detail-section-desc">{t('categories.sectionBasicDesc')}</p>
+          </header>
           <div className="detail-section-content form-grid">
 
-            <label className="form-field">
+            <label className="form-field" data-field="name">
               <span>{t('categories.detail.name')}</span>
               <input
+                name="name"
                 className="control-input"
                 value={form.name}
                 onChange={(event) => handleNameChange(event.target.value)}
@@ -393,20 +615,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               />
               {validationErrors.name ? (
                 <small className="field-error">{validationErrors.name}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('categories.detail.slug')}</span>
-              <input
-                className="control-input"
-                value={form.slug}
-                onChange={(event) => handleSlugChange(event.target.value)}
-                disabled={isReadOnly}
-              />
-              <small className="field-hint">{t('categories.detail.slugHint')}</small>
-              {validationErrors.slug ? (
-                <small className="field-error">{validationErrors.slug}</small>
               ) : null}
             </label>
 
@@ -423,169 +631,311 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   <option key={c.id} value={c.id}>{c.label}</option>
                 ))}
               </select>
+              <small className="field-hint">{t('categories.detail.parentIdHint')}</small>
               {validationErrors.parentId ? (
                 <small className="field-error">{validationErrors.parentId}</small>
               ) : null}
             </label>
 
-            <label className="form-field">
-              <span>{t('categories.detail.sortOrder')}</span>
-              <input
-                className="control-input"
-                type="number"
-                min="0"
-                step="1"
-                value={form.sortOrder}
-                onChange={(event) => updateField('sortOrder', event.target.value)}
-                disabled={isReadOnly}
-                placeholder="0"
-              />
-              <small className="field-hint">{t('categories.detail.sortOrderHint')}</small>
-              {validationErrors.sortOrder ? (
-                <small className="field-error">{validationErrors.sortOrder}</small>
-              ) : null}
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span>{t('categories.detail.imageUrl')}</span>
-              <ImageUrlInput
-                value={form.imageUrl}
-                onChange={(url) => updateField('imageUrl', url)}
-                alt={form.imageAlt}
-                onAltChange={(alt) => updateField('imageAlt', alt)}
-                disabled={isReadOnly}
-                error={validationErrors.imageUrl}
-              />
-            </div>
-
-            <div className="form-field form-field-wide">
-              <span>{t('categories.detail.iconUrl')}</span>
-              <ImageUrlInput
-                value={form.iconUrl}
-                onChange={(url) => updateField('iconUrl', url)}
-                alt={form.iconAlt}
-                onAltChange={(alt) => updateField('iconAlt', alt)}
-                disabled={isReadOnly}
-                error={validationErrors.iconUrl}
-              />
-            </div>
 
             <div className="form-field form-field-wide">
               <span>{t('categories.detail.description')}</span>
               <RichTextEditor
                 value={form.description}
                 onChange={(html) => updateField('description', html)}
-                placeholder="Nhập mô tả danh mục..."
+                placeholder={t('categories.descriptionPlaceholder')}
                 disabled={isReadOnly}
                 enableImagePicker
               />
+              <small className="field-hint">{t('categories.descriptionHint')}</small>
+              {validationErrors.description ? (
+                <small className="field-error">{validationErrors.description}</small>
+              ) : null}
             </div>
 
-            <label className="form-checkbox">
-              <input
-                type="checkbox"
-                checked={form.visible}
-                onChange={(event) => updateField('visible', event.target.checked)}
-                disabled={isReadOnly}
-              />
-              <span>{t('categories.detail.isVisible')}</span>
-            </label>
+            <div className="form-field form-field-wide form-media-pair">
+              <div className="form-field" data-field="imageUrl">
+                <span>{t('categories.detail.imageUrl')}</span>
+                <ImageUrlInput
+                  value={form.imageUrl}
+                  onChange={(url) => updateField('imageUrl', url)}
+                  disabled={isReadOnly}
+                  error={validationErrors.imageUrl}
+                />
+              </div>
 
-            <label className="form-checkbox">
-              <input
-                type="checkbox"
-                checked={form.showOnHomepage}
-                onChange={(event) => updateField('showOnHomepage', event.target.checked)}
-                disabled={isReadOnly}
-              />
-              <span>{t('categories.detail.showOnHomepage')}</span>
-            </label>
+            </div>
+
+            <div className="form-checkbox-group">
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.visible}
+                  onChange={(event) => {
+                    const nextVisible = event.target.checked
+                    setForm((prev) => ({
+                      ...prev,
+                      visible: nextVisible,
+                      // showOnHomepage requires the category to be visible —
+                      // hidden categories are excluded from the public site,
+                      // so a homepage flag would be silently ignored.
+                      showOnHomepage: nextVisible ? prev.showOnHomepage : false,
+                    }))
+                  }}
+                  disabled={isReadOnly}
+                />
+                <span>{t('categories.detail.isVisible')}</span>
+              </label>
+
+              <label className={`form-checkbox${!form.visible ? ' is-disabled' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={form.showOnHomepage}
+                  onChange={(event) => updateField('showOnHomepage', event.target.checked)}
+                  disabled={isReadOnly || !form.visible}
+                />
+                <span>
+                  {t('categories.detail.showOnHomepage')}
+                  {!form.visible && (
+                    <small className="form-checkbox-hint">{t('categories.detail.showOnHomepageRequiresVisible')}</small>
+                  )}
+                </span>
+              </label>
+            </div>
 
           </div>
         </section>
 
-        <section className="detail-section">
-          <h2 className="detail-section-title">{t('categories.detail.seoSection')}</h2>
-          <div className="detail-section-content form-grid">
+        <section className={`detail-section${seoExpanded ? '' : ' is-collapsed'}`}>
+          <header
+            className="detail-section-header detail-section-header--toggle"
+            role="button"
+            tabIndex={0}
+            aria-expanded={seoExpanded}
+            aria-controls="category-seo-section"
+            onClick={() => setSeoExpanded((v) => !v)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSeoExpanded((v) => !v)
+              }
+            }}
+          >
+            <div>
+              <h2>
+                <Search size={16} aria-hidden="true" className="detail-section-icon" />
+                {t('categories.sectionSeo')}
+              </h2>
+              <p className="detail-section-desc">{t('categories.sectionSeoDesc')}</p>
+            </div>
+            <span className="section-collapse-icon" aria-hidden="true">
+              <ChevronDown size={16} className="detail-section-chevron" />
+            </span>
+          </header>
+          <div className="detail-section-collapse-wrap" id="category-seo-section">
+            <div className="detail-section-collapse-inner">
+              <div className="detail-section-content">
 
-            <label className="form-field">
-              <span>{t('categories.detail.seoTitle')}</span>
-              <input
-                className="control-input"
-                value={form.seoTitle}
-                onChange={(event) => updateField('seoTitle', event.target.value)}
-                disabled={isReadOnly}
-              />
-              {validationErrors.seoTitle ? (
-                <small className="field-error">{validationErrors.seoTitle}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('categories.detail.seoCanonicalUrl')}</span>
-              <input
-                className="control-input"
-                value={form.seoCanonicalUrl}
-                onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
-                disabled={isReadOnly}
-              />
-              {validationErrors.seoCanonicalUrl ? (
-                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field form-field-wide">
-              <span>{t('categories.detail.seoDescription')}</span>
-              <textarea
-                className="control-input"
-                rows={3}
-                value={form.seoDescription}
-                onChange={(event) => updateField('seoDescription', event.target.value)}
-                disabled={isReadOnly}
-              />
-              {validationErrors.seoDescription ? (
-                <small className="field-error">{validationErrors.seoDescription}</small>
-              ) : null}
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span>{t('categories.detail.seoOgImageUrl')}</span>
-              <ImageUrlInput
-                value={form.seoOgImageUrl}
-                onChange={(url) => updateField('seoOgImageUrl', url)}
-                alt={form.seoOgImageAlt}
-                onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                disabled={isReadOnly}
-                error={validationErrors.seoOgImageUrl}
-              />
-              {validationErrors.seoOgImageAlt ? (
-                <small className="field-error">{validationErrors.seoOgImageAlt}</small>
-              ) : null}
+            <div className="form-grid" style={{ marginBottom: 'var(--admin-space-4)' }}>
+              <label className="form-field" data-field="slug">
+                <span>{t('categories.detail.slug')}</span>
+                <input
+                  name="slug"
+                  className="control-input"
+                  value={form.slug}
+                  onChange={(event) => handleSlugChange(event.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={t('categories.slugPlaceholder')}
+                />
+                <small className="field-hint">{t('categories.detail.slugHint')}</small>
+                {validationErrors.slug ? (
+                  <small className="field-error">{validationErrors.slug}</small>
+                ) : null}
+              </label>
             </div>
 
-            <label className="form-checkbox">
-              <input
-                type="checkbox"
-                checked={form.seoNoIndex}
-                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
-                disabled={isReadOnly}
-              />
-              <span>{t('categories.detail.seoNoIndex')}</span>
-            </label>
+            {/* Google search preview — what will actually show up on the SERP.
+                Updates live so editors see exactly what they're shipping. */}
+            <div className="seo-preview" aria-label={t('categories.detail.seoPreviewLabel')}>
+              <div className="seo-preview-label">{t('categories.detail.seoPreviewLabel')}</div>
+              <div className="seo-preview-snippet">
+                <div className="seo-preview-url">
+                  {form.seoCanonicalUrl?.trim()
+                    || `${STOREFRONT_BASE}/${form.slug || form.name?.toLowerCase().replace(/\s+/g, '-') || 'slug'}`}
+                </div>
+                <div className="seo-preview-title">
+                  {form.seoTitle?.trim() || form.name?.trim() || t('categories.detail.seoPreviewFallbackTitle')}
+                </div>
+                <div className="seo-preview-desc">
+                  {form.seoDescription?.trim() || t('categories.detail.seoPreviewFallbackDesc')}
+                </div>
+              </div>
+            </div>
 
+            <div className="form-grid" style={{ marginTop: 'var(--admin-space-4)' }}>
+              <label className="form-field" data-field="seoTitle">
+                <span className="form-field-label-row">
+                  {t('categories.detail.seoTitle')}
+                  <CharCounter value={form.seoTitle} max={SEO_TITLE_RECOMMENDED} />
+                </span>
+                <input
+                  name="seoTitle"
+                  className="control-input"
+                  value={form.seoTitle}
+                  onChange={(event) => updateField('seoTitle', event.target.value)}
+                  disabled={isReadOnly}
+                />
+                {validationErrors.seoTitle ? (
+                  <small className="field-error">{validationErrors.seoTitle}</small>
+                ) : null}
+              </label>
+
+              <label className="form-field" data-field="seoCanonicalUrl">
+                <span>{t('categories.detail.seoCanonicalUrl')}</span>
+                <input
+                  name="seoCanonicalUrl"
+                  className="control-input"
+                  value={form.seoCanonicalUrl}
+                  onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
+                  disabled={isReadOnly}
+                />
+                {validationErrors.seoCanonicalUrl ? (
+                  <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
+                ) : null}
+              </label>
+
+              <label className="form-field form-field-wide" data-field="seoDescription">
+                <span className="form-field-label-row">
+                  {t('categories.detail.seoDescription')}
+                  <CharCounter value={form.seoDescription} max={SEO_DESCRIPTION_RECOMMENDED} />
+                </span>
+                <textarea
+                  name="seoDescription"
+                  className="control-input"
+                  rows={3}
+                  value={form.seoDescription}
+                  onChange={(event) => updateField('seoDescription', event.target.value)}
+                  disabled={isReadOnly}
+                />
+                {validationErrors.seoDescription ? (
+                  <small className="field-error">{validationErrors.seoDescription}</small>
+                ) : null}
+              </label>
+
+              <div className="form-field form-field-wide">
+                <span>{t('categories.detail.seoOgImageUrl')}</span>
+                <ImageUrlInput
+                  value={form.seoOgImageUrl}
+                  onChange={(url) => updateField('seoOgImageUrl', url)}
+                  alt={form.seoOgImageAlt}
+                  onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                  disabled={isReadOnly}
+                  error={validationErrors.seoOgImageUrl}
+                />
+                {validationErrors.seoOgImageAlt ? (
+                  <small className="field-error">{validationErrors.seoOgImageAlt}</small>
+                ) : null}
+              </div>
+
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.seoNoIndex}
+                  onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                  disabled={isReadOnly}
+                />
+                <span>{t('categories.detail.seoNoIndex')}</span>
+              </label>
+            </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <div className="form-footer">
+        {!isCreate && state.item && (
+          <section className="detail-section">
+            <header className="detail-section-header">
+              <div>
+                <h2>
+                  <Package size={16} aria-hidden="true" className="detail-section-icon" />
+                  {t('categories.detail.productsSectionTitle', { count: productsTotal })}
+                </h2>
+                <p className="detail-section-desc">{t('categories.detail.productsSectionDesc')}</p>
+              </div>
+              {productsTotal > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}
+                >
+                  {t('categories.detail.productsViewAll', { count: productsTotal })}
+                </button>
+              )}
+            </header>
+            <div className="detail-section-content">
+              {productsList.length === 0 ? (
+                <p className="cat-products-empty">{t('categories.detail.productsEmpty')}</p>
+              ) : (
+                <ul className="cat-products-list">
+                  {productsList.map((p) => (
+                    <li key={p.id} className="cat-products-item">
+                      <button
+                        type="button"
+                        className="cat-products-item-link"
+                        onClick={() => navigate(`/admin/products/${p.id}`)}
+                      >
+                        <div className="cat-products-thumb">
+                          {p.image?.url ? (
+                            <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer" />
+                          ) : (
+                            <span aria-hidden="true">—</span>
+                          )}
+                        </div>
+                        <div className="cat-products-meta">
+                          <strong>{p.name}</strong>
+                          <span className="cat-products-sku">{p.sku || p.slug}</span>
+                        </div>
+                        <span className={`status-badge status-${p.publishStatus === 'PUBLISHED' ? 'success' : p.publishStatus === 'TRASH' ? 'danger' : 'neutral'}`}>
+                          {localizePublishStatus(p.publishStatus, t)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        )}
+
+
+        {/* The base .form-footer is already sticky-bottom across the admin
+            (see ProductDetailScreen). Keep this as the last element of
+            the form so it doesn't overlap the danger zone above it. */}
+        <div className={`form-footer${isDirty ? ' form-footer--dirty' : ''}`}>
           <div className="form-status">
             {isDirty && (
-              <span className="status-pill is-dirty">{t('common.dirty')}</span>
+              <span className="status-pill is-dirty">{t('categories.dirtyHint')}</span>
             )}
             {!isCreate && state.item?.updatedAt ? (
-              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
+              <small title={formatDateTime(state.item.updatedAt)}>
+                {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
+              </small>
             ) : null}
           </div>
           <div className="screen-actions">
+            <small className="form-shortcut-hint" aria-hidden="true">
+              <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            </small>
+            {isDirty && !isReadOnly && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleDiscardChanges}
+                disabled={isSubmitting}
+              >
+                {t('categories.detail.discardChanges')}
+              </button>
+            )}
             <button
               type="submit"
               className="btn btn-primary"
@@ -600,32 +950,27 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </div>
         </div>
 
-        {!isCreate && canUpdate && (
-          <div className="danger-zone">
-            <div className="danger-zone-info">
-              <strong>{t('categories.detail.disableBtn')}</strong>
-              <p>{t('categories.detail.disableConfirm')}</p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-danger"
-              disabled={isSubmitting}
-              onClick={async () => {
-                const confirmed = await showConfirm(
-                  t('categories.detail.disableConfirm'),
-                  t('categories.detail.disableConfirmTitle'),
-                )
-                if (!confirmed) return
-                setIsSubmitting(true)
-                disableMutation.mutate()
-              }}
-            >
-              {isSubmitting ? t('categories.detail.disablingBtn') : t('categories.detail.disableBtn')}
-            </button>
-          </div>
-        )}
-
       </form>
+
+      {!isCreate && canUpdate && (
+        <div className="danger-zone">
+          <div className="danger-zone-info">
+            <strong>
+              <AlertTriangle size={13} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />
+              {t('categories.detail.dangerZoneTitle')}
+            </strong>
+            <p>{t('categories.detail.dangerZoneDesc')}</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleHardDelete}
+            disabled={hardDeleteMutation.isPending}
+          >
+            {hardDeleteMutation.isPending ? t('common.deleting') : t('categories.detail.hardDeleteBtn')}
+          </button>
+        </div>
+      )}
     </section>
   )
 }

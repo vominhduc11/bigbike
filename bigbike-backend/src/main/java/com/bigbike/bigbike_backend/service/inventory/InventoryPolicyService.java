@@ -31,15 +31,7 @@ public class InventoryPolicyService {
         return ProductStockState.IN_STOCK;
     }
 
-    /**
-     * Recomputes and sets stockState on the variant based on current quantityOnHand.
-     * PREORDER and CONTACT_FOR_STOCK are admin-controlled and never overwritten.
-     */
     public void recomputeStockState(ProductVariantEntity variant) {
-        ProductStockState current = variant.getStockState();
-        if (current == ProductStockState.PREORDER || current == ProductStockState.CONTACT_FOR_STOCK) {
-            return;
-        }
         variant.setStockState(computeStockState(variant.getQuantityOnHand(), lowStockThreshold()));
     }
 }

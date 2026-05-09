@@ -22,20 +22,22 @@ import { toast } from 'sonner'
 import {
   createMenuItem,
   deleteMenuItem,
-  fetchBrands,
-  fetchCategories,
-  fetchContent,
   fetchMenuDetail,
   fetchMenus,
-  fetchProducts,
   reorderMenuItems,
   updateMenuItem,
 } from '../lib/adminApi'
+import { normalizeMenu } from '../lib/contracts'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
-import { useDebounce } from '../lib/useDebounce'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+
+function safeMenuDetailCache(data) {
+  if (!data) return data
+  if (data?.item) return { ...data, item: normalizeMenu(data.item) }
+  return data
+}
 
 // ── System slots ───────────────────────────────────────────────────────────────
 // Mirrors backend `MenuLocations.SYSTEM_LOCATIONS`. The storefront only renders
@@ -65,74 +67,14 @@ const SYSTEM_SLOTS = [
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const TARGET_TYPES = ['CUSTOM', 'CATEGORY', 'PRODUCT', 'BRAND', 'PAGE', 'ARTICLE']
-
 const EMPTY_ITEM = {
   label: '',
   url: '',
   sortOrder: '0',
   parentId: '',
-  targetType: 'CUSTOM',
-  targetId: '',
   openInNewTab: false,
   cssClass: '',
   status: 'ACTIVE',
-}
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function normalizeTargetType(targetType) {
-  return TARGET_TYPES.includes(targetType) ? targetType : 'CUSTOM'
-}
-
-function toTargetUrl(targetType, item) {
-  const slug = item?.slug
-  if (!slug) return ''
-  switch (targetType) {
-    case 'CATEGORY': return `/danh-muc-san-pham/${slug}/`
-    case 'PRODUCT':  return `/product/${slug}/`
-    case 'BRAND':    return `/brands/${slug}/`
-    case 'PAGE':     return `/${slug}/`
-    case 'ARTICLE':  return `/tin-tuc/${slug}/`
-    default:         return ''
-  }
-}
-
-function toTargetOption(targetType, item) {
-  return {
-    id: item?.id || '',
-    label: item?.name || item?.title || item?.slug || item?.id,
-    slug: item?.slug || '',
-    url: toTargetUrl(targetType, item),
-  }
-}
-
-async function fetchMenuTargetOptions(targetType, search) {
-  const query = { pageSize: 100, search, sort: 'name:asc' }
-  switch (targetType) {
-    case 'CATEGORY': {
-      const data = await fetchCategories(query)
-      return (data.items ?? []).map((item) => toTargetOption(targetType, item))
-    }
-    case 'PRODUCT': {
-      const data = await fetchProducts({ ...query, sort: 'updatedAt:desc' })
-      return (data.items ?? []).map((item) => toTargetOption(targetType, item))
-    }
-    case 'BRAND': {
-      const data = await fetchBrands(query)
-      return (data.items ?? []).map((item) => toTargetOption(targetType, item))
-    }
-    case 'PAGE': {
-      const data = await fetchContent({ ...query, type: 'PAGE', publishStatus: 'ALL' })
-      return (data.items ?? []).map((item) => toTargetOption(targetType, item))
-    }
-    case 'ARTICLE': {
-      const data = await fetchContent({ ...query, type: 'ARTICLE', publishStatus: 'ALL' })
-      return (data.items ?? []).map((item) => toTargetOption(targetType, item))
-    }
-    default:
-      return []
-  }
 }
 
 function normalizeParentId(parentId) {
@@ -154,6 +96,7 @@ function sortMenuItems(items) {
 function buildMenuTree(items) {
   const byId = new Map()
   sortMenuItems(items).forEach((item) => {
+    if (!item?.id || item.id === 'unknown') return
     byId.set(item.id, { ...item, children: [] })
   })
   const roots = []
@@ -179,10 +122,12 @@ function buildMenuTree(items) {
 }
 
 function flattenMenuTree(nodes, depth = 0) {
-  return nodes.flatMap((node) => [
-    { ...node, depth },
-    ...flattenMenuTree(node.children, depth + 1),
-  ])
+  return nodes
+    .filter((node) => node != null && node.id)
+    .flatMap((node) => [
+      { ...node, depth },
+      ...flattenMenuTree(node.children ?? [], depth + 1),
+    ])
 }
 
 function collectDescendantIds(items, itemId) {
@@ -217,27 +162,14 @@ function isValidCustomUrl(url) {
 }
 
 function isItemFormValid(data) {
-  const targetType = normalizeTargetType(data.targetType)
   if (!data.label.trim()) return false
-  if (targetType === 'CUSTOM') return data.url.trim() !== '' && isValidCustomUrl(data.url)
-  return data.targetId !== ''
+  return data.url.trim() !== '' && isValidCustomUrl(data.url)
 }
 
 const SLOT_CONTEXT_NOTES = {
   primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
   footer:  'Mục này sẽ xuất hiện ở menu footer (cuối trang). Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
   guide:   'Mục này sẽ xuất hiện trong widget Hướng dẫn mua hàng ở footer. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-}
-
-function targetTypeLabel(t, targetType) {
-  switch (normalizeTargetType(targetType)) {
-    case 'CATEGORY': return t('menus.targetCategory')
-    case 'PRODUCT':  return t('menus.targetProduct')
-    case 'BRAND':    return t('menus.targetBrand')
-    case 'PAGE':     return t('menus.targetPage')
-    case 'ARTICLE':  return t('menus.targetArticle')
-    default:         return t('menus.targetCustom')
-  }
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -289,127 +221,6 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   )
 }
 
-const TARGET_TYPE_OPTIONS = (t) => [
-  { value: 'CATEGORY', label: t('menus.targetCategory') },
-  { value: 'PRODUCT',  label: t('menus.targetProduct') },
-  { value: 'BRAND',    label: t('menus.targetBrand') },
-  { value: 'PAGE',     label: t('menus.targetPage') },
-  { value: 'ARTICLE',  label: t('menus.targetArticle') },
-  { value: 'CUSTOM',   label: t('menus.targetCustom') },
-]
-
-function MenuTargetFields({ value, onChange, t }) {
-  const targetType = normalizeTargetType(value.targetType)
-  const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 250)
-
-  const targetQuery = useQuery({
-    queryKey: ['menu-target-options', targetType, debouncedSearch],
-    queryFn: () => fetchMenuTargetOptions(targetType, debouncedSearch),
-    enabled: targetType !== 'CUSTOM',
-    staleTime: 5 * 60_000,
-  })
-  const options = targetQuery.data ?? []
-  const hasSelectedOption = options.some((item) => item.id === value.targetId)
-
-  function updateTargetType(nextType) {
-    onChange({ targetType: nextType, targetId: '', url: nextType === 'CUSTOM' ? value.url : '' })
-    setSearch('')
-  }
-
-  function updateTargetId(nextId) {
-    const selected = options.find((item) => item.id === nextId)
-    onChange({
-      targetId: nextId,
-      url: selected?.url || '',
-      label: value.label?.trim() ? value.label : (selected?.label || value.label),
-    })
-  }
-
-  return (
-    <>
-      {/* Target type — chip row */}
-      <div className="form-field form-field-wide">
-        <span>{t('menus.targetType')}</span>
-        <div className="menu-target-chips" role="group" aria-label={t('menus.targetType')}>
-          {TARGET_TYPE_OPTIONS(t).map(({ value: v, label }) => (
-            <button
-              key={v}
-              type="button"
-              className={`menu-target-chip${targetType === v ? ' is-active' : ''}`}
-              onClick={() => updateTargetType(v)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {targetType === 'CUSTOM' ? (
-        <label className="form-field form-field-wide">
-          {t('menus.itemUrlCustom')}
-          <input
-            className="control-input"
-            value={value.url}
-            onChange={(e) => onChange({ url: e.target.value, targetId: '' })}
-            placeholder="/danh-muc-san-pham/... hoặc https://..."
-          />
-          {value.url.trim() ? (
-            !isValidCustomUrl(value.url) && (
-              <small className="menu-form-hint menu-form-hint--danger">
-                URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com
-              </small>
-            )
-          ) : (
-            <small className="menu-form-hint">{t('menus.urlHint')}</small>
-          )}
-        </label>
-      ) : (
-        <>
-          <label className="form-field form-field-wide">
-            {t('menus.targetSearch')}
-            <input
-              className="control-input"
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('menus.targetSearchPlaceholder')}
-            />
-          </label>
-          <label className="form-field form-field-wide">
-            {t('menus.targetRecord')}
-            <select
-              className="control-select"
-              value={value.targetId}
-              onChange={(e) => updateTargetId(e.target.value)}
-            >
-              <option value="">
-                {targetQuery.isLoading ? t('menus.targetLoading') : t('menus.targetSelectPlaceholder')}
-              </option>
-              {value.targetId && !hasSelectedOption && (
-                <option value={value.targetId}>{value.label || value.url}</option>
-              )}
-              {options.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          {value.targetId && value.url && (
-            <label className="form-field form-field-wide">
-              {t('menus.targetUrlPreview')}
-              <input className="control-input" value={value.url} readOnly />
-            </label>
-          )}
-          {!targetQuery.isLoading && options.length === 0 && (
-            <small className="menu-form-hint form-field-wide">
-              {t('menus.targetEmpty')}
-            </small>
-          )}
-        </>
-      )}
-    </>
-  )
-}
 
 function ItemForm({ value, onChange, parentOptions, t, isNew }) {
   return (
@@ -426,8 +237,25 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
         />
       </label>
 
-      {/* Target type + link fields */}
-      <MenuTargetFields value={value} t={t} onChange={onChange} />
+      {/* URL */}
+      <label className="form-field form-field-wide">
+        {t('menus.itemUrlCustom')}
+        <input
+          className="control-input"
+          value={value.url}
+          onChange={(e) => onChange({ url: e.target.value })}
+          placeholder="/danh-muc-san-pham/... hoặc https://..."
+        />
+        {value.url.trim() ? (
+          !isValidCustomUrl(value.url) && (
+            <small className="menu-form-hint menu-form-hint--danger">
+              URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com
+            </small>
+          )
+        ) : (
+          <small className="menu-form-hint">{t('menus.urlHint')}</small>
+        )}
+      </label>
 
       {/* Parent */}
       <MenuParentSelect
@@ -463,39 +291,11 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
         />
         {t('menus.itemOpenInNewTab')}
       </label>
-
-      {/* Advanced: sort order + CSS class (hidden by default) */}
-      <details className="menu-item-advanced form-field-wide">
-        <summary>{t('menus.advancedSection')}</summary>
-        <div className="menu-item-advanced-body">
-          <label className="form-field">
-            {t('menus.formSortOrder')}
-            <input
-              className="control-input"
-              type="number"
-              min="0"
-              value={value.sortOrder}
-              onChange={(e) => onChange({ sortOrder: e.target.value })}
-            />
-            <small className="menu-form-hint">{t('menus.sortOrderHint')}</small>
-          </label>
-          <label className="form-field">
-            {t('menus.itemCssClass')}
-            <input
-              className="control-input"
-              value={value.cssClass}
-              placeholder="highlight"
-              onChange={(e) => onChange({ cssClass: e.target.value })}
-            />
-            <small className="menu-form-hint">{t('menus.cssClassHint')}</small>
-          </label>
-        </div>
-      </details>
     </div>
   )
 }
 
-function SortableMenuItem({ item, parentLabel, rootLabel, typeLabel, canUpdate, onEdit, onDelete, isDeleting }) {
+function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
 
   const isInactive = item.status === 'INACTIVE'
@@ -535,9 +335,6 @@ function SortableMenuItem({ item, parentLabel, rootLabel, typeLabel, canUpdate, 
       </td>
       <td>
         <span className="menu-item-url-cell" title={item.url}>{item.url}</span>
-      </td>
-      <td>
-        <span className="menu-item-type-cell">{typeLabel}</span>
       </td>
       {canUpdate && (
         <td className="menu-item-actions-cell">
@@ -626,7 +423,10 @@ export function MenuScreen({ canUpdate }) {
     enabled: Boolean(selectedMenuId),
   })
   const menuDetail = detailData?.item ?? null
-  const menuItems = useMemo(() => sortMenuItems(menuDetail?.items ?? []), [menuDetail?.items])
+  const menuItems = useMemo(
+    () => sortMenuItems((menuDetail?.items ?? []).filter((item) => item?.id && item.id !== 'unknown')),
+    [menuDetail?.items],
+  )
   const menuTree = useMemo(() => buildMenuTree(menuItems), [menuItems])
   const flatMenuItems = useMemo(() => flattenMenuTree(menuTree), [menuTree])
   const itemById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems])
@@ -662,7 +462,7 @@ export function MenuScreen({ canUpdate }) {
   const reorderMutation = useMutation({
     mutationFn: (items) => reorderMenuItems(selectedMenuId, items),
     onSuccess: (data) => {
-      queryClient.setQueryData(['menu-detail', selectedMenuId], data)
+      queryClient.setQueryData(['menu-detail', selectedMenuId], safeMenuDetailCache(data))
     },
     onError: () => {
       toast.error(t('common.error'))
@@ -686,11 +486,11 @@ export function MenuScreen({ canUpdate }) {
       const patchPayload = {
         label: data.label,
         url: data.url,
-        targetType: data.targetType,
-        targetId: data.targetType === 'CUSTOM' ? null : (data.targetId || null),
+        targetType: 'CUSTOM',
+        targetId: null,
         sortOrder: data.sortOrder,
         openInNewTab: data.openInNewTab,
-        cssClass: data.cssClass?.trim() || null,
+        cssClass: null,
         status: data.status || 'ACTIVE',
         parentId: data.parentId || null,
       }
@@ -763,23 +563,16 @@ export function MenuScreen({ canUpdate }) {
 
   function handleAddItem(e) {
     e.preventDefault()
-    const targetType = normalizeTargetType(newItem.targetType)
-    if (!newItem.label.trim()) { setItemError(t('menus.linkRequired')); return }
-    if (targetType === 'CUSTOM' && !newItem.url.trim()) { setItemError(t('menus.linkRequired')); return }
-    if (targetType === 'CUSTOM' && newItem.url.trim() && !isValidCustomUrl(newItem.url)) {
-      setItemError('URL không hợp lệ. Dùng đường dẫn / hoặc URL đầy đủ.'); return
-    }
-    if (targetType !== 'CUSTOM' && !newItem.targetId) { setItemError(t('menus.targetRequired')); return }
     setItemError('')
     addItemMutation.mutate({
       label: newItem.label.trim(),
       url: newItem.url.trim(),
-      targetType,
-      targetId: targetType === 'CUSTOM' ? null : newItem.targetId,
+      targetType: 'CUSTOM',
+      targetId: null,
       parentId: newItem.parentId || null,
       sortOrder: Number(newItem.sortOrder),
       openInNewTab: newItem.openInNewTab,
-      cssClass: newItem.cssClass.trim() || null,
+      cssClass: null,
       status: newItem.status || 'ACTIVE',
     })
   }
@@ -792,13 +585,7 @@ export function MenuScreen({ canUpdate }) {
 
   function handleEditItem(e) {
     e.preventDefault()
-    const targetType = normalizeTargetType(editItemForm.targetType)
-    if (!editItemForm.label.trim()) { setEditItemError(t('menus.linkRequired')); return }
-    if (targetType === 'CUSTOM' && !editItemForm.url.trim()) { setEditItemError(t('menus.linkRequired')); return }
-    if (targetType === 'CUSTOM' && editItemForm.url.trim() && !isValidCustomUrl(editItemForm.url)) {
-      setEditItemError('URL không hợp lệ. Dùng đường dẫn / hoặc URL đầy đủ.'); return
-    }
-    if (targetType !== 'CUSTOM' && !editItemForm.targetId) { setEditItemError(t('menus.targetRequired')); return }
+    if (!editItem) return
     setEditItemError('')
     const nextParentId = normalizeParentId(editItemForm.parentId)
     const parentChanged = nextParentId !== normalizeParentId(editItem.parentId)
@@ -808,29 +595,26 @@ export function MenuScreen({ canUpdate }) {
       data: {
         label: editItemForm.label.trim(),
         url: editItemForm.url.trim(),
-        targetType,
-        targetId: targetType === 'CUSTOM' ? '' : editItemForm.targetId,
+        targetType: 'CUSTOM',
+        targetId: null,
         parentId: nextParentId,
         sortOrder: Number(editItemForm.sortOrder),
         openInNewTab: editItemForm.openInNewTab,
-        cssClass: editItemForm.cssClass?.trim() || null,
+        cssClass: null,
         status: editItemForm.status || 'ACTIVE',
       },
     })
   }
 
   function openEditItem(item) {
-    const targetType = normalizeTargetType(item.targetType)
     setEditItem(item)
     setEditItemForm({
       label: item.label || '',
       url: item.url || '',
       parentId: item.parentId || '',
-      targetType,
-      targetId: targetType === 'CUSTOM' ? '' : (item.targetId || ''),
       sortOrder: String(item.sortOrder ?? '0'),
       openInNewTab: item.openInNewTab === true,
-      cssClass: item.cssClass || '',
+      cssClass: '',
       status: item.status || 'ACTIVE',
     })
     setEditItemError('')
@@ -1005,7 +789,7 @@ export function MenuScreen({ canUpdate }) {
                   <div className="menu-table-wrap">
                     <table className="menu-table">
                       <colgroup>
-                        <col /><col /><col /><col /><col />
+                        <col /><col /><col /><col />
                         {canUpdate && <col />}
                       </colgroup>
                       <thead>
@@ -1014,7 +798,6 @@ export function MenuScreen({ canUpdate }) {
                           <th>{t('menus.itemLabel')}</th>
                           <th>{t('menus.itemParent')}</th>
                           <th>{t('menus.itemUrl')}</th>
-                          <th>{t('menus.itemTarget')}</th>
                           {canUpdate && <th />}
                         </tr>
                       </thead>
@@ -1025,7 +808,6 @@ export function MenuScreen({ canUpdate }) {
                             item={item}
                             parentLabel={item.parentId ? (itemById.get(item.parentId)?.label || t('menus.parentMissing')) : ''}
                             rootLabel={t('menus.parentRoot')}
-                            typeLabel={targetTypeLabel(t, item.targetType)}
                             canUpdate={canUpdate}
                             onEdit={openEditItem}
                             onDelete={handleDeleteItem}

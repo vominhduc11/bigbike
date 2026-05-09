@@ -310,14 +310,10 @@ public class AdminInventoryService {
 
         product.setStockQuantity(after);
 
-        // Recompute stockState (same logic as OrderStockRestoreService product branch).
         int threshold = inventoryPolicyService.lowStockThreshold();
-        ProductStockState current = product.getStockState();
-        if (current != ProductStockState.PREORDER && current != ProductStockState.CONTACT_FOR_STOCK) {
-            if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
-            else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
-            else product.setStockState(ProductStockState.IN_STOCK);
-        }
+        if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
+        else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
+        else product.setStockState(ProductStockState.IN_STOCK);
 
         productRepo.save(product);
 

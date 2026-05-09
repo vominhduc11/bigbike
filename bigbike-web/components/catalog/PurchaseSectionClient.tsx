@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { ProductGallery } from "./ProductGallery";
 import { PricingPanel } from "./PricingPanel";
 import { StockStatus } from "./StockStatus";
@@ -161,7 +160,6 @@ export function PurchaseSectionClient({
     (selectedVariant?.isAvailable ?? !hasVariants) &&
     effectiveStockState !== "OUT_OF_STOCK" &&
     !snapshot?.stock?.forceOutOfStock;
-  const isContactOnly = effectiveStockState === "CONTACT_FOR_STOCK";
 
   // When a variant is selected, the StockStatus badge should reflect THAT
   // variant's state + on-hand count; otherwise fall back to the product
@@ -332,31 +330,25 @@ export function PurchaseSectionClient({
 
         {/* CTA buttons */}
         <div className="wp-pdp-actions">
-          {isContactOnly ? (
-            <Link href="/lien-he/" className="wp-btn-primary">
-              Liên hệ tư vấn
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className="wp-btn-primary"
-              onClick={handleAddToCart}
-              disabled={addLoading || !isAvailable}
-            >
-              {addLoading
-                ? "Đang thêm..."
-                : requiresVariantSelection
-                  ? "Vui lòng chọn biến thể"
-                  : isAvailable
-                    ? "Thêm vào giỏ"
-                    : "Tạm hết hàng"}
-            </button>
-          )}
+          <button
+            type="button"
+            className="wp-btn-primary"
+            onClick={handleAddToCart}
+            disabled={addLoading || !isAvailable}
+          >
+            {addLoading
+              ? "Đang thêm..."
+              : requiresVariantSelection
+                ? "Vui lòng chọn biến thể"
+                : isAvailable
+                  ? "Thêm vào giỏ"
+                  : "Tạm hết hàng"}
+          </button>
           <button
             type="button"
             className="wp-btn-secondary"
             onClick={() => setQuickBuyOpen(true)}
-            disabled={!isAvailable || isContactOnly}
+            disabled={!isAvailable}
           >
             Mua ngay
           </button>

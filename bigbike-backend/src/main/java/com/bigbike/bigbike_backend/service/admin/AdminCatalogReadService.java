@@ -74,19 +74,41 @@ public class AdminCatalogReadService {
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CATEGORY_SORT_FIELDS);
         String query = coalesceSearch(q, search);
+        boolean asc = sortSpec.direction() == SortDirection.ASC;
 
-        List<Category> result = catalogReadRepository.findAllCategories().stream()
-                .filter(category -> matchesVisibility(category.isVisible(), visibility))
-                .filter(category -> matchesCategoryQuery(category, query))
-                .sorted(categoryComparator(sortSpec))
-                .toList();
+        var paged = catalogReadRepository.findCategoriesPaged(
+                query, visibility, sortSpec.field(), asc, page, size
+        );
 
-        return paginationService.paginate(result, page, size);
+        long total = paged.totalItems();
+        int totalPages = size <= 0 ? 0 : (int) Math.ceil((double) total / size);
+        return new PageResult<>(paged.items(), page, size, total, totalPages);
     }
 
     public Category getCategoryById(String id) {
         return catalogReadRepository.findCategoryById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
+    }
+
+    /**
+     * Returns the full category set sorted in tree-friendly order:
+     * roots first (parentId == null), then by sortOrder, then by name.
+     * Children of the same parent fall together because they share the
+     * same parentId comparator key. The actual tree structure is built on
+     * the client; the server just ships a deterministic flat list.
+     */
+    public List<Category> listAllCategoriesForTree() {
+        return catalogReadRepository.findAllCategories().stream()
+                .sorted(Comparator
+                        .comparing(
+                                Category::parentId,
+                                Comparator.nullsFirst(Comparator.naturalOrder())
+                        )
+                        .thenComparing(
+                                (Category c) -> c.sortOrder() == null ? Integer.MAX_VALUE : c.sortOrder()
+                        )
+                        .thenComparing(Category::name, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     public PageResult<Brand> listBrands(
@@ -131,15 +153,6 @@ public class AdminCatalogReadService {
         return !isVisible;
     }
 
-    private static boolean matchesCategoryQuery(Category category, String query) {
-        if (query == null || query.isBlank()) {
-            return true;
-        }
-        String term = query.toLowerCase(Locale.ROOT);
-        return category.name().toLowerCase(Locale.ROOT).contains(term)
-                || category.slug().toLowerCase(Locale.ROOT).contains(term);
-    }
-
     private static boolean matchesBrandQuery(Brand brand, String query) {
         if (query == null || query.isBlank()) {
             return true;
@@ -155,17 +168,6 @@ public class AdminCatalogReadService {
             case "price" -> Comparator.comparing(product -> product.price().retailPrice());
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             case "updatedAt" -> Comparator.comparing(Product::updatedAt);
-            default -> throw new IllegalStateException("Unsupported sort field.");
-        };
-        return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
-    }
-
-    private static Comparator<Category> categoryComparator(SortSpec sortSpec) {
-        Comparator<Category> comparator = switch (sortSpec.field()) {
-            case "name" -> Comparator.comparing(Category::name, String.CASE_INSENSITIVE_ORDER);
-            case "createdAt" -> Comparator.comparing(Category::createdAt);
-            case "updatedAt" -> Comparator.comparing(Category::updatedAt);
-            case "sortOrder" -> Comparator.comparing(category -> category.sortOrder() == null ? Integer.MAX_VALUE : category.sortOrder());
             default -> throw new IllegalStateException("Unsupported sort field.");
         };
         return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;

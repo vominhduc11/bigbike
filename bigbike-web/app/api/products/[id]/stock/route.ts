@@ -13,8 +13,6 @@ const STOCK_LABELS: Record<string, string> = {
   IN_STOCK: "Còn hàng",
   LOW_STOCK: "Còn ít",
   OUT_OF_STOCK: "Hết hàng",
-  PREORDER: "Đặt trước",
-  CONTACT_FOR_STOCK: "Liên hệ",
 };
 
 export async function GET(_req: Request, { params }: Params) {

@@ -250,8 +250,11 @@ export function createCategorySchema(t) {
     .object({
       slug: z.string(),
       name: z.string().min(1, t('categories.detail.errNameRequired')),
+      description: z.string().optional(),
       imageUrl: z.string().optional(),
+      imageAlt: z.string().optional(),
       iconUrl: z.string().optional(),
+      iconAlt: z.string().optional(),
       sortOrder: z.string().optional(),
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
@@ -266,12 +269,26 @@ export function createCategorySchema(t) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugRequired'), path: ['slug'] })
       } else if (!SLUG_REGEX.test(s)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugFormat'), path: ['slug'] })
+      } else if (s.length > 100) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugTooLong'), path: ['slug'] })
+      }
+      if ((data.name ?? '').trim().length > 255) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errNameTooLong'), path: ['name'] })
+      }
+      if ((data.description ?? '').trim().length > 5000) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errDescriptionTooLong'), path: ['description'] })
       }
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageUrl'), path: ['imageUrl'] })
       }
+      if ((data.imageAlt ?? '').trim().length > 255) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageAltTooLong'), path: ['imageAlt'] })
+      }
       if (data.iconUrl?.trim() && !MEDIA_URL_REGEX.test(data.iconUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconUrl'), path: ['iconUrl'] })
+      }
+      if ((data.iconAlt ?? '').trim().length > 255) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconAltTooLong'), path: ['iconAlt'] })
       }
       const sortStr = (data.sortOrder ?? '').trim()
       if (sortStr !== '') {

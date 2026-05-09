@@ -272,7 +272,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new ProductPrice(BigDecimal.valueOf(2890000), null, null, "VND"),
                 List.of(),
                 List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số")),
-                ProductStockState.PREORDER,
+                ProductStockState.IN_STOCK,
                 null,
                 false,
                 PublishStatus.HIDDEN,
@@ -381,6 +381,41 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     @Override
     public List<Category> findAllCategories() {
         return categories;
+    }
+
+    @Override
+    public CategoryPage findCategoriesPaged(
+            String query,
+            String visibility,
+            String sortField,
+            boolean sortAsc,
+            int page,
+            int pageSize
+    ) {
+        var stream = categories.stream();
+        if (visibility != null && !visibility.isBlank()) {
+            boolean wantVisible = "VISIBLE".equals(visibility);
+            stream = stream.filter(c -> c.isVisible() == wantVisible);
+        }
+        if (query != null && !query.isBlank()) {
+            String term = query.toLowerCase(java.util.Locale.ROOT);
+            stream = stream.filter(c -> c.name().toLowerCase(java.util.Locale.ROOT).contains(term)
+                    || c.slug().toLowerCase(java.util.Locale.ROOT).contains(term));
+        }
+        java.util.Comparator<Category> cmp = switch (sortField) {
+            case "name" -> java.util.Comparator.comparing(Category::name, String.CASE_INSENSITIVE_ORDER);
+            case "createdAt" -> java.util.Comparator.comparing(Category::createdAt);
+            case "sortOrder" -> java.util.Comparator.comparing(c -> c.sortOrder() == null ? Integer.MAX_VALUE : c.sortOrder());
+            default -> java.util.Comparator.comparing(Category::updatedAt);
+        };
+        if (!sortAsc) cmp = cmp.reversed();
+
+        List<Category> sorted = stream.sorted(cmp).toList();
+        long total = sorted.size();
+        int from = Math.max(0, (page - 1) * pageSize);
+        int to = Math.min(sorted.size(), from + pageSize);
+        List<Category> slice = from >= sorted.size() ? List.of() : sorted.subList(from, to);
+        return new CategoryPage(slice, total);
     }
 
     @Override
