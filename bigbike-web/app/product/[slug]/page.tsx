@@ -73,7 +73,7 @@ export async function generateMetadata({
       "Chi tiết sản phẩm bảo hộ biker BigBike.",
     canonicalPath: product.seo?.canonicalUrl ?? toProductPath(product.slug),
     noIndex: product.seo?.noIndex ?? false,
-    ogImage: product.image?.url ?? undefined,
+    ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
   });
 }
 

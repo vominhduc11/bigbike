@@ -9,7 +9,6 @@ type FilterState = {
   q?: string;
   brand?: string;
   color?: string;
-  gender?: string;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
@@ -37,7 +36,6 @@ function buildChips(
       q: key === "q" ? undefined : current.q,
       "pwb-brand": key === "brand" ? undefined : current.brand,
       filter_color: key === "color" ? undefined : current.color,
-      filter_gender: key === "gender" ? undefined : current.gender,
       min_price: key === "price" ? undefined : current.minPrice,
       max_price: key === "price" ? undefined : current.maxPrice,
       sort: key === "sort" ? undefined : current.sort,
@@ -49,8 +47,6 @@ function buildChips(
   if (current.q) chips.push({ label: `"${current.q}"`, removeHref: hrefWithout("q") });
   if (current.brand) chips.push({ label: current.brand, removeHref: hrefWithout("brand") });
   if (current.color) chips.push({ label: `Màu: ${current.color}`, removeHref: hrefWithout("color") });
-  if (current.gender === "nam") chips.push({ label: "Nam", removeHref: hrefWithout("gender") });
-  if (current.gender === "nu") chips.push({ label: "Nữ", removeHref: hrefWithout("gender") });
   if (current.minPrice || current.maxPrice) {
     const lo = current.minPrice ? `${(current.minPrice / 1_000_000).toFixed(0)}tr` : "0";
     const hi = current.maxPrice ? `${(current.maxPrice / 1_000_000).toFixed(0)}tr` : "∞";
@@ -116,7 +112,7 @@ export function CatalogFilters({
     : brands;
 
   const hasActiveFilters =
-    current.brand || current.color || current.gender || current.minPrice || current.maxPrice || current.q;
+    current.brand || current.color || current.minPrice || current.maxPrice || current.q;
 
   return (
     <aside className="wp-filters-v2">
@@ -264,7 +260,6 @@ export function CatalogFilters({
               const qs = buildQueryString({
                 ...hiddenParams,
                 "pwb-brand": current.brand,
-                filter_gender: current.gender,
                 q: current.q,
                 sort: current.sort,
                 min_price: p.min,
@@ -322,25 +317,6 @@ export function CatalogFilters({
               );
             })}
           </div>
-        </FilterSection>
-
-        {/* Gender filter */}
-        <FilterSection title="Giới tính" defaultOpen={false}>
-          {[
-            { value: "", label: "Tất cả" },
-            { value: "nam", label: "Nam" },
-            { value: "nu", label: "Nữ" },
-          ].map((opt) => (
-            <label key={opt.value || "all"} className="wp-filter-row">
-              <input
-                type="radio"
-                name="filter_gender"
-                value={opt.value}
-                defaultChecked={(current.gender ?? "") === opt.value}
-              />
-              <span className="wp-filter-row-label">{opt.label}</span>
-            </label>
-          ))}
         </FilterSection>
 
         <button className="wp-filter-apply" type="submit">

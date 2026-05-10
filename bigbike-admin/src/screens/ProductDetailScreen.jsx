@@ -393,11 +393,12 @@ function buildFormFromItem(item) {
     seoNoIndex: Boolean(item.seo?.noIndex),
     isFeatured: Boolean(item.isFeatured),
     showOnHomepage: Boolean(item.showOnHomepage),
-    gallery: (item.gallery || []).map((img) => ({ url: img.url || '' })),
+    gallery: (item.gallery || []).map((img) => ({ url: img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
       type: inferVideoType(v.url || '', v.provider),
+      thumbnailUrl: v.thumbnail?.url || '',
     })),
     specifications: (item.specifications || []).map((s) => ({
       _key: crypto.randomUUID(),
@@ -467,7 +468,7 @@ function toPayload(form) {
 
   payload.gallery = form.gallery
     .filter((img) => img.url.trim())
-    .map((img, i) => ({ url: img.url.trim(), sortOrder: i }))
+    .map((img, i) => ({ url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: i }))
 
   payload.videos = form.videos
     .filter((v) => v.url.trim())
@@ -475,6 +476,7 @@ function toPayload(form) {
       url: v.url.trim(),
       title: v.title.trim() || undefined,
       provider: v.type === 'upload' ? 'upload' : 'youtube',
+      thumbnailUrl: v.thumbnailUrl?.trim() || undefined,
       sortOrder: i,
     }))
 
@@ -580,6 +582,15 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
         >
           {trimmed ? 'Đổi ảnh' : 'Chọn ảnh'}
         </button>
+        <input
+          type="text"
+          className="gallery-card-alt-input"
+          placeholder="Alt text (mô tả ảnh)"
+          value={item.alt || ''}
+          onChange={(e) => onUpdate('alt', e.target.value)}
+          disabled={disabled}
+          aria-label="Mô tả ảnh (alt text)"
+        />
         {urlError && <small className="field-error">{urlError}</small>}
       </div>
       {pickerOpen && (
@@ -659,7 +670,7 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
     onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
   }
   function addItem() {
-    onChange([...items, { url: '', title: '', type: 'youtube' }])
+    onChange([...items, { url: '', title: '', type: 'youtube', thumbnailUrl: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -754,6 +765,13 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                       style={{ marginTop: 8, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
                     />
                   )}
+                  <input
+                    className="control-input"
+                    placeholder="Thumbnail URL (tuỳ chọn)"
+                    value={item.thumbnailUrl || ''}
+                    onChange={(e) => updateItem(index, { thumbnailUrl: e.target.value })}
+                    disabled={disabled}
+                  />
                 </div>
               )}
 

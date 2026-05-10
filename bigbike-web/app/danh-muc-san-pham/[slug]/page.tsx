@@ -72,7 +72,6 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   const page = Number(readSearchParamAlias(query, "page", "paged") ?? "1");
   const brand = readSearchParamAlias(query, "pwb-brand", "brand");
   const q = readSingleSearchParam(query.q);
-  const gender = readSingleSearchParam(query.filter_gender);
   const color = readSingleSearchParam(query.filter_color);
   const minPrice = readSingleSearchParam(query.min_price);
   const maxPrice = readSingleSearchParam(query.max_price);
@@ -80,7 +79,6 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   return buildPublicMetadata({
     title: buildCatalogTitle(category.seo?.title ?? category.name, {
       page,
-      gender,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       colorName: color,
@@ -92,7 +90,6 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       page > 1 ||
       Boolean(brand) ||
       Boolean(q) ||
-      Boolean(gender) ||
       Boolean(color) ||
       Boolean(minPrice) ||
       Boolean(maxPrice),
@@ -125,7 +122,6 @@ export default async function CategoryDetailPage({
   const brandParsed = parseSlugParam(readSearchParamAlias(pageParams, "pwb-brand", "brand"), "pwb-brand");
   const qParsed = parseTextParam(pageParams.q, 100);
   const colorParsed = parseSlugParam(pageParams.filter_color, "filter_color");
-  const genderParsed = parseSlugParam(pageParams.filter_gender, "filter_gender");
   const minPriceParsed = parseOptionalPositiveIntParam(pageParams.min_price, {
     min: 0,
     max: 1_000_000_000,
@@ -144,7 +140,6 @@ export default async function CategoryDetailPage({
     brandParsed.error,
     qParsed.error,
     colorParsed.error,
-    genderParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
     sortParsed.error,
@@ -169,7 +164,6 @@ export default async function CategoryDetailPage({
       brand: brandParsed.value,
       q: qParsed.value,
       filterColor: colorParsed.value,
-      filterGender: genderParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
     }),
@@ -208,7 +202,6 @@ export default async function CategoryDetailPage({
     q: qParsed.value,
     brand: brandParsed.value,
     color: colorParsed.value,
-    gender: genderParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
     sort: sortParsed.value,
@@ -294,7 +287,7 @@ export default async function CategoryDetailPage({
       {/* ── Catalog body ──────────────────────────────────────── */}
       <div className="wp-cat-layout">
         <CatalogFilters
-          key={[currentFilters.brand, currentFilters.color, currentFilters.gender, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
+          key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
           current={currentFilters}
           resetHref={canonicalPath}
@@ -359,7 +352,6 @@ export default async function CategoryDetailPage({
                       "pwb-brand": brandParsed.value,
                       q: qParsed.value,
                       filter_color: colorParsed.value,
-                      filter_gender: genderParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
                     })}`

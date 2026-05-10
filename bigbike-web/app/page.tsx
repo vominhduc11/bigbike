@@ -276,7 +276,7 @@ export default async function HomePage() {
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
     listProducts({ page: 1, filterFeatured: true, size: 12, sort: "createdAt:desc" }),
-    listProducts({ page: 1, size: 5, sort: "createdAt:desc" }),
+    listProducts({ page: 1, showOnHomepage: true, size: 5, sort: "createdAt:desc" }),
     listHomeVideos(),
   ]);
 
@@ -408,9 +408,9 @@ export default async function HomePage() {
           <div className="bb-container">
             <div className="wp-products-header">
               <div>
-                <p className="wp-kicker">MỚI NHẤT</p>
+                <p className="wp-kicker">TẠI BIGBIKE</p>
                 <h2 id="home-products-heading" className="wp-products-title">
-                  SẢN PHẨM MỚI TẠI BIGBIKE
+                  SẢN PHẨM BIGBIKE
                 </h2>
               </div>
               <Link href={toProductListPath()} className="wp-view-all-link">

@@ -89,12 +89,22 @@ export function ProductTabs({ specifications, description, videos, productName }
         {active === "specs" && hasSpecs && (
           <table className="bb-spec-table">
             <tbody>
-              {specifications.map((spec) => (
-                <tr key={`${spec.group}-${spec.name}`}>
-                  <td>{safeText(spec.name, "Thông tin")}</td>
-                  <td>{safeText(spec.value, "Đang cập nhật")}</td>
-                </tr>
-              ))}
+              {specifications.flatMap((spec, idx) => {
+                const group = spec.group?.trim() || null;
+                const prevGroup = idx > 0 ? (specifications[idx - 1].group?.trim() || null) : "__none__";
+                const showHeader = group !== null && group !== prevGroup;
+                return [
+                  ...(showHeader ? [
+                    <tr key={`group-${group}`} className="bb-spec-group-header">
+                      <th colSpan={2}>{group}</th>
+                    </tr>
+                  ] : []),
+                  <tr key={`${idx}-${spec.name}`}>
+                    <td>{safeText(spec.name, "Thông số")}</td>
+                    <td>{safeText(spec.value, "Đang cập nhật")}</td>
+                  </tr>,
+                ];
+              })}
             </tbody>
           </table>
         )}

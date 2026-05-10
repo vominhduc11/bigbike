@@ -36,7 +36,6 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
   const pageValue = readSearchParamAlias(params, "page", "paged");
   const page = Number(pageValue ?? "1");
   const q = readSingleSearchParam(params.q);
-  const gender = readSingleSearchParam(params.filter_gender);
   const color = readSingleSearchParam(params.filter_color);
   const minPrice = readSingleSearchParam(params.min_price);
   const maxPrice = readSingleSearchParam(params.max_price);
@@ -44,7 +43,6 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
   const hasFilters =
     Boolean(q) ||
     Boolean(brand) ||
-    Boolean(gender) ||
     Boolean(color) ||
     Boolean(minPrice) ||
     Boolean(maxPrice) ||
@@ -54,7 +52,6 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
 
   return buildPublicMetadata({
     title: buildCatalogTitle(titleBase, {
-      gender,
       page,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
@@ -85,7 +82,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
   const brandParsed = parseSlugParam(readSearchParamAlias(params, "pwb-brand", "brand"), "pwb-brand");
   const qParsed = parseTextParam(params.q, 100);
   const colorParsed = parseSlugParam(params.filter_color, "filter_color");
-  const genderParsed = parseSlugParam(params.filter_gender, "filter_gender");
   const minPriceParsed = parseOptionalPositiveIntParam(params.min_price, {
     min: 0,
     max: PRICE_PARAM_MAX,
@@ -105,7 +101,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     brandParsed.error,
     qParsed.error,
     colorParsed.error,
-    genderParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
     sortParsed.error,
@@ -134,7 +129,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       brand: brandParsed.value,
       q: qParsed.value,
       filterColor: colorParsed.value,
-      filterGender: genderParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
     }),
@@ -143,7 +137,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
   const pagination = result.pagination;
   const pageTitle = buildCatalogTitle(qParsed.value ? `Kết quả tìm kiếm: "${qParsed.value}"` : "Sản phẩm", {
-    gender: genderParsed.value,
     page: pageParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
@@ -154,7 +147,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     q: qParsed.value,
     brand: brandParsed.value,
     color: colorParsed.value,
-    gender: genderParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
     sort: sortParsed.value,
@@ -175,7 +167,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
       <div className="wp-cat-layout">
         <CatalogFilters
-          key={[currentFilters.brand, currentFilters.color, currentFilters.gender, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
+          key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
           current={currentFilters}
           resetHref={toProductListPath()}
@@ -235,7 +227,6 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                       "pwb-brand": brandParsed.value,
                       q: qParsed.value,
                       filter_color: colorParsed.value,
-                      filter_gender: genderParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
                     })}`

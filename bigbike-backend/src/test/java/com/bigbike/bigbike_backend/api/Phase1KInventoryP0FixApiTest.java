@@ -358,15 +358,15 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(jsonPath("$.error.details[0].code").value("TRASH_PRODUCT"));
     }
 
-    // ── 14. filter_gender returns 400 UNSUPPORTED_FILTER ─────────────────────────
+    // ── 14. filter_gender is silently ignored (param reserved, not implemented) ──
 
     @Test
-    void publicProductList_filterGender_returns400() throws Exception {
+    void publicProductList_filterGender_isIgnoredReturns200() throws Exception {
+        // filter_gender is no longer rejected — it is accepted and silently ignored.
+        // The web UI no longer sends this param; old bookmarked URLs should not error.
         mockMvc.perform(get("/api/v1/products")
                         .param("filter_gender", "male"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("filter_gender"))
-                .andExpect(jsonPath("$.error.details[0].code").value("UNSUPPORTED_FILTER"));
+                .andExpect(status().isOk());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────

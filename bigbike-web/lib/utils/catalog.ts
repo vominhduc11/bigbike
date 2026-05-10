@@ -1,6 +1,5 @@
 type CatalogFilterSummary = {
   brandName?: string | null;
-  gender?: string | null;
   minPrice?: number | null;
   maxPrice?: number | null;
   colorName?: string | null;
@@ -16,12 +15,6 @@ export function buildCatalogTitle(baseTitle: string, filters: CatalogFilterSumma
 
   if (filters.brandName) {
     parts.push(filters.brandName);
-  }
-
-  if (filters.gender === "nam") {
-    parts.push("Danh cho Nam");
-  } else if (filters.gender === "nu") {
-    parts.push("Danh cho Nu");
   }
 
   const hasMinPrice = typeof filters.minPrice === "number";

@@ -65,7 +65,6 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
   const page = Number(readSearchParamAlias(query, "page", "paged") ?? "1");
   const brandFilter = readSearchParamAlias(query, "pwb-brand", "brand");
   const q = readSingleSearchParam(query.q);
-  const gender = readSingleSearchParam(query.filter_gender);
   const color = readSingleSearchParam(query.filter_color);
   const minPrice = readSingleSearchParam(query.min_price);
   const maxPrice = readSingleSearchParam(query.max_price);
@@ -74,7 +73,6 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
     title:
       buildCatalogTitle(brand.seo?.title ?? brand.name, {
         page,
-        gender,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
         colorName: color,
@@ -86,7 +84,6 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
       page > 1 ||
       Boolean(brandFilter) ||
       Boolean(q) ||
-      Boolean(gender) ||
       Boolean(color) ||
       Boolean(minPrice) ||
       Boolean(maxPrice),
@@ -116,7 +113,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   const brandFilterParsed = parseSlugParam(readSearchParamAlias(query, "pwb-brand", "brand"), "pwb-brand");
   const qParsed = parseTextParam(query.q, 100);
   const colorParsed = parseSlugParam(query.filter_color, "filter_color");
-  const genderParsed = parseSlugParam(query.filter_gender, "filter_gender");
   const minPriceParsed = parseOptionalPositiveIntParam(query.min_price, {
     min: 0,
     max: 1_000_000_000,
@@ -134,7 +130,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     brandFilterParsed.error,
     qParsed.error,
     colorParsed.error,
-    genderParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
     sortParsed.error,
@@ -159,7 +154,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       brand: slug,
       q: qParsed.value,
       filterColor: colorParsed.value,
-      filterGender: genderParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
     }),
@@ -189,7 +183,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     q: qParsed.value,
     brand: brandFilterParsed.value,
     color: colorParsed.value,
-    gender: genderParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
     sort: sortParsed.value,
@@ -284,7 +277,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                       "pwb-brand": brandFilterParsed.value,
                       q: qParsed.value,
                       filter_color: colorParsed.value,
-                      filter_gender: genderParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
                     })}`

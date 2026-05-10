@@ -3,6 +3,7 @@ com\bigbike\bigbike_backend\api\AdminContentApiTest.class
 com\bigbike\bigbike_backend\api\SliderApiTest.class
 com\bigbike\bigbike_backend\api\AdminMediaP0Test.class
 com\bigbike\bigbike_backend\api\AdminUsersApiTest.class
+com\bigbike\bigbike_backend\api\Phase2FSerialInventoryTest.class
 com\bigbike\bigbike_backend\api\Phase1I1CustomerStatusLoginTest.class
 com\bigbike\bigbike_backend\api\Phase1NReviewsApiTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest.class
@@ -63,6 +64,7 @@ com\bigbike\bigbike_backend\api\PublicReadApiTest.class
 com\bigbike\bigbike_backend\api\AdminShippingApiTest.class
 com\bigbike\bigbike_backend\service\slider\SliderReadServiceTest.class
 com\bigbike\bigbike_backend\api\AdminReportRepositoryQueryTest.class
+com\bigbike\bigbike_backend\api\Phase2FSerialInventoryTest$Fixture.class
 com\bigbike\bigbike_backend\api\AdminAuthSecurityTest.class
 com\bigbike\bigbike_backend\api\AdminReceivableApiTest.class
 com\bigbike\bigbike_backend\api\Phase1LReturnsApiTest$AuthSession.class

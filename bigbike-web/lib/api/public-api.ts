@@ -228,7 +228,6 @@ export type ProductListQuery = {
   brand?: string;
   q?: string;
   filterColor?: string;
-  filterGender?: string;
   minPrice?: number;
   maxPrice?: number;
   filterFeatured?: boolean;
@@ -246,7 +245,6 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       "pwb-brand": query.brand,
       q: query.q,
       filter_color: query.filterColor,
-      filter_gender: query.filterGender,
       min_price: query.minPrice,
       max_price: query.maxPrice,
       featured: query.filterFeatured ? "true" : undefined,
