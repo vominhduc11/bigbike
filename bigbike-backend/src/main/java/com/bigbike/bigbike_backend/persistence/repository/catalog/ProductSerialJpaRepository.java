@@ -59,4 +59,73 @@ public interface ProductSerialJpaRepository extends JpaRepository<ProductSerialE
           AND s.reservedUntil < :now
         """)
     List<ProductSerialEntity> findExpiredReservations(@Param("now") java.time.Instant now);
+
+    // ── Queries needed by SerialLifecycleService ──────────────────────────────
+
+    /**
+     * Picks the oldest IN_STOCK serials for a variant with a row-level write lock
+     * (FOR UPDATE SKIP LOCKED) to prevent concurrent checkout double-reservation.
+     * Uses native query because JPQL cannot express SKIP LOCKED.
+     */
+    @org.springframework.data.jpa.repository.Query(
+        value = """
+            SELECT * FROM product_serials
+            WHERE product_variant_id = :variantId
+              AND status = 'IN_STOCK'
+            ORDER BY received_at ASC
+            LIMIT :limit
+            FOR UPDATE SKIP LOCKED
+            """,
+        nativeQuery = true
+    )
+    List<ProductSerialEntity> findAvailableForVariantWithLock(
+            @Param("variantId") String variantId,
+            @Param("limit") int limit
+    );
+
+    /**
+     * Picks the oldest IN_STOCK serials for a product with no variant assigned.
+     */
+    @org.springframework.data.jpa.repository.Query(
+        value = """
+            SELECT * FROM product_serials
+            WHERE product_id = :productId
+              AND product_variant_id IS NULL
+              AND status = 'IN_STOCK'
+            ORDER BY received_at ASC
+            LIMIT :limit
+            FOR UPDATE SKIP LOCKED
+            """,
+        nativeQuery = true
+    )
+    List<ProductSerialEntity> findAvailableForProductNoVariantWithLock(
+            @Param("productId") String productId,
+            @Param("limit") int limit
+    );
+
+    @Query("""
+        SELECT s FROM ProductSerialEntity s
+        WHERE s.orderLineItemId IN (
+            SELECT li.id FROM OrderLineItemEntity li WHERE li.order.id = :orderId
+        )
+        """)
+    List<ProductSerialEntity> findByOrderId(@Param("orderId") UUID orderId);
+
+    @Query("""
+        SELECT s FROM ProductSerialEntity s
+        WHERE s.orderLineItemId = :lineItemId
+        """)
+    List<ProductSerialEntity> findByOrderLineItemId(@Param("lineItemId") UUID lineItemId);
+
+    @Query("""
+        SELECT s FROM ProductSerialEntity s
+        WHERE s.returnItemId IN (
+            SELECT ri.id FROM ReturnItemEntity ri WHERE ri.returnId = :returnId
+        )
+        """)
+    List<ProductSerialEntity> findByReturnId(@Param("returnId") UUID returnId);
+
+    long countByVariant_IdAndStatusIn(String variantId, List<ProductSerialStatus> statuses);
+
+    long countByProduct_IdAndVariantIsNullAndStatusIn(String productId, List<ProductSerialStatus> statuses);
 }

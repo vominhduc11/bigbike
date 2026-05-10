@@ -34,4 +34,10 @@ public class InventoryPolicyService {
     public void recomputeStockState(ProductVariantEntity variant) {
         variant.setStockState(computeStockState(variant.getQuantityOnHand(), lowStockThreshold()));
     }
+
+    public boolean isSerialInventoryOnlyEnabled() {
+        return settingRepo.findBySettingKey("serial_inventory_only")
+                .map(s -> "true".equalsIgnoreCase(s.getSettingValue()))
+                .orElse(false);
+    }
 }

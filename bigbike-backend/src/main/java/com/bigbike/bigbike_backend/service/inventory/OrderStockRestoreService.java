@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemSerialJpaRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -25,19 +26,22 @@ public class OrderStockRestoreService {
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository stockMovementRepo;
     private final InventoryPolicyService inventoryPolicyService;
+    private final OrderLineItemSerialJpaRepository olisRepo;
 
     public OrderStockRestoreService(
             OrderLineItemJpaRepository lineItemRepo,
             ProductJpaRepository productRepo,
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository stockMovementRepo,
-            InventoryPolicyService inventoryPolicyService
+            InventoryPolicyService inventoryPolicyService,
+            OrderLineItemSerialJpaRepository olisRepo
     ) {
         this.lineItemRepo = lineItemRepo;
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
         this.stockMovementRepo = stockMovementRepo;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.olisRepo = olisRepo;
     }
 
     @Transactional
@@ -59,6 +63,10 @@ public class OrderStockRestoreService {
 
         for (OrderLineItemEntity item : items) {
             if (item.getProductId() == null) continue;
+
+            // Serial-tracked line items: stock is restored by SerialLifecycleService (DB trigger syncs qty).
+            // This service only handles non-serial (legacy) quantity restore.
+            if (!olisRepo.findByOrderLineItemId(item.getId()).isEmpty()) continue;
 
             if (item.getProductVariantId() != null) {
                 variantRepo.findByIdForUpdate(item.getProductVariantId().toString()).ifPresent(variant -> {

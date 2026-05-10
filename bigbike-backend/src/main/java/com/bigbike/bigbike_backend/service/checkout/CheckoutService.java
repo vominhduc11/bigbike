@@ -45,6 +45,7 @@ import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMetho
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -98,6 +99,7 @@ public class CheckoutService {
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final InventoryPolicyService inventoryPolicyService;
+    private final SerialLifecycleService serialLifecycleService;
     private final CouponPolicyService couponPolicy;
     private final JdbcTemplate jdbcTemplate;
 
@@ -123,6 +125,7 @@ public class CheckoutService {
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
             InventoryPolicyService inventoryPolicyService,
+            SerialLifecycleService serialLifecycleService,
             CouponPolicyService couponPolicy,
             JdbcTemplate jdbcTemplate
     ) {
@@ -147,6 +150,7 @@ public class CheckoutService {
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.serialLifecycleService = serialLifecycleService;
         this.couponPolicy = couponPolicy;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -230,13 +234,14 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.save(order);
 
-        // Decrement stock after order is saved so movements carry the correct orderId.
-        decrementStockForCartItems(items, savedOrder.getId(), now);
-
-        // Line items from cart
+        // Save line items first — serial reservation needs the line item ID.
+        List<OrderLineItemEntity> savedLineItems = new ArrayList<>();
         for (CartItemEntity cartItem : items) {
-            lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now));
+            savedLineItems.add(lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now)));
         }
+
+        // Decrement stock / reserve serials per line item.
+        applyStockForLineItems(savedLineItems, items, savedOrder.getId(), now);
 
         // Addresses
         addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
@@ -318,18 +323,34 @@ public class CheckoutService {
             if (!variant.isAvailable()) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' tạm ngừng bán.");
             }
-            if (variant.getQuantityOnHand() < req.quantity()) {
-                int onHand = variant.getQuantityOnHand();
-                throw new ConflictException(onHand <= 0
-                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+            if (variant.isTrackSerials()) {
+                long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
+                if (available < req.quantity()) {
+                    throw new ConflictException(available <= 0
+                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + available + " trong kho.");
+                }
+            } else {
+                if (variant.getQuantityOnHand() < req.quantity()) {
+                    int onHand = variant.getQuantityOnHand();
+                    throw new ConflictException(onHand <= 0
+                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+                }
             }
         } else {
             if (Boolean.TRUE.equals(product.getForceOutOfStock())
                     || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
             }
-            if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
+            if (product.isTrackSerials()) {
+                long available = serialLifecycleService.countAvailable(product.getId(), null);
+                if (available < req.quantity()) {
+                    throw new ConflictException(available <= 0
+                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + available + " trong kho.");
+                }
+            } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
                     && product.getStockQuantity() < req.quantity()) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                         + product.getStockQuantity() + " trong kho.");
@@ -364,7 +385,16 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.save(order);
 
-        if (variant != null) {
+        // Save line item first so serial reservation has a valid ID.
+        OrderLineItemEntity savedLineItem = lineItemRepo.save(buildLineItemFromProduct(
+                savedOrder, product, variant, unitPrice, qty,
+                lineSubtotal, lineDiscount, lineTotal, now));
+
+        if (variant != null && variant.isTrackSerials()) {
+            Instant reservedUntil = serialLifecycleService.computeReservedUntil();
+            serialLifecycleService.reserveForOrderLine(
+                    savedLineItem, product.getId(), variant.getId(), qty, reservedUntil);
+        } else if (variant != null) {
             decrementVariantStock(variant, qty, savedOrder.getId(), now);
         } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
             int newQty = product.getStockQuantity() - qty;
@@ -377,10 +407,6 @@ public class CheckoutService {
             }
             productRepo.save(product);
         }
-
-        // Line item from product snapshot
-        lineItemRepo.save(buildLineItemFromProduct(savedOrder, product, variant,
-                unitPrice, qty, lineSubtotal, lineDiscount, lineTotal, now));
 
         // Addresses
         addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
@@ -816,8 +842,8 @@ public class CheckoutService {
 
     /**
      * Pass 1: validate stock availability and re-sync prices from DB.
-     * Collects price changes into the provided list for inclusion in the response.
-     * Does NOT write any stock changes — that happens in decrementStockForCartItems after order is saved.
+     * For serial-tracked variants, validates against IN_STOCK serial count (not quantity_on_hand).
+     * Does NOT write any stock changes.
      */
     private void syncPricesAndValidateStock(List<CartItemEntity> items,
             List<OrderSummaryResponse.PriceChange> priceChanges) {
@@ -837,11 +863,22 @@ public class CheckoutService {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' tạm ngừng bán.");
                 }
-                if (variant.getQuantityOnHand() < cartItem.getQuantity()) {
-                    int onHand = variant.getQuantityOnHand();
-                    throw new ConflictException(onHand <= 0
-                            ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
-                            : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + onHand + " trong kho.");
+                if (variant.isTrackSerials()) {
+                    // Serial-only: count actual IN_STOCK serials, not quantity_on_hand
+                    long available = serialLifecycleService.countAvailable(
+                            product.getId(), variant.getId());
+                    if (available < cartItem.getQuantity()) {
+                        throw new ConflictException(available <= 0
+                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
+                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + available + " trong kho.");
+                    }
+                } else {
+                    if (variant.getQuantityOnHand() < cartItem.getQuantity()) {
+                        int onHand = variant.getQuantityOnHand();
+                        throw new ConflictException(onHand <= 0
+                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
+                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + onHand + " trong kho.");
+                    }
                 }
             } else {
                 if (Boolean.TRUE.equals(product.getForceOutOfStock())
@@ -849,7 +886,14 @@ public class CheckoutService {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
                 }
-                if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
+                if (product.isTrackSerials()) {
+                    long available = serialLifecycleService.countAvailable(product.getId(), null);
+                    if (available < cartItem.getQuantity()) {
+                        throw new ConflictException(available <= 0
+                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
+                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + available + " trong kho.");
+                    }
+                } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
                         && product.getStockQuantity() < cartItem.getQuantity()) {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " +
@@ -869,16 +913,34 @@ public class CheckoutService {
     }
 
     /**
-     * Pass 2: decrement stock and write stock_movements for each cart item.
-     * Called after order is saved so movements carry the correct orderId.
+     * Pass 2: for each saved line item, either reserve serials (serial-tracked)
+     * or decrement quantity_on_hand (legacy path).
+     * Line items must already be persisted so they have valid IDs for bridge records.
      */
-    private void decrementStockForCartItems(List<CartItemEntity> items, UUID orderId, Instant now) {
+    private void applyStockForLineItems(List<OrderLineItemEntity> savedLineItems,
+                                        List<CartItemEntity> cartItems,
+                                        UUID orderId, Instant now) {
         int threshold = inventoryPolicyService.lowStockThreshold();
-        for (CartItemEntity cartItem : items) {
+        for (int i = 0; i < savedLineItems.size(); i++) {
+            OrderLineItemEntity lineItem = savedLineItems.get(i);
+            CartItemEntity cartItem = cartItems.get(i);
             if (cartItem.getProductId() == null) continue;
+
             if (cartItem.getProductVariantId() != null) {
                 variantRepo.findByIdForUpdate(cartItem.getProductVariantId().toString())
-                        .ifPresent(v -> decrementVariantStock(v, cartItem.getQuantity(), orderId, now));
+                        .ifPresent(variant -> {
+                            if (variant.isTrackSerials()) {
+                                Instant reservedUntil = serialLifecycleService.computeReservedUntil();
+                                serialLifecycleService.reserveForOrderLine(
+                                        lineItem,
+                                        cartItem.getProductId().toString(),
+                                        variant.getId(),
+                                        cartItem.getQuantity(),
+                                        reservedUntil);
+                            } else {
+                                decrementVariantStock(variant, cartItem.getQuantity(), orderId, now);
+                            }
+                        });
             } else {
                 productRepo.findByIdForUpdate(cartItem.getProductId().toString()).ifPresent(product -> {
                     if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;

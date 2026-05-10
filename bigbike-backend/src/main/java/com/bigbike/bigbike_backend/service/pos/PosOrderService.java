@@ -25,6 +25,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRe
 import com.bigbike.bigbike_backend.service.checkout.OrderKeyGenerator;
 import com.bigbike.bigbike_backend.service.checkout.OrderNumberGenerator;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService;
 import com.bigbike.bigbike_backend.service.receivable.ReceivableService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
@@ -89,6 +90,7 @@ public class PosOrderService {
     private final OrderKeyGenerator orderKeyGenerator;
     private final AdminOrderWsService wsService;
     private final InventoryPolicyService inventoryPolicyService;
+    private final SerialLifecycleService serialLifecycleService;
     private final CreditPolicyService creditPolicyService;
     private final ReceivableService receivableService;
     private final CustomerJpaRepository customerRepo;
@@ -106,6 +108,7 @@ public class PosOrderService {
             OrderKeyGenerator orderKeyGenerator,
             AdminOrderWsService wsService,
             InventoryPolicyService inventoryPolicyService,
+            SerialLifecycleService serialLifecycleService,
             CreditPolicyService creditPolicyService,
             ReceivableService receivableService,
             CustomerJpaRepository customerRepo
@@ -122,6 +125,7 @@ public class PosOrderService {
         this.orderKeyGenerator = orderKeyGenerator;
         this.wsService = wsService;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.serialLifecycleService = serialLifecycleService;
         this.creditPolicyService = creditPolicyService;
         this.receivableService = receivableService;
         this.customerRepo = customerRepo;
@@ -207,7 +211,13 @@ public class PosOrderService {
             if (!variant.isAvailable()) {
                 throw new ConflictException("Phiên bản '" + variant.getName() + "' không còn khả dụng.");
             }
-            if (variant.getQuantityOnHand() < item.quantity()) {
+            if (variant.isTrackSerials()) {
+                long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
+                if (available < item.quantity()) {
+                    throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                            + available + " serial khả dụng trong kho.");
+                }
+            } else if (variant.getQuantityOnHand() < item.quantity()) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                         + variant.getQuantityOnHand() + " trong kho.");
             }
@@ -331,8 +341,9 @@ public class PosOrderService {
             lineItemRepo.save(li);
         }
 
-        // Decrement stock immediately (POS = goods leave the shelf now)
-        decrementStock(req.items(), savedOrder.getId(), now);
+        // Decrement stock / reserve+sell serials immediately (POS = goods leave the shelf now).
+        // applyPosStock must run after line items are persisted (serial bridge needs their IDs).
+        applyPosStock(req.items(), lineItems, savedOrder.getId(), now);
 
         // Payment record (only create if money was actually collected)
         if (!isCreditOrder || downPayment.compareTo(BigDecimal.ZERO) > 0) {
@@ -429,33 +440,51 @@ public class PosOrderService {
         return createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit, null, null);
     }
 
-    private void decrementStock(
+    /**
+     * POS stock application: for serial-tracked variants, reserve then immediately mark sold
+     * (POS order is COMPLETED on creation). For non-serial variants, decrement qty directly.
+     * Must run after line items are persisted so bridge records have valid FKs.
+     */
+    private void applyPosStock(
             List<PosLineItemRequest> items,
+            List<OrderLineItemEntity> savedLineItems,
             UUID orderId,
             Instant now
     ) {
-        for (PosLineItemRequest item : items) {
-            // productVariantId is always non-null here (validated in createOrder)
+        for (int i = 0; i < items.size(); i++) {
+            PosLineItemRequest item = items.get(i);
+            OrderLineItemEntity lineItem = savedLineItems.get(i);
+
             ProductVariantEntity v = variantRepo.findByIdForUpdate(item.productVariantId())
-                    .orElseThrow(() -> new NotFoundException("Variant không tìm thấy khi trừ kho: " + item.productVariantId()));
+                    .orElseThrow(() -> new NotFoundException(
+                            "Variant không tìm thấy khi trừ kho: " + item.productVariantId()));
 
-            int before = v.getQuantityOnHand();
-            int after = before - item.quantity();
-            v.setQuantityOnHand(after);
-            inventoryPolicyService.recomputeStockState(v);
-            variantRepo.save(v);
+            if (v.isTrackSerials()) {
+                // Reserve serials then immediately mark sold (POS = instant sale)
+                Instant reservedUntil = now.plusSeconds(60); // very short TTL; markSold follows immediately
+                serialLifecycleService.reserveForOrderLine(
+                        lineItem, v.getProduct() != null ? v.getProduct().getId() : null,
+                        v.getId(), item.quantity(), reservedUntil);
+                serialLifecycleService.markSoldForOrder(orderId);
+            } else {
+                int before = v.getQuantityOnHand();
+                int after = before - item.quantity();
+                v.setQuantityOnHand(after);
+                inventoryPolicyService.recomputeStockState(v);
+                variantRepo.save(v);
 
-            StockMovementEntity mv = new StockMovementEntity();
-            mv.setVariant(v);
-            mv.setMovementType("OUT");
-            mv.setQuantityDelta(-item.quantity());
-            mv.setReferenceType("ORDER");
-            mv.setReferenceId(orderId);
-            mv.setNote("POS_SALE");
-            mv.setCreatedAt(now);
-            mv.setQuantityBefore(before);
-            mv.setQuantityAfter(after);
-            stockMovementRepo.save(mv);
+                StockMovementEntity mv = new StockMovementEntity();
+                mv.setVariant(v);
+                mv.setMovementType("OUT");
+                mv.setQuantityDelta(-item.quantity());
+                mv.setReferenceType("ORDER");
+                mv.setReferenceId(orderId);
+                mv.setNote("POS_SALE");
+                mv.setCreatedAt(now);
+                mv.setQuantityBefore(before);
+                mv.setQuantityAfter(after);
+                stockMovementRepo.save(mv);
+            }
         }
     }
 

@@ -5,10 +5,15 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminSerialResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdjustStockRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.UpdateSerialStatusRequest;
+import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
+import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminInventoryService;
+import com.bigbike.bigbike_backend.service.admin.AdminSerialImportService;
 import com.bigbike.bigbike_backend.service.admin.AdminSerialService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -37,15 +42,18 @@ public class AdminInventoryController {
 
     private final AdminInventoryService inventoryService;
     private final AdminSerialService serialService;
+    private final AdminSerialImportService serialImportService;
     private final DevAdminAuthService devAdminAuthService;
 
     public AdminInventoryController(
             AdminInventoryService inventoryService,
             AdminSerialService serialService,
+            AdminSerialImportService serialImportService,
             DevAdminAuthService devAdminAuthService
     ) {
         this.inventoryService = inventoryService;
         this.serialService = serialService;
+        this.serialImportService = serialImportService;
         this.devAdminAuthService = devAdminAuthService;
     }
 
@@ -199,6 +207,22 @@ public class AdminInventoryController {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         serialService.enableProductTracking(productId, enabled);
+    }
+
+    /**
+     * POST /api/v1/admin/inventory/serials/import
+     * Bulk-insert product serials from a JSON payload.
+     * partialMode=false (default): all-or-nothing transaction.
+     * partialMode=true: skip bad rows, insert valid ones.
+     * Permission: products.update (TODO: migrate to inventory.serial.import when added).
+     */
+    @PostMapping("/serials/import")
+    public SerialImportResponse importSerials(
+            @RequestBody @Valid SerialImportRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return serialImportService.importSerials(req, resolveAdminId());
     }
 
     private UUID resolveAdminId() {

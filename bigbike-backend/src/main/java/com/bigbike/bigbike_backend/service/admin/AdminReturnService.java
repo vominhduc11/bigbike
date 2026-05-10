@@ -19,11 +19,13 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariant
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ReturnItemSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnHistoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.returns.ReturnJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -67,6 +69,8 @@ public class AdminReturnService {
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository stockMovementRepo;
     private final InventoryPolicyService inventoryPolicyService;
+    private final SerialLifecycleService serialLifecycleService;
+    private final ReturnItemSerialJpaRepository risRepo;
     private final OrderNotificationService notificationService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
 
@@ -80,6 +84,8 @@ public class AdminReturnService {
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository stockMovementRepo,
             InventoryPolicyService inventoryPolicyService,
+            SerialLifecycleService serialLifecycleService,
+            ReturnItemSerialJpaRepository risRepo,
             OrderNotificationService notificationService,
             com.bigbike.bigbike_backend.service.payment.RefundService refundService
     ) {
@@ -92,6 +98,8 @@ public class AdminReturnService {
         this.variantRepo = variantRepo;
         this.stockMovementRepo = stockMovementRepo;
         this.inventoryPolicyService = inventoryPolicyService;
+        this.serialLifecycleService = serialLifecycleService;
+        this.risRepo = risRepo;
         this.notificationService = notificationService;
         this.refundService = refundService;
     }
@@ -181,9 +189,15 @@ public class AdminReturnService {
                     req.adminNote(), false, null, null);
         }
 
-        // Restore stock when goods are confirmed received back into warehouse.
-        // COMPLETED = accepted/exchanged, no refund. REFUNDED = money returned, goods also back.
-        // Both transitions physically return items to inventory.
+        // When goods physically arrive: mark serials RETURNED (not IN_STOCK yet — needs INSPECTION).
+        // Legacy (non-serial) items: stock restore happens at COMPLETED/REFUNDED as before.
+        if ("RECEIVED".equals(newStatus)) {
+            serialLifecycleService.receiveReturnForReturn(ret.getId());
+        }
+
+        // Non-serial items: restore stock immediately on COMPLETED/REFUNDED.
+        // Serial-tracked items: stock is only restored after admin sets INSPECTION → IN_STOCK
+        // via PATCH /admin/inventory/serials/{id}/status.
         if ("COMPLETED".equals(newStatus) || "REFUNDED".equals(newStatus)) {
             restoreStockForReturn(ret.getId());
         }
@@ -225,6 +239,8 @@ public class AdminReturnService {
 
         for (ReturnItemEntity ri : returnItems) {
             if (ri.getOrderLineItemId() == null) continue;
+            // Serial-tracked return items: stock restores only after INSPECTION → IN_STOCK via serial API.
+            if (!risRepo.findByReturnItemId(ri.getId()).isEmpty()) continue;
             lineItemRepo.findById(ri.getOrderLineItemId()).ifPresent((OrderLineItemEntity li) -> {
                 if (li.getProductVariantId() != null) {
                     // Variant-level restore

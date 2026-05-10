@@ -33,6 +33,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderSh
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -107,6 +108,7 @@ public class AdminOrderService {
     private final AdminOrderWsService adminOrderWsService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
     private final OrderStockRestoreService orderStockRestoreService;
+    private final SerialLifecycleService serialLifecycleService;
 
     public AdminOrderService(
             OrderJpaRepository orderRepo,
@@ -120,7 +122,8 @@ public class AdminOrderService {
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
             com.bigbike.bigbike_backend.service.payment.RefundService refundService,
-            OrderStockRestoreService orderStockRestoreService
+            OrderStockRestoreService orderStockRestoreService,
+            SerialLifecycleService serialLifecycleService
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
@@ -134,6 +137,7 @@ public class AdminOrderService {
         this.adminOrderWsService = adminOrderWsService;
         this.refundService = refundService;
         this.orderStockRestoreService = orderStockRestoreService;
+        this.serialLifecycleService = serialLifecycleService;
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -251,10 +255,15 @@ public class AdminOrderService {
         }
         orderRepo.save(order);
 
-        // Restore stock when order is cancelled or refunded
-        if ("CANCELLED".equals(newStatus)) {
+        // Serial lifecycle transitions (idempotent; no-op if no serials linked)
+        if ("COMPLETED".equals(newStatus)) {
+            serialLifecycleService.markSoldForOrder(orderId);
+        } else if ("CANCELLED".equals(newStatus)) {
+            // Release serial reservations, then restore non-serial stock
+            serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_CANCELLED");
             orderStockRestoreService.restoreForCancel(orderId);
         } else if ("REFUNDED".equals(newStatus)) {
+            // Refund does not return physical goods — serial stays SOLD until a return is processed
             orderStockRestoreService.restoreForRefund(orderId);
         }
 
