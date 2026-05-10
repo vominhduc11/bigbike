@@ -1,5 +1,6 @@
 # Legacy reference data
 bigbike_vn__2026_04_17/
+uploads/
 
 # Design assets (large binary/zip files, not for git)
 *.zip

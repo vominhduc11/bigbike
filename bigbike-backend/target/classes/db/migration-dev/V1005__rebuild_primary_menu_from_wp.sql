@@ -5,16 +5,18 @@
 -- from the WP nav_menu_item post IDs (legacy_id holds the same value).
 
 delete from menu_items
-where menu_id = '00000000-0000-0000-0000-000000000201';
+where menu_id in (select id from menus where location = 'primary');
 
 insert into menu_items
   (id, menu_id, parent_id, label, url, target_type, target_id,
    sort_order, open_in_new_tab, css_class, status, legacy_id, created_at, updated_at)
-values
+select t.id, m.id, t.parent_id, t.label, t.url, t.target_type, t.target_id,
+       t.sort_order, t.open_in_new_tab, t.css_class, t.status, t.legacy_id, now(), now()
+from (values
   -- ── Top level ──────────────────────────────────────────────────────────────
-  ('00000000-0000-0000-0010-000000008135', '00000000-0000-0000-0000-000000000201', null,
-   'Trang chủ', '/', 'CUSTOM', null,
-   1, false, null, 'ACTIVE', 8135, now(), now()),
+  ('00000000-0000-0000-0010-000000008135'::uuid, '00000000-0000-0000-0000-000000000201'::uuid, null::uuid,
+   'Trang chủ', '/', 'CUSTOM'::varchar, null::uuid,
+   1, false, null::varchar, 'ACTIVE'::varchar, 8135::bigint, now(), now()),
   ('00000000-0000-0000-0010-000000007936', '00000000-0000-0000-0000-000000000201', null,
    'Tất cả sản phẩm', '/san-pham/', 'CUSTOM', null,
    2, false, null, 'ACTIVE', 7936, now(), now()),
@@ -166,7 +168,10 @@ values
    34, false, null, 'ACTIVE', 7942, now(), now()),
   ('00000000-0000-0000-0010-000000007943', '00000000-0000-0000-0000-000000000201', null,
    'Liên hệ', '/lien-he/', 'CUSTOM', null,
-   35, false, null, 'ACTIVE', 7943, now(), now());
+   35, false, null, 'ACTIVE', 7943, now(), now())
+) as t(id, old_menu_id, parent_id, label, url, target_type, target_id,
+       sort_order, open_in_new_tab, css_class, status, legacy_id, ts1, ts2)
+cross join (select id from menus where location = 'primary') as m;
 
 -- Drop the legacy "main-menu" location that was imported earlier with empty labels.
 -- It is INACTIVE so not publicly visible, but is redundant alongside the rebuilt
