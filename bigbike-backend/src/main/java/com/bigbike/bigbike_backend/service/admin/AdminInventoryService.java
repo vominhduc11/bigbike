@@ -183,18 +183,18 @@ public class AdminInventoryService {
                     "Cannot adjust stock for a variant belonging to a trashed product.");
         }
 
+        // Guard: system-wide serial-only mode — checked first; higher-level policy than per-variant flag
+        if (inventoryPolicyService.isSerialInventoryOnlyEnabled()) {
+            throw ValidationException.fromField("variantId", "SERIAL_INVENTORY_ONLY",
+                    "Manual quantity adjustment is disabled. Use serial import/status transition. " +
+                    "(serial_inventory_only=true in site_settings)");
+        }
         // Guard: serial-tracked variants — quantity is driven by serial lifecycle, not manual input
         if (variant.isTrackSerials()) {
             throw ValidationException.fromField("variantId", "SERIAL_TRACKED",
                     "This variant uses serial-based inventory. Use the serial management API instead " +
                     "(POST /inventory/variants/{id}/serials to add stock, " +
                     "PATCH /inventory/serials/{id}/status to change serial state).");
-        }
-        // Guard: system-wide serial-only mode — block manual adjustments globally
-        if (inventoryPolicyService.isSerialInventoryOnlyEnabled()) {
-            throw ValidationException.fromField("variantId", "SERIAL_INVENTORY_ONLY",
-                    "Manual quantity adjustment is disabled. Use serial import/status transition. " +
-                    "(serial_inventory_only=true in site_settings)");
         }
 
         if (req.quantityDelta() == null) {

@@ -98,7 +98,7 @@ public class ProductEntity {
     @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
-    @Column(name = "track_serials", nullable = false)
+    @Column(name = "track_serials", nullable = false, columnDefinition = "boolean not null default false")
     private boolean trackSerials;
 
     @Column(name = "manage_stock")

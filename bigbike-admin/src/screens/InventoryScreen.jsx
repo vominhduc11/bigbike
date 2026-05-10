@@ -10,6 +10,7 @@ import {
   fetchAllMovements,
   fetchInventory,
   fetchInventorySummary,
+  fetchSerialInventoryOnly,
   downloadInventoryCsv,
   fetchVariantSerials,
   fetchProductSerials,
@@ -1321,9 +1322,11 @@ export function InventoryScreen({ canUpdate = false }) {
   const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
   const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
   const [csvDownloading, setCsvDownloading] = useState(false)
+  const [serialOnlyMode, setSerialOnlyMode] = useState(false)
 
   useEffect(() => {
     fetchInventorySummary().then(setSummary)
+    fetchSerialInventoryOnly().then(setSerialOnlyMode)
   }, [])
 
   useEffect(() => {
@@ -1358,6 +1361,10 @@ export function InventoryScreen({ canUpdate = false }) {
   }
 
   function openStockIn(item = null) {
+    if (serialOnlyMode || item?.trackSerials) {
+      openSerialManage(item)
+      return
+    }
     setStockInTarget(item)
     setIsStockInOpen(true)
   }
@@ -1424,7 +1431,7 @@ export function InventoryScreen({ canUpdate = false }) {
     },
     canUpdate ? {
       key: 'actions', label: t('common.actions'), skeletonWidth: '40%',
-      render: (item) => item.trackSerials ? (
+      render: (item) => (item.trackSerials || serialOnlyMode) ? (
         <button
           type="button"
           className="btn btn-secondary"
@@ -1444,7 +1451,7 @@ export function InventoryScreen({ canUpdate = false }) {
         </button>
       ),
     } : null,
-  ].filter(Boolean), [t, canUpdate])
+  ].filter(Boolean), [t, canUpdate, serialOnlyMode])
 
   return (
     <section className="screen">
@@ -1455,7 +1462,7 @@ export function InventoryScreen({ canUpdate = false }) {
           <p>{t('inventory.description')}</p>
         </div>
         <div className="screen-actions">
-          {canUpdate && (
+          {canUpdate && !serialOnlyMode && (
             <button type="button" className="btn btn-primary" onClick={() => openStockIn()}>
               {t('inventory.stockIn.btnLabel')}
             </button>
@@ -1477,6 +1484,19 @@ export function InventoryScreen({ canUpdate = false }) {
       </header>
 
       <SummaryBanner summary={summary} />
+
+      {serialOnlyMode && (
+        <div role="status" style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: 8, padding: '10px 16px', marginBottom: 12,
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
+          <span style={{ color: '#1d4ed8', fontWeight: 600, fontSize: '0.875rem' }}>
+            Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.
+          </span>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--admin-color-border)', marginBottom: 20 }}>
         {[['stock', 'Tồn kho'], ['movements', 'Lịch sử biến động']].map(([id, label]) => (
@@ -1543,7 +1563,7 @@ export function InventoryScreen({ canUpdate = false }) {
         </>
       )}
 
-      {isStockInOpen && (
+      {isStockInOpen && !serialOnlyMode && (
         <StockInModal
           item={stockInTarget}
           onSuccess={handleStockInSuccess}

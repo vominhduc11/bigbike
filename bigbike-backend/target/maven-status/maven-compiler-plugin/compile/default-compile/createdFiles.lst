@@ -9,6 +9,7 @@ com\bigbike\bigbike_backend\migration\wordpress\normalizer\ProductNormalizationS
 com\bigbike\bigbike_backend\api\admin\dto\report\AdminAnalyticsResponse.class
 com\bigbike\bigbike_backend\api\checkout\CheckoutController.class
 com\bigbike\bigbike_backend\migration\wordpress\redirect\FgRedirectAnalyzer.class
+com\bigbike\bigbike_backend\service\admin\AdminSerialService$1.class
 com\bigbike\bigbike_backend\api\public_\dto\PublicHomeVideoResponse.class
 com\bigbike\bigbike_backend\service\auth\PermissionCatalog.class
 com\bigbike\bigbike_backend\service\search\GlobalSearchService.class

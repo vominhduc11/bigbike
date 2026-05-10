@@ -59,7 +59,7 @@ public class ProductVariantEntity {
     @Column(name = "quantity_on_hand", nullable = false)
     private int quantityOnHand;
 
-    @Column(name = "track_serials", nullable = false)
+    @Column(name = "track_serials", nullable = false, columnDefinition = "boolean not null default false")
     private boolean trackSerials;
 
     @Column(nullable = false)

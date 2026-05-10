@@ -1236,6 +1236,18 @@ export async function batchUpdateSettings(updates) {
   return { items }
 }
 
+// Returns true when the backend serial_inventory_only gate is enabled.
+// Fails open (returns false) so the UI is never blocked by a network error.
+export async function fetchSerialInventoryOnly() {
+  if (FORCE_MOCK) return false
+  try {
+    const payload = await requestJson('/admin/settings/serial_inventory_only')
+    return (payload?.data?.settingValue ?? payload?.data?.item?.settingValue) === 'true'
+  } catch {
+    return false
+  }
+}
+
 // â”€â”€ Coupons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchCoupons(query) {
