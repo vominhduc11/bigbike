@@ -1,21 +1,27 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.AddSerialsRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminSerialResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdjustStockRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.UpdateSerialStatusRequest;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminInventoryService;
+import com.bigbike.bigbike_backend.service.admin.AdminSerialService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,13 +36,16 @@ public class AdminInventoryController {
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminInventoryService inventoryService;
+    private final AdminSerialService serialService;
     private final DevAdminAuthService devAdminAuthService;
 
     public AdminInventoryController(
             AdminInventoryService inventoryService,
+            AdminSerialService serialService,
             DevAdminAuthService devAdminAuthService
     ) {
         this.inventoryService = inventoryService;
+        this.serialService = serialService;
         this.devAdminAuthService = devAdminAuthService;
     }
 
@@ -105,6 +114,91 @@ public class AdminInventoryController {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return inventoryService.adjustProductStock(productId, resolveAdminId(), req);
+    }
+
+    // ── Serial management ─────────────────────────────────────────────────────
+
+    @GetMapping("/variants/{variantId}/serials")
+    public PageResult<AdminSerialResponse> listVariantSerials(
+            @PathVariable String variantId,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return serialService.listForVariant(variantId, status, page, size);
+    }
+
+    @GetMapping("/products/{productId}/serials")
+    public PageResult<AdminSerialResponse> listProductSerials(
+            @PathVariable String productId,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return serialService.listForProduct(productId, status, page, size);
+    }
+
+    @GetMapping("/serials/{serialId}")
+    public AdminSerialResponse getSerial(
+            @PathVariable UUID serialId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return serialService.getSerial(serialId);
+    }
+
+    @PostMapping("/variants/{variantId}/serials")
+    public List<AdminSerialResponse> addVariantSerials(
+            @PathVariable String variantId,
+            @Valid @RequestBody AddSerialsRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return serialService.addToVariant(variantId, resolveAdminId(), req);
+    }
+
+    @PostMapping("/products/{productId}/serials")
+    public List<AdminSerialResponse> addProductSerials(
+            @PathVariable String productId,
+            @Valid @RequestBody AddSerialsRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return serialService.addToProduct(productId, resolveAdminId(), req);
+    }
+
+    @PatchMapping("/serials/{serialId}/status")
+    public AdminSerialResponse updateSerialStatus(
+            @PathVariable UUID serialId,
+            @Valid @RequestBody UpdateSerialStatusRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return serialService.updateStatus(serialId, resolveAdminId(), req);
+    }
+
+    @PostMapping("/variants/{variantId}/enable-tracking")
+    public void enableVariantTracking(
+            @PathVariable String variantId,
+            @RequestParam(defaultValue = "true") boolean enabled,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        serialService.enableVariantTracking(variantId, enabled);
+    }
+
+    @PostMapping("/products/{productId}/enable-tracking")
+    public void enableProductTracking(
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "true") boolean enabled,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        serialService.enableProductTracking(productId, enabled);
     }
 
     private UUID resolveAdminId() {

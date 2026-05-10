@@ -1862,7 +1862,90 @@ function normalizeStockItem(input) {
     stockState: s.stockState || 'UNKNOWN',
     quantityOnHand: Number(s.quantityOnHand) || 0,
     retailPrice: Number(s.retailPrice) || 0,
+    trackSerials: Boolean(s.trackSerials),
   }
+}
+
+function normalizeSerial(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: s.id || '',
+    productId: s.productId || '',
+    productName: s.productName || '',
+    variantId: s.variantId || null,
+    variantName: s.variantName || null,
+    chassisNumber: s.chassisNumber || null,
+    engineNumber: s.engineNumber || null,
+    status: s.status || 'IN_STOCK',
+    reservedUntil: s.reservedUntil || null,
+    orderLineItemId: s.orderLineItemId || null,
+    returnItemId: s.returnItemId || null,
+    receivedAt: s.receivedAt || null,
+    soldAt: s.soldAt || null,
+    returnedAt: s.returnedAt || null,
+    note: s.note || null,
+    createdAt: s.createdAt || null,
+    updatedAt: s.updatedAt || null,
+  }
+}
+
+export async function fetchVariantSerials(variantId, query = {}) {
+  const payload = await requestJson(`/admin/inventory/variants/${variantId}/serials`, {
+    query: { page: query.page || 1, size: query.pageSize || 20, status: query.status || undefined },
+  })
+  return parseListPayload(payload, normalizeSerial, Number(query.pageSize) || 20)
+}
+
+export async function fetchProductSerials(productId, query = {}) {
+  const payload = await requestJson(`/admin/inventory/products/${productId}/serials`, {
+    query: { page: query.page || 1, size: query.pageSize || 20, status: query.status || undefined },
+  })
+  return parseListPayload(payload, normalizeSerial, Number(query.pageSize) || 20)
+}
+
+export async function addVariantSerials(variantId, serials, note) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/inventory/variants/${variantId}/serials`, {
+    method: 'POST',
+    body: { serials, note: note || undefined },
+  })
+  const items = Array.isArray(payload?.data) ? payload.data.map(normalizeSerial)
+              : Array.isArray(payload) ? payload.map(normalizeSerial) : []
+  return { items }
+}
+
+export async function addProductSerials(productId, serials, note) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/inventory/products/${productId}/serials`, {
+    method: 'POST',
+    body: { serials, note: note || undefined },
+  })
+  const items = Array.isArray(payload?.data) ? payload.data.map(normalizeSerial)
+              : Array.isArray(payload) ? payload.map(normalizeSerial) : []
+  return { items }
+}
+
+export async function updateSerialStatus(serialId, status, note) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/inventory/serials/${serialId}/status`, {
+    method: 'PATCH',
+    body: { status, note: note || undefined },
+  })
+  return { item: normalizeSerial(payload?.data || payload || {}) }
+}
+
+export async function enableVariantSerialTracking(variantId, enabled = true) {
+  assertMutationEnabled()
+  await requestJson(`/admin/inventory/variants/${variantId}/enable-tracking?enabled=${enabled}`, {
+    method: 'POST',
+  })
+}
+
+export async function enableProductSerialTracking(productId, enabled = true) {
+  assertMutationEnabled()
+  await requestJson(`/admin/inventory/products/${productId}/enable-tracking?enabled=${enabled}`, {
+    method: 'POST',
+  })
 }
 
 export async function adjustStock(variantId, quantityDelta, movementType, note, serialNumbers) {

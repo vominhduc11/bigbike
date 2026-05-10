@@ -183,6 +183,14 @@ public class AdminInventoryService {
                     "Cannot adjust stock for a variant belonging to a trashed product.");
         }
 
+        // Guard: serial-tracked variants — quantity is driven by serial lifecycle, not manual input
+        if (variant.isTrackSerials()) {
+            throw ValidationException.fromField("variantId", "SERIAL_TRACKED",
+                    "This variant uses serial-based inventory. Use the serial management API instead " +
+                    "(POST /inventory/variants/{id}/serials to add stock, " +
+                    "PATCH /inventory/serials/{id}/status to change serial state).");
+        }
+
         if (req.quantityDelta() == null) {
             throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
         }
@@ -287,6 +295,12 @@ public class AdminInventoryService {
                     "Cannot adjust stock for a trashed product.");
         }
 
+        if (product.isTrackSerials()) {
+            throw ValidationException.fromField("productId", "SERIAL_TRACKED",
+                    "This product uses serial-based inventory. Use the serial management API instead " +
+                    "(POST /inventory/products/{id}/serials to add stock).");
+        }
+
         if (req.quantityDelta() == null) {
             throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
         }
@@ -298,8 +312,7 @@ public class AdminInventoryService {
                     "movementType must be one of: IN, OUT, ADJUSTMENT, RETURN.");
         }
 
-        // Serials are not supported for product-level (no-variant) adjustments.
-        // IN type: skip serial requirement since product-level stock doesn't track serials.
+        // Serials not supported for product-level non-tracking adjustments.
 
         int before = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
         int after = before + req.quantityDelta();
@@ -384,12 +397,13 @@ public class AdminInventoryService {
                 p.getName(),
                 p.getSku(),
                 img,
-                null,          // variantId — null for product-level
-                null,          // variantName — null for product-level
-                null,          // variantSku — null for product-level
+                null,
+                null,
+                null,
                 p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
                 p.getStockQuantity() != null ? p.getStockQuantity() : 0,
-                p.getRetailPrice()
+                p.getRetailPrice(),
+                p.isTrackSerials()
         );
     }
 
@@ -404,7 +418,8 @@ public class AdminInventoryService {
                 v.getSku(),
                 v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
                 v.getQuantityOnHand(),
-                v.getRetailPrice()
+                v.getRetailPrice(),
+                v.isTrackSerials()
         );
     }
 

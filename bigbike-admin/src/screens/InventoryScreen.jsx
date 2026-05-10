@@ -11,6 +11,13 @@ import {
   fetchInventory,
   fetchInventorySummary,
   downloadInventoryCsv,
+  fetchVariantSerials,
+  fetchProductSerials,
+  addVariantSerials,
+  addProductSerials,
+  updateSerialStatus,
+  enableVariantSerialTracking,
+  enableProductSerialTracking,
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
@@ -810,6 +817,391 @@ function StockInModal({ item, onSuccess, onClose }) {
   )
 }
 
+// ── Serial management modal ───────────────────────────────────────────────────
+
+const SERIAL_STATUS_LABELS = {
+  IN_STOCK: 'Có sẵn',
+  RESERVED: 'Đang giữ',
+  SOLD: 'Đã bán',
+  DAMAGED: 'Hư hỏng',
+  INSPECTION: 'Kiểm tra',
+  RETURNED: 'Đã trả lại',
+  SCRAPPED: 'Thanh lý',
+}
+
+const SERIAL_STATUS_COLORS = {
+  IN_STOCK: '#16a34a',
+  RESERVED: '#d97706',
+  SOLD: '#6b7280',
+  DAMAGED: '#dc2626',
+  INSPECTION: '#7c3aed',
+  RETURNED: '#0ea5e9',
+  SCRAPPED: '#9ca3af',
+}
+
+const ALLOWED_TRANSITIONS = {
+  IN_STOCK:   ['DAMAGED', 'INSPECTION', 'SCRAPPED'],
+  RESERVED:   ['IN_STOCK'],
+  SOLD:       ['RETURNED'],
+  RETURNED:   ['INSPECTION'],
+  INSPECTION: ['IN_STOCK', 'DAMAGED', 'SCRAPPED'],
+  DAMAGED:    ['SCRAPPED'],
+  SCRAPPED:   [],
+}
+
+function SerialStatusBadge({ status }) {
+  const label = SERIAL_STATUS_LABELS[status] || status
+  const color = SERIAL_STATUS_COLORS[status] || '#6b7280'
+  return <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{label}</span>
+}
+
+function AddSerialsPanel({ item, onSuccess }) {
+  const isVariant = Boolean(item?.variantId)
+  const [rows, setRows] = useState([{ chassis: '', engine: '' }])
+  const [note, setNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  function addRow() { setRows((r) => [...r, { chassis: '', engine: '' }]) }
+  function removeRow(i) { setRows((r) => r.filter((_, idx) => idx !== i)) }
+  function updateRow(i, field, val) {
+    setRows((r) => r.map((row, idx) => idx === i ? { ...row, [field]: val } : row))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const serials = rows
+      .map((r) => ({ chassisNumber: r.chassis.trim() || undefined, engineNumber: r.engine.trim() || undefined }))
+      .filter((r) => r.chassisNumber || r.engineNumber)
+
+    if (serials.length === 0) {
+      setError('Vui lòng nhập ít nhất một số khung hoặc số máy.')
+      return
+    }
+    setError('')
+    setSubmitting(true)
+    try {
+      if (isVariant) {
+        await addVariantSerials(item.variantId, serials, note.trim() || undefined)
+      } else {
+        await addProductSerials(item.productId, serials, note.trim() || undefined)
+      }
+      toast.success(`Đã thêm ${serials.length} serial vào kho.`)
+      setRows([{ chassis: '', engine: '' }])
+      setNote('')
+      onSuccess()
+    } catch (err) {
+      setError(err.message || 'Lỗi khi thêm serial.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)', marginBottom: 12 }}>
+        Mỗi dòng là một xe: nhập số khung và/hoặc số máy.
+      </p>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 12 }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>#</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Số khung</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Số máy</th>
+            <th style={{ width: 32 }} />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i}>
+              <td style={{ padding: '4px 6px', color: 'var(--admin-color-text-muted)' }}>{i + 1}</td>
+              <td style={{ padding: '4px 6px' }}>
+                <input
+                  className="control-input"
+                  style={{ width: '100%' }}
+                  placeholder="VD: RLHND9181NY..."
+                  value={row.chassis}
+                  onChange={(e) => updateRow(i, 'chassis', e.target.value)}
+                  disabled={submitting}
+                />
+              </td>
+              <td style={{ padding: '4px 6px' }}>
+                <input
+                  className="control-input"
+                  style={{ width: '100%' }}
+                  placeholder="VD: ND9E1-..."
+                  value={row.engine}
+                  onChange={(e) => updateRow(i, 'engine', e.target.value)}
+                  disabled={submitting}
+                />
+              </td>
+              <td style={{ padding: '4px 6px' }}>
+                {rows.length > 1 && (
+                  <button type="button" className="btn-icon btn-secondary-ghost"
+                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">
+                    ✕
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button type="button" className="btn btn-secondary" style={{ marginBottom: 12 }}
+        onClick={addRow} disabled={submitting}>
+        + Thêm dòng
+      </button>
+      <div className="form-group">
+        <label className="form-label" htmlFor="serial-note">Ghi chú (tuỳ chọn)</label>
+        <input id="serial-note" className="control-input" style={{ width: '100%' }}
+          value={note} onChange={(e) => setNote(e.target.value)} disabled={submitting} />
+      </div>
+      {error && <p style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 8 }}>{error}</p>}
+      <button type="submit" className="btn btn-primary" disabled={submitting} style={{ marginTop: 8 }}>
+        {submitting ? 'Đang lưu…' : `Nhập ${rows.filter((r) => r.chassis.trim() || r.engine.trim()).length || rows.length} serial`}
+      </button>
+    </form>
+  )
+}
+
+function SerialListPanel({ item, refreshKey }) {
+  const isVariant = Boolean(item?.variantId)
+  const [query, setQuery] = useState({ page: 1, pageSize: 20, status: '' })
+  const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
+  const [statusChangeId, setStatusChangeId] = useState(null)
+  const [statusChangeValue, setStatusChangeValue] = useState('')
+  const [statusNote, setStatusNote] = useState('')
+  const [changing, setChanging] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setState((s) => ({ ...s, status: 'loading' }))
+    const fetch = isVariant
+      ? fetchVariantSerials(item.variantId, query)
+      : fetchProductSerials(item.productId, query)
+    fetch.then((data) => {
+      if (!active) return
+      setState({ status: 'success', items: data.items || [], pagination: data.pagination || null })
+    }).catch((err) => {
+      if (!active) return
+      setState({ status: 'error', items: [], pagination: null, error: err.message })
+    })
+    return () => { active = false }
+  }, [item, query, refreshKey])
+
+  async function handleStatusChange(serialId) {
+    if (!statusChangeValue) return
+    setChanging(true)
+    try {
+      await updateSerialStatus(serialId, statusChangeValue, statusNote.trim() || undefined)
+      toast.success('Cập nhật trạng thái serial thành công.')
+      setStatusChangeId(null)
+      setStatusChangeValue('')
+      setStatusNote('')
+      setQuery((q) => ({ ...q }))
+    } catch (err) {
+      toast.error(err.message || 'Lỗi cập nhật trạng thái.')
+    } finally {
+      setChanging(false)
+    }
+  }
+
+  if (state.status === 'error') {
+    return <p style={{ color: '#dc2626', fontSize: '0.82rem' }}>Lỗi: {state.error}</p>
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+        <label style={{ fontSize: '0.82rem' }}>
+          Lọc trạng thái:
+          <select className="control-select" style={{ marginLeft: 6 }}
+            value={query.status}
+            onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}>
+            <option value="">Tất cả</option>
+            {Object.keys(SERIAL_STATUS_LABELS).map((s) => (
+              <option key={s} value={s}>{SERIAL_STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {state.status === 'loading' && (
+        <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)' }}>Đang tải…</p>
+      )}
+
+      {state.status === 'success' && state.items.length === 0 && (
+        <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)' }}>
+          Chưa có serial nào{query.status ? ` với trạng thái "${SERIAL_STATUS_LABELS[query.status] || query.status}"` : ''}.
+        </p>
+      )}
+
+      {state.items.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+              {['Số khung', 'Số máy', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
+                <th key={h} style={{ textAlign: 'left', padding: '5px 8px', fontWeight: 600 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {state.items.map((s) => {
+              const isChanging = statusChangeId === s.id
+              const allowedTo = ALLOWED_TRANSITIONS[s.status] || []
+              return (
+                <tr key={s.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.chassisNumber || '—'}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.engineNumber || '—'}</td>
+                  <td style={{ padding: '6px 8px' }}><SerialStatusBadge status={s.status} /></td>
+                  <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
+                    {s.receivedAt ? formatDateTime(s.receivedAt) : '—'}
+                  </td>
+                  <td style={{ padding: '6px 8px' }}>
+                    {allowedTo.length > 0 && !isChanging && (
+                      <button type="button" className="btn btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                        onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
+                        Đổi trạng thái
+                      </button>
+                    )}
+                    {isChanging && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <select className="control-select" value={statusChangeValue}
+                          onChange={(e) => setStatusChangeValue(e.target.value)} disabled={changing}>
+                          <option value="">-- Chọn --</option>
+                          {allowedTo.map((st) => (
+                            <option key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</option>
+                          ))}
+                        </select>
+                        <input className="control-input" placeholder="Ghi chú (tuỳ chọn)"
+                          value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
+                          disabled={changing} style={{ fontSize: '0.78rem' }} />
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button type="button" className="btn btn-primary"
+                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                            onClick={() => handleStatusChange(s.id)}
+                            disabled={changing || !statusChangeValue}>
+                            {changing ? '…' : 'Xác nhận'}
+                          </button>
+                          <button type="button" className="btn btn-secondary"
+                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                            onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
+                            disabled={changing}>
+                            Huỷ
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+
+      {state.pagination && state.pagination.totalPages > 1 && (
+        <PaginationControls pagination={state.pagination}
+          onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
+      )}
+    </>
+  )
+}
+
+function SerialManageModal({ item, onClose }) {
+  const [activeTab, setActiveTab] = useState('list')
+  const [listRefreshKey, setListRefreshKey] = useState(0)
+  const [trackingLoading, setTrackingLoading] = useState(false)
+  const isVariant = Boolean(item?.variantId)
+
+  const title = [item.productName, item.variantName].filter(Boolean).join(' · ')
+
+  async function handleEnableTracking() {
+    setTrackingLoading(true)
+    try {
+      if (isVariant) {
+        await enableVariantSerialTracking(item.variantId, true)
+      } else {
+        await enableProductSerialTracking(item.productId, true)
+      }
+      toast.success('Đã bật quản lý serial cho sản phẩm này.')
+      onClose()
+    } catch (err) {
+      toast.error(err.message || 'Lỗi bật quản lý serial.')
+    } finally {
+      setTrackingLoading(false)
+    }
+  }
+
+  if (!item.trackSerials) {
+    return (
+      <div className="modal-overlay" role="dialog" aria-modal="true">
+        <div className="modal-box">
+          <header className="modal-header">
+            <h2 className="modal-title">Bật quản lý serial</h2>
+            <button type="button" className="btn-icon btn-secondary-ghost"
+              onClick={onClose} aria-label="Đóng">✕</button>
+          </header>
+          <div className="modal-body">
+            <p style={{ marginBottom: 12 }}>
+              <strong>{title}</strong> hiện dùng quản lý tồn kho thủ công (số lượng).
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: 16 }}>
+              Bật quản lý serial sẽ chuyển sang theo dõi từng chiếc xe theo số khung / số máy.
+              Tồn kho sẽ tự động tính từ số serial đang trạng thái "Có sẵn".
+            </p>
+            <button type="button" className="btn btn-primary"
+              onClick={handleEnableTracking} disabled={trackingLoading}>
+              {trackingLoading ? 'Đang bật…' : 'Bật quản lý serial'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true">
+      <div className="modal-box modal-box--wide">
+        <header className="modal-header">
+          <h2 className="modal-title">Quản lý serial — {title}</h2>
+          <button type="button" className="btn-icon btn-secondary-ghost"
+            onClick={onClose} aria-label="Đóng">✕</button>
+        </header>
+
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--admin-color-border)', padding: '0 24px' }}>
+          {[['list', 'Danh sách serial'], ['add', 'Thêm serial mới']].map(([id, label]) => (
+            <button key={id} type="button"
+              style={{
+                background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
+                fontWeight: activeTab === id ? 700 : 400,
+                borderBottom: activeTab === id ? '2px solid var(--admin-color-primary)' : '2px solid transparent',
+                marginBottom: -1,
+                color: activeTab === id ? 'var(--admin-color-primary)' : 'var(--admin-color-text-muted)',
+              }}
+              onClick={() => setActiveTab(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="modal-body">
+          {activeTab === 'list' && (
+            <SerialListPanel item={item} refreshKey={listRefreshKey} />
+          )}
+          {activeTab === 'add' && (
+            <AddSerialsPanel
+              item={item}
+              onSuccess={() => { setActiveTab('list'); setListRefreshKey((k) => k + 1) }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── All-movements tab ─────────────────────────────────────────────────────────
 
 const INITIAL_MV_QUERY = { page: 1, pageSize: 20, movementType: '', referenceType: '' }
@@ -924,6 +1316,8 @@ export function InventoryScreen({ canUpdate = false }) {
   const [summary, setSummary] = useState(null)
   const [stockInTarget, setStockInTarget] = useState(null)
   const [isStockInOpen, setIsStockInOpen] = useState(false)
+  const [serialTarget, setSerialTarget] = useState(null)
+  const [isSerialOpen, setIsSerialOpen] = useState(false)
   const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
   const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
   const [csvDownloading, setCsvDownloading] = useState(false)
@@ -973,6 +1367,18 @@ export function InventoryScreen({ canUpdate = false }) {
     setStockInTarget(null)
   }
 
+  function openSerialManage(item) {
+    setSerialTarget(item)
+    setIsSerialOpen(true)
+  }
+
+  function closeSerialManage() {
+    setIsSerialOpen(false)
+    setSerialTarget(null)
+    setInventoryRefreshKey((k) => k + 1)
+    fetchInventorySummary().then(setSummary)
+  }
+
   const columns = useMemo(() => [
     {
       key: 'product', label: t('inventory.colProduct'), skeletonWidth: '80%',
@@ -1005,11 +1411,29 @@ export function InventoryScreen({ canUpdate = false }) {
     },
     {
       key: 'quantityOnHand', label: t('inventory.colQty'), align: 'right', skeletonWidth: '30%',
-      render: (item) => <strong style={{ fontSize: '1rem' }}>{item.quantityOnHand}</strong>,
+      render: (item) => (
+        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+          <strong style={{ fontSize: '1rem' }}>{item.quantityOnHand}</strong>
+          {item.trackSerials && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--admin-color-primary)', fontWeight: 600 }}>
+              Serial
+            </span>
+          )}
+        </span>
+      ),
     },
     canUpdate ? {
       key: 'actions', label: t('common.actions'), skeletonWidth: '40%',
-      render: (item) => (
+      render: (item) => item.trackSerials ? (
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ fontSize: '0.8rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+          onClick={() => openSerialManage(item)}
+        >
+          Quản lý serial
+        </button>
+      ) : (
         <button
           type="button"
           className="btn btn-secondary"
@@ -1124,6 +1548,13 @@ export function InventoryScreen({ canUpdate = false }) {
           item={stockInTarget}
           onSuccess={handleStockInSuccess}
           onClose={closeStockIn}
+        />
+      )}
+
+      {isSerialOpen && serialTarget && (
+        <SerialManageModal
+          item={serialTarget}
+          onClose={closeSerialManage}
         />
       )}
     </section>

@@ -12,7 +12,8 @@ public record AdminStockItemResponse(
         String variantSku,
         String stockState,
         int quantityOnHand,
-        BigDecimal retailPrice
+        BigDecimal retailPrice,
+        boolean trackSerials
 ) {
     public record ImageRef(
             String id,

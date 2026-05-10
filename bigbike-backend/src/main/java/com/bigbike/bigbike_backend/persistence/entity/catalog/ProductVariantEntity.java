@@ -59,6 +59,9 @@ public class ProductVariantEntity {
     @Column(name = "quantity_on_hand", nullable = false)
     private int quantityOnHand;
 
+    @Column(name = "track_serials", nullable = false)
+    private boolean trackSerials;
+
     @Column(nullable = false)
     private boolean isAvailable;
 
@@ -197,6 +200,14 @@ public class ProductVariantEntity {
 
     public void setQuantityOnHand(int quantityOnHand) {
         this.quantityOnHand = quantityOnHand;
+    }
+
+    public boolean isTrackSerials() {
+        return trackSerials;
+    }
+
+    public void setTrackSerials(boolean trackSerials) {
+        this.trackSerials = trackSerials;
     }
 
     public boolean isAvailable() {

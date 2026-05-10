@@ -359,7 +359,7 @@ public class ProductVariationImporter implements DomainImporter {
         if (stockStatus == null) return ProductStockState.IN_STOCK;
         return switch (stockStatus.toLowerCase()) {
             case "outofstock", "out_of_stock" -> ProductStockState.OUT_OF_STOCK;
-            case "onbackorder" -> ProductStockState.PREORDER;
+            case "onbackorder" -> ProductStockState.OUT_OF_STOCK;
             default -> ProductStockState.IN_STOCK;
         };
     }

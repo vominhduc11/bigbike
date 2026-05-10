@@ -98,6 +98,9 @@ public class ProductEntity {
     @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
+    @Column(name = "track_serials", nullable = false)
+    private boolean trackSerials;
+
     @Column(name = "manage_stock")
     private Boolean manageStock;
 
@@ -357,6 +360,14 @@ public class ProductEntity {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public boolean isTrackSerials() {
+        return trackSerials;
+    }
+
+    public void setTrackSerials(boolean trackSerials) {
+        this.trackSerials = trackSerials;
     }
 
     public Boolean getManageStock() {

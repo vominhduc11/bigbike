@@ -241,7 +241,7 @@ public class ProductImporter implements DomainImporter {
         if (status == null) return ProductStockState.IN_STOCK;
         return switch (status.toLowerCase()) {
             case "outofstock", "out_of_stock" -> ProductStockState.OUT_OF_STOCK;
-            case "onbackorder" -> ProductStockState.PREORDER;
+            case "onbackorder" -> ProductStockState.OUT_OF_STOCK;
             default -> ProductStockState.IN_STOCK;
         };
     }
