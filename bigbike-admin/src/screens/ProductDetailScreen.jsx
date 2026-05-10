@@ -476,7 +476,7 @@ function toPayload(form) {
       url: v.url.trim(),
       title: v.title.trim() || undefined,
       provider: v.type === 'upload' ? 'upload' : 'youtube',
-      thumbnailUrl: v.thumbnailUrl?.trim() || undefined,
+      thumbnailUrl: v.type === 'upload' ? (v.thumbnailUrl?.trim() || undefined) : undefined,
       sortOrder: i,
     }))
 

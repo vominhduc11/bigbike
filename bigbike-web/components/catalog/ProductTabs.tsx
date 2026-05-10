@@ -95,7 +95,7 @@ export function ProductTabs({ specifications, description, videos, productName }
                 const showHeader = group !== null && group !== prevGroup;
                 return [
                   ...(showHeader ? [
-                    <tr key={`group-${group}`} className="bb-spec-group-header">
+                    <tr key={`group-${idx}`} className="bb-spec-group-header">
                       <th colSpan={2}>{group}</th>
                     </tr>
                   ] : []),
