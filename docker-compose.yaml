@@ -163,6 +163,8 @@ services:
         VITE_ADMIN_API_BASE: /api/v1
         VITE_USE_ADMIN_MOCK: "false"
         VITE_ADMIN_ROLE: ADMIN
+        # Docker-internal MinIO origin for rewriting backend URLs to /media-proxy/.
+        VITE_MINIO_INTERNAL_ORIGIN: http://minio:9000
     container_name: bigbike-admin
     restart: unless-stopped
     depends_on:

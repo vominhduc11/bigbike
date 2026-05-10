@@ -56,14 +56,20 @@ function toInteger(value, fallback = 0) {
   return parsed
 }
 
-// Rewrites Docker-internal MinIO URLs (http://minio:PORT/BUCKET/...) to the
-// nginx-proxied /media-proxy/... path so the browser can load them.
+// Rewrites Docker-internal MinIO URLs to the nginx-proxied /media-proxy/... path
+// so the browser can load them. The internal origin is configured via
+// VITE_MINIO_INTERNAL_ORIGIN (default: http://minio:9000).
+const _MINIO_INTERNAL_ORIGIN = (
+  import.meta.env.VITE_MINIO_INTERNAL_ORIGIN || 'http://minio:9000'
+).replace(/\/$/, '')
+
 function rewriteInternalMinioUrl(url) {
-  const match = url.match(/^http:\/\/minio:[0-9]+\/[^/]+\/(.*)$/)
-  if (match) {
-    return '/media-proxy/' + match[1]
-  }
-  return url
+  const prefix = _MINIO_INTERNAL_ORIGIN + '/'
+  if (!url.startsWith(prefix)) return url
+  const rest = url.slice(prefix.length)
+  const slashIdx = rest.indexOf('/')
+  if (slashIdx === -1) return url
+  return '/media-proxy/' + rest.slice(slashIdx + 1)
 }
 
 export function normalizeImageAsset(input) {

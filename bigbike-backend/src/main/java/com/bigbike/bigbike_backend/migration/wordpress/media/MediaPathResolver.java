@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.migration.wordpress.media;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Path;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class MediaPathResolver {
     /** Builds the public URL for an object in the given bucket. */
     public String publicUrl(String endpoint, String bucket, String key) {
         String base = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
+        URI.create(base); // validates endpoint is a proper URI
         return base + "/" + bucket + "/" + key;
     }
 }

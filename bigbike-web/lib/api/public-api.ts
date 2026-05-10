@@ -143,7 +143,7 @@ async function loadList<T>(
   try {
     const response = await requestJson<ApiListResponse<T>>(endpoint, query, revalidate, tags);
     return {
-      data: response.data,
+      data: response.data ?? [],
       pagination: response.pagination,
       error: null,
     };

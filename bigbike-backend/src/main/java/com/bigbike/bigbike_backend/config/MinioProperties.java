@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Configuration;
 public class MinioProperties {
 
     private String endpoint = "http://localhost:9000";
-    private String accessKey = "minio_admin";
-    private String secretKey = "minio_dev_only";
+    private String accessKey = "";
+    private String secretKey = "";
     private String bucket = "bigbike-media";
 
     public String getEndpoint() { return endpoint; }

@@ -249,7 +249,7 @@ export function ProductGallery({
             <div
               className="wp-pdp-zoom-window"
               style={{
-                backgroundImage: `url(${zoomImageUrl})`,
+                backgroundImage: `url("${zoomImageUrl.replaceAll('"', '%22')}")`,
                 backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
                 backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%`,
               }}

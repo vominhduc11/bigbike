@@ -86,7 +86,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
                     <source media="(max-width: 768px)" srcSet={slide.mobileSrc} />
                   )}
                   <img
-                    src={slide.desktopSrc}
+                    src={slide.desktopSrc || ''}
                     alt={slide.alt}
                     className="wp-slide-img"
                     loading={i === 0 ? "eager" : "lazy"}

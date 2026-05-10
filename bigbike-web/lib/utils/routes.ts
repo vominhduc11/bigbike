@@ -4,6 +4,7 @@ const SITE_ORIGIN =
   "https://bigbike.vn";
 
 if (
+  globalThis.window === undefined &&
   process.env.NODE_ENV === "production" &&
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\b/i.test(SITE_ORIGIN)
 ) {

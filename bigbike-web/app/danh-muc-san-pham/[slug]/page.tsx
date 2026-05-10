@@ -29,7 +29,9 @@ import { toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/route
 import { isValidSlug } from "@/lib/utils/slug";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 
-export const revalidate = 3600;
+// searchParams (filters, pagination, sort) make this page per-request dynamic.
+// Data caching is handled at the fetch level in public-api.ts (revalidate: 3600 + tags).
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const result = await listCategories({ page: 1, size: 100 });

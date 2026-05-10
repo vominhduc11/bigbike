@@ -51,10 +51,10 @@ CREATE INDEX IF NOT EXISTS idx_wr_customer_id    ON warranty_records (customer_i
 CREATE INDEX IF NOT EXISTS idx_wr_status_end     ON warranty_records (status, end_date);
 
 -- ── 4. site_settings seed: serial_inventory_only & warranty_period_months ────
-INSERT INTO site_settings (setting_key, setting_value)
+INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
 VALUES
-    ('serial_inventory_only', 'false'),
-    ('default_warranty_months', '12')
+    (gen_random_uuid(), 'serial_inventory_only',  'false', 'inventory', false, 'Enable serial-number-only inventory mode',    now(), now()),
+    (gen_random_uuid(), 'default_warranty_months', '12',   'inventory', false, 'Default warranty duration in months',          now(), now())
 ON CONFLICT (setting_key) DO NOTHING;
 
 -- ── 5. Deprecation note on product_serials legacy FK columns ──────────────────
