@@ -18,9 +18,13 @@ public class ReceivableOverdueScheduler {
     private static final Logger log = LoggerFactory.getLogger(ReceivableOverdueScheduler.class);
 
     private final ReceivableService receivableService;
+    private final ReceivableNotificationService notificationService;
 
-    public ReceivableOverdueScheduler(ReceivableService receivableService) {
+    public ReceivableOverdueScheduler(
+            ReceivableService receivableService,
+            ReceivableNotificationService notificationService) {
         this.receivableService = receivableService;
+        this.notificationService = notificationService;
     }
 
     @Scheduled(cron = "0 5 0 * * ?")
@@ -31,6 +35,12 @@ public class ReceivableOverdueScheduler {
             log.info("ReceivableOverdueScheduler: flagged {} receivable(s) as OVERDUE.", updated);
         } else {
             log.info("ReceivableOverdueScheduler: no receivables transitioned to OVERDUE.");
+        }
+        // Send daily digest of ALL currently overdue receivables to admin
+        try {
+            notificationService.sendOverdueDigestIfAny();
+        } catch (Exception e) {
+            log.warn("ReceivableOverdueScheduler: failed to send overdue digest: {}", e.getMessage());
         }
     }
 }

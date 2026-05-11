@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Minus, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Minus, Pencil, Plus, Printer, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
@@ -17,6 +17,10 @@ function priceOf(priceObj) {
 function summarizeOptions(options) {
   if (!Array.isArray(options) || options.length === 0) return ''
   return options.map((o) => o.value ?? o.name ?? '').filter(Boolean).join(' / ')
+}
+
+function effectivePrice(item) {
+  return item.overriddenPrice != null ? item.overriddenPrice : item.price
 }
 
 function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit }) {
@@ -109,6 +113,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           productId: item.productId,
           productVariantId: item.variantId,
           quantity: item.qty,
+          ...(item.overriddenPrice != null ? { unitPriceOverride: item.overriddenPrice } : {}),
         })),
       }
       let payload
@@ -375,37 +380,145 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   )
 }
 
-function ReceiptModal({ order, paymentMethod, onClose }) {
+function printReceipt(order, cart) {
+  const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
+  const items = cart || []
+  const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
+  const dateStr = new Date().toLocaleString('vi-VN')
+  const rows = items.map((item) => `
+    <tr>
+      <td>${item.productName}${item.variantName ? `<br><small>${item.variantName}</small>` : ''}</td>
+      <td class="r">${item.qty}</td>
+      <td class="r">${fmt(effectivePrice(item))}</td>
+      <td class="r">${fmt(effectivePrice(item) * item.qty)}</td>
+    </tr>`).join('')
+  const changeRow = order?.changeAmount > 0
+    ? `<tr><td colspan="3">Tiền thừa trả lại</td><td class="r">${fmt(order.changeAmount)}</td></tr>`
+    : ''
+  const w = window.open('', '_blank', 'width=420,height=640')
+  if (!w) return
+  w.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Hóa đơn ${order?.orderNumber || ''}</title>
+<style>
+  body{font-family:monospace;font-size:12px;max-width:320px;margin:0 auto;padding:12px}
+  h2{text-align:center;margin:0 0 2px}
+  .center{text-align:center}
+  .sep{border:none;border-top:1px dashed #000;margin:8px 0}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:3px 2px;vertical-align:top}
+  th{border-bottom:1px solid #000;text-align:left}
+  .r{text-align:right;white-space:nowrap}
+  .total-row td{border-top:1px solid #000;font-weight:bold}
+  small{color:#555}
+  @media print{@page{margin:6mm}}
+</style></head>
+<body>
+<h2>BigBike</h2>
+<p class="center" style="margin:2px 0">Hóa đơn bán hàng tại quầy</p>
+<hr class="sep">
+<p style="margin:2px 0">Số đơn: <strong>${order?.orderNumber || '—'}</strong></p>
+<p style="margin:2px 0">Ngày: ${dateStr}</p>
+<hr class="sep">
+<table>
+  <thead><tr><th>Sản phẩm</th><th class="r">SL</th><th class="r">Đơn giá</th><th class="r">T.tiền</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot>
+    <tr class="total-row"><td colspan="3">Tổng cộng</td><td class="r">${fmt(total)}</td></tr>
+    ${changeRow}
+  </tfoot>
+</table>
+<hr class="sep">
+<p class="center" style="margin-top:12px">Cảm ơn quý khách!</p>
+</body></html>`)
+  w.document.close()
+  w.focus()
+  setTimeout(() => { w.print(); w.close() }, 300)
+}
+
+function ReceiptModal({ order, paymentMethod, cart, onClose }) {
   const { t } = useTranslation()
   const isCreditOrder = paymentMethod === 'CREDIT' || order?.paymentMethod === 'CREDIT'
+  const items = cart || []
+  const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
-      <div className="pos-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="pos-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="pos-modal-close btn btn-secondary btn-icon" onClick={onClose}>
           <X size={16} />
         </button>
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--admin-color-success,#22c55e)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" />
           </svg>
-          <h3 style={{ marginTop: 8 }}>{t('pos.success')}</h3>
-          <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>
+          <h3 style={{ marginTop: 8, marginBottom: 4 }}>{t('pos.success')}</h3>
+          <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem', margin: 0 }}>
             {t('pos.orderNumber')}: <strong>{order?.orderNumber || '—'}</strong>
           </p>
-          {isCreditOrder && (
-            <p style={{ fontSize: '0.85rem', marginTop: 4, color: 'var(--admin-color-warning, #f59e0b)' }}>
-              Công nợ: <strong>{order?.paymentStatus || 'UNPAID'}</strong>
-            </p>
-          )}
-          {!isCreditOrder && order?.changeAmount != null && order.changeAmount > 0 && (
-            <p style={{ fontSize: '0.85rem', marginTop: 4 }}>
-              Tiền thừa: <strong style={{ color: 'var(--admin-color-success, #22c55e)' }}>{formatCurrencyVnd(order.changeAmount)}</strong>
-            </p>
-          )}
         </div>
-        <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={onClose}>
-          {t('pos.newSale')}
-        </button>
+
+        {items.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--admin-color-border-subtle)' }}>
+                <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Sản phẩm</th>
+                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>SL</th>
+                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>Đơn giá</th>
+                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>T.tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.variantId}>
+                  <td style={{ padding: '4px 6px' }}>
+                    <div>{item.productName}</div>
+                    {item.variantName && <div style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.variantName}</div>}
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '4px 6px' }}>{item.qty}</td>
+                  <td style={{ textAlign: 'right', padding: '4px 6px', whiteSpace: 'nowrap' }}>
+                    {formatCurrencyVnd(effectivePrice(item))}
+                    {item.overriddenPrice != null && (
+                      <div style={{ fontSize: '0.7rem', color: 'var(--admin-color-text-muted)', textDecoration: 'line-through' }}>
+                        {formatCurrencyVnd(item.price)}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '4px 6px', whiteSpace: 'nowrap' }}>{formatCurrencyVnd(effectivePrice(item) * item.qty)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '1px solid var(--admin-color-border-subtle)', fontWeight: 700 }}>
+                <td colSpan={3} style={{ padding: '6px 6px 2px', textAlign: 'right' }}>Tổng cộng</td>
+                <td style={{ padding: '6px 6px 2px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatCurrencyVnd(total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+
+        {isCreditOrder && (
+          <p style={{ fontSize: '0.85rem', marginBottom: 8, color: 'var(--admin-color-warning, #f59e0b)', textAlign: 'center' }}>
+            Công nợ: <strong>{order?.paymentStatus || 'UNPAID'}</strong>
+          </p>
+        )}
+        {!isCreditOrder && order?.changeAmount != null && order.changeAmount > 0 && (
+          <p style={{ fontSize: '0.85rem', marginBottom: 8, textAlign: 'center' }}>
+            Tiền thừa: <strong style={{ color: 'var(--admin-color-success, #22c55e)' }}>{formatCurrencyVnd(order.changeAmount)}</strong>
+          </p>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={() => printReceipt(order, cart)}
+          >
+            <Printer size={14} /> In hóa đơn
+          </button>
+          <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={onClose}>
+            {t('pos.newSale')}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -414,7 +527,7 @@ function ReceiptModal({ order, paymentMethod, onClose }) {
 const POS_CART_KEY = 'pos_cart'
 const POS_CART_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours
 
-export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
+export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverridePrice }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
   const dq = useDebounce(q, 200)
@@ -433,6 +546,12 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
   })
   const [modal, setModal] = useState(null) // null | 'payment' | 'receipt'
   const [lastOrder, setLastOrder] = useState(null)
+
+  // Price override editing state
+  const [editingPriceId, setEditingPriceId] = useState(null)
+  const [priceInput, setPriceInput] = useState('')
+  const priceInputRef = useRef(null)
+
   // Persist cart to localStorage with expiry metadata
   useEffect(() => {
     try { localStorage.setItem(POS_CART_KEY, JSON.stringify({ items: cart, savedAt: Date.now(), userId: userId ?? null })) } catch { /* ignore */ }
@@ -447,6 +566,10 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
       .finally(() => { if (!cancelled) setSearching(false) })
     return () => { cancelled = true }
   }, [dq])
+
+  useEffect(() => {
+    if (editingPriceId && priceInputRef.current) priceInputRef.current.focus()
+  }, [editingPriceId])
 
   function handleSearchChange(value) {
     setQ(value)
@@ -472,6 +595,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
         variantName: summarizeOptions(variant.options),
         sku: variant.sku,
         price: unitPrice,
+        overriddenPrice: null,
         thumbnail: product.image?.url ?? null,
         qty: 1,
         stock: variant.stockQuantity ?? 999,
@@ -495,7 +619,26 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
     setCart((prev) => prev.filter((c) => c.variantId !== cartKey))
   }
 
-  const total = cart.reduce((s, c) => s + c.price * c.qty, 0)
+  function startEditPrice(item) {
+    setEditingPriceId(item.variantId)
+    setPriceInput(String(item.overriddenPrice != null ? item.overriddenPrice : item.price))
+  }
+
+  function commitEditPrice(variantId) {
+    const parsed = Number(priceInput)
+    if (!isNaN(parsed) && parsed >= 0) {
+      setCart((prev) => prev.map((c) =>
+        c.variantId === variantId ? { ...c, overriddenPrice: parsed === c.price ? null : parsed } : c
+      ))
+    }
+    setEditingPriceId(null)
+  }
+
+  function cancelEditPrice() {
+    setEditingPriceId(null)
+  }
+
+  const total = cart.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
 
   return (
     <section className="screen pos-screen">
@@ -586,7 +729,46 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
                     {(item.variantName || item.sku) && (
                       <span className="pos-cart-item-sku">{item.variantName || item.sku}</span>
                     )}
-                    <span className="pos-cart-item-price">{formatCurrencyVnd(item.price)}</span>
+                    {editingPriceId === item.variantId ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                        <input
+                          ref={priceInputRef}
+                          type="number"
+                          min={0}
+                          className="control-input"
+                          style={{ width: 110, padding: '2px 6px', fontSize: '0.8rem' }}
+                          value={priceInput}
+                          onChange={(e) => setPriceInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitEditPrice(item.variantId)
+                            if (e.key === 'Escape') cancelEditPrice()
+                          }}
+                          onBlur={() => commitEditPrice(item.variantId)}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="pos-cart-item-price">
+                          {formatCurrencyVnd(effectivePrice(item))}
+                          {item.overriddenPrice != null && (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--admin-color-text-muted)', textDecoration: 'line-through', marginLeft: 4 }}>
+                              {formatCurrencyVnd(item.price)}
+                            </span>
+                          )}
+                        </span>
+                        {canOverridePrice && (
+                          <button
+                            type="button"
+                            className="btn btn-icon btn-sm"
+                            title="Sửa giá"
+                            style={{ opacity: 0.6 }}
+                            onClick={() => startEditPrice(item)}
+                          >
+                            <Pencil size={11} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="pos-cart-item-qty">
                     <button type="button" className="btn btn-icon btn-sm" onClick={() => updateQty(item.variantId, -1)}><Minus size={12} /></button>
@@ -594,13 +776,28 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
                     <button type="button" className="btn btn-icon btn-sm" onClick={() => updateQty(item.variantId, 1)}><Plus size={12} /></button>
                     <button type="button" className="btn btn-icon btn-sm btn-danger-ghost" onClick={() => removeFromCart(item.variantId)}><Trash2 size={12} /></button>
                   </div>
-                  <span className="pos-cart-item-subtotal">{formatCurrencyVnd(item.price * item.qty)}</span>
+                  <span className="pos-cart-item-subtotal">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</span>
                 </div>
               ))}
             </div>
           )}
 
           <div className="pos-cart-footer">
+            {cart.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ marginBottom: 8, alignSelf: 'flex-start' }}
+                onClick={() => {
+                  if (window.confirm('Xoá toàn bộ giỏ hàng?')) {
+                    setCart([])
+                    try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
+                  }
+                }}
+              >
+                <Trash2 size={13} style={{ marginRight: 4 }} /> Xoá giỏ hàng
+              </button>
+            )}
             <div className="pos-cart-total">
               <span>{t('pos.total')}</span>
               <strong>{formatCurrencyVnd(total)}</strong>
@@ -624,9 +821,10 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
           canOverrideCreditLimit={canOverrideCreditLimit}
           onClose={() => setModal(null)}
           onSuccess={(order, usedMethod) => {
-            setLastOrder({ ...order, usedMethod })
+            const cartSnapshot = [...cart]
+            setLastOrder({ ...order, usedMethod, cartSnapshot })
             setCart([])
-            try { localStorage.removeItem('pos_cart') } catch { /* ignore */ }
+            try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
             setQ('')
             setResults([])
             setModal('receipt')
@@ -635,7 +833,12 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit }) {
       )}
 
       {modal === 'receipt' && (
-        <ReceiptModal order={lastOrder} paymentMethod={lastOrder?.usedMethod} onClose={() => setModal(null)} />
+        <ReceiptModal
+          order={lastOrder}
+          paymentMethod={lastOrder?.usedMethod}
+          cart={lastOrder?.cartSnapshot}
+          onClose={() => setModal(null)}
+        />
       )}
 
     </section>

@@ -5,12 +5,21 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.service.payment.RefundService;
 import com.bigbike.bigbike_backend.service.pos.PosOrderService;
 import com.bigbike.bigbike_backend.service.pos.PosOrderService.PosCreateOrderRequest;
 import com.bigbike.bigbike_backend.service.pos.PosOrderService.PosOrderResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,17 +34,20 @@ public class AdminPosController {
     private final AdminCatalogReadService catalogReadService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
+    private final RefundService refundService;
 
     public AdminPosController(
             PosOrderService posOrderService,
             AdminCatalogReadService catalogReadService,
             DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
+            ApiResponseFactory apiResponseFactory,
+            RefundService refundService
     ) {
         this.posOrderService = posOrderService;
         this.catalogReadService = catalogReadService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
+        this.refundService = refundService;
     }
 
     /** Tìm kiếm sản phẩm nhanh theo tên / SKU — dùng cho POS search bar. */
@@ -69,6 +81,50 @@ public class AdminPosController {
                 posOrderService.createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit,
                         clientIp, userAgent),
                 request);
+    }
+
+    /** Hoàn tiền tại quầy cho đơn POS. Delegates to the shared RefundService. */
+    @PostMapping("/orders/{orderId}/refund")
+    public ApiDataResponse<Map<String, Object>> posRefund(
+            @PathVariable UUID orderId,
+            @Valid @RequestBody PosRefundRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "pos.write");
+        UUID adminId = resolveAdminId();
+        String clientIp = extractClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        refundService.applyRefund(
+                orderId,
+                adminId,
+                req.refundAmount(),
+                req.reason(),
+                req.note(),
+                true,
+                clientIp,
+                userAgent);
+        return apiResponseFactory.data(Map.of("orderId", orderId, "status", "REFUND_APPLIED"), request);
+    }
+
+    public record PosRefundRequest(
+            @NotNull @DecimalMin(value = "0.01", message = "refundAmount phải lớn hơn 0")
+            BigDecimal refundAmount,
+            String reason,
+            String note
+    ) {}
+
+    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    private UUID resolveAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof com.bigbike.bigbike_backend.domain.auth.AdminPrincipal principal) {
+            try {
+                return UUID.fromString(principal.id());
+            } catch (IllegalArgumentException ignored) {
+                // non-UUID dev id — fall through
+            }
+        }
+        return DEV_ADMIN_ID;
     }
 
     private String extractClientIp(HttpServletRequest request) {

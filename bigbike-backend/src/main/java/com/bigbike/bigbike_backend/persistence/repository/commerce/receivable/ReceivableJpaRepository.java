@@ -69,6 +69,8 @@ public interface ReceivableJpaRepository extends JpaRepository<ReceivableEntity,
 
     List<ReceivableEntity> findByCustomerIdAndStatusNotIn(UUID customerId, List<String> statuses);
 
+    List<ReceivableEntity> findByStatus(String status);
+
     /**
      * Returns all OPEN or PARTIALLY_PAID receivables whose dueDate is before the given date.
      * Used by the overdue scheduler.

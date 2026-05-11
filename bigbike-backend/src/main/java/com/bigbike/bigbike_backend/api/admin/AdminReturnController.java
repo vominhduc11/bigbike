@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminCreateReturnRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.UpdateReturnStatusRequest;
@@ -10,11 +11,13 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -56,6 +59,24 @@ public class AdminReturnController {
     ) {
         devAdminAuthService.requirePermission(request, "orders.read");
         return adminReturnService.getReturnDetail(returnId);
+    }
+
+    @PostMapping
+    public AdminReturnDetailResponse createReturn(
+            @Valid @RequestBody AdminCreateReturnRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.write");
+        return adminReturnService.adminCreateReturn(req, resolveAdminId());
+    }
+
+    @GetMapping("/by-order/{orderId}")
+    public List<AdminReturnListItemResponse> listByOrder(
+            @PathVariable UUID orderId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.read");
+        return adminReturnService.listByOrderId(orderId);
     }
 
     @PatchMapping("/{returnId}/status")

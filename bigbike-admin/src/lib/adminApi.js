@@ -939,6 +939,15 @@ export async function updateOrderPaymentStatus(orderId, paymentStatus, paidAmoun
   return parseDetailPayload(payload, normalizeOrder)
 }
 
+export async function updateOrderFulfillment(orderId, body) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/orders/${orderId}/fulfillment`, {
+    method: 'PATCH',
+    body,
+  })
+  return parseDetailPayload(payload, normalizeOrder)
+}
+
 export async function addOrderNote(orderId, { content, customerVisible = false }) {
   assertMutationEnabled()
   const payload = await requestJson(`/admin/orders/${orderId}/notes`, {
@@ -1042,7 +1051,7 @@ export async function fetchMediaStats(query) {
     delete q.sort; delete q.dir; delete q.usageFilter
     const payload = await requestJson('/admin/media/stats', { query: q })
     return payload?.data ?? null
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -1894,8 +1903,7 @@ function normalizeSerial(input) {
     productName: s.productName || '',
     variantId: s.variantId || null,
     variantName: s.variantName || null,
-    chassisNumber: s.chassisNumber || null,
-    engineNumber: s.engineNumber || null,
+    serialNumber: s.serialNumber || null,
     status: s.status || 'IN_STOCK',
     reservedUntil: s.reservedUntil || null,
     orderLineItemId: s.orderLineItemId || null,
@@ -1945,6 +1953,25 @@ export async function addProductSerials(productId, serials, note) {
   return { items }
 }
 
+/**
+ * Bulk-import serials via POST /admin/inventory/serials/import.
+ * rows: [{ productId, variantId?, serialNumber, note?, enableTracking? }]
+ * partialMode=true → skip bad rows, insert valid ones (returns inserted/skipped/errors[]).
+ */
+export async function importBulkSerials(rows, partialMode = true) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/inventory/serials/import', {
+    method: 'POST',
+    body: { rows, partialMode },
+  })
+  const data = payload?.data || payload || {}
+  return {
+    inserted: Number(data.inserted ?? 0),
+    skipped: Number(data.skipped ?? 0),
+    errors: Array.isArray(data.errors) ? data.errors : [],
+  }
+}
+
 export async function updateSerialStatus(serialId, status, note) {
   assertMutationEnabled()
   const payload = await requestJson(`/admin/inventory/serials/${serialId}/status`, {
@@ -1966,6 +1993,19 @@ export async function enableProductSerialTracking(productId, enabled = true) {
   await requestJson(`/admin/inventory/products/${productId}/enable-tracking?enabled=${enabled}`, {
     method: 'POST',
   })
+}
+
+export async function fetchAllSerials({ q, status, productId, page = 1, pageSize = 20 } = {}) {
+  const payload = await requestJson('/admin/inventory/serials', {
+    query: {
+      page,
+      size: pageSize,
+      q: q || undefined,
+      status: status && status !== 'ALL' ? status : undefined,
+      productId: productId || undefined,
+    },
+  })
+  return parseListPayload(payload, normalizeSerial, pageSize)
 }
 
 export async function adjustStock(variantId, quantityDelta, movementType, note, serialNumbers) {
@@ -2137,6 +2177,22 @@ export async function updateReturnStatus(returnId, body) {
     body,
   })
   return normalizeReturn(payload?.data || payload || {})
+}
+
+export async function adminCreateReturn(body) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/returns', { method: 'POST', body })
+  return normalizeReturn(payload?.data || payload || {})
+}
+
+export async function fetchReturnsByOrder(orderId) {
+  try {
+    const payload = await requestJson(`/admin/returns/by-order/${orderId}`)
+    const raw = Array.isArray(payload) ? payload : (payload?.data ?? [])
+    return raw.map(normalizeReturn)
+  } catch {
+    return []
+  }
 }
 
 // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2418,6 +2474,38 @@ export async function createRole(input) {
 export async function deleteRole(roleId) {
   assertMutationEnabled()
   await requestJson(`/admin/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' })
+}
+
+// ── Warranties ────────────────────────────────────────────────────────────────
+
+function normalizeWarranty(w = {}) {
+  return {
+    id: w.id ?? '',
+    serialId: w.serialId ?? '',
+    orderLineItemId: w.orderLineItemId ?? null,
+    customerId: w.customerId ?? null,
+    customerEmail: w.customerEmail ?? null,
+    customerPhone: w.customerPhone ?? null,
+    startDate: w.startDate ?? null,
+    endDate: w.endDate ?? null,
+    status: w.status ?? 'ACTIVE',
+    createdAt: w.createdAt ?? null,
+  }
+}
+
+export async function fetchWarranties(query = {}) {
+  const params = {}
+  if (query.status && query.status !== 'ALL') params.status = query.status
+  if (query.page) params.page = query.page
+  if (query.pageSize) params.size = query.pageSize
+  const payload = await requestJson('/admin/warranties', { query: params })
+  return withLiveData(parseListPayload(payload, normalizeWarranty, Number(query.pageSize) || 20))
+}
+
+export async function voidWarranty(warrantyId) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/warranties/${warrantyId}/void`, { method: 'PATCH' })
+  return normalizeWarranty(payload?.data || payload || {})
 }
 
 

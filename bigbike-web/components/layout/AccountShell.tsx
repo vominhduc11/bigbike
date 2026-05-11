@@ -21,11 +21,11 @@ export function useAccountRefresh(): (() => Promise<void>) | null {
 }
 
 const NAV = [
-  { href: "/tai-khoan", label: "Tổng quan", exact: true },
-  { href: "/tai-khoan/don-hang", label: "Đơn hàng", exact: false },
-  { href: "/tai-khoan/doi-tra", label: "Đổi trả", exact: false },
-  { href: "/tai-khoan/edit-address", label: "Địa chỉ", exact: false },
-  { href: "/tai-khoan/edit-account", label: "Tài khoản", exact: false },
+  { href: "/tai-khoan/", label: "Tổng quan", exact: true },
+  { href: "/tai-khoan/don-hang/", label: "Đơn hàng", exact: false },
+  { href: "/tai-khoan/doi-tra/", label: "Đổi trả", exact: false },
+  { href: "/tai-khoan/edit-address/", label: "Địa chỉ", exact: false },
+  { href: "/tai-khoan/edit-account/", label: "Tài khoản", exact: false },
 ];
 
 function navIsActive(href: string, exact: boolean, pathname: string | null): boolean {

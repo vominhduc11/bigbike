@@ -624,7 +624,10 @@ textarea.bb-input {
   border-top: 1px solid var(--bb-border-subtle);
 }
 
-.bb-category-image,
+.bb-category-image {
+  aspect-ratio: 3 / 2;
+}
+
 .bb-article-image {
   aspect-ratio: 16 / 9;
 }
@@ -1688,15 +1691,20 @@ html[data-header-scrolled] .wp-logo-wordmark {
   gap: 6px;
 }
 
-[data-bigbike-mega="true"] {
-  z-index: calc(var(--bb-z-header) - 1) !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+.wp-mega-tippy {
+  position: fixed;
+  top: var(--bb-header-stack);
+  left: 0;
+  right: 0;
+  z-index: calc(var(--bb-z-header) - 1);
+  width: 100vw;
+  max-width: 100vw;
+  outline: none;
+  pointer-events: none;
 }
 
-.wp-mega-tippy {
-  width: 100vw;
-  outline: none;
+.wp-mega-tippy[data-open="true"] {
+  pointer-events: auto;
 }
 
 .wp-mega-panel {
@@ -1809,8 +1817,17 @@ html[data-header-scrolled] .wp-header {
 
 /* ── BBTooltip ──────────────────────────────────────────────── */
 
+.bb-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .bb-tooltip {
-  display: inline-block;
+  position: absolute;
+  z-index: calc(var(--bb-z-overlay) - 20);
+  display: block;
   padding: 4px 8px;
   background: rgba(22, 22, 22, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1823,6 +1840,58 @@ html[data-header-scrolled] .wp-header {
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--bb-duration-fast) var(--bb-ease-standard),
+    transform var(--bb-duration-fast) var(--bb-ease-standard),
+    visibility 0s linear var(--bb-duration-fast);
+}
+
+.bb-tooltip[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: var(--bb-tooltip-delay, 60ms);
+}
+
+.bb-tooltip--bottom {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, -2px);
+}
+
+.bb-tooltip--bottom[data-open="true"] {
+  transform: translate(-50%, 0);
+}
+
+.bb-tooltip--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, 2px);
+}
+
+.bb-tooltip--top[data-open="true"] {
+  transform: translate(-50%, 0);
+}
+
+.bb-tooltip--left {
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translate(2px, -50%);
+}
+
+.bb-tooltip--left[data-open="true"] {
+  transform: translate(0, -50%);
+}
+
+.bb-tooltip--right {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translate(-2px, -50%);
+}
+
+.bb-tooltip--right[data-open="true"] {
+  transform: translate(0, -50%);
 }
 
 .wp-promo-banner.wp-promo-banner-image {
@@ -2980,7 +3049,7 @@ body.wp-mobile-menu-open {
 .wp-experience {
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
-  padding: 6.25rem 0 5rem;
+  padding: var(--bb-space-20) 0;
 }
 
 .wp-experience-header {
@@ -3020,12 +3089,18 @@ body.wp-mobile-menu-open {
 
 .wp-exp-carousel-track {
   display: flex;
-  gap: 40px;
-  touch-action: pan-y pinch-zoom;
+  gap: var(--wp-exp-gap, 40px);
+  width: max-content;
+  will-change: transform;
+  transition: transform 1s cubic-bezier(.2, 0, 0, 1), opacity 0.16s ease;
+}
+
+.wp-exp-carousel-track.is-jumping {
+  transition: none;
 }
 
 .wp-exp-carousel-slide {
-  flex: 0 0 calc((100% - 57.2px) / 2.43);
+  flex: 0 0 var(--wp-exp-slide-w, 42vw);
   min-width: 0;
   cursor: pointer;
   user-select: none;
@@ -3039,36 +3114,23 @@ body.wp-mobile-menu-open {
   cursor: default;
 }
 
-.wp-exp-carousel-slide:not(.is-active) {
-  opacity: 1;
-  transform: none;
-}
-
-.wp-exp-carousel-slide:not(.is-active) .wp-exp-content {
+.wp-exp-carousel-slide .wp-exp-content {
   opacity: 0;
   visibility: hidden;
+  transform: translateY(40px);
 }
 
 .wp-exp-carousel-slide.is-active .wp-exp-content {
   opacity: 1;
-  transform: translateY(0);
   visibility: visible;
+  transform: translateY(0);
 }
 
 @media (max-width: 767px) {
-  .wp-exp-carousel-track {
-    gap: 13px;
-  }
-
-  .wp-exp-carousel-slide {
-    flex: 0 0 calc((100% - 2.6px) / 1.2);
-  }
-
-  /* On mobile, only one slide is meaningfully visible — keep title/CTA
-     on every slide so partially-visible peek slides don't read as empty. */
-  .wp-exp-carousel-slide:not(.is-active) .wp-exp-content {
+  .wp-exp-carousel-slide .wp-exp-content {
     opacity: 1;
     visibility: visible;
+    transform: none;
   }
 }
 
@@ -3437,7 +3499,7 @@ body.wp-mobile-menu-open {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  padding: 1.5rem 0;
+  padding: var(--bb-space-12) 0;
 }
 
 .wp-tile-3 {
@@ -3615,7 +3677,7 @@ body.wp-mobile-menu-open {
 /* ── Products Section ──────────────────────────────────── */
 .wp-products-section {
   background: var(--bb-bg-page);
-  padding: 3rem 0;
+  padding: var(--bb-space-12) 0;
 }
 
 /* Phase 2-9: New Arrivals — subtle visual break from Featured Products */
@@ -3690,7 +3752,7 @@ body.wp-mobile-menu-open {
 .wp-cat-section {
   background: var(--bb-bg-page);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: var(--bb-space-6);
+  padding: var(--bb-space-12) 0;
 }
 
 .wp-cat-section-header {
@@ -3730,8 +3792,8 @@ body.wp-mobile-menu-open {
 
 /* Phase 2-6: real photo — natural colours, cover crop */
 .wp-cat-img-cell-bg {
-  object-fit: cover;
-  padding: 0;
+  object-fit: contain;
+  padding: 10%;
   transition: transform 0.4s cubic-bezier(.2, 0, 0, 1);
   position: relative;
   z-index: 1;
@@ -3845,6 +3907,7 @@ body.wp-mobile-menu-open {
   transform: translateY(40px);
   visibility: hidden;
   transition: opacity 0.7s ease, transform 0.7s ease, visibility 0.7s ease;
+  will-change: opacity, transform;
 }
 
 .wp-exp-content-body {
@@ -3906,7 +3969,7 @@ body.wp-mobile-menu-open {
 /* ── News / Blog Section ───────────────────────────────── */
 .wp-news-section {
   background: var(--bb-bg-section);
-  padding: 3rem 0;
+  padding: var(--bb-space-12) 0;
 }
 
 .wp-news-header {
@@ -4045,7 +4108,7 @@ body.wp-mobile-menu-open {
 /* ── Brand Carousel ────────────────────────────────────── */
 .wp-brands-section {
   background: var(--bb-bg-section);
-  padding: 3rem 0;
+  padding: var(--bb-space-12) 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -4104,7 +4167,7 @@ body.wp-mobile-menu-open {
 /* ── SEO Content Bottom ───────────────────────────────── */
 .wp-seo-content {
   background: var(--bb-bg-section);
-  padding: 3rem 0 4rem;
+  padding: var(--bb-space-12) 0 var(--bb-space-16);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -4283,6 +4346,16 @@ body.wp-mobile-menu-open {
 .wp-stock-in { background: var(--bb-state-success-bg); color: var(--bb-state-success); }
 .wp-stock-low { background: var(--bb-state-warning-bg); color: var(--bb-state-warning); }
 .wp-stock-out { background: var(--bb-state-danger-bg); color: var(--bb-brand-primary); }
+.wp-wishlist-btn { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 160ms, border-color 160ms, color 160ms; color: rgba(255,255,255,0.6); padding: 0; }
+.wp-wishlist-btn:hover { background: rgba(0,0,0,0.75); border-color: var(--bb-brand-primary-border); color: var(--bb-brand-primary); }
+.wp-wishlist-btn.active { background: rgba(160,0,0,0.25); border-color: var(--bb-brand-primary); color: var(--bb-brand-primary); }
+
+/* ── Generic badges (bb-badge) ───────────────────────────── */
+.bb-badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; }
+.bb-badge--green { background: var(--bb-state-success-bg); color: var(--bb-state-success); }
+.bb-badge--yellow { background: var(--bb-state-warning-bg); color: var(--bb-state-warning); }
+.bb-badge--red { background: var(--bb-state-danger-bg); color: var(--bb-brand-primary); }
+.bb-badge--grey { background: rgba(255,255,255,0.07); color: var(--bb-text-muted); }
 
 /* ── Brand strip ─────────────────────────────────────────── */
 .wp-brand-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
@@ -5467,7 +5540,7 @@ select.wp-input { cursor: pointer; }
 
 /* ── Prevent body horizontal overflow ─────────────────────── */
 /* Needed for two concurrent reasons:
-   1. The Tippy mega-menu uses `width: 100vw` — on desktop with a scrollbar,
+   1. The desktop mega-menu uses `width: 100vw` — on desktop with a scrollbar,
       100vw > clientWidth, so the menu transiently bleeds 15-17px past the right edge.
    2. Embla carousel tracks (Experience, Product) extend past the viewport during
       pointer-drag gestures before the viewport's overflow:hidden fully clips them
@@ -5753,8 +5826,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* ── Home Video Section ─────────────────────────────────────────────────── */
 .wp-video-section {
-  /* Phase 1-3: was padding: 80px 0 0 — missing bottom gap before Brands section */
-  padding: 80px 0 64px;
+  /* Outer padding bỏ để inner (có bg image) đảm nhiệm toàn bộ vertical rhythm.
+     Tránh "double padding" cộng dồn từng làm section này cao bất thường so với mặt bằng. */
+  padding: 0;
   background: #111;
   position: relative;
 }
@@ -5763,7 +5837,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding: 90px 0;
+  padding: var(--bb-space-20) 0;
 }
 .wp-video-section-header {
   text-align: center;
@@ -5782,7 +5856,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 @media (max-width: 768px) {
   .wp-video-section-title { font-size: 24px; line-height: 30px; }
-  .wp-video-section-inner { padding: 60px 0; }
+  .wp-video-section-inner { padding: var(--bb-space-12) 0; }
 }
 
 /* Carousel */
@@ -6262,5 +6336,11 @@ img, picture, video, svg, canvas { max-width: 100%; }
 @media (min-width: 1024px) {
   .bb-cat-sections {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .bb-cat-sections {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

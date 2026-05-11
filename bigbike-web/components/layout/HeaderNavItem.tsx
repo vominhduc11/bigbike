@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Tippy from "@tippyjs/react/headless";
-import { useEffect, useId, useRef, useState } from "react";
-import type { Instance, Props } from "tippy.js";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import type { PublicMenuItem } from "@/lib/contracts/public";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
@@ -40,45 +38,6 @@ function ChevronIcon() {
 
 const megaMenuDelay: [number, number] = [80, 120];
 
-const megaMenuPopperOptions: NonNullable<Props["popperOptions"]> = {
-  strategy: "fixed",
-  modifiers: [
-    {
-      name: "flip",
-      enabled: false,
-    },
-    {
-      name: "preventOverflow",
-      options: {
-        padding: 0,
-        rootBoundary: "viewport",
-      },
-    },
-    {
-      name: "bigbikeMegaPanelRoot",
-      enabled: true,
-      phase: "beforeWrite",
-      requires: ["computeStyles"],
-      fn({ state }) {
-        state.elements.popper.setAttribute("data-bigbike-mega", "true");
-        Object.assign(state.styles.popper, {
-          left: "0",
-          right: "0",
-          top: "var(--bb-header-stack)",
-          transform: "none",
-          width: "100vw",
-        });
-      },
-      effect({ state }) {
-        state.elements.popper.setAttribute("data-bigbike-mega", "true");
-        return () => {
-          state.elements.popper.removeAttribute("data-bigbike-mega");
-        };
-      },
-    },
-  ],
-};
-
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
   const href = normalizeMenuUrl(node.url);
@@ -89,19 +48,68 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     .join(" ");
 
   const [open, setOpen] = useState(false);
-  const tippyInstanceRef = useRef<Instance | null>(null);
   const triggerRef = useRef<HTMLAnchorElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathnameRef = useRef(pathname);
   const panelId = useId();
 
-  useEffect(() => {
-    tippyInstanceRef.current?.hide();
-  }, [pathname]);
+  const clearMegaTimers = useCallback(() => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
 
-  function closeMenu() {
-    tippyInstanceRef.current?.hide();
+  const openMenu = useCallback(
+    (immediate = false) => {
+      clearMegaTimers();
+      if (immediate) {
+        setOpen(true);
+        return;
+      }
+      openTimerRef.current = setTimeout(() => setOpen(true), megaMenuDelay[0]);
+    },
+    [clearMegaTimers],
+  );
+
+  const closeMenu = useCallback(() => {
+    clearMegaTimers();
     setOpen(false);
-  }
+  }, [clearMegaTimers]);
+
+  const scheduleCloseMenu = useCallback(() => {
+    clearMegaTimers();
+    closeTimerRef.current = setTimeout(() => setOpen(false), megaMenuDelay[1]);
+  }, [clearMegaTimers]);
+
+  useEffect(() => {
+    if (pathnameRef.current === pathname) return;
+    pathnameRef.current = pathname;
+    clearMegaTimers();
+    const closeRouteMenuTimer = window.setTimeout(() => setOpen(false), 0);
+    return () => window.clearTimeout(closeRouteMenuTimer);
+  }, [pathname, clearMegaTimers]);
+
+  useEffect(() => () => clearMegaTimers(), [clearMegaTimers]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (triggerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      closeMenu();
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, closeMenu]);
 
   function closeMenuReturnFocus() {
     closeMenu();
@@ -173,67 +181,58 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   );
 
   return (
-    <Tippy
-      delay={megaMenuDelay}
-      duration={[140, 120]}
-      hideOnClick
-      interactive
-      interactiveBorder={10}
-      maxWidth="none"
-      offset={[0, 0]}
-      placement="bottom-start"
-      popperOptions={megaMenuPopperOptions}
-      render={(attrs) => (
-        <div className="wp-mega-tippy" tabIndex={-1} {...attrs}>
-          {megaPanel}
-        </div>
-      )}
-      trigger="mouseenter focusin"
-      onClickOutside={closeMenu}
-      onCreate={(instance) => {
-        tippyInstanceRef.current = instance;
-      }}
-      onDestroy={() => {
-        tippyInstanceRef.current = null;
-      }}
-      onHide={() => {
-        setOpen(false);
-      }}
-      onShow={() => {
-        setOpen(true);
+    <div
+      className="wp-nav-item-has-children"
+      onMouseEnter={() => openMenu()}
+      onMouseLeave={scheduleCloseMenu}
+      onFocusCapture={() => openMenu(true)}
+      onBlurCapture={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+          return;
+        }
+        scheduleCloseMenu();
       }}
     >
-      <div className="wp-nav-item-has-children">
-        <Link
-          ref={triggerRef}
-          href={href}
-          className={linkClass}
-          target={node.openInNewTab ? "_blank" : undefined}
-          rel={node.openInNewTab ? "noreferrer" : undefined}
-          aria-current={active ? "page" : undefined}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              closeMenu();
-              return;
-            }
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
-              tippyInstanceRef.current?.show();
-              setTimeout(() => {
-                const firstLink = panelRef.current?.querySelector<HTMLAnchorElement>("a");
-                firstLink?.focus();
-              }, megaMenuDelay[0] + 20);
-            }
-          }}
-        >
-          <span>{node.label}</span>
-          <ChevronIcon />
-        </Link>
+      <Link
+        ref={triggerRef}
+        href={href}
+        className={linkClass}
+        target={node.openInNewTab ? "_blank" : undefined}
+        rel={node.openInNewTab ? "noreferrer" : undefined}
+        aria-current={active ? "page" : undefined}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={closeMenu}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeMenu();
+            return;
+          }
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            openMenu(true);
+            window.setTimeout(() => {
+              const firstLink = panelRef.current?.querySelector<HTMLAnchorElement>("a");
+              firstLink?.focus();
+            }, 20);
+          }
+        }}
+      >
+        <span>{node.label}</span>
+        <ChevronIcon />
+      </Link>
+      <div
+        className="wp-mega-tippy"
+        data-bigbike-mega="true"
+        data-open={open ? "true" : "false"}
+        onMouseEnter={() => openMenu(true)}
+        onMouseLeave={scheduleCloseMenu}
+      >
+        {megaPanel}
       </div>
-    </Tippy>
+    </div>
   );
 }

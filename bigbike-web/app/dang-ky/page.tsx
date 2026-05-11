@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerCustomer } from "@/lib/api/client-api";
+import { refreshAuth } from "@/lib/auth/auth-store";
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toLoginPath } from "@/lib/utils/routes";
 
@@ -31,6 +32,7 @@ export default function RegisterPage() {
         values.firstName,
         values.lastName || undefined,
       );
+      await refreshAuth();
       setConfirmedEmail(values.email);
       setRegistered(true);
     } catch (err: unknown) {

@@ -70,11 +70,11 @@ export function toOrderConfirmPath(orderNumber: string, orderKey?: string): stri
   if (orderKey) {
     params.set("key", orderKey);
   }
-  return `/don-hang/xac-nhan?${params.toString()}`;
+  return `/don-hang/xac-nhan/?${params.toString()}`;
 }
 
 export function toOrderDetailPath(orderId: string): string {
-  return `/tai-khoan/don-hang/${encodeURIComponent(orderId)}`;
+  return `/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`;
 }
 
 export function toLoginPath(returnTo?: string): string {

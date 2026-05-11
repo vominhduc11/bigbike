@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.service.order.CustomerOrderCancelService;
 import com.bigbike.bigbike_backend.service.order.CustomerReturnService;
 import com.bigbike.bigbike_backend.service.order.OrderReadService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,15 +33,18 @@ public class CustomerOrderController {
 
     private final OrderReadService orderReadService;
     private final CustomerReturnService customerReturnService;
+    private final CustomerOrderCancelService customerOrderCancelService;
     private final ApiResponseFactory apiResponseFactory;
 
     public CustomerOrderController(
             OrderReadService orderReadService,
             CustomerReturnService customerReturnService,
+            CustomerOrderCancelService customerOrderCancelService,
             ApiResponseFactory apiResponseFactory
     ) {
         this.orderReadService = orderReadService;
         this.customerReturnService = customerReturnService;
+        this.customerOrderCancelService = customerOrderCancelService;
         this.apiResponseFactory = apiResponseFactory;
     }
 
@@ -88,6 +93,17 @@ public class CustomerOrderController {
         UUID customerId = requireCustomerId();
         return apiResponseFactory.data(
                 orderReadService.getCustomerOrderDetail(customerId, orderId),
+                request
+        );
+    }
+
+    @PatchMapping("/{orderId}/cancel")
+    public ApiDataResponse<OrderDetailResponse> cancelOrder(
+            @PathVariable UUID orderId,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(
+                customerOrderCancelService.cancel(requireCustomerId(), orderId),
                 request
         );
     }

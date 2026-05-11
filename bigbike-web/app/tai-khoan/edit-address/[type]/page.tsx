@@ -22,7 +22,7 @@ function InvalidAddressType({ type }: { type: string }) {
       <div className="wp-empty-state">
         <p className="wp-muted-text">
           Không tìm thấy loại địa chỉ &ldquo;{type}&rdquo;.{" "}
-          <Link href="/tai-khoan" style={{ color: "var(--bb-brand-primary, #F90606)" }}>
+          <Link href="/tai-khoan/" style={{ color: "var(--bb-brand-primary, #F90606)" }}>
             Quay lại tài khoản
           </Link>
         </p>
@@ -234,7 +234,7 @@ export default function EditAddressPage({ params }: Props) {
   const { type } = use(params);
   const isValid = type === "billing" || type === "shipping";
   return (
-    <AccountShell loginRedirect={`/tai-khoan/edit-address/${type}`}>
+    <AccountShell loginRedirect={`/tai-khoan/edit-address/${type}/`}>
       {isValid
         ? <EditAddressContent type={type as ValidAddressType} />
         : <InvalidAddressType type={type} />

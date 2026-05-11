@@ -10,6 +10,9 @@ import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.RefundTransactionEntity;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.RefundTransactionJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
@@ -36,6 +39,8 @@ public class RefundService {
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final OrderStockRestoreService orderStockRestoreService;
+    private final ReceivableJpaRepository receivableRepo;
+    private final RefundTransactionJpaRepository refundTransactionRepo;
 
     public RefundService(
             OrderJpaRepository orderRepo,
@@ -44,7 +49,9 @@ public class RefundService {
             AuditLogJpaRepository auditLogRepo,
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
-            OrderStockRestoreService orderStockRestoreService) {
+            OrderStockRestoreService orderStockRestoreService,
+            ReceivableJpaRepository receivableRepo,
+            RefundTransactionJpaRepository refundTransactionRepo) {
         this.orderRepo = orderRepo;
         this.paymentRepo = paymentRepo;
         this.noteRepo = noteRepo;
@@ -52,6 +59,8 @@ public class RefundService {
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.orderStockRestoreService = orderStockRestoreService;
+        this.receivableRepo = receivableRepo;
+        this.refundTransactionRepo = refundTransactionRepo;
     }
 
     /**
@@ -125,13 +134,42 @@ public class RefundService {
             orderStockRestoreService.restoreForRefund(orderId);
         }
 
-        paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
+        // Cancel outstanding receivable when the entire order is refunded.
+        // Avoids leaving a ghost debt on a returned credit-sale order.
+        if (fullRefund) {
+            receivableRepo.findByOrderId(orderId).ifPresent(ar -> {
+                if (!"CLOSED".equals(ar.getStatus()) && !"WRITTEN_OFF".equals(ar.getStatus())) {
+                    ar.setWrittenOffAmount(ar.getOutstandingAmount());
+                    ar.setOutstandingAmount(BigDecimal.ZERO);
+                    ar.setStatus("WRITTEN_OFF");
+                    ar.setWriteOffReason("ORDER_REFUNDED");
+                    ar.setWrittenOffAt(now);
+                    ar.setUpdatedAt(now);
+                    receivableRepo.save(ar);
+                }
+            });
+        }
+
+        UUID resolvedPaymentId = paymentRepo.findByOrderId(orderId).stream().findFirst().map(p -> {
             p.setRefundAmount(newTotalRefunded);
             p.setRefundedAt(now);
             if (fullRefund) p.setStatus("REFUNDED");
             p.setUpdatedAt(now);
             paymentRepo.save(p);
-        });
+            return p.getId();
+        }).orElse(null);
+
+        RefundTransactionEntity tx = new RefundTransactionEntity();
+        tx.setOrder(order);
+        tx.setPaymentId(resolvedPaymentId);
+        tx.setAmount(scaled);
+        tx.setReason(refundReason);
+        tx.setNote((noteContent != null && !noteContent.isBlank()) ? noteContent : null);
+        tx.setAdminId(adminId);
+        tx.setIpAddress(clientIp);
+        tx.setUserAgent(userAgent);
+        tx.setCreatedAt(now);
+        refundTransactionRepo.save(tx);
 
         String resolvedNote = (noteContent != null && !noteContent.isBlank())
                 ? noteContent

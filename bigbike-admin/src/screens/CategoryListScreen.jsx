@@ -88,9 +88,6 @@ function buildTree(items) {
   return flatten(roots, 0)
 }
 
-const isDefaultQuery = (q) =>
-  !q.search && q.visibility === 'ALL' && q.sort === 'sortOrder:asc'
-
 // Wrap matched substring(s) in <mark> for live search highlighting.
 function highlightMatch(text, term) {
   if (!term) return text
@@ -190,6 +187,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   // the matches without manually expanding each level.
   useEffect(() => {
     if (!searchTerm) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedIds((prev) => {
       const next = new Set(prev)
       matchAncestors.forEach((id) => next.add(id))
@@ -202,6 +200,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     // Selections refer to ids that may no longer be on the visible page after
     // a filter/page change. Clearing avoids confusing the user with an action
     // bar showing items they can't see.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIds(new Set())
   }, [query])
 

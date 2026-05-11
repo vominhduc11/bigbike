@@ -66,6 +66,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
 
   // Reset form fields when switching media
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAltText(media.altText ?? '')
     setTitle(media.title ?? '')
     setCaption(media.caption ?? '')
@@ -84,6 +85,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   useEffect(() => {
     if (media.references && media.references.length > 0) return
     if ((media.usageCount ?? 0) === 0) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefsLoading(true)
     fetchMediaReferences(media.id)
       .then(setRefs)

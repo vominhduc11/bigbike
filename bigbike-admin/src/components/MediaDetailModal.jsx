@@ -49,6 +49,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
     // If references not already bundled in the list item, fetch separately
     if (media.references && media.references.length > 0) return
     if (media.usageCount === 0) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefsLoading(true)
     fetchMediaReferences(media.id)
       .then(setRefs)

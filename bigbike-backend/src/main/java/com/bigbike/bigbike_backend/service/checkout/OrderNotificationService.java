@@ -131,6 +131,39 @@ public class OrderNotificationService {
         log.info("Order status update ({}) sent for order {}.", newStatus, order.getOrderNumber());
     }
 
+    // ── Customer: order shipped ───────────────────────────────────────────────
+
+    @Async
+    public void sendOrderShipped(OrderEntity order, String customerVisibleNote) {
+        String customerEmail = order.getCustomerEmail();
+        if (customerEmail == null || customerEmail.isBlank()) return;
+        if (!emailDispatch.isEnabled()) {
+            log.info("Mail not configured — shipment notification skipped for order {}.", order.getOrderNumber());
+            return;
+        }
+
+        Context ctx = new Context();
+        ctx.setVariable("customerName", safeCustomerName(order));
+        ctx.setVariable("orderNumber", order.getOrderNumber());
+        ctx.setVariable("totalFormatted", formatVnd(order.getTotalAmount()));
+        ctx.setVariable("hasTrackingNumber",
+                order.getTrackingNumber() != null && !order.getTrackingNumber().isBlank());
+        ctx.setVariable("trackingNumber", order.getTrackingNumber());
+        ctx.setVariable("shippingCarrier", order.getShippingCarrier());
+        ctx.setVariable("hasNote", customerVisibleNote != null && !customerVisibleNote.isBlank());
+        ctx.setVariable("note", customerVisibleNote);
+        ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
+                + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
+
+        emailDispatch.send(
+                customerEmail,
+                "[BigBike] Đơn hàng #" + order.getOrderNumber() + " đang trên đường giao đến bạn",
+                "order-shipped",
+                ctx);
+
+        log.info("Shipment notification sent for order {}.", order.getOrderNumber());
+    }
+
     // ── Return notifications ──────────────────────────────────────────────────
 
     public void sendReturnReceived(ReturnEntity ret, String customerEmail, String orderNumber) {

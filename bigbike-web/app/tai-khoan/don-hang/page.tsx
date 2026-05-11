@@ -68,8 +68,8 @@ function OrderHistoryContent() {
 
   function handleTabClick(tabKey: string) {
     const url = tabKey === "ALL"
-      ? "/tai-khoan/don-hang"
-      : `/tai-khoan/don-hang?status=${tabKey}`;
+      ? "/tai-khoan/don-hang/"
+      : `/tai-khoan/don-hang/?status=${tabKey}`;
     setPage(1);
     router.replace(url, { scroll: false });
   }

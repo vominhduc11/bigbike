@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.RefundTransactionJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import jakarta.persistence.criteria.Predicate;
 import java.io.IOException;
@@ -62,17 +63,20 @@ public class AdminReportService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final CustomerJpaRepository customerRepo;
     private final ProductJpaRepository productRepo;
+    private final RefundTransactionJpaRepository refundTransactionRepo;
 
     public AdminReportService(
             OrderJpaRepository orderRepo,
             OrderLineItemJpaRepository lineItemRepo,
             CustomerJpaRepository customerRepo,
-            ProductJpaRepository productRepo
+            ProductJpaRepository productRepo,
+            RefundTransactionJpaRepository refundTransactionRepo
     ) {
         this.orderRepo = orderRepo;
         this.lineItemRepo = lineItemRepo;
         this.customerRepo = customerRepo;
         this.productRepo = productRepo;
+        this.refundTransactionRepo = refundTransactionRepo;
     }
 
     public AdminAnalyticsResponse getAnalytics(String from, String to) {
@@ -95,8 +99,10 @@ public class AdminReportService {
         // paidAmount is never modified by RefundService.applyRefund() — it is the total cash collected.
         BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
-        // Refund amount: SUM(refundAmount) anchored to placedAt (not refundedAt — see REPORT_RULE_011)
-        BigDecimal refundAmount = orderRepo.sumRefundAmountInRange(fromInstant, toInstant);
+        // Refund amount: SUM(amount) from refund_transactions anchored to transaction createdAt.
+        // Using refund_transactions gives period-accurate figures — a refund issued this week for a
+        // last-month order now correctly appears in this week's report, not last month's.
+        BigDecimal refundAmount = refundTransactionRepo.sumRefundAmountInRange(fromInstant, toInstant);
 
         // Net revenue may be negative — no clamp
         BigDecimal netRevenue = paidRevenue.subtract(refundAmount);

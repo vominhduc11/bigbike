@@ -786,7 +786,7 @@ public class AdminCatalogMutationService {
             entity.setCurrency("VND");
         }
         if (create || request.getStockState() != null) {
-            entity.setStockState(request.getStockState() == null ? ProductStockState.IN_STOCK : request.getStockState());
+            entity.setStockState(request.getStockState() != null ? request.getStockState() : ProductStockState.OUT_OF_STOCK);
         }
         if (create || request.getForceOutOfStock() != null) {
             entity.setForceOutOfStock(Boolean.TRUE.equals(request.getForceOutOfStock()));
@@ -1019,7 +1019,9 @@ public class AdminCatalogMutationService {
                 variant.setSalePrice(req.getSalePrice());
             }
             variant.setCurrency("VND");
-            variant.setStockState(req.getStockState() != null ? req.getStockState() : com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK);
+            if (createVariant || req.getStockState() != null) {
+                variant.setStockState(req.getStockState() != null ? req.getStockState() : com.bigbike.bigbike_backend.domain.catalog.ProductStockState.OUT_OF_STOCK);
+            }
             variant.setImageUrl(colorKey != null ? imageByColor.getOrDefault(colorKey, null) : null);
             variant.setImageAlt(AdminMutationValidators.trimToNull(req.getImageAlt()));
             variant.setAvailable(req.getIsAvailable() == null || req.getIsAvailable());

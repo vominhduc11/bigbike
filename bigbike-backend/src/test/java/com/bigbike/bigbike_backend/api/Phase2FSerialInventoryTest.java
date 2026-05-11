@@ -113,7 +113,7 @@ class Phase2FSerialInventoryTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"serials":[{"chassisNumber":"%s"},{"chassisNumber":"%s"},{"chassisNumber":"%s"}],"note":"T01"}
+                                {"serials":[{"serialNumber":"%s"},{"serialNumber":"%s"},{"serialNumber":"%s"}],"note":"T01"}
                                 """.formatted(ch1, ch2, ch3)))
                 .andExpect(status().isOk());
 
@@ -132,7 +132,7 @@ class Phase2FSerialInventoryTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"serials":[{"chassisNumber":"%s"},{"chassisNumber":"%s"}],"note":"T02"}
+                                {"serials":[{"serialNumber":"%s"},{"serialNumber":"%s"}],"note":"T02"}
                                 """.formatted(ch1, ch2)))
                 .andExpect(status().isOk());
 
@@ -408,7 +408,7 @@ class Phase2FSerialInventoryTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "rows": [{"productId":"%s","chassisNumber":"T14-%s","enableTracking":false}],
+                                  "rows": [{"productId":"%s","serialNumber":"T14-%s","enableTracking":false}],
                                   "partialMode": true
                                 }
                                 """.formatted(f.productId(), uid())))
@@ -430,16 +430,16 @@ class Phase2FSerialInventoryTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"rows":[{"productId":"%s","variantId":"%s","chassisNumber":"%s","enableTracking":false}],"partialMode":false}
+                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s","enableTracking":false}],"partialMode":false}
                                 """.formatted(f.productId(), f.variantId(), chassis)))
                 .andExpect(status().isOk());
 
-        // Second import with same chassis → reports DUPLICATE_IN_DB
+        // Second import with same serial → reports DUPLICATE_IN_DB
         String resp = mvc.perform(post("/api/v1/admin/inventory/serials/import")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"rows":[{"productId":"%s","variantId":"%s","chassisNumber":"%s","enableTracking":false}],"partialMode":true}
+                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s","enableTracking":false}],"partialMode":true}
                                 """.formatted(f.productId(), f.variantId(), chassis)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -523,12 +523,12 @@ class Phase2FSerialInventoryTest {
         return new Fixture(productId, null, product, null);
     }
 
-    private ProductSerialEntity makeSerial(Fixture f, ProductSerialStatus status, String chassis) {
+    private ProductSerialEntity makeSerial(Fixture f, ProductSerialStatus status, String serialNumber) {
         Instant now = Instant.now();
         ProductSerialEntity serial = new ProductSerialEntity();
         serial.setProduct(f.product());
         serial.setVariant(f.variant());
-        serial.setChassisNumber(chassis);
+        serial.setSerialNumber(serialNumber);
         serial.setStatus(status);
         serial.setReceivedAt(now);
         serial.setCreatedAt(now);

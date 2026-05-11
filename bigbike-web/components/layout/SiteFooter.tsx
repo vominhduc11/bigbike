@@ -19,9 +19,9 @@ const FALLBACK_FOOTER_LINKS: FallbackLink[] = [
 
 const FALLBACK_GUIDE_LINKS: FallbackLink[] = [
   { id: "fbg-1", parentId: null, label: "Hướng dẫn mua hàng", url: "/huong-dan-mua-hang/", children: [] },
-  { id: "fbg-2", parentId: null, label: "Chính sách đổi trả", url: "/chinh-sach-doi-tra/", children: [] },
-  { id: "fbg-3", parentId: null, label: "Chính sách bảo hành", url: "/chinh-sach-bao-hanh/", children: [] },
-  { id: "fbg-4", parentId: null, label: "Chính sách vận chuyển", url: "/chinh-sach-van-chuyen/", children: [] },
+  { id: "fbg-2", parentId: null, label: "Chính sách đổi trả", url: "/chinh-sach/doi-tra/", children: [] },
+  { id: "fbg-3", parentId: null, label: "Chính sách bảo hành", url: "/chinh-sach/bao-hanh/", children: [] },
+  { id: "fbg-4", parentId: null, label: "Chính sách bảo mật", url: "/chinh-sach/bao-mat/", children: [] },
 ];
 
 function getSettingValue(

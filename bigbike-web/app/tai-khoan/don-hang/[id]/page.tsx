@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { createReturn, fetchMyOrder } from "@/lib/api/client-api";
+import { cancelMyOrder, createReturn, fetchMyOrder } from "@/lib/api/client-api";
 import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
@@ -37,6 +37,7 @@ const TERMINAL_STEPS: Record<string, TimelineStep> = {
 };
 
 const RETURNABLE_ORDER_STATUSES = new Set(["COMPLETED"]);
+const CANCELLABLE_ORDER_STATUSES = new Set(["PENDING"]);
 
 const RETURN_REASON_LABELS: Record<string, string> = {
   DEFECTIVE: "Hàng bị lỗi",
@@ -205,6 +206,9 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
   const [error, setError] = useState("");
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [returnSubmitted, setReturnSubmitted] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -438,10 +442,56 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             </div>
           )}
 
+          {/* Cancel order */}
+          {CANCELLABLE_ORDER_STATUSES.has(order.status) && (
+            cancelError ? (
+              <p className="wp-error-text">{cancelError}</p>
+            ) : cancelConfirm ? (
+              <div className="wp-info-card" style={{ borderLeft: "3px solid var(--c-danger, #ef4444)" }}>
+                <p style={{ marginBottom: 12, fontWeight: 600 }}>Xác nhận huỷ đơn #{order.orderNumber}?</p>
+                <p className="wp-muted-text" style={{ marginBottom: 16, fontSize: "0.9em" }}>
+                  Đơn hàng sẽ bị huỷ và tồn kho sẽ được hoàn lại. Thao tác không thể khôi phục.
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="wp-btn-primary"
+                    style={{ background: "var(--c-danger, #ef4444)" }}
+                    disabled={cancelling}
+                    onClick={async () => {
+                      setCancelling(true);
+                      try {
+                        const updated = await cancelMyOrder(order.id);
+                        setOrder(updated);
+                        setCancelConfirm(false);
+                      } catch (err: unknown) {
+                        setCancelError(err instanceof Error ? err.message : "Không thể huỷ đơn.");
+                        setCancelConfirm(false);
+                      } finally {
+                        setCancelling(false);
+                      }
+                    }}
+                  >
+                    {cancelling ? "Đang huỷ..." : "Xác nhận huỷ"}
+                  </button>
+                  <button type="button" className="wp-btn-secondary" onClick={() => setCancelConfirm(false)} disabled={cancelling}>
+                    Không huỷ
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "right" }}>
+                <button type="button" className="wp-btn-secondary wp-btn-sm" onClick={() => setCancelConfirm(true)}>
+                  Huỷ đơn hàng
+                </button>
+              </div>
+            )
+          )}
+
           {/* Return request */}
           {RETURNABLE_ORDER_STATUSES.has(order.status) && (
             returnSubmitted ? (
-              <div className="wp-alert-success"><p>Yêu cầu đổi trả đã được gửi. <Link href="/tai-khoan/doi-tra" className="bb-link">Xem đổi trả của tôi</Link></p></div>
+              <div className="wp-alert-success"><p>Yêu cầu đổi trả đã được gửi. <Link href="/tai-khoan/doi-tra/" className="bb-link">Xem đổi trả của tôi</Link></p></div>
             ) : showReturnForm ? (
               <CreateReturnForm orderId={order.id} lineItems={order.lineItems} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
             ) : (
@@ -461,7 +511,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 export default function OrderDetailPage({ params }: Props) {
   const { id } = use(params);
   return (
-    <AccountShell loginRedirect={`/tai-khoan/don-hang/${id}`}>
+    <AccountShell loginRedirect={`/tai-khoan/don-hang/${id}/`}>
       <OrderDetailContent orderId={id} />
     </AccountShell>
   );

@@ -46,6 +46,15 @@ public class OrderEntity {
     @Column(name = "fulfillment_status", length = 50)
     private String fulfillmentStatus;
 
+    @Column(name = "tracking_number", length = 200)
+    private String trackingNumber;
+
+    @Column(name = "shipping_carrier", length = 100)
+    private String shippingCarrier;
+
+    @Column(name = "shipped_at")
+    private Instant shippedAt;
+
     @Column(name = "customer_email", length = 255)
     private String customerEmail;
 
@@ -157,6 +166,15 @@ public class OrderEntity {
 
     public String getFulfillmentStatus() { return fulfillmentStatus; }
     public void setFulfillmentStatus(String fulfillmentStatus) { this.fulfillmentStatus = fulfillmentStatus; }
+
+    public String getTrackingNumber() { return trackingNumber; }
+    public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
+
+    public String getShippingCarrier() { return shippingCarrier; }
+    public void setShippingCarrier(String shippingCarrier) { this.shippingCarrier = shippingCarrier; }
+
+    public Instant getShippedAt() { return shippedAt; }
+    public void setShippedAt(Instant shippedAt) { this.shippedAt = shippedAt; }
 
     public String getCustomerEmail() { return customerEmail; }
     public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }

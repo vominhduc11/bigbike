@@ -481,7 +481,7 @@ function ReturnsContent() {
 
 export default function ReturnsPage() {
   return (
-    <AccountShell loginRedirect="/tai-khoan/doi-tra">
+    <AccountShell loginRedirect="/tai-khoan/doi-tra/">
       <ReturnsContent />
     </AccountShell>
   );

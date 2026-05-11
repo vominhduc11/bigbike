@@ -4,6 +4,7 @@ import { formatVnd, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
+import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { RatingStars } from "@/components/ui/RatingStars";
 
 type ProductCardProps = {
@@ -38,6 +39,7 @@ export function ProductCard({ product }: ProductCardProps) {
       />
       <div className="wp-product-image">
         {isSale && <span className="wp-product-tag">Sale</span>}
+        <WishlistButton productId={product.id} />
         <MediaImage
           image={product.image}
           altFallback={name}

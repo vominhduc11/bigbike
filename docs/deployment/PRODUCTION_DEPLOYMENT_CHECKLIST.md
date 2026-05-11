@@ -414,9 +414,10 @@ These items are not blocking the initial release but are required in subsequent 
 
 | ID | Item | Domain | Notes |
 |---|---|---|---|
-| P3-001 | Webhook auto-reconciliation for SePay | Payments | Current SePay flow is manual (no auto-reconciliation). Wire up SePay webhook callback to auto-confirm orders on payment receipt. |
-| P3-002 | Distributed rate limiting (Redis) | Auth / API | Current rate limiting is in-process (per JVM instance). In a multi-instance deployment, rate limits are not shared. Replace with Redis-backed rate limiting. |
-| P3-003 | Observability stack | Ops | Add centralized logging (ELK or Loki), metrics (Prometheus + Grafana), and distributed tracing (Jaeger or Zipkin) for production visibility. |
+| P3-001 | Distributed rate limiting (Redis) | Auth / API | Current rate limiting is in-process (per JVM instance). In a multi-instance deployment, rate limits are not shared. Replace with Redis-backed rate limiting. |
+| P3-002 | Observability stack | Ops | Add centralized logging (ELK or Loki), metrics (Prometheus + Grafana), and distributed tracing (Jaeger or Zipkin) for production visibility. |
+
+> **Out of scope (business decision):** Auto-reconciliation for bank-transfer (SePay/VNPAY/MoMo). BigBike vận hành chuyển khoản đối soát thủ công — admin tự cập nhật khi nhận tiền. SePay artifacts đã được xóa ở V59.
 
 ---
 

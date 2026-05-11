@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerReturnService {
 
     private static final Set<String> RETURNABLE_STATUSES = Set.of("COMPLETED");
+    private static final int RETURN_WINDOW_DAYS = 30;
     private static final Set<String> VALID_REASONS =
             Set.of("DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER");
 
@@ -75,6 +77,12 @@ public class CustomerReturnService {
         if (!RETURNABLE_STATUSES.contains(order.getStatus())) {
             throw ValidationException.fromField("orderId", "NOT_RETURNABLE",
                     "Only COMPLETED orders can be returned. Current status: " + order.getStatus());
+        }
+
+        Instant returnWindowStart = Instant.now().minus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
+        if (order.getCompletedAt() == null || order.getCompletedAt().isBefore(returnWindowStart)) {
+            throw ValidationException.fromField("orderId", "RETURN_WINDOW_EXPIRED",
+                    "Đơn hàng đã quá " + RETURN_WINDOW_DAYS + " ngày kể từ khi hoàn thành, không thể yêu cầu hoàn trả.");
         }
 
         String reason = req.reason().toUpperCase(Locale.ROOT);

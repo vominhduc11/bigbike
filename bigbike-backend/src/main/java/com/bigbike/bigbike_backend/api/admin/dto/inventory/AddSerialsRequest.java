@@ -9,7 +9,6 @@ public record AddSerialsRequest(
         String note
 ) {
     public record SerialEntry(
-            String chassisNumber,
-            String engineNumber
+            String serialNumber
     ) {}
 }

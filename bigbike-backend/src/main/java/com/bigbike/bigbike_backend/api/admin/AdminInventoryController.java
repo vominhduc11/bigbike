@@ -126,6 +126,19 @@ public class AdminInventoryController {
 
     // ── Serial management ─────────────────────────────────────────────────────
 
+    @GetMapping("/serials")
+    public PageResult<AdminSerialResponse> listAllSerials(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return serialService.listAll(q, status, productId, page, size);
+    }
+
     @GetMapping("/variants/{variantId}/serials")
     public PageResult<AdminSerialResponse> listVariantSerials(
             @PathVariable String variantId,

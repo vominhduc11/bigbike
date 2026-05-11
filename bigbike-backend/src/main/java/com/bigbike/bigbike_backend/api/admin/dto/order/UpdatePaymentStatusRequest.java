@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 public record UpdatePaymentStatusRequest(
         @NotBlank String paymentStatus,
         BigDecimal paidAmount,
+        String bankReference,
         String note,
         Boolean customerVisible
 ) {}

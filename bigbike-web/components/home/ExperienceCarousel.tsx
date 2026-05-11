@@ -1,7 +1,13 @@
 "use client";
 
-import useEmblaCarousel from "embla-carousel-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Article } from "@/lib/contracts/public";
@@ -11,27 +17,35 @@ import { toArticlePath } from "@/lib/utils/routes";
 type Props = { articles: Article[] };
 type LegacyExperienceKey = "ls2" | "scoyco" | "agv";
 
+const LOOP_REPEATS = 7;
+const LOOP_CENTER_REPEAT = Math.floor(LOOP_REPEATS / 2);
+const LOOP_EDGE_BUFFER_REPEATS = 2;
+const DESKTOP_SLIDES_PER_VIEW = 2.43;
+const MOBILE_SLIDES_PER_VIEW = 1.2;
+const DESKTOP_GAP = 40;
+const MOBILE_GAP = 13;
+
 const LEGACY_EXPERIENCE_MEDIA: Record<
   LegacyExperienceKey,
   { order: number; title: string; coverImage: string; productImage: string }
 > = {
   ls2: {
-    order: 2,
+    order: 0,
     title: "Mũ bảo hiểm fullface LS2 FF352",
     coverImage: "/wp-content/uploads/2020/06/LS2-FF352_background.jpg",
     productImage: "/wp-content/uploads/2020/06/LS2-FF352_thumbnail.png",
   },
-  scoyco: {
-    order: 1,
-    title: "[Review] - Áo bảo hộ SCOYCO JK37",
-    coverImage: "/wp-content/uploads/2020/06/scoyco-jk37_background.jpg",
-    productImage: "/wp-content/uploads/2020/06/scoyco-jk37_thumbnail-1.png",
-  },
   agv: {
-    order: 0,
+    order: 1,
     title: "[Tiêu điểm] Mũ Bảo Hiểm AGV Chính Hãng 2025",
     coverImage: "/wp-content/uploads/2020/06/avg_background.jpg",
     productImage: "/wp-content/uploads/2020/06/avg_thmbnail-1.png",
+  },
+  scoyco: {
+    order: 2,
+    title: "[Review] - Áo bảo hộ SCOYCO JK37",
+    coverImage: "/wp-content/uploads/2020/06/scoyco-jk37_background.jpg",
+    productImage: "/wp-content/uploads/2020/06/scoyco-jk37_thumbnail-1.png",
   },
 };
 
@@ -83,48 +97,135 @@ function orderLikeLegacyWp(articles: Article[]): Article[] {
 }
 
 function getInitialArticleIndex(articles: Article[]): number {
-  const scoycoIndex = articles.findIndex((article) => getLegacyExperienceKey(article) === "scoyco");
-  return scoycoIndex >= 0 ? scoycoIndex : 0;
+  const agvIndex = articles.findIndex((article) => getLegacyExperienceKey(article) === "agv");
+  if (agvIndex >= 0) return agvIndex;
+  return articles.length > 1 ? Math.floor(articles.length / 2) : 0;
+}
+
+function buildLoopArticles(articles: Article[]): Article[] {
+  if (articles.length <= 1) return articles;
+  return Array.from({ length: LOOP_REPEATS }, () => articles).flat();
+}
+
+function getLoopArticleIndex(displayIndex: number, articleCount: number): number {
+  return ((displayIndex % articleCount) + articleCount) % articleCount;
+}
+
+function getCenteredDisplayIndex(displayIndex: number, articleCount: number): number {
+  return LOOP_CENTER_REPEAT * articleCount + getLoopArticleIndex(displayIndex, articleCount);
+}
+
+function shouldRecenterDisplayIndex(displayIndex: number, articleCount: number): boolean {
+  if (articleCount <= 1) return false;
+  return (
+    displayIndex < articleCount * LOOP_EDGE_BUFFER_REPEATS ||
+    displayIndex >= articleCount * (LOOP_REPEATS - LOOP_EDGE_BUFFER_REPEATS)
+  );
 }
 
 export function ExperienceCarousel({ articles }: Props) {
   const orderedArticles = useMemo(() => orderLikeLegacyWp(articles), [articles]);
   const n = orderedArticles.length;
-  const initialArticleIndex = useMemo(
-    () => getInitialArticleIndex(orderedArticles),
-    [orderedArticles],
-  );
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: n > 1, // Embla needs ≥ 2 slides to create valid loop clones
-    align: "center",
-    containScroll: false,
-    startIndex: initialArticleIndex,
-    duration: 16,
-  });
-  const [selectedIndex, setSelectedIndex] = useState(initialArticleIndex);
+  const loopArticles = useMemo(() => buildLoopArticles(orderedArticles), [orderedArticles]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState<{
+    viewportWidth: number;
+    slideWidth: number;
+    gap: number;
+  } | null>(null);
+  const initialDisplayIndex = useMemo(() => {
+    return n > 1
+      ? LOOP_CENTER_REPEAT * n + getInitialArticleIndex(orderedArticles)
+      : 0;
+  }, [n, orderedArticles]);
+  const [activeDisplayIndex, setActiveDisplayIndex] = useState(initialDisplayIndex);
+  const [isRecenterJumping, setIsRecenterJumping] = useState(false);
 
   useEffect(() => {
-    if (!emblaApi) return;
-    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
-    onSelect();
-    emblaApi.on("select", onSelect);
-    return () => { emblaApi.off("select", onSelect); };
-  }, [emblaApi]);
+    if (!isRecenterJumping) return;
 
-  const scrollToArticle = useCallback(
-    (articleIndex: number) => emblaApi?.scrollTo(articleIndex),
-    [emblaApi],
-  );
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setIsRecenterJumping(false);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [isRecenterJumping]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const measuredViewport = viewport;
+
+    function updateLayout() {
+      const viewportWidth = measuredViewport.clientWidth;
+      const mobile = viewportWidth < 767;
+      const slidesPerView = mobile ? MOBILE_SLIDES_PER_VIEW : DESKTOP_SLIDES_PER_VIEW;
+      const gap = mobile ? MOBILE_GAP : DESKTOP_GAP;
+      const slideWidth = (viewportWidth - gap * (slidesPerView - 1)) / slidesPerView;
+
+      setLayout((previous) => {
+        if (
+          previous &&
+          Math.abs(previous.viewportWidth - viewportWidth) < 0.5 &&
+          Math.abs(previous.slideWidth - slideWidth) < 0.5 &&
+          previous.gap === gap
+        ) {
+          return previous;
+        }
+        return { viewportWidth, slideWidth, gap };
+      });
+    }
+
+    updateLayout();
+    const resizeObserver = new ResizeObserver(updateLayout);
+    resizeObserver.observe(measuredViewport);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   if (n === 0) return null;
 
+  const activeOffset = layout
+    ? (layout.viewportWidth - layout.slideWidth) / 2 -
+      activeDisplayIndex * (layout.slideWidth + layout.gap)
+    : 0;
+  const trackStyle = {
+    "--wp-exp-gap": layout ? `${layout.gap}px` : `${DESKTOP_GAP}px`,
+    "--wp-exp-slide-w": layout ? `${layout.slideWidth}px` : "42vw",
+    opacity: layout ? 1 : 0,
+    transform: `translate3d(${activeOffset}px, 0, 0)`,
+  } as CSSProperties;
+
+  function recenterIfNeeded(displayIndex: number) {
+    if (!shouldRecenterDisplayIndex(displayIndex, n)) return;
+    setIsRecenterJumping(true);
+    setActiveDisplayIndex(getCenteredDisplayIndex(displayIndex, n));
+  }
+
+  function handleSlideKeyDown(event: KeyboardEvent<HTMLDivElement>, displayIndex: number) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    setActiveDisplayIndex(displayIndex);
+  }
+
   return (
     <div className="wp-exp-carousel">
-      <div className="wp-exp-carousel-vp" ref={emblaRef}>
-        <div className="wp-exp-carousel-track">
-          {orderedArticles.map((article, i) => {
-            const active = i === selectedIndex;
+      <div className="wp-exp-carousel-vp" ref={viewportRef}>
+        <div
+          className={`wp-exp-carousel-track${isRecenterJumping ? " is-jumping" : ""}`}
+          style={trackStyle}
+          onTransitionEnd={(event) => {
+            if (event.target === event.currentTarget && event.propertyName === "transform") {
+              recenterIfNeeded(activeDisplayIndex);
+            }
+          }}
+        >
+          {loopArticles.map((article, i) => {
             const legacyKey = getLegacyExperienceKey(article);
             const legacyMedia = legacyKey ? LEGACY_EXPERIENCE_MEDIA[legacyKey] : null;
             const title = legacyMedia?.title ?? safeText(article.title, "Bài viết");
@@ -134,23 +235,16 @@ export function ExperienceCarousel({ articles }: Props) {
               legacyMedia?.productImage ||
               normalizeLegacyUploadUrl(article.productImage?.url?.trim()) ||
               normalizeLegacyUploadUrl(extractFirstImageUrl(article.body));
+            const active = i === activeDisplayIndex;
 
             return (
               <div
-                key={article.id}
+                key={`${article.id}-${i}`}
                 className={`wp-exp-carousel-slide${active ? " is-active" : ""}`}
-                onClick={!active ? () => scrollToArticle(i) : undefined}
+                onClick={!active ? () => setActiveDisplayIndex(i) : undefined}
+                onKeyDown={!active ? (event) => handleSlideKeyDown(event, i) : undefined}
                 role={!active ? "button" : undefined}
                 tabIndex={!active ? 0 : undefined}
-                onKeyDown={
-                  !active
-                    ? (e) => {
-                        if (e.key !== "Enter") return;
-                        e.preventDefault();
-                        scrollToArticle(i);
-                      }
-                    : undefined
-                }
                 aria-label={!active ? `Chuyển đến: ${title}` : undefined}
               >
                 <div className="wp-experience-img-wrap">

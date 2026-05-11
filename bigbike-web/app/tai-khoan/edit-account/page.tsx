@@ -31,6 +31,10 @@ function EditAccountContent() {
 
     // Client-side password validation
     if (newPassword) {
+      if (!currentPassword) {
+        setPasswordError("Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu.");
+        return;
+      }
       if (newPassword.length < 8) {
         setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
         return;
@@ -145,7 +149,7 @@ function EditAccountContent() {
 
 export default function EditAccountPage() {
   return (
-    <AccountShell loginRedirect="/tai-khoan/edit-account">
+    <AccountShell loginRedirect="/tai-khoan/edit-account/">
       <EditAccountContent />
     </AccountShell>
   );

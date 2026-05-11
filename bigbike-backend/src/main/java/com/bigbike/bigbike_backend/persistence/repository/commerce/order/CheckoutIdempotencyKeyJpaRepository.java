@@ -24,4 +24,8 @@ public interface CheckoutIdempotencyKeyJpaRepository extends JpaRepository<Check
             @Param("orderId") UUID orderId,
             @Param("now") Instant now
     );
+
+    @Modifying
+    @Query("DELETE FROM CheckoutIdempotencyKeyEntity k WHERE k.createdAt < :cutoff")
+    int deleteOlderThan(@Param("cutoff") Instant cutoff);
 }

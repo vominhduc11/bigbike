@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAppliedCouponResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -68,7 +69,8 @@ public class AdminOrderService {
     );
 
     private static final Set<String> ALLOWED_PAYMENT_STATUSES = Set.of(
-            "UNPAID", "PENDING", "PAID", "PARTIALLY_PAID", "FAILED", "REFUNDED", "CANCELLED", "PARTIALLY_REFUNDED"
+            "UNPAID", "PENDING", "PAID", "PARTIALLY_PAID", "FAILED", "REFUNDED", "CANCELLED", "PARTIALLY_REFUNDED",
+            "WRITTEN_OFF"
     );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
@@ -94,6 +96,22 @@ public class AdminOrderService {
         ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",           Set.of());
         ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED",          Set.of());
         ALLOWED_PAYMENT_TRANSITIONS.put("FAILED",             Set.of("PAID", "PARTIALLY_PAID", "CANCELLED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("WRITTEN_OFF",        Set.of());
+    }
+
+    private static final Set<String> ALLOWED_FULFILLMENT_STATUSES = Set.of(
+            "UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"
+    );
+
+    private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
+    static {
+        ALLOWED_FULFILLMENT_TRANSITIONS = new HashMap<>();
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED", "RETURNED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of("RETURNED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("CANCELLED",   Set.of());
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("RETURNED",    Set.of());
     }
 
     private final OrderJpaRepository orderRepo;
@@ -253,6 +271,16 @@ public class AdminOrderService {
         if ("CANCELLED".equals(newStatus) && order.getCancelledAt() == null) {
             order.setCancelledAt(now);
         }
+
+        // Auto-initialise fulfillmentStatus for DELIVERY orders on key transitions.
+        if ("DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
+            if ("PROCESSING".equals(newStatus) && order.getFulfillmentStatus() == null) {
+                order.setFulfillmentStatus("UNFULFILLED");
+            } else if ("CANCELLED".equals(newStatus)) {
+                order.setFulfillmentStatus("CANCELLED");
+            }
+        }
+
         orderRepo.save(order);
 
         // Serial lifecycle transitions (idempotent; no-op if no serials linked)
@@ -324,10 +352,13 @@ public class AdminOrderService {
                 order.setPaymentStatus("PAID");
                 order.setPaidAmount(paid);
                 if (order.getPaidAt() == null) order.setPaidAt(now);
-                // Mark payment record SUCCEEDED
+                // Mark payment record SUCCEEDED; capture bank transfer reference if provided
                 paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
                     p.setStatus("SUCCEEDED");
                     p.setPaidAt(now);
+                    if (req.bankReference() != null && !req.bankReference().isBlank()) {
+                        p.setTransactionId(req.bankReference().strip());
+                    }
                     paymentRepo.save(p);
                 });
             }
@@ -385,6 +416,85 @@ public class AdminOrderService {
                 req.refundAmount(), req.refundReason(),
                 noteContent, Boolean.TRUE.equals(req.customerVisible()),
                 clientIp, userAgent);
+        return toDetail(orderRepo.findById(orderId).orElseThrow());
+    }
+
+    // ── Update fulfillment status ─────────────────────────────────────────────
+
+    @Transactional
+    public AdminOrderDetailResponse updateFulfillmentStatus(UUID orderId, UUID adminId,
+            UpdateFulfillmentRequest req, String clientIp, String userAgent) {
+
+        String newStatus = req.fulfillmentStatus().toUpperCase(Locale.ROOT);
+        if (!ALLOWED_FULFILLMENT_STATUSES.contains(newStatus)) {
+            throw ValidationException.fromField("fulfillmentStatus", "INVALID",
+                    "Unknown fulfillment status: " + newStatus);
+        }
+
+        OrderEntity order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        if (!"DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
+            throw new ConflictException(
+                    "Fulfillment status is only applicable to DELIVERY orders.");
+        }
+
+        String current = order.getFulfillmentStatus();
+
+        if (newStatus.equals(current)) {
+            return toDetail(order);
+        }
+
+        if (current != null) {
+            Set<String> allowed = ALLOWED_FULFILLMENT_TRANSITIONS.getOrDefault(current, Set.of());
+            if (!allowed.contains(newStatus)) {
+                throw new ConflictException(
+                        "Cannot transition fulfillment from " + current + " to " + newStatus + ".");
+            }
+        }
+
+        Instant now = Instant.now();
+
+        order.setFulfillmentStatus(newStatus);
+        order.setUpdatedAt(now);
+
+        if ("SHIPPED".equals(newStatus) && order.getShippedAt() == null) {
+            order.setShippedAt(now);
+        }
+        if (req.trackingNumber() != null && !req.trackingNumber().isBlank()) {
+            order.setTrackingNumber(req.trackingNumber().trim());
+        }
+        if (req.shippingCarrier() != null && !req.shippingCarrier().isBlank()) {
+            order.setShippingCarrier(req.shippingCarrier().trim());
+        }
+
+        orderRepo.save(order);
+
+        if (req.note() != null && !req.note().isBlank()) {
+            boolean visible = Boolean.TRUE.equals(req.customerVisible());
+            noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
+        }
+
+        auditLogRepo.save(buildAudit(adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
+                order.getId(),
+                "{\"fulfillmentStatus\":\"" + current + "\"}",
+                "{\"fulfillmentStatus\":\"" + newStatus + "\""
+                        + (order.getTrackingNumber() != null
+                                ? ",\"trackingNumber\":\"" + order.getTrackingNumber() + "\""
+                                : "") + "}",
+                now, clientIp, userAgent));
+
+        if ("SHIPPED".equals(newStatus)) {
+            String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
+                    ? req.note() : null;
+            orderNotificationService.sendOrderShipped(order, customerNote);
+        }
+
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_FULFILLMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
+                safeCustomerName(order), order.getTotalAmount(),
+                order.getStatus(), order.getPaymentStatus(), now));
+
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 
@@ -478,6 +588,10 @@ public class AdminOrderService {
                 order.getStatus(),
                 order.getPaymentStatus(),
                 order.getFulfillmentStatus(),
+                order.getFulfillmentType(),
+                order.getTrackingNumber(),
+                order.getShippingCarrier(),
+                order.getShippedAt(),
                 order.getCustomerEmail(),
                 order.getCustomerPhone(),
                 order.getCustomerNote(),
@@ -524,7 +638,7 @@ public class AdminOrderService {
 
     private OrderPaymentResponse toPayment(PaymentEntity e) {
         return new OrderPaymentResponse(e.getId(), e.getPaymentMethod(), e.getStatus(),
-                e.getAmount(), e.getCurrency(), e.getPaidAt());
+                e.getAmount(), e.getCurrency(), e.getTransactionId(), e.getPaidAt());
     }
 
     private AdminOrderNoteResponse toAdminNote(OrderNoteEntity e) {

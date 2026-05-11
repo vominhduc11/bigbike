@@ -1,0 +1,79 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { fetchWishlist } from "@/lib/api/client-api";
+import { listProducts } from "@/lib/api/public-api";
+import type { Product } from "@/lib/contracts/public";
+import { AccountShell } from "@/components/layout/AccountShell";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+function WishlistContent() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetchWishlist()
+      .then(async (ids) => {
+        if (!active) return;
+        if (ids.length === 0) { setProducts([]); return; }
+        // Fetch all products matching wishlist IDs — use id filter via search
+        // Products API doesn't support multi-ID lookup; fall back to listing and filtering client-side.
+        // For production scale consider a dedicated batch endpoint.
+        const result = await listProducts({ page: 1, size: 100 });
+        if (!active) return;
+        const idSet = new Set(ids);
+        const sorted = (result.data ?? []).filter((p) => idSet.has(p.id));
+        setProducts(sorted);
+      })
+      .catch((err: Error) => { if (active) setError(err.message ?? "Không tải được danh sách yêu thích."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <>
+      <div className="wp-account-header">
+        <h2>Sản phẩm yêu thích</h2>
+      </div>
+
+      {error && <p className="wp-error-text">{error}</p>}
+
+      {loading ? (
+        <div className="wp-product-grid" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="wp-product-card">
+              <div className="wp-product-image bb-skel" style={{ aspectRatio: "1/1" }} />
+              <div className="wp-product-body bb-skel-stack">
+                <span className="bb-skel bb-skel--text bb-skel-w-40" />
+                <span className="bb-skel bb-skel--text bb-skel-w-80" />
+                <span className="bb-skel bb-skel--text bb-skel-w-60" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : products.length === 0 ? (
+        <EmptyState
+          title="Chưa có sản phẩm yêu thích"
+          description="Nhấn vào biểu tượng trái tim trên sản phẩm bất kỳ để lưu vào đây."
+          action={<Link href="/san-pham/" className="wp-btn-primary wp-btn-sm">Khám phá sản phẩm</Link>}
+        />
+      ) : (
+        <div className="wp-product-grid">
+          {products.map((p) => <ProductCard key={p.id} product={p} />)}
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function WishlistPage() {
+  return (
+    <AccountShell loginRedirect="/tai-khoan/yeu-thich/">
+      <WishlistContent />
+    </AccountShell>
+  );
+}

@@ -493,9 +493,9 @@ export default function CheckoutPage() {
 
               <div className="wp-terms-notice">
                 Bằng việc đặt hàng, bạn đồng ý với{" "}
-                <Link href="/dieu-khoan-dich-vu">Điều khoản dịch vụ</Link>
+                <Link href="/chinh-sach/dieu-khoan/">Điều khoản dịch vụ</Link>
                 {" "}và{" "}
-                <Link href="/chinh-sach-doi-tra">Chính sách đổi trả</Link>
+                <Link href="/chinh-sach/doi-tra/">Chính sách đổi trả</Link>
                 {" "}của BigBike.
               </div>
 

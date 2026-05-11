@@ -57,7 +57,7 @@ export default function VerifyEmailPage() {
             <p className="bb-text-muted" style={{ marginBottom: 24 }}>
               Tài khoản của bạn đã được kích hoạt đầy đủ.
             </p>
-            <Link href="/tai-khoan" className="bb-btn bb-btn-primary">
+            <Link href="/tai-khoan/" className="bb-btn bb-btn-primary">
               Vào tài khoản
             </Link>
           </>
@@ -70,7 +70,7 @@ export default function VerifyEmailPage() {
             <p className="bb-text-muted" style={{ marginBottom: 24 }}>{errorMsg}</p>
             <p style={{ fontSize: "0.9rem" }}>
               Link có thể đã hết hạn hoặc đã được sử dụng.{" "}
-              <Link href="/tai-khoan" style={{ color: "var(--bb-color-primary)" }}>
+              <Link href="/tai-khoan/" style={{ color: "var(--bb-color-primary)" }}>
                 Vào tài khoản
               </Link>{" "}
               để yêu cầu gửi lại email xác thực.

@@ -1,9 +1,11 @@
 "use client";
-import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
-import { useCallback, useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
 import Image from "next/image";
 import Link from "next/link";
+import "swiper/css";
 
 export type HeroSlide = {
   id: string;
@@ -18,25 +20,8 @@ type HeroSliderProps = {
 };
 
 export function HeroSlider({ slides }: HeroSliderProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, duration: 30 },
-    [Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })],
-  );
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
-  const scrollTo = useCallback(
-    (index: number) => emblaApi?.scrollTo(index),
-    [emblaApi],
-  );
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
-    emblaApi.on("select", onSelect);
-    return () => void emblaApi.off("select", onSelect);
-  }, [emblaApi]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   const count = slides.length;
 
@@ -54,7 +39,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             Mũ bảo hiểm, áo giáp, găng tay, intercom và phụ kiện touring được
             chọn lọc theo tinh thần garage cao cấp: rõ ràng, đáng tin, tư vấn kỹ.
           </p>
-          <Link href="/san-pham" className="wp-hero-cta">
+          <Link href="/san-pham/" className="wp-hero-cta">
             Xem sản phẩm <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -72,39 +57,45 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div className="wp-slider" aria-roledescription="carousel">
-      <div className="wp-slider-viewport" ref={emblaRef}>
-        <div className="wp-slider-track">
-          {slides.map((slide, i) => (
-            <div
-              key={slide.id}
-              className="wp-slide"
-              aria-hidden={i !== selectedIndex}
+      <Swiper
+        modules={[Autoplay]}
+        loop={true}
+        speed={600}
+        autoplay={{ delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true }}
+        onSwiper={(swiper) => { swiperRef.current = swiper; }}
+        onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+        style={{ width: "100%", height: "100%" }}
+      >
+        {slides.map((slide, i) => (
+          <SwiperSlide key={slide.id} style={{ width: "100%", height: "100%" }}>
+            <Link
+              href={slide.href}
+              tabIndex={i !== activeIndex ? -1 : 0}
+              style={{ display: "block", width: "100%", height: "100%" }}
             >
-              <Link href={slide.href} tabIndex={i !== selectedIndex ? -1 : 0}>
-                <picture className="wp-slide-picture">
-                  {slide.mobileSrc && (
-                    <source media="(max-width: 768px)" srcSet={slide.mobileSrc} />
-                  )}
-                  <img
-                    src={slide.desktopSrc || ''}
-                    alt={slide.alt}
-                    className="wp-slide-img"
-                    loading={i === 0 ? "eager" : "lazy"}
-                    fetchPriority={i === 0 ? "high" : "auto"}
-                    decoding="async"
-                  />
-                </picture>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+              <picture className="wp-slide-picture">
+                {slide.mobileSrc && (
+                  <source media="(max-width: 768px)" srcSet={slide.mobileSrc} />
+                )}
+                <img
+                  src={slide.desktopSrc || ""}
+                  alt={slide.alt}
+                  className="wp-slide-img"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  decoding="async"
+                />
+              </picture>
+            </Link>
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
       {count > 1 && (
         <>
           <button
             className="wp-slider-btn wp-slider-prev"
-            onClick={scrollPrev}
+            onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -113,26 +104,22 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           </button>
           <button
             className="wp-slider-btn wp-slider-next"
-            onClick={scrollNext}
+            onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M6.5 3.5L12 9l-5.5 5.5" />
             </svg>
           </button>
-          <div
-            className="wp-slider-dots"
-            role="tablist"
-            aria-label="Điều hướng slide"
-          >
+          <div className="wp-slider-dots" role="tablist" aria-label="Điều hướng slide">
             {slides.map((_, i) => (
               <button
                 key={i}
                 role="tab"
-                aria-selected={i === selectedIndex}
+                aria-selected={i === activeIndex}
                 aria-label={`Slide ${i + 1}`}
-                className={`wp-slider-dot${i === selectedIndex ? " is-active" : ""}`}
-                onClick={() => scrollTo(i)}
+                className={`wp-slider-dot${i === activeIndex ? " is-active" : ""}`}
+                onClick={() => swiperRef.current?.slideToLoop(i)}
               />
             ))}
           </div>

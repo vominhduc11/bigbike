@@ -1,10 +1,12 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminCreateReturnRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnDetailResponse.ReturnHistoryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnDetailResponse.ReturnItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.UpdateReturnStatusRequest;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
@@ -27,16 +29,20 @@ import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -73,6 +79,7 @@ public class AdminReturnService {
     private final ReturnItemSerialJpaRepository risRepo;
     private final OrderNotificationService notificationService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
+    private final EntityManager em;
 
     public AdminReturnService(
             ReturnJpaRepository returnRepo,
@@ -87,7 +94,8 @@ public class AdminReturnService {
             SerialLifecycleService serialLifecycleService,
             ReturnItemSerialJpaRepository risRepo,
             OrderNotificationService notificationService,
-            com.bigbike.bigbike_backend.service.payment.RefundService refundService
+            com.bigbike.bigbike_backend.service.payment.RefundService refundService,
+            EntityManager em
     ) {
         this.returnRepo = returnRepo;
         this.itemRepo = itemRepo;
@@ -102,6 +110,7 @@ public class AdminReturnService {
         this.risRepo = risRepo;
         this.notificationService = notificationService;
         this.refundService = refundService;
+        this.em = em;
     }
 
     // ── List (server-side pagination) ─────────────────────────────────────────
@@ -286,6 +295,108 @@ public class AdminReturnService {
                 }
             });
         }
+    }
+
+    // ── Admin-initiated return creation ───────────────────────────────────────
+
+    @Transactional
+    public AdminReturnDetailResponse adminCreateReturn(AdminCreateReturnRequest req, UUID adminId) {
+        OrderEntity order = orderRepo.findById(req.orderId())
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        if (!"COMPLETED".equals(order.getStatus())) {
+            throw new ConflictException(
+                    "Chỉ đơn hàng COMPLETED mới có thể tạo yêu cầu đổi trả. Trạng thái hiện tại: "
+                    + order.getStatus());
+        }
+
+        boolean alreadyActive = returnRepo.findByOrderIdOrderByCreatedAtDesc(req.orderId())
+                .stream().anyMatch(r -> "PENDING".equals(r.getStatus())
+                        || "APPROVED".equals(r.getStatus())
+                        || "RECEIVED".equals(r.getStatus()));
+        if (alreadyActive) {
+            throw new ConflictException("Đơn hàng này đang có yêu cầu đổi trả chưa hoàn tất.");
+        }
+
+        String reason = req.reason().toUpperCase(Locale.ROOT);
+
+        Set<UUID> seen = new HashSet<>();
+        for (AdminCreateReturnRequest.ReturnItemRequest item : req.items()) {
+            if (!seen.add(item.orderLineItemId())) {
+                throw ValidationException.fromField("items[].orderLineItemId", "DUPLICATE",
+                        "Trùng orderLineItemId: " + item.orderLineItemId());
+            }
+        }
+
+        Map<UUID, OrderLineItemEntity> lineItemMap = lineItemRepo.findByOrderId(req.orderId())
+                .stream().collect(Collectors.toMap(OrderLineItemEntity::getId, li -> li));
+
+        for (AdminCreateReturnRequest.ReturnItemRequest item : req.items()) {
+            OrderLineItemEntity lineItem = lineItemMap.get(item.orderLineItemId());
+            if (lineItem == null) {
+                throw ValidationException.fromField("items[].orderLineItemId", "NOT_IN_ORDER",
+                        "Line item không thuộc đơn hàng này: " + item.orderLineItemId());
+            }
+            int alreadyReturned = itemRepo.sumNonRejectedQuantityByLineItemId(item.orderLineItemId());
+            int remaining = lineItem.getQuantity() - alreadyReturned;
+            if (item.quantity() > remaining) {
+                throw ValidationException.fromField("items[].quantity", "EXCEEDS_RETURNABLE",
+                        "Số lượng " + item.quantity() + " vượt quá số có thể trả (" + remaining
+                        + ") cho sản phẩm: " + lineItem.getProductName());
+            }
+        }
+
+        Instant now = Instant.now();
+        Long seq = (Long) em.createNativeQuery("SELECT nextval('return_number_seq')").getSingleResult();
+        String returnNumber = String.format("RMA-%06d", seq);
+
+        ReturnEntity ret = new ReturnEntity();
+        ret.setReturnNumber(returnNumber);
+        ret.setOrderId(req.orderId());
+        ret.setCustomerId(order.getCustomerId());
+        ret.setStatus("PENDING");
+        ret.setReason(reason);
+        ret.setCustomerNote(req.customerNote());
+        ret.setRefundAmount(BigDecimal.ZERO);
+        ret.setCreatedAt(now);
+        ret.setUpdatedAt(now);
+        returnRepo.save(ret);
+
+        for (AdminCreateReturnRequest.ReturnItemRequest item : req.items()) {
+            OrderLineItemEntity lineItem = lineItemMap.get(item.orderLineItemId());
+            ReturnItemEntity itemEntity = new ReturnItemEntity();
+            itemEntity.setReturnId(ret.getId());
+            itemEntity.setOrderLineItemId(item.orderLineItemId());
+            itemEntity.setProductName(lineItem.getProductName());
+            itemEntity.setVariantName(lineItem.getVariantName());
+            itemEntity.setSku(lineItem.getSku());
+            itemEntity.setQuantity(item.quantity());
+            itemEntity.setUnitPrice(lineItem.getUnitPrice());
+            itemEntity.setReason(item.reason());
+            itemEntity.setCreatedAt(now);
+            itemRepo.save(itemEntity);
+        }
+
+        ReturnHistoryEntity history = new ReturnHistoryEntity();
+        history.setReturnId(ret.getId());
+        history.setFromStatus(null);
+        history.setToStatus("PENDING");
+        history.setNote("Yêu cầu đổi trả tạo bởi nhân viên.");
+        history.setAdminId(adminId);
+        history.setCreatedAt(now);
+        historyRepo.save(history);
+
+        return toDetail(ret, order);
+    }
+
+    // ── Returns by order ─────────────────────────────────────────────────────────
+
+    public List<AdminReturnListItemResponse> listByOrderId(UUID orderId) {
+        OrderEntity order = orderRepo.findById(orderId).orElse(null);
+        return returnRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
+                .stream()
+                .map(r -> toListItem(r, order))
+                .toList();
     }
 
     // ── Spec builder ──────────────────────────────────────────────────────────

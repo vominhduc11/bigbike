@@ -38,13 +38,17 @@ function AccountOverview() {
           <p className="wp-nav-card-title">Đơn hàng</p>
           <p className="wp-nav-card-desc">Xem lịch sử đặt hàng →</p>
         </Link>
-        <Link href="/tai-khoan/edit-account" className="wp-nav-card">
+        <Link href="/tai-khoan/edit-account/" className="wp-nav-card">
           <p className="wp-nav-card-title">Tài khoản</p>
           <p className="wp-nav-card-desc">Chỉnh sửa thông tin →</p>
         </Link>
-        <Link href="/tai-khoan/edit-address/billing" className="wp-nav-card">
+        <Link href="/tai-khoan/edit-address/billing/" className="wp-nav-card">
           <p className="wp-nav-card-title">Địa chỉ</p>
           <p className="wp-nav-card-desc">Quản lý địa chỉ →</p>
+        </Link>
+        <Link href="/tai-khoan/yeu-thich/" className="wp-nav-card">
+          <p className="wp-nav-card-title">Yêu thích</p>
+          <p className="wp-nav-card-desc">Sản phẩm đã lưu →</p>
         </Link>
       </div>
     </>
@@ -53,7 +57,7 @@ function AccountOverview() {
 
 export default function AccountPage() {
   return (
-    <AccountShell loginRedirect="/tai-khoan">
+    <AccountShell loginRedirect="/tai-khoan/">
       <AccountOverview />
     </AccountShell>
   );

@@ -50,6 +50,21 @@ public class AdminSerialService {
         this.auditLogRepo = auditLogRepo;
     }
 
+    // ── List all serials (global search) ─────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PageResult<AdminSerialResponse> listAll(
+            String q, String statusStr, String productId, int page, int size
+    ) {
+        int pg = Math.max(1, page) - 1;
+        int sz = clampSize(size);
+        String qParam = (q == null || q.isBlank()) ? null : q.strip();
+        ProductSerialStatus status = parseStatus(statusStr);
+        String pidParam = (productId == null || productId.isBlank()) ? null : productId.strip();
+        Page<ProductSerialEntity> dbPage = serialRepo.searchAll(qParam, status, pidParam, PageRequest.of(pg, sz));
+        return toPageResult(dbPage, page, sz);
+    }
+
     // ── List serials for a variant ────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -207,8 +222,7 @@ public class AdminSerialService {
             ProductSerialEntity s = new ProductSerialEntity();
             s.setProduct(product);
             s.setVariant(variant);
-            s.setChassisNumber(nullIfBlank(entry.chassisNumber()));
-            s.setEngineNumber(nullIfBlank(entry.engineNumber()));
+            s.setSerialNumber(entry.serialNumber().strip());
             s.setStatus(ProductSerialStatus.IN_STOCK);
             s.setNote(req.note());
             s.setAdminId(adminId);
@@ -228,48 +242,26 @@ public class AdminSerialService {
     }
 
     private void validateEntries(List<AddSerialsRequest.SerialEntry> entries) {
-        Set<String> seenChassis = new HashSet<>();
-        Set<String> seenEngine = new HashSet<>();
-        List<String> chassis = new ArrayList<>();
-        List<String> engine = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        List<String> numbers = new ArrayList<>();
 
         for (AddSerialsRequest.SerialEntry e : entries) {
-            String c = nullIfBlank(e.chassisNumber());
-            String en = nullIfBlank(e.engineNumber());
-
-            if (c == null && en == null) {
-                throw ValidationException.fromField("serials", "MISSING_IDENTIFIER",
-                        "Each serial must have at least a chassisNumber or engineNumber.");
+            String sn = nullIfBlank(e.serialNumber());
+            if (sn == null) {
+                throw ValidationException.fromField("serials", "MISSING_SERIAL_NUMBER",
+                        "Each entry must have a non-blank serialNumber.");
             }
-            if (c != null) {
-                if (!seenChassis.add(c)) {
-                    throw ValidationException.fromField("serials", "DUPLICATE_CHASSIS",
-                            "Duplicate chassisNumber in request: " + c);
-                }
-                chassis.add(c);
+            if (!seen.add(sn)) {
+                throw ValidationException.fromField("serials", "DUPLICATE_SERIAL_NUMBER",
+                        "Duplicate serialNumber in request: " + sn);
             }
-            if (en != null) {
-                if (!seenEngine.add(en)) {
-                    throw ValidationException.fromField("serials", "DUPLICATE_ENGINE",
-                            "Duplicate engineNumber in request: " + en);
-                }
-                engine.add(en);
-            }
+            numbers.add(sn);
         }
 
-        if (!chassis.isEmpty()) {
-            List<String> existing = serialRepo.findExistingChassisNumbers(chassis);
-            if (!existing.isEmpty()) {
-                throw ValidationException.fromField("serials", "CHASSIS_ALREADY_EXISTS",
-                        "Chassis numbers already registered: " + existing);
-            }
-        }
-        if (!engine.isEmpty()) {
-            List<String> existing = serialRepo.findExistingEngineNumbers(engine);
-            if (!existing.isEmpty()) {
-                throw ValidationException.fromField("serials", "ENGINE_ALREADY_EXISTS",
-                        "Engine numbers already registered: " + existing);
-            }
+        List<String> existing = serialRepo.findExistingSerialNumbers(numbers);
+        if (!existing.isEmpty()) {
+            throw ValidationException.fromField("serials", "SERIAL_ALREADY_EXISTS",
+                    "Serial numbers already registered: " + existing);
         }
     }
 

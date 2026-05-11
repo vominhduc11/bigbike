@@ -20,7 +20,7 @@ function pickSetting(
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đặt hàng thành công",
   description: "Xác nhận đơn hàng BigBike.",
-  canonicalPath: "/don-hang/xac-nhan",
+  canonicalPath: "/don-hang/xac-nhan/",
   noIndex: true,
 });
 

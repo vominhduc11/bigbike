@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { addCartItem, fetchCart } from "@/lib/api/client-api";
+import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
 
 type Toast = {
@@ -20,6 +22,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
   const [cartCount, setCartCount] = useState<number | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
@@ -40,6 +43,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshCount();
   }, [refreshCount]);
+
+  // Re-sync cart count when auth changes (e.g. after login, backend merges guest cart)
+  useEffect(() => {
+    if (auth.status === "loading") return;
+    refreshCount();
+  }, [auth.status, refreshCount]);
 
   const showToast = useCallback((title: string, message: string) => {
     const id = ++nextId.current;
@@ -67,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <b>{toast.title}</b>
             <span>{toast.message}</span>
           </div>
-          <a href={toCartPath()} className="wp-toast-cta">Xem giỏ →</a>
+          <Link href={toCartPath()} className="wp-toast-cta">Xem giỏ →</Link>
         </div>
       ))}
     </CartContext.Provider>

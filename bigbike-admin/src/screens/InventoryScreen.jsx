@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { QRCodeSVG } from 'qrcode.react'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -14,8 +15,7 @@ import {
   downloadInventoryCsv,
   fetchVariantSerials,
   fetchProductSerials,
-  addVariantSerials,
-  addProductSerials,
+  importBulkSerials,
   updateSerialStatus,
   enableVariantSerialTracking,
   enableProductSerialTracking,
@@ -856,59 +856,204 @@ function SerialStatusBadge({ status }) {
   return <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{label}</span>
 }
 
+// ── File parser: CSV/Excel 1 cột mã serial ────────────────────────────────────
+
+const SERIAL_HEADERS = new Set(['serial', 'serial_number', 'serialnumber', 'ma_serial', 'mã serial', 'so_serial', 'số serial'])
+
+function detectSerialColumn(firstRow) {
+  const norm = firstRow.map((c) => (c == null ? '' : String(c).trim().toLowerCase()))
+  const serialIdx = norm.findIndex((c) => SERIAL_HEADERS.has(c))
+  return { hasHeader: serialIdx >= 0, serialIdx: serialIdx >= 0 ? serialIdx : 0 }
+}
+
+function rowsToSerials(dataRows, serialIdx) {
+  return dataRows.map((row) => {
+    const serial = String(row[serialIdx] ?? '').trim()
+    return { serial }
+  }).filter((r) => r.serial)
+}
+
+async function parseSerialFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase()
+  if (file.size > 5 * 1024 * 1024) throw new Error('FILE_TOO_BIG')
+
+  if (ext === 'csv' || ext === 'txt') {
+    const text = await file.text()
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/)
+    const rows  = lines.map((l) => l.split(/[,;\t]/).map((c) => c.trim()))
+    if (rows.length === 0) return []
+    const { hasHeader, serialIdx } = detectSerialColumn(rows[0])
+    return rowsToSerials(hasHeader ? rows.slice(1) : rows, serialIdx)
+  }
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    const xlsxModule = await import('xlsx')
+    const XLSX = xlsxModule.default ?? xlsxModule
+    const wb   = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' })
+    const ws   = wb.Sheets[wb.SheetNames[0]]
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+    if (rows.length === 0) return []
+    const { hasHeader, serialIdx } = detectSerialColumn(rows[0])
+    return rowsToSerials(hasHeader ? rows.slice(1) : rows, serialIdx)
+  }
+
+  throw new Error('FILE_UNSUPPORTED')
+}
+
+// ── AddSerialsPanel ────────────────────────────────────────────────────────────
+
 function AddSerialsPanel({ item, onSuccess }) {
   const isVariant = Boolean(item?.variantId)
-  const [rows, setRows] = useState([{ chassis: '', engine: '' }])
-  const [note, setNote] = useState('')
+  const [rows, setRows] = useState([{ serial: '' }])
+  const [supplierNote, setSupplierNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const fileInputRef = useRef(null)
 
-  function addRow() { setRows((r) => [...r, { chassis: '', engine: '' }]) }
+  // File import state
+  const [parsing, setParsing] = useState(false)
+  const [parsePreview, setParsePreview] = useState(null) // { total, valid, blank }
+
+  // Result state after submit
+  const [importResult, setImportResult] = useState(null) // { inserted, skipped, errors[] }
+
+  function addRow() { setRows((r) => [...r, { serial: '' }]) }
   function removeRow(i) { setRows((r) => r.filter((_, idx) => idx !== i)) }
   function updateRow(i, field, val) {
     setRows((r) => r.map((row, idx) => idx === i ? { ...row, [field]: val } : row))
+    setImportResult(null)
+  }
+
+  async function handleFileImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setParsing(true)
+    setParsePreview(null)
+    setImportResult(null)
+    try {
+      const pairs = await parseSerialFile(file)
+      const valid = pairs.filter((r) => r.serial)
+      const blank = pairs.length - valid.length
+      setParsePreview({ total: pairs.length, valid: valid.length, blank })
+      setRows(valid.length > 0 ? valid.map((p) => ({ serial: p.serial })) : [{ serial: '' }])
+      if (valid.length === 0) setError('File không có dòng hợp lệ nào.')
+      else setError('')
+    } catch (err) {
+      const msg = err.message === 'FILE_TOO_BIG' ? 'File quá lớn (tối đa 5 MB).'
+               : err.message === 'FILE_UNSUPPORTED' ? 'Chỉ chấp nhận .csv, .txt, .xlsx, .xls.'
+               : 'Không thể đọc file. Kiểm tra lại định dạng.'
+      setError(msg)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  function handleRetrySkipped() {
+    if (!importResult) return
+    const errorIndices = new Set(importResult.errors.map((e) => e.rowIndex))
+    const failedRows = rows.filter((_, i) => errorIndices.has(i))
+    setRows(failedRows.length > 0 ? failedRows : [{ serial: '' }])
+    setImportResult(null)
+    setError('')
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const serials = rows
-      .map((r) => ({ chassisNumber: r.chassis.trim() || undefined, engineNumber: r.engine.trim() || undefined }))
-      .filter((r) => r.chassisNumber || r.engineNumber)
-
-    if (serials.length === 0) {
-      setError('Vui lòng nhập ít nhất một số khung hoặc số máy.')
+    const validRows = rows.filter((r) => r.serial.trim())
+    if (validRows.length === 0) {
+      setError('Vui lòng nhập ít nhất một mã serial.')
       return
     }
     setError('')
     setSubmitting(true)
+    setImportResult(null)
     try {
-      if (isVariant) {
-        await addVariantSerials(item.variantId, serials, note.trim() || undefined)
+      const importRows = validRows.map((r) => ({
+        productId: item.productId,
+        variantId: isVariant ? item.variantId : undefined,
+        serialNumber: r.serial.trim(),
+        note: supplierNote.trim() || undefined,
+        enableTracking: true,
+      }))
+      const result = await importBulkSerials(importRows, true)
+      setImportResult(result)
+      if (result.skipped === 0) {
+        toast.success(`Đã nhập ${result.inserted} serial vào kho.`)
+        setRows([{ serial: '' }])
+        setSupplierNote('')
+        setParsePreview(null)
+        onSuccess()
       } else {
-        await addProductSerials(item.productId, serials, note.trim() || undefined)
+        toast.success(`Nhập ${result.inserted} serial thành công, bỏ qua ${result.skipped} dòng lỗi.`)
       }
-      toast.success(`Đã thêm ${serials.length} serial vào kho.`)
-      setRows([{ chassis: '', engine: '' }])
-      setNote('')
-      onSuccess()
     } catch (err) {
-      setError(err.message || 'Lỗi khi thêm serial.')
+      setError(err.message || 'Lỗi khi nhập serial.')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const validCount = rows.filter((r) => r.serial.trim()).length
+
   return (
     <form onSubmit={handleSubmit}>
-      <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)', marginBottom: 12 }}>
-        Mỗi dòng là một xe: nhập số khung và/hoặc số máy.
+      {/* Supplier note — nổi bật ở đầu form */}
+      <div className="form-group" style={{ marginBottom: 16 }}>
+        <label className="form-label" htmlFor="serial-supplier-note">
+          Số phiếu xuất / hoá đơn nhà phân phối
+          <span style={{ fontWeight: 400, color: 'var(--admin-color-text-muted)', marginLeft: 6 }}>(tuỳ chọn)</span>
+        </label>
+        <input
+          id="serial-supplier-note"
+          className="control-input"
+          style={{ width: '100%' }}
+          placeholder="VD: HD-2025-001, Phiếu xuất kho ABC..."
+          value={supplierNote}
+          onChange={(e) => setSupplierNote(e.target.value)}
+          disabled={submitting}
+        />
+        <p style={{ fontSize: '0.76rem', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
+          Ghi chú sẽ được lưu kèm mỗi serial trong lô nhập này.
+        </p>
+      </div>
+
+      {/* File import */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <p className="form-label" style={{ margin: 0 }}>Danh sách xe nhận về</p>
+        <button type="button" className="btn btn-secondary btn-sm"
+          onClick={() => fileInputRef.current?.click()} disabled={submitting || parsing}>
+          {parsing ? 'Đang đọc file…' : 'Import từ file'}
+        </button>
+        <input ref={fileInputRef} type="file" accept=".csv,.txt,.xlsx,.xls"
+          style={{ display: 'none' }} onChange={handleFileImport} />
+        <span style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+          CSV / Excel — 1 cột: Mã serial
+        </span>
+      </div>
+
+      {/* Parse preview */}
+      {parsePreview && (
+        <div style={{
+          background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6,
+          padding: '8px 12px', marginBottom: 10, fontSize: '0.8rem', color: '#166534',
+          display: 'flex', gap: 16, flexWrap: 'wrap',
+        }}>
+          <span>Tổng dòng: <strong>{parsePreview.total}</strong></span>
+          <span>Hợp lệ: <strong>{parsePreview.valid}</strong></span>
+          {parsePreview.blank > 0 && <span>Dòng trống bỏ qua: <strong>{parsePreview.blank}</strong></span>}
+        </div>
+      )}
+
+      {/* Manual row table */}
+      <p style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', marginBottom: 6 }}>
+        Mỗi dòng là một xe — nhập số khung và/hoặc số máy.
       </p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 12 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 10 }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>#</th>
-            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Số khung</th>
-            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Số máy</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600, width: 30 }}>#</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Mã serial</th>
             <th style={{ width: 32 }} />
           </tr>
         </thead>
@@ -917,53 +1062,149 @@ function AddSerialsPanel({ item, onSuccess }) {
             <tr key={i}>
               <td style={{ padding: '4px 6px', color: 'var(--admin-color-text-muted)' }}>{i + 1}</td>
               <td style={{ padding: '4px 6px' }}>
-                <input
-                  className="control-input"
-                  style={{ width: '100%' }}
-                  placeholder="VD: RLHND9181NY..."
-                  value={row.chassis}
-                  onChange={(e) => updateRow(i, 'chassis', e.target.value)}
-                  disabled={submitting}
-                />
-              </td>
-              <td style={{ padding: '4px 6px' }}>
-                <input
-                  className="control-input"
-                  style={{ width: '100%' }}
-                  placeholder="VD: ND9E1-..."
-                  value={row.engine}
-                  onChange={(e) => updateRow(i, 'engine', e.target.value)}
-                  disabled={submitting}
-                />
+                <input className="control-input" style={{ width: '100%' }}
+                  placeholder="VD: SN-20240001"
+                  value={row.serial}
+                  onChange={(e) => updateRow(i, 'serial', e.target.value)}
+                  disabled={submitting} />
               </td>
               <td style={{ padding: '4px 6px' }}>
                 {rows.length > 1 && (
                   <button type="button" className="btn-icon btn-secondary-ghost"
-                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">
-                    ✕
-                  </button>
+                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button type="button" className="btn btn-secondary" style={{ marginBottom: 12 }}
+      <button type="button" className="btn btn-secondary" style={{ marginBottom: 14 }}
         onClick={addRow} disabled={submitting}>
         + Thêm dòng
       </button>
-      <div className="form-group">
-        <label className="form-label" htmlFor="serial-note">Ghi chú (tuỳ chọn)</label>
-        <input id="serial-note" className="control-input" style={{ width: '100%' }}
-          value={note} onChange={(e) => setNote(e.target.value)} disabled={submitting} />
+
+      {error && (
+        <p role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginBottom: 8 }}>{error}</p>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button type="submit" className="btn btn-primary" disabled={submitting || validCount === 0}>
+          {submitting ? 'Đang nhập…' : `Nhập ${validCount} serial`}
+        </button>
       </div>
-      {error && <p style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 8 }}>{error}</p>}
-      <button type="submit" className="btn btn-primary" disabled={submitting} style={{ marginTop: 8 }}>
-        {submitting ? 'Đang lưu…' : `Nhập ${rows.filter((r) => r.chassis.trim() || r.engine.trim()).length || rows.length} serial`}
-      </button>
+
+      {/* Import result — skipped rows with reasons */}
+      {importResult && importResult.skipped > 0 && (
+        <div style={{
+          marginTop: 16, background: '#fefce8', border: '1px solid #fde68a',
+          borderRadius: 6, padding: '12px 14px',
+        }}>
+          <p style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 6 }}>
+            Kết quả: {importResult.inserted} nhập thành công · {importResult.skipped} dòng bị bỏ qua
+          </p>
+          <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #fde68a' }}>
+                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Dòng</th>
+                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Trường</th>
+                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Lý do</th>
+              </tr>
+            </thead>
+            <tbody>
+              {importResult.errors.map((err, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #fef9c3' }}>
+                  <td style={{ padding: '3px 6px', fontFamily: 'monospace' }}>{err.rowIndex + 1}</td>
+                  <td style={{ padding: '3px 6px', color: '#92400e' }}>{err.field}</td>
+                  <td style={{ padding: '3px 6px' }}>{err.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button type="button" className="btn btn-secondary" style={{ marginTop: 10, fontSize: '0.8rem' }}
+            onClick={handleRetrySkipped}>
+            Tải lại {importResult.skipped} dòng lỗi để sửa
+          </button>
+        </div>
+      )}
+
+      {importResult && importResult.skipped === 0 && importResult.inserted > 0 && (
+        <div style={{
+          marginTop: 12, background: '#f0fdf4', border: '1px solid #bbf7d0',
+          borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem', color: '#166534',
+        }}>
+          ✓ Đã nhập thành công {importResult.inserted} serial vào kho.
+        </div>
+      )}
     </form>
   )
 }
+
+// ── SerialQrModal ─────────────────────────────────────────────────────────────
+
+function SerialQrModal({ serial, onClose }) {
+  const qrRef = useRef(null)
+  const qrValue = serial.serialNumber || ''
+  const label   = serial.serialNumber || ''
+
+  function handlePrint() {
+    const style = document.createElement('style')
+    style.textContent = `
+      @media print {
+        body > * { visibility: hidden !important; }
+        #serial-qr-print, #serial-qr-print * { visibility: visible !important; }
+        #serial-qr-print {
+          position: fixed !important; inset: 0 !important;
+          display: flex !important; flex-direction: column !important;
+          align-items: center !important; justify-content: center !important;
+          gap: 10px !important; background: white !important;
+        }
+      }
+    `
+    document.head.appendChild(style)
+    window.print()
+    document.head.removeChild(style)
+  }
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Mã QR serial"
+      onClick={onClose}>
+      <div className="modal-box" style={{ maxWidth: 320, textAlign: 'center' }}
+        onClick={(e) => e.stopPropagation()}>
+        <header className="modal-header">
+          <h2 className="modal-title" style={{ fontSize: '0.95rem' }}>Mã QR Serial</h2>
+          <button type="button" className="btn-icon btn-secondary-ghost"
+            onClick={onClose} aria-label="Đóng">✕</button>
+        </header>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div id="serial-qr-print" ref={qrRef}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {qrValue ? (
+              <QRCodeSVG value={qrValue} size={180} level="H" marginSize={2} />
+            ) : (
+              <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Không có dữ liệu để tạo QR.</p>
+            )}
+            <p style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.05em' }}>{label}</p>
+            {serial.receivedAt && (
+              <p style={{ fontSize: '0.72rem', color: '#6b7280' }}>Nhập kho: {formatDateTime(serial.receivedAt)}</p>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <button type="button" className="btn btn-primary" style={{ flex: 1 }}
+              onClick={handlePrint} disabled={!qrValue}>
+              In QR
+            </button>
+            <button type="button" className="btn btn-secondary" style={{ flex: 1 }}
+              onClick={onClose}>
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── SerialListPanel ───────────────────────────────────────────────────────────
 
 function SerialListPanel({ item, refreshKey }) {
   const isVariant = Boolean(item?.variantId)
@@ -973,9 +1214,11 @@ function SerialListPanel({ item, refreshKey }) {
   const [statusChangeValue, setStatusChangeValue] = useState('')
   const [statusNote, setStatusNote] = useState('')
   const [changing, setChanging] = useState(false)
+  const [qrSerial, setQrSerial] = useState(null)
 
   useEffect(() => {
     let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((s) => ({ ...s, status: 'loading' }))
     const fetch = isVariant
       ? fetchVariantSerials(item.variantId, query)
@@ -988,6 +1231,7 @@ function SerialListPanel({ item, refreshKey }) {
       setState({ status: 'error', items: [], pagination: null, error: err.message })
     })
     return () => { active = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, query, refreshKey])
 
   async function handleStatusChange(serialId) {
@@ -1041,7 +1285,7 @@ function SerialListPanel({ item, refreshKey }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-              {['Số khung', 'Số máy', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
+              {['Mã serial', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
                 <th key={h} style={{ textAlign: 'left', padding: '5px 8px', fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
@@ -1052,48 +1296,58 @@ function SerialListPanel({ item, refreshKey }) {
               const allowedTo = ALLOWED_TRANSITIONS[s.status] || []
               return (
                 <tr key={s.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.chassisNumber || '—'}</td>
-                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.engineNumber || '—'}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.serialNumber || '—'}</td>
                   <td style={{ padding: '6px 8px' }}><SerialStatusBadge status={s.status} /></td>
                   <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
                     {s.receivedAt ? formatDateTime(s.receivedAt) : '—'}
                   </td>
                   <td style={{ padding: '6px 8px' }}>
-                    {allowedTo.length > 0 && !isChanging && (
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {/* QR button — always visible */}
                       <button type="button" className="btn btn-secondary"
                         style={{ fontSize: '0.75rem', padding: '2px 8px' }}
-                        onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
-                        Đổi trạng thái
+                        title="Xem mã QR"
+                        onClick={() => setQrSerial(s)}>
+                        QR
                       </button>
-                    )}
-                    {isChanging && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <select className="control-select" value={statusChangeValue}
-                          onChange={(e) => setStatusChangeValue(e.target.value)} disabled={changing}>
-                          <option value="">-- Chọn --</option>
-                          {allowedTo.map((st) => (
-                            <option key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</option>
-                          ))}
-                        </select>
-                        <input className="control-input" placeholder="Ghi chú (tuỳ chọn)"
-                          value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
-                          disabled={changing} style={{ fontSize: '0.78rem' }} />
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button type="button" className="btn btn-primary"
-                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
-                            onClick={() => handleStatusChange(s.id)}
-                            disabled={changing || !statusChangeValue}>
-                            {changing ? '…' : 'Xác nhận'}
-                          </button>
-                          <button type="button" className="btn btn-secondary"
-                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
-                            onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
-                            disabled={changing}>
-                            Huỷ
-                          </button>
+
+                      {/* Status change */}
+                      {allowedTo.length > 0 && !isChanging && (
+                        <button type="button" className="btn btn-secondary"
+                          style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                          onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
+                          Đổi trạng thái
+                        </button>
+                      )}
+                      {isChanging && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <select className="control-select" value={statusChangeValue}
+                            onChange={(e) => setStatusChangeValue(e.target.value)} disabled={changing}>
+                            <option value="">-- Chọn --</option>
+                            {allowedTo.map((st) => (
+                              <option key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</option>
+                            ))}
+                          </select>
+                          <input className="control-input" placeholder="Ghi chú (tuỳ chọn)"
+                            value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
+                            disabled={changing} style={{ fontSize: '0.78rem' }} />
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button type="button" className="btn btn-primary"
+                              style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                              onClick={() => handleStatusChange(s.id)}
+                              disabled={changing || !statusChangeValue}>
+                              {changing ? '…' : 'Xác nhận'}
+                            </button>
+                            <button type="button" className="btn btn-secondary"
+                              style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                              onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
+                              disabled={changing}>
+                              Huỷ
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               )
@@ -1105,6 +1359,10 @@ function SerialListPanel({ item, refreshKey }) {
       {state.pagination && state.pagination.totalPages > 1 && (
         <PaginationControls pagination={state.pagination}
           onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
+      )}
+
+      {qrSerial && (
+        <SerialQrModal serial={qrSerial} onClose={() => setQrSerial(null)} />
       )}
     </>
   )
@@ -1451,6 +1709,7 @@ export function InventoryScreen({ canUpdate = false }) {
         </button>
       ),
     } : null,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   ].filter(Boolean), [t, canUpdate, serialOnlyMode])
 
   return (

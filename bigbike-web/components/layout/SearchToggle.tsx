@@ -330,16 +330,9 @@ export function SearchToggle() {
               <span className="wp-search-footer-spacer" />
               <span className="wp-search-hint">
                 Hoặc{" "}
-                <a
-                  href={toProductListPath()}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setOpen(false);
-                    router.push(toProductListPath());
-                  }}
-                >
+                <Link href={toProductListPath()} onClick={() => setOpen(false)}>
                   xem tất cả sản phẩm →
-                </a>
+                </Link>
               </span>
             </div>
           </div>

@@ -10,5 +10,6 @@ public record OrderPaymentResponse(
         String status,
         BigDecimal amount,
         String currency,
+        String transactionId,
         Instant paidAt
 ) {}

@@ -52,23 +52,16 @@ public class AdminSerialImportService {
         int inserted = 0;
         int skipped = 0;
 
-        // Collect all chassis/engine numbers in this batch to detect intra-batch duplicates
-        Set<String> batchChassis = new HashSet<>();
-        Set<String> batchEngine = new HashSet<>();
+        // Collect all serial numbers in this batch to detect intra-batch duplicates
+        Set<String> batchSerials = new HashSet<>();
 
-        // Pre-collect existing numbers from DB for the whole batch (single query each)
-        List<String> allChassis = req.rows().stream()
-                .map(r -> r.chassisNumber())
+        // Pre-collect existing serial numbers from DB for the whole batch (single query)
+        List<String> allSerialNumbers = req.rows().stream()
+                .map(r -> r.serialNumber())
                 .filter(s -> s != null && !s.isBlank())
                 .toList();
-        List<String> allEngine = req.rows().stream()
-                .map(r -> r.engineNumber())
-                .filter(s -> s != null && !s.isBlank())
-                .toList();
-        Set<String> existingChassis = new HashSet<>(
-                allChassis.isEmpty() ? List.of() : serialRepo.findExistingChassisNumbers(allChassis));
-        Set<String> existingEngine = new HashSet<>(
-                allEngine.isEmpty() ? List.of() : serialRepo.findExistingEngineNumbers(allEngine));
+        Set<String> existingSerials = new HashSet<>(
+                allSerialNumbers.isEmpty() ? List.of() : serialRepo.findExistingSerialNumbers(allSerialNumbers));
 
         Instant now = Instant.now();
 
@@ -76,29 +69,18 @@ public class AdminSerialImportService {
             var row = req.rows().get(i);
             List<RowError> rowErrors = new ArrayList<>();
 
-            // ── Validate identifiers ──────────────────────────────────────────
-            boolean hasChassis = row.chassisNumber() != null && !row.chassisNumber().isBlank();
-            boolean hasEngine  = row.engineNumber()  != null && !row.engineNumber().isBlank();
+            // ── Validate serial number ────────────────────────────────────────
+            String sn = row.serialNumber() != null ? row.serialNumber().strip() : null;
 
-            if (!hasChassis && !hasEngine) {
-                rowErrors.add(new RowError(i, "chassisNumber/engineNumber", "REQUIRED",
-                        "At least one of chassisNumber or engineNumber must be provided."));
-            }
-            if (hasChassis && existingChassis.contains(row.chassisNumber())) {
-                rowErrors.add(new RowError(i, "chassisNumber", "DUPLICATE_IN_DB",
-                        "Chassis number already exists: " + row.chassisNumber()));
-            }
-            if (hasEngine && existingEngine.contains(row.engineNumber())) {
-                rowErrors.add(new RowError(i, "engineNumber", "DUPLICATE_IN_DB",
-                        "Engine number already exists: " + row.engineNumber()));
-            }
-            if (hasChassis && !batchChassis.add(row.chassisNumber())) {
-                rowErrors.add(new RowError(i, "chassisNumber", "DUPLICATE_IN_BATCH",
-                        "Chassis number appears more than once in this import: " + row.chassisNumber()));
-            }
-            if (hasEngine && !batchEngine.add(row.engineNumber())) {
-                rowErrors.add(new RowError(i, "engineNumber", "DUPLICATE_IN_BATCH",
-                        "Engine number appears more than once in this import: " + row.engineNumber()));
+            if (sn == null || sn.isEmpty()) {
+                rowErrors.add(new RowError(i, "serialNumber", "REQUIRED",
+                        "serialNumber must not be blank."));
+            } else if (existingSerials.contains(sn)) {
+                rowErrors.add(new RowError(i, "serialNumber", "DUPLICATE_IN_DB",
+                        "Serial number already exists: " + sn));
+            } else if (!batchSerials.add(sn)) {
+                rowErrors.add(new RowError(i, "serialNumber", "DUPLICATE_IN_BATCH",
+                        "Serial number appears more than once in this import: " + sn));
             }
 
             // ── Validate product/variant ──────────────────────────────────────
@@ -147,8 +129,7 @@ public class AdminSerialImportService {
             ProductSerialEntity serial = new ProductSerialEntity();
             serial.setProduct(product);
             serial.setVariant(variant);
-            serial.setChassisNumber(hasChassis ? row.chassisNumber().trim() : null);
-            serial.setEngineNumber(hasEngine  ? row.engineNumber().trim()  : null);
+            serial.setSerialNumber(sn);
             serial.setStatus(ProductSerialStatus.IN_STOCK);
             serial.setNote(row.note());
             serial.setAdminId(adminId);
@@ -168,9 +149,8 @@ public class AdminSerialImportService {
                 }
             }
 
-            // Add to existing sets so subsequent rows in same batch see this as "existing"
-            if (hasChassis) existingChassis.add(row.chassisNumber());
-            if (hasEngine)  existingEngine.add(row.engineNumber());
+            // Add to existing set so subsequent rows in same batch see this as "existing"
+            existingSerials.add(sn);
 
             inserted++;
         }

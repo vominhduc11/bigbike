@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
@@ -83,6 +83,13 @@ function RequestResetForm() {
 function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   const {
     register,
@@ -97,7 +104,7 @@ function ResetPasswordForm({ token }: { token: string }) {
     try {
       await resetCustomerPassword(token, values.password);
       setSuccess(true);
-      window.setTimeout(() => router.replace(toLoginPath()), 1500);
+      redirectTimerRef.current = setTimeout(() => router.replace(toLoginPath()), 1500);
     } catch (err: unknown) {
       setError("root", { message: (err as Error).message });
     }

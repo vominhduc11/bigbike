@@ -39,11 +39,12 @@ Evidence:
 
 | Topic | Current finding | Status |
 |---|---|---|
-| SePay | SePay payment artifacts were removed; no active controller/service/provider contract confirmed. | `NOT_FOUND_IN_REPO` |
-| External payment provider/webhook | No confirmed live implementation. | `NOT_FOUND_IN_REPO` |
+| SePay (auto bank-transfer reconciliation) | Out of scope by business decision. Artifacts removed in V59. Bank-transfer payments are reconciled manually by admin in BACS flow — see `BUSINESS_PROCESS.md`. | `OUT_OF_SCOPE` |
+| External payment provider/webhook | Out of scope. Online checkout supports COD/BACS only; no online gateway. | `OUT_OF_SCOPE` |
 | External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. | `NOT_FOUND_IN_REPO` |
 
 Evidence:
 
 - `V59__remove_sepay_payment_artifacts.sql`
+- `CheckoutService.ALLOWED_PAYMENT_METHODS` (COD, BACS only)
 - repo search for provider/webhook/carrier implementations

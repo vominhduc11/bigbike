@@ -61,7 +61,8 @@ public class PosOrderService {
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
             String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
             String customerId,           // Required for CREDIT payment method
-            Long downPayment             // Optional: partial upfront payment for CREDIT orders
+            Long downPayment,            // Optional: partial upfront payment for CREDIT orders
+            String downPaymentMethod     // Payment method used for the downpayment (CASH or CARD_TERMINAL); defaults to CASH
     ) {}
 
     public record PosOrderResponse(
@@ -350,7 +351,9 @@ public class PosOrderService {
             BigDecimal collected = isCreditOrder ? downPayment : subtotal;
             PaymentEntity payment = new PaymentEntity();
             payment.setOrder(savedOrder);
-            payment.setPaymentMethod(isCreditOrder ? "CASH" : req.paymentMethod());
+            String resolvedDownPaymentMethod = (req.downPaymentMethod() != null && !req.downPaymentMethod().isBlank())
+                    ? req.downPaymentMethod() : "CASH";
+            payment.setPaymentMethod(isCreditOrder ? resolvedDownPaymentMethod : req.paymentMethod());
             payment.setProvider("POS");
             payment.setStatus("PAID");
             payment.setAmount(collected);

@@ -258,6 +258,7 @@ public class OrderReadService {
                 e.getStatus(),
                 e.getAmount(),
                 e.getCurrency(),
+                e.getTransactionId(),
                 e.getPaidAt()
         );
     }

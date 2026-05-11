@@ -36,21 +36,13 @@ public interface ProductSerialJpaRepository extends JpaRepository<ProductSerialE
 
     long countByProduct_IdAndVariantIsNullAndStatus(String productId, ProductSerialStatus status);
 
-    Optional<ProductSerialEntity> findByChassisNumber(String chassisNumber);
-
-    Optional<ProductSerialEntity> findByEngineNumber(String engineNumber);
+    Optional<ProductSerialEntity> findBySerialNumber(String serialNumber);
 
     @Query("""
-        SELECT s.chassisNumber FROM ProductSerialEntity s
-        WHERE s.chassisNumber IN :numbers
+        SELECT s.serialNumber FROM ProductSerialEntity s
+        WHERE s.serialNumber IN :numbers
         """)
-    List<String> findExistingChassisNumbers(@Param("numbers") List<String> numbers);
-
-    @Query("""
-        SELECT s.engineNumber FROM ProductSerialEntity s
-        WHERE s.engineNumber IN :numbers
-        """)
-    List<String> findExistingEngineNumbers(@Param("numbers") List<String> numbers);
+    List<String> findExistingSerialNumbers(@Param("numbers") List<String> numbers);
 
     @Query("""
         SELECT s FROM ProductSerialEntity s
@@ -128,4 +120,17 @@ public interface ProductSerialJpaRepository extends JpaRepository<ProductSerialE
     long countByVariant_IdAndStatusIn(String variantId, List<ProductSerialStatus> statuses);
 
     long countByProduct_IdAndVariantIsNullAndStatusIn(String productId, List<ProductSerialStatus> statuses);
+
+    @Query("""
+        SELECT s FROM ProductSerialEntity s
+        WHERE (:q IS NULL OR LOWER(s.serialNumber) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:status IS NULL OR s.status = :status)
+          AND (:productId IS NULL OR s.product.id = :productId)
+        ORDER BY s.createdAt DESC
+        """)
+    Page<ProductSerialEntity> searchAll(
+            @Param("q") String q,
+            @Param("status") ProductSerialStatus status,
+            @Param("productId") String productId,
+            Pageable pageable);
 }

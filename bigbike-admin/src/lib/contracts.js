@@ -466,6 +466,10 @@ export function normalizeOrder(input) {
     orderStatus: normalizeOrderStatus(s.status ?? s.orderStatus),
     paymentStatus: normalizePaymentStatus(s.paymentStatus),
     fulfillmentStatus: toTrimmedStringLocal(s.fulfillmentStatus) || undefined,
+    fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
+    trackingNumber: toTrimmedStringLocal(s.trackingNumber) || undefined,
+    shippingCarrier: toTrimmedStringLocal(s.shippingCarrier) || undefined,
+    shippedAt: toTrimmedStringLocal(s.shippedAt) || undefined,
     paymentMethod,
     source: toTrimmedStringLocal(s.source) || undefined,
     // Line items — backend field is lineItems (not items)

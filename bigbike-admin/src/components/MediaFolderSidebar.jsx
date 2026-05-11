@@ -33,17 +33,14 @@ export function MediaFolderSidebar({
 }) {
   const { t } = useTranslation()
   const [tags, setTags] = useState([])
-  const [tagsLoading, setTagsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
   const [creating, setCreating] = useState(false)
 
   // Tags are local — they don't drive bulk actions, so the sidebar can own them.
   useEffect(() => {
     let active = true
-    setTagsLoading(true)
     fetchMediaTags()
       .then((ts) => { if (active) setTags(ts) })
-      .finally(() => { if (active) setTagsLoading(false) })
     return () => { active = false }
   }, [])
 

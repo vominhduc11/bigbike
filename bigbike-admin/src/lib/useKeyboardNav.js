@@ -96,6 +96,7 @@ export function useKeyboardNav({ count, gridRef, onActivate, onSelect, onDelete,
 
   // Reset when count changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (focusIndex >= count) setFocusIndex(-1)
   }, [count, focusIndex])
 

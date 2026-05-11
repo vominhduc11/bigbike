@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -129,6 +130,21 @@ public class AdminOrderController {
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
                 adminOrderService.createRefund(orderId, adminId, body,
+                        extractClientIp(request), request.getHeader("User-Agent")),
+                request
+        );
+    }
+
+    @PatchMapping("/{orderId}/fulfillment")
+    public ApiDataResponse<AdminOrderDetailResponse> updateFulfillmentStatus(
+            @PathVariable UUID orderId,
+            @Valid @RequestBody UpdateFulfillmentRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.write");
+        UUID adminId = resolveAdminId();
+        return apiResponseFactory.data(
+                adminOrderService.updateFulfillmentStatus(orderId, adminId, body,
                         extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );

@@ -339,7 +339,8 @@ public class SerialLifecycleService {
                 var lineItem = lineItemRepo.findById(serial.getOrderLineItemId()).orElse(null);
                 if (lineItem != null && lineItem.getOrder() != null) {
                     String orderStatus = lineItem.getOrder().getStatus();
-                    if ("COMPLETED".equals(orderStatus) || "PROCESSING".equals(orderStatus)) {
+                    if ("COMPLETED".equals(orderStatus) || "PROCESSING".equals(orderStatus)
+                            || "ON_HOLD".equals(orderStatus)) {
                         log.warn("Skipping expired reservation for serial {} — order {} is {}",
                                 serial.getId(), lineItem.getOrder().getId(), orderStatus);
                         continue;

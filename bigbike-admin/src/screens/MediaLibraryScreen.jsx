@@ -36,7 +36,6 @@ import styles from './MediaLibraryScreen.module.css'
 const ALLOWED_MIME = [
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
   'video/mp4',
-  'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/webm', 'audio/aac',
 ]
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 const PAGE_SIZE_OPTIONS = [12, 24, 48, 96]
@@ -121,8 +120,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     let active = true
     fetchMediaStats(apiQuery).then((s) => { if (active) setStats(s) })
     return () => { active = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.uploadedFrom, apiQuery.uploadedTo,
-      apiQuery.minSize, apiQuery.maxSize, apiQuery.minWidth, apiQuery.minHeight]) // eslint-disable-line react-hooks/exhaustive-deps
+      apiQuery.minSize, apiQuery.maxSize, apiQuery.minWidth, apiQuery.minHeight])
 
   function updateQuery(partial, options = { resetPage: true }) {
     setQuery((p) => {
@@ -171,7 +171,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     }
     // Refresh list once everyone done
     setQuery((p) => ({ ...p }))
-    toast.success(t('media.uploadComplete', { count: queue.filter((q) => true).length }))
+    toast.success(t('media.uploadComplete', { count: queue.length }))
     // Auto-clear successful uploads after 3s
     setTimeout(() => setUploadQueue((q) => q.filter((u) => u.status !== 'done')), 3000)
   }

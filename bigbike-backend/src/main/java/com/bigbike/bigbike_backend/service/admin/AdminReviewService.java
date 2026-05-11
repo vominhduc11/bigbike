@@ -97,7 +97,7 @@ public class AdminReviewService {
             String userAgent
     ) {
         if (status == null || status.isBlank()) {
-            throw ValidationException.fromField("status", "REQUIRED", "Tráº¡ng thĂ¡i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+            throw ValidationException.fromField("status", "REQUIRED", "Trạng thái không được để trống.");
         }
 
         String normalized = status.toUpperCase(Locale.ROOT);
@@ -105,7 +105,7 @@ public class AdminReviewService {
             throw ValidationException.fromField(
                     "status",
                     "INVALID",
-                    "Tráº¡ng thĂ¡i khĂ´ng há»£p lá»‡. Chá»‰ cháº¥p nháº­n: APPROVED, PENDING, SPAM, TRASH."
+                    "Trạng thái không hợp lệ. Chỉ chấp nhận: APPROVED, PENDING, SPAM, TRASH."
             );
         }
 

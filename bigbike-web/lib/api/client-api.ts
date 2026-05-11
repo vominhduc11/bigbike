@@ -193,6 +193,24 @@ export function createReturn(orderId: string, payload: CreateReturnPayload): Pro
   return clientRequest("POST", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/returns`, payload);
 }
 
+// ── Wishlist ──────────────────────────────────────────────────────────────────
+
+export function fetchWishlist(): Promise<string[]> {
+  return clientRequest("GET", "/api/v1/customer/wishlist");
+}
+
+export function addToWishlist(productId: string): Promise<{ productId: string; added: boolean }> {
+  return clientRequest("POST", "/api/v1/customer/wishlist", { productId });
+}
+
+export function removeFromWishlist(productId: string): Promise<void> {
+  return clientRequest("DELETE", `/api/v1/customer/wishlist/${encodeURIComponent(productId)}`);
+}
+
+export function cancelMyOrder(orderId: string): Promise<OrderDetail> {
+  return clientRequest("PATCH", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/cancel`);
+}
+
 export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
   const res = await fetch(`${API_BASE_URL}/api/v1/customer/orders/${encodeURIComponent(orderId)}`, {
     credentials: "include",

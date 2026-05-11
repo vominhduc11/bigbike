@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { CartProvider } from "@/lib/cart-context";
+import { WishlistProvider } from "@/lib/wishlist-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 
 const bungee = localFont({
@@ -94,10 +95,12 @@ export default function RootLayout({
         )}
         <QueryProvider>
           <CartProvider>
-            <SiteHeader />
-            <main className="bb-main">{children}</main>
-            <SiteFooter />
-            <FloatingChatLoader />
+            <WishlistProvider>
+              <SiteHeader />
+              <main className="bb-main">{children}</main>
+              <SiteFooter />
+              <FloatingChatLoader />
+            </WishlistProvider>
           </CartProvider>
         </QueryProvider>
       </body>

@@ -31,11 +31,8 @@ public class ProductSerialEntity {
     @JoinColumn(name = "product_variant_id")
     private ProductVariantEntity variant;
 
-    @Column(name = "chassis_number", length = 100)
-    private String chassisNumber;
-
-    @Column(name = "engine_number", length = 100)
-    private String engineNumber;
+    @Column(name = "serial_number", length = 100, nullable = false)
+    private String serialNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -80,11 +77,8 @@ public class ProductSerialEntity {
     public ProductVariantEntity getVariant() { return variant; }
     public void setVariant(ProductVariantEntity variant) { this.variant = variant; }
 
-    public String getChassisNumber() { return chassisNumber; }
-    public void setChassisNumber(String chassisNumber) { this.chassisNumber = chassisNumber; }
-
-    public String getEngineNumber() { return engineNumber; }
-    public void setEngineNumber(String engineNumber) { this.engineNumber = engineNumber; }
+    public String getSerialNumber() { return serialNumber; }
+    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
 
     public ProductSerialStatus getStatus() { return status; }
     public void setStatus(ProductSerialStatus status) { this.status = status; }

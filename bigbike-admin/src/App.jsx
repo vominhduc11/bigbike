@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
-  Package, RotateCcw, Settings, Shield, ShoppingCart, Star, Store, Tag, Ticket,
+  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Hash, Image, KeyRound, LayoutDashboard,
+  Package, RotateCcw, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -50,6 +50,8 @@ const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),    
 const PosScreen              = lazyScreen(() => import('./screens/PosScreen'),              'PosScreen')
 const ReceivablesListScreen  = lazyScreen(() => import('./screens/ReceivablesListScreen'),  'ReceivablesListScreen')
 const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDetailScreen'), 'ReceivableDetailScreen')
+const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListScreen'),     'WarrantyListScreen')
+const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -72,7 +74,9 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.products',
     items: [
       { path: '/admin/products',   labelKey: 'nav.products',   permission: 'products.read',  icon: Package },
-      { path: '/admin/inventory',  labelKey: 'nav.inventory',  permission: 'products.read',  icon: Package },
+      { path: '/admin/inventory',   labelKey: 'nav.inventory',   permission: 'products.read',     icon: Package },
+      { path: '/admin/serials',     labelKey: 'nav.serials',     permission: 'products.read',     icon: Hash },
+      { path: '/admin/warranties',  labelKey: 'nav.warranties',  permission: 'inventory.read',    icon: ShieldCheck },
       { path: '/admin/categories', labelKey: 'nav.categories', permission: 'catalog.read',   icon: Tag },
       { path: '/admin/brands',     labelKey: 'nav.brands',     permission: 'catalog.read',   icon: Award },
     ],
@@ -165,7 +169,9 @@ function parseRoute(pathname) {
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
   if (module === 'inventory')   return { kind: 'screen', name: 'inventory' }
+  if (module === 'serials')     return { kind: 'screen', name: 'serials' }
   if (module === 'returns')       return { kind: 'screen', name: 'returns' }
+  if (module === 'warranties')    return { kind: 'screen', name: 'warranties' }
   if (module === 'receivables' && !id) return { kind: 'screen', name: 'receivables-list' }
   if (module === 'receivables' && id) return { kind: 'screen', name: 'receivable-detail', receivableId: id }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
@@ -207,7 +213,9 @@ function routePermission(routeName) {
     case 'audit-logs':                   return 'audit-logs.read'
     case 'reports':                      return 'reports.read'
     case 'inventory':                    return 'products.read'
+    case 'serials':                      return 'products.read'
     case 'returns':                      return 'orders.read'
+    case 'warranties':                   return 'inventory.read'
     case 'receivables-list':
     case 'receivable-detail':            return 'receivables.read'
     case 'roles':                        return 'roles.read'
@@ -396,12 +404,16 @@ function AdminApp() {
       screen = <ReportsScreen />; break
     case 'inventory':
       screen = <InventoryScreen canUpdate={hasPermission('products.update')} />; break
+    case 'serials':
+      screen = <SerialListScreen canUpdate={hasPermission('products.update')} />; break
     case 'returns':
       screen = <ReturnListScreen canUpdate={hasPermission('orders.write')} />; break
+    case 'warranties':
+      screen = <WarrantyListScreen canUpdate={hasPermission('inventory.write')} />; break
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} />; break
     case 'pos':
-      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} canOverrideCreditLimit={hasPermission('receivables.override_limit')} />; break
+      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} canOverrideCreditLimit={hasPermission('receivables.override_limit')} canOverridePrice={hasPermission('pos.price_override')} />; break
     case 'receivables-list':
       screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'receivable-detail':

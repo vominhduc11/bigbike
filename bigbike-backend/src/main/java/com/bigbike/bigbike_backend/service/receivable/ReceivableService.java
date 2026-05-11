@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.receivable.ReceivableDetailResp
 import com.bigbike.bigbike_backend.api.admin.dto.receivable.WriteOffReceivableRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -80,7 +82,7 @@ public class ReceivableService {
 
         if (customer != null && customer.getPaymentTermsDays() != null) {
             ar.setPaymentTermsDays(customer.getPaymentTermsDays());
-            ar.setDueDate(LocalDate.now().plusDays(customer.getPaymentTermsDays()));
+            ar.setDueDate(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(customer.getPaymentTermsDays()));
             ar.setCreditLimitSnapshot(customer.getCreditLimit());
         }
 
@@ -118,6 +120,9 @@ public class ReceivableService {
         }
 
         BigDecimal amount = req.amount().setScale(2, RoundingMode.HALF_UP);
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw ValidationException.fromField("amount", "INVALID", "Số tiền thanh toán phải lớn hơn 0.");
+        }
         if (amount.compareTo(ar.getOutstandingAmount()) > 0) {
             throw new ConflictException(String.format(
                     "Số tiền thu (%,.0f) vượt quá số còn nợ (%,.0f).",
@@ -237,7 +242,7 @@ public class ReceivableService {
      */
     @Transactional
     public int refreshOverdueStatus() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         List<ReceivableEntity> candidates = receivableRepo.findOverdueCandidates(today);
         for (ReceivableEntity ar : candidates) {
             ar.setStatus("OVERDUE");
