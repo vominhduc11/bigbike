@@ -44,17 +44,22 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
   const [wards, setWards] = useState<Ward[]>([]);
   const [wardsLoading, setWardsLoading] = useState(false);
 
+  // Extract primitive so dep array is stable and effect closure doesn't capture the object
+  const districtCode = selectedDistrict?.code ?? null;
+
   useEffect(() => {
-    if (!selectedDistrict) {
-      setWards([]);
-      return;
-    }
-    setWardsLoading(true);
-    fetchWards(selectedDistrict.code).then((w) => {
-      setWards(w);
-      setWardsLoading(false);
-    });
-  }, [selectedDistrict?.code]);
+    let cancelled = false;
+    (async () => {
+      if (!districtCode) {
+        if (!cancelled) { setWards([]); setWardsLoading(false); }
+        return;
+      }
+      if (!cancelled) setWardsLoading(true);
+      const w = await fetchWards(districtCode);
+      if (!cancelled) { setWards(w); setWardsLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [districtCode]);
 
   return (
     <>

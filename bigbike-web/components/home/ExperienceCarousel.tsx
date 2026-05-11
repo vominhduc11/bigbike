@@ -96,7 +96,7 @@ export function ExperienceCarousel({ articles }: Props) {
   );
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
+    loop: n > 1, // Embla needs ≥ 2 slides to create valid loop clones
     align: "center",
     containScroll: false,
     startIndex: initialArticleIndex,

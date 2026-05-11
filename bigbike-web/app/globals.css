@@ -3270,7 +3270,10 @@ body.wp-mobile-menu-open {
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
-
+/* BP note: 900px is intentionally NOT the token 1024px.
+   At 901-1024px the two-column about/feature layouts still read well on
+   landscape tablets; collapsing them at 1024px would waste too much space.
+   Token breakpoints (640/768/1024/1280/1440) apply to NEW rules only. */
 @media (max-width: 900px) {
   .wp-hero-fallback {
     grid-template-columns: 1fr;
@@ -3320,6 +3323,11 @@ body.wp-mobile-menu-open {
   }
 }
 
+/* BP note: 600px is intentionally NOT the token 640px.
+   This threshold predates the token system and is used in ~30 rules across
+   the homepage CSS. Changing it to 640px risks subtle layout regressions
+   on common 360-600px phone viewports. Aligning this is a follow-up task
+   that requires visual regression testing across all affected screens. */
 @media (max-width: 600px) {
   .wp-hero-fallback {
     padding: var(--bb-space-10) var(--bb-space-4);
@@ -4157,6 +4165,7 @@ body.wp-mobile-menu-open {
   }
 }
 
+/* BP note: 900px — see first 900px block above for rationale. */
 @media (max-width: 900px) {
   .wp-featured-grid-3 {
     grid-template-columns: repeat(2, 1fr);
@@ -5457,10 +5466,15 @@ select.wp-input { cursor: pointer; }
  * ════════════════════════════════════════════════════════════════ */
 
 /* ── Prevent body horizontal overflow ─────────────────────── */
-/* Phase 3-15: root cause is the ExperienceCarousel slide track (align: center, no
-   containScroll) — slides intentionally bleed past the viewport edge on desktop.
-   Removing this rule causes a visible horizontal scrollbar on mobile; keep it here
-   and rely on the carousel's own overflow:hidden viewport to contain the track. */
+/* Needed for two concurrent reasons:
+   1. The Tippy mega-menu uses `width: 100vw` — on desktop with a scrollbar,
+      100vw > clientWidth, so the menu transiently bleeds 15-17px past the right edge.
+   2. Embla carousel tracks (Experience, Product) extend past the viewport during
+      pointer-drag gestures before the viewport's overflow:hidden fully clips them
+      in certain browser compositing frames.
+   Each source has been patched at the component level (overflow:hidden on viewports,
+   maxWidth capping on the mega-panel) but the global guard is kept as belt-and-braces
+   because removing it is likely to re-introduce a scrollbar on some devices. */
 html, body { overflow-x: hidden; }
 
 /* ── Hard guard: no element should bleed past viewport ────── */

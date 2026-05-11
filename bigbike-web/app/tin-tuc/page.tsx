@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
