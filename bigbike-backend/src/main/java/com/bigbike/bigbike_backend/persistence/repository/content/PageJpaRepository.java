@@ -21,15 +21,15 @@ public interface PageJpaRepository extends JpaRepository<PageEntity, String> {
             SELECT p.id FROM PageEntity p
             WHERE (:publishStatus IS NULL OR p.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """,
             countQuery = """
             SELECT COUNT(p) FROM PageEntity p
             WHERE (:publishStatus IS NULL OR p.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """)
     Page<String> findAdminPageIds(
             @Param("publishStatus") PublishStatus publishStatus,
@@ -54,8 +54,8 @@ public interface PageJpaRepository extends JpaRepository<PageEntity, String> {
             LEFT JOIN FETCH p.parent
             WHERE (:publishStatus IS NULL OR p.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(p.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(p.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """)
     List<PageEntity> findByFilter(
             @Param("publishStatus") PublishStatus publishStatus,

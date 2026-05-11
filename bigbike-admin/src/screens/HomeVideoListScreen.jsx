@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -43,11 +43,85 @@ const EMPTY_FORM = {
   isActive: true,
 }
 
-function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
+function VideoPreviewModal({ video, onClose }) {
+  const embedUrl = video.youtubeId
+    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`
+    : null
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.82)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative', width: '90vw', maxWidth: 800,
+          background: '#000', borderRadius: 10, overflow: 'hidden',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 10, right: 12, zIndex: 1,
+            background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff',
+            fontSize: 22, lineHeight: 1, cursor: 'pointer', borderRadius: 4,
+            padding: '2px 8px',
+          }}
+          aria-label="Đóng"
+        >×</button>
+
+        <div style={{ position: 'relative', paddingBottom: '56.25%' }}>
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={video.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+            />
+          ) : video.videoUrl ? (
+            <video
+              src={video.videoUrl}
+              controls
+              autoPlay
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+            />
+          ) : null}
+        </div>
+
+        {video.title && (
+          <p style={{ margin: 0, padding: '10px 16px', color: '#fff', fontSize: 13, fontWeight: 600, background: '#111' }}>
+            {video.title}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
   const { t } = useTranslation()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: video.id,
-    disabled: !canUpdate,
+    disabled: !canUpdate || selectionMode,
   })
 
   const style = {
@@ -56,51 +130,79 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive }) {
     opacity: isDragging ? 0.4 : 1,
   }
 
+  const thumbSrc = video.thumbnail?.url
+    || (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg` : null)
+
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        background: 'var(--admin-color-surface-base)',
-        border: '1px solid var(--admin-color-border-subtle)',
+        background: selected ? 'var(--admin-color-primary-subtle, #1a2a3a)' : 'var(--admin-color-surface-base)',
+        border: selected ? '1px solid var(--admin-color-primary)' : '1px solid var(--admin-color-border-subtle)',
         borderRadius: 'var(--admin-radius-md)',
         padding: '12px 16px',
         display: 'flex',
         gap: 12,
         alignItems: 'flex-start',
         boxShadow: 'var(--admin-shadow-xs)',
-        opacity: video.isActive === false ? 0.55 : undefined,
+        opacity: video.isActive === false && !selected ? 0.55 : undefined,
       }}
     >
       {canUpdate && (
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'grab',
-            padding: '2px 4px',
-            color: 'var(--admin-color-text-muted)',
-            flexShrink: 0,
-            touchAction: 'none',
-          }}
-          aria-label={t('homeVideos.dragToReorder')}
-        >
-          <GripVertical size={16} />
-        </button>
-      )}
-
-      {video.thumbnail?.url && (
-        <div style={{ flexShrink: 0, width: 80, height: 48, position: 'relative', borderRadius: 4, overflow: 'hidden', background: '#111' }}>
-          <img
-            src={video.thumbnail.url}
-            alt={video.thumbnail.alt || video.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelect(video.id, e.target.checked)}
+            style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
+            aria-label={`Chọn video ${video.title}`}
           />
+          {!selectionMode && (
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              style={{
+                background: 'none', border: 'none', cursor: 'grab',
+                padding: '2px 4px', color: 'var(--admin-color-text-muted)', touchAction: 'none',
+              }}
+              aria-label={t('homeVideos.dragToReorder')}
+            >
+              <GripVertical size={16} />
+            </button>
+          )}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={onPreview}
+        style={{
+          flexShrink: 0, width: 96, height: 58,
+          borderRadius: 6, overflow: 'hidden',
+          background: '#111', border: 'none', padding: 0,
+          cursor: 'pointer', position: 'relative',
+        }}
+        aria-label={`Xem trước: ${video.title}`}
+      >
+        {thumbSrc
+          ? <img src={thumbSrc} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : video.videoUrl
+            ? <video src={video.videoUrl} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }} />
+            : <div style={{ width: '100%', height: '100%', background: '#222' }} />
+        }
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.3)',
+        }}>
+          <svg viewBox="0 0 40 40" width={28} height={28} fill="none">
+            <circle cx="20" cy="20" r="20" fill="rgba(0,0,0,0.55)" />
+            <polygon points="16,12 16,28 30,20" fill="white" />
+          </svg>
+        </div>
+      </button>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -162,6 +264,12 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [localItems, setLocalItems] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
+  const [previewVideo, setPreviewVideo] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [isBulkBusy, setIsBulkBusy] = useState(false)
+  const [searchText, setSearchText] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const selectAllRef = useRef(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -332,6 +440,66 @@ export function HomeVideoListScreen({ canUpdate }) {
     reorderMutation.mutate(reordered.map((video) => ({ id: video.id, sortOrder: video.sortOrder })))
   }
 
+  const isFiltering = searchText.trim() !== '' || statusFilter !== 'ALL'
+  const filteredItems = items.filter((v) => {
+    const matchSearch = searchText.trim() === '' || v.title.toLowerCase().includes(searchText.trim().toLowerCase())
+    const matchStatus = statusFilter === 'ALL' || (statusFilter === 'active' ? v.isActive : !v.isActive)
+    return matchSearch && matchStatus
+  })
+
+  const selectionMode = selectedIds.size > 0
+  const allSelected = filteredItems.length > 0 && filteredItems.every((v) => selectedIds.has(v.id))
+  const someSelected = selectionMode && !allSelected
+
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected
+  }, [someSelected])
+
+  function handleSelect(id, checked) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      checked ? next.add(id) : next.delete(id)
+      return next
+    })
+  }
+
+  function handleSelectAll(checked) {
+    setSelectedIds(checked ? new Set(filteredItems.map((v) => v.id)) : new Set())
+  }
+
+  async function handleBulkSetActive(isActive) {
+    setIsBulkBusy(true)
+    try {
+      await Promise.all([...selectedIds].map((id) => updateHomeVideo(id, { isActive })))
+      queryClient.invalidateQueries({ queryKey: ['home-videos'] })
+      setLocalItems(null)
+      setSelectedIds(new Set())
+      toast.success(isActive ? `Đã hiện ${selectedIds.size} video` : `Đã ẩn ${selectedIds.size} video`)
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }
+
+  async function handleBulkDelete() {
+    const count = selectedIds.size
+    const confirmed = await showConfirm(`Xoá ${count} video đã chọn? Thao tác này không thể hoàn tác.`, 'Xoá hàng loạt')
+    if (!confirmed) return
+    setIsBulkBusy(true)
+    try {
+      await Promise.all([...selectedIds].map((id) => deleteHomeVideo(id)))
+      queryClient.invalidateQueries({ queryKey: ['home-videos'] })
+      setLocalItems(null)
+      setSelectedIds(new Set())
+      toast.success(`Đã xoá ${count} video`)
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }
+
   const isBusy = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
   const youtubePreviewId = extractAllowedYouTubeId(form.videoUrl)
 
@@ -342,16 +510,136 @@ export function HomeVideoListScreen({ canUpdate }) {
     <StatePanel tone="neutral" title={t('homeVideos.empty')} description={t('homeVideos.emptyDescription')} />
   ) : (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {items.map((video) => (
+
+      {/* Filter bar */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          type="search"
+          value={searchText}
+          onChange={(e) => { setSearchText(e.target.value); setSelectedIds(new Set()) }}
+          placeholder="Tìm theo tên video..."
+          style={{
+            flex: 1, padding: '7px 12px',
+            border: '1px solid var(--admin-color-border-subtle)',
+            borderRadius: 8, fontSize: 13,
+            background: 'var(--admin-color-surface-base)',
+            color: 'inherit', outline: 'none',
+          }}
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setSelectedIds(new Set()) }}
+          style={{
+            padding: '7px 10px',
+            border: '1px solid var(--admin-color-border-subtle)',
+            borderRadius: 8, fontSize: 13,
+            background: 'var(--admin-color-surface-base)',
+            color: 'inherit', cursor: 'pointer',
+          }}
+        >
+          <option value="ALL">Tất cả ({items.length})</option>
+          <option value="active">Đang hiện ({items.filter((v) => v.isActive).length})</option>
+          <option value="hidden">Đang ẩn ({items.filter((v) => !v.isActive).length})</option>
+        </select>
+        {isFiltering && (
+          <button
+            type="button"
+            onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}
+            style={{ fontSize: 12, padding: '7px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 8, background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Xoá bộ lọc
+          </button>
+        )}
+      </div>
+
+      {filteredItems.length === 0 ? (
+        <StatePanel tone="neutral" title="Không tìm thấy video" description="Thử thay đổi từ khoá hoặc bộ lọc trạng thái." />
+      ) : (<>
+
+      {canUpdate && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px' }}>
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
+            aria-label="Chọn tất cả"
+          />
+          <span style={{ fontSize: 13, color: 'var(--admin-color-text-muted)' }}>
+            {selectionMode ? `Đã chọn ${selectedIds.size} / ${items.length}` : 'Chọn tất cả'}
+          </span>
+          {selectionMode && (
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              style={{ fontSize: 12, padding: '2px 8px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer', marginLeft: 4 }}
+            >
+              Bỏ chọn
+            </button>
+          )}
+        </div>
+      )}
+
+      {selectionMode && canUpdate && (
+        <div style={{
+          display: 'flex', gap: 8, alignItems: 'center',
+          padding: '10px 14px',
+          background: 'var(--admin-color-surface-raised)',
+          border: '1px solid var(--admin-color-border-subtle)',
+          borderRadius: 'var(--admin-radius-md)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>
+            {selectedIds.size} video đã chọn:
+          </span>
+          <button
+            type="button"
+            disabled={isBulkBusy}
+            onClick={() => handleBulkSetActive(false)}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
+          >
+            Ẩn
+          </button>
+          <button
+            type="button"
+            disabled={isBulkBusy}
+            onClick={() => handleBulkSetActive(true)}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
+          >
+            Hiện
+          </button>
+          <button
+            type="button"
+            disabled={isBulkBusy}
+            onClick={handleBulkDelete}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-danger-border)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', color: 'var(--admin-color-danger)', opacity: isBulkBusy ? 0.6 : 1 }}
+          >
+            Xoá
+          </button>
+        </div>
+      )}
+
+      {isFiltering && (
+        <p style={{ fontSize: 12, color: 'var(--admin-color-text-muted)', margin: '0 0 4px 2px' }}>
+          {filteredItems.length} / {items.length} video — kéo thả sắp xếp bị tắt khi đang lọc
+        </p>
+      )}
+
+      {filteredItems.map((video) => (
         <VideoCard
           key={video.id}
           video={video}
-          canUpdate={canUpdate}
+          canUpdate={canUpdate && !isFiltering}
           onEdit={openEdit}
           onDelete={handleDelete}
           onToggleActive={handleToggleActive}
+          onPreview={() => setPreviewVideo(video)}
+          selected={selectedIds.has(video.id)}
+          onSelect={handleSelect}
+          selectionMode={selectionMode || isFiltering}
         />
       ))}
+      </>)}
     </div>
   )
 
@@ -545,6 +833,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 onEdit={() => {}}
                 onDelete={() => {}}
                 onToggleActive={() => {}}
+                onPreview={() => {}}
               />
             )}
           </DragOverlay>
@@ -556,6 +845,10 @@ export function HomeVideoListScreen({ canUpdate }) {
           onSelect={(url) => { setForm((prev) => ({ ...prev, videoUrl: url })); setVideoPickerOpen(false) }}
           onClose={() => setVideoPickerOpen(false)}
         />
+      )}
+
+      {previewVideo && (
+        <VideoPreviewModal video={previewVideo} onClose={() => setPreviewVideo(null)} />
       )}
     </div>
   )

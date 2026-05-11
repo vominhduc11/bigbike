@@ -107,6 +107,10 @@ public class AdminContentReadService {
                 article.category() != null ? article.category().id() : null,
                 article.categories(),
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -133,7 +137,25 @@ public class AdminContentReadService {
                 null,
                 null,
                 page.type(),
-                page.parentId()
+                page.parentId(),
+                pageHeroImage(page),
+                page.heroTitle(),
+                page.heroDescription(),
+                page.heroKicker()
+        );
+    }
+
+    private static com.bigbike.bigbike_backend.domain.catalog.ImageAsset pageHeroImage(Page page) {
+        if (page.heroImageUrl() == null && page.heroImageAlt() == null) {
+            return null;
+        }
+        return new com.bigbike.bigbike_backend.domain.catalog.ImageAsset(
+                null,
+                page.heroImageUrl(),
+                page.heroImageAlt(),
+                null,
+                null,
+                null
         );
     }
 

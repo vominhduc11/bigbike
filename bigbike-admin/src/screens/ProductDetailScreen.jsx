@@ -337,6 +337,7 @@ function buildEmptyForm() {
     seoNoIndex: false,
     isFeatured: false,
     showOnHomepage: false,
+    homepageOrder: '',
     gallery: [],
     videos: [],
     specifications: [],
@@ -393,6 +394,7 @@ function buildFormFromItem(item) {
     seoNoIndex: Boolean(item.seo?.noIndex),
     isFeatured: Boolean(item.isFeatured),
     showOnHomepage: Boolean(item.showOnHomepage),
+    homepageOrder: Number.isFinite(item.homepageOrder) ? String(item.homepageOrder) : '',
     gallery: (item.gallery || []).map((img) => ({ url: img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
@@ -449,6 +451,7 @@ function toPayload(form) {
     publishStatus: form.publishStatus,
     featured: Boolean(form.isFeatured),
     showOnHomepage: Boolean(form.showOnHomepage),
+    homepageOrder: form.homepageOrder === '' ? null : toIntegerOrNull(form.homepageOrder),
     seo: hasSeo
       ? {
           title: form.seoTitle.trim() || null,
@@ -1608,6 +1611,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           publishStatus: 'DRAFT',
           isFeatured: false,
           showOnHomepage: false,
+          homepageOrder: '',
           // Clear variants IDs so they create as new
           variants: base.variants.map((v) => ({ ...v, _key: crypto.randomUUID(), id: '' })),
         }
@@ -2038,12 +2042,37 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
                 <span>{t('products.detail.showOnHomepage')}</span>
               </label>
+              <small className="detail-section-desc" style={{ marginTop: 4, width: '100%' }}>
+                Trang chủ chỉ hiển thị tối đa 12 sản phẩm <b>Nổi bật</b> và 10 sản phẩm <b>Trang chủ</b>.
+                Một sản phẩm bật cả hai cờ chỉ hiện ở khối "Nổi bật" để tránh trùng. Dùng ô
+                "Thứ tự trang chủ" bên dưới để ghim sản phẩm lên đầu (số nhỏ = lên trước).
+              </small>
               {(form.isFeatured || form.showOnHomepage) && form.publishStatus !== 'PUBLISHED' && (
                 <small className="detail-section-desc" style={{ color: 'var(--admin-color-warning, #d97706)', marginTop: 4, width: '100%' }}>
                   Sản phẩm chưa được Xuất bản — bật tùy chọn này sẽ không hiển thị trên web cho đến khi trạng thái chuyển sang Xuất bản.
                 </small>
               )}
             </div>
+
+            {(form.isFeatured || form.showOnHomepage) && (
+              <label className="form-field" style={{ maxWidth: 240 }}>
+                <span>Thứ tự trang chủ</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  step={1}
+                  min={0}
+                  value={form.homepageOrder}
+                  onChange={(e) => updateField('homepageOrder', e.target.value)}
+                  placeholder="VD: 1"
+                  disabled={isReadOnly}
+                />
+                <small className="detail-section-desc">
+                  Để trống nếu không cần ghim — sản phẩm sẽ xếp theo ngày tạo mới nhất.
+                  Số nhỏ hơn sẽ hiển thị trước.
+                </small>
+              </label>
+            )}
           </div>
         </CollapsibleSection>
 

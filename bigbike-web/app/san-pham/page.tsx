@@ -1,16 +1,17 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, listBrands, listProducts } from "@/lib/api/public-api";
+import { PRODUCT_SORT_VALUES, listBrands, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { toProductListPath } from "@/lib/utils/routes";
+import { readHeroSettings } from "@/lib/utils/page-hero";
+import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 import {
   buildQueryString,
   collectErrors,
@@ -120,7 +121,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     );
   }
 
-  const [result, brandsResult] = await Promise.all([
+  const [result, brandsResult, settingsResult] = await Promise.all([
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -133,7 +134,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       maxPrice: maxPriceParsed.value,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
+    listPublicSettings(),
   ]);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
 
   const pagination = result.pagination;
   const pageTitle = buildCatalogTitle(qParsed.value ? `Kết quả tìm kiếm: "${qParsed.value}"` : "Sản phẩm", {
@@ -154,16 +157,18 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
   return (
     <>
-      <div className="wp-breadcrumb">
-        <Link href="/">Trang chủ</Link>
-        <span className="sep">/</span>
-        <span className="wp-breadcrumb-active">Sản phẩm</span>
-      </div>
-
-      <div className="wp-page-head">
-        <span className="kicker">Shop gear biker</span>
-        <h1>{pageTitle}</h1>
-      </div>
+      <PageHero
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
+        kicker={heroSettings.kicker ?? "SHOP GEAR BIKER"}
+        title={heroSettings.title ?? pageTitle}
+        description={heroSettings.description}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Sản phẩm" },
+        ]}
+        meta={pagination ? `${pagination.totalItems} sản phẩm` : undefined}
+      />
 
       <div className="wp-cat-layout">
         <CatalogFilters

@@ -23,10 +23,18 @@ const INITIAL_QUERY = {
   stockState: 'ALL',
   brandId: '',
   categoryId: '',
+  featured: 'ALL',
+  showOnHomepage: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,
   pageSize: 20,
 }
+
+// Mirror of the homepage block sizes in bigbike-web/app/page.tsx — anything beyond these
+// caps is fetched but not rendered by the storefront, so admin should know the surplus
+// is silently dropped.
+const HOMEPAGE_FEATURED_LIMIT = 12
+const HOMEPAGE_CAROUSEL_LIMIT = 5
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -173,6 +181,25 @@ export function ProductListScreen({ navigate, canUpdate }) {
         key: 'stockState',
         label: t('products.colStock'),
         render: (product) => <StockStatusBadge value={product.stockState} />,
+      },
+      {
+        key: 'homepage',
+        label: 'Trang chủ',
+        render: (product) => {
+          const flags = []
+          if (product.isFeatured) flags.push('Nổi bật')
+          if (product.showOnHomepage) flags.push('Trang chủ')
+          if (flags.length === 0) return <span style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>—</span>
+          const orderText = Number.isFinite(product.homepageOrder)
+            ? ` · #${product.homepageOrder}`
+            : ''
+          return (
+            <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+              <strong style={{ fontSize: 12 }}>{flags.join(' + ')}</strong>
+              {orderText && <small style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>Thứ tự{orderText}</small>}
+            </span>
+          )
+        },
       },
       {
         key: 'updatedAt',
@@ -350,6 +377,32 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </label>
 
         <label>
+          Nổi bật trang chủ
+          <select
+            className="control-select"
+            value={query.featured}
+            onChange={(event) => updateQuery({ featured: event.target.value }, { resetPage: true })}
+          >
+            <option value="ALL">{t('common.all')}</option>
+            <option value="true">Đang bật</option>
+            <option value="false">Đang tắt</option>
+          </select>
+        </label>
+
+        <label>
+          Hiển thị trang chủ
+          <select
+            className="control-select"
+            value={query.showOnHomepage}
+            onChange={(event) => updateQuery({ showOnHomepage: event.target.value }, { resetPage: true })}
+          >
+            <option value="ALL">{t('common.all')}</option>
+            <option value="true">Đang bật</option>
+            <option value="false">Đang tắt</option>
+          </select>
+        </label>
+
+        <label>
           {t('products.filterSort')}
           <select
             className="control-select"
@@ -362,6 +415,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
             <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
             <option value="name:asc">{t('sort.nameAZ')}</option>
             <option value="name:desc">{t('sort.nameZA')}</option>
+            <option value="homepageOrder:asc">Thứ tự trang chủ (nhỏ → lớn)</option>
           </select>
         </label>
 
@@ -383,6 +437,34 @@ export function ProductListScreen({ navigate, canUpdate }) {
           </select>
         </label>
       </section>
+
+      {state.status === 'success' && (query.featured === 'true' || query.showOnHomepage === 'true') ? (
+        (() => {
+          const totalFlagged = state.pagination?.totalItems ?? state.items.length
+          const limit = query.featured === 'true' ? HOMEPAGE_FEATURED_LIMIT : HOMEPAGE_CAROUSEL_LIMIT
+          const blockLabel = query.featured === 'true' ? '"Sản phẩm nổi bật"' : '"Gợi ý dành cho bạn"'
+          if (totalFlagged <= limit) return null
+          return (
+            <div
+              role="status"
+              style={{
+                margin: '12px 0',
+                padding: '10px 14px',
+                borderRadius: 8,
+                background: 'rgba(217, 119, 6, 0.08)',
+                border: '1px solid rgba(217, 119, 6, 0.35)',
+                color: 'var(--admin-color-warning, #b45309)',
+                fontSize: 13,
+              }}
+            >
+              <strong>Đang bật cờ này: {totalFlagged} sản phẩm.</strong>{' '}
+              Trang chủ chỉ hiển thị tối đa <strong>{limit} sản phẩm</strong> ở khối {blockLabel}.
+              Số dư sẽ bị bỏ qua âm thầm — sắp xếp theo cột "Thứ tự trang chủ" để chọn ra
+              {' '}{limit} sản phẩm hiển thị.
+            </div>
+          )
+        })()
+      ) : null}
 
       {state.status === 'error' ? (
         <StatePanel

@@ -277,6 +277,12 @@ function assertMutationEnabled() {
   )
 }
 
+function normalizeFlagFilter(value) {
+  if (value === true || value === 'true') return 'true'
+  if (value === false || value === 'false') return 'false'
+  return undefined
+}
+
 function buildProductQuery(query) {
   return {
     page: query?.page,
@@ -287,6 +293,8 @@ function buildProductQuery(query) {
     stockState: query?.stockState,
     brandId: query?.brandId || undefined,
     categoryId: query?.categoryId || undefined,
+    featured: normalizeFlagFilter(query?.featured),
+    showOnHomepage: normalizeFlagFilter(query?.showOnHomepage),
   }
 }
 

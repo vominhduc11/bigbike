@@ -8,6 +8,7 @@ public record Brand(
         String name,
         String description,
         ImageAsset logo,
+        ImageAsset bannerImage,
         SeoMeta seo,
         boolean isVisible,
         Instant createdAt,

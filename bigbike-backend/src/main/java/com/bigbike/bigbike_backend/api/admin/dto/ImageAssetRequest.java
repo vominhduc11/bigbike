@@ -6,7 +6,8 @@ import jakarta.validation.constraints.Size;
 public class ImageAssetRequest {
 
     @Size(max = 2048, message = "Image URL is too long.")
-    @Pattern(regexp = "^(?:https?://|/).*", flags = Pattern.Flag.CASE_INSENSITIVE,
+    // Empty string is allowed and means "clear the image" (handled by trimToNull in service layer).
+    @Pattern(regexp = "^$|^(?:https?://|/).*", flags = Pattern.Flag.CASE_INSENSITIVE,
             message = "Image URL must use http/https or be a relative path.")
     private String url;
 

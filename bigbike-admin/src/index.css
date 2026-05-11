@@ -3164,6 +3164,18 @@ a {
   padding: 8px 0;
 }
 
+.sv2-field-readonly--html {
+  max-width: 880px;
+  padding: var(--admin-space-3) var(--admin-space-4);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-color-surface-muted);
+}
+
+.sv2-field--html {
+  max-width: 880px;
+}
+
 .sv2-empty {
   color: var(--admin-color-text-muted);
   font-style: normal;

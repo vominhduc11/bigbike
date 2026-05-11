@@ -1,7 +1,7 @@
 "use client";
 
 import useEmblaCarousel from "embla-carousel-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -22,11 +22,45 @@ function PlayIcon() {
   );
 }
 
-function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void }) {
+const FOCUSABLE = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
+
+function VideoModal({
+  video,
+  onClose,
+  triggerRef,
+}: {
+  video: HomeVideo;
+  onClose: () => void;
+  triggerRef: RefObject<HTMLButtonElement | null>;
+}) {
+  const backdropRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Move focus into the modal on open; return focus to trigger on close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const first = backdropRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+    first?.focus();
+    const savedTrigger = triggerRef.current;
+    return () => { savedTrigger?.focus(); };
+  }, [triggerRef]);
+
+  // Focus trap — keep Tab/Shift+Tab inside the modal
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const el = backdropRef.current;
+      if (!el) return;
+      const focusable = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -48,6 +82,7 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
 
   return (
     <div
+      ref={backdropRef}
       className="wp-video-modal-backdrop"
       onClick={onClose}
       role="dialog"
@@ -68,7 +103,6 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
             allowFullScreen
           />
         ) : isSafeHomeVideoUrl(video.videoUrl) ? (
-          /* fallback: non-YouTube self-hosted */
           <video
             className="wp-video-modal-player"
             src={video.videoUrl}
@@ -88,19 +122,26 @@ function VideoModal({ video, onClose }: { video: HomeVideo; onClose: () => void 
   );
 }
 
-function VideoCard({ video, onClick }: { video: HomeVideo; onClick: () => void }) {
+function VideoCard({
+  video,
+  onOpen,
+}: {
+  video: HomeVideo;
+  onOpen: (el: HTMLButtonElement) => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
   const [imgError, setImgError] = useState(false);
   const title = safeText(video.title, "Video");
-  // Priority: custom thumbnail > YouTube auto-thumbnail; falls back to placeholder on load error
   const thumbSrc = imgError
     ? null
     : resolveMediaUrl(video.thumbnail?.url?.trim()) || video.autoThumbnailUrl || null;
 
   return (
     <button
+      ref={btnRef}
       type="button"
       className="wp-video-card"
-      onClick={onClick}
+      onClick={() => { if (btnRef.current) onOpen(btnRef.current); }}
       aria-label={`Xem video: ${title}`}
     >
       <div className="wp-video-thumb-wrap">
@@ -112,6 +153,15 @@ function VideoCard({ video, onClick }: { video: HomeVideo; onClick: () => void }
             className="wp-video-thumb"
             sizes="(max-width: 600px) 80vw, 33vw"
             onError={() => setImgError(true)}
+          />
+        ) : video.videoUrl ? (
+          <video
+            src={video.videoUrl}
+            preload="metadata"
+            muted
+            className="wp-video-thumb"
+            style={{ objectFit: "cover", pointerEvents: "none" }}
+            aria-hidden="true"
           />
         ) : (
           <div className="wp-video-thumb-fallback" aria-hidden="true">
@@ -129,6 +179,12 @@ export function HomeVideoCarousel({ videos }: Props) {
   const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleOpen = useCallback((video: HomeVideo, el: HTMLButtonElement) => {
+    triggerRef.current = el;
+    setActiveVideo(video);
+  }, []);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
@@ -166,7 +222,10 @@ export function HomeVideoCarousel({ videos }: Props) {
           <div className="wp-video-carousel-track">
             {videos.map((video) => (
               <div key={video.id} className="wp-video-carousel-slide">
-                <VideoCard video={video} onClick={() => setActiveVideo(video)} />
+                <VideoCard
+                  video={video}
+                  onOpen={(el) => handleOpen(video, el)}
+                />
               </div>
             ))}
           </div>
@@ -215,7 +274,11 @@ export function HomeVideoCarousel({ videos }: Props) {
       )}
 
       {activeVideo && (
-        <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />
+        <VideoModal
+          video={activeVideo}
+          onClose={() => setActiveVideo(null)}
+          triggerRef={triggerRef}
+        />
       )}
     </>
   );

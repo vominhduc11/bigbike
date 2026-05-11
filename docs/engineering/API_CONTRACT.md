@@ -64,6 +64,32 @@ Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 
 Status: `CONFIRMED_FROM_CODE`
 
+## Admin Catalog Contract
+
+### Product list — filter and sort params (V95+)
+
+`GET /api/v1/admin/products` accepts additional query parameters added alongside the `homepageOrder` feature:
+
+| Param | Type | Purpose |
+|---|---|---|
+| `featured` | `boolean` (optional) | Filter by `isFeatured` flag. `true` → only featured; `false` → only non-featured; omit → all. |
+| `showOnHomepage` | `boolean` (optional) | Filter by `showOnHomepage` flag. Same tri-state semantics as `featured`. |
+| `sort` | `string` (optional) | Accepts `homepageOrder:asc` and `homepageOrder:desc` in addition to the existing `name`, `price`, `createdAt`, `updatedAt` options. Null-last behaviour: unpinned products always appear after pinned ones regardless of direction. |
+
+**Homepage placement limits** (enforced on the web frontend, not the backend API):
+- Block 1 ("Sản phẩm nổi bật") — max 12 `isFeatured` products shown
+- Block 2 ("Gợi ý dành cho bạn") — max 5 `showOnHomepage` products shown; products already in Block 1 are excluded
+
+The admin UI shows a warning banner when the filtered count exceeds the applicable limit.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `AdminCatalogController.java` — `@RequestParam(required = false) Boolean featured`, `@RequestParam(required = false) Boolean showOnHomepage`
+- `AdminCatalogReadService.listProducts()` — in-memory flag filter via `matchesFlag()` helper
+- `AdminCatalogReadService.productComparator()` — `homepageOrder` compound sort
+- `bigbike-openapi.json` — `featured` and `showOnHomepage` filter params on admin product list endpoint
+
 ## POS Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
@@ -95,6 +121,26 @@ Status: `CONFIRMED_FROM_CODE`
 **Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array.
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
+
+**Page hero settings (group `public_hero`, all `publicAllowed`):**
+
+For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
+
+| Key prefix | Type | Purpose |
+|---|---|---|
+| `hero_<page>_image_url` | `IMAGE_URL` | Background image URL |
+| `hero_<page>_image_alt` | `STRING` | Image alt text |
+| `hero_<page>_title` | `STRING` | Heading text |
+| `hero_<page>_description` | `STRING` | Short tagline below heading |
+| `hero_<page>_kicker` | `STRING` | Small uppercase chip above heading |
+
+Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
+
+**`UpsertPageRequest` admin DTO** (admin can edit hero on any CMS page):
+- `heroImage`: `{ url, alt }` — same nested shape as `coverImage`. Send `{ url: "" }` to clear.
+- `heroTitle`, `heroDescription`, `heroKicker`: nullable strings.
+
+**Public `Page` response** adds `heroImageUrl`, `heroImageAlt`, `heroTitle`, `heroDescription`, `heroKicker` (all nullable strings) to the existing shape.
 
 ## Audit Log Contract
 

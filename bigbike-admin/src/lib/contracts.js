@@ -263,6 +263,7 @@ export function normalizeProduct(input) {
     publishStatus: normalizePublishStatus(source.publishStatus),
     isFeatured: Boolean(source.isFeatured),
     showOnHomepage: Boolean(source.showOnHomepage),
+    homepageOrder: Number.isFinite(source.homepageOrder) ? Number(source.homepageOrder) : null,
     seo: normalizeSeoMeta(source.seo),
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
@@ -572,6 +573,7 @@ export function normalizeSetting(input) {
     value: toTrimmedStringLocal(s.value) || toTrimmedStringLocal(s.settingValue) || undefined,
     description: toTrimmedStringLocal(s.description) || undefined,
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
+    valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }

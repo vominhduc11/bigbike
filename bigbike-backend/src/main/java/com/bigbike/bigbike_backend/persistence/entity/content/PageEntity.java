@@ -60,6 +60,21 @@ public class PageEntity {
     private String seoOgImageMimeType;
     private Boolean seoNoIndex;
 
+    @Column(name = "hero_image_url", columnDefinition = "text")
+    private String heroImageUrl;
+
+    @Column(name = "hero_image_alt")
+    private String heroImageAlt;
+
+    @Column(name = "hero_title")
+    private String heroTitle;
+
+    @Column(name = "hero_description", columnDefinition = "text")
+    private String heroDescription;
+
+    @Column(name = "hero_kicker")
+    private String heroKicker;
+
     private Instant publishedAt;
 
     @Column(nullable = false)
@@ -202,6 +217,46 @@ public class PageEntity {
 
     public void setSeoNoIndex(Boolean seoNoIndex) {
         this.seoNoIndex = seoNoIndex;
+    }
+
+    public String getHeroImageUrl() {
+        return heroImageUrl;
+    }
+
+    public void setHeroImageUrl(String heroImageUrl) {
+        this.heroImageUrl = heroImageUrl;
+    }
+
+    public String getHeroImageAlt() {
+        return heroImageAlt;
+    }
+
+    public void setHeroImageAlt(String heroImageAlt) {
+        this.heroImageAlt = heroImageAlt;
+    }
+
+    public String getHeroTitle() {
+        return heroTitle;
+    }
+
+    public void setHeroTitle(String heroTitle) {
+        this.heroTitle = heroTitle;
+    }
+
+    public String getHeroDescription() {
+        return heroDescription;
+    }
+
+    public void setHeroDescription(String heroDescription) {
+        this.heroDescription = heroDescription;
+    }
+
+    public String getHeroKicker() {
+        return heroKicker;
+    }
+
+    public void setHeroKicker(String heroKicker) {
+        this.heroKicker = heroKicker;
     }
 
     public Instant getPublishedAt() {

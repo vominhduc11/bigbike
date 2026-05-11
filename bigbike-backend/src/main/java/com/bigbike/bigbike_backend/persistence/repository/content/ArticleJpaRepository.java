@@ -26,8 +26,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
                  OR primaryCat.slug = :categorySlug
                  OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """,
             countQuery = """
             SELECT COUNT(a) FROM ArticleEntity a LEFT JOIN a.category primaryCat
@@ -36,8 +36,8 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
                  OR primaryCat.slug = :categorySlug
                  OR EXISTS (SELECT 1 FROM a.categories c WHERE c.slug = :categorySlug))
             AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """)
     Page<String> findPublishedArticleIds(
             @Param("publishStatus") PublishStatus publishStatus,
@@ -53,17 +53,17 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             SELECT a.id FROM ArticleEntity a
             WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """,
             countQuery = """
             SELECT COUNT(a) FROM ArticleEntity a
             WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """)
     Page<String> findAdminArticleIds(
             @Param("publishStatus") PublishStatus publishStatus,
@@ -92,9 +92,9 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
             LEFT JOIN FETCH a.category
             WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
             AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', :q, '%'))
-                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', :q, '%')))
+                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+                 OR LOWER(a.slug) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
             """)
     List<ArticleEntity> findByFilter(
             @Param("publishStatus") PublishStatus publishStatus,

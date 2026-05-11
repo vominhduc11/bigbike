@@ -220,6 +220,11 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageMimeType(),
                         entity.getSeoNoIndex()
                 ),
+                entity.getHeroImageUrl(),
+                entity.getHeroImageAlt(),
+                entity.getHeroTitle(),
+                entity.getHeroDescription(),
+                entity.getHeroKicker(),
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

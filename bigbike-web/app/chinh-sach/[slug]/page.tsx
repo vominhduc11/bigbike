@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { toHomePath } from "@/lib/utils/routes";
 
 // Map URL slug → backend page slug
 const POLICY_SLUG_MAP: Record<string, string> = {
@@ -69,13 +71,23 @@ export default async function PolicyPage({ params }: Props) {
 
   const page = result.data;
   const meta = POLICY_META[slug] ?? {};
+  const pageTitle = safeText(page.title, meta.title ?? "Chính sách");
 
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        kicker={page.heroKicker ?? "CHÍNH SÁCH"}
+        title={page.heroTitle ?? pageTitle}
+        description={page.heroDescription}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Chính sách" },
+          { label: pageTitle },
+        ]}
+      />
       <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, meta.title ?? "Chính sách")}</h1>
-        </header>
         <article
           className="bb-richtext bb-section"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}

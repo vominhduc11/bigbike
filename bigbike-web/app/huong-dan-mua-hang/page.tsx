@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toPagePath } from "@/lib/utils/routes";
+import { toHomePath, toPagePath } from "@/lib/utils/routes";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Hướng dẫn mua hàng",
@@ -34,14 +35,23 @@ export default async function HowToBuyPage() {
 
   const page = pageResult.data;
   const menuItems = menuResult.data?.items ?? [];
+  const pageTitle = safeText(page.title, "Hướng dẫn mua hàng");
 
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        kicker={page.heroKicker ?? "HƯỚNG DẪN"}
+        title={page.heroTitle ?? pageTitle}
+        description={page.heroDescription}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Hướng dẫn", href: "/huong-dan/" },
+          { label: pageTitle },
+        ]}
+      />
       <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, "Hướng dẫn mua hàng")}</h1>
-        </header>
-
         <div className="bb-detail-layout bb-section">
           <div className="bb-card" style={{ padding: "var(--bb-space-5)" }}>
             <article

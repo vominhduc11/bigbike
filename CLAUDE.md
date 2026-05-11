@@ -50,6 +50,15 @@ Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/
 
 ---
 
+## Phong cách trả lời
+
+- **Ngôn ngữ business, không dùng thuật ngữ kỹ thuật.** Giải thích bằng ngôn ngữ mà chủ shop / quản lý có thể hiểu ngay — không dùng tên class, method, endpoint, stack trace hay jargon lập trình trừ khi user là developer và đang hỏi về code cụ thể.
+- **Ngắn gọn nhưng đủ ý.** Không viết dài dòng, không lặp lại điều đã nói. Mỗi câu phải có thông tin.
+- **Trình bày dễ đọc.** Dùng danh sách, bảng, hoặc tiêu đề ngắn khi có nhiều điểm cần liệt kê. Không đổ thành đoạn văn dài.
+- **Trả lời đúng trọng tâm câu hỏi.** Không giải thích những thứ user không hỏi.
+
+---
+
 ## Đọc thêm
 
 Full agent operating rules: [AGENTS.md](AGENTS.md) — đặc biệt Section 3 (Required Reading Order) và Section 4 (Source of Truth Map).

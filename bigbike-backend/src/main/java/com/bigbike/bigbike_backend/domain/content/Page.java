@@ -13,9 +13,13 @@ public record Page(
         String parentId,
         PublishStatus publishStatus,
         SeoMeta seo,
+        String heroImageUrl,
+        String heroImageAlt,
+        String heroTitle,
+        String heroDescription,
+        String heroKicker,
         Instant publishedAt,
         Instant createdAt,
         Instant updatedAt
 ) {
 }
-

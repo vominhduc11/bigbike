@@ -47,7 +47,7 @@ public class AdminPosController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "pos.read");
-        var results = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null);
+        var results = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null, null);
         return apiResponseFactory.list(results, request);
     }
 

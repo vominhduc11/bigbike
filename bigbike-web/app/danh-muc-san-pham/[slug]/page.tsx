@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
+import { PageHero, type PageHeroBreadcrumbItem } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
@@ -13,7 +13,7 @@ import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listCategories, lis
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { safeText } from "@/lib/utils/format";
 import {
   buildQueryString,
   collectErrors,
@@ -208,7 +208,6 @@ export default async function CategoryDetailPage({
   };
 
   const heroImgAsset = category.image ?? category.icon;
-  const heroImgSrc = heroImgAsset?.url ? resolveMediaUrl(heroImgAsset.url.trim()) : null;
 
   const rawDescription = category.description ?? null;
   const isHtmlDescription = rawDescription ? /<[a-z][\s\S]*>/i.test(rawDescription) : false;
@@ -216,53 +215,30 @@ export default async function CategoryDetailPage({
     ? rawDescription!.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim()
     : rawDescription;
 
+  const heroBreadcrumb: PageHeroBreadcrumbItem[] = [
+    { label: "Trang chủ", href: toHomePath() },
+    { label: "Sản phẩm", href: toProductListPath() },
+    ...(parentCategory
+      ? [{
+          label: safeText(parentCategory.name, "Danh mục cha"),
+          href: toCategoryPath(parentCategory.slug),
+        }]
+      : []),
+    { label: categoryName },
+  ];
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      {/* ── Category Hero ──────────────────────────────────────── */}
-      <div className={`wp-cat-hero${heroImgSrc ? "" : " wp-cat-hero--no-img"}`}>
-        {heroImgSrc && (
-          <Image
-            src={heroImgSrc}
-            alt={safeText(
-              (category.image ?? category.icon)?.alt,
-              categoryName,
-            )}
-            fill
-            className="wp-cat-hero-bg"
-            priority
-            sizes="100vw"
-          />
-        )}
-        {heroImgSrc && <div className="wp-cat-hero-overlay" />}
-        <div className="wp-cat-hero-content bb-container">
-          <nav className="wp-cat-hero-breadcrumb" aria-label="Điều hướng">
-            <Link href={toHomePath()}>Trang chủ</Link>
-            <span aria-hidden="true">/</span>
-            <Link href={toProductListPath()}>Sản phẩm</Link>
-            {parentCategory && (
-              <>
-                <span aria-hidden="true">/</span>
-                <Link href={toCategoryPath(parentCategory.slug)}>
-                  {safeText(parentCategory.name, "Danh mục cha")}
-                </Link>
-              </>
-            )}
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">{categoryName}</span>
-          </nav>
-          <p className="wp-cat-hero-kicker">DANH MỤC SẢN PHẨM</p>
-          <h1 className="wp-cat-hero-title">{categoryName}</h1>
-          {heroDescription && (
-            <p className="wp-cat-hero-desc">{heroDescription}</p>
-          )}
-          {pagination && (
-            <span className="wp-cat-hero-count">
-              {pagination.totalItems} sản phẩm
-            </span>
-          )}
-        </div>
-      </div>
+      <PageHero
+        imageUrl={heroImgAsset?.url}
+        imageAlt={heroImgAsset?.alt}
+        kicker="DANH MỤC SẢN PHẨM"
+        title={categoryName}
+        description={heroDescription}
+        breadcrumb={heroBreadcrumb}
+        meta={pagination ? `${pagination.totalItems} sản phẩm` : undefined}
+      />
 
       {/* ── Sub-categories ────────────────────────────────────── */}
       {childCategories.length > 0 && (

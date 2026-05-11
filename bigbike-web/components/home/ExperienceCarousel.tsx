@@ -1,7 +1,7 @@
 "use client";
 
 import useEmblaCarousel from "embla-carousel-react";
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Article } from "@/lib/contracts/public";
@@ -10,8 +10,6 @@ import { toArticlePath } from "@/lib/utils/routes";
 
 type Props = { articles: Article[] };
 type LegacyExperienceKey = "ls2" | "scoyco" | "agv";
-const SLIDE_COPY_COUNT = 11;
-const CENTER_COPY_INDEX = Math.floor(SLIDE_COPY_COUNT / 2);
 
 const LEGACY_EXPERIENCE_MEDIA: Record<
   LegacyExperienceKey,
@@ -89,10 +87,6 @@ function getInitialArticleIndex(articles: Article[]): number {
   return scoycoIndex >= 0 ? scoycoIndex : 0;
 }
 
-function positiveModulo(value: number, divisor: number): number {
-  return ((value % divisor) + divisor) % divisor;
-}
-
 export function ExperienceCarousel({ articles }: Props) {
   const orderedArticles = useMemo(() => orderLikeLegacyWp(articles), [articles]);
   const n = orderedArticles.length;
@@ -100,178 +94,36 @@ export function ExperienceCarousel({ articles }: Props) {
     () => getInitialArticleIndex(orderedArticles),
     [orderedArticles],
   );
-  const initialScrollIndex = n > 0 ? CENTER_COPY_INDEX * n + initialArticleIndex : 0;
-  const slides = useMemo(
-    () =>
-      n > 0
-        ? Array.from({ length: SLIDE_COPY_COUNT }, () => orderedArticles).flat()
-        : orderedArticles,
-    [n, orderedArticles],
-  );
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
+    loop: true,
     align: "center",
     containScroll: false,
-    startIndex: initialScrollIndex,
+    startIndex: initialArticleIndex,
     duration: 16,
   });
-  const [selectedIndex, setSelectedIndex] = useState(initialScrollIndex);
-  const [interactionLocked, setInteractionLocked] = useState(false);
-  const recenterTimersRef = useRef<number[]>([]);
-  const unlockTimersRef = useRef<number[]>([]);
-  const interactionLockedRef = useRef(false);
-  const pendingTargetIndexRef = useRef<number | null>(null);
-  const normalizeToMiddleCopy = useCallback(
-    (index: number) => CENTER_COPY_INDEX * n + positiveModulo(index, n),
-    [n],
-  );
-  const clearUnlockTimers = useCallback(() => {
-    unlockTimersRef.current.forEach((timer) => window.clearTimeout(timer));
-    unlockTimersRef.current = [];
-  }, []);
-  const unlockInteraction = useCallback(() => {
-    clearUnlockTimers();
-    interactionLockedRef.current = false;
-    pendingTargetIndexRef.current = null;
-    setInteractionLocked(false);
-  }, [clearUnlockTimers]);
-  const lockInteraction = useCallback(() => {
-    clearUnlockTimers();
-    interactionLockedRef.current = true;
-    setInteractionLocked(true);
-
-    const timer = window.setTimeout(() => {
-      interactionLockedRef.current = false;
-      setInteractionLocked(false);
-      unlockTimersRef.current = unlockTimersRef.current.filter((item) => item !== timer);
-    }, 720);
-    unlockTimersRef.current.push(timer);
-  }, [clearUnlockTimers]);
-  const blockInteractionWhileLocked = useCallback((event: SyntheticEvent) => {
-    if (!interactionLockedRef.current) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
-  const getClosestSnapForArticle = useCallback(
-    (articleIndex: number) => {
-      if (n === 0) return 0;
-
-      const currentIndex = emblaApi?.selectedScrollSnap() ?? selectedIndex;
-      const currentArticleIndex = positiveModulo(currentIndex, n);
-      let delta = positiveModulo(articleIndex, n) - currentArticleIndex;
-
-      if (delta > n / 2) delta -= n;
-      if (delta < -n / 2) delta += n;
-
-      return currentIndex + delta;
-    },
-    [emblaApi, n, selectedIndex],
-  );
+  const [selectedIndex, setSelectedIndex] = useState(initialArticleIndex);
 
   useEffect(() => {
-    if (!emblaApi || n === 0) return;
-    emblaApi.scrollTo(initialScrollIndex, true);
-  }, [emblaApi, initialScrollIndex, n]);
-
-  useEffect(() => {
-    if (!emblaApi || n === 0) return;
-    const clearTimers = () => {
-      recenterTimersRef.current.forEach((timer) => window.clearTimeout(timer));
-      recenterTimersRef.current = [];
-      clearUnlockTimers();
-      interactionLockedRef.current = false;
-      setInteractionLocked(false);
-    };
-    const recenter = () => {
-      if (interactionLockedRef.current) return;
-
-      const index = emblaApi.selectedScrollSnap();
-      const normalizedIndex = normalizeToMiddleCopy(index);
-
-      if (index !== normalizedIndex) {
-        emblaApi.scrollTo(normalizedIndex, true);
-        setSelectedIndex(normalizedIndex);
-        unlockInteraction();
-        return;
-      }
-
-      setSelectedIndex(index);
-      unlockInteraction();
-    };
-    const sync = () => {
-      if (interactionLockedRef.current) return;
-
-      const index = emblaApi.selectedScrollSnap();
-      const normalizedIndex = normalizeToMiddleCopy(index);
-
-      setSelectedIndex(index);
-
-      if (index === normalizedIndex) return;
-
-      const timer = window.setTimeout(() => {
-        if (emblaApi.selectedScrollSnap() === index) {
-          recenter();
-        }
-      }, 480);
-      recenterTimersRef.current.push(timer);
-    };
-
-    emblaApi.on("select", sync);
-    emblaApi.on("settle", recenter);
-    sync();
-    return () => {
-      clearTimers();
-      emblaApi.off("select", sync);
-      emblaApi.off("settle", recenter);
-    };
-  }, [clearUnlockTimers, emblaApi, n, normalizeToMiddleCopy, unlockInteraction]);
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi]);
 
   const scrollToArticle = useCallback(
-    (articleIndex: number) => {
-      if (!emblaApi || interactionLockedRef.current) return;
-
-      const nextIndex = getClosestSnapForArticle(articleIndex);
-      if (nextIndex === emblaApi.selectedScrollSnap()) return;
-
-      recenterTimersRef.current.forEach((timer) => window.clearTimeout(timer));
-      recenterTimersRef.current = [];
-
-      lockInteraction();
-      pendingTargetIndexRef.current = nextIndex;
-      setSelectedIndex(nextIndex);
-      emblaApi.scrollTo(nextIndex);
-
-      const normalizedIndex = normalizeToMiddleCopy(nextIndex);
-      const timer = window.setTimeout(() => {
-        if (pendingTargetIndexRef.current !== nextIndex) return;
-
-        if (nextIndex !== normalizedIndex) {
-          emblaApi.scrollTo(normalizedIndex, true);
-        }
-
-        setSelectedIndex(normalizedIndex);
-        unlockInteraction();
-      }, 560);
-      recenterTimersRef.current.push(timer);
-    },
-    [emblaApi, getClosestSnapForArticle, lockInteraction, normalizeToMiddleCopy, unlockInteraction],
+    (articleIndex: number) => emblaApi?.scrollTo(articleIndex),
+    [emblaApi],
   );
 
   if (n === 0) return null;
 
   return (
-    <div className={`wp-exp-carousel${interactionLocked ? " is-transitioning" : ""}`}>
-      <div
-        className="wp-exp-carousel-vp"
-        ref={emblaRef}
-        onClickCapture={blockInteractionWhileLocked}
-        onPointerDownCapture={blockInteractionWhileLocked}
-      >
+    <div className="wp-exp-carousel">
+      <div className="wp-exp-carousel-vp" ref={emblaRef}>
         <div className="wp-exp-carousel-track">
-          {slides.map((article, i) => {
-            const articleIndex = i % n;
+          {orderedArticles.map((article, i) => {
             const active = i === selectedIndex;
             const legacyKey = getLegacyExperienceKey(article);
             const legacyMedia = legacyKey ? LEGACY_EXPERIENCE_MEDIA[legacyKey] : null;
@@ -285,9 +137,9 @@ export function ExperienceCarousel({ articles }: Props) {
 
             return (
               <div
-                key={`${article.id}-${i}`}
+                key={article.id}
                 className={`wp-exp-carousel-slide${active ? " is-active" : ""}`}
-                onClick={!active ? () => scrollToArticle(articleIndex) : undefined}
+                onClick={!active ? () => scrollToArticle(i) : undefined}
                 role={!active ? "button" : undefined}
                 tabIndex={!active ? 0 : undefined}
                 onKeyDown={
@@ -295,7 +147,7 @@ export function ExperienceCarousel({ articles }: Props) {
                     ? (e) => {
                         if (e.key !== "Enter") return;
                         e.preventDefault();
-                        scrollToArticle(articleIndex);
+                        scrollToArticle(i);
                       }
                     : undefined
                 }

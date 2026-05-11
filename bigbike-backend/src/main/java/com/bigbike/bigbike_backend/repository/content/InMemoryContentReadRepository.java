@@ -113,6 +113,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         null,
                         false
                 ),
+                null,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-18T05:00:00Z")
@@ -133,6 +138,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         null,
                         false
                 ),
+                null,
+                null,
+                null,
+                null,
+                null,
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-18T05:00:00Z")

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -42,13 +43,22 @@ export default async function ContactPage() {
   const mapUrl = publicSettings.find((s) => s.settingKey === "google_maps_url")?.settingValue?.trim() ?? "";
   const canEmbedMap = /^https?:\/\/(www\.)?google\.com\/maps[/?#]/.test(mapUrl);
 
+  const pageTitle = safeText(page.title, "Liên hệ");
+
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        kicker={page.heroKicker ?? "LIÊN HỆ"}
+        title={page.heroTitle ?? pageTitle}
+        description={page.heroDescription}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: pageTitle },
+        ]}
+      />
       <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, "Liên hệ")}</h1>
-        </header>
-
         <div className="bb-detail-layout bb-section">
           {/* Main: page content + contact form */}
           <div className="bb-main-gap">

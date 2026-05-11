@@ -27,6 +27,10 @@ public record AdminContentItem(
         String categoryId,
         List<ContentCategorySummary> categories,
         PageType pageType,
-        String parentId
+        String parentId,
+        ImageAsset heroImage,
+        String heroTitle,
+        String heroDescription,
+        String heroKicker
 ) {
 }

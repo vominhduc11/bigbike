@@ -27,7 +27,6 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    seoOgImageUrl: '',
     seoNoIndex: false,
   }
 }
@@ -44,7 +43,6 @@ function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
   }
 }
@@ -66,7 +64,6 @@ function toPayload(form) {
     form.seoTitle.trim() ||
     form.seoDescription.trim() ||
     form.seoCanonicalUrl.trim() ||
-    form.seoOgImageUrl.trim() ||
     form.seoNoIndex
   ) {
     payload.seo = {
@@ -74,9 +71,6 @@ function toPayload(form) {
       description: form.seoDescription.trim() || undefined,
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
       noIndex: Boolean(form.seoNoIndex),
-    }
-    if (form.seoOgImageUrl.trim()) {
-      payload.seo.ogImage = { url: form.seoOgImageUrl.trim() }
     }
   }
 
@@ -399,18 +393,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               ) : null}
             </label>
 
-            <label className="form-field form-field-wide">
-              <span>{t('brands.detail.seoOgImageUrl')}</span>
-              <input
-                className="control-input"
-                value={form.seoOgImageUrl}
-                onChange={(event) => updateField('seoOgImageUrl', event.target.value)}
-                disabled={isReadOnly}
-              />
-              {validationErrors.seoOgImageUrl ? (
-                <small className="field-error">{validationErrors.seoOgImageUrl}</small>
-              ) : null}
-            </label>
 
             <label className="form-checkbox">
               <input

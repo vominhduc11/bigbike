@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class CatalogReadService {
 
-    private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt");
+    private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "homepageOrder");
     private static final Set<String> CATEGORY_SORT_FIELDS = Set.of("name", "createdAt", "sortOrder");
     private static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt");
 
@@ -231,6 +231,23 @@ public class CatalogReadService {
     }
 
     private static Comparator<Product> productComparator(SortSpec sortSpec) {
+        // homepageOrder pins manually-ordered products to the top; unpinned (null) fall to the
+        // bottom and are tie-broken by newest-first so recently-added stock surfaces above
+        // long-tail unpinned items. Direction (asc/desc) only flips the pinned section.
+        if ("homepageOrder".equals(sortSpec.field())) {
+            Comparator<Product> pinned = Comparator.comparing(
+                    Product::homepageOrder,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            if (sortSpec.direction() == SortDirection.DESC) {
+                pinned = Comparator.comparing(
+                        Product::homepageOrder,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                );
+            }
+            return pinned.thenComparing(Product::createdAt, Comparator.reverseOrder());
+        }
+
         Comparator<Product> comparator = switch (sortSpec.field()) {
             case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
             case "price" -> Comparator.comparing(

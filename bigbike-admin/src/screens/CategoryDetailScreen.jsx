@@ -82,8 +82,6 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    seoOgImageUrl: '',
-    seoOgImageAlt: '',
     seoNoIndex: false,
   }
 }
@@ -102,8 +100,6 @@ function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImage?.url || '',
-    seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
   }
 }
@@ -126,15 +122,10 @@ function toPayload(form) {
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()
   const seoCanonicalUrl = form.seoCanonicalUrl.trim()
-  const seoOgImageUrl = form.seoOgImageUrl.trim()
-  const seoOgImageAlt = form.seoOgImageAlt.trim()
   payload.seo = {
     title: seoTitle || undefined,
     description: seoDescription || undefined,
     canonicalUrl: seoCanonicalUrl || undefined,
-    ogImage: seoOgImageUrl
-      ? { url: seoOgImageUrl, alt: seoOgImageAlt || undefined }
-      : null,
     noIndex: Boolean(form.seoNoIndex),
   }
 
@@ -257,7 +248,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       // hidden fields contain data.
       const hasSeo = Boolean(
         nextForm.seoTitle || nextForm.seoDescription || nextForm.seoCanonicalUrl
-        || nextForm.seoOgImageUrl || nextForm.seoNoIndex
+        || nextForm.seoNoIndex
       )
       if (hasSeo) setSeoExpanded(true)
       if (nextForm.slug) setSeoExpanded(true)
@@ -822,20 +813,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 ) : null}
               </label>
 
-              <div className="form-field form-field-wide">
-                <span>{t('categories.detail.seoOgImageUrl')}</span>
-                <ImageUrlInput
-                  value={form.seoOgImageUrl}
-                  onChange={(url) => updateField('seoOgImageUrl', url)}
-                  alt={form.seoOgImageAlt}
-                  onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                  disabled={isReadOnly}
-                  error={validationErrors.seoOgImageUrl}
-                />
-                {validationErrors.seoOgImageAlt ? (
-                  <small className="field-error">{validationErrors.seoOgImageAlt}</small>
-                ) : null}
-              </div>
 
               <label className="form-checkbox">
                 <input

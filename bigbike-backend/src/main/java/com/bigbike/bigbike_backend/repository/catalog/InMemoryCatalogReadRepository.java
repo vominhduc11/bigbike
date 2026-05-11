@@ -103,6 +103,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         260,
                         "image/png"
                 ),
+                null,
                 new SeoMeta(
                         "Thương hiệu LS2",
                         "Sản phẩm LS2 tại BigBike.",
@@ -128,6 +129,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         260,
                         "image/png"
                 ),
+                null,
                 new SeoMeta(
                         "Thương hiệu KYT",
                         "Sản phẩm KYT tại BigBike.",
@@ -235,6 +237,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.PUBLISHED,
                 true,
                 true,
+                1,
                 new BigDecimal("4.50"),
                 null,
                 null,
@@ -278,6 +281,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.HIDDEN,
                 false,
                 false,
+                null,
                 new BigDecimal("4.50"),
                 null,
                 null,
@@ -321,6 +325,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 PublishStatus.PUBLISHED,
                 true,
                 false,
+                2,
                 new BigDecimal("4.50"),
                 null,
                 null,

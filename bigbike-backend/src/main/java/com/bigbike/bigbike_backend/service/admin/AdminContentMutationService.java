@@ -331,6 +331,12 @@ public class AdminContentMutationService {
                 mediaUrlProperties.getPublicBaseUrl(),
                 errors
         );
+        AdminMutationValidators.validateImageAsset(
+                request.getHeroImage(),
+                "heroImage",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
         if (slug != null) {
             PageEntity existingBySlug = pageJpaRepository.findBySlug(slug).orElse(null);
             if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
@@ -445,6 +451,22 @@ public class AdminContentMutationService {
             applySeo(entity, request.getSeo());
         } else if (create) {
             clearSeo(entity);
+        }
+
+        // Hero fields are independently patchable so admin can edit text without re-uploading image.
+        if (request.getHeroImage() != null) {
+            applyHeroImage(entity, request.getHeroImage());
+        } else if (create) {
+            clearHeroImage(entity);
+        }
+        if (create || request.getHeroTitle() != null) {
+            entity.setHeroTitle(AdminMutationValidators.trimToNull(request.getHeroTitle()));
+        }
+        if (create || request.getHeroDescription() != null) {
+            entity.setHeroDescription(AdminMutationValidators.trimToNull(request.getHeroDescription()));
+        }
+        if (create || request.getHeroKicker() != null) {
+            entity.setHeroKicker(AdminMutationValidators.trimToNull(request.getHeroKicker()));
         }
     }
 
@@ -620,6 +642,16 @@ public class AdminContentMutationService {
         entity.setSeoOgImageMimeType(AdminMutationValidators.trimToNull(request.getOgImage().getMimeType()));
     }
 
+    private static void applyHeroImage(PageEntity entity, ImageAssetRequest request) {
+        entity.setHeroImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setHeroImageAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearHeroImage(PageEntity entity) {
+        entity.setHeroImageUrl(null);
+        entity.setHeroImageAlt(null);
+    }
+
     private static void clearSeo(PageEntity entity) {
         entity.setSeoTitle(null);
         entity.setSeoDescription(null);
@@ -655,11 +687,26 @@ public class AdminContentMutationService {
                 article.category() != null ? article.category().id() : null,
                 article.categories(),
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }
 
     private static AdminContentItem toAdminContentItem(Page page) {
+        com.bigbike.bigbike_backend.domain.catalog.ImageAsset heroImage =
+                (page.heroImageUrl() == null && page.heroImageAlt() == null)
+                        ? null
+                        : new com.bigbike.bigbike_backend.domain.catalog.ImageAsset(
+                                null,
+                                page.heroImageUrl(),
+                                page.heroImageAlt(),
+                                null,
+                                null,
+                                null
+                        );
         return new AdminContentItem(
                 page.id(),
                 "PAGE",
@@ -681,7 +728,11 @@ public class AdminContentMutationService {
                 null,
                 null,
                 page.type(),
-                page.parentId()
+                page.parentId(),
+                heroImage,
+                page.heroTitle(),
+                page.heroDescription(),
+                page.heroKicker()
         );
     }
 

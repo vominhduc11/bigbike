@@ -132,6 +132,9 @@ public class ProductEntity {
     private Boolean isFeatured;
     private Boolean showOnHomepage;
 
+    @Column(name = "homepage_order")
+    private Integer homepageOrder;
+
     @Column(name = "rating", precision = 3, scale = 2)
     private BigDecimal rating;
 
@@ -456,6 +459,14 @@ public class ProductEntity {
 
     public void setShowOnHomepage(Boolean showOnHomepage) {
         this.showOnHomepage = showOnHomepage;
+    }
+
+    public Integer getHomepageOrder() {
+        return homepageOrder;
+    }
+
+    public void setHomepageOrder(Integer homepageOrder) {
+        this.homepageOrder = homepageOrder;
     }
 
     public BigDecimal getRating() {

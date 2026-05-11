@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { toHomePath } from "@/lib/utils/routes";
 
 type GuidePageProps = {
   subSegments?: string[];
@@ -95,14 +97,31 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   const page = pageResult.data;
   const currentPath = route.path;
   const menuItems = menuResult.data?.items ?? [];
+  const pageTitle = safeText(page.title, route.title);
+  const isRoot = !subSegments || subSegments.length === 0;
 
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        kicker={page.heroKicker ?? "HƯỚNG DẪN"}
+        title={page.heroTitle ?? pageTitle}
+        description={page.heroDescription ?? route.description}
+        breadcrumb={
+          isRoot
+            ? [
+                { label: "Trang chủ", href: toHomePath() },
+                { label: pageTitle },
+              ]
+            : [
+                { label: "Trang chủ", href: toHomePath() },
+                { label: "Hướng dẫn", href: "/huong-dan/" },
+                { label: pageTitle },
+              ]
+        }
+      />
       <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, "Hướng dẫn")}</h1>
-        </header>
-
         <div className="bb-detail-layout bb-section">
           <div className="bb-card bb-card-content">
             <article

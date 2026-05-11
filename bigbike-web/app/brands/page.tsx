@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { BRAND_SORT_VALUES, listBrands } from "@/lib/api/public-api";
+import { BRAND_SORT_VALUES, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
+import { readHeroSettings } from "@/lib/utils/page-hero";
 import { buildQueryString, collectErrors, parsePositiveIntParam, parseSortParam, readSingleSearchParam } from "@/lib/utils/query";
-import { toBrandListPath, toBrandPath } from "@/lib/utils/routes";
+import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 
 type BrandListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -54,20 +56,33 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
     );
   }
 
-  const result = await listBrands({
-    page: pageParsed.value,
-    size: sizeParsed.value,
-    sort: sortParsed.value,
-  });
+  const [result, settingsResult] = await Promise.all([
+    listBrands({
+      page: pageParsed.value,
+      size: sizeParsed.value,
+      sort: sortParsed.value,
+    }),
+    listPublicSettings(),
+  ]);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_brands");
 
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
+        kicker={heroSettings.kicker ?? "BRAND"}
+        title={heroSettings.title ?? "Thương hiệu"}
+        description={
+          heroSettings.description ?? "Tất cả thương hiệu đồ bảo hộ biker tại BigBike."
+        }
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Thương hiệu" },
+        ]}
+        meta={result.pagination ? `${result.pagination.totalItems} thương hiệu` : undefined}
+      />
       <div className="bb-container">
-        <header>
-          <p className="bb-kicker">Brand</p>
-          <h1>Thương hiệu</h1>
-          <p className="bb-page-subtitle">Tất cả thương hiệu đồ bảo hộ biker tại BigBike.</p>
-        </header>
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toBrandListPath()} />

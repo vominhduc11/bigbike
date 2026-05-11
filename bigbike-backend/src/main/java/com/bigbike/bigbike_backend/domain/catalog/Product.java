@@ -26,6 +26,8 @@ public record Product(
         PublishStatus publishStatus,
         Boolean isFeatured,
         Boolean showOnHomepage,
+        /** Pin priority inside homepage featured/showOnHomepage blocks. Lower = earlier; null = end. */
+        Integer homepageOrder,
         /** Denormalized cache of the approved-review average used by product list/detail reads. */
         java.math.BigDecimal rating,
         /** Denormalized cache of the approved-review count used by product list/detail reads. */

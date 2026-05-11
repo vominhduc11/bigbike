@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -27,7 +28,9 @@ import {
 import { toBrandPath, toHomePath, toBrandListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-export const revalidate = 3600;
+// searchParams (filters, pagination, sort) make this page per-request dynamic.
+// Data caching is handled at the fetch level in public-api.ts (revalidate: 3600 + tags).
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const result = await listBrands({ page: 1, size: 1000, sort: "name:asc" });
@@ -207,7 +210,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         )}
       </div>
 
-      {brand.logo && (
+      {(brand.bannerImage ?? brand.logo) && (
         <div style={{ maxWidth: 1440, margin: "0 auto 24px", padding: "0 24px" }}>
           <div
             style={{
@@ -218,7 +221,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
             }}
           >
             <MediaImage
-              image={brand.logo}
+              image={(brand.bannerImage ?? brand.logo)!}
               altFallback={brandName}
               width={1200}
               height={400}
@@ -248,7 +251,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                 </>
               ) : null}
             </div>
-            <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            <Suspense fallback={null}>
+              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
+            </Suspense>
           </div>
 
           {productsResult.error && productsResult.data.length === 0 ? (

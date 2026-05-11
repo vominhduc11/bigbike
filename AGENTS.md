@@ -87,6 +87,15 @@ Brand direction:
 
 ---
 
+## Phong cách trả lời
+
+- **Ngôn ngữ business, không dùng thuật ngữ kỹ thuật.** Giải thích bằng ngôn ngữ mà chủ shop / quản lý có thể hiểu ngay — không dùng tên class, method, endpoint, stack trace hay jargon lập trình trừ khi user là developer và đang hỏi về code cụ thể.
+- **Ngắn gọn nhưng đủ ý.** Không viết dài dòng, không lặp lại điều đã nói. Mỗi câu phải có thông tin.
+- **Trình bày dễ đọc.** Dùng danh sách, bảng, hoặc tiêu đề ngắn khi có nhiều điểm cần liệt kê. Không đổ thành đoạn văn dài.
+- **Trả lời đúng trọng tâm câu hỏi.** Không giải thích những thứ user không hỏi.
+
+---
+
 ## ⚠️ Docs-First Contract — READ THIS BEFORE ANY CODE CHANGE
 
 > Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/engineering/) là **source of truth** của BigBike. Code được dựng lên từ những docs này, không phải ngược lại.

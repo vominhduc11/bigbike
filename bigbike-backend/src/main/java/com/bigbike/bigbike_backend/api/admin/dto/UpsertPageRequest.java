@@ -25,6 +25,18 @@ public class UpsertPageRequest {
     @Valid
     private SeoMetaRequest seo;
 
+    @Valid
+    private ImageAssetRequest heroImage;
+
+    @Size(max = 256, message = "Hero title is too long.")
+    private String heroTitle;
+
+    @Size(max = 1024, message = "Hero description is too long.")
+    private String heroDescription;
+
+    @Size(max = 128, message = "Hero kicker is too long.")
+    private String heroKicker;
+
     public String getSlug() {
         return slug;
     }
@@ -79,5 +91,37 @@ public class UpsertPageRequest {
 
     public void setSeo(SeoMetaRequest seo) {
         this.seo = seo;
+    }
+
+    public ImageAssetRequest getHeroImage() {
+        return heroImage;
+    }
+
+    public void setHeroImage(ImageAssetRequest heroImage) {
+        this.heroImage = heroImage;
+    }
+
+    public String getHeroTitle() {
+        return heroTitle;
+    }
+
+    public void setHeroTitle(String heroTitle) {
+        this.heroTitle = heroTitle;
+    }
+
+    public String getHeroDescription() {
+        return heroDescription;
+    }
+
+    public void setHeroDescription(String heroDescription) {
+        this.heroDescription = heroDescription;
+    }
+
+    public String getHeroKicker() {
+        return heroKicker;
+    }
+
+    public void setHeroKicker(String heroKicker) {
+        this.heroKicker = heroKicker;
     }
 }

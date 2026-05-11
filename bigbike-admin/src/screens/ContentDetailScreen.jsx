@@ -8,7 +8,6 @@ import {
   fetchContentAuthors,
   fetchContentCategories,
   fetchContentDetail,
-  fetchContentPageRefs,
   mapValidationErrors,
   updateContent,
 } from '../lib/adminApi'
@@ -46,8 +45,12 @@ function buildEmptyForm(contentType) {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    seoOgImageUrl: '',
     seoNoIndex: false,
+    heroImageUrl: '',
+    heroImageAlt: '',
+    heroTitle: '',
+    heroDescription: '',
+    heroKicker: '',
     type: normalizeContentType(contentType),
   }
 }
@@ -74,8 +77,12 @@ function buildFormFromItem(contentType, item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
+    heroImageUrl: item.heroImage?.url || '',
+    heroImageAlt: item.heroImage?.alt || '',
+    heroTitle: item.heroTitle || '',
+    heroDescription: item.heroDescription || '',
+    heroKicker: item.heroKicker || '',
     type: normalizeContentType(item.type || contentType),
   }
 }
@@ -126,6 +133,15 @@ function toPayload(form, isCreate) {
     }
     // Always send parentId — empty string clears the parent
     payload.parentId = form.parentId || ''
+
+    // Hero — always send so admin can clear by leaving blank.
+    // Empty url is accepted by backend (@Pattern allows empty) and treated as "clear".
+    payload.heroImage = form.heroImageUrl.trim()
+      ? { url: form.heroImageUrl.trim(), alt: form.heroImageAlt.trim() || undefined }
+      : { url: '' }
+    payload.heroTitle = form.heroTitle.trim() || ''
+    payload.heroDescription = form.heroDescription.trim() || ''
+    payload.heroKicker = form.heroKicker.trim() || ''
   }
 
   // Always send seo as non-null object so backend can clear fields when all are empty
@@ -134,7 +150,6 @@ function toPayload(form, isCreate) {
     description: form.seoDescription.trim() || null,
     canonicalUrl: form.seoCanonicalUrl.trim() || null,
     noIndex: Boolean(form.seoNoIndex),
-    ogImage: form.seoOgImageUrl.trim() ? { url: form.seoOgImageUrl.trim() } : null,
   }
 
   return payload
@@ -170,12 +185,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: pageRefs = [] } = useQuery({
-    queryKey: ['content-reference', 'pages'],
-    queryFn: fetchContentPageRefs,
-    staleTime: 5 * 60 * 1000,
-    enabled: normalizedType === 'PAGE',
-  })
 
   useEffect(() => {
     if (!fetchResult) return
@@ -470,25 +479,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               </label>
             ) : null}
 
-            {/* P1-002: Parent page selector for pages */}
-            {!isArticle ? (
-              <label className="form-field">
-                <span>{t('content.detail.parentPage', { defaultValue: 'Trang cha' })}</span>
-                <select
-                  className="control-select"
-                  value={form.parentId}
-                  onChange={(event) => updateField('parentId', event.target.value)}
-                  disabled={isReadOnly}
-                >
-                  <option value="">{t('content.detail.parentNone', { defaultValue: '— Không có trang cha —' })}</option>
-                  {pageRefs
-                    .filter((p) => p.id !== contentId)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>{p.title || p.slug}</option>
-                    ))}
-                </select>
-              </label>
-            ) : null}
 
             {isArticle ? (
               <label className="form-field form-field-wide">
@@ -580,6 +570,67 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           </section>
         ) : null}
 
+        {!isArticle ? (
+          <section className="detail-section">
+            <header className="detail-section-header">
+              <h2>Hero banner</h2>
+              <p className="detail-section-hint">
+                Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ
+                rơi về nền đen-đỏ mặc định.
+              </p>
+            </header>
+            <div className="detail-section-content form-grid">
+              <div className="form-field form-field-wide">
+                <span>Ảnh hero</span>
+                <ImageUrlInput
+                  value={form.heroImageUrl}
+                  onChange={(url) => updateField('heroImageUrl', url)}
+                  alt={form.heroImageAlt}
+                  onAltChange={(alt) => updateField('heroImageAlt', alt)}
+                  disabled={isReadOnly}
+                  error={validationErrors['heroImage.url']}
+                />
+              </div>
+
+              <label className="form-field">
+                <span>Kicker (chip nhỏ trên tiêu đề)</span>
+                <input
+                  className="control-input"
+                  value={form.heroKicker}
+                  onChange={(event) => updateField('heroKicker', event.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="vd: GIỚI THIỆU"
+                  maxLength={128}
+                />
+              </label>
+
+              <label className="form-field">
+                <span>Tiêu đề hero</span>
+                <input
+                  className="control-input"
+                  value={form.heroTitle}
+                  onChange={(event) => updateField('heroTitle', event.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="Để trống nếu muốn dùng tên trang"
+                  maxLength={256}
+                />
+              </label>
+
+              <label className="form-field form-field-wide">
+                <span>Mô tả ngắn dưới tiêu đề</span>
+                <textarea
+                  className="control-input control-textarea"
+                  value={form.heroDescription}
+                  onChange={(event) => updateField('heroDescription', event.target.value)}
+                  disabled={isReadOnly}
+                  maxLength={1024}
+                  rows={2}
+                />
+              </label>
+            </div>
+          </section>
+        ) : null}
+
         <section className="detail-section">
           <header className="detail-section-header">
             <h2>{t('content.detail.sectionSeo')}</h2>
@@ -618,18 +669,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               ) : null}
             </label>
 
-            <label className="form-field form-field-wide">
-              <span>{t('content.detail.seoOgImageUrl')}</span>
-              <input
-                className="control-input"
-                value={form.seoOgImageUrl}
-                onChange={(event) => updateField('seoOgImageUrl', event.target.value)}
-                disabled={isReadOnly}
-              />
-              {validationErrors.seoOgImageUrl ? (
-                <small className="field-error">{validationErrors.seoOgImageUrl}</small>
-              ) : null}
-            </label>
 
             <label className="form-checkbox">
               <input

@@ -146,6 +146,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getPublishStatus(),
                 entity.getFeatured(),
                 entity.getShowOnHomepage(),
+                entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
                 null,
@@ -342,6 +343,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getPublishStatus(),
                 entity.getFeatured(),
                 entity.getShowOnHomepage(),
+                entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
                 entity.getContentBottom(),
@@ -419,6 +421,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getLogoHeight(),
                         entity.getLogoMimeType()
                 ),
+                toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
                 toSeoMeta(
                         entity.getSeoTitle(),
                         entity.getSeoDescription(),

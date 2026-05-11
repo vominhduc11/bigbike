@@ -1,12 +1,14 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
-  Home, Building2,
+  Home, Building2, Image as ImageIcon,
   CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { RichTextEditor } from '../components/RichTextEditor'
+import { ImageUrlInput } from '../components/ImageUrlInput'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -76,7 +78,7 @@ function validateValue(key, value) {
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PROMO', 'SEO', 'STORE', 'TAX',
+  'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX',
 ]
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
@@ -93,6 +95,7 @@ const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
+  PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero', fallbackLabel: 'Hero trang' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
   STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
@@ -123,11 +126,15 @@ const KEY_LABELS_VI = {
   home_exp_subtitle: 'Khu trải nghiệm — kicker phụ đề',
   home_exp_title: 'Khu trải nghiệm — tiêu đề chính',
   home_exp_desc: 'Khu trải nghiệm — đoạn mô tả',
+  about_title: 'Khu giới thiệu — tiêu đề chính',
+  about_subtitle: 'Khu giới thiệu — kicker phụ đề',
+  about_content_html: 'Khu giới thiệu — nội dung (rich-text)',
   // seo
   seo_home_title: 'SEO Title trang chủ (thẻ <title>)',
   seo_home_description: 'SEO Description trang chủ (meta)',
   og_image_url: 'Ảnh khi share Facebook (Open Graph)',
   seo_home_h1: 'Tiêu đề H1 trang chủ',
+  home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // store (operational)
   order_min_amount: 'Đơn tối thiểu để checkout (VND, 0 = không giới hạn)',
   low_stock_threshold: 'Ngưỡng cảnh báo sắp hết hàng (số lượng)',
@@ -136,6 +143,24 @@ const KEY_LABELS_VI = {
   tax_rate: 'Thuế suất VAT (vd: 0.10 = 10%)',
   tax_inclusive: 'Giá sản phẩm đã bao gồm thuế (true/false)',
   tax_registration_number: 'Mã số thuế (MST) — in trên hoá đơn',
+  // public_hero — Tất cả sản phẩm
+  hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm',
+  hero_products_image_alt: 'Alt ảnh hero — Tất cả sản phẩm',
+  hero_products_title: 'Tiêu đề hero — Tất cả sản phẩm',
+  hero_products_description: 'Mô tả hero — Tất cả sản phẩm',
+  hero_products_kicker: 'Kicker hero — Tất cả sản phẩm',
+  // public_hero — Thương hiệu
+  hero_brands_image_url: 'Ảnh hero — trang Thương hiệu',
+  hero_brands_image_alt: 'Alt ảnh hero — Thương hiệu',
+  hero_brands_title: 'Tiêu đề hero — Thương hiệu',
+  hero_brands_description: 'Mô tả hero — Thương hiệu',
+  hero_brands_kicker: 'Kicker hero — Thương hiệu',
+  // public_hero — Tin tức
+  hero_news_image_url: 'Ảnh hero — trang Tin tức',
+  hero_news_image_alt: 'Alt ảnh hero — Tin tức',
+  hero_news_title: 'Tiêu đề hero — Tin tức',
+  hero_news_description: 'Mô tả hero — Tin tức',
+  hero_news_kicker: 'Kicker hero — Tin tức',
 }
 
 const FALLBACK_META = { icon: Settings, labelKey: null }
@@ -144,7 +169,8 @@ function tabLabel(group, t) {
   const meta = TAB_META[group?.toUpperCase()] || FALLBACK_META
   if (!meta.labelKey) return group ?? t('settings.groupGeneral')
   const translated = t(meta.labelKey)
-  return translated === meta.labelKey ? (group ?? t('settings.groupGeneral')) : translated
+  if (translated !== meta.labelKey) return translated
+  return meta.fallbackLabel ?? group ?? t('settings.groupGeneral')
 }
 
 // ── SettingField ──────────────────────────────────────────────────────────────
@@ -156,24 +182,49 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
   const type = inputTypeFor(setting.key)
   const placeholder = placeholderFor(setting.key)
   const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
+  const isHtml = setting.valueType === 'HTML'
+  const isImage = setting.valueType === 'IMAGE_URL'
 
   return (
-    <div className={`sv2-field${isDirty ? ' sv2-field--dirty' : ''}`}>
+    <div className={`sv2-field${isDirty ? ' sv2-field--dirty' : ''}${isHtml ? ' sv2-field--html' : ''}`}>
       <div className="sv2-field-label">
         {label}
         {isDirty && <span className="sv2-field-dirty-dot" aria-label="Chưa lưu" />}
       </div>
 
       {canUpdate ? (
-        <input
-          className={`control-input sv2-field-input${error ? ' sv2-field-input--error' : ''}`}
-          type={type}
-          inputMode={type === 'number' ? 'numeric' : undefined}
-          value={currentValue}
-          placeholder={placeholder || (rawValue ? '' : 'Bấm để nhập...')}
-          onChange={(e) => onChange(setting.key, e.target.value)}
-          aria-describedby={error ? `err-${setting.key}` : undefined}
+        isHtml ? (
+          <RichTextEditor
+            value={currentValue}
+            onChange={(html) => onChange(setting.key, html)}
+            placeholder="Soạn nội dung HTML..."
+            hasError={Boolean(error)}
+            enableImagePicker
+          />
+        ) : isImage ? (
+          <ImageUrlInput
+            value={currentValue}
+            onChange={(url) => onChange(setting.key, url)}
+            error={error}
+          />
+        ) : (
+          <input
+            className={`control-input sv2-field-input${error ? ' sv2-field-input--error' : ''}`}
+            type={type}
+            inputMode={type === 'number' ? 'numeric' : undefined}
+            value={currentValue}
+            placeholder={placeholder || (rawValue ? '' : 'Bấm để nhập...')}
+            onChange={(e) => onChange(setting.key, e.target.value)}
+            aria-describedby={error ? `err-${setting.key}` : undefined}
+          />
+        )
+      ) : isHtml ? (
+        <div
+          className="sv2-field-readonly sv2-field-readonly--html"
+          dangerouslySetInnerHTML={{ __html: rawValue || '<em>Chưa có nội dung</em>' }}
         />
+      ) : isImage && rawValue ? (
+        <img src={rawValue} alt="" className="img-preview" loading="lazy" />
       ) : (
         <div className="sv2-field-readonly">
           {rawValue || <em className="sv2-empty">Chưa có giá trị</em>}

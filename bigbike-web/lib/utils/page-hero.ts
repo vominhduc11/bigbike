@@ -1,0 +1,29 @@
+import type { PublicSiteSetting } from "@/lib/contracts/public";
+
+export type HeroSettingPrefix = "hero_products" | "hero_brands" | "hero_news";
+
+type HeroPropsFromSettings = {
+  imageUrl: string | null;
+  imageAlt: string | null;
+  title: string | null;
+  description: string | null;
+  kicker: string | null;
+};
+
+function findValue(settings: PublicSiteSetting[], key: string): string | null {
+  const value = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
+  return value ? value : null;
+}
+
+export function readHeroSettings(
+  settings: PublicSiteSetting[],
+  prefix: HeroSettingPrefix,
+): HeroPropsFromSettings {
+  return {
+    imageUrl: findValue(settings, `${prefix}_image_url`),
+    imageAlt: findValue(settings, `${prefix}_image_alt`),
+    title: findValue(settings, `${prefix}_title`),
+    description: findValue(settings, `${prefix}_description`),
+    kicker: findValue(settings, `${prefix}_kicker`),
+  };
+}

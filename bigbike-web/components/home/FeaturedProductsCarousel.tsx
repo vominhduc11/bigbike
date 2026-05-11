@@ -7,10 +7,13 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 type Props = { products: Product[] };
 
 export function FeaturedProductsCarousel({ products }: Props) {
+  // slidesToScroll: 1 keeps navigation predictable when the carousel only has 5 items
+  // (the homepage limit) — scrolling 2 at a time made the "next" button run out of slides
+  // after a single click on desktop where 3-4 cards are already visible.
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     dragFree: true,
-    slidesToScroll: 2,
+    slidesToScroll: 1,
   });
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);

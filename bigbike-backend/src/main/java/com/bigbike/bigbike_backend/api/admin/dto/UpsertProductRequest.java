@@ -55,6 +55,8 @@ public class UpsertProductRequest {
     private Boolean forceOutOfStock;
     private Boolean isFeatured;
     private Boolean showOnHomepage;
+    private Integer homepageOrder;
+    private boolean homepageOrderPresent;
 
     // rating and ratingCount are read-only — owned by the review moderation subsystem.
     // They are intentionally absent from this request DTO. Sending them in JSON is ignored
@@ -243,6 +245,19 @@ public class UpsertProductRequest {
 
     public void setShowOnHomepage(Boolean showOnHomepage) {
         this.showOnHomepage = showOnHomepage;
+    }
+
+    public Integer getHomepageOrder() {
+        return homepageOrder;
+    }
+
+    public void setHomepageOrder(Integer homepageOrder) {
+        this.homepageOrder = homepageOrder;
+        this.homepageOrderPresent = true;
+    }
+
+    public boolean isHomepageOrderPresent() {
+        return homepageOrderPresent;
     }
 
     public String getContentBottom() {

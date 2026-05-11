@@ -2904,6 +2904,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "featured",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by isFeatured flag (true = on homepage 'Sản phẩm nổi bật' grid)."
+          },
+          {
+            "name": "showOnHomepage",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by showOnHomepage flag (true = on homepage 'Sản phẩm BigBike' carousel)."
           }
         ],
         "responses": {
@@ -7773,6 +7789,12 @@
           "showOnHomepage": {
             "type": "boolean",
             "nullable": true
+          },
+          "homepageOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Manual pin priority inside homepage featured/showOnHomepage blocks. Lower = appears earlier; null = unpinned (sorted to the end by createdAt DESC)."
           },
           "rating": {
             "type": "number",

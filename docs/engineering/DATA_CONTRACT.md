@@ -149,6 +149,54 @@ Evidence:
 - `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
 
+### Product homepage flags and ordering
+
+Three columns on the `products` table control homepage surface placement:
+
+| Column | DB column | Type | Purpose |
+|---|---|---|---|
+| `isFeatured` | `is_featured` | `BOOLEAN NOT NULL DEFAULT false` | Slot product into the "Sản phẩm nổi bật" grid (Block 1). Max 12 shown; sorted by `homepageOrder ASC NULLS LAST`, then `created_at DESC`. |
+| `showOnHomepage` | `show_on_homepage` | `BOOLEAN NOT NULL DEFAULT false` | Slot product into the "Gợi ý dành cho bạn" carousel (Block 2). Max 5 shown; sorted same as above. Products already shown in Block 1 are excluded (deduplication on web). |
+| `homepageOrder` | `homepage_order` | `INTEGER NULL` (added V95) | Manual ordering pin shared by both blocks. Lower value = appears earlier. `NULL` = unpinned (sorted to end by `createdAt DESC`). |
+
+Migration: `V95__add_product_homepage_order.sql` — `ALTER TABLE products ADD COLUMN IF NOT EXISTS homepage_order INTEGER; CREATE INDEX idx_products_homepage_order ON products (homepage_order) WHERE homepage_order IS NOT NULL;`
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `ProductEntity.java` — `@Column(name = "homepage_order") private Integer homepageOrder`
+- `Product.java` — record field `Integer homepageOrder`
+- `UpsertProductRequest.java` — presence-flag pattern (`homepageOrderPresent`) prevents null from clearing an existing value on partial PATCH
+- `AdminCatalogMutationService.applyProductPatch()` — applies `homepageOrder` only when `create || homepageOrderPresent`
+- `CatalogReadService.productComparator()` — compound sort: pinned ASC/DESC, null last, `createdAt:DESC` tiebreaker
+- `bigbike-openapi.json` — `homepageOrder` in Product schema (integer, nullable)
+
+### Page hero fields (V98)
+
+`PageEntity` holds an optional hero banner block surfaced on public CMS pages (`/gioi-thieu`, `/lien-he`, `/chinh-sach/*`, `/huong-dan*`). Hero is independent of the SEO OG image and the article cover image.
+
+| Column | DB column | Type | Nullable | Purpose |
+|---|---|---|---|---|
+| `heroImageUrl` | `hero_image_url` | `VARCHAR(1024)` | YES | Public URL of hero background. Empty/null → web falls back to `wp-cat-hero--no-img` gradient. |
+| `heroImageAlt` | `hero_image_alt` | `VARCHAR(512)` | YES | Alt text for accessibility. |
+| `heroTitle` | `hero_title` | `VARCHAR(256)` | YES | Heading override. If null, web renders `page.title`. |
+| `heroDescription` | `hero_description` | `VARCHAR(1024)` | YES | Short tagline below the heading. Plain text. |
+| `heroKicker` | `hero_kicker` | `VARCHAR(128)` | YES | Small uppercase chip rendered above the heading (e.g. `GIỚI THIỆU`). |
+
+Migration: `V98__add_page_hero_fields.sql` — `ALTER TABLE pages ADD COLUMN hero_* …` (all nullable, no default).
+
+For the **listing pages** (`/san-pham`, `/brands`, `/tin-tuc`) which have no `PageEntity`, the same five hero attributes are stored as `SiteSettingEntity` rows in setting group `public_hero` (15 keys total — see [API_CONTRACT.md](API_CONTRACT.md#admin-settings-contract)).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `PageEntity.java` — added 5 `hero*` fields
+- `Page.java` — domain record extended with hero fields
+- `UpsertPageRequest.java` — admin DTO accepts `heroImage` + `heroTitle` + `heroDescription` + `heroKicker`
+- `JpaContentReadRepository.toDomain(PageEntity)` — maps entity → domain
+- `SettingDefinitionRegistry.java` — registers 15 `hero_(products|brands|news)_*` keys
+- `V98__add_page_hero_fields.sql`
+
 ## Accounts Receivable Data Fields
 
 Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivables.sql`.

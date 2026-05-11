@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toPagePath } from "@/lib/utils/routes";
+import { toHomePath, toPagePath } from "@/lib/utils/routes";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Giới thiệu",
@@ -29,14 +30,22 @@ export default async function AboutPage() {
   }
 
   const page = result.data;
+  const pageTitle = safeText(page.title, "Giới thiệu");
 
   return (
     <section className="bb-page">
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        kicker={page.heroKicker ?? "GIỚI THIỆU"}
+        title={page.heroTitle ?? pageTitle}
+        description={page.heroDescription}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: pageTitle },
+        ]}
+      />
       <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, "Giới thiệu")}</h1>
-        </header>
-
         <article
           className="bb-richtext bb-section"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "wp-blog-cat-1",
+    "legacyTermId": "1",
+    "slug": "khong-phan-loai",
+    "name": "Chưa được phân loại",
+    "parent": "0",
+    "postCount": 4
+  },
+  {
+    "id": "wp-blog-cat-350",
+    "legacyTermId": "350",
+    "slug": "uncategorized-en",
+    "name": "Uncategorized",
+    "parent": "0",
+    "postCount": 0
+  },
+  {
+    "id": "wp-blog-cat-361",
+    "legacyTermId": "361",
+    "slug": "tin-tuc",
+    "name": "Tin tức",
+    "parent": "0",
+    "postCount": 156
+  },
+  {
+    "id": "wp-blog-cat-365",
+    "legacyTermId": "365",
+    "slug": "reviews",
+    "name": "Reviews",
+    "parent": "0",
+    "postCount": 7
+  },
+  {
+    "id": "wp-blog-cat-6599",
+    "legacyTermId": "6599",
+    "slug": "cach-do-size-ban-tay-de-chon-mua-gang-tay-tai-bao-ho-tai-bigbike-vn",
+    "name": "Cách đo size bàn tay để chọn mua găng tay tại bảo hộ tại BIGBIKE.VN",
+    "parent": "0",
+    "postCount": 0
+  }
+]

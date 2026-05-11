@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AdminCatalogReadService {
 
-    private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "updatedAt");
+    private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "updatedAt", "homepageOrder");
     private static final Set<String> CATEGORY_SORT_FIELDS = Set.of("name", "createdAt", "updatedAt", "sortOrder");
     private static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt", "updatedAt");
 
@@ -46,17 +46,25 @@ public class AdminCatalogReadService {
             String publishStatus,
             String stockState,
             String brandId,
-            String categoryId
+            String categoryId,
+            Boolean featured,
+            Boolean showOnHomepage
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
 
         List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId)
                 .stream()
+                .filter(product -> matchesFlag(product.isFeatured(), featured))
+                .filter(product -> matchesFlag(product.showOnHomepage(), showOnHomepage))
                 .sorted(productComparator(sortSpec))
                 .toList();
 
         return paginationService.paginate(result, page, size);
+    }
+
+    private static boolean matchesFlag(Boolean actual, Boolean expected) {
+        return expected == null || Boolean.TRUE.equals(actual) == expected;
     }
 
     public Product getProductById(String id) {
@@ -163,6 +171,14 @@ public class AdminCatalogReadService {
     }
 
     private static Comparator<Product> productComparator(SortSpec sortSpec) {
+        if ("homepageOrder".equals(sortSpec.field())) {
+            Comparator<Integer> nullSafe = sortSpec.direction() == SortDirection.DESC
+                    ? Comparator.nullsLast(Comparator.reverseOrder())
+                    : Comparator.nullsLast(Comparator.naturalOrder());
+            return Comparator.comparing(Product::homepageOrder, nullSafe)
+                    .thenComparing(Product::updatedAt, Comparator.reverseOrder());
+        }
+
         Comparator<Product> comparator = switch (sortSpec.field()) {
             case "name" -> Comparator.comparing(Product::name, String.CASE_INSENSITIVE_ORDER);
             case "price" -> Comparator.comparing(product -> product.price().retailPrice());

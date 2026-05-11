@@ -800,6 +800,9 @@ public class AdminCatalogMutationService {
         if (create || request.getShowOnHomepage() != null) {
             entity.setShowOnHomepage(Boolean.TRUE.equals(request.getShowOnHomepage()));
         }
+        if (create || request.isHomepageOrderPresent()) {
+            entity.setHomepageOrder(request.getHomepageOrder());
+        }
         // Phase 2D: review moderation owns rating cache recomputation, so
         // product mutations must not write rating/ratingCount directly.
         if (create || request.isContentBottomPresent()) {
@@ -1186,6 +1189,12 @@ public class AdminCatalogMutationService {
             clearLogo(entity);
         }
 
+        if (request.getBanner() != null) {
+            applyBanner(entity, request.getBanner());
+        } else if (create) {
+            clearBanner(entity);
+        }
+
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {
@@ -1270,6 +1279,16 @@ public class AdminCatalogMutationService {
         entity.setLogoWidth(null);
         entity.setLogoHeight(null);
         entity.setLogoMimeType(null);
+    }
+
+    private static void applyBanner(BrandEntity entity, ImageAssetRequest request) {
+        entity.setBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearBanner(BrandEntity entity) {
+        entity.setBannerUrl(null);
+        entity.setBannerAlt(null);
     }
 
     private static void applySeo(ProductEntity entity, SeoMetaRequest request) {

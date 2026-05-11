@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ArticleCard } from "@/components/content/ArticleCard";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { ARTICLE_SORT_VALUES, listArticles } from "@/lib/api/public-api";
+import { ARTICLE_SORT_VALUES, listArticles, listPublicSettings } from "@/lib/api/public-api";
 import type { Article, ContentCategorySummary } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { readHeroSettings } from "@/lib/utils/page-hero";
 import {
   buildQueryString,
   collectErrors,
@@ -16,7 +17,7 @@ import {
   parseTextParam,
   readSingleSearchParam,
 } from "@/lib/utils/query";
-import { toArticleListPath } from "@/lib/utils/routes";
+import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 
 const SORT_LABELS: Record<(typeof ARTICLE_SORT_VALUES)[number], string> = {
   "publishedAt:desc": "Mới nhất",
@@ -106,13 +107,17 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     );
   }
 
-  const result = await listArticles({
-    page: pageParsed.value,
-    size: sizeParsed.value,
-    sort: sortParsed.value,
-    category: categoryParsed.value,
-    q: qParsed.value,
-  });
+  const [result, settingsResult] = await Promise.all([
+    listArticles({
+      page: pageParsed.value,
+      size: sizeParsed.value,
+      sort: sortParsed.value,
+      category: categoryParsed.value,
+      q: qParsed.value,
+    }),
+    listPublicSettings(),
+  ]);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
 
   const articles = result.data;
   const totalItems = result.pagination?.totalItems ?? articles.length;
@@ -146,31 +151,21 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
   return (
     <div className="wp-news-page">
-      <div className="wp-breadcrumb">
-        <Link href="/">Trang chủ</Link>
-        <span className="sep">/</span>
-        <span>Tin tức</span>
-      </div>
-
-      <section className="wp-news-hero" aria-labelledby="news-heading">
-        <div className="wp-news-hero-copy">
-          <span className="wp-news-kicker">BigBike Blog</span>
-          <h1 id="news-heading">Tin tức và hướng dẫn biker</h1>
-          <p>
-            Kiến thức chọn gear, kinh nghiệm sử dụng đồ bảo hộ moto và cập nhật
-            sản phẩm chính hãng cho anh em rider Việt Nam.
-          </p>
-        </div>
-        <div className="wp-news-hero-panel" aria-label="Tổng quan bài viết">
-          <span>Bài viết</span>
-          <b>{totalItems}</b>
-          <p>
-            {hasContentFilters
-              ? "Kết quả đang được lọc theo từ khoá hoặc danh mục."
-              : "Sắp xếp theo bài mới nhất từ hệ thống BigBike."}
-          </p>
-        </div>
-      </section>
+      <PageHero
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
+        kicker={heroSettings.kicker ?? "BIGBIKE BLOG"}
+        title={heroSettings.title ?? "Tin tức và hướng dẫn biker"}
+        description={
+          heroSettings.description ??
+          "Kiến thức chọn gear, kinh nghiệm sử dụng đồ bảo hộ moto và cập nhật sản phẩm chính hãng cho anh em rider Việt Nam."
+        }
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Tin tức" },
+        ]}
+        meta={`${totalItems} bài viết`}
+      />
 
       <div className="wp-news-section">
         <div className="wp-news-toolbar">

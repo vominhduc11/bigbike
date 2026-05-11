@@ -27,12 +27,14 @@ import {
 } from "@/lib/seo/json-ld";
 import {
   formatDate,
+  formatVnd,
   isSafeHomeVideoUrl,
   resolveMediaUrl,
   safeText,
   toSafePublicHref,
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { RatingStars } from "@/components/ui/RatingStars";
 import {
   toArticleListPath,
   toArticlePath,
@@ -155,7 +157,11 @@ function HomeTrustRail() {
 
 function WpCategoryImageCell({ category }: { category: Category }) {
   const name = safeText(category.name, "Danh mục");
+  // Prefer uploaded image (real photo) over icon (SVG glyph).
+  // isIcon drives the CSS filter: icons get brightness(0) invert(1) to show as white
+  // silhouettes; real photos render with their natural colours.
   const imgAsset = category.image ?? category.icon;
+  const isIcon = !category.image && !!category.icon;
   const src = imgAsset?.url ? resolveMediaUrl(imgAsset.url.trim()) : null;
 
   return (
@@ -165,7 +171,7 @@ function WpCategoryImageCell({ category }: { category: Category }) {
           src={src}
           alt={safeText(imgAsset?.alt, name)}
           fill
-          className="wp-cat-img-cell-bg"
+          className={`wp-cat-img-cell-bg${isIcon ? " wp-cat-img-cell-bg--icon" : ""}`}
           sizes="(max-width: 600px) 50vw, 25vw"
         />
       ) : (
@@ -229,18 +235,57 @@ function WpNewsCard({ article }: { article: Article }) {
   );
 }
 
+function mapTileStockState(state: import("@/lib/contracts/public").Product["stockState"]) {
+  switch (state) {
+    case "IN_STOCK":    return { label: "Còn hàng",      className: "wp-stock-in" };
+    case "LOW_STOCK":   return { label: "Sắp hết hàng",  className: "wp-stock-low" };
+    case "OUT_OF_STOCK":return { label: "Hết hàng",      className: "wp-stock-out" };
+    default:            return { label: "Đang cập nhật", className: "wp-stock-out" };
+  }
+}
+
 function FeaturedProductTile({ product }: { product: import("@/lib/contracts/public").Product }) {
   const name = safeText(product.name, "Sản phẩm");
   const href = toProductPath(product.slug);
   const src = resolveMediaUrl(product.image?.url?.trim());
   const categoryName = product.category?.name ?? "";
+  const brandName = product.brand?.name ?? "";
+
+  const retail  = product.price?.retailPrice ?? 0;
+  const sale    = product.price?.salePrice && product.price.salePrice > 0 ? product.price.salePrice : null;
+  const compare = product.price?.compareAtPrice && product.price.compareAtPrice > 0 ? product.price.compareAtPrice : null;
+  const current = sale ?? retail;
+  const isSale  = Boolean((sale && sale < retail) || (compare && compare > current));
+  const { label: stockLabel, className: stockClass } = mapTileStockState(product.stockState);
 
   return (
     <Link href={href} className="wp-tile-3">
       <div style={{ position: "relative", zIndex: 1 }}>
+        {brandName && <p className="wp-tile-3-brand">{brandName}</p>}
         {categoryName && <p className="wp-tile-3-cat">{categoryName}</p>}
         <h3 className="wp-tile-3-name">{name}</h3>
-        <span className="wp-tile-3-cta">Mua ngay</span>
+        {product.rating != null && product.rating > 0 && (
+          <div className="wp-tile-3-rating">
+            <RatingStars value={product.rating} />
+            {product.ratingCount != null && product.ratingCount > 0 && (
+              <span className="wp-tile-3-rating-count">({product.ratingCount})</span>
+            )}
+          </div>
+        )}
+        <div className="wp-tile-3-price">
+          {product.price ? (
+            <>
+              <b className="wp-tile-3-price-current">{formatVnd(current)}</b>
+              {isSale && compare && compare > current && (
+                <s className="wp-tile-3-price-compare">{formatVnd(compare)}</s>
+              )}
+            </>
+          ) : (
+            <b className="wp-tile-3-price-current">Liên hệ</b>
+          )}
+        </div>
+        <span className={`wp-tile-3-stock ${stockClass}`}>{stockLabel}</span>
+        <span className="wp-tile-3-cta">Xem sản phẩm</span>
       </div>
       {src && (
         <div className="wp-tile-3-img-wrap">
@@ -267,18 +312,44 @@ export default async function HomePage() {
     settingsResult,
     featuredProductsResult,
     carouselProductsResult,
+    newArrivalsResult,
     homeVideosResult,
   ] = await Promise.all([
     listHomeSliders(),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", showOnHomepage: true }),
-    listArticles({ page: 1, category: "trai-nghiem", size: 3, sort: "publishedAt:desc" }),
-    listArticles({ page: 1, category: "blog", size: 3, sort: "publishedAt:desc" }),
+    listArticles({ page: 1, category: "reviews", size: 3, sort: "publishedAt:desc" }),
+    listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, filterFeatured: true, size: 12, sort: "createdAt:desc" }),
-    listProducts({ page: 1, showOnHomepage: true, size: 5, sort: "createdAt:desc" }),
+    listProducts({ page: 1, filterFeatured: true, size: 12, sort: "homepageOrder:asc" }),
+    listProducts({ page: 1, showOnHomepage: true, size: 10, sort: "homepageOrder:asc" }),
+    listProducts({ page: 1, size: 16, sort: "createdAt:desc" }),
     listHomeVideos(),
   ]);
+
+  // Dedupe so a product flagged BOTH "isFeatured" + "showOnHomepage" only appears once on
+  // the homepage. The Featured grid (Block 2) wins because it is the most prominent slot.
+  const featuredProducts = featuredProductsResult.data;
+  const featuredIds = new Set(featuredProducts.map((p) => p.id));
+  const carouselProducts = carouselProductsResult.data.filter((p) => !featuredIds.has(p.id));
+
+  // "Hàng mới về" — auto-curated products created within the last NEW_ARRIVAL_DAYS days.
+  // Hides itself if no recent products to avoid showing stale stock as "new".
+  const NEW_ARRIVAL_DAYS = 30;
+  const NEW_ARRIVAL_LIMIT = 8;
+  // eslint-disable-next-line react-hooks/purity -- server component, Date.now() is fine
+  const newArrivalCutoff = Date.now() - NEW_ARRIVAL_DAYS * 24 * 60 * 60 * 1000;
+  const homepageProductIds = new Set([
+    ...featuredProducts.map((p) => p.id),
+    ...carouselProducts.map((p) => p.id),
+  ]);
+  const newArrivalProducts = newArrivalsResult.data
+    .filter((p) => !homepageProductIds.has(p.id))
+    .filter((p) => {
+      const createdAtMs = Date.parse(p.createdAt);
+      return Number.isFinite(createdAtMs) && createdAtMs >= newArrivalCutoff;
+    })
+    .slice(0, NEW_ARRIVAL_LIMIT);
 
   const settings = settingsResult.data ?? [];
   const hotline = findSetting(settings, "hotline") || findSetting(settings, "phone");
@@ -311,7 +382,12 @@ export default async function HomePage() {
 
   const expArticles = expArticlesResult.data;
   const newsArticles = newsArticlesResult.data;
-  const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
+  // Cap to keep the homepage carousel scannable. Older videos belong to a future
+  // dedicated /videos page, not the homepage which should highlight a curated set.
+  const HOME_VIDEO_LIMIT = 8;
+  const homeVideos = (homeVideosResult.data ?? [])
+    .filter(isRenderableHomeVideo)
+    .slice(0, HOME_VIDEO_LIMIT);
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd("BigBike", HOME_ORG_LOGO));
   const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd("BigBike"));
@@ -331,16 +407,31 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdFaq }} />
 
       {/* Block 1: Hero Banner */}
+      {/* H1 ở đây là sr-only cho SEO — tagline visible nằm dưới slider */}
       <h1 className="bb-sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
+
+      {/* Tagline visible: nói rõ shop bán gì trong 3 giây đầu */}
+      {slides.length > 0 && (
+        <div className="wp-hero-tagline-strip" aria-hidden="true">
+          <span className="wp-hero-tagline-item">
+            <strong>BigBike</strong> — Shop đồ bảo hộ moto, phụ kiện touring
+          </span>
+          <span className="wp-hero-tagline-sep" aria-hidden="true">•</span>
+          <span className="wp-hero-tagline-item">100% chính hãng</span>
+          <span className="wp-hero-tagline-sep" aria-hidden="true">•</span>
+          <span className="wp-hero-tagline-item">Giao hàng toàn quốc</span>
+        </div>
+      )}
+
       <HomeTrustRail />
 
       <div className="bb-container">
         {/* Block 2: Featured Products (ISR) */}
-        {featuredProductsResult.data.length > 0 && (
+        {featuredProducts.length > 0 && (
           <section aria-label="Sản phẩm nổi bật">
             <div className="wp-featured-grid-3">
-              {featuredProductsResult.data.map((p) => (
+              {featuredProducts.map((p) => (
                 <FeaturedProductTile key={p.id} product={p} />
               ))}
             </div>
@@ -369,7 +460,7 @@ export default async function HomePage() {
                 <>
                   <p className="wp-kicker">Về BigBike · Est. 2013</p>
                   <h2 id="home-about-heading" className="wp-about-title">
-                    Garage đồ chơi cao cấp cho rider biết mình cần gì
+                    Gear bảo hộ chính hãng cho rider biết mình cần gì
                   </h2>
                   <p>
                     BigBike là shop chuyên đồ phượt, đồ bảo hộ moto và phụ kiện touring tại TP
@@ -377,9 +468,8 @@ export default async function HomePage() {
                     khi khách xuống tiền.
                   </p>
                   <p>
-                    Tinh thần của website là gọn như một garage gear cao cấp: nhìn nhanh biết món
-                    nào đáng tin, so sánh dễ, chọn đúng size, đúng nhu cầu và có người hỗ trợ khi
-                    cần.
+                    Tinh thần của shop: nhìn nhanh biết món nào đáng tin, so sánh dễ, chọn đúng
+                    size, đúng nhu cầu — và luôn có người hỗ trợ khi cần.
                   </p>
                   <div className="wp-about-stats">
                     <div className="wp-about-stat">
@@ -402,22 +492,42 @@ export default async function HomePage() {
         </section>
       </div>
 
-      {/* Block 4: Product Carousel (ISR) */}
-      {carouselProductsResult.data.length > 0 && (
+      {/* Block 4: Product Carousel (ISR) — admin-curated picks */}
+      {carouselProducts.length > 0 && (
         <section className="wp-products-section" aria-labelledby="home-products-heading">
           <div className="bb-container">
             <div className="wp-products-header">
               <div>
-                <p className="wp-kicker">TẠI BIGBIKE</p>
+                <p className="wp-kicker">BIGBIKE TUYỂN CHỌN</p>
                 <h2 id="home-products-heading" className="wp-products-title">
-                  SẢN PHẨM BIGBIKE
+                  GỢI Ý DÀNH CHO BẠN
                 </h2>
               </div>
               <Link href={toProductListPath()} className="wp-view-all-link">
                 Xem tất cả →
               </Link>
             </div>
-            <FeaturedProductsCarousel products={carouselProductsResult.data} />
+            <FeaturedProductsCarousel products={carouselProducts} />
+          </div>
+        </section>
+      )}
+
+      {/* Block 4b: New Arrivals (auto-curated, last 30 days) — visual distinction via wp-new-arrivals-section */}
+      {newArrivalProducts.length > 0 && (
+        <section className="wp-products-section wp-new-arrivals-section" aria-labelledby="home-new-arrivals-heading">
+          <div className="bb-container">
+            <div className="wp-products-header">
+              <div>
+                <p className="wp-kicker">MỚI CẬP NHẬT</p>
+                <h2 id="home-new-arrivals-heading" className="wp-products-title">
+                  HÀNG MỚI VỀ
+                </h2>
+              </div>
+              <Link href={`${toProductListPath()}?sort=createdAt:desc`} className="wp-view-all-link">
+                Xem tất cả →
+              </Link>
+            </div>
+            <FeaturedProductsCarousel products={newArrivalProducts} />
           </div>
         </section>
       )}
@@ -558,7 +668,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Block 10: SEO Content */}
+      {/* Block 11: SEO Content */}
       <div className="wp-seo-content">
         <div className="bb-container">
           {homeContentBottomHtml ? (

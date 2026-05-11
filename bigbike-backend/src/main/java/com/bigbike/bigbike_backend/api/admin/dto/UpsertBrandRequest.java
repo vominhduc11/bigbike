@@ -21,6 +21,9 @@ public class UpsertBrandRequest {
     private ImageAssetRequest logo;
 
     @Valid
+    private ImageAssetRequest banner;
+
+    @Valid
     private SeoMetaRequest seo;
 
     private Boolean visible;
@@ -55,6 +58,14 @@ public class UpsertBrandRequest {
 
     public void setLogo(ImageAssetRequest logo) {
         this.logo = logo;
+    }
+
+    public ImageAssetRequest getBanner() {
+        return banner;
+    }
+
+    public void setBanner(ImageAssetRequest banner) {
+        this.banner = banner;
     }
 
     public SeoMetaRequest getSeo() {

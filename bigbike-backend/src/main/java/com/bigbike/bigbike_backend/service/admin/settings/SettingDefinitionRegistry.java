@@ -137,6 +137,55 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Nội dung HTML section giới thiệu trên trang chủ.").build(),
 
+                // ── PUBLIC_HERO ── (hero banner cho listing pages không có PageEntity)
+                SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh nền hero trang Tất cả sản phẩm (/san-pham).").build(),
+                SettingDefinition.builder("hero_products_image_alt", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Alt text ảnh hero trang Tất cả sản phẩm.").build(),
+                SettingDefinition.builder("hero_products_title", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề hero trang Tất cả sản phẩm.").build(),
+                SettingDefinition.builder("hero_products_description", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Mô tả ngắn dưới tiêu đề hero trang Tất cả sản phẩm.").build(),
+                SettingDefinition.builder("hero_products_kicker", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Kicker (chip nhỏ trên tiêu đề) hero trang Tất cả sản phẩm.").build(),
+
+                SettingDefinition.builder("hero_brands_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh nền hero trang Thương hiệu (/brands).").build(),
+                SettingDefinition.builder("hero_brands_image_alt", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Alt text ảnh hero trang Thương hiệu.").build(),
+                SettingDefinition.builder("hero_brands_title", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề hero trang Thương hiệu.").build(),
+                SettingDefinition.builder("hero_brands_description", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Mô tả ngắn dưới tiêu đề hero trang Thương hiệu.").build(),
+                SettingDefinition.builder("hero_brands_kicker", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Kicker hero trang Thương hiệu.").build(),
+
+                SettingDefinition.builder("hero_news_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh nền hero trang Tin tức (/tin-tuc).").build(),
+                SettingDefinition.builder("hero_news_image_alt", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Alt text ảnh hero trang Tin tức.").build(),
+                SettingDefinition.builder("hero_news_title", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề hero trang Tin tức.").build(),
+                SettingDefinition.builder("hero_news_description", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Mô tả ngắn dưới tiêu đề hero trang Tin tức.").build(),
+                SettingDefinition.builder("hero_news_kicker", "public_hero", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Kicker hero trang Tin tức.").build(),
+
                 // ── SEO ──
                 SettingDefinition.builder("seo_home_title", "seo", SettingValueType.STRING)
                         .publicAllowed()

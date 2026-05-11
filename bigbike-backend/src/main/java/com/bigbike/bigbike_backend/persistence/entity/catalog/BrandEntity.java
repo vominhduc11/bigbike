@@ -32,6 +32,11 @@ public class BrandEntity {
     private Integer logoHeight;
     private String logoMimeType;
 
+    @Column(columnDefinition = "text")
+    private String bannerUrl;
+
+    private String bannerAlt;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -138,6 +143,22 @@ public class BrandEntity {
 
     public void setLogoMimeType(String logoMimeType) {
         this.logoMimeType = logoMimeType;
+    }
+
+    public String getBannerUrl() {
+        return bannerUrl;
+    }
+
+    public void setBannerUrl(String bannerUrl) {
+        this.bannerUrl = bannerUrl;
+    }
+
+    public String getBannerAlt() {
+        return bannerAlt;
+    }
+
+    public void setBannerAlt(String bannerAlt) {
+        this.bannerAlt = bannerAlt;
     }
 
     public String getSeoTitle() {

@@ -179,6 +179,11 @@ export type Product = {
   publishStatus: PublishStatus;
   isFeatured?: boolean;
   showOnHomepage?: boolean;
+  /**
+   * Manual pin priority inside homepage Featured/ShowOnHomepage blocks.
+   * Lower number = appears earlier; null = unpinned (sorted to the end by createdAt DESC).
+   */
+  homepageOrder?: number | null;
   /** Denormalized cache of the approved-review average for fast listing/detail reads. */
   rating?: number | null;
   /** Denormalized cache of the approved-review count for fast listing/detail reads. */
@@ -212,6 +217,7 @@ export type Brand = {
   name: string;
   description?: string;
   logo?: ImageAsset;
+  bannerImage?: ImageAsset;
   seo?: SeoMeta;
   isVisible: boolean;
   createdAt: string;
@@ -258,6 +264,11 @@ export type Page = {
   type: PageType;
   publishStatus: PublishStatus;
   seo?: SeoMeta;
+  heroImageUrl?: string | null;
+  heroImageAlt?: string | null;
+  heroTitle?: string | null;
+  heroDescription?: string | null;
+  heroKicker?: string | null;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
