@@ -57,14 +57,23 @@ public class AdminReturnService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    // Valid transitions: PENDING → APPROVED | REJECTED
-    //                    APPROVED → RECEIVED
-    //                    RECEIVED → COMPLETED | REFUNDED
+    // Valid transitions:
+    //   PENDING     → APPROVED | REJECTED
+    //   APPROVED    → RECEIVED
+    //   RECEIVED    → INSPECTING | COMPLETED | REFUNDED
+    //   INSPECTING  → COMPLETED | REFUNDED | RECEIVED (re-receive if QC bounces back)
+    //
+    // INSPECTING is optional — high-risk goods (mũ bảo hiểm, áo giáp) must enter
+    // INSPECTING before being marked COMPLETED so each ReturnItem is reviewed and
+    // marked PASS/FAIL. Items marked FAIL are excluded from stock restore.
     private static final Map<String, Set<String>> TRANSITIONS = Map.of(
-            "PENDING",  Set.of("APPROVED", "REJECTED"),
-            "APPROVED", Set.of("RECEIVED"),
-            "RECEIVED", Set.of("COMPLETED", "REFUNDED")
+            "PENDING",    Set.of("APPROVED", "REJECTED"),
+            "APPROVED",   Set.of("RECEIVED"),
+            "RECEIVED",   Set.of("INSPECTING", "COMPLETED", "REFUNDED"),
+            "INSPECTING", Set.of("COMPLETED", "REFUNDED")
     );
+
+    private static final Set<String> INSPECTION_RESULTS = Set.of("PASS", "FAIL");
 
     private final ReturnJpaRepository returnRepo;
     private final ReturnItemJpaRepository itemRepo;
@@ -165,6 +174,20 @@ public class AdminReturnService {
                     ". Allowed: " + allowed);
         }
 
+        // When closing out of INSPECTING, every item must have an inspection result.
+        // Skipping items would silently let unchecked goods be restored or refunded.
+        if ("INSPECTING".equals(ret.getStatus())
+                && ("COMPLETED".equals(newStatus) || "REFUNDED".equals(newStatus))) {
+            List<ReturnItemEntity> items = itemRepo.findByReturnId(returnId);
+            for (ReturnItemEntity it : items) {
+                if (it.getInspectionResult() == null) {
+                    throw ValidationException.fromField("items", "INSPECTION_INCOMPLETE",
+                            "Vẫn còn món chưa được kiểm tra (PASS/FAIL). Sản phẩm: "
+                            + it.getProductName());
+                }
+            }
+        }
+
         if ("REFUNDED".equals(newStatus)) {
             if (req.refundAmount() == null || req.refundAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
                 throw ValidationException.fromField("refundAmount", "REQUIRED",
@@ -216,6 +239,66 @@ public class AdminReturnService {
         return toDetail(ret, order);
     }
 
+    // ── Per-item inspection ───────────────────────────────────────────────────
+
+    /**
+     * Records the quality-check decision for a single return item.
+     *
+     * <p>Allowed only while the parent return is in {@code INSPECTING}. Each
+     * decision is one of:
+     * <ul>
+     *   <li>{@code PASS} — goods are sellable, will be restored to stock when the
+     *       return transitions to {@code COMPLETED} or {@code REFUNDED}.</li>
+     *   <li>{@code FAIL} — goods are not sellable (defective from use, missing parts,
+     *       failed safety inspection); skipped during stock restore so they cannot
+     *       be re-sold.</li>
+     * </ul>
+     *
+     * <p>Inspecting an item is idempotent: calling again with a different result
+     * overwrites the previous decision and re-stamps {@code inspectedAt} and
+     * {@code inspectedByAdminId}.
+     */
+    @Transactional
+    public AdminReturnDetailResponse inspectItem(
+            UUID returnId, UUID itemId, UUID adminId,
+            com.bigbike.bigbike_backend.api.admin.dto.returns.InspectReturnItemRequest req
+    ) {
+        ReturnEntity ret = returnRepo.findById(returnId)
+                .orElseThrow(() -> new NotFoundException("Return not found."));
+
+        if (!"INSPECTING".equals(ret.getStatus())) {
+            throw new ConflictException(
+                    "Chỉ có thể kiểm tra món hàng khi phiếu trả đang ở trạng thái INSPECTING. "
+                    + "Trạng thái hiện tại: " + ret.getStatus());
+        }
+
+        ReturnItemEntity item = itemRepo.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Return item not found."));
+
+        if (!returnId.equals(item.getReturnId())) {
+            throw new NotFoundException("Return item not found.");
+        }
+
+        String result = req.result() == null ? "" : req.result().toUpperCase(Locale.ROOT);
+        if (!INSPECTION_RESULTS.contains(result)) {
+            throw ValidationException.fromField("result", "INVALID",
+                    "result phải là một trong: " + INSPECTION_RESULTS);
+        }
+
+        Instant now = Instant.now();
+        item.setInspectionResult(result);
+        item.setInspectionNote(req.note());
+        item.setInspectedAt(now);
+        item.setInspectedByAdminId(adminId);
+        itemRepo.save(item);
+
+        ret.setUpdatedAt(now);
+        returnRepo.save(ret);
+
+        OrderEntity order = orderRepo.findById(ret.getOrderId()).orElse(null);
+        return toDetail(ret, order);
+    }
+
     // ── Notification dispatch ─────────────────────────────────────────────────
 
     private void dispatchReturnNotification(ReturnEntity ret, String newStatus, OrderEntity order) {
@@ -248,6 +331,8 @@ public class AdminReturnService {
 
         for (ReturnItemEntity ri : returnItems) {
             if (ri.getOrderLineItemId() == null) continue;
+            // Failed QC: keep the goods out of inventory — they go to scrap, not back on the shelf.
+            if ("FAIL".equals(ri.getInspectionResult())) continue;
             // Serial-tracked return items: stock restores only after INSPECTION → IN_STOCK via serial API.
             if (!risRepo.findByReturnItemId(ri.getId()).isEmpty()) continue;
             lineItemRepo.findById(ri.getOrderLineItemId()).ifPresent((OrderLineItemEntity li) -> {
@@ -313,7 +398,8 @@ public class AdminReturnService {
         boolean alreadyActive = returnRepo.findByOrderIdOrderByCreatedAtDesc(req.orderId())
                 .stream().anyMatch(r -> "PENDING".equals(r.getStatus())
                         || "APPROVED".equals(r.getStatus())
-                        || "RECEIVED".equals(r.getStatus()));
+                        || "RECEIVED".equals(r.getStatus())
+                        || "INSPECTING".equals(r.getStatus()));
         if (alreadyActive) {
             throw new ConflictException("Đơn hàng này đang có yêu cầu đổi trả chưa hoàn tất.");
         }
@@ -437,7 +523,8 @@ public class AdminReturnService {
         List<ReturnItemResponse> items = itemRepo.findByReturnId(r.getId())
                 .stream().map(i -> new ReturnItemResponse(
                         i.getId(), i.getProductName(), i.getVariantName(),
-                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getReason()
+                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getReason(),
+                        i.getInspectionResult(), i.getInspectionNote(), i.getInspectedAt()
                 )).toList();
 
         List<ReturnHistoryResponse> history = historyRepo.findByReturnIdOrderByCreatedAtAsc(r.getId())

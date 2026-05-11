@@ -34,6 +34,7 @@ public final class AdminRolePermissions {
                     "coupons.read", "coupons.write",
                     "shipping.read", "shipping.write",
                     "reviews.read", "reviews.write",
+                    "contact.read", "contact.write",
                     "admin-users.read", "admin-users.write",
                     "roles.read", "roles.write",
                     "audit-logs.read",
@@ -52,6 +53,7 @@ public final class AdminRolePermissions {
                     "coupons.read", "coupons.write",
                     "shipping.read",
                     "reviews.read", "reviews.write",
+                    "contact.read", "contact.write",
                     "pos.read", "pos.write",
                     "receivables.read", "receivables.record_payment",
                     "reports.read", "reports.export"

@@ -6,6 +6,9 @@ import com.bigbike.bigbike_backend.api.order.dto.CreateReturnRequest;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse.ReturnHistoryResponse;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse.ReturnItemResponse;
+import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse;
+import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse.EligibleItem;
+import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse.Reason;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
@@ -95,7 +98,8 @@ public class CustomerReturnService {
         boolean alreadyActive = returnRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
                 .stream().anyMatch(r -> "PENDING".equals(r.getStatus())
                         || "APPROVED".equals(r.getStatus())
-                        || "RECEIVED".equals(r.getStatus()));
+                        || "RECEIVED".equals(r.getStatus())
+                        || "INSPECTING".equals(r.getStatus()));
         if (alreadyActive) {
             throw ValidationException.fromField("orderId", "RETURN_IN_PROGRESS",
                     "A return request for this order is already in progress.");
@@ -184,6 +188,80 @@ public class CustomerReturnService {
                             .map(OrderEntity::getOrderNumber).orElse(null);
                     return toDetail(r, orderNumber);
                 }).toList();
+    }
+
+    /**
+     * Pre-check whether the given order is eligible for a customer-initiated return.
+     *
+     * <p>Returns a structured response describing the order-level eligibility flag,
+     * a stable reason code (see {@link Reason}) and the list of line items the
+     * customer can still return with their remaining quantities. The frontend uses
+     * this to render the return form — items with {@code returnableQuantity == 0}
+     * are typically hidden or disabled.
+     *
+     * <p>This method is read-only and never mutates state.
+     */
+    public ReturnEligibilityResponse getReturnEligibility(UUID customerId, UUID orderId) {
+        OrderEntity order = orderRepo.findById(orderId).orElse(null);
+        if (order == null) {
+            return new ReturnEligibilityResponse(orderId, null, false,
+                    Reason.ORDER_NOT_FOUND, null, List.of());
+        }
+
+        if (!customerId.equals(order.getCustomerId())) {
+            // Same response shape as ORDER_NOT_FOUND to avoid leaking ownership info.
+            return new ReturnEligibilityResponse(orderId, null, false,
+                    Reason.NOT_OWNER, null, List.of());
+        }
+
+        if (!RETURNABLE_STATUSES.contains(order.getStatus())) {
+            return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
+                    Reason.ORDER_NOT_COMPLETED, null, List.of());
+        }
+
+        Long daysRemaining = null;
+        if (order.getCompletedAt() != null) {
+            Instant deadline = order.getCompletedAt().plus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
+            long secs = deadline.getEpochSecond() - Instant.now().getEpochSecond();
+            daysRemaining = Math.max(0L, secs / 86400L);
+        }
+
+        Instant returnWindowStart = Instant.now().minus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
+        if (order.getCompletedAt() == null || order.getCompletedAt().isBefore(returnWindowStart)) {
+            return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
+                    Reason.WINDOW_EXPIRED, daysRemaining, List.of());
+        }
+
+        boolean alreadyActive = returnRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
+                .stream().anyMatch(r -> "PENDING".equals(r.getStatus())
+                        || "APPROVED".equals(r.getStatus())
+                        || "RECEIVED".equals(r.getStatus())
+                        || "INSPECTING".equals(r.getStatus()));
+        if (alreadyActive) {
+            return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
+                    Reason.RETURN_IN_PROGRESS, daysRemaining, List.of());
+        }
+
+        // Per-line-item remaining quantity (original − already-returned in non-rejected returns).
+        List<EligibleItem> items = lineItemRepo.findByOrderId(orderId).stream()
+                .map(li -> {
+                    int alreadyReturned = itemRepo.sumNonRejectedQuantityByLineItemId(li.getId());
+                    int remaining = Math.max(0, li.getQuantity() - alreadyReturned);
+                    return new EligibleItem(
+                            li.getId(), li.getProductName(), li.getVariantName(), li.getSku(),
+                            li.getQuantity(), alreadyReturned, remaining, li.getUnitPrice()
+                    );
+                })
+                .toList();
+
+        boolean anyReturnable = items.stream().anyMatch(it -> it.returnableQuantity() > 0);
+        if (!anyReturnable) {
+            return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
+                    Reason.NOTHING_TO_RETURN, daysRemaining, items);
+        }
+
+        return new ReturnEligibilityResponse(orderId, order.getStatus(), true,
+                Reason.OK, daysRemaining, items);
     }
 
     public CustomerReturnResponse getCustomerReturn(UUID customerId, UUID returnId) {

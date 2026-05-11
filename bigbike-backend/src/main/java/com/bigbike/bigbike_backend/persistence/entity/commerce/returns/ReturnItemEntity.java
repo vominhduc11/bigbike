@@ -42,6 +42,18 @@ public class ReturnItemEntity {
     @Column(columnDefinition = "text")
     private String reason;
 
+    @Column(name = "inspection_result", length = 20)
+    private String inspectionResult;
+
+    @Column(name = "inspection_note", columnDefinition = "text")
+    private String inspectionNote;
+
+    @Column(name = "inspected_at")
+    private Instant inspectedAt;
+
+    @Column(name = "inspected_by_admin_id")
+    private UUID inspectedByAdminId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -71,6 +83,18 @@ public class ReturnItemEntity {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public String getInspectionResult() { return inspectionResult; }
+    public void setInspectionResult(String inspectionResult) { this.inspectionResult = inspectionResult; }
+
+    public String getInspectionNote() { return inspectionNote; }
+    public void setInspectionNote(String inspectionNote) { this.inspectionNote = inspectionNote; }
+
+    public Instant getInspectedAt() { return inspectedAt; }
+    public void setInspectedAt(Instant inspectedAt) { this.inspectedAt = inspectedAt; }
+
+    public UUID getInspectedByAdminId() { return inspectedByAdminId; }
+    public void setInspectedByAdminId(UUID inspectedByAdminId) { this.inspectedByAdminId = inspectedByAdminId; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

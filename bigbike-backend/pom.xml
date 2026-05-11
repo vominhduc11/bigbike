@@ -295,4 +295,35 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- Run with: ./mvnw -B -Psecurity-scan verify -->
+		<profile>
+			<id>security-scan</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.owasp</groupId>
+						<artifactId>dependency-check-maven</artifactId>
+						<version>10.0.3</version>
+						<configuration>
+							<failBuildOnCVSS>9</failBuildOnCVSS>
+							<suppressionFile>dependency-check-suppressions.xml</suppressionFile>
+							<formats>
+								<format>HTML</format>
+								<format>XML</format>
+							</formats>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>check</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

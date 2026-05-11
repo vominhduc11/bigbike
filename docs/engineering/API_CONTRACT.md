@@ -39,6 +39,7 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `GET` | `/api/v1/customer/orders/returns` | List own returns | raw `List<CustomerReturnResponse>` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/returns/{returnId}` | Get own return detail | raw `CustomerReturnResponse` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
 | `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | raw `CustomerReturnResponse` with HTTP `201` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
+| `GET` | `/api/v1/customer/orders/{orderId}/return-eligibility` | Pre-check whether the customer can open a return on this order and which line items still have returnable quantity. Read-only. Returns stable reason codes (`OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`). | `ApiDataResponse<ReturnEligibilityResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerReturnService.getReturnEligibility` |
 
 ## Commerce Mutation Contracts
 
@@ -167,6 +168,26 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 - `ADMIN_ROLE` — AdminRoleService (fixed in V76; previously erroneously `ADMIN_ROLE:<roleId>`)
 
 **Note:** `resource_id` column is `uuid` type. For entities with String IDs (products, categories, brands, content, roles), `resource_id = null` and the entity identifier is embedded in `afterData`/`beforeData` JSON.
+
+## Admin Returns Inspection Contract (V104)
+
+| Method | Path | Permission | Purpose | Status | Evidence |
+|---|---|---|---|---|---|
+| `PATCH` | `/api/v1/admin/returns/{returnId}/items/{itemId}/inspect` | `orders.write` | Records a per-item QC decision while the parent return is `INSPECTING`. Body: `{ "result": "PASS"|"FAIL", "note": "..." }`. Idempotent: calling again overwrites the previous decision. | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.inspectItem`, `V104__add_return_item_inspection.sql` |
+
+`AdminReturnDetailResponse.ReturnItemResponse` now includes `inspectionResult`, `inspectionNote`, `inspectedAt`.
+
+State machine guards (also see [STATE_MACHINES.md §10](../business/STATE_MACHINES.md)):
+- `INSPECTING → COMPLETED/REFUNDED` is rejected with `items.INSPECTION_INCOMPLETE` if any `ReturnItem` is missing an inspection result.
+- `restoreStockForReturn` skips items with `inspection_result = 'FAIL'` so customer-damaged goods don't re-enter inventory.
+
+## Admin Contact Inbox Contract (V105)
+
+| Method | Path | Permission | Purpose | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/admin/contact-messages?page&size&status&q` | `contact.read` | Paginated list with optional status filter and search across name/phone/email/content. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.list` |
+| `GET` | `/api/v1/admin/contact-messages/{id}` | `contact.read` | Detail with admin note, assignee display name, IP, user-agent. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.getDetail` |
+| `PATCH` | `/api/v1/admin/contact-messages/{id}` | `contact.write` | Patch status / admin note / assigned admin. All fields optional. `resolved_at` stamped on first entry into terminal state. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.update` |
 
 ## WebSocket Contract
 

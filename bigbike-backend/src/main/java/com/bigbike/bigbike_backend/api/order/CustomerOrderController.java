@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.order.dto.CreateReturnRequest;
 import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
+import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.order.CustomerOrderCancelService;
 import com.bigbike.bigbike_backend.service.order.CustomerReturnService;
@@ -117,6 +118,21 @@ public class CustomerOrderController {
     ) {
         return apiResponseFactory.data(
                 customerReturnService.createReturn(requireCustomerId(), orderId, req),
+                request
+        );
+    }
+
+    /**
+     * Pre-check whether this order can still be returned and which items remain.
+     * Frontend should call this before rendering the "Yêu cầu đổi/trả" form.
+     */
+    @GetMapping("/{orderId}/return-eligibility")
+    public ApiDataResponse<ReturnEligibilityResponse> getReturnEligibility(
+            @PathVariable UUID orderId,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(
+                customerReturnService.getReturnEligibility(requireCustomerId(), orderId),
                 request
         );
     }

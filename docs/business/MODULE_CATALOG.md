@@ -7,7 +7,7 @@
 | Catalog browse | web, backend, mobile | Products, categories, brands, articles, pages, settings, menus, sliders, home videos | `CONFIRMED_FROM_CODE` | public controllers, `public-api.ts`, `api_endpoints.dart` |
 | Page hero banners | web, backend, admin | Admin-managed hero (image + title + description + kicker) on every public content page. Backed by `PageEntity` for CMS pages and by `public_hero` settings group for listing pages (`/san-pham`, `/brands`, `/tin-tuc`). | `CONFIRMED_FROM_CODE` | `PageEntity.java` hero fields (V98), `SettingDefinitionRegistry` `hero_*` keys, `bigbike-web/components/layout/PageHero.tsx` |
 | Search | web, backend, mobile | `GET /api/v1/search` and `GET /api/v1/search-suggest` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `SecurityConfig.java`, clients |
-| Contact | web, backend, mobile | `POST /api/v1/contact` | `CONFIRMED_FROM_CODE` | `ContactController.java`, `client-api.ts`, `api_endpoints.dart` |
+| Contact | web, backend, mobile | `POST /api/v1/contact` — public form persists into `contact_messages` (V105) and emails admin (best-effort). | `CONFIRMED_FROM_CODE` | `ContactController.java`, `ContactService.java`, `client-api.ts`, `api_endpoints.dart` |
 | Cart | web, backend, mobile | Guest/customer cart with CSRF-protected mutations | `CONFIRMED_FROM_CODE` | `CartController.java`, `CartService.java`, tests |
 | Checkout | web, backend, mobile | Cart checkout and quick buy with shipping/payment validation and idempotency | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, tests, clients |
 | Customer account | web, backend, mobile | Profile, addresses, orders, returns | `CONFIRMED_FROM_CODE` | customer controllers, clients |
@@ -31,6 +31,7 @@
 | Admin order WebSocket | admin, backend | Subscribe to `/topic/admin/orders` for order events | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Accounts Receivable admin | admin, backend | Receivable list/detail, payment recording, write-off, aging report, customer credit profile management | `CONFIRMED_FROM_CODE` | `AdminReceivableController.java`, `ReceivableService.java`, `ReceivableQueryService.java`, `CreditPolicyService.java`, `V75__add_credit_and_receivables.sql` |
 | Audit logs admin | admin, backend | Read-only paginated activity log with filters (actorType, resourceType, action, date range). Enriches actor name and resource label. Permission: `audit-logs.read`. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
+| Contact inbox admin | admin, backend | List/detail/update of customer contact-form submissions. Status workflow `OPEN → IN_PROGRESS → RESOLVED/CLOSED`, with admin note and assignee. Permissions: `contact.read`, `contact.write`. (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.java`, `V105__create_contact_messages.sql` |
 
 ## Inventory And Receiving Subdomains
 

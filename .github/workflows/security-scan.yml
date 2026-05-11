@@ -1,0 +1,81 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-dependency-scan:
+    name: OWASP Dependency Check (backend)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run OWASP dependency-check (backend)
+        working-directory: bigbike-backend
+        run: ./mvnw -B -Psecurity-scan verify
+
+      - name: Upload backend dependency-check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dependency-check-report
+          path: |
+            bigbike-backend/target/dependency-check-report.html
+            bigbike-backend/target/dependency-check-report.xml
+          if-no-files-found: warn
+
+  npm-audit-scan:
+    name: npm audit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - bigbike-web
+          - bigbike-admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project }}
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Run npm audit (moderate)
+        id: npm_audit
+        continue-on-error: true
+        working-directory: ${{ matrix.project }}
+        run: npm audit --audit-level=moderate --json > npm-audit-report.json
+
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.project }}-npm-audit-report
+          path: ${{ matrix.project }}/npm-audit-report.json
+          if-no-files-found: warn

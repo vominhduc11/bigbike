@@ -29,7 +29,10 @@ public record AdminReturnDetailResponse(
             String sku,
             int quantity,
             BigDecimal unitPrice,
-            String reason
+            String reason,
+            String inspectionResult,
+            String inspectionNote,
+            Instant inspectedAt
     ) {}
 
     public record ReturnHistoryResponse(

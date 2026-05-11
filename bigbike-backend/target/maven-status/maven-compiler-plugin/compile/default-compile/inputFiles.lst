@@ -1,6 +1,7 @@
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminAdminUsersController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminAuditLogController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminCatalogController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminContactController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminContentController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminCouponController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminCustomerController.java
@@ -25,6 +26,9 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminSliderController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\AdminWarrantyController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\audit\AdminAuditLogListItemResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\contact\AdminContactMessageDetail.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\contact\AdminContactMessageListItem.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\contact\UpdateContactMessageRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\coupon\AdminCouponDetailResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\coupon\AdminCouponListItemResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\coupon\CreateCouponRequest.java
@@ -92,6 +96,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\returns\AdminCreateReturnRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\returns\AdminReturnDetailResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\returns\AdminReturnListItemResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\returns\InspectReturnItemRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\returns\UpdateReturnStatusRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\SeoMetaRequest.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\admin\dto\settings\AdminSiteSettingResponse.java
@@ -150,6 +155,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\CustomerAddressController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\CustomerAuthController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\CustomerController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\CustomerWishlistController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\dto\CustomerAddressResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\dto\CustomerAuthResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\customer\dto\CustomerForgotPasswordRequest.java
@@ -181,6 +187,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\order\dto\OrderNoteResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\order\dto\OrderPaymentResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\order\dto\OrderShippingItemResponse.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\order\dto\ReturnEligibilityResponse.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\order\OrderLookupController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\ContactController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\dto\ContactRequest.java
@@ -195,6 +202,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\PublicSearchController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\PublicSettingsController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\PublicSliderController.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\PublicWarrantyController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\api\public_\VnAddressController.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\BigbikeBackendApplication.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\config\ClientIpResolver.java
@@ -391,6 +399,8 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\returns\ReturnHistoryEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\returns\ReturnItemEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\warranty\WarrantyRecordEntity.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\commerce\WishlistItemEntity.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\contact\ContactMessageEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\content\ArticleEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\content\BlogTagEntity.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\entity\content\ContentAuthorEntity.java
@@ -449,6 +459,8 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\per
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\returns\ReturnItemJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\returns\ReturnJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\warranty\WarrantyRecordJpaRepository.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\commerce\WishlistItemJpaRepository.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\contact\ContactMessageJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\content\ArticleJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\content\BlogTagJpaRepository.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\persistence\repository\content\ContentAuthorJpaRepository.java
@@ -485,6 +497,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminAuditLogService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminCatalogMutationService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminCatalogReadService.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContactService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentMutationService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentReadService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\admin\AdminContentReferenceService.java
@@ -553,6 +566,7 @@ S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\ser
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\inventory\OrderStockRestoreService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\inventory\SerialLifecycleService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\inventory\SerialReservationCleanupJob.java
+S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\order\CustomerOrderCancelService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\order\CustomerReturnService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\order\OrderReadService.java
 S:\project\bigbike\bigbike-backend\src\main\java\com\bigbike\bigbike_backend\service\payment\RefundService.java

@@ -549,6 +549,7 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 - `APPROVED`
 - `REJECTED`
 - `RECEIVED`
+- `INSPECTING` *(added V104 — optional QC step for safety-equipment domain)*
 - `COMPLETED`
 - `REFUNDED`
 
@@ -568,9 +569,12 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 |---|---|---|---|---|---|---|
 | `PENDING` | `APPROVED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
 | `PENDING` | `REJECTED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `APPROVED` | `RECEIVED` | Admin / return write permission | Return exists and approved. | History record; goods received notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
+| `APPROVED` | `RECEIVED` | Admin / return write permission | Return exists and approved. | History record; goods received notification; serial-tracked items marked `RETURNED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
+| `RECEIVED` | `INSPECTING` | Admin / return write permission | Goods received. | History record; no customer email. Enables per-item PASS/FAIL via `PATCH /returns/{id}/items/{itemId}/inspect`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104) |
 | `RECEIVED` | `COMPLETED` | Admin / return write permission | Goods received. | Restore stock for return items (variant-based); history record. No refund issued. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
 | `RECEIVED` | `REFUNDED` | Admin / return write permission | Goods received; `refundAmount` required (`> 0`, `≤ paidAmount − alreadyRefunded`). | Restore stock for return items (same as COMPLETED — goods physically returned); sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; audit log; order note; WS event; refunded notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `RefundService.java` |
+| `INSPECTING` | `COMPLETED` | Admin / return write permission | Every `ReturnItem` has `inspection_result` set (PASS or FAIL). | Restore stock **only for items marked PASS**; FAIL items kept out of inventory (defective / customer-damaged). History record. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104) |
+| `INSPECTING` | `REFUNDED` | Admin / return write permission | Every `ReturnItem` has `inspection_result` set; `refundAmount` required. | Same as `RECEIVED → REFUNDED` but stock restore skips FAIL items. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104), `RefundService.java` |
 
 ### Forbidden Transitions
 
@@ -588,11 +592,27 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 | Transition | Side Effect | Evidence | Status |
 |---|---|---|---|
 | `RECEIVED -> COMPLETED` | Restore stock for return items with variant. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
+| `INSPECTING -> COMPLETED` | Restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
+| `INSPECTING -> REFUNDED` | Same as `RECEIVED -> REFUNDED` but skips FAIL items during stock restore. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
 | any valid transition | Save return history. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `PENDING -> APPROVED` | Send approved notification. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` for service call; delivery runtime `NEEDS_VERIFICATION` |
 | `PENDING -> REJECTED` | Send rejected notification. | `AdminReturnService.java` | same |
 | `APPROVED -> RECEIVED` | Send goods received notification. | `AdminReturnService.java` | same |
 | `RECEIVED -> REFUNDED` | Sync order refundAmount if provided; send refunded notification. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED`; payment record impact `NEEDS_VERIFICATION` |
+| `RECEIVED -> INSPECTING` | No customer email. Items remain in QC; admin must call `PATCH /items/{itemId}/inspect` for each before closing. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
+
+### Inspection Sub-Workflow (V104)
+
+For BigBike, every return item touching safety gear (mũ bảo hiểm, áo giáp) should pass through `INSPECTING` before COMPLETED/REFUNDED so admins can confirm goods are sellable. INSPECTING is **optional** for backward compatibility — direct `RECEIVED -> COMPLETED/REFUNDED` is still accepted, in which case all received items are treated as PASS.
+
+Per-item inspection rules:
+
+- Endpoint: `PATCH /api/v1/admin/returns/{returnId}/items/{itemId}/inspect`
+- Body: `{ "result": "PASS"|"FAIL", "note": "..." }`
+- Allowed only when parent return status is `INSPECTING`.
+- Idempotent: calling again overwrites the previous decision and refreshes `inspected_at` / `inspected_by_admin_id`.
+- `INSPECTING -> COMPLETED/REFUNDED` is blocked until **every** ReturnItem has an inspection result.
+- Items marked `FAIL` are **excluded from stock restore** so customer-damaged goods cannot re-enter inventory.
 
 ### Frontend Behavior
 

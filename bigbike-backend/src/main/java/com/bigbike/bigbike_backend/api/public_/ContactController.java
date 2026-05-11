@@ -27,7 +27,7 @@ public class ContactController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Void> submit(@RequestBody ContactRequest req, HttpServletRequest request) {
-        contactService.submit(req);
+        contactService.submit(req, request);
         return apiResponseFactory.data(null, request);
     }
 }

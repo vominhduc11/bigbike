@@ -11,6 +11,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Secret scan ───────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run gitleaks
+        run: |
+          if [ -f .gitleaks.toml ]; then
+            gitleaks detect --source . --config .gitleaks.toml --verbose
+          else
+            gitleaks detect --source . --verbose
+          fi
+
   # ── Backend ──────────────────────────────────────────────────────────────────
   backend:
     name: Backend (Java 17 / Maven)
@@ -77,6 +96,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Security audit (high)
+        run: npm audit --audit-level=high
+
       - name: Lint
         run: npm run lint
 
@@ -109,6 +131,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Security audit (high)
+        run: npm audit --audit-level=high
 
       - name: Lint
         run: npm run lint

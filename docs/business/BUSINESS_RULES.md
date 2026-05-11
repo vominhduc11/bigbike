@@ -207,3 +207,31 @@ Evidence:
 - `OrderLineItemJpaRepository.java`
 - `RefundService.java`
 - `AdminCustomerService.java`
+
+## Returns And Inspection Rules
+
+- `RETURN_RULE_001`: Customer returns are only valid for orders in `COMPLETED` status within `RETURN_WINDOW_DAYS = 30` days from `orders.completed_at`. `CONFIRMED_FROM_CODE`
+- `RETURN_RULE_002`: An order can have **at most one active return** at a time. Active = status in `{PENDING, APPROVED, RECEIVED, INSPECTING}`. Enforced both in `CustomerReturnService`/`AdminReturnService` and by the V65 partial unique index. `CONFIRMED_FROM_CODE`
+- `RETURN_RULE_003`: For each `order_line_item_id`, the running sum of `return_items.quantity` across non-`REJECTED` returns must not exceed the original `order_line_items.quantity`. Validated server-side at submission time. `CONFIRMED_FROM_CODE`
+- `RETURN_RULE_004`: **Inspection step (V104).** Returns may transition `RECEIVED → INSPECTING` to enter a per-item QC phase. Every `ReturnItem` must be marked `PASS` or `FAIL` via `PATCH /admin/returns/{id}/items/{itemId}/inspect` before the return can move on to `COMPLETED` or `REFUNDED`. Skipping inspection is allowed (legacy path `RECEIVED → COMPLETED/REFUNDED`), but is **not recommended for safety equipment** (mũ bảo hiểm, áo giáp). `CONFIRMED_FROM_CODE`
+- `RETURN_RULE_005`: **FAIL items never re-enter stock.** When a return closes from `INSPECTING`, `restoreStockForReturn` skips any `ReturnItem` with `inspection_result = 'FAIL'`. This prevents customer-damaged goods from being put back on the sellable shelf. `CONFIRMED_FROM_CODE`
+- `RETURN_RULE_006`: `GET /api/v1/customer/orders/{orderId}/return-eligibility` is read-only and never mutates state. It returns one of the stable reason codes `OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`. Frontend should call this before rendering the return form. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `AdminReturnService.java`
+- `CustomerReturnService.java`
+- `ReturnItemEntity.java`
+- `V104__add_return_item_inspection.sql`
+
+## Contact Inbox Rules
+
+- `CONTACT_RULE_001`: `POST /api/v1/contact` always persists into `contact_messages` first, **then** attempts to email the admin. Email failure is logged but does not roll back the persisted message — the inbox is the source of truth. `CONFIRMED_FROM_CODE`
+- `CONTACT_RULE_002`: Status transitions: `OPEN → IN_PROGRESS → RESOLVED/CLOSED` and any state may be reopened back to `OPEN`/`IN_PROGRESS`. `resolved_at` is stamped the first time the message enters a terminal status (`RESOLVED` or `CLOSED`) and cleared on reopen so resolution-time metrics stay honest. `CONFIRMED_FROM_CODE`
+- `CONTACT_RULE_003`: `contact.read` and `contact.write` are seeded for built-in roles `ADMIN` and `SHOP_MANAGER`. Other roles must be granted explicitly via the Roles UI. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ContactService.java`
+- `AdminContactService.java`
+- `V105__create_contact_messages.sql`

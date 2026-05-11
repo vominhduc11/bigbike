@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminCreateReturnRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.AdminReturnListItemResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.returns.InspectReturnItemRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.returns.UpdateReturnStatusRequest;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminReturnService;
@@ -87,6 +88,17 @@ public class AdminReturnController {
     ) {
         devAdminAuthService.requirePermission(request, "orders.write");
         return adminReturnService.updateStatus(returnId, resolveAdminId(), req);
+    }
+
+    @PatchMapping("/{returnId}/items/{itemId}/inspect")
+    public AdminReturnDetailResponse inspectItem(
+            @PathVariable UUID returnId,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody InspectReturnItemRequest req,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.write");
+        return adminReturnService.inspectItem(returnId, itemId, resolveAdminId(), req);
     }
 
     private UUID resolveAdminId() {
