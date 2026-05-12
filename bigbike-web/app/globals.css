@@ -8590,8 +8590,7 @@ input[type="checkbox"] {
 }
 
 .wp-product-card {
-  padding: 20px;
-  border: 1px solid #dddddd;
+  padding: 0;
 }
 
 .wp-product-image,
