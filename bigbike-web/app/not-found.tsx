@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PageHero } from "@/components/layout/PageHero";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
@@ -21,6 +22,15 @@ export default async function NotFoundPage() {
       />
       <div className="bb-container">
         <div className="wp-404-inner">
+          <div className="wp-404-image">
+            <Image
+              src="/wp/404.png"
+              alt="Không tìm thấy trang"
+              width={480}
+              height={320}
+              priority
+            />
+          </div>
           <p className="wp-404-lead">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
 
           <form

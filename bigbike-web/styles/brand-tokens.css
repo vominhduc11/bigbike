@@ -204,7 +204,7 @@
   --bb-page-padding-mobile: var(--bb-space-4);
   --bb-page-padding-tablet: var(--bb-space-6);
   --bb-page-padding-desktop: var(--bb-space-8);
-  --bb-header-height: 4rem;
+  --bb-header-height: 5rem;
   --bb-promo-strip-height: 0px;
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-sidebar-width: 17.5rem;
@@ -237,7 +237,7 @@
   --bb-focus-outline: 2px solid var(--bb-color-blue);
 
   --bb-shadow-sm: none;
-  --bb-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --bb-shadow-md: 0 3px 6px rgba(0, 0, 0, 0.16);
   --bb-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
   --bb-shadow-sky: 0 12px 32px rgba(0, 0, 0, 0.25);
   --bb-shadow-brand: 0 4px 12px rgba(255, 12, 9, 0.2);

@@ -320,6 +320,7 @@ export async function SiteFooter() {
             />
           </div>
           <div className="bb-footer-bottom-copy">
+            <p className="bb-footer-bottom-slogan">Bigbike mong được lắng nghe và đồng hành cùng bạn trên mọi cung đường.</p>
             <p>© {new Date().getFullYear()} {siteName}.</p>
             {businessLicenseNo && (
               <p>
