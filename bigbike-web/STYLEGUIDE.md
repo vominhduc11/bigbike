@@ -1,6 +1,7 @@
 # BigBike Web Styleguide
 
 > Cập nhật ngày 2026-05-12: `bigbike-web` áp dụng theo file thiết kế do user cung cấp tại `C:\Users\vomin\Downloads\DESIGN.md`.
+> Track B light-first WP-parity đã được chọn — xem `docs/audits/BIGBIKE_WEB_BACKGROUND_COLOR_AUDIT.md`.
 >
 > File này là nguồn rút gọn cho giao diện `bigbike-web`. Khi thay đổi token, layout, component hoặc trạng thái UI, phải giữ code khớp các quy tắc dưới đây.
 
@@ -10,7 +11,7 @@
 
 | Mục | Quy tắc |
 |---|---|
-| Theme | Dark-first, nền chính `#000000`, bề mặt tương phản mạnh |
+| Theme | Light-first (WP-parity): nền trang `#ffffff`, chữ đen; header và footer giữ dark |
 | CTA chính | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale |
 | Link / tương tác phụ | Xanh `#007BFF` |
 | Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
@@ -34,16 +35,28 @@
 --bb-color-blue: #007bff;
 --bb-color-cyan: #00bfff;
 
---bb-bg-page: #000000;
---bb-bg-section: #000000;
+/* Light-first (WP-parity) */
+--bb-bg-page: #ffffff;
+--bb-bg-section: #ffffff;
 --bb-bg-surface: #ffffff;
 --bb-bg-surface-raised: #f5f5f5;
 --bb-bg-surface-hover: #fff4f3;
+--bb-bg-surface-alt: #f8f8f8;
 
---bb-text-primary: #ffffff;
---bb-text-secondary: #cecece;
+/* Dark surfaces: header, footer, drawers, toasts */
+--bb-bg-surface-dark: #141414;
+--bb-bg-surface-dark-2: #0d0d0d;
+--bb-bg-surface-dark-3: #111111;
+--bb-color-footer-top: #3a3a3a;
+
+/* Text on light background */
+--bb-text-primary: #000000;
+--bb-text-secondary: #6f6f6f;
 --bb-text-muted: #abb8c3;
---bb-text-inverse: #000000;
+
+/* Text on dark surfaces (header, footer) */
+--bb-text-inverse: #ffffff;
+--bb-text-inverse-secondary: #cecece;
 
 --bb-border-subtle: #dddddd;
 --bb-border-default: #cecece;
@@ -114,9 +127,10 @@ Quy tắc:
 
 ### Footer
 
-- Nền `#1A1A1A`.
+- Top strip nền `#3A3A3A` (khớp WP).
+- Bottom bar nền `#000000`.
 - Heading trắng, link `#CECECE`, hover đỏ.
-- Divider `#333322`.
+- Divider `#333333`.
 
 ### Hero / Impact Sections
 

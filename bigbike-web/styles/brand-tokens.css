@@ -1,8 +1,8 @@
 /**
  * BigBike Brand Tokens
  * Source: C:\Users\vomin\Downloads\DESIGN.md
- *
- * Dark-first, high-contrast, sharp-edged commerce UI.
+ * Track B light-first WP-parity (2026-05-12): nền trang #fff, chữ đen,
+ * header/footer giữ dark. Xem docs/audits/BIGBIKE_WEB_BACKGROUND_COLOR_AUDIT.md.
  * Fonts are loaded in app/layout.tsx through next/font.
  */
 
@@ -35,6 +35,8 @@
   --bb-color-dark-2: #333322;
   --bb-color-dark-3: #202020;
   --bb-color-dark-4: #292929;
+  --bb-color-footer-top: #3a3a3a;
+  --bb-color-gray-25: #f8f8f8;
   --bb-color-gray-50: #f5f5f5;
   --bb-color-gray-100: #eeeeef;
   --bb-color-gray-200: #dddddd;
@@ -66,19 +68,27 @@
   --bb-action-secondary: var(--bb-color-blue);
   --bb-action-secondary-hover: var(--bb-color-blue-hover);
 
-  --bb-bg-page: var(--bb-color-black);
-  --bb-bg-section: var(--bb-color-black);
+  /* Light-first (WP-parity): page and sections are white */
+  --bb-bg-page: var(--bb-color-white);
+  --bb-bg-section: var(--bb-color-white);
+  --bb-bg-section-alt: var(--bb-color-gray-25);
   --bb-bg-surface: var(--bb-color-white);
   --bb-bg-surface-raised: var(--bb-color-gray-50);
   --bb-bg-surface-hover: var(--bb-color-red-50);
   --bb-bg-inverse: var(--bb-color-black);
+  /* Dark surfaces for header, footer, drawers, toasts, media players */
+  --bb-bg-surface-dark: #141414;
+  --bb-bg-surface-dark-2: #0d0d0d;
+  --bb-bg-surface-dark-3: #111111;
 
-  --bb-text-primary: var(--bb-color-white);
-  --bb-text-secondary: var(--bb-color-gray-300);
+  /* Text on light background (body, cards, sections) */
+  --bb-text-primary: var(--bb-color-black);
+  --bb-text-secondary: var(--bb-color-gray-500);
   --bb-text-muted: var(--bb-color-gray-400);
-  --bb-text-disabled: var(--bb-color-gray-300);
-  --bb-text-inverse: var(--bb-color-black);
-  --bb-text-inverse-secondary: var(--bb-color-dark-2);
+  --bb-text-disabled: var(--bb-color-gray-400);
+  /* Text on dark surfaces (header, footer, drawers) */
+  --bb-text-inverse: var(--bb-color-white);
+  --bb-text-inverse-secondary: var(--bb-color-gray-300);
   --bb-text-inverse-muted: var(--bb-color-gray-500);
   --bb-text-brand: var(--bb-brand-primary);
   --bb-text-link: var(--bb-color-blue);
@@ -262,18 +272,24 @@
   --sans-body: var(--bb-font-body);
 }
 
-.bb-theme,
-.bb-theme-dark {
-  color-scheme: dark;
+.bb-theme {
+  color-scheme: light;
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
+  font-family: var(--bb-font-body);
+}
+
+.bb-theme-dark {
+  color-scheme: dark;
+  background: var(--bb-bg-inverse);
+  color: var(--bb-text-inverse);
   font-family: var(--bb-font-body);
 }
 
 .bb-theme-light {
   color-scheme: light;
   background: var(--bb-bg-surface);
-  color: var(--bb-text-inverse);
+  color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
 }
 
@@ -459,7 +475,7 @@
 
 .bb-card {
   background: var(--bb-bg-surface);
-  color: var(--bb-text-inverse);
+  color: var(--bb-text-primary);
   border: 1px solid var(--bb-border-subtle);
   border-radius: 0;
   box-shadow: none;
@@ -555,7 +571,7 @@
   position: relative;
   overflow: hidden;
   background: var(--bb-bg-surface);
-  color: var(--bb-text-inverse);
+  color: var(--bb-text-primary);
   border: 1px solid var(--bb-border-subtle);
   border-radius: 0;
   box-shadow: none;
@@ -637,7 +653,7 @@
 }
 .bb-richtext th {
   background: var(--bb-bg-surface-raised);
-  color: var(--bb-text-inverse);
+  color: var(--bb-text-primary);
   font-weight: var(--bb-font-weight-semibold);
 }
 .bb-richtext img {
@@ -650,7 +666,7 @@
   margin: var(--bb-space-4) 0;
   padding: var(--bb-space-3) var(--bb-space-4);
   background: var(--bb-color-dark);
-  color: var(--bb-text-secondary);
+  color: var(--bb-text-inverse);
 }
 
 @media (max-width: 575px) {
