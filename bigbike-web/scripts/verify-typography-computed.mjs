@@ -49,6 +49,9 @@ const ROUTES = [
   { path: "/lien-he", label: "contact" },
   { path: "/dang-nhap", label: "login" },
   { path: "/gioi-thieu", label: "about-static" },
+  // Phase 2 additions: routes that render .wp-btn-primary without backend data
+  { path: "/bao-hanh", label: "warranty" },
+  { path: "/gio-hang", label: "cart" },
 ];
 
 // ─── CSS Properties to dump ──────────────────────────────────────────────────
