@@ -217,7 +217,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
               padding: 16,
               background: "var(--bb-bg-surface)",
               border: "1px solid var(--bb-border-subtle)",
-              borderRadius: 8,
+              borderRadius: "var(--bb-radius-card)",
             }}
           >
             <MediaImage

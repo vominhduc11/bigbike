@@ -47,6 +47,15 @@
   --bb-color-gray-900: #171717;
   --bb-color-white: #ffffff;
 
+  /* Legacy WP theme aliases */
+  --theme-white: #fff;
+  --theme-black: #000;
+  --theme-gray: #6f6f6f;
+  --theme-red: #ff0c09;
+  --theme-size: 14px;
+  --theme-font: var(--font-barlow), "Barlow", sans-serif;
+  --theme-font-second: var(--font-barlow-condensed), "Barlow Condensed", sans-serif;
+
   /* Semantic color */
   --bb-brand-primary: var(--bb-color-red-500);
   --bb-brand-primary-hover: var(--bb-color-red-600);
@@ -111,7 +120,7 @@
   /* Typography */
   --bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", var(--font-barlow), "Barlow", "Helvetica", sans-serif;
   --bb-font-heading: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  --bb-font-body: var(--font-barlow-condensed), "Barlow Condensed", var(--font-barlow), "Barlow", "Helvetica", sans-serif;
+  --bb-font-body: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --bb-font-link: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --bb-font-cta: var(--font-oswald), "Oswald", "Helvetica Neue", Arial, sans-serif;
   --bb-font-nav: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -188,9 +197,10 @@
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-sidebar-width: 17.5rem;
   --bb-product-card-min-width: 14rem;
-  --bb-bp-sm: 640px;
+  --bb-bp-xs: 360px;
+  --bb-bp-sm: 576px;
   --bb-bp-md: 768px;
-  --bb-bp-lg: 1024px;
+  --bb-bp-lg: 992px;
   --bb-bp-xl: 1200px;
   --bb-bp-2xl: 1440px;
   --bb-touch-target: 44px;
@@ -272,13 +282,13 @@
   margin-inline: auto;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 576px) {
   .bb-container {
     width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 992px) {
   .bb-container {
     width: min(100% - calc(var(--bb-page-padding-desktop) * 2), var(--bb-container-xl));
   }
@@ -643,7 +653,7 @@
   color: var(--bb-text-secondary);
 }
 
-@media (max-width: 639px) {
+@media (max-width: 575px) {
   :root {
     --bb-text-hero: 18px;
     --bb-text-h1: 20px;
@@ -656,7 +666,7 @@
   }
 }
 
-@media (min-width: 640px) and (max-width: 1023px) {
+@media (min-width: 576px) and (max-width: 991px) {
   :root {
     --bb-text-hero: 24px;
     --bb-text-h1: 24px;

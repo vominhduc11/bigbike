@@ -67,7 +67,7 @@ State colors:
 | H1 | Barlow | 32px | 600 | 48px |
 | H2 | Barlow | 24px | 600 | 36px |
 | H3 | Oswald | 18px | 600 | 20px |
-| Body | Barlow Condensed | 16px | 400 | 24px |
+| Body | Barlow | 16px | 400 | 24px |
 | Button / CTA | Oswald | 16px | 600 | 24px |
 | Link | Barlow | 16px | 400 | 24px |
 | Meta / badge | Barlow | 12px | 700 | 12px |
@@ -141,9 +141,10 @@ Quy tắc:
 
 | Breakpoint | Hành vi |
 |---|---|
-| 320-639px | 1 cột, padding 16px, hero title 18px |
-| 640-1023px | 2 cột, padding 24px |
-| 1024px+ | 3 cột, padding 32px |
+| 320-575px | 1 cột, padding 16px, hero title 18px |
+| 576-767px | 2 cột nhẹ, padding 24px |
+| 768-991px | 2 cột/tablet, padding 24px |
+| 992px+ | 3 cột/sidebar ổn định, padding 32px |
 | 1200px+ | Container centered 1200px |
 
 ---

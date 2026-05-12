@@ -785,7 +785,7 @@ export function FormSkeleton({
           padding: "22px 24px",
           background: "var(--bb-bg-surface)",
           border: "1px solid var(--bb-border-subtle)",
-          borderRadius: 8,
+          borderRadius: "var(--bb-radius-card)",
         }}
       >
         <SkelText w="20%" />

@@ -7,7 +7,13 @@ import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, listBrands, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import {
+  PRODUCT_SORT_VALUES,
+  listBrands,
+  listCategories,
+  listProducts,
+  listPublicSettings,
+} from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readHeroSettings } from "@/lib/utils/page-hero";
@@ -37,12 +43,14 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
   const pageValue = readSearchParamAlias(params, "page", "paged");
   const page = Number(pageValue ?? "1");
   const q = readSingleSearchParam(params.q);
+  const category = readSingleSearchParam(params.category);
   const color = readSingleSearchParam(params.filter_color);
   const minPrice = readSingleSearchParam(params.min_price);
   const maxPrice = readSingleSearchParam(params.max_price);
   const brand = readSearchParamAlias(params, "pwb-brand", "brand");
   const hasFilters =
     Boolean(q) ||
+    Boolean(category) ||
     Boolean(brand) ||
     Boolean(color) ||
     Boolean(minPrice) ||
@@ -121,7 +129,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     );
   }
 
-  const [result, brandsResult, settingsResult] = await Promise.all([
+  const [result, brandsResult, categoriesResult, settingsResult] = await Promise.all([
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -134,6 +142,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       maxPrice: maxPriceParsed.value,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
     listPublicSettings(),
   ]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
@@ -148,6 +157,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
   const currentFilters = {
     q: qParsed.value,
+    category: categoryParsed.value,
     brand: brandParsed.value,
     color: colorParsed.value,
     minPrice: minPriceParsed.value,
@@ -172,8 +182,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
 
       <div className="wp-cat-layout">
         <CatalogFilters
-          key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
+          key={[currentFilters.category, currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
+          categories={categoriesResult.data}
           current={currentFilters}
           resetHref={toProductListPath()}
         />
@@ -197,7 +208,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                 <span
                   className="bb-skel"
                   aria-hidden="true"
-                  style={{ width: 160, height: 36, borderRadius: 4 }}
+                  style={{ width: 160, height: 36, borderRadius: "var(--bb-radius-input)" }}
                 />
               }
             >

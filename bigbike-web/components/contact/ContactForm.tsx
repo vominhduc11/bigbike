@@ -70,7 +70,7 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
       <h2 style={{ marginBottom: "var(--bb-space-4)", fontSize: "var(--bb-text-lg)" }}>Gửi tin nhắn</h2>
 
       {error && (
-        <div style={{ padding: "10px 14px", background: "var(--bb-brand-primary-soft)", border: "1px solid var(--bb-brand-primary-border)", borderRadius: 6, marginBottom: "var(--bb-space-4)" }}>
+        <div style={{ padding: "10px 14px", background: "var(--bb-brand-primary-soft)", border: "1px solid var(--bb-brand-primary-border)", borderRadius: "var(--bb-radius-sm)", marginBottom: "var(--bb-space-4)" }}>
           <p style={{ fontSize: "var(--bb-text-sm)", color: "rgba(255,255,255,0.85)", margin: 0 }}>{error}</p>
         </div>
       )}

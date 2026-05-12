@@ -155,6 +155,9 @@ const MEDIA_ORIGIN = (() => {
 const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
+  // Keep legacy WordPress `.html` URLs from being normalized before rewrites.
+  // Proxy below still normalizes extensionless routes to trailing slash.
+  skipTrailingSlashRedirect: true,
   // Client router cache: keep static segments 3 min, dynamic 30 s.
   // Avoids full server roundtrip when navigating back to a recently visited page.
   experimental: {

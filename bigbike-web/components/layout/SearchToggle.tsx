@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BBTooltip } from "@/components/ui/BBTooltip";
+import { useFocusTrap } from "@/lib/ui/focus-trap";
 import { toProductListPath, toProductPath } from "@/lib/utils/routes";
 import { formatVnd } from "@/lib/utils/format";
 
@@ -45,15 +46,22 @@ export function SearchToggle() {
   const [suggestions, setSuggestions] = useState<SuggestProduct[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+
+  useFocusTrap(shellRef, {
+    active: open,
+    initialFocusRef: inputRef,
+    lockScroll: true,
+    onEscape: () => setOpen(false),
+  });
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecent(getRecentSearches());
-      const id = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(id);
     } else {
       setQuery("");
       setSuggestions([]);
@@ -93,8 +101,7 @@ export function SearchToggle() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
       }
@@ -127,6 +134,7 @@ export function SearchToggle() {
     <>
       <BBTooltip content="Tìm kiếm">
       <button
+        ref={triggerRef}
         className="wp-icon-btn"
         aria-label="Tìm kiếm"
         type="button"
@@ -159,7 +167,13 @@ export function SearchToggle() {
           />
 
           {/* Search shell */}
-          <div className="wp-search-shell" role="dialog" aria-label="Tìm kiếm">
+          <div
+            ref={shellRef}
+            className="wp-search-shell"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tìm kiếm"
+          >
             <button
               type="button"
               className="wp-search-close"

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
+import { useFocusTrap } from "@/lib/ui/focus-trap";
 import {
   toAccountPath,
   toCartPath,
@@ -151,22 +152,25 @@ export function MobileHeaderMenu({
 }: MobileHeaderMenuProps) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const auth = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
+  useFocusTrap(drawerRef, {
+    active: open,
+    initialFocusRef: closeButtonRef,
+    lockScroll: true,
+    onEscape: () => setOpen(false),
+  });
+
   useEffect(() => {
     if (!open) return;
 
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("keydown", onKeyDown);
     document.body.classList.add("wp-mobile-menu-open");
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       document.body.classList.remove("wp-mobile-menu-open");
     };
   }, [open]);
@@ -202,10 +206,17 @@ export function MobileHeaderMenu({
             aria-label="Đóng menu"
             onClick={close}
           />
-          <aside className="wp-mobile-drawer" aria-label={menuLabel}>
+          <aside
+            ref={drawerRef}
+            className="wp-mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={menuLabel}
+          >
             <div className="wp-mobile-drawer-head">
               <span>BIGBIKE MENU</span>
               <button
+                ref={closeButtonRef}
                 className="wp-icon-btn"
                 aria-label="Đóng menu"
                 type="button"

@@ -168,7 +168,7 @@ export default async function CategoryDetailPage({
       maxPrice: maxPriceParsed.value,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
-    listCategories({ page: 1, size: 200, sort: "sortOrder:asc" }),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
   ]);
 
   if (!categoryResult.data && categoryResult.error?.status === 404) {
@@ -291,7 +291,7 @@ export default async function CategoryDetailPage({
                 <span
                   className="bb-skel"
                   aria-hidden="true"
-                  style={{ width: 160, height: 36, borderRadius: 4 }}
+                  style={{ width: 160, height: 36, borderRadius: "var(--bb-radius-input)" }}
                 />
               }
             >

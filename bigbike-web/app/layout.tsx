@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import localFont from "next/font/local";
 import { Barlow, Barlow_Condensed, Oswald } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -9,13 +8,6 @@ import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-
-const bungee = localFont({
-  src: "../public/fonts/Bungee-Regular.ttf",
-  variable: "--font-bungee",
-  weight: "400",
-  display: "swap",
-});
 
 const oswald = Oswald({
   subsets: ["latin", "vietnamese"],
@@ -35,24 +27,6 @@ const barlowCondensed = Barlow_Condensed({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-barlow-condensed",
-  display: "swap",
-});
-
-const exo = localFont({
-  src: [
-    { path: "../public/fonts/Exo-Thin.ttf", weight: "100", style: "normal" },
-    { path: "../public/fonts/Exo-Light.ttf", weight: "300", style: "normal" },
-    { path: "../public/fonts/Exo-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../public/fonts/Exo-Italic.ttf", weight: "400", style: "italic" },
-    { path: "../public/fonts/Exo-Medium.ttf", weight: "500", style: "normal" },
-    { path: "../public/fonts/Exo-MediumItalic.ttf", weight: "500", style: "italic" },
-    { path: "../public/fonts/Exo-SemiBold.ttf", weight: "600", style: "normal" },
-    { path: "../public/fonts/Exo-Bold.ttf", weight: "700", style: "normal" },
-    { path: "../public/fonts/Exo-BoldItalic.ttf", weight: "700", style: "italic" },
-    { path: "../public/fonts/Exo-Black.ttf", weight: "900", style: "normal" },
-    { path: "../public/fonts/Exo-BlackItalic.ttf", weight: "900", style: "italic" },
-  ],
-  variable: "--font-exo",
   display: "swap",
 });
 
@@ -85,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} ${bungee.variable} ${exo.variable} h-full antialiased`}>
+    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`}>
       <body className="bb-theme min-h-full flex flex-col">
         {GTM_ID && (
           <Script

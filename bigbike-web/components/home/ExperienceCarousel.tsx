@@ -11,6 +11,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import type { Article } from "@/lib/contracts/public";
+import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toArticlePath } from "@/lib/utils/routes";
 
@@ -164,7 +165,7 @@ export function ExperienceCarousel({ articles }: Props) {
 
     function updateLayout() {
       const viewportWidth = measuredViewport.clientWidth;
-      const mobile = viewportWidth < 767;
+      const mobile = viewportWidth < BB_BREAKPOINTS.md;
       const slidesPerView = mobile ? MOBILE_SLIDES_PER_VIEW : DESKTOP_SLIDES_PER_VIEW;
       const gap = mobile ? MOBILE_GAP : DESKTOP_GAP;
       const slideWidth = (viewportWidth - gap * (slidesPerView - 1)) / slidesPerView;

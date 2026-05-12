@@ -6,7 +6,7 @@ sourcePattern,targetPattern,redirectType,status,notes
 /en/{slug}.html,/{slug}/,301,active,Polylang English locale - redirect to Vietnamese
 /vi/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang vi blog
 /en/tin-tuc/{slug}.html,/tin-tuc/{slug}/,301,active,Polylang en blog
-/{slug}.html,/{slug}/,301,active,Generic legacy WP .html permalink
+/{slug}.html,/{slug}/,rewrite,active,Generic legacy WP .html permalink handled by Next.js afterFiles rewrites
 /san-pham/,/danh-muc-san-pham/,301,inactive,Disabled — /san-pham/ is the canonical product listing in Next.js app
 /danh-muc-san-pham/{slug}.html,/danh-muc-san-pham/{slug}/,301,active,Old category .html
 /non-bao-hiem-moto/,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,Old root category

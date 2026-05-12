@@ -6,6 +6,7 @@ import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
+import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
 
 type Props = { videos: HomeVideo[] };
@@ -211,8 +212,8 @@ export function HomeVideoCarousel({ videos }: Props) {
             slidesPerView={1}
             spaceBetween={0}
             breakpoints={{
-              600: { slidesPerView: 2, spaceBetween: 20 },
-              767: { slidesPerView: 3, spaceBetween: 30 },
+              [BB_BREAKPOINTS.sm]: { slidesPerView: 2, spaceBetween: 20 },
+              [BB_BREAKPOINTS.md]: { slidesPerView: 3, spaceBetween: 30 },
             }}
           >
             {videos.map((video) => (

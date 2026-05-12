@@ -130,8 +130,8 @@ function OrderHistoryContent() {
               </div>
               <div className="wp-order-body">
                 <div className="bb-skel-row">
-                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
-                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
+                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: "var(--bb-radius-sm)" }} />
+                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: "var(--bb-radius-sm)" }} />
                 </div>
                 <div className="bb-skel-col" style={{ flex: 1 }}>
                   <span className="bb-skel bb-skel--text bb-skel-w-60" />

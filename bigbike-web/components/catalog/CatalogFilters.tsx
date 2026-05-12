@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { Brand } from "@/lib/contracts/public";
+import type { Brand, Category } from "@/lib/contracts/public";
 import { BBTooltip } from "@/components/ui/BBTooltip";
 import { buildQueryString } from "@/lib/utils/query";
 
 type FilterState = {
   q?: string;
+  category?: string;
   brand?: string;
   color?: string;
   minPrice?: number;
@@ -16,6 +17,7 @@ type FilterState = {
 
 type CatalogFiltersProps = {
   brands: Brand[];
+  categories?: Category[];
   current: FilterState;
   resetHref: string;
   hiddenParams?: Record<string, string | undefined>;
@@ -27,6 +29,7 @@ function buildChips(
   current: FilterState,
   resetHref: string,
   hiddenParams: Record<string, string | undefined>,
+  categories: Category[],
 ): Chip[] {
   const chips: Chip[] = [];
 
@@ -34,6 +37,7 @@ function buildChips(
     const remaining: Record<string, string | number | undefined> = {
       ...hiddenParams,
       q: key === "q" ? undefined : current.q,
+      category: key === "category" ? undefined : current.category,
       "pwb-brand": key === "brand" ? undefined : current.brand,
       filter_color: key === "color" ? undefined : current.color,
       min_price: key === "price" ? undefined : current.minPrice,
@@ -45,6 +49,11 @@ function buildChips(
   }
 
   if (current.q) chips.push({ label: `"${current.q}"`, removeHref: hrefWithout("q") });
+  if (current.category) {
+    const categoryLabel =
+      categories.find((category) => category.slug === current.category)?.name ?? current.category;
+    chips.push({ label: `Danh mục: ${categoryLabel}`, removeHref: hrefWithout("category") });
+  }
   if (current.brand) chips.push({ label: current.brand, removeHref: hrefWithout("brand") });
   if (current.color) chips.push({ label: `Màu: ${current.color}`, removeHref: hrefWithout("color") });
   if (current.minPrice || current.maxPrice) {
@@ -97,13 +106,15 @@ function FilterSection({
 
 export function CatalogFilters({
   brands,
+  categories = [],
   current,
   resetHref,
   hiddenParams = {},
 }: CatalogFiltersProps) {
   const [brandSearch, setBrandSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const chips = buildChips(current, resetHref, hiddenParams);
+  const visibleCategories = categories.filter((category) => category.isVisible);
+  const chips = buildChips(current, resetHref, hiddenParams, visibleCategories);
 
   const filteredBrands = brandSearch.trim()
     ? brands.filter((b) =>
@@ -112,7 +123,12 @@ export function CatalogFilters({
     : brands;
 
   const hasActiveFilters =
-    current.brand || current.color || current.minPrice || current.maxPrice || current.q;
+    current.category ||
+    current.brand ||
+    current.color ||
+    current.minPrice ||
+    current.maxPrice ||
+    current.q;
 
   return (
     <aside className="wp-filters-v2">
@@ -176,6 +192,27 @@ export function CatalogFilters({
         )}
         {current.sort && (
           <input type="hidden" name="sort" value={current.sort} />
+        )}
+
+        {/* Category filter */}
+        {visibleCategories.length > 0 && (
+          <FilterSection title="Danh mục">
+            <label className="wp-filter-row">
+              <input type="radio" name="category" value="" defaultChecked={!current.category} />
+              <span className="wp-filter-row-label">Tất cả sản phẩm</span>
+            </label>
+            {visibleCategories.map((category) => (
+              <label key={category.id} className="wp-filter-row">
+                <input
+                  type="radio"
+                  name="category"
+                  value={category.slug}
+                  defaultChecked={current.category === category.slug}
+                />
+                <span className="wp-filter-row-label">{category.name}</span>
+              </label>
+            ))}
+          </FilterSection>
         )}
 
         {/* Brand filter */}
@@ -259,6 +296,7 @@ export function CatalogFilters({
               const active = current.minPrice === p.min && current.maxPrice === p.max;
               const qs = buildQueryString({
                 ...hiddenParams,
+                category: current.category,
                 "pwb-brand": current.brand,
                 q: current.q,
                 sort: current.sort,

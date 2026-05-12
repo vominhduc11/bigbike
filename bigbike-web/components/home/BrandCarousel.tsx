@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
+import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toBrandPath } from "@/lib/utils/routes";
 
@@ -20,7 +21,8 @@ export function BrandCarousel({ brands }: Props) {
           slidesPerView={2}
           spaceBetween={13}
           breakpoints={{
-            767: { slidesPerView: 5, spaceBetween: 40 },
+            [BB_BREAKPOINTS.sm]: { slidesPerView: 3, spaceBetween: 24 },
+            [BB_BREAKPOINTS.md]: { slidesPerView: 5, spaceBetween: 40 },
           }}
         >
           {brands.map((b) => {

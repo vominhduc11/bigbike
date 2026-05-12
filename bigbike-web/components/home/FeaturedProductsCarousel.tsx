@@ -9,6 +9,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import type { Product } from "@/lib/contracts/public";
 import { WpFeaturedProductCard } from "@/components/home/WpFeaturedProductCard";
+import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 
 type Props = { products: Product[] };
 
@@ -39,9 +40,10 @@ export function FeaturedProductsCarousel({ products }: Props) {
           spaceBetween={0}
           pagination={{ el: ".wp-fp-pagination", clickable: true }}
           breakpoints={{
-            320: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 0 },
-            380: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 20 },
-            767: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
+            [BB_BREAKPOINTS.xs]: { slidesPerView: 1.1, slidesPerGroup: 1, spaceBetween: 12 },
+            [BB_BREAKPOINTS.sm]: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 20 },
+            [BB_BREAKPOINTS.md]: { slidesPerView: 3, slidesPerGroup: 3, spaceBetween: 24 },
+            [BB_BREAKPOINTS.lg]: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
           }}
         >
           {products.map((p) => (

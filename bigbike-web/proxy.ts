@@ -136,7 +136,9 @@ function isLoop(currentPath: string, target: string): boolean {
     const targetPath = target.startsWith("/")
       ? target
       : new URL(target).pathname;
-    return targetPath === currentPath;
+    const normalize = (path: string) =>
+      path.length > 1 ? path.replace(/\/+$/, "") : path;
+    return normalize(targetPath) === normalize(currentPath);
   } catch {
     return false;
   }
@@ -144,6 +146,16 @@ function isLoop(currentPath: string, target: string): boolean {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
+
+  if (
+    pathname !== "/" &&
+    !pathname.endsWith("/") &&
+    !pathname.includes(".")
+  ) {
+    const destination = new URL(request.url);
+    destination.pathname = `${pathname}/`;
+    return NextResponse.redirect(destination.toString(), 308);
+  }
 
   // Auth protection: /tai-khoan/* requires bb_session cookie
   if (pathname.startsWith("/tai-khoan")) {

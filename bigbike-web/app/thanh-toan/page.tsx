@@ -21,7 +21,7 @@ function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
   return (
     <div className="wp-radio-stack" aria-busy="true">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="bb-skel" style={{ height: 56, borderRadius: 4, width: "100%" }} />
+        <div key={i} className="bb-skel" style={{ height: 56, borderRadius: "var(--bb-radius-sm)", width: "100%" }} />
       ))}
     </div>
   );
@@ -32,7 +32,7 @@ function MiniSummarySkeleton() {
     <div aria-busy="true" className="bb-skel-stack">
       {[0, 1].map((i) => (
         <div key={i} className="bb-skel-row">
-          <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: 4 }} />
+          <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: "var(--bb-radius-sm)" }} />
           <div className="bb-skel-col" style={{ flex: 1 }}>
             <span className="bb-skel bb-skel--text bb-skel-w-50" />
             <span className="bb-skel bb-skel--text bb-skel-w-80" />
