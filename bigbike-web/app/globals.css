@@ -16,7 +16,7 @@
 
 body {
   background: var(--bb-bg-page);
-  color: var(--bb-text-secondary);
+  color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-base);
   line-height: var(--bb-line-body);
@@ -4380,8 +4380,8 @@ body.wp-mobile-menu-open {
 .wp-toast-cta:hover { color: var(--bb-brand-primary-hover); }
 
 /* -- Breadcrumb -------------------------------------------- */
-.wp-breadcrumb { max-width: 1440px; margin: 0 auto; padding: 16px 24px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bb-text-muted); display: flex; flex-wrap: wrap; align-items: center; }
-.wp-breadcrumb a { color: var(--bb-text-muted); text-decoration: none; cursor: pointer; }
+.wp-breadcrumb { max-width: 1440px; margin: 0 auto; padding: 16px 24px; font-size: 16px; letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
+.wp-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
 .wp-breadcrumb a:hover { color: var(--bb-brand-primary); }
 .wp-breadcrumb .sep { margin: 0 10px; color: var(--bb-brand-primary); }
 /* Clear the emblem (150px wide, overflows ~76px below header bar) so the
@@ -8104,10 +8104,10 @@ body {
 }
 
 body {
-  color: var(--bb-text-secondary);
+  color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-base);
-  line-height: 24.003px;
+  line-height: var(--bb-line-body);
 }
 
 a {
@@ -8135,7 +8135,6 @@ a:hover {
 .wp-pdp,
 .wp-pdp-below {
   background: var(--bb-bg-page);
-  color: var(--bb-text-secondary);
 }
 
 .bb-card,
@@ -8211,6 +8210,17 @@ a:hover {
   text-transform: uppercase;
 }
 
+/* WP section title: Oswald 35px (24px @max-767px) — custom.css .block-title h3 */
+.wp-section-title {
+  font-size: 35px;
+}
+
+@media (max-width: 767px) {
+  .wp-section-title {
+    font-size: 24px;
+  }
+}
+
 .wp-kicker,
 .bb-kicker,
 .wp-news-kicker,
@@ -8243,6 +8253,16 @@ a:hover {
 .wp-cat-hero-breadcrumb a:hover,
 .wp-breadcrumb a:hover {
   color: var(--bb-brand-primary);
+}
+
+/* WP breadcrumb: color #717171, weight 600 — overrides blue-link group above */
+.wp-breadcrumb,
+.wp-breadcrumb a {
+  color: #717171;
+}
+
+.wp-breadcrumb a {
+  font-weight: 600;
 }
 
 .wp-header {
@@ -8289,11 +8309,12 @@ a:hover {
   padding: 0 18px;
   color: #ffffff;
   border-bottom: 2px solid transparent;
-  font-family: var(--bb-font-link);
-  font-size: 16px;
-  font-weight: 400;
+  font-family: var(--bb-font-nav);
+  font-size: 1.143rem;
+  font-weight: 600;
   line-height: 24px;
   letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .wp-navigation-item > a:hover,
@@ -8320,10 +8341,10 @@ a:hover {
 }
 
 .wp-sub-menu-item > a {
-  color: var(--bb-text-inverse-muted);
-  font-family: var(--bb-font-link);
-  font-size: 16px;
-  font-weight: 400;
+  color: #6f6f6f;
+  font-family: var(--bb-font-display);
+  font-size: 14px;
+  font-weight: 600;
   line-height: 24px;
 }
 
@@ -8586,12 +8607,18 @@ input[type="checkbox"] {
 .wp-checkout-summary-title h3,
 .wp-checkout-step-title h3 {
   color: var(--bb-text-inverse);
-  font-family: var(--bb-font-cta);
+  font-family: var(--bb-font-display);
   font-size: 18px;
   font-weight: 600;
   line-height: 20px;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+/* WP product title: Oswald 16px, no uppercase (custom.css: .product .product--item-title) */
+.wp-product-name {
+  font-size: 16px;
+  text-transform: none;
 }
 
 .wp-product-price b,
@@ -8601,8 +8628,8 @@ input[type="checkbox"] {
 .wp-checkout-summary-card .wp-mini-price,
 .bb-price {
   color: var(--bb-brand-primary);
-  font-family: var(--bb-font-cta);
-  font-size: 16px;
+  font-family: var(--bb-font-display);
+  font-size: 14px;
   font-weight: 600;
   line-height: 24px;
 }
@@ -8794,7 +8821,7 @@ input[type="checkbox"] {
 .bb-footer .bb-footer-brand h2,
 .bb-footer .bb-footer-col h3 {
   color: #ffffff;
-  font-family: var(--bb-font-cta);
+  font-family: var(--bb-font-display);
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;

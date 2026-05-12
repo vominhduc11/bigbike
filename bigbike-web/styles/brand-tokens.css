@@ -128,17 +128,19 @@
   --bb-product-preorder: var(--bb-state-info);
 
   /* Typography */
-  --bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", var(--font-barlow), "Barlow", "Helvetica", sans-serif;
-  --bb-font-heading: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* WP parity: Oswald for display/heading (product titles, section heads, h1-h6, sub-menu) */
+  /* Barlow Condensed for nav + buttons (.btn); Barlow for body/links */
+  --bb-font-display: var(--font-oswald), "Oswald", "Helvetica Neue", Arial, sans-serif;
+  --bb-font-heading: var(--font-oswald), "Oswald", "Helvetica Neue", Arial, sans-serif;
   --bb-font-body: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --bb-font-link: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  --bb-font-cta: var(--font-oswald), "Oswald", "Helvetica Neue", Arial, sans-serif;
-  --bb-font-nav: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --bb-font-cta: var(--font-barlow-condensed), "Barlow Condensed", "Barlow", sans-serif;
+  --bb-font-nav: var(--font-barlow-condensed), "Barlow Condensed", "Barlow", sans-serif;
   --bb-font-system: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 
   --bb-text-xs: 12px;
   --bb-text-sm: 14px;
-  --bb-text-base: 16.002px;
+  --bb-text-base: 16px;
   --bb-text-md: 16px;
   --bb-text-lg: 18px;
   --bb-text-xl: 20px;
