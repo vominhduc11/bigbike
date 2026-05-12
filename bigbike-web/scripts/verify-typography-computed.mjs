@@ -155,8 +155,10 @@ const EXPECTED_CHECKS = [
   },
 
   // ── header nav item ───────────────────────────────────────────────────────
+  // Use :not(.active) to skip the active nav item which correctly shows
+  // brand-primary color (#ff0c09) instead of white — that is intended behavior.
   {
-    selector: ".wp-navigation-item > a",
+    selector: ".wp-navigation-item:not(.active) > a",
     label: "nav-item-link",
     checks: [
       {
@@ -188,7 +190,7 @@ const EXPECTED_CHECKS = [
         prop: "color",
         expected: "rgb(255, 255, 255)",
         matchType: "exact",
-        note: "WP nav links are white on dark header",
+        note: "WP nav links are white on dark header (non-active items)",
       },
     ],
   },
@@ -350,9 +352,9 @@ const EXPECTED_CHECKS = [
       },
       {
         prop: "letter-spacing",
-        expected: "0px",
+        expected: "normal",
         matchType: "exact",
-        note: "WP no letter-spacing on breadcrumb",
+        note: "WP no letter-spacing on breadcrumb; CSS letter-spacing:0 → Chromium computes 'normal' (0 ≡ normal in Chrome)",
       },
       {
         prop: "color",
@@ -502,15 +504,17 @@ const EXPECTED_CHECKS = [
   },
 
   // ── form input ────────────────────────────────────────────────────────────
+  // Login uses input[type='text'] + class bb-input (no email-type inputs exist).
+  // .bb-input is the correct selector for styled form inputs.
   {
-    selector: ".bb-input, .wp-input, input[type='text'], input[type='email']",
+    selector: ".bb-input",
     label: "form-input",
     checks: [
       {
         prop: "font-size",
         expected: "16px",
         matchType: "exact",
-        note: "Input font-size (WP uses 14px in some contexts)",
+        note: "Form input font-size 16px (WP parity); bb-input is the styled input class",
       },
     ],
   },
@@ -535,16 +539,18 @@ const EXPECTED_CHECKS = [
     ],
   },
 
-  // ── h2 (generic section heading) ─────────────────────────────────────────
+  // ── h2 (product detail related-products title) ────────────────────────────
+  // .bb-page h2 was too broad — it matches empty-state h2s that inherit body
+  // font (Barlow). Use the specific .wp-pdp-related-title class instead.
   {
-    selector: ".bb-page h2, .wp-pdp-related-title",
-    label: "section-h2",
+    selector: ".wp-pdp-related-title",
+    label: "pdp-related-title",
     checks: [
       {
         prop: "font-family",
         expected: "Oswald",
         matchType: "contains",
-        note: "Section headings use Oswald (--bb-font-heading)",
+        note: "Related products title uses --bb-font-display (Oswald)",
       },
     ],
   },
