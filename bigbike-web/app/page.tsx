@@ -416,7 +416,7 @@ export default async function HomePage() {
           <div className="bb-container">
             <div className="wp-products-header">
               <p className="wp-kicker">SẢN PHẨM NỔI BẬT</p>
-              <h2 id="home-products-heading" className="wp-products-title">
+              <h2 id="home-products-heading" className="wp-products-title wp-section-title">
                 SẢN PHẨM NỔI BẬT TẠI BIGBIKE
               </h2>
             </div>

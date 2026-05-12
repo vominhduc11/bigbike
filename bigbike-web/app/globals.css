@@ -1937,8 +1937,9 @@ html[data-header-hidden] .wp-header {
   outline: none;
 }
 
-.wp-menu-toggle {
-  display: inline-flex;
+.wp-menu-toggle,
+.wp-user-control .wp-menu-toggle {
+  display: none;
 }
 
 .wp-user-menu {
@@ -2378,22 +2379,18 @@ body.wp-mobile-menu-open {
 }
 
 /* -- Responsive: WP header collapse rules ------------------"? */
+/* Desktop ≥ 1200px: nav visible, hamburger hidden (via default display:none above).
+   Mobile/tablet < 1200px: nav hides, hamburger shows. */
 
-@media (max-width: 1180px) {
-  .wp-navigation-item > a {
-    padding: 26px 18px 27px;
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 1260px) {
+@media (max-width: 1199px) {
   .wp-navigation {
     display: none;
   }
   .wp-user-control {
     margin-left: auto;
   }
-  .wp-menu-toggle {
+  .wp-menu-toggle,
+  .wp-user-control .wp-menu-toggle {
     display: inline-flex;
   }
 }
