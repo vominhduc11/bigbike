@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { toCanonicalUrl } from "@/lib/utils/routes";
 
-const DEFAULT_OG_IMAGE = "/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png";
+const DEFAULT_OG_IMAGE = "/wp/logo.png";
 const SITE_NAME = "BigBike";
 
 type PublicMetadataInput = {

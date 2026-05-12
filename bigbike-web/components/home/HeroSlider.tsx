@@ -45,7 +45,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
         </div>
         <div className="wp-hero-fallback-mark" aria-hidden="true">
           <Image
-            src="/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png"
+            src="/wp/logo.png"
             alt=""
             fill
             sizes="(max-width: 900px) 70vw, 42vw"

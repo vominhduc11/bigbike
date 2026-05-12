@@ -46,7 +46,7 @@ import {
 
 export const revalidate = 3600;
 
-const HOME_ORG_LOGO = "/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png";
+const HOME_ORG_LOGO = "/wp/logo.png";
 
 const HOME_FAQS = [
   {
@@ -118,84 +118,37 @@ function isRenderableHomeVideo(video: import("@/lib/contracts/public").HomeVideo
   return isSafeHomeVideoUrl(video.videoUrl);
 }
 
-function HomeTrustRail() {
-  const items = [
-    {
-      title: "100% Chính hãng",
-      sub: "Gear có nguồn gốc rõ, bảo hành theo hãng, cam kết chính hãng.",
-      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-17.svg",
-    },
-    {
-      title: "Giao hàng toàn quốc",
-      sub: "Ship nhanh toàn quốc, miễn phí từ 2 triệu, đóng gói chắc chắn.",
-      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-19.svg",
-    },
-    {
-      title: "Tư vấn kỹ — đáng tin",
-      sub: "Chọn mũ, áo giáp, găng tay theo xe, cung đường và nhu cầu thực.",
-      icon: "/brand/icons/SVG/DO/BIGBIKE_ICON-21.svg",
-    },
-  ];
-
-  return (
-    <section className="wp-feature-row" aria-label="Cam kết BigBike">
-      {items.map((item) => (
-        <div className="wp-feature-tile" key={item.title}>
-          <span className="wp-feat-icon" aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.icon} alt="" width="52" height="52" />
-          </span>
-          <span className="wp-feat-text">
-            <b>{item.title}</b>
-            <span>{item.sub}</span>
-          </span>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function WpCategoryImageCell({ category }: { category: Category }) {
+function WpCategoryListItem({ category }: { category: Category }) {
   const name = safeText(category.name, "Danh mục");
-  // Prefer uploaded image (real photo) over icon (SVG glyph).
-  // isIcon drives the CSS filter: icons get brightness(0) invert(1) to show as white
-  // silhouettes; real photos render with their natural colours.
   const imgAsset = category.image ?? category.icon;
-  const isIcon = !category.image && !!category.icon;
   const src = imgAsset?.url ? resolveMediaUrl(imgAsset.url.trim()) : null;
 
   return (
-    <Link href={toCategoryPath(category.slug)} className="wp-cat-img-cell">
-      {src ? (
-        <Image
-          src={src}
-          alt={safeText(imgAsset?.alt, name)}
-          fill
-          className={`wp-cat-img-cell-bg${isIcon ? " wp-cat-img-cell-bg--icon" : ""}`}
-          sizes="(max-width: 600px) 50vw, 25vw"
-        />
-      ) : (
-        <div className="wp-cat-img-fallback">
-          <span className="wp-cat-img-fallback-text">{name}</span>
-        </div>
-      )}
-      <div className="wp-cat-img-overlay" />
-      <div className="wp-cat-img-label">
-        <span>{name}</span>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 14 14"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M2.5 7h9M7 2.5l4.5 4.5-4.5 4.5" />
-        </svg>
-      </div>
+    <Link href={toCategoryPath(category.slug)} className="wp-cat-list-item">
+      <span className="wp-cat-list-img" aria-hidden="true">
+        {src ? (
+          <Image
+            src={src}
+            alt={safeText(imgAsset?.alt, name)}
+            width={90}
+            height={90}
+            sizes="(max-width: 600px) 70px, 90px"
+            style={{ width: 90, height: 90 }}
+          />
+        ) : null}
+      </span>
+      <span className="wp-cat-list-desc">{name}</span>
+      <svg
+        className="wp-cat-list-arrow"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="11" />
+        <path d="M10 7l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </Link>
   );
 }
@@ -312,7 +265,6 @@ export default async function HomePage() {
     settingsResult,
     featuredProductsResult,
     carouselProductsResult,
-    newArrivalsResult,
     homeVideosResult,
   ] = await Promise.all([
     listHomeSliders(),
@@ -323,7 +275,6 @@ export default async function HomePage() {
     listPublicSettings(),
     listProducts({ page: 1, filterFeatured: true, size: 12, sort: "homepageOrder:asc" }),
     listProducts({ page: 1, showOnHomepage: true, size: 10, sort: "homepageOrder:asc" }),
-    listProducts({ page: 1, size: 16, sort: "createdAt:desc" }),
     listHomeVideos(),
   ]);
 
@@ -333,31 +284,13 @@ export default async function HomePage() {
   const featuredIds = new Set(featuredProducts.map((p) => p.id));
   const carouselProducts = carouselProductsResult.data.filter((p) => !featuredIds.has(p.id));
 
-  // "Hàng mới về" — auto-curated products created within the last NEW_ARRIVAL_DAYS days.
-  // Hides itself if no recent products to avoid showing stale stock as "new".
-  const NEW_ARRIVAL_DAYS = 30;
-  const NEW_ARRIVAL_LIMIT = 8;
-  // eslint-disable-next-line react-hooks/purity -- server component, Date.now() is fine
-  const newArrivalCutoff = Date.now() - NEW_ARRIVAL_DAYS * 24 * 60 * 60 * 1000;
-  const homepageProductIds = new Set([
-    ...featuredProducts.map((p) => p.id),
-    ...carouselProducts.map((p) => p.id),
-  ]);
-  const newArrivalProducts = newArrivalsResult.data
-    .filter((p) => !homepageProductIds.has(p.id))
-    .filter((p) => {
-      const createdAtMs = Date.parse(p.createdAt);
-      return Number.isFinite(createdAtMs) && createdAtMs >= newArrivalCutoff;
-    })
-    .slice(0, NEW_ARRIVAL_LIMIT);
-
   const settings = settingsResult.data ?? [];
   const hotline = findSetting(settings, "hotline") || findSetting(settings, "phone");
   const promoTitle = findSetting(settings, "promo_title") || "LS2 DUAL SPORT MX436\nPIONEER";
   const promoOff = findSetting(settings, "promo_off") || "20% OFF";
   const promoHref = findSetting(settings, "promo_href") || toProductListPath();
   const promoImageSrc =
-    resolveMediaUrl(findSetting(settings, "promo_image_url").trim()) || "/banner-ads.jpg";
+    resolveMediaUrl(findSetting(settings, "promo_image_url").trim()) || "/wp/banner-ads.jpg";
   const aboutTitle = findSetting(settings, "about_title").trim();
   const aboutSubtitle = findSetting(settings, "about_subtitle").trim();
   const aboutContentHtml = findSetting(settings, "about_content_html").trim();
@@ -406,25 +339,10 @@ export default async function HomePage() {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdFaq }} />
 
-      {/* Block 1: Hero Banner */}
-      {/* H1 ở đây là sr-only cho SEO — tagline visible nằm dưới slider */}
+      {/* Block 1: Hero Banner — WP page-home.php main-banner swiper */}
+      {/* H1 ở đây là sr-only cho SEO — WP không có tagline strip */}
       <h1 className="bb-sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
-
-      {/* Tagline visible: nói rõ shop bán gì trong 3 giây đầu */}
-      {slides.length > 0 && (
-        <div className="wp-hero-tagline-strip" aria-hidden="true">
-          <span className="wp-hero-tagline-item">
-            <strong>BigBike</strong> — Shop đồ bảo hộ moto, phụ kiện touring
-          </span>
-          <span className="wp-hero-tagline-sep" aria-hidden="true">•</span>
-          <span className="wp-hero-tagline-item">100% chính hãng</span>
-          <span className="wp-hero-tagline-sep" aria-hidden="true">•</span>
-          <span className="wp-hero-tagline-item">Giao hàng toàn quốc</span>
-        </div>
-      )}
-
-      <HomeTrustRail />
 
       <div className="bb-container">
         {/* Block 2: Featured Products (ISR) */}
@@ -497,61 +415,32 @@ export default async function HomePage() {
         <section className="wp-products-section" aria-labelledby="home-products-heading">
           <div className="bb-container">
             <div className="wp-products-header">
-              <div>
-                <p className="wp-kicker">BIGBIKE TUYỂN CHỌN</p>
-                <h2 id="home-products-heading" className="wp-products-title">
-                  GỢI Ý DÀNH CHO BẠN
-                </h2>
-              </div>
-              <Link href={toProductListPath()} className="wp-view-all-link">
-                Xem tất cả →
-              </Link>
+              <p className="wp-kicker">SẢN PHẨM NỔI BẬT</p>
+              <h2 id="home-products-heading" className="wp-products-title">
+                SẢN PHẨM NỔI BẬT TẠI BIGBIKE
+              </h2>
             </div>
             <FeaturedProductsCarousel products={carouselProducts} />
+            {categoriesResult.data.length > 0 && (
+              <div className="wp-cat-list" aria-label="Danh mục sản phẩm">
+                {categoriesResult.data.map((cat) => (
+                  <WpCategoryListItem key={cat.id} category={cat} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {/* Block 4b: New Arrivals (auto-curated, last 30 days) — visual distinction via wp-new-arrivals-section */}
-      {newArrivalProducts.length > 0 && (
-        <section className="wp-products-section wp-new-arrivals-section" aria-labelledby="home-new-arrivals-heading">
+      {/* Block 5: Category Grid (standalone) — chỉ render khi KHÔNG có carousel sản phẩm để vẫn cho user thấy danh mục */}
+      {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
+        <section className="wp-products-section" aria-label="Danh mục sản phẩm">
           <div className="bb-container">
-            <div className="wp-products-header">
-              <div>
-                <p className="wp-kicker">MỚI CẬP NHẬT</p>
-                <h2 id="home-new-arrivals-heading" className="wp-products-title">
-                  HÀNG MỚI VỀ
-                </h2>
-              </div>
-              <Link href={`${toProductListPath()}?sort=createdAt:desc`} className="wp-view-all-link">
-                Xem tất cả →
-              </Link>
+            <div className="wp-cat-list">
+              {categoriesResult.data.map((cat) => (
+                <WpCategoryListItem key={cat.id} category={cat} />
+              ))}
             </div>
-            <FeaturedProductsCarousel products={newArrivalProducts} />
-          </div>
-        </section>
-      )}
-
-      {/* Block 5: Category Grid */}
-      {categoriesResult.data.length > 0 && (
-        <section className="wp-cat-section" aria-labelledby="home-cat-heading">
-          <div className="bb-container">
-            <div className="wp-cat-section-header">
-              <div>
-                <p className="wp-kicker">DANH MỤC SẢN PHẨM</p>
-                <h2 id="home-cat-heading" className="wp-cat-section-title">
-                  KHÁM PHÁ DANH MỤC
-                </h2>
-              </div>
-              <Link href={toProductListPath()} className="wp-view-all-link">
-                Xem tất cả →
-              </Link>
-            </div>
-          </div>
-          <div className="wp-cat-grid-img">
-            {categoriesResult.data.map((cat) => (
-              <WpCategoryImageCell key={cat.id} category={cat} />
-            ))}
           </div>
         </section>
       )}
@@ -661,9 +550,6 @@ export default async function HomePage() {
       {/* Block 10: Brand Carousel */}
       {brandsResult.data.length > 0 && (
         <section className="wp-brands-section" aria-label="Thương hiệu đối tác">
-          <div className="bb-container">
-            <p className="wp-kicker">THƯƠNG HIỆU ĐỐI TÁC</p>
-          </div>
           <BrandCarousel brands={brandsResult.data} />
         </section>
       )}

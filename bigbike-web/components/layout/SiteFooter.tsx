@@ -176,6 +176,7 @@ export async function SiteFooter() {
           </div>
         </section>
 
+        <div className="bb-footer-right">
         <section className="bb-footer-col">
           <h3>Danh mục</h3>
           <Link href={toProductListPath()} className="bb-footer-link">
@@ -305,16 +306,17 @@ export async function SiteFooter() {
             </div>
           ) : null}
         </section>
+        </div>
       </div>
 
       <div className="bb-footer-bottom">
         <div className="bb-container bb-footer-bottom-inner">
           <div className="bb-footer-bottom-logo">
             <Image
-              src="/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png"
+              src="/wp/logo-footer.png"
               alt="BigBike"
-              width={108}
-              height={36}
+              width={200}
+              height={66}
             />
           </div>
           <div className="bb-footer-bottom-copy">

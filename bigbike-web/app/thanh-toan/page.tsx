@@ -74,16 +74,9 @@ const PAYMENT_DESC: Record<string, string> = {
   bacs: "Chuyển khoản ngân hàng — thông tin TK gửi qua email sau khi đặt hàng.",
 };
 
-const STEPS = [
-  { n: 1, label: "Thông tin giao hàng", sub: "Địa chỉ · SĐT · tên" },
-  { n: 2, label: "Phương thức thanh toán", sub: "COD · chuyển khoản" },
-  { n: 3, label: "Xác nhận đặt hàng", sub: "Kiểm tra & hoàn tất" },
-];
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { refreshCount } = useCart();
-  const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [shippingMethodId, setShippingMethodId] = useState("");
   const [customerNote, setCustomerNote] = useState("");
@@ -133,6 +126,14 @@ export default function CheckoutPage() {
       setSubmitError("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
       return;
     }
+    if (!paymentMethod) {
+      setSubmitError("Vui lòng chọn phương thức thanh toán.");
+      return;
+    }
+    if (!shippingMethodId) {
+      setSubmitError("Vui lòng chọn phương thức vận chuyển.");
+      return;
+    }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -165,7 +166,6 @@ export default function CheckoutPage() {
     }
   }
 
-  const selectedPayment = checkoutOptions?.paymentMethods.find((m) => m.code === paymentMethod);
   const selectedShipping = checkoutOptions?.shippingMethods.find((m) => m.id === shippingMethodId);
 
   if (cartLoading && optionsLoading && !cart) {
@@ -187,52 +187,32 @@ export default function CheckoutPage() {
         <span className="sep">/</span>
         <Link href={toCartPath()}>Giỏ hàng</Link>
         <span className="sep">/</span>
-        <span>Đặt hàng</span>
+        <span>Thanh toán</span>
       </div>
 
-      <div className="wp-page-head">
-        <span className="kicker">Bước {step} / 3 · An toàn &amp; bảo mật</span>
-        <h1>Hoàn tất đơn hàng</h1>
-      </div>
+      <div className="wp-checkout-page bb-container">
+        <div className="wp-cart-title-row">
+          <h1>Thanh toán</h1>
+        </div>
 
-      <div className="wp-checkout-layout">
-        {/* Left: form with stepper */}
-        <div>
-          {/* Stepper */}
-          <div className="wp-stepper">
-            {STEPS.map((s) => (
-              <div
-                key={s.n}
-                className={`wp-step${step === s.n ? " active" : ""}${step > s.n ? " done" : ""}`}
-                onClick={() => step > s.n && setStep(s.n)}
-                style={{ cursor: step > s.n ? "pointer" : "default" }}
-              >
-                <div className="wp-step-num">
-                  {step > s.n ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  ) : s.n}
-                </div>
-                <div className="wp-step-label">
-                  {s.label}
-                  <span>{s.sub}</span>
-                </div>
+        <form
+          name="checkout"
+          className="wp-checkout-form-1page"
+          onSubmit={handleSubmit(placeOrder)}
+          noValidate
+        >
+          <div className="wp-cart-grid">
+            {/* LEFT: customer details + payment + shipping */}
+            <div className="wp-cart-main">
+              <div className="wp-checkout-title-bar">
+                <h3>THANH TOÁN</h3>
               </div>
-            ))}
-          </div>
 
-          {/* Step 1: Shipping info */}
-          {step === 1 && (
-            <form
-              onSubmit={handleSubmit(() => setStep(2))}
-              noValidate
-            >
-              <div className="wp-checkout-section">
-                <h3>
-                  Thông tin người nhận
-                  <span className="badge">Bắt buộc</span>
-                </h3>
+              <div className="wp-checkout-step-block">
+                <div className="wp-checkout-step-title">
+                  <h3><span><b>1</b></span> Thông tin giao hàng</h3>
+                </div>
+
                 <div className="wp-form-grid">
                   <div className="wp-field">
                     <label>Họ và tên <span className="req">*</span></label>
@@ -273,12 +253,7 @@ export default function CheckoutPage() {
                       <p className="wp-field-error">{addressErrors.email.message}</p>
                     )}
                   </div>
-                </div>
-              </div>
 
-              <div className="wp-checkout-section">
-                <h3>Địa chỉ giao hàng</h3>
-                <div className="wp-form-grid">
                   <VnAddressFields
                     value={{
                       province: address.province ?? "",
@@ -293,6 +268,7 @@ export default function CheckoutPage() {
                       {addressErrors.province?.message ?? addressErrors.district?.message}
                     </p>
                   )}
+
                   <div className="wp-field full">
                     <label>Địa chỉ chi tiết <span className="req">*</span></label>
                     <input
@@ -304,11 +280,12 @@ export default function CheckoutPage() {
                       <p className="wp-field-error">{addressErrors.addressLine1.message}</p>
                     )}
                   </div>
+
                   <div className="wp-field full">
-                    <label>Ghi chú cho shipper</label>
+                    <label>Ghi chú đơn hàng (tuỳ chọn)</label>
                     <textarea
                       className="wp-input wp-textarea-resize"
-                      style={{ minHeight: 64, fontFamily: "inherit" }}
+                      style={{ minHeight: 80, fontFamily: "inherit" }}
                       placeholder="Ví dụ: gọi trước khi giao 15 phút..."
                       value={customerNote}
                       onChange={(e) => setCustomerNote(e.target.value)}
@@ -317,23 +294,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="wp-checkout-nav">
-                <Link href={toCartPath()} className="wp-link-back">← Quay lại giỏ hàng</Link>
-                <button type="submit" className="wp-btn-primary wp-btn-wide">
-                  Tiếp tục → Thanh toán
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Step 2: Payment + Shipping */}
-          {step === 2 && (
-            <>
-              <div className="wp-checkout-section">
-                <h3>
-                  Phương thức thanh toán
-                  <span className="badge">02</span>
-                </h3>
+              <div className="wp-checkout-step-block">
+                <div className="wp-checkout-step-title">
+                  <h3><span><b>2</b></span> Phương thức thanh toán</h3>
+                </div>
                 {optionsLoading ? (
                   <MiniRadioStackSkeleton rows={3} />
                 ) : checkoutOptions?.paymentMethods.length ? (
@@ -369,11 +333,10 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div className="wp-checkout-section">
-                <h3>
-                  Phương thức vận chuyển
-                  <span className="badge">03</span>
-                </h3>
+              <div className="wp-checkout-step-block">
+                <div className="wp-checkout-step-title">
+                  <h3><span><b>3</b></span> Phương thức vận chuyển</h3>
+                </div>
                 {optionsLoading ? (
                   <MiniRadioStackSkeleton rows={2} />
                 ) : checkoutOptions?.shippingMethods.length ? (
@@ -405,91 +368,6 @@ export default function CheckoutPage() {
                   </p>
                 )}
               </div>
-
-              <div className="wp-checkout-nav">
-                <button type="button" className="wp-link-back" onClick={() => setStep(1)}>
-                  ← Quay lại giao hàng
-                </button>
-                <button
-                  type="button"
-                  className="wp-btn-primary wp-btn-wide"
-                  disabled={!paymentMethod || !shippingMethodId}
-                  onClick={() => setStep(3)}
-                >
-                  Tiếp tục → Xác nhận
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Review & confirm */}
-          {step === 3 && (
-            <>
-              <div className="wp-checkout-section">
-                <h3>Giao đến</h3>
-                <div className="wp-checkout-address">
-                  <b>{address.fullName}</b>
-                  {" · "}{address.phone}
-                  <br />
-                  {[address.addressLine1, address.ward, address.district, address.province]
-                    .filter(Boolean)
-                    .join(", ")}
-                </div>
-                <button
-                  type="button"
-                  className="wp-link-back wp-edit-trigger"
-                  onClick={() => setStep(1)}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>{" "}
-                  Chỉnh sửa
-                </button>
-              </div>
-
-              <div className="wp-checkout-section">
-                <h3>Phương thức thanh toán</h3>
-                <div className="wp-checkout-pay-row">
-                  <span className={`wp-pay-logo ${paymentMethod}`}>
-                    {paymentMethod.toUpperCase()}
-                  </span>
-                  <span>{selectedPayment?.title ?? paymentMethod}</span>
-                </div>
-                {selectedShipping && (
-                  <p className="wp-muted-text wp-edit-trigger">
-                    Vận chuyển: {selectedShipping.title}
-                    {selectedShipping.cost === 0 ? " — Miễn phí" : ` — ${formatVnd(selectedShipping.cost)}`}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  className="wp-link-back wp-edit-trigger"
-                  onClick={() => setStep(2)}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>{" "}
-                  Chỉnh sửa
-                </button>
-              </div>
-
-              {cart && cart.items.length > 0 && (
-                <div className="wp-checkout-section">
-                  <h3>Sản phẩm ({cart.items.reduce((s, it) => s + it.quantity, 0)})</h3>
-                  {cart.items.map((item) => (
-                    <div key={item.id} className="wp-mini-item">
-                      <MiniCartThumb item={item} />
-                      <div className="wp-mini-body">
-                        <p className="name">{item.productName}</p>
-                        {item.variantName && <p className="variant">{item.variantName}</p>}
-                      </div>
-                      <span className="wp-mini-price">{formatVnd(item.lineTotal)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               <div className="wp-terms-notice">
                 Bằng việc đặt hàng, bạn đồng ý với{" "}
@@ -523,80 +401,94 @@ export default function CheckoutPage() {
 
               {submitError && <p className="wp-error-text">{submitError}</p>}
 
-              <div className="wp-checkout-nav">
-                <button type="button" className="wp-link-back" onClick={() => setStep(2)}>
-                  ← Quay lại
-                </button>
+              <div className="wp-checkout-1page-actions">
+                <Link href={toCartPath()} className="wp-cart-continue">
+                  <span aria-hidden="true">‹</span> QUAY LẠI GIỎ HÀNG
+                </Link>
                 <button
-                  type="button"
-                  className="wp-btn-primary wp-btn-wide"
-                  disabled={submitting || cartLoading}
-                  onClick={placeOrder}
+                  type="submit"
+                  className="wp-cart-checkout-btn"
+                  disabled={submitting || cartLoading || !cart?.items.length}
                 >
                   {submitting
-                    ? "Đang đặt hàng..."
+                    ? "ĐANG ĐẶT HÀNG..."
                     : cart
-                      ? `Đặt hàng · ${formatVnd(cart.totals.totalAmount)}`
-                      : "Đặt hàng"}
+                      ? `ĐẶT HÀNG · ${formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}`
+                      : "ĐẶT HÀNG"}
                 </button>
               </div>
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Right: order summary (always visible) */}
-        <div className="wp-order-summary">
-          <h3>Đơn hàng của bạn</h3>
-
-          {cartLoading ? (
-            <MiniSummarySkeleton />
-          ) : !cart || cart.items.length === 0 ? (
-            <>
-              <p className="wp-loading-text" style={{ marginBottom: 12 }}>Giỏ hàng trống.</p>
-              <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link>
-            </>
-          ) : (
-            <>
-              {cart.items.map((item) => (
-                <div key={item.id} className="wp-mini-item">
-                  <MiniCartThumb item={item} />
-                  <div className="wp-mini-body">
-                    <p className="name">{item.productName}</p>
-                    {item.variantName && <p className="variant">{item.variantName}</p>}
-                  </div>
-                  <span className="wp-mini-price">{formatVnd(item.lineTotal)}</span>
+            {/* RIGHT: order review (sticky) */}
+            <aside className="wp-cart-side">
+              <div className="wp-checkout-summary-card">
+                <div className="wp-checkout-summary-title">
+                  <h3>Thông tin đơn đặt hàng</h3>
                 </div>
-              ))}
 
-              <div className="wp-summary-row" style={{ marginTop: 8 }}>
-                <span>Tạm tính</span>
-                <b>{formatVnd(cart.totals.subtotalAmount)}</b>
+                {cartLoading ? (
+                  <MiniSummarySkeleton />
+                ) : !cart || cart.items.length === 0 ? (
+                  <>
+                    <p style={{ marginBottom: 12, color: "var(--bb-text-muted)" }}>Giỏ hàng trống.</p>
+                    <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link>
+                  </>
+                ) : (
+                  <>
+                    <div className="wp-checkout-mini-list">
+                      {cart.items.map((item) => (
+                        <div key={item.id} className="wp-mini-item">
+                          <MiniCartThumb item={item} />
+                          <div className="wp-mini-body">
+                            <p className="name">{item.productName}</p>
+                            {item.variantName && <p className="variant">{item.variantName}</p>}
+                          </div>
+                          <span className="wp-mini-price">{formatVnd(item.lineTotal)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="wp-cart-summary" style={{ padding: 0, border: "none", marginTop: 12 }}>
+                      <div className="wp-cart-summary-row">
+                        <p>Tạm tính:</p>
+                        <p><b>{formatVnd(cart.totals.subtotalAmount)}</b></p>
+                      </div>
+                      {cart.couponCodes && cart.couponCodes.length > 0 && (
+                        <div className="wp-cart-summary-row">
+                          <p>Mã giảm giá:</p>
+                          <p><b>{cart.couponCodes.join(", ")}</b></p>
+                        </div>
+                      )}
+                      {cart.totals.discountAmount > 0 && (
+                        <div className="wp-cart-summary-row discount">
+                          <p>Giảm giá:</p>
+                          <p className="discount"><b>−{formatVnd(cart.totals.discountAmount)}</b></p>
+                        </div>
+                      )}
+                      <div className="wp-cart-summary-row">
+                        <p>Phí vận chuyển:</p>
+                        <p>
+                          {selectedShipping && selectedShipping.cost > 0
+                            ? <b>{formatVnd(selectedShipping.cost)}</b>
+                            : <span className="wp-cart-ship-note">Miễn phí</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="wp-cart-total-summary" style={{ marginTop: 12 }}>
+                      <div className="wp-cart-summary-row">
+                        <p>Tổng:</p>
+                        <p className="wp-cart-total-price">
+                          <b>{formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}</b>
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              {cart.couponCodes && cart.couponCodes.length > 0 && (
-                <div className="wp-summary-row" style={{ fontSize: "0.85em", color: "var(--c-success, #16a34a)" }}>
-                  <span>Mã giảm giá</span>
-                  <b>{cart.couponCodes.join(", ")}</b>
-                </div>
-              )}
-              {cart.totals.discountAmount > 0 && (
-                <div className="wp-summary-row discount">
-                  <span>Giảm giá</span>
-                  <b>−{formatVnd(cart.totals.discountAmount)}</b>
-                </div>
-              )}
-              {selectedShipping && selectedShipping.cost > 0 && (
-                <div className="wp-summary-row">
-                  <span>Vận chuyển</span>
-                  <b>{formatVnd(selectedShipping.cost)}</b>
-                </div>
-              )}
-              <div className="wp-summary-total">
-                <span>Tổng thanh toán</span>
-                <b>{formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}</b>
-              </div>
-            </>
-          )}
-        </div>
+            </aside>
+          </div>
+        </form>
       </div>
     </>
   );

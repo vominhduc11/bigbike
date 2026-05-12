@@ -1,27 +1,70 @@
 import Link from "next/link";
+import { PageHero } from "@/components/layout/PageHero";
+import { ArticleCard } from "@/components/content/ArticleCard";
+import { listArticles } from "@/lib/api/public-api";
+import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 
-export default function NotFoundPage() {
+export const revalidate = 3600;
+
+export default async function NotFoundPage() {
+  const recentResult = await listArticles({ page: 1, size: 3, sort: "publishedAt:desc" });
+  const recent = recentResult.data ?? [];
+
   return (
-    <section className="bb-page">
+    <section className="bb-page wp-404-page">
+      <PageHero
+        title="Xin lỗi, nội dung bạn tìm kiếm không còn tồn tại có thể nội dung đã cũ hoặc bị xóa."
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "404" },
+        ]}
+      />
       <div className="bb-container">
-        <section className="bb-empty-state">
-          <h1>Không tìm thấy trang</h1>
-          <p>URL có thể đã thay đổi hoặc nội dung chưa được publish.</p>
-          <div className="bb-not-found-nav">
-            <Link href="/" className="bb-button bb-button-primary">
+        <div className="wp-404-inner">
+          <p className="wp-404-lead">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
+
+          <form
+            action={toProductListPath()}
+            method="get"
+            className="wp-404-search"
+            role="search"
+            aria-label="Tìm kiếm sản phẩm"
+          >
+            <input
+              type="search"
+              name="q"
+              placeholder="Tìm sản phẩm, thương hiệu..."
+              className="wp-404-search-input"
+              aria-label="Từ khoá tìm kiếm"
+            />
+            <button type="submit" className="bb-button bb-button-primary wp-404-search-btn">
+              TÌM KIẾM
+            </button>
+          </form>
+
+          <div className="wp-404-nav">
+            <Link href={toHomePath()} className="bb-button bb-button-primary">
               VỀ TRANG CHỦ
             </Link>
-            <Link href="/san-pham/" className="bb-button bb-button-secondary">
+            <Link href={toProductListPath()} className="bb-button bb-button-secondary">
               XEM SẢN PHẨM
             </Link>
-            <Link href="/danh-muc-san-pham/" className="bb-button bb-button-secondary">
-              DANH MỤC
-            </Link>
-            <Link href="/lien-he/" className="bb-button bb-button-secondary">
-              LIÊN HỆ
+            <Link href={toArticleListPath()} className="bb-button bb-button-secondary">
+              ĐỌC TIN TỨC
             </Link>
           </div>
-        </section>
+
+          {recent.length > 0 && (
+            <section className="wp-404-recent" aria-label="Bài viết mới">
+              <h2 className="wp-404-recent-title">BÀI VIẾT MỚI</h2>
+              <div className="wp-news-grid">
+                {recent.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </section>
   );

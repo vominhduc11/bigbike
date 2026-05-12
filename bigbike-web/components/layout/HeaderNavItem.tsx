@@ -18,44 +18,74 @@ function isNodeActive(pathname: string | null, node: HeaderNavNode): boolean {
   return node.children.some((child) => isNodeActive(pathname, child));
 }
 
-function ChevronIcon() {
+function SubMenu({
+  nodes,
+  onItemClick,
+  pathname,
+  nested = false,
+}: {
+  nodes: HeaderNavNode[];
+  onItemClick: () => void;
+  pathname: string | null;
+  nested?: boolean;
+}) {
   return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
+    <ul className={nested ? "wp-sub-menu wp-sub-menu-nested" : "wp-sub-menu"}>
+      {nodes.map((child) => {
+        const hasChildren = child.children.length > 0;
+        const active = isNodeActive(pathname, child);
+        return (
+          <li
+            key={child.id}
+            className={
+              "wp-sub-menu-item" +
+              (hasChildren ? " wp-sub-menu-item-has-children" : "") +
+              (active ? " active" : "")
+            }
+          >
+            <Link
+              href={normalizeMenuUrl(child.url)}
+              target={child.openInNewTab ? "_blank" : undefined}
+              rel={child.openInNewTab ? "noreferrer" : undefined}
+              onClick={onItemClick}
+            >
+              {child.label}
+            </Link>
+            {hasChildren && (
+              <SubMenu
+                nodes={child.children}
+                onItemClick={onItemClick}
+                pathname={pathname}
+                nested
+              />
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-const megaMenuDelay: [number, number] = [80, 120];
+const menuDelay: [number, number] = [80, 160];
 
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
   const href = normalizeMenuUrl(node.url);
   const hasChildren = node.children.length > 0;
   const active = isNodeActive(pathname, node);
-  const linkClass = ["wp-nav-link", node.cssClass, active ? "active" : null]
+  const linkClass = [node.cssClass, active ? "active" : null]
     .filter(Boolean)
     .join(" ");
 
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLAnchorElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLLIElement>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathnameRef = useRef(pathname);
-  const panelId = useId();
+  const menuId = useId();
 
-  const clearMegaTimers = useCallback(() => {
+  const clearTimers = useCallback(() => {
     if (openTimerRef.current) {
       clearTimeout(openTimerRef.current);
       openTimerRef.current = null;
@@ -68,121 +98,71 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   const openMenu = useCallback(
     (immediate = false) => {
-      clearMegaTimers();
+      clearTimers();
       if (immediate) {
         setOpen(true);
         return;
       }
-      openTimerRef.current = setTimeout(() => setOpen(true), megaMenuDelay[0]);
+      openTimerRef.current = setTimeout(() => setOpen(true), menuDelay[0]);
     },
-    [clearMegaTimers],
+    [clearTimers],
   );
 
   const closeMenu = useCallback(() => {
-    clearMegaTimers();
+    clearTimers();
     setOpen(false);
-  }, [clearMegaTimers]);
+  }, [clearTimers]);
 
   const scheduleCloseMenu = useCallback(() => {
-    clearMegaTimers();
-    closeTimerRef.current = setTimeout(() => setOpen(false), megaMenuDelay[1]);
-  }, [clearMegaTimers]);
+    clearTimers();
+    closeTimerRef.current = setTimeout(() => setOpen(false), menuDelay[1]);
+  }, [clearTimers]);
 
   useEffect(() => {
     if (pathnameRef.current === pathname) return;
     pathnameRef.current = pathname;
-    clearMegaTimers();
-    const closeRouteMenuTimer = window.setTimeout(() => setOpen(false), 0);
-    return () => window.clearTimeout(closeRouteMenuTimer);
-  }, [pathname, clearMegaTimers]);
+    clearTimers();
+    setOpen(false);
+  }, [pathname, clearTimers]);
 
-  useEffect(() => () => clearMegaTimers(), [clearMegaTimers]);
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (triggerRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
+      if (wrapperRef.current?.contains(target)) return;
       closeMenu();
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open, closeMenu]);
 
-  function closeMenuReturnFocus() {
-    closeMenu();
-    triggerRef.current?.focus();
-  }
-
   if (!hasChildren) {
     return (
-      <Link
-        href={href}
-        className={linkClass}
-        target={node.openInNewTab ? "_blank" : undefined}
-        rel={node.openInNewTab ? "noreferrer" : undefined}
-        aria-current={active ? "page" : undefined}
-      >
-        {node.label}
-      </Link>
+      <li className={"wp-navigation-item" + (active ? " active" : "")}>
+        <Link
+          href={href}
+          className={linkClass || undefined}
+          target={node.openInNewTab ? "_blank" : undefined}
+          rel={node.openInNewTab ? "noreferrer" : undefined}
+          aria-current={active ? "page" : undefined}
+        >
+          {node.label}
+        </Link>
+      </li>
     );
   }
 
-  const megaPanel = (
-    <div
-      id={panelId}
-      ref={panelRef}
-      className="wp-mega-panel"
-      role="menu"
-      aria-label={node.label}
-      aria-hidden={!open}
-      data-open={open ? "true" : "false"}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          event.stopPropagation();
-          closeMenuReturnFocus();
-        }
-      }}
-    >
-      <div className="bb-container wp-mega-panel-inner">
-        {node.children.map((column) => (
-          <div key={column.id} className="wp-mega-column">
-            <Link
-              href={normalizeMenuUrl(column.url)}
-              className="wp-mega-column-title"
-              role="menuitem"
-              onClick={closeMenu}
-            >
-              {column.label}
-            </Link>
-            {column.children.length > 0 && (
-              <ul className="wp-mega-sublist">
-                {column.children.map((leaf) => (
-                  <li key={leaf.id}>
-                    <Link
-                      href={normalizeMenuUrl(leaf.url)}
-                      className="wp-mega-sublink"
-                      role="menuitem"
-                      onClick={closeMenu}
-                    >
-                      {leaf.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div
-      className="wp-nav-item-has-children"
+    <li
+      ref={wrapperRef}
+      className={
+        "wp-navigation-item wp-navigation-item-has-children" +
+        (active ? " active" : "") +
+        (open ? " open" : "")
+      }
       onMouseEnter={() => openMenu()}
       onMouseLeave={scheduleCloseMenu}
       onFocusCapture={() => openMenu(true)}
@@ -197,14 +177,13 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       <Link
         ref={triggerRef}
         href={href}
-        className={linkClass}
+        className={linkClass || undefined}
         target={node.openInNewTab ? "_blank" : undefined}
         rel={node.openInNewTab ? "noreferrer" : undefined}
         aria-current={active ? "page" : undefined}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={panelId}
-        onClick={closeMenu}
+        aria-controls={menuId}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.preventDefault();
@@ -215,24 +194,17 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
             event.preventDefault();
             openMenu(true);
             window.setTimeout(() => {
-              const firstLink = panelRef.current?.querySelector<HTMLAnchorElement>("a");
+              const firstLink = wrapperRef.current?.querySelector<HTMLAnchorElement>(".wp-sub-menu a");
               firstLink?.focus();
             }, 20);
           }
         }}
       >
-        <span>{node.label}</span>
-        <ChevronIcon />
+        {node.label}
       </Link>
-      <div
-        className="wp-mega-tippy"
-        data-bigbike-mega="true"
-        data-open={open ? "true" : "false"}
-        onMouseEnter={() => openMenu(true)}
-        onMouseLeave={scheduleCloseMenu}
-      >
-        {megaPanel}
+      <div id={menuId} aria-hidden={!open} data-open={open ? "true" : "false"}>
+        <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
       </div>
-    </div>
+    </li>
   );
 }

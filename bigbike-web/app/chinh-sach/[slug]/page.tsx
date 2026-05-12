@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHero } from "@/components/layout/PageHero";
+import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -87,14 +88,15 @@ export default async function PolicyPage({ params }: Props) {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container">
-        <article
-          className="bb-richtext bb-section"
-          dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-        />
-        <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
-          Cập nhật {formatDate(page.updatedAt)}
-        </p>
+      <div className="bb-container wp-static-layout">
+        <PolicySidebar activeHref={`/chinh-sach/${slug}`} title="CHÍNH SÁCH" />
+        <div className="wp-static-content">
+          <article
+            className="bb-richtext"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+          />
+          <p className="wp-about-updated">Cập nhật {formatDate(page.updatedAt)}</p>
+        </div>
       </div>
     </section>
   );

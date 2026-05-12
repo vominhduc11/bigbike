@@ -1,7 +1,9 @@
 "use client";
 
-import useEmblaCarousel from "embla-carousel-react";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import type { Swiper as SwiperType } from "swiper";
+import "swiper/css";
 import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -12,12 +14,11 @@ function PlayIcon() {
   return (
     <svg
       className="wp-video-play-icon"
-      viewBox="0 0 64 64"
-      fill="none"
+      viewBox="0 0 14 16"
+      fill="currentColor"
       aria-hidden="true"
     >
-      <circle cx="32" cy="32" r="32" fill="rgba(0,0,0,0.55)" />
-      <polygon points="26,20 26,44 48,32" fill="white" />
+      <polygon points="1,1 1,15 13,8" />
     </svg>
   );
 }
@@ -151,7 +152,7 @@ function VideoCard({
             alt={safeText(video.thumbnail?.alt, title)}
             fill
             className="wp-video-thumb"
-            sizes="(max-width: 600px) 80vw, 33vw"
+            sizes="(max-width: 600px) 100vw, (max-width: 767px) 50vw, 33vw"
             onError={() => setImgError(true)}
           />
         ) : video.videoUrl ? (
@@ -170,7 +171,9 @@ function VideoCard({
         )}
         <PlayIcon />
       </div>
-      <p className="wp-video-card-title">{title}</p>
+      <div className="wp-video-card-desc">
+        <p className="wp-video-card-title">{title}</p>
+      </div>
     </button>
   );
 }
@@ -178,94 +181,87 @@ function VideoCard({
 export function HomeVideoCarousel({ videos }: Props) {
   const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   const handleOpen = useCallback((video: HomeVideo, el: HTMLButtonElement) => {
     triggerRef.current = el;
     setActiveVideo(video);
   }, []);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    align: "start",
-    containScroll: "trimSnaps",
-  });
-
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
-  const scrollTo = useCallback((idx: number) => emblaApi?.scrollTo(idx), [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
-    const onReInit = () => setScrollSnaps(emblaApi.scrollSnapList());
-    onSelect();
-    onReInit();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onReInit);
-    return () => {
-      emblaApi.off("select", onSelect);
-      emblaApi.off("reInit", onReInit);
-    };
-  }, [emblaApi]);
-
   if (videos.length === 0) return null;
 
-  const showControls = videos.length > 2;
-  const isLastSnap = selectedIndex >= scrollSnaps.length - 1;
+  const showControls = videos.length > 1;
+  const loopEnabled = videos.length > 1;
 
   return (
     <>
       <div className="wp-video-carousel">
-        <div className="wp-video-carousel-vp" ref={emblaRef}>
-          <div className="wp-video-carousel-track">
+        <div className="wp-video-carousel-vp">
+          <Swiper
+            onSwiper={(s) => {
+              swiperRef.current = s;
+              setSelectedIndex(s.realIndex);
+            }}
+            onSlideChange={(s) => {
+              setSelectedIndex(s.realIndex);
+            }}
+            loop={loopEnabled}
+            speed={1000}
+            slidesPerView={1}
+            spaceBetween={0}
+            breakpoints={{
+              600: { slidesPerView: 2, spaceBetween: 20 },
+              767: { slidesPerView: 3, spaceBetween: 30 },
+            }}
+          >
             {videos.map((video) => (
-              <div key={video.id} className="wp-video-carousel-slide">
+              <SwiperSlide key={video.id} className="wp-video-carousel-slide">
                 <VideoCard
                   video={video}
                   onOpen={(el) => handleOpen(video, el)}
                 />
-              </div>
+              </SwiperSlide>
             ))}
-          </div>
+          </Swiper>
         </div>
         {showControls && (
           <>
             <button
               type="button"
               className="wp-slider-btn wp-slider-prev"
-              onClick={scrollPrev}
+              onClick={() => swiperRef.current?.slidePrev()}
               aria-label="Video trước"
-              disabled={selectedIndex === 0}
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M11.5 3.5L6 9l5.5 5.5" />
+              <svg viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 2 L4 22 L22 42" />
               </svg>
             </button>
             <button
               type="button"
               className="wp-slider-btn wp-slider-next"
-              onClick={scrollNext}
+              onClick={() => swiperRef.current?.slideNext()}
               aria-label="Video tiếp"
-              disabled={isLastSnap}
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6.5 3.5L12 9l-5.5 5.5" />
+              <svg viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 2 L23 22 L5 42" />
               </svg>
             </button>
           </>
         )}
       </div>
 
-      {showControls && scrollSnaps.length > 1 && (
+      {showControls && videos.length > 1 && (
         <div className="wp-video-dots" aria-label="Chuyển slide video">
-          {scrollSnaps.map((_, idx) => (
+          {videos.map((_, idx) => (
             <button
               key={idx}
               type="button"
               className={`wp-video-dot${idx === selectedIndex ? " is-active" : ""}`}
-              onClick={() => scrollTo(idx)}
+              onClick={() => {
+                if (loopEnabled) swiperRef.current?.slideToLoop(idx);
+                else swiperRef.current?.slideTo(idx);
+              }}
               aria-label={`Đến slide ${idx + 1}`}
               aria-current={idx === selectedIndex ? "true" : undefined}
             />

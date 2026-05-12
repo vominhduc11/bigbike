@@ -1,272 +1,236 @@
 /**
  * BigBike Brand Tokens
- * Source of truth for BigBike UI styling.
+ * Source: C:\Users\vomin\Downloads\DESIGN.md
  *
- * Brand:
- * - BIG BIKE SHOP
- * - Primary color: #F90606
- * - Dark-first, rugged, biker/motorcycle commerce identity
- *
- * Usage:
- * - Import this file once in the global stylesheet.
- * - Do not hardcode brand colors inside components.
- * - Use semantic tokens for UI decisions.
+ * Dark-first, high-contrast, sharp-edged commerce UI.
+ * Fonts are loaded in app/layout.tsx through next/font.
  */
 
 :root {
-  /* ============================================================
-   * 1. Brand Primitives
-   * ============================================================ */
-
-  --bb-color-red-50: #fff1f1;
-  --bb-color-red-100: #ffdede;
+  /* Color primitives */
+  --bb-color-red-50: #fff4f3;
+  --bb-color-red-100: #ffe8e6;
   --bb-color-red-200: #ffbcbc;
   --bb-color-red-300: #ff8b8b;
   --bb-color-red-400: #ff4d4d;
-  --bb-color-red-500: #f90606;
-  --bb-color-red-600: #d90404;
-  --bb-color-red-700: #b80303;
-  --bb-color-red-800: #8f0202;
+  --bb-color-red-500: #ff0c09;
+  --bb-color-red-600: #e50a07;
+  --bb-color-red-700: #cc0906;
+  --bb-color-red-800: #970505;
   --bb-color-red-900: #610101;
 
-  --bb-color-black: #0a0a0a;
-  --bb-color-dark: #191919;
-  --bb-color-dark-2: #141414;
+  --bb-color-blue: #007bff;
+  --bb-color-blue-hover: #0056b3;
+  --bb-color-cyan: #00bfff;
+  --bb-color-cyan-hover: #0099cc;
+  --bb-color-orange: #ff6900;
+  --bb-color-warning: #fcb900;
+  --bb-color-green: #778866;
+  --bb-color-purple: #660055;
+  --bb-color-pink: #f78da7;
+  --bb-color-magenta: #f78da7;
+
+  --bb-color-black: #000000;
+  --bb-color-dark: #1a1a1a;
+  --bb-color-dark-2: #333322;
   --bb-color-dark-3: #202020;
   --bb-color-dark-4: #292929;
-
-  --bb-color-gray-50: #f7f7f8;
+  --bb-color-gray-50: #f5f5f5;
   --bb-color-gray-100: #eeeeef;
-  --bb-color-gray-200: #d8d8db;
-  --bb-color-gray-300: #b8b8be;
-  --bb-color-gray-400: #9a9aa2;
-  --bb-color-gray-500: #818189;
-  --bb-color-gray-600: #66666d;
-  --bb-color-gray-700: #333333;
+  --bb-color-gray-200: #dddddd;
+  --bb-color-gray-300: #cecece;
+  --bb-color-gray-400: #abb8c3;
+  --bb-color-gray-500: #6f6f6f;
+  --bb-color-gray-600: #6f6f6f;
+  --bb-color-gray-700: #333322;
   --bb-color-gray-800: #242424;
   --bb-color-gray-900: #171717;
-
   --bb-color-white: #ffffff;
 
-  --bb-color-orange: #f99d1c;
-  --bb-color-magenta: #e1058c;
-  --bb-color-blue: #20c4f4;
-  --bb-color-green: #62bb46;
-
-  /* ============================================================
-   * 2. Semantic Colors
-   * ============================================================ */
-
+  /* Semantic color */
   --bb-brand-primary: var(--bb-color-red-500);
   --bb-brand-primary-hover: var(--bb-color-red-600);
   --bb-brand-primary-active: var(--bb-color-red-700);
-  --bb-brand-primary-soft: rgba(249, 6, 6, 0.12);
-  --bb-brand-primary-border: rgba(249, 6, 6, 0.36);
+  --bb-brand-primary-soft: rgba(255, 12, 9, 0.08);
+  --bb-brand-primary-border: rgba(255, 12, 9, 0.36);
+
+  --bb-action-secondary: var(--bb-color-blue);
+  --bb-action-secondary-hover: var(--bb-color-blue-hover);
 
   --bb-bg-page: var(--bb-color-black);
-  --bb-bg-section: var(--bb-color-dark);
-  --bb-bg-surface: var(--bb-color-dark-2);
-  --bb-bg-surface-raised: var(--bb-color-dark-3);
-  --bb-bg-surface-hover: var(--bb-color-dark-4);
-  --bb-bg-inverse: var(--bb-color-white);
+  --bb-bg-section: var(--bb-color-black);
+  --bb-bg-surface: var(--bb-color-white);
+  --bb-bg-surface-raised: var(--bb-color-gray-50);
+  --bb-bg-surface-hover: var(--bb-color-red-50);
+  --bb-bg-inverse: var(--bb-color-black);
 
-  --bb-text-primary: rgba(255, 255, 255, 0.96);
-  --bb-text-secondary: rgba(255, 255, 255, 0.74);
-  --bb-text-muted: rgba(255, 255, 255, 0.56);
-  --bb-text-disabled: rgba(255, 255, 255, 0.36);
-  --bb-text-inverse: #111111;
+  --bb-text-primary: var(--bb-color-white);
+  --bb-text-secondary: var(--bb-color-gray-300);
+  --bb-text-muted: var(--bb-color-gray-400);
+  --bb-text-disabled: var(--bb-color-gray-300);
+  --bb-text-inverse: var(--bb-color-black);
+  --bb-text-inverse-secondary: var(--bb-color-dark-2);
+  --bb-text-inverse-muted: var(--bb-color-gray-500);
   --bb-text-brand: var(--bb-brand-primary);
+  --bb-text-link: var(--bb-color-blue);
 
-  --bb-border-subtle: rgba(255, 255, 255, 0.10);
-  --bb-border-default: rgba(255, 255, 255, 0.16);
-  --bb-border-strong: rgba(255, 255, 255, 0.28);
+  --bb-border-subtle: var(--bb-color-gray-200);
+  --bb-border-default: var(--bb-color-gray-300);
+  --bb-border-strong: var(--bb-color-gray-400);
   --bb-border-brand: var(--bb-brand-primary-border);
 
   --bb-overlay-dark: rgba(0, 0, 0, 0.72);
   --bb-overlay-soft: rgba(0, 0, 0, 0.48);
   --bb-overlay-gradient: linear-gradient(
     90deg,
-    rgba(10, 10, 10, 0.96) 0%,
-    rgba(10, 10, 10, 0.78) 42%,
-    rgba(10, 10, 10, 0.32) 100%
+    rgba(0, 0, 0, 0.96) 0%,
+    rgba(0, 0, 0, 0.5) 56%,
+    rgba(0, 0, 0, 0.3) 100%
   );
 
-  /* ============================================================
-   * 3. Commerce / State Colors
-   * ============================================================ */
-
-  --bb-state-success: #62bb46;
-  --bb-state-success-bg: rgba(98, 187, 70, 0.14);
-  --bb-state-success-border: rgba(98, 187, 70, 0.34);
-
-  --bb-state-warning: #f99d1c;
-  --bb-state-warning-bg: rgba(249, 157, 28, 0.14);
-  --bb-state-warning-border: rgba(249, 157, 28, 0.34);
-
-  --bb-state-danger: #f90606;
-  --bb-state-danger-bg: rgba(249, 6, 6, 0.14);
-  --bb-state-danger-border: rgba(249, 6, 6, 0.38);
-
-  --bb-state-info: #20c4f4;
-  --bb-state-info-bg: rgba(32, 196, 244, 0.14);
-  --bb-state-info-border: rgba(32, 196, 244, 0.34);
+  --bb-state-success: #778866;
+  --bb-state-success-bg: rgba(119, 136, 102, 0.14);
+  --bb-state-success-border: rgba(119, 136, 102, 0.34);
+  --bb-state-warning: var(--bb-color-warning);
+  --bb-state-warning-bg: rgba(252, 185, 0, 0.18);
+  --bb-state-warning-border: rgba(252, 185, 0, 0.38);
+  --bb-state-danger: var(--bb-brand-primary);
+  --bb-state-danger-bg: var(--bb-color-red-50);
+  --bb-state-danger-border: var(--bb-brand-primary-border);
+  --bb-state-info: var(--bb-color-blue);
+  --bb-state-info-bg: rgba(0, 123, 255, 0.08);
+  --bb-state-info-border: rgba(0, 123, 255, 0.34);
 
   --bb-product-price: var(--bb-brand-primary);
   --bb-product-sale: var(--bb-brand-primary);
   --bb-product-stock-in: var(--bb-state-success);
   --bb-product-stock-low: var(--bb-state-warning);
-  --bb-product-stock-out: var(--bb-text-muted);
+  --bb-product-stock-out: var(--bb-text-inverse-muted);
   --bb-product-preorder: var(--bb-state-info);
 
-  /* ============================================================
-   * 4. Typography
-   * ============================================================ */
+  /* Typography */
+  --bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", var(--font-barlow), "Barlow", "Helvetica", sans-serif;
+  --bb-font-heading: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --bb-font-body: var(--font-barlow-condensed), "Barlow Condensed", var(--font-barlow), "Barlow", "Helvetica", sans-serif;
+  --bb-font-link: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --bb-font-cta: var(--font-oswald), "Oswald", "Helvetica Neue", Arial, sans-serif;
+  --bb-font-nav: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --bb-font-system: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --bb-font-display: "Bungee", "Exo", "Inter", Arial, sans-serif;
-  --bb-font-body: "Exo", "Inter", Arial, sans-serif;
-  --bb-font-system: Inter, Arial, sans-serif;
+  --bb-text-xs: 12px;
+  --bb-text-sm: 14px;
+  --bb-text-base: 16.002px;
+  --bb-text-md: 16px;
+  --bb-text-lg: 18px;
+  --bb-text-xl: 20px;
+  --bb-text-2xl: 24px;
+  --bb-text-3xl: 30px;
+  --bb-text-4xl: 32px;
+  --bb-text-5xl: 40px;
+  --bb-text-6xl: 48px;
+  --bb-text-7xl: 56px;
 
-  --bb-text-xs: 0.75rem;      /* 12px */
-  --bb-text-sm: 0.875rem;     /* 14px */
-  --bb-text-base: 1rem;       /* 16px */
-  --bb-text-lg: 1.125rem;     /* 18px */
-  --bb-text-xl: 1.25rem;      /* 20px */
-  --bb-text-2xl: 1.5rem;      /* 24px */
-  --bb-text-3xl: 1.875rem;    /* 30px */
-  --bb-text-4xl: 2.25rem;     /* 36px */
-  --bb-text-5xl: 3rem;        /* 48px */
-  --bb-text-6xl: 3.75rem;     /* 60px */
-  --bb-text-7xl: 4.5rem;      /* 72px */
-
-  --bb-text-hero: clamp(2.5rem, 6vw, 5.5rem);
-  --bb-text-h1: clamp(2rem, 4vw, 3.5rem);
-  --bb-text-h2: clamp(1.625rem, 3vw, 2.5rem);
-  --bb-text-h3: clamp(1.375rem, 2vw, 1.75rem);
+  --bb-text-hero: 30px;
+  --bb-text-h1: 32px;
+  --bb-text-h2: 24px;
+  --bb-text-h3: 18px;
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;
   --bb-font-weight-semibold: 600;
   --bb-font-weight-bold: 700;
-  --bb-font-weight-black: 900;
+  --bb-font-weight-black: 700;
 
   --bb-line-none: 1;
-  --bb-line-tight: 1.08;
-  --bb-line-heading: 1.16;
-  --bb-line-body: 1.6;
-  --bb-line-ui: 1.4;
+  --bb-line-tight: 1.111;
+  --bb-line-heading: 1.5;
+  --bb-line-body: 1.5;
+  --bb-line-ui: 1.5;
 
-  --bb-letter-tight: -0.02em;
+  --bb-letter-tight: 0;
   --bb-letter-normal: 0;
-  --bb-letter-wide: 0.04em;
-  --bb-letter-display: 0.01em;
+  --bb-letter-wide: 0;
+  --bb-letter-display: 0;
 
-  /* ============================================================
-   * 5. Spacing
-   * ============================================================ */
-
+  /* Spacing */
   --bb-space-0: 0;
-  --bb-space-1: 0.25rem;   /* 4px */
-  --bb-space-2: 0.5rem;    /* 8px */
-  --bb-space-3: 0.75rem;   /* 12px */
-  --bb-space-4: 1rem;      /* 16px */
-  --bb-space-5: 1.25rem;   /* 20px */
-  --bb-space-6: 1.5rem;    /* 24px */
-  --bb-space-8: 2rem;      /* 32px */
-  --bb-space-10: 2.5rem;   /* 40px */
-  --bb-space-12: 3rem;     /* 48px */
-  --bb-space-16: 4rem;     /* 64px */
-  --bb-space-20: 5rem;     /* 80px */
-  --bb-space-24: 6rem;     /* 96px */
-  --bb-space-32: 8rem;     /* 128px */
+  --bb-space-1: 0.25rem;
+  --bb-space-2: 0.5rem;
+  --bb-space-3: 0.75rem;
+  --bb-space-4: 1rem;
+  --bb-space-5: 1.25rem;
+  --bb-space-6: 1.5rem;
+  --bb-space-7: 1.75rem;
+  --bb-space-8: 2rem;
+  --bb-space-10: 2.5rem;
+  --bb-space-12: 3rem;
+  --bb-space-13: 3.25rem;
+  --bb-space-15: 3.75rem;
+  --bb-space-16: 4rem;
+  --bb-space-18: 4.5rem;
+  --bb-space-20: 5rem;
+  --bb-space-24: 6rem;
+  --bb-space-25: 6.25rem;
+  --bb-space-32: 8rem;
+  --bb-section-y: 4.5rem;
 
-  /* ============================================================
-   * 6. Layout
-   * ============================================================ */
-
-  --bb-container-xs: 40rem;   /* 640px */
-  --bb-container-sm: 48rem;   /* 768px */
-  --bb-container-md: 64rem;   /* 1024px */
-  --bb-container-lg: 80rem;   /* 1280px */
-  --bb-container-xl: 90rem;   /* 1440px */
-
+  /* Layout */
+  --bb-container-xs: 36rem;
+  --bb-container-sm: 45rem;
+  --bb-container-md: 60rem;
+  --bb-container-lg: 71.25rem;
+  --bb-container-xl: 75rem;
   --bb-page-padding-mobile: var(--bb-space-4);
   --bb-page-padding-tablet: var(--bb-space-6);
   --bb-page-padding-desktop: var(--bb-space-8);
-
-  --bb-header-height: 4.5rem;
-  --bb-promo-strip-height: 2.125rem; /* 34px */
+  --bb-header-height: 4rem;
+  --bb-promo-strip-height: 0px;
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-sidebar-width: 17.5rem;
-  --bb-product-card-min-width: 16rem;
-
-  /* Responsive breakpoints — single source of truth.
-   * Mobile-first: use min-width for these. Use max-width only for legacy
-   * desktop-first overrides during the transition. */
-  --bb-bp-sm: 640px;   /* large mobile */
-  --bb-bp-md: 768px;   /* tablet portrait */
-  --bb-bp-lg: 1024px;  /* tablet landscape / small laptop */
-  --bb-bp-xl: 1280px;  /* desktop */
-  --bb-bp-2xl: 1440px; /* wide desktop */
-
-  /* Touch target floor — WCAG 2.5.5 / Apple HIG. Use as min-width/min-height. */
+  --bb-product-card-min-width: 14rem;
+  --bb-bp-sm: 640px;
+  --bb-bp-md: 768px;
+  --bb-bp-lg: 1024px;
+  --bb-bp-xl: 1200px;
+  --bb-bp-2xl: 1440px;
   --bb-touch-target: 44px;
 
-  /* ============================================================
-   * 7. Radius / Shape
-   * ============================================================ */
-
+  /* Radius: sharp industrial design */
   --bb-radius-none: 0;
-  --bb-radius-xs: 0.125rem;
-  --bb-radius-sm: 0.25rem;
-  --bb-radius-md: 0.5rem;
-  --bb-radius-lg: 0.75rem;
-  --bb-radius-xl: 1rem;
-  --bb-radius-pill: 999px;
+  --bb-radius-xs: 0;
+  --bb-radius-sm: 0;
+  --bb-radius-md: 0;
+  --bb-radius-lg: 0;
+  --bb-radius-xl: 0;
+  --bb-radius-pill: 0;
+  --bb-radius-brand: 0;
+  --bb-radius-card: 0;
+  --bb-radius-button: 0;
+  --bb-radius-input: 0;
 
-  /*
-   * BigBike prefers sharp / slightly angular shapes.
-   * Avoid overly rounded cute UI.
-   */
-  --bb-radius-brand: var(--bb-radius-sm);
-  --bb-radius-card: var(--bb-radius-md);
-  --bb-radius-button: var(--bb-radius-sm);
-  --bb-radius-input: var(--bb-radius-sm);
-
-  /* ============================================================
-   * 8. Border / Ring / Focus
-   * ============================================================ */
-
+  /* Borders, focus, depth */
   --bb-border-width-hairline: 1px;
   --bb-border-width-strong: 2px;
+  --bb-focus-ring: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  --bb-focus-outline: 2px solid var(--bb-color-blue);
 
-  --bb-focus-ring: 0 0 0 3px rgba(249, 6, 6, 0.36);
-  --bb-focus-outline: 2px solid var(--bb-brand-primary);
-
-  /* ============================================================
-   * 9. Shadow / Elevation
-   * ============================================================ */
-
-  --bb-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
-  --bb-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
-  --bb-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.42);
-  --bb-shadow-brand: 0 12px 30px rgba(249, 6, 6, 0.22);
-
-  /* ============================================================
-   * 10. Motion
-   * ============================================================ */
+  --bb-shadow-sm: none;
+  --bb-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --bb-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --bb-shadow-sky: 0 12px 32px rgba(0, 0, 0, 0.25);
+  --bb-shadow-brand: 0 4px 12px rgba(255, 12, 9, 0.2);
+  --bb-shadow-product: 0 4px 12px rgba(255, 12, 9, 0.1);
+  --bb-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
 
   --bb-duration-instant: 80ms;
   --bb-duration-fast: 140ms;
   --bb-duration-normal: 220ms;
   --bb-duration-slow: 360ms;
-
+  --bb-duration-cart: 220ms;
+  --bb-duration-carousel: 360ms;
   --bb-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --bb-ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
   --bb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
-
-  /* ============================================================
-   * 11. Z-index
-   * ============================================================ */
 
   --bb-z-base: 0;
   --bb-z-raised: 10;
@@ -276,17 +240,30 @@
   --bb-z-overlay: 400;
   --bb-z-modal: 500;
   --bb-z-toast: 600;
+
+  --fg1: var(--bb-text-primary);
+  --fg2: var(--bb-text-secondary);
+  --fg3: var(--bb-text-muted);
+  --bg1: var(--bb-bg-page);
+  --bg2: var(--bb-bg-surface);
+  --bg3: var(--bb-bg-surface-raised);
+  --accent: var(--bb-brand-primary);
+  --serif-display: var(--bb-font-display);
+  --sans-body: var(--bb-font-body);
 }
 
-/* ============================================================
- * Base Theme Helpers
- * ============================================================ */
-
+.bb-theme,
 .bb-theme-dark {
   color-scheme: dark;
-
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
+  font-family: var(--bb-font-body);
+}
+
+.bb-theme-light {
+  color-scheme: light;
+  background: var(--bb-bg-surface);
+  color: var(--bb-text-inverse);
   font-family: var(--bb-font-body);
 }
 
@@ -295,7 +272,7 @@
   margin-inline: auto;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .bb-container {
     width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
   }
@@ -307,108 +284,94 @@
   }
 }
 
-/* ============================================================
- * Typography Utilities
- * ============================================================ */
-
 .bb-display {
   font-family: var(--bb-font-display);
-  font-weight: var(--bb-font-weight-regular);
-  line-height: var(--bb-line-tight);
-  letter-spacing: var(--bb-letter-display);
+  font-size: var(--bb-text-hero);
+  font-weight: 700;
+  line-height: 45px;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .bb-heading {
-  font-family: var(--bb-font-display);
-  font-weight: var(--bb-font-weight-regular);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
   line-height: var(--bb-line-heading);
-  letter-spacing: var(--bb-letter-display);
-}
-
-.bb-body {
-  font-family: var(--bb-font-body);
-  font-weight: var(--bb-font-weight-regular);
-  line-height: var(--bb-line-body);
-}
-
-.bb-text-muted {
-  color: var(--bb-text-muted);
-}
-
-.bb-text-brand {
-  color: var(--bb-text-brand);
-}
-
-.bb-heading-racing {
-  font-family: var(--bb-font-display);
-  font-weight: var(--bb-font-weight-regular);
-  font-size: var(--bb-text-xl);
-  line-height: var(--bb-line-tight);
-  letter-spacing: var(--bb-letter-display);
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .bb-h1 {
-  font-family: var(--bb-font-display);
-  font-size: var(--bb-text-4xl);
-  line-height: var(--bb-line-tight);
-  letter-spacing: var(--bb-letter-display);
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-h1);
+  font-weight: 600;
+  line-height: 48px;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .bb-h2 {
-  font-family: var(--bb-font-display);
-  font-size: var(--bb-text-3xl);
-  line-height: var(--bb-line-heading);
-  letter-spacing: var(--bb-letter-display);
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-h2);
+  font-weight: 600;
+  line-height: 36px;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
-.bb-h3 {
-  font-family: var(--bb-font-display);
-  font-size: var(--bb-text-2xl);
-  line-height: var(--bb-line-heading);
-  letter-spacing: var(--bb-letter-display);
+.bb-h3,
+.bb-heading-racing {
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-h3);
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.bb-body {
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-base);
+  font-weight: 400;
+  line-height: 24.003px;
 }
 
 .bb-kicker {
-  font-family: var(--bb-font-body);
+  font-family: var(--bb-font-cta);
   font-size: var(--bb-text-xs);
-  font-weight: var(--bb-font-weight-bold);
-  line-height: var(--bb-line-ui);
-  letter-spacing: var(--bb-letter-wide);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--bb-text-brand);
 }
 
 .bb-meta {
-  font-family: var(--bb-font-body);
+  font-family: var(--bb-font-link);
   font-size: var(--bb-text-xs);
-  font-weight: var(--bb-font-weight-regular);
-  line-height: var(--bb-line-body);
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0;
+  text-transform: uppercase;
   color: var(--bb-text-muted);
 }
 
-/* ============================================================
- * UI Components: Token-backed defaults
- * ============================================================ */
+.bb-text-muted { color: var(--bb-text-muted); }
+.bb-text-brand { color: var(--bb-text-brand); }
 
 .bb-button {
   display: inline-flex;
-  min-height: 2.75rem;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: var(--bb-space-2);
-  padding: 0 var(--bb-space-5);
+  padding: 16px 32px;
   border: 1px solid transparent;
-  border-radius: var(--bb-radius-button);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-sm);
-  font-weight: var(--bb-font-weight-bold);
-  line-height: var(--bb-line-ui);
-  letter-spacing: var(--bb-letter-wide);
+  border-radius: 0;
+  font-family: var(--bb-font-cta);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0;
   text-decoration: none;
   text-transform: uppercase;
   cursor: pointer;
@@ -416,8 +379,11 @@
     background-color var(--bb-duration-fast) var(--bb-ease-standard),
     border-color var(--bb-duration-fast) var(--bb-ease-standard),
     color var(--bb-duration-fast) var(--bb-ease-standard),
-    transform var(--bb-duration-fast) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-fast) var(--bb-ease-standard);
+    transform var(--bb-duration-fast) var(--bb-ease-standard);
+}
+
+.bb-button:hover:not(:disabled) {
+  transform: scale(1.02);
 }
 
 .bb-button:focus-visible {
@@ -428,84 +394,99 @@
 .bb-button:disabled,
 .bb-button[aria-disabled="true"] {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 1;
   transform: none;
 }
 
 .bb-button-primary {
   background: var(--bb-brand-primary);
   color: var(--bb-color-white);
-  box-shadow: var(--bb-shadow-brand);
+  border-color: var(--bb-brand-primary);
 }
 
 .bb-button-primary:hover:not(:disabled) {
   background: var(--bb-brand-primary-hover);
-  transform: translateY(-1px);
+  border-color: var(--bb-brand-primary-hover);
 }
 
 .bb-button-primary:active:not(:disabled) {
   background: var(--bb-brand-primary-active);
-  transform: translateY(0);
+  border-color: var(--bb-brand-primary-active);
 }
 
 .bb-button-secondary {
-  background: transparent;
-  color: var(--bb-text-primary);
-  border-color: var(--bb-border-strong);
+  background: var(--bb-color-white);
+  color: var(--bb-brand-primary);
+  border: 2px solid var(--bb-brand-primary);
 }
 
 .bb-button-secondary:hover:not(:disabled) {
-  border-color: var(--bb-brand-primary);
+  background: var(--bb-color-red-50);
+  border-color: var(--bb-brand-primary-hover);
+  color: var(--bb-brand-primary);
+}
+
+.bb-button-outline {
+  background: transparent;
+  color: var(--bb-color-blue);
+  border-color: var(--bb-color-blue);
+}
+
+.bb-button-outline:hover:not(:disabled) {
+  background: rgba(0, 123, 255, 0.08);
+  border-color: var(--bb-color-blue-hover);
+  color: var(--bb-color-blue);
+}
+
+.bb-button-dark {
+  background: var(--bb-color-black);
   color: var(--bb-color-white);
-  background: var(--bb-brand-primary-soft);
+}
+
+.bb-button-dark:hover:not(:disabled) {
+  background: var(--bb-brand-primary);
 }
 
 .bb-card {
   background: var(--bb-bg-surface);
+  color: var(--bb-text-inverse);
   border: 1px solid var(--bb-border-subtle);
-  border-radius: var(--bb-radius-card);
-  box-shadow: var(--bb-shadow-sm);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .bb-card-hover {
   transition:
     border-color var(--bb-duration-normal) var(--bb-ease-standard),
-    transform var(--bb-duration-normal) var(--bb-ease-standard),
     box-shadow var(--bb-duration-normal) var(--bb-ease-standard);
 }
 
 .bb-card-hover:hover {
-  border-color: var(--bb-border-brand);
-  box-shadow: var(--bb-shadow-md);
-  transform: translateY(-2px);
+  border-color: var(--bb-brand-primary);
+  box-shadow: var(--bb-shadow-product);
 }
 
 .bb-input {
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0 var(--bb-space-4);
-  border: 1px solid var(--bb-border-default);
-  border-radius: var(--bb-radius-input);
-  background: var(--bb-bg-surface-raised);
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-sm);
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--bb-border-subtle);
+  border-radius: 0;
+  background: var(--bb-color-white);
+  color: var(--bb-color-black);
+  font-family: var(--bb-font-link);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
   transition:
     border-color var(--bb-duration-fast) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-fast) var(--bb-ease-standard),
-    background-color var(--bb-duration-fast) var(--bb-ease-standard);
+    box-shadow var(--bb-duration-fast) var(--bb-ease-standard);
 }
 
-.bb-input::placeholder {
-  color: var(--bb-text-muted);
-}
-
-.bb-input:hover {
-  border-color: var(--bb-border-strong);
-}
-
+.bb-input::placeholder { color: var(--bb-color-gray-400); }
+.bb-input:hover { border-color: var(--bb-border-strong); }
 .bb-input:focus {
-  border-color: var(--bb-brand-primary);
+  border-color: var(--bb-color-blue);
   box-shadow: var(--bb-focus-ring);
   outline: none;
 }
@@ -514,18 +495,19 @@
   display: inline-flex;
   align-items: center;
   gap: var(--bb-space-1);
-  min-height: 1.5rem;
-  padding: 0 var(--bb-space-2);
-  border-radius: var(--bb-radius-brand);
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-xs);
-  font-weight: var(--bb-font-weight-bold);
-  line-height: var(--bb-line-ui);
-  letter-spacing: var(--bb-letter-wide);
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 0;
+  font-family: var(--bb-font-link);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
-.bb-badge-sale {
+.bb-badge-sale,
+.bb-badge-stock-out {
   background: var(--bb-brand-primary);
   color: var(--bb-color-white);
 }
@@ -537,30 +519,25 @@
 }
 
 .bb-badge-stock-low {
-  background: var(--bb-state-warning-bg);
-  color: var(--bb-state-warning);
-  border: 1px solid var(--bb-state-warning-border);
+  background: var(--bb-state-warning);
+  color: var(--bb-color-black);
 }
 
 .bb-badge-preorder {
-  background: var(--bb-state-info-bg);
-  color: var(--bb-state-info);
-  border: 1px solid var(--bb-state-info-border);
+  background: var(--bb-state-info);
+  color: var(--bb-color-white);
 }
-
-/* ============================================================
- * Commerce Helpers
- * ============================================================ */
 
 .bb-price {
   color: var(--bb-product-price);
-  font-family: var(--bb-font-body);
-  font-weight: var(--bb-font-weight-bold);
-  line-height: var(--bb-line-ui);
+  font-family: var(--bb-font-cta);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
 }
 
 .bb-price-compare {
-  color: var(--bb-text-muted);
+  color: var(--bb-text-inverse-muted);
   text-decoration: line-through;
 }
 
@@ -568,118 +545,129 @@
   position: relative;
   overflow: hidden;
   background: var(--bb-bg-surface);
+  color: var(--bb-text-inverse);
   border: 1px solid var(--bb-border-subtle);
-  border-radius: var(--bb-radius-card);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .bb-product-image-wrap {
-  background:
-    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.10), transparent 34%),
-    var(--bb-bg-surface-raised);
+  background: var(--bb-color-white);
+  aspect-ratio: 1 / 1;
 }
 
 .bb-hero-overlay {
   background: var(--bb-overlay-gradient);
 }
 
-/* ============================================================
- * Rich Text (WP HTML content rendered via dangerouslySetInnerHTML)
- * ============================================================ */
-
 .bb-richtext {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-size: var(--bb-text-base);
-  line-height: var(--bb-line-body);
+  line-height: 24.003px;
 }
 
 .bb-richtext h1,
-.bb-richtext h2,
+.bb-richtext h2 {
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  line-height: var(--bb-line-heading);
+  letter-spacing: 0;
+  margin-top: var(--bb-space-8);
+  margin-bottom: var(--bb-space-4);
+  color: inherit;
+  text-transform: uppercase;
+}
+
 .bb-richtext h3,
 .bb-richtext h4,
 .bb-richtext h5,
 .bb-richtext h6 {
-  font-family: var(--bb-font-display);
-  font-weight: var(--bb-font-weight-regular);
-  line-height: var(--bb-line-heading);
-  letter-spacing: var(--bb-letter-display);
-  text-transform: uppercase;
+  font-family: var(--bb-font-cta);
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
   margin-top: var(--bb-space-6);
   margin-bottom: var(--bb-space-3);
+  color: inherit;
+  text-transform: uppercase;
 }
 
-.bb-richtext h2 { font-size: var(--bb-text-2xl); }
-.bb-richtext h3 { font-size: var(--bb-text-xl); }
+.bb-richtext h2 { font-size: var(--bb-text-h2); }
+.bb-richtext h3 { font-size: var(--bb-text-h3); }
 .bb-richtext h4 { font-size: var(--bb-text-lg); }
-
-.bb-richtext p {
-  margin-bottom: var(--bb-space-4);
-}
-
+.bb-richtext p { margin-bottom: var(--bb-space-4); }
 .bb-richtext a {
-  color: var(--bb-brand-primary);
+  color: var(--bb-color-blue);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-
-.bb-richtext a:hover {
-  color: var(--bb-brand-primary-hover);
-}
-
+.bb-richtext a:hover { color: var(--bb-brand-primary); }
 .bb-richtext strong,
-.bb-richtext b {
-  font-weight: var(--bb-font-weight-bold);
-}
-
+.bb-richtext b { font-weight: var(--bb-font-weight-bold); }
 .bb-richtext ul,
 .bb-richtext ol {
   padding-left: var(--bb-space-6);
   margin-bottom: var(--bb-space-4);
 }
-
 .bb-richtext ul { list-style: disc; }
 .bb-richtext ol { list-style: decimal; }
-
-.bb-richtext li {
-  margin-bottom: var(--bb-space-2);
-}
-
+.bb-richtext li { margin-bottom: var(--bb-space-2); }
 .bb-richtext table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: var(--bb-space-6);
   font-size: var(--bb-text-sm);
 }
-
 .bb-richtext th,
 .bb-richtext td {
   padding: var(--bb-space-2) var(--bb-space-3);
-  border: 1px solid var(--bb-border-subtle);
+  border: 1px solid var(--bb-border-default);
   text-align: left;
 }
-
 .bb-richtext th {
   background: var(--bb-bg-surface-raised);
-  font-weight: var(--bb-font-weight-bold);
+  color: var(--bb-text-inverse);
+  font-weight: var(--bb-font-weight-semibold);
 }
-
 .bb-richtext img {
   max-width: 100%;
   height: auto;
-  border-radius: var(--bb-radius-sm);
+  border-radius: 0;
 }
-
 .bb-richtext blockquote {
   border-left: 3px solid var(--bb-brand-primary);
   margin: var(--bb-space-4) 0;
   padding: var(--bb-space-3) var(--bb-space-4);
-  background: var(--bb-bg-surface-raised);
-  font-style: italic;
+  background: var(--bb-color-dark);
+  color: var(--bb-text-secondary);
 }
 
-/* ============================================================
- * Accessibility / Reduced Motion
- * ============================================================ */
+@media (max-width: 639px) {
+  :root {
+    --bb-text-hero: 18px;
+    --bb-text-h1: 20px;
+    --bb-text-h2: 18px;
+    --bb-section-y: 2rem;
+  }
+
+  .bb-display {
+    line-height: 27px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  :root {
+    --bb-text-hero: 24px;
+    --bb-text-h1: 24px;
+    --bb-text-h2: 24px;
+    --bb-section-y: 3.25rem;
+  }
+
+  .bb-display {
+    line-height: 36px;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -689,21 +677,5 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
-  }
-}
-
-/* ============================================================
- * Promo strip auto-collapse — drop the second line on small
- * screens so the sticky header takes less vertical space.
- * ============================================================ */
-@media (max-width: 768px) {
-  :root {
-    --bb-promo-strip-height: 1.875rem; /* 30px */
-  }
-}
-
-@media (max-width: 600px) {
-  :root {
-    --bb-header-height: 4rem;          /* 64px — logo shrinks at this BP */
   }
 }

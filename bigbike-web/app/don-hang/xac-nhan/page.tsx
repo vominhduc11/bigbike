@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatVnd, orderStatusLabel, safeText } from "@/lib/utils/format";
+import { formatDate, formatVnd, orderStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
 
 function pickSetting(
@@ -69,20 +69,44 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         </p>
 
         {orderNumber && (
-          <div className="order-card">
-            <div>
-              <div className="label">Mã đơn hàng</div>
-              <b className="red">#{orderNumber}</b>
-            </div>
-            <div>
-              <div className="label">Tổng giá trị</div>
-              <b>{order ? formatVnd(order.totalAmount) : "—"}</b>
-            </div>
-            <div>
-              <div className="label">Trạng thái</div>
-              <b>{order ? orderStatusLabel(order.status) : "Đã tiếp nhận"}</b>
-            </div>
-          </div>
+          <ul className="wp-order-overview">
+            <li>
+              <span className="label">Mã đơn hàng:</span>
+              <strong className="red">#{orderNumber}</strong>
+            </li>
+            {order && (
+              <li>
+                <span className="label">Ngày đặt:</span>
+                <strong>{formatDate(order.placedAt)}</strong>
+              </li>
+            )}
+            {order?.customerEmail && (
+              <li>
+                <span className="label">Email:</span>
+                <strong>{order.customerEmail}</strong>
+              </li>
+            )}
+            <li>
+              <span className="label">Tổng giá trị:</span>
+              <strong>{order ? formatVnd(order.totalAmount) : "—"}</strong>
+            </li>
+            {order?.payments?.[0]?.paymentMethod && (
+              <li>
+                <span className="label">Phương thức thanh toán:</span>
+                <strong>
+                  {order.payments[0].paymentMethod === "cod"
+                    ? "Thanh toán khi nhận hàng (COD)"
+                    : order.payments[0].paymentMethod === "bacs"
+                      ? "Chuyển khoản ngân hàng"
+                      : order.payments[0].paymentMethod.toUpperCase()}
+                </strong>
+              </li>
+            )}
+            <li>
+              <span className="label">Trạng thái:</span>
+              <strong>{order ? orderStatusLabel(order.status) : "Đã tiếp nhận"}</strong>
+            </li>
+          </ul>
         )}
 
         {order && (

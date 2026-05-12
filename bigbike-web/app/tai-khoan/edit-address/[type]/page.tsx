@@ -22,7 +22,7 @@ function InvalidAddressType({ type }: { type: string }) {
       <div className="wp-empty-state">
         <p className="wp-muted-text">
           Không tìm thấy loại địa chỉ &ldquo;{type}&rdquo;.{" "}
-          <Link href="/tai-khoan/" style={{ color: "var(--bb-brand-primary, #F90606)" }}>
+          <Link href="/tai-khoan/" style={{ color: "var(--bb-brand-primary, #FF0C09)" }}>
             Quay lại tài khoản
           </Link>
         </p>

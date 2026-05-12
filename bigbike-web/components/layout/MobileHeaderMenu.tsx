@@ -254,7 +254,7 @@ export function MobileHeaderMenu({
                     onClick={handleLogout}
                     disabled={loggingOut}
                   >
-                    {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+                    {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
                   </button>
                 </>
               ) : (

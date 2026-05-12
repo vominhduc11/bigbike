@@ -3,6 +3,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 
+const WP_HERO_BG = "/wp/page-title-bg.png";
+const WP_HERO_ILLUSTRATION = "/wp/mu-bao-hiem.png";
+
 export type PageHeroBreadcrumbItem = {
   label: string;
   href?: string;
@@ -28,24 +31,22 @@ export function PageHero({
   meta,
 }: PageHeroProps) {
   const trimmedUrl = imageUrl?.trim();
-  const resolvedUrl = trimmedUrl ? resolveMediaUrl(trimmedUrl) : null;
+  const customSrc = trimmedUrl ? resolveMediaUrl(trimmedUrl) : null;
+  const resolvedUrl = customSrc || WP_HERO_BG;
   const altText = safeText(imageAlt, title);
+  const isFallbackBg = !customSrc;
 
   return (
-    <div className={`wp-cat-hero${resolvedUrl ? "" : " wp-cat-hero--no-img"}`}>
-      {resolvedUrl ? (
-        <>
-          <Image
-            src={resolvedUrl}
-            alt={altText}
-            fill
-            className="wp-cat-hero-bg"
-            priority
-            sizes="100vw"
-          />
-          <div className="wp-cat-hero-overlay" />
-        </>
-      ) : null}
+    <div className={`wp-cat-hero${isFallbackBg ? " wp-cat-hero--wp" : ""}`}>
+      <Image
+        src={resolvedUrl}
+        alt={altText}
+        fill
+        className="wp-cat-hero-bg"
+        priority
+        sizes="100vw"
+      />
+      {!isFallbackBg && <div className="wp-cat-hero-overlay" />}
       <div className="wp-cat-hero-content bb-container">
         {breadcrumb && breadcrumb.length > 0 ? (
           <nav className="wp-cat-hero-breadcrumb" aria-label="Điều hướng">
@@ -69,6 +70,11 @@ export function PageHero({
         {description ? <p className="wp-cat-hero-desc">{description}</p> : null}
         {meta ? <span className="wp-cat-hero-count">{meta}</span> : null}
       </div>
+      {isFallbackBg && (
+        <div className="wp-cat-hero-illustration" aria-hidden="true">
+          <Image src={WP_HERO_ILLUSTRATION} alt="" width={420} height={420} />
+        </div>
+      )}
     </div>
   );
 }

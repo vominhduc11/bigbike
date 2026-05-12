@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import localFont from "next/font/local";
-import { Oswald } from "next/font/google";
+import { Barlow, Barlow_Condensed, Oswald } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -21,6 +21,20 @@ const oswald = Oswald({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-oswald",
+  display: "swap",
+});
+
+const barlow = Barlow({
+  subsets: ["latin", "vietnamese"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-barlow",
+  display: "swap",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-barlow-condensed",
   display: "swap",
 });
 
@@ -58,8 +72,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-    { media: "(prefers-color-scheme: light)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
   ],
 };
 
@@ -71,8 +85,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${bungee.variable} ${exo.variable} ${oswald.variable} h-full antialiased`}>
-      <body className="bb-theme-dark min-h-full flex flex-col">
+    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} ${bungee.variable} ${exo.variable} h-full antialiased`}>
+      <body className="bb-theme min-h-full flex flex-col">
         {GTM_ID && (
           <Script
             id="gtm-init"

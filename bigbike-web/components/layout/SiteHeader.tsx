@@ -12,7 +12,6 @@ import type { PublicMenuItem } from "@/lib/contracts/public";
 const DEFAULT_SITE_NAME = "BigBike";
 const PRIMARY_MENU_LOCATION = "primary";
 
-
 function buildMenuTree(items: PublicMenuItem[]): HeaderNavNode[] {
   const map = new Map<string, HeaderNavNode>();
   items.forEach((item) => map.set(item.id, { ...item, children: [] }));
@@ -46,29 +45,6 @@ function getSettingValue(
   return fallback;
 }
 
-function PromoStrip({
-  hotline,
-  zaloUrl,
-}: {
-  hotline: string;
-  zaloUrl: string;
-}) {
-  return (
-    <div className="wp-promo-strip-wrap">
-      <div className="bb-container wp-promo-strip">
-        <span>
-          <b>BIGBIKE SINCE 2013</b> garage gear moto chính hãng, tư vấn kỹ cho
-          từng cung đường
-        </span>
-        <span>
-          {hotline ? `Hotline ${hotline} · ` : ""}
-          {zaloUrl ? "Zalo hỗ trợ nhanh" : "Giao hàng toàn quốc"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export async function SiteHeader() {
   const [menuResult, settingsResult] = await Promise.all([
     getPublicMenu(PRIMARY_MENU_LOCATION),
@@ -95,58 +71,53 @@ export async function SiteHeader() {
 
   return (
     <StickyHeaderShell>
-      <PromoStrip hotline={hotline} zaloUrl={zaloUrl} />
-      <div className="bb-container wp-header-inner">
-        <div className="wp-logo-panel">
-          <Link
-            href="/"
-            className="wp-logo-link"
-            aria-label={`${siteName} Home`}
-            title={siteName}
-          >
-            {/* WP-style dual logo: emblem (default, ≥768px while not scrolled)
-                cross-fades with wordmark (scrolled and/or <768px). */}
-            <Image
-              className="wp-logo-emblem hide-mobile"
-              src="/brand/wp-logo/emblem.png"
-              alt={siteName}
-              width={210}
-              height={190}
-              priority
-            />
-            <Image
-              className="wp-logo-wordmark hide-desktop"
-              src="/brand/wp-logo/wordmark.png"
-              alt={siteName}
-              width={120}
-              height={44}
-              priority
-            />
-          </Link>
-        </div>
+      <div className="wp-header-container">
+        <div className="wp-header-row">
+          <div className="wp-logo">
+            <Link href="/" aria-label={`${siteName} Home`} title={siteName}>
+              <Image
+                className="wp-logo-img hide-mobile"
+                src="/wp/logo.png"
+                alt={siteName}
+                width={210}
+                height={190}
+                priority
+              />
+              <Image
+                className="wp-logo-img hide-desktop"
+                src="/wp/logo-1.png"
+                alt={siteName}
+                width={120}
+                height={44}
+                priority
+              />
+            </Link>
+          </div>
 
-        <nav
-          className="wp-nav"
-          aria-label={menuResult.data?.name ?? "Điều hướng chính"}
-        >
-          {resolvedMenuTree.map((node) => (
-            <HeaderNavItem key={node.id} node={node} />
-          ))}
-        </nav>
+          <div className="wp-right-header">
+            <nav
+              className="wp-navigation"
+              aria-label={menuResult.data?.name ?? "Điều hướng chính"}
+            >
+              <ul className="wp-header-nav">
+                {resolvedMenuTree.map((node) => (
+                  <HeaderNavItem key={node.id} node={node} />
+                ))}
+              </ul>
+            </nav>
 
-        <div className="wp-header-actions">
-          <SearchToggle />
-
-          <CartIcon />
-
-          <HeaderUserMenu />
-
-          <MobileHeaderMenu
-            menuTree={resolvedMenuTree}
-            menuLabel={menuResult.data?.name ?? "Điều hướng chính"}
-            hotline={hotline}
-            zaloUrl={zaloUrl}
-          />
+            <div className="wp-user-control">
+              <SearchToggle />
+              <CartIcon />
+              <HeaderUserMenu />
+              <MobileHeaderMenu
+                menuTree={resolvedMenuTree}
+                menuLabel={menuResult.data?.name ?? "Điều hướng chính"}
+                hotline={hotline}
+                zaloUrl={zaloUrl}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </StickyHeaderShell>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArticleCard } from "@/components/content/ArticleCard";
+import { ArticleTOC } from "@/components/content/ArticleTOC";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { getArticleBySlug, listArticles } from "@/lib/api/public-api";
@@ -80,17 +81,21 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   }
 
   const article = result.data;
-  const [articleJsonLd, breadcrumbJsonLd, relatedResult] = await Promise.all([
+  const [articleJsonLd, breadcrumbJsonLd, relatedResult, recentResult, featuredResult] = await Promise.all([
     Promise.resolve(serializeJsonLd(buildArticleJsonLd(article))),
     Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
     listArticles({
       page: 1,
-      size: 3,
+      size: 4,
       sort: "publishedAt:desc",
       category: article.category?.slug,
     }),
+    listArticles({ page: 1, size: 5, sort: "publishedAt:desc" }),
+    listArticles({ page: 1, size: 5, sort: "publishedAt:desc", featured: true }),
   ]);
   const relatedArticles = (relatedResult.data ?? []).filter((a) => a.slug !== article.slug);
+  const recentArticles = (recentResult.data ?? []).filter((a) => a.slug !== article.slug).slice(0, 5);
+  const featuredArticles = (featuredResult.data ?? []).filter((a) => a.slug !== article.slug).slice(0, 5);
 
   const articleTitle = safeText(article.title, "Bài viết");
   const articleCategory = safeText(article.category?.name, "Tin tức");
@@ -121,7 +126,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         <span>{articleTitle}</span>
       </div>
 
-      <div className="wp-article-wrap">
+      <div className="wp-article-layout">
+       <div className="wp-article-wrap">
         <header className="wp-article-header">
           <div className="wp-article-meta-row">
             <Link href={categoryHref} className="wp-article-meta-chip">
@@ -154,6 +160,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             />
           </div>
         )}
+
+        <ArticleTOC />
 
         <article
           className="bb-richtext wp-article-body"
@@ -201,14 +209,72 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             </Link>
           ) : null}
         </nav>
+       </div>
+
+       <aside className="wp-article-sidebar" aria-label="Tin tức nổi bật">
+        {featuredArticles.length > 0 && (
+          <div className="wp-article-widget">
+            <h3 className="wp-article-widget-title">TIN TỨC NỔI BẬT</h3>
+            <ul className="wp-article-widget-list">
+              {featuredArticles.map((a) => (
+                <li key={a.id} className="wp-article-widget-item">
+                  <Link href={toArticlePath(a.slug)} className="wp-article-widget-link">
+                    {a.coverImage?.url && (
+                      <span className="wp-article-widget-thumb">
+                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} />
+                      </span>
+                    )}
+                    <span className="wp-article-widget-body">
+                      <span className="wp-article-widget-cat">
+                        {safeText(a.category?.name, "Tin tức")}
+                      </span>
+                      <span className="wp-article-widget-name">{safeText(a.title, "Bài viết")}</span>
+                      <time dateTime={a.publishedAt ?? a.createdAt} className="wp-article-widget-date">
+                        {formatDate(a.publishedAt ?? a.createdAt)}
+                      </time>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {recentArticles.length > 0 && (
+          <div className="wp-article-widget">
+            <h3 className="wp-article-widget-title">TIN TỨC MỚI</h3>
+            <ul className="wp-article-widget-list">
+              {recentArticles.map((a) => (
+                <li key={a.id} className="wp-article-widget-item">
+                  <Link href={toArticlePath(a.slug)} className="wp-article-widget-link">
+                    {a.coverImage?.url && (
+                      <span className="wp-article-widget-thumb">
+                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} />
+                      </span>
+                    )}
+                    <span className="wp-article-widget-body">
+                      <span className="wp-article-widget-cat">
+                        {safeText(a.category?.name, "Tin tức")}
+                      </span>
+                      <span className="wp-article-widget-name">{safeText(a.title, "Bài viết")}</span>
+                      <time dateTime={a.publishedAt ?? a.createdAt} className="wp-article-widget-date">
+                        {formatDate(a.publishedAt ?? a.createdAt)}
+                      </time>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+       </aside>
       </div>
 
-      {/* Related articles */}
+      {/* Related articles — WP shows 4 in same category */}
       {relatedArticles.length > 0 && (
         <section className="wp-related-articles bb-container">
-          <h2 className="wp-related-articles-title">Bài viết liên quan</h2>
-          <div className="wp-news-grid">
-            {relatedArticles.slice(0, 3).map((a) => (
+          <h2 className="wp-related-articles-title">TIN TỨC LIÊN QUAN</h2>
+          <div className="wp-news-grid wp-news-grid--4">
+            {relatedArticles.slice(0, 4).map((a) => (
               <ArticleCard key={a.id} article={a} />
             ))}
           </div>

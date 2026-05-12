@@ -1,23 +1,19 @@
 "use client";
-import useEmblaCarousel from "embla-carousel-react";
-import { useCallback } from "react";
+
+import { useRef } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 import type { Product } from "@/lib/contracts/public";
-import { ProductCard } from "@/components/catalog/ProductCard";
+import { WpFeaturedProductCard } from "@/components/home/WpFeaturedProductCard";
 
 type Props = { products: Product[] };
 
 export function FeaturedProductsCarousel({ products }: Props) {
-  // slidesToScroll: 1 keeps navigation predictable when the carousel only has 5 items
-  // (the homepage limit) — scrolling 2 at a time made the "next" button run out of slides
-  // after a single click on desktop where 3-4 cards are already visible.
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
-    dragFree: true,
-    slidesToScroll: 1,
-  });
-
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const swiperRef = useRef<SwiperType | null>(null);
 
   if (products.length === 0) return null;
 
@@ -25,29 +21,46 @@ export function FeaturedProductsCarousel({ products }: Props) {
     <div className="wp-prod-carousel-wrap">
       <button
         className="wp-car-btn wp-car-prev"
-        onClick={scrollPrev}
+        onClick={() => swiperRef.current?.slidePrev()}
         aria-label="Cuộn trái"
       >
         ‹
       </button>
 
-      <div className="wp-prod-carousel-viewport" ref={emblaRef}>
-        <div className="wp-prod-carousel">
+      <div className="wp-prod-carousel-viewport">
+        <Swiper
+          modules={[Navigation, Pagination]}
+          onSwiper={(s) => {
+            swiperRef.current = s;
+          }}
+          speed={700}
+          slidesPerView={1}
+          slidesPerGroup={1}
+          spaceBetween={0}
+          pagination={{ el: ".wp-fp-pagination", clickable: true }}
+          breakpoints={{
+            320: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 0 },
+            380: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 20 },
+            767: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
+          }}
+        >
           {products.map((p) => (
-            <div key={p.id} className="wp-prod-carousel-item">
-              <ProductCard product={p} />
-            </div>
+            <SwiperSlide key={p.id} className="wp-prod-carousel-item">
+              <WpFeaturedProductCard product={p} />
+            </SwiperSlide>
           ))}
-        </div>
+        </Swiper>
       </div>
 
       <button
         className="wp-car-btn wp-car-next"
-        onClick={scrollNext}
+        onClick={() => swiperRef.current?.slideNext()}
         aria-label="Cuộn phải"
       >
         ›
       </button>
+
+      <div className="wp-fp-pagination" aria-hidden="true" />
     </div>
   );
 }

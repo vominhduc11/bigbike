@@ -14,7 +14,7 @@ import {
 type JsonLdObject = Record<string, unknown>;
 
 const SITE_NAME = "BigBike";
-const ORG_LOGO_PATH = "/brand/logo/PNG/01/BIGBIKE_FINAL_LOGO-01.png";
+const ORG_LOGO_PATH = "/wp/logo.png";
 
 function buildPublisher(): JsonLdObject {
   return {

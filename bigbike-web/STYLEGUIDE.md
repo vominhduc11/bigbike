@@ -1,256 +1,158 @@
-# BigBike — Hướng dẫn giao diện & thương hiệu
+# BigBike Web Styleguide
 
-> Tài liệu này rút gọn từ `Bigbike Design System/README.md` và `SKILL.md`. Mọi quyết định giao diện đều phải tuân thủ các nguyên tắc dưới đây.
+> Cập nhật ngày 2026-05-12: `bigbike-web` áp dụng theo file thiết kế do user cung cấp tại `C:\Users\vomin\Downloads\DESIGN.md`.
+>
+> File này là nguồn rút gọn cho giao diện `bigbike-web`. Khi thay đổi token, layout, component hoặc trạng thái UI, phải giữ code khớp các quy tắc dưới đây.
 
 ---
 
-## Nguyên tắc bất biến (non-negotiables)
+## Nguyên Tắc Bắt Buộc
 
-| Nguyên tắc | Áp dụng |
+| Mục | Quy tắc |
 |---|---|
-| Tiếng Việt đầy đủ dấu | Mọi copy trên UI. Chỉ slogan và label tiện ích mới dùng Latin |
-| Đỏ racing `#F90606` là màu accent duy nhất | Không dùng màu accent thứ hai. Các màu warning/info/success chỉ dùng cho badge |
-| Display dùng **Bungee**, body dùng **Exo** | Không dùng Google Fonts, không dùng font thay thế |
-| Không emoji bao giờ | Dùng typography, màu đỏ, icon SVG để truyền cảm xúc |
-| Dark-first | Toàn site chạy `bb-theme-dark`. Nền trang là `#0a0a0a` |
-| Card hover: viền đỏ + lift, KHÔNG scale | `transform: translateY(-2px)` + `border-color → red`. Không `scale()` |
+| Theme | Dark-first, nền chính `#000000`, bề mặt tương phản mạnh |
+| CTA chính | Đỏ `#FF0C09`, dùng cho mua hàng, khẩn cấp, giá sale |
+| Link / tương tác phụ | Xanh `#007BFF` |
+| Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
+| Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
+| Font body | Barlow |
+| Font heading / CTA | Oswald |
+| Font layout dày đặc | Barlow Condensed |
+| Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
+| Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
+| Copy | Tiếng Việt đầy đủ dấu; CTA và heading thường viết HOA |
+| Emoji | Không dùng |
 
 ---
 
-## Palette màu
+## Palette
 
-### Accent chính
 ```css
---bb-brand-primary: #F90606          /* Racing red — CTA, giá, kicker, nav hover */
---bb-brand-primary-hover: #d90404    /* Button hover */
---bb-brand-primary-active: #b80303   /* Button press */
+--bb-brand-primary: #ff0c09;
+--bb-brand-primary-hover: #e50a07;
+--bb-brand-primary-active: #cc0906;
+--bb-color-blue: #007bff;
+--bb-color-cyan: #00bfff;
+
+--bb-bg-page: #000000;
+--bb-bg-section: #000000;
+--bb-bg-surface: #ffffff;
+--bb-bg-surface-raised: #f5f5f5;
+--bb-bg-surface-hover: #fff4f3;
+
+--bb-text-primary: #ffffff;
+--bb-text-secondary: #cecece;
+--bb-text-muted: #abb8c3;
+--bb-text-inverse: #000000;
+
+--bb-border-subtle: #dddddd;
+--bb-border-default: #cecece;
+--bb-border-strong: #abb8c3;
 ```
 
-### Dark surfaces (thứ tự từ tối đến sáng)
-```css
---bb-bg-page:           #0a0a0a   /* Nền trang */
---bb-bg-surface:        #141414   /* Card, panel */
---bb-bg-surface-raised: #202020   /* Input, nâng lên */
---bb-bg-surface-hover:  #292929   /* Hover state */
-```
+State colors:
 
-### Gray scale
-`#f7f7f8` (50) → ... → `#171717` (900)
-
-### Màu trạng thái (chỉ dùng badge, KHÔNG dùng làm accent)
-- Success: `#62bb46`
-- Warning: `#f99d1c`
-- Info (floating chat): `#20c4f4`
-- Danger = brand red
+- Danger: `#FF0C09`
+- Warning: `#FCB900`
+- Info: `#007BFF`
+- Chat: `#00BFFF`
 
 ---
 
 ## Typography
 
-### Font loading
-- Fonts nằm trong `public/fonts/*.ttf`, load qua `next/font/local` trong `app/layout.tsx`
-- Biến CSS: `--font-bungee`, `--font-exo`
+| Vai trò | Font | Size | Weight | Line height |
+|---|---|---:|---:|---:|
+| Display / hero | Barlow Condensed | 30px | 700 | 45px |
+| H1 | Barlow | 32px | 600 | 48px |
+| H2 | Barlow | 24px | 600 | 36px |
+| H3 | Oswald | 18px | 600 | 20px |
+| Body | Barlow Condensed | 16px | 400 | 24px |
+| Button / CTA | Oswald | 16px | 600 | 24px |
+| Link | Barlow | 16px | 400 | 24px |
+| Meta / badge | Barlow | 12px | 700 | 12px |
 
-### Quy tắc casing
-| Vị trí | Casing |
+Quy tắc:
+
+- Heading, nav, badge, CTA: uppercase.
+- Body text dùng sentence case.
+- Không dùng letter-spacing âm.
+- Không render chữ trắng nhỏ hơn 16px trên nền tối, trừ meta phụ có màu `#CECECE`.
+
+---
+
+## Component Rules
+
+### Buttons
+
+- Primary: nền `#FF0C09`, chữ trắng, padding `16px 32px`, radius `0`, border none.
+- Secondary: nền trắng, chữ đỏ, border đỏ `2px`, radius `0`.
+- Ghost: transparent, chữ/border xanh `#007BFF`, radius `0`.
+- Hover primary: `#E50A07`, lift nhẹ `translateY(-1px)` hoặc scale tối đa `1.02`.
+- Disabled: nền `#CECECE`, không transform.
+
+### Product Cards
+
+- Nền trắng, chữ đen, padding 20px, border `1px solid #DDDDDD`, radius `0`.
+- Ảnh vuông 1:1, full width.
+- Title: Oswald 18/600/20.
+- Price: Oswald 16/600, đỏ `#FF0C09`.
+- Hover: border đỏ, shadow `0 4px 12px rgba(255,12,9,0.1)`.
+- Add-to-cart bar: đen, chữ trắng, trượt lên khi hover; trên touch luôn hiện.
+
+### Inputs
+
+- Nền trắng, chữ đen, padding `12px 16px`, border `#DDDDDD`, radius `0`.
+- Focus: border xanh `#007BFF`, ring `rgba(0,123,255,0.1)`.
+- Error: border đỏ, nền `#FFF4F3`.
+
+### Navigation
+
+- Header nền đen, cao 64px, chữ trắng.
+- Nav hover/active: đỏ `#FF0C09`, underline đỏ.
+- Cart badge: đỏ, chữ trắng, tròn.
+
+### Footer
+
+- Nền `#1A1A1A`.
+- Heading trắng, link `#CECECE`, hover đỏ.
+- Divider `#333322`.
+
+### Hero / Impact Sections
+
+- Nền đen hoặc ảnh có overlay tối.
+- Padding desktop `60px 52px`, mobile giảm về 32px.
+- Chữ trắng, CTA đỏ.
+
+---
+
+## Layout
+
+- Spacing theo thang 4px.
+- Container tối đa 1200px.
+- Desktop padding 24px; tablet 24px; mobile 16px.
+- Product grid: desktop 3 cột, tablet 2 cột, mobile 1 cột.
+- Section spacing: desktop 72px, tablet 52px, mobile 32px.
+- Touch target tối thiểu 44px.
+
+---
+
+## Responsive
+
+| Breakpoint | Hành vi |
 |---|---|
-| Display / hero title / section heading / nav / CTA | **ALL CAPS** |
-| Kicker (nhãn nhỏ trên heading) | **ALL CAPS + letter-spacing rộng** |
-| Body text / mô tả sản phẩm / bài viết | Sentence case |
-| Tên sản phẩm trên card | ALL CAPS (qua CSS `text-transform`) |
-| Brand name | **BigBike** hoặc **BIGBIKE** (không "Big Bike") |
-
-### Typography classes (từ `styles/brand-tokens.css`)
-```css
-.bb-h1            /* Bungee 4xl, tight, uppercase — tiêu đề trang */
-.bb-h2            /* Bungee 3xl, heading, uppercase — section heading */
-.bb-h3            /* Bungee 2xl, heading, uppercase — sub-heading */
-.bb-heading-racing /* Bungee xl, tight, uppercase — racing title nhỏ */
-.bb-display       /* Bungee, tight, display letter-spacing, uppercase */
-.bb-heading       /* Bungee, heading line-height */
-.bb-body          /* Exo 400, body line-height */
-.bb-kicker        /* Exo bold xs, ALL CAPS, red, wide tracking */
-.bb-meta          /* Exo 400 xs, muted — ngày tháng, tag phụ */
-.bb-text-muted    /* color: muted */
-.bb-text-brand    /* color: red */
-```
-
-### Ký tự đặc biệt
-- Rating: `★★★★★` (U+2605 Unicode) — **không** dùng SVG
-- Phân cách nav: `•` màu đỏ
-- Giá tiền: `formatVnd(2590000)` → `2.590.000 ₫` (period thousands, ₫ trailing)
+| 320-639px | 1 cột, padding 16px, hero title 18px |
+| 640-1023px | 2 cột, padding 24px |
+| 1024px+ | 3 cột, padding 32px |
+| 1200px+ | Container centered 1200px |
 
 ---
 
-## Spacing
+## Update Rule
 
-Thang 4px base: `--bb-space-1` (4px) → `--bb-space-32` (128px)
+Nếu `DESIGN.md` thay đổi, cập nhật theo thứ tự:
 
-```css
-/* Ví dụ hay dùng */
---bb-space-2:  8px   /* gap icon-text */
---bb-space-4:  16px  /* padding nhỏ */
---bb-space-6:  24px  /* gap card */
---bb-space-10: 40px  /* section padding */
---bb-space-20: 80px  /* section spacing lớn */
-```
-
-Container: max `1440px`, padding 16/24/32px (mobile/tablet/desktop)
-
----
-
-## Border radius
-
-| Context | Giá trị |
-|---|---|
-| Button, input | `sm = 4px` |
-| Card | `md = 8px` |
-| Variant chip, badge | `pill = 999px` |
-| **Không dùng** `xl = 16px` trên UI chính | Trông quá "consumer-soft" |
-
----
-
-## Shadows
-
-```css
---bb-shadow-sm: 0 2px 8px rgba(0,0,0,0.24)    /* card rest */
---bb-shadow-md: 0 8px 24px rgba(0,0,0,0.32)   /* card hover */
---bb-shadow-lg: 0 18px 48px rgba(0,0,0,0.42)  /* modal */
---bb-shadow-brand: 0 12px 30px rgba(249,6,6,0.22)  /* primary button */
-```
-
----
-
-## Animation
-
-| Tên | Duration | Dùng khi |
-|---|---|---|
-| instant | 80ms | Ripple, immediate feedback |
-| fast | 140ms | Hover, focus |
-| normal | 220ms | Card lift, slide |
-| slow | 360ms | Modal open, drawer |
-
-Easing chuẩn: `cubic-bezier(0.2,0,0,1)`. Luôn honor `prefers-reduced-motion`.
-
----
-
-## Layout signatures (KHÔNG được đơn giản hóa)
-
-### 1. Sticky header 72px + trapezoid logo panel
-```css
-/* Logo panel bên trái dùng clip-path */
-clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 100%, 0 100%);
-```
-Header có `backdrop-filter: blur(8px)` — là nơi DUY NHẤT dùng blur.
-
-### 2. Hero radial halo
-```css
-background:
-  radial-gradient(circle at 88% 22%, rgba(249,6,6,0.22), transparent 28%),
-  radial-gradient(circle at 20%  0%, rgba(255,255,255,0.12), transparent 42%),
-  linear-gradient(145deg, #0d0d0d 0%, #171717 48%, #1f1f1f 100%);
-```
-Hero overlay image: `90deg rgba(10,10,10,0.96) → 0.32`
-
-### 3. Product card hover
-```css
-border-color: var(--bb-border-brand);  /* đỏ */
-transform: translateY(-2px);
-box-shadow: var(--bb-shadow-md);
-/* Black bar "THÊM VÀO GIỎ HÀNG" slide lên từ dưới */
-```
-
-### 4. Promo banner
-```css
-background: linear-gradient(135deg, #c00, #8b0000);
-/* Watermark "BIGBIKE" opacity thấp */
-```
-
-### 5. Article image filter (red wash)
-```css
-filter: saturate(1.4) brightness(0.72);
-/* Overlay: rgba(160,0,0,0.35) */
-```
-
-### 6. Floating chat
-- Color: `#20c4f4` (màu này ĐƯỢC PHÉP vì đây là chat bubble)
-- 52px tròn, bottom-right
-- Zalo hoặc tel: link
-
----
-
-## Bộ icon
-
-- **48 icon proprietary** trong `public/brand/icons/bigbike-icon-01.svg` → `48.svg`
-  - Dạng: white glyph trên red tile, không recolor
-  - Dùng cho: category card, feature block
-- **Inline Lucide-style** cho UI chrome (search, cart, hamburger, arrow)
-  - 20×20 hoặc 24×24, `stroke-width="2"`, `stroke="currentColor"`, `stroke-linecap="round"`
-- **Không** import icon library ngoài
-- **Không** icon fonts
-
----
-
-## Logo & favicon
-
-| Asset | Đường dẫn | Dùng khi |
-|---|---|---|
-| Logo chính (mascot + wordmark) | `public/brand/logo-primary.png` | Dark background |
-| Logo mono trắng | `public/brand/logo-mono-white.png` | Background đã có màu đỏ |
-| Wordmark ngang | `public/brand/logo-wordmark.png` | Header/footer slot hẹp |
-| Slogan | `public/brand/slogan.png` | Hero frame, signage |
-| Favicon mặc định | `public/brand/favicon/SVG/BIGBIKE_FAVICON-01.svg` | H-block đỏ |
-
----
-
-## Copy (giọng văn)
-
-**Xưng hô:** "bạn" với khách hàng, "anh em biker" để tạo cảm giác cộng đồng. Không "quý khách".
-
-**Ví dụ thực tế từ production:**
-- Kicker: `SẢN PHẨM NỔI BẬT`
-- Hero title: `SẢN PHẨM NỔI BẬT TẠI BIGBIKE`
-- About: `Bigbike tự hào là một trong những shop chuyên bán đồ phượt, đồ bảo hộ moto đáng tin cậy tại TP HCM…`
-- CTA: `MUA NGAY`, `THÊM VÀO GIỎ HÀNG`, `XEM TẤT CẢ →`
-- Promo: `HOT OFFER · LS2 DUAL SPORT MX436 PIONEER · 20% OFF`
-- Stock labels: `Còn hàng` / `Sắp hết hàng` / `Hết hàng` / `Đặt trước` / `Liên hệ tồn kho`
-
----
-
-## Cách dùng CSS token (ví dụ)
-
-```tsx
-// Nút primary
-<button className="bb-button bb-button-primary">MUA NGAY</button>
-
-// Kicker + heading
-<p className="bb-kicker">SẢN PHẨM NỔI BẬT</p>
-<h2 className="bb-h2">MŨ BẢO HIỂM CHÍNH HÃNG</h2>
-
-// Giá
-<span className="bb-price">{formatVnd(2590000)}</span>
-<span className="bb-price-compare">{formatVnd(2990000)}</span>
-
-// Card với hover
-<div className="bb-product-card bb-card-hover">...</div>
-
-// Meta
-<span className="bb-meta">15 tháng 4, 2026 · Tin tức</span>
-
-// CSS thuần
-background: var(--bb-bg-surface);
-color: var(--bb-text-primary);
-border: 1px solid var(--bb-border-default);
-border-radius: var(--bb-radius-card);
-```
-
----
-
-## Tỷ lệ ảnh
-
-| Loại | Tỷ lệ |
-|---|---|
-| Hero slider | 16:5.5 |
-| Product tile | 1:1 |
-| Article card | 16:9 |
-| Experience block | 4:3 |
+1. `bigbike-web/STYLEGUIDE.md`
+2. `bigbike-web/styles/brand-tokens.css`
+3. `bigbike-web/app/globals.css`
+4. Component liên quan nếu CSS token chưa đủ

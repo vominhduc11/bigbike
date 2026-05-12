@@ -133,7 +133,7 @@ function EditAccountContent() {
             </div>
           </div>
           {passwordError && (
-            <p style={{ color: "var(--bb-brand-primary, #F90606)", fontSize: "0.85rem", marginTop: 6 }}>
+            <p style={{ color: "var(--bb-brand-primary, #FF0C09)", fontSize: "0.85rem", marginTop: 6 }}>
               {passwordError}
             </p>
           )}

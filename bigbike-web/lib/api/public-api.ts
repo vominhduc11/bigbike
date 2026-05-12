@@ -315,6 +315,7 @@ export type ArticleListQuery = {
   sort?: string;
   category?: string;
   q?: string;
+  featured?: boolean;
 };
 
 export function listArticles(query: ArticleListQuery): Promise<ListResult<Article>> {
@@ -326,6 +327,7 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
       sort: query.sort ?? "publishedAt:desc",
       category: query.category,
       q: query.q,
+      featured: query.featured ? "true" : undefined,
     },
     3600,
     ["articles"],

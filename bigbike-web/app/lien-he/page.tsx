@@ -45,8 +45,12 @@ export default async function ContactPage() {
 
   const pageTitle = safeText(page.title, "Liên hệ");
 
+  const fallbackMap =
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.5!2d106.6378!3d10.7625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529b0e0a3a0e7%3A0x0!2zNzkvMzAvNTIgw4J1IEPGoSwgUDQsIFE.MTEgVHAuSENN!5e0!3m2!1svi!2s!4v1";
+  const mapEmbedSrc = canEmbedMap ? mapUrl : fallbackMap;
+
   return (
-    <section className="bb-page">
+    <section className="bb-page wp-contact-page">
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
@@ -58,89 +62,86 @@ export default async function ContactPage() {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container">
-        <div className="bb-detail-layout bb-section">
-          {/* Main: page content + contact form */}
-          <div className="bb-main-gap">
-            {page.body && (
-              <div className="bb-card bb-card-content">
-                <article
-                  className="bb-richtext"
-                  dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-                />
-                <p className="bb-updated-date">Cập nhật {formatDate(page.updatedAt)}</p>
-              </div>
-            )}
 
-            <ContactForm hotline={hotline} email={email} />
+      <div className="wp-contact-map-full" aria-hidden="false">
+        <iframe
+          title="Bản đồ cửa hàng BigBike"
+          src={mapEmbedSrc}
+          width="100%"
+          height="375"
+          style={{ border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowFullScreen
+        />
+      </div>
+
+      <div className="bb-container">
+        <div className="wp-contact-grid">
+          <div className="wp-contact-info">
+            {page.body && (
+              <article
+                className="wp-contact-intro bb-richtext"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+              />
+            )}
+            <ul className="wp-contact-list">
+              <li className="wp-contact-row">
+                <span className="wp-contact-icon" aria-hidden="true">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </span>
+                <div className="wp-contact-text">
+                  <p>Hotline liên hệ</p>
+                  {hotline ? <p><b>{hotline}</b></p> : <p><b>028.62797251</b></p>}
+                  {zalo && !/^https?:\/\//.test(zalo) && <p><b>{zalo}</b></p>}
+                </div>
+              </li>
+              <li className="wp-contact-row">
+                <span className="wp-contact-icon" aria-hidden="true">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </span>
+                <div className="wp-contact-text">
+                  <p>Cửa hàng BigBike</p>
+                  {address ? <p><b>{address}</b></p> : <p><b>79/30/52 Âu Cơ, P.14, Q.11, TP.HCM</b></p>}
+                </div>
+              </li>
+              <li className="wp-contact-row">
+                <span className="wp-contact-icon" aria-hidden="true">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </span>
+                <div className="wp-contact-text">
+                  <p>Giờ làm việc</p>
+                  <p><b>T2 - T6: 09h00 - 21h00</b></p>
+                  <p><b>T7 / CN: 09h00 - 18h00</b></p>
+                  <p><b>Lễ / Tết: nghỉ</b></p>
+                </div>
+              </li>
+            </ul>
+            {email && (
+              <p className="wp-contact-email">
+                Email: <a href={`mailto:${email}`} className="bb-link">{email}</a>
+              </p>
+            )}
           </div>
 
-          {/* Sidebar: contact info + map + navigation */}
-          <aside className="bb-sidebar-grid">
-            <div className="bb-card bb-card-content">
-              <h2 className="bb-sidebar-heading">Thông tin liên hệ</h2>
-              <div style={{ display: "grid", gap: "var(--bb-space-3)" }}>
-                {hotline && (
-                  <div>
-                    <p className="bb-contact-label">Hotline</p>
-                    <a href={`tel:${hotline}`} className="bb-link">{hotline}</a>
-                  </div>
-                )}
-                {email && (
-                  <div>
-                    <p className="bb-contact-label">Email</p>
-                    <a href={`mailto:${email}`} className="bb-link">{email}</a>
-                  </div>
-                )}
-                {address && (
-                  <div>
-                    <p className="bb-contact-label">Địa chỉ</p>
-                    <p>{address}</p>
-                  </div>
-                )}
-                {zalo && (
-                  <div>
-                    <p className="bb-contact-label">Zalo / Chat</p>
-                    {/^https?:\/\//.test(zalo) ? (
-                      <a href={zalo} className="bb-link" target="_blank" rel="noreferrer noopener">Nhắn Zalo</a>
-                    ) : (
-                      <p>{zalo}</p>
-                    )}
-                  </div>
-                )}
-                {!hotline && !email && !address && !zalo && (
-                  <p className="wp-muted-text">Đang cập nhật thông tin liên hệ.</p>
-                )}
-              </div>
+          <div className="wp-contact-form-col">
+            <div className="wp-contact-form-head">
+              <h3>Liên hệ trực tuyến</h3>
+              <p>Để lại lời nhắn — BigBike sẽ phản hồi trong giờ làm việc.</p>
             </div>
-
-            {canEmbedMap ? (
-              <div className="bb-card bb-card-content">
-                <h2 className="bb-sidebar-heading">Bản đồ</h2>
-                <div className="bb-map-frame">
-                  <iframe
-                    title="Bản đồ liên hệ BigBike"
-                    src={mapUrl}
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="bb-card bb-card-content">
-              <h2 className="bb-sidebar-heading">Di chuyển nhanh</h2>
-              <div className="bb-nav-links">
-                <Link href={toHomePath()} className="bb-link">Về trang chủ</Link>
-                <Link href={toProductListPath()} className="bb-link">Xem sản phẩm</Link>
-                <Link href={toArticleListPath()} className="bb-link">Xem tin tức</Link>
-              </div>
-            </div>
-          </aside>
+            <ContactForm hotline={hotline} email={email} />
+          </div>
         </div>
+
+        <nav className="wp-contact-quick-nav">
+          <Link href={toHomePath()} className="bb-link">Về trang chủ</Link>
+          <span aria-hidden="true">·</span>
+          <Link href={toProductListPath()} className="bb-link">Xem sản phẩm</Link>
+          <span aria-hidden="true">·</span>
+          <Link href={toArticleListPath()} className="bb-link">Xem tin tức</Link>
+        </nav>
+
+        <p className="wp-about-updated">Cập nhật {formatDate(page.updatedAt)}</p>
       </div>
     </section>
   );

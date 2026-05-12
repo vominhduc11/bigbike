@@ -2,11 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { search } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { parsePositiveIntParam, parseTextParam, readSingleSearchParam } from "@/lib/utils/query";
+import { toHomePath } from "@/lib/utils/routes";
 
 const SEARCH_PATH = "/tim-kiem/";
 
@@ -40,13 +42,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const types: Array<"product" | "article"> | undefined =
     postType === "product" ? ["product"] : postType === "article" ? ["article"] : undefined;
 
+  const heroTitle = query ? `Tìm kiếm: ${query}` : "Tìm kiếm";
+
   return (
     <section className="bb-page">
+      <PageHero
+        title={heroTitle}
+        kicker="KẾT QUẢ TÌM KIẾM"
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Tìm kiếm" },
+        ]}
+      />
       <div className="bb-container">
-        <header>
-          <h1>Tìm kiếm</h1>
-        </header>
-
         <form method="GET" className="bb-query-form">
           <div className="bb-query-row">
             <label className="bb-query-label">

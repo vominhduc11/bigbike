@@ -28,13 +28,15 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           width={1200}
           height={675}
         />
-        <span className="wp-news-date">{publishedDate}</span>
       </div>
       <div className="wp-news-body">
-        <p className="wp-news-meta">{category}</p>
-        <h3 className="wp-news-card-title">{title}</h3>
-        <p className="wp-news-excerpt">{excerpt}</p>
-        <span className="wp-news-read-more">Đọc tiếp</span>
+        <span className="wp-news-date">{publishedDate}</span>
+        <div className="wp-news-body-inside">
+          <p className="wp-news-meta">{category}</p>
+          <h3 className="wp-news-card-title">{title}</h3>
+          <p className="wp-news-excerpt">{excerpt}</p>
+          <span className="wp-news-read-more">Đọc tiếp</span>
+        </div>
       </div>
     </Link>
   );
