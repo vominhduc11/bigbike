@@ -17,6 +17,7 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
   return (
@@ -223,7 +224,7 @@ export default function CheckoutPage() {
                       {...register("fullName")}
                     />
                     {addressErrors.fullName && (
-                      <p className="wp-field-error">{addressErrors.fullName.message}</p>
+                      <p className="text-sm text-destructive">{addressErrors.fullName.message}</p>
                     )}
                   </div>
 
@@ -238,7 +239,7 @@ export default function CheckoutPage() {
                       {...register("phone")}
                     />
                     {addressErrors.phone && (
-                      <p className="wp-field-error">{addressErrors.phone.message}</p>
+                      <p className="text-sm text-destructive">{addressErrors.phone.message}</p>
                     )}
                   </div>
 
@@ -251,7 +252,7 @@ export default function CheckoutPage() {
                       {...register("email")}
                     />
                     {addressErrors.email && (
-                      <p className="wp-field-error">{addressErrors.email.message}</p>
+                      <p className="text-sm text-destructive">{addressErrors.email.message}</p>
                     )}
                   </div>
 
@@ -265,7 +266,7 @@ export default function CheckoutPage() {
                     required
                   />
                   {(addressErrors.province || addressErrors.district) && (
-                    <p className="wp-field-error full">
+                    <p className="text-sm text-destructive col-span-full">
                       {addressErrors.province?.message ?? addressErrors.district?.message}
                     </p>
                   )}
@@ -278,15 +279,15 @@ export default function CheckoutPage() {
                       {...register("addressLine1")}
                     />
                     {addressErrors.addressLine1 && (
-                      <p className="wp-field-error">{addressErrors.addressLine1.message}</p>
+                      <p className="text-sm text-destructive">{addressErrors.addressLine1.message}</p>
                     )}
                   </div>
 
                   <div className="wp-field full">
                     <label>Ghi chú đơn hàng (tuỳ chọn)</label>
-                    <textarea
-                      className="wp-input wp-textarea-resize"
-                      style={{ minHeight: 80, fontFamily: "inherit" }}
+                    <Textarea
+                      className="min-h-[80px] resize-y"
+                      style={{ fontFamily: "inherit" }}
                       placeholder="Ví dụ: gọi trước khi giao 15 phút..."
                       value={customerNote}
                       onChange={(e) => setCustomerNote(e.target.value)}

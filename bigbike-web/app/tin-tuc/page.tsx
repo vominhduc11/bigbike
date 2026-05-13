@@ -20,6 +20,13 @@ import {
 } from "@/lib/utils/query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 
 const SORT_LABELS: Record<(typeof ARTICLE_SORT_VALUES)[number], string> = {
@@ -183,25 +190,35 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
             </div>
             <div className="wp-field">
               <label>Danh mục</label>
-              <select name="category" defaultValue={categoryParsed.value ?? ""} className="wp-input">
-                <option value="">Tất cả danh mục</option>
-                {categoryParsed.value && !categories.some((c) => c.slug === categoryParsed.value) ? (
-                  <option value={categoryParsed.value}>Danh mục hiện tại: {categoryParsed.value}</option>
-                ) : null}
-                {categories.map((c) => (
-                  <option key={c.id} value={c.slug}>{c.name}</option>
-                ))}
-              </select>
+              <Select name="category" defaultValue={categoryParsed.value ?? ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả danh mục" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tất cả danh mục</SelectItem>
+                  {categoryParsed.value && !categories.some((c) => c.slug === categoryParsed.value) ? (
+                    <SelectItem value={categoryParsed.value}>Danh mục hiện tại: {categoryParsed.value}</SelectItem>
+                  ) : null}
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="wp-field">
               <label>Sắp xếp</label>
-              <select name="sort" defaultValue={sortParsed.value} className="wp-input">
-                {ARTICLE_SORT_VALUES.map((value) => (
-                  <option value={value} key={value}>
-                    {sortLabel(value)}
-                  </option>
-                ))}
-              </select>
+              <Select name="sort" defaultValue={sortParsed.value}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ARTICLE_SORT_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {sortLabel(value)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="wp-news-filter-actions">
               <Button type="submit" variant="primary">

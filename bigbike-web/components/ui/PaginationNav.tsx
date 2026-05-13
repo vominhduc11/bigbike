@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 type PaginationNavProps = {
   page: number;
@@ -28,9 +29,11 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
   return (
     <nav className="bb-pagination" aria-label="Phân trang">
       {page > 1 ? (
-        <Link href={makeHref(page - 1)} className="bb-pagination-nav">Trang trước</Link>
+        <Button asChild variant="secondary" size="sm">
+          <Link href={makeHref(page - 1)}>Trang trước</Link>
+        </Button>
       ) : (
-        <button disabled className="bb-pagination-nav">Trang trước</button>
+        <Button variant="secondary" size="sm" disabled>Trang trước</Button>
       )}
 
       <div className="bb-pagination-pages">
@@ -51,9 +54,11 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
       </div>
 
       {page < totalPages ? (
-        <Link href={makeHref(page + 1)} className="bb-pagination-nav">Trang sau</Link>
+        <Button asChild variant="secondary" size="sm">
+          <Link href={makeHref(page + 1)}>Trang sau</Link>
+        </Button>
       ) : (
-        <button disabled className="bb-pagination-nav">Trang sau</button>
+        <Button variant="secondary" size="sm" disabled>Trang sau</Button>
       )}
     </nav>
   );

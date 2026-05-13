@@ -16,6 +16,7 @@ import { toLoginPath, toRegisterPath } from "@/lib/utils/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
@@ -47,15 +48,15 @@ function RequestResetForm() {
   return (
     <>
       {errors.root && (
-        <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+        <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
           {errors.root.message}
-        </p>
+        </div>
       )}
 
       {success ? (
-        <div className="bb-card" style={{ padding: "var(--bb-space-4)", marginBottom: "var(--bb-space-4)" }}>
+        <Card className="p-5 mb-5">
           <p>Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.</p>
-        </div>
+        </Card>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
           <div className="flex flex-col gap-1.5">
@@ -66,7 +67,7 @@ function RequestResetForm() {
               placeholder="email@example.com"
               {...register("login")}
             />
-            {errors.login && <p className="wp-field-error">{errors.login.message}</p>}
+            {errors.login && <p className="text-sm text-destructive">{errors.login.message}</p>}
           </div>
           <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
@@ -110,18 +111,18 @@ function ResetPasswordForm({ token }: { token: string }) {
   return (
     <>
       {errors.root && (
-        <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+        <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
           {errors.root.message}
-        </p>
+        </div>
       )}
 
       {success ? (
-        <div className="bb-card" style={{ padding: "var(--bb-space-4)", marginBottom: "var(--bb-space-4)" }}>
+        <Card className="p-5 mb-5">
           <p>Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...</p>
           <Link href={toLoginPath()} className="bb-link bb-auth-footer-link" style={{ marginTop: "var(--bb-space-3)" }}>
             Đi đến trang đăng nhập
           </Link>
-        </div>
+        </Card>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
           <div className="flex flex-col gap-1.5">
@@ -133,7 +134,7 @@ function ResetPasswordForm({ token }: { token: string }) {
               placeholder="Nhập mật khẩu mới"
               {...register("password")}
             />
-            {errors.password && <p className="wp-field-error">{errors.password.message}</p>}
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="reset-confirm">Xác nhận mật khẩu</Label>
@@ -144,7 +145,7 @@ function ResetPasswordForm({ token }: { token: string }) {
               placeholder="Nhập lại mật khẩu mới"
               {...register("confirm")}
             />
-            {errors.confirm && <p className="wp-field-error">{errors.confirm.message}</p>}
+            {errors.confirm && <p className="text-sm text-destructive">{errors.confirm.message}</p>}
           </div>
           <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
@@ -160,7 +161,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
 
   return (
     <div className="bb-auth-wrap">
-      <div className="bb-card bb-card-padded">
+      <Card className="p-6">
         <header className="bb-auth-header">
           <p className="bb-kicker">Tài khoản</p>
           <h1 className="bb-auth-title">
@@ -186,7 +187,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
           {" "}
           <Link href={toRegisterPath()} className="bb-link">Tạo tài khoản mới</Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

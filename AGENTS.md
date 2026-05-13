@@ -385,6 +385,24 @@ Never commit raw `bigbike_vn__2026_04_17/` source, `sqldump.sql`, `wp-config.php
 
 Do not build new features ahead of legacy discovery for the affected domain.
 
+### 5.9 Frontend UI stack — React + Tailwind CSS + Radix UI + shadcn/ui
+
+Khi code bất kỳ UI component hoặc layout nào trong `bigbike-web` hoặc `bigbike-admin`:
+
+- **shadcn/ui** là component library chính — dùng `components/ui/` (Button, Input, Select, Dialog, Checkbox, Tabs, …) làm building block trước khi tự build.
+- **Tailwind CSS** cho styling — dùng utility classes, không tạo CSS class legacy mới trong `globals.css` khi Tailwind đủ dùng.
+- **Radix UI** cho interactive primitives (Select, Dialog, Dropdown, Tooltip, Checkbox, Radio…) — không dùng native HTML `<select>`, `<dialog>`, `<details>` nếu shadcn wrapper đã tồn tại trong `components/ui/`.
+- Variants và override: dùng `cn()` + `cva()` / `buttonVariants()` — không bypass bằng cách xóa component để thay raw HTML element.
+- Tham chiếu `@theme inline` trong `globals.css` để biết Tailwind color tokens có sẵn (`text-primary`, `bg-brand`, `border-border`, …).
+
+Cấm:
+
+- ❌ Thêm CSS class legacy mới vào `globals.css` khi Tailwind utility là đủ.
+- ❌ Dùng native `<select>`, `<input type="checkbox">`, `<dialog>` khi shadcn `Select`, `Checkbox`, `Dialog` đã có sẵn trong `components/ui/`.
+- ❌ Xóa hoặc bypass shadcn component (Button, Select, …) để thay bằng raw HTML với class legacy.
+- ❌ Tạo component UI từ đầu khi Radix UI / shadcn đã có primitive phù hợp.
+- ❌ Hardcode màu hex, spacing px, font string trực tiếp — dùng token từ `Bigbike Design System/colors_and_type.css` hoặc Tailwind token tương ứng.
+
 ---
 
 ## 6. Repository Boundaries
@@ -413,6 +431,7 @@ Rules:
 - Internal links.
 - Optimized images.
 - No admin UX patterns unless truly appropriate.
+- **UI stack: React + Tailwind CSS + Radix UI + shadcn/ui** — xem rule 5.9 để biết cách dùng đúng.
 
 Do not turn public web into a dashboard. Customers do not want to "manage entity rows", they want to buy gear and leave with dignity.
 

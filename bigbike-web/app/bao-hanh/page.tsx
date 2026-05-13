@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
@@ -21,15 +22,15 @@ function formatDate(iso: string) {
 
 function StatusBadge({ status, daysLeft }: { status: WarrantyResult["status"]; daysLeft: number }) {
   if (status === "VOIDED") {
-    return <span className="bb-badge bb-badge--grey">Đã huỷ</span>;
+    return <Badge variant="outline">Đã huỷ</Badge>;
   }
   if (status === "EXPIRED") {
-    return <span className="bb-badge bb-badge--red">Hết hạn</span>;
+    return <Badge variant="destructive">Hết hạn</Badge>;
   }
   if (daysLeft <= 30) {
-    return <span className="bb-badge bb-badge--yellow">Sắp hết hạn ({daysLeft} ngày)</span>;
+    return <Badge variant="warning">Sắp hết hạn ({daysLeft} ngày)</Badge>;
   }
-  return <span className="bb-badge bb-badge--green">Còn hiệu lực ({daysLeft} ngày)</span>;
+  return <Badge variant="success">Còn hiệu lực ({daysLeft} ngày)</Badge>;
 }
 
 export default function WarrantyLookupPage() {

@@ -50,6 +50,30 @@ Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/
 
 ---
 
+## ⚠️ UI Stack — bigbike-web & bigbike-admin
+
+Khi code bất kỳ giao diện nào trong `bigbike-web` hoặc `bigbike-admin`, **bắt buộc dùng combo**:
+
+> **React + Tailwind CSS + Radix UI + shadcn/ui**
+
+| Việc cần làm | Dùng gì |
+|---|---|
+| Component UI (button, input, select, dialog, checkbox, tabs…) | shadcn/ui từ `components/ui/` |
+| Styling, spacing, color, layout | Tailwind CSS utility classes |
+| Interactive primitive (dropdown, tooltip, popover, radio…) | Radix UI qua shadcn wrapper |
+| Variant/override | `cn()` + `cva()` / `buttonVariants()` |
+| Color/token reference | `@theme inline` trong `globals.css` (`text-primary`, `bg-brand`, `border-border`…) |
+
+**Cấm:**
+- ❌ Dùng native `<select>`, `<dialog>`, `<input type="checkbox">` khi shadcn đã có component tương ứng.
+- ❌ Xóa/bypass shadcn component để thay bằng raw HTML + class CSS legacy.
+- ❌ Thêm CSS class mới vào `globals.css` khi Tailwind utility là đủ.
+- ❌ Hardcode hex màu / spacing px thay vì dùng Tailwind token.
+
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.9.
+
+---
+
 ## Phong cách trả lời
 
 - **Ngôn ngữ business, không dùng thuật ngữ kỹ thuật.** Giải thích bằng ngôn ngữ mà chủ shop / quản lý có thể hiểu ngay — không dùng tên class, method, endpoint, stack trace hay jargon lập trình trừ khi user là developer và đang hỏi về code cụ thể.

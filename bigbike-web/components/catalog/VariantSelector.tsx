@@ -3,6 +3,13 @@
 import type { CSSProperties } from "react";
 import { safeText } from "@/lib/utils/format";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   findMatchingVariant,
   isColorAttribute,
   normalizeValue,
@@ -235,30 +242,28 @@ export function VariantSelector({
   return (
     <div className="wp-pdp-opt-group">
       <h6>Biến thể</h6>
-      <select
-        className="wp-input"
+      <Select
         value={currentVariantId}
-        onChange={(e) => {
-          const v = variants.find((va) => va.id === e.target.value);
+        onValueChange={(id) => {
+          const v = variants.find((va) => va.id === id);
           if (!v) return;
-          // Project the variant's own option set up so parent state stays
-          // consistent with chip-style selection.
           for (const opt of v.options ?? []) {
             onSelectOption(opt.name, opt.value);
           }
         }}
         disabled={disabled}
       >
-        <option value="" disabled>
-          — Chọn biến thể —
-        </option>
-        {variants.map((v) => (
-          <option key={v.id} value={v.id} disabled={!v.isAvailable}>
-            {describeVariant(v)}
-            {v.isAvailable ? "" : " — hết hàng"}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger>
+          <SelectValue placeholder="— Chọn biến thể —" />
+        </SelectTrigger>
+        <SelectContent>
+          {variants.map((v) => (
+            <SelectItem key={v.id} value={v.id} disabled={!v.isAvailable}>
+              {describeVariant(v)}{v.isAvailable ? "" : " — hết hàng"}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

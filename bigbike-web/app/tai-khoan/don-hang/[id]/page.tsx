@@ -8,6 +8,15 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function orderStatusClass(status: string): string {
   const map: Record<string, string> = {
@@ -119,14 +128,13 @@ function CreateReturnForm({
                   <span style={{ color: "var(--c-muted)", marginLeft: 6 }}>×{li.quantity}</span>
                 </label>
                 {selections[li.id]?.selected && (
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={li.quantity}
                     value={selections[li.id].quantity}
                     onChange={(e) => setQty(li.id, Number(e.target.value), li.quantity)}
-                    className="wp-input"
-                    style={{ width: 64, textAlign: "center" }}
+                    className="w-16 text-center"
                     aria-label={`Số lượng ${li.productName}`}
                   />
                 )}
@@ -135,16 +143,20 @@ function CreateReturnForm({
           </div>
           <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
             <label>Lý do đổi trả</label>
-            <select className="wp-input" name="reason" required>
-              <option value="">-- Chọn lý do --</option>
-              {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+            <Select name="reason" required>
+              <SelectTrigger>
+                <SelectValue placeholder="-- Chọn lý do --" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
             <label>Ghi chú thêm (không bắt buộc)</label>
-            <textarea className="wp-input" name="customerNote" rows={2} placeholder="Mô tả thêm..." style={{ resize: "vertical" }} />
+            <Textarea name="customerNote" rows={2} placeholder="Mô tả thêm..." className="resize-y" />
           </div>
         </div>
         <div className="wp-form-actions">

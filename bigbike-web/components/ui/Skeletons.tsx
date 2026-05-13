@@ -15,6 +15,7 @@
  */
 
 import type { CSSProperties, ReactNode } from "react";
+import { Card } from "@/components/ui/card";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -817,7 +818,7 @@ export function AuthSkeleton() {
       <section className="bb-page">
         <div className="bb-container">
           <div className="bb-auth-wrap">
-            <div className="bb-card bb-card-padded" style={{ padding: 24 }}>
+            <Card className="p-6">
               <div className="bb-skel-stack">
                 <SkelText w="30%" />
                 <SkelTitle w="60%" h="1.8em" />
@@ -829,7 +830,7 @@ export function AuthSkeleton() {
                 <SkelButton w="100%" />
                 <SkelText w="55%" />
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </section>

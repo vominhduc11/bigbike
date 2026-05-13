@@ -206,7 +206,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
         />
       </div>
 
-      {error && <p className="wp-field-error">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="wp-review-form-actions">
         <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
@@ -348,7 +348,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
             {isFetchingNextPage ? "Đang tải thêm..." : "Xem thêm đánh giá"}
           </Button>
           {isFetchNextPageError && (
-            <p className="wp-field-error">Không thể tải thêm đánh giá.</p>
+            <p className="text-sm text-destructive">Không thể tải thêm đánh giá.</p>
           )}
         </div>
       )}

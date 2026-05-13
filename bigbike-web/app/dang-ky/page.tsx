@@ -12,6 +12,7 @@ import { toAccountPath, toLoginPath } from "@/lib/utils/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function RegisterPage() {
       <section className="bb-page">
         <div className="bb-container">
           <div className="bb-auth-wrap">
-            <div className="bb-card bb-card-padded" style={{ textAlign: "center" }}>
+            <Card className="p-6 text-center">
               <div style={{ marginBottom: "var(--bb-space-4)", display: "flex", justifyContent: "center" }}>
                 <svg
                   width="52"
@@ -82,7 +83,7 @@ export default function RegisterPage() {
               >
                 Vào tài khoản
               </Button>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -93,16 +94,16 @@ export default function RegisterPage() {
     <section className="bb-page">
       <div className="bb-container">
         <div className="bb-auth-wrap">
-          <div className="bb-card bb-card-padded">
+          <Card className="p-6">
             <header className="bb-auth-header">
               <p className="bb-kicker">Tài khoản</p>
               <h1 className="bb-auth-title">Đăng ký</h1>
             </header>
 
             {errors.root && (
-              <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+              <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
                 {errors.root.message}
-              </p>
+              </div>
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
@@ -117,7 +118,7 @@ export default function RegisterPage() {
                   {...register("firstName")}
                 />
                 {errors.firstName && (
-                  <p className="wp-field-error">{errors.firstName.message}</p>
+                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
                 )}
               </div>
 
@@ -143,7 +144,7 @@ export default function RegisterPage() {
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p className="wp-field-error">{errors.email.message}</p>
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
                 )}
               </div>
 
@@ -159,7 +160,7 @@ export default function RegisterPage() {
                   {...register("password")}
                 />
                 {errors.password && (
-                  <p className="wp-field-error">{errors.password.message}</p>
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </div>
 
@@ -175,7 +176,7 @@ export default function RegisterPage() {
                   {...register("confirm")}
                 />
                 {errors.confirm && (
-                  <p className="wp-field-error">{errors.confirm.message}</p>
+                  <p className="text-sm text-destructive">{errors.confirm.message}</p>
                 )}
               </div>
 
@@ -190,7 +191,7 @@ export default function RegisterPage() {
                 Đăng nhập
               </Link>
             </p>
-          </div>
+          </Card>
         </div>
       </div>
     </section>

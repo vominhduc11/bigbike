@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { VN_PROVINCES } from "@/lib/vn-address-data";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AddressState = {
   province: string;
@@ -67,74 +75,69 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
         <label>
           Tỉnh / Thành phố{required && <span className="req"> *</span>}
         </label>
-        <select
-          className={`wp-input${value.province ? " filled" : ""}`}
+        <Select
           required={required}
           value={value.province}
-          onChange={(e) => {
-            onChange("province", e.target.value);
+          onValueChange={(v) => {
+            onChange("province", v);
             onChange("district", "");
             onChange("ward", "");
           }}
         >
-          <option value="">— Chọn tỉnh / thành phố —</option>
-          {VN_PROVINCES.map((p) => (
-            <option key={p.code} value={p.name}>{p.name}</option>
-          ))}
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder="— Chọn tỉnh / thành phố —" />
+          </SelectTrigger>
+          <SelectContent>
+            {VN_PROVINCES.map((p) => (
+              <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="wp-field">
         <label>Quận / Huyện</label>
         {selectedProvince ? (
-          <select
-            className={`wp-input${value.district ? " filled" : ""}`}
+          <Select
             value={value.district}
-            onChange={(e) => {
-              onChange("district", e.target.value);
+            onValueChange={(v) => {
+              onChange("district", v);
               onChange("ward", "");
             }}
           >
-            <option value="">— Chọn quận / huyện —</option>
-            {selectedProvince.districts.map((d) => (
-              <option key={d.code} value={d.name}>{d.name}</option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="— Chọn quận / huyện —" />
+            </SelectTrigger>
+            <SelectContent>
+              {selectedProvince.districts.map((d) => (
+                <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
-          <input
-            className="wp-input"
-            placeholder="Chọn tỉnh/thành phố trước"
-            disabled
-            value=""
-            readOnly
-          />
+          <Input placeholder="Chọn tỉnh/thành phố trước" disabled />
         )}
       </div>
 
       <div className="wp-field">
         <label>Phường / Xã</label>
         {selectedDistrict ? (
-          <select
-            className={`wp-input${value.ward ? " filled" : ""}`}
+          <Select
             value={value.ward}
             disabled={wardsLoading}
-            onChange={(e) => onChange("ward", e.target.value)}
+            onValueChange={(v) => onChange("ward", v)}
           >
-            <option value="">
-              {wardsLoading ? "Đang tải..." : "— Chọn phường / xã —"}
-            </option>
-            {wards.map((w) => (
-              <option key={w.code} value={w.name}>{w.name}</option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder={wardsLoading ? "Đang tải..." : "— Chọn phường / xã —"} />
+            </SelectTrigger>
+            <SelectContent>
+              {wards.map((w) => (
+                <SelectItem key={w.code} value={w.name}>{w.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
-          <input
-            className="wp-input"
-            placeholder="Chọn quận/huyện trước"
-            disabled
-            value=""
-            readOnly
-          />
+          <Input placeholder="Chọn quận/huyện trước" disabled />
         )}
       </div>
     </>

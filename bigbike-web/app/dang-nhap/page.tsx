@@ -13,6 +13,7 @@ import { isSafeReturnTo } from "@/lib/utils/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 function LoginForm() {
   const router = useRouter();
@@ -42,16 +43,16 @@ function LoginForm() {
 
   return (
     <div className="bb-auth-wrap">
-      <div className="bb-card bb-card-padded">
+      <Card className="p-6">
         <header className="bb-auth-header">
           <p className="bb-kicker">Tài khoản</p>
           <h1 className="bb-auth-title">Đăng nhập</h1>
         </header>
 
         {errors.root && (
-          <p className="bb-status-banner" style={{ marginBottom: "var(--bb-space-4)" }}>
+          <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
             {errors.root.message}
-          </p>
+          </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
@@ -64,7 +65,7 @@ function LoginForm() {
               {...register("login")}
             />
             {errors.login && (
-              <p className="wp-field-error">{errors.login.message}</p>
+              <p className="text-sm text-destructive">{errors.login.message}</p>
             )}
           </div>
 
@@ -78,7 +79,7 @@ function LoginForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="wp-field-error">{errors.password.message}</p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
@@ -97,7 +98,7 @@ function LoginForm() {
             Đăng ký ngay
           </Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -105,7 +106,7 @@ function LoginForm() {
 function LoginFormSkeleton() {
   return (
     <div className="bb-auth-wrap" aria-busy="true">
-      <div className="bb-card bb-card-padded" style={{ padding: 24 }}>
+      <Card className="p-6">
         <div className="bb-skel-stack">
           <span className="bb-skel bb-skel--text bb-skel-w-25" />
           <span className="bb-skel bb-skel--title bb-skel-w-50" style={{ height: "1.8em" }} />
@@ -117,7 +118,7 @@ function LoginFormSkeleton() {
           <span className="bb-skel bb-skel--btn" style={{ width: "100%" }} />
           <span className="bb-skel bb-skel--text bb-skel-w-60" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

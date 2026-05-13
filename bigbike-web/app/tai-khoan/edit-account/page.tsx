@@ -5,6 +5,13 @@ import { AccountShell, useAccount, useAccountRefresh } from "@/components/layout
 import { updateCustomerProfile } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function EditAccountContent() {
   const profile = useAccount();
@@ -105,12 +112,16 @@ function EditAccountContent() {
             </div>
             <div className="wp-field">
               <label>Giới tính</label>
-              <select className="wp-input" name="gender" defaultValue={profile?.gender ?? ""}>
-                <option value="">-- Chọn --</option>
-                <option value="male">Nam</option>
-                <option value="female">Nữ</option>
-                <option value="other">Khác</option>
-              </select>
+              <Select name="gender" defaultValue={profile?.gender ?? undefined}>
+                <SelectTrigger>
+                  <SelectValue placeholder="-- Chọn --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Nam</SelectItem>
+                  <SelectItem value="female">Nữ</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="wp-field">
               <label>Ngày sinh</label>

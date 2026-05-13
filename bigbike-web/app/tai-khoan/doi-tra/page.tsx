@@ -6,6 +6,15 @@ import type { CustomerReturn, OrderLineItem, OrderListItem } from "@/lib/contrac
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const RETURN_STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ duyệt",
@@ -316,17 +325,16 @@ function ReturnsContent() {
                     Không có đơn hàng nào đủ điều kiện đổi trả (cần trạng thái Hoàn thành).
                   </p>
                 ) : (
-                  <select
-                    className="wp-input"
-                    value={selectedOrderId}
-                    onChange={(e) => handleOrderChange(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Chọn đơn hàng --</option>
-                    {returnableOrders.map((o) => (
-                      <option key={o.id} value={o.id}>Đơn #{o.orderNumber}</option>
-                    ))}
-                  </select>
+                  <Select value={selectedOrderId} onValueChange={handleOrderChange} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn đơn hàng --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {returnableOrders.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>Đơn #{o.orderNumber}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
 
@@ -353,14 +361,13 @@ function ReturnsContent() {
                           <span style={{ color: "var(--c-muted)", marginLeft: 6 }}>×{li.quantity}</span>
                         </label>
                         {itemSelections[li.id]?.selected && (
-                          <input
+                          <Input
                             type="number"
                             min={1}
                             max={li.quantity}
                             value={itemSelections[li.id].quantity}
                             onChange={(e) => setLineItemQty(li.id, Number(e.target.value), li.quantity)}
-                            className="wp-input"
-                            style={{ width: 64, textAlign: "center" }}
+                            className="w-16 text-center"
                             aria-label={`Số lượng ${li.productName}`}
                           />
                         )}
@@ -372,21 +379,24 @@ function ReturnsContent() {
 
               <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
                 <label>Lý do đổi trả</label>
-                <select className="wp-input" name="reason" required>
-                  <option value="">-- Chọn lý do --</option>
-                  {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+                <Select name="reason" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- Chọn lý do --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
                 <label>Mô tả thêm (không bắt buộc)</label>
-                <textarea
-                  className="wp-input"
+                <Textarea
                   name="customerNote"
                   rows={3}
                   placeholder="Mô tả thêm về vấn đề..."
-                  style={{ resize: "vertical" }}
+                  className="resize-y"
                 />
               </div>
             </div>

@@ -135,7 +135,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             <div className="bb-card bb-card-content">
               <h2 className="bb-sidebar-heading">Mục hướng dẫn</h2>
               {menuResult.error ? (
-                <p className="bb-status-banner">{menuResult.error.message}</p>
+                <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
               ) : menuItems.length === 0 ? (
                 <p className="wp-muted-text">Chưa có mục hướng dẫn.</p>
               ) : (
