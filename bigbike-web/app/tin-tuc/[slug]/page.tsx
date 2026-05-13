@@ -13,6 +13,7 @@ import {
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { Button } from "@/components/ui/button";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toArticleListPath, toArticlePath, toCanonicalUrl } from "@/lib/utils/routes";
@@ -200,13 +201,13 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         </div>
 
         <nav className="wp-article-footer-nav" aria-label="Điều hướng bài viết">
-          <Link href={toArticleListPath()} className="bb-button bb-button-secondary">
-            Tất cả bài viết
-          </Link>
+          <Button asChild variant="secondary">
+            <Link href={toArticleListPath()}>Tất cả bài viết</Link>
+          </Button>
           {article.category?.slug ? (
-            <Link href={categoryHref} className="bb-button bb-button-primary">
-              Xem cùng danh mục
-            </Link>
+            <Button asChild variant="primary">
+              <Link href={categoryHref}>Xem cùng danh mục</Link>
+            </Button>
           ) : null}
         </nav>
        </div>

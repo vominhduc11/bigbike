@@ -5,6 +5,7 @@ import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, formatVnd, orderStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 
 function pickSetting(
   settings: { settingKey: string; settingValue: string }[],
@@ -168,8 +169,12 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         )}
 
         <div className="cta-row">
-          <Link href={toProductListPath()} className="wp-btn-secondary">Tiếp tục mua hàng</Link>
-          <Link href={toOrderHistoryPath()} className="wp-btn-primary">Xem đơn hàng của tôi →</Link>
+          <Button asChild variant="secondary">
+            <Link href={toProductListPath()}>Tiếp tục mua hàng</Link>
+          </Button>
+          <Button asChild variant="primary">
+            <Link href={toOrderHistoryPath()}>Xem đơn hàng của tôi →</Link>
+          </Button>
         </div>
       </div>
     </>

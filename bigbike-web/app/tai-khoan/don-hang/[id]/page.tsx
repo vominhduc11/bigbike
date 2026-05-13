@@ -7,6 +7,7 @@ import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/cont
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 
 function orderStatusClass(status: string): string {
   const map: Record<string, string> = {
@@ -147,8 +148,8 @@ function CreateReturnForm({
           </div>
         </div>
         <div className="wp-form-actions">
-          <button type="submit" className="wp-btn-primary" disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi yêu cầu"}</button>
-          <button type="button" className="wp-btn-secondary" onClick={onDone} disabled={submitting}>Hủy</button>
+          <Button type="submit" variant="primary" disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi yêu cầu"}</Button>
+          <Button type="button" variant="secondary" onClick={onDone} disabled={submitting}>Hủy</Button>
         </div>
       </form>
     </div>
@@ -280,9 +281,9 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
       ) : !order ? (
         <div className="wp-empty-state">
           <p style={{ fontSize: 14, marginBottom: 16 }}>Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.</p>
-          <Link href={toOrderHistoryPath()} className="wp-btn-secondary" style={{ fontSize: 12, padding: "10px 18px" }}>
-            Quay lại đơn hàng
-          </Link>
+          <Button asChild variant="secondary" size="sm">
+            <Link href={toOrderHistoryPath()}>Quay lại đơn hàng</Link>
+          </Button>
         </div>
       ) : (
         <div className="wp-list-gap">
@@ -453,9 +454,9 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                   Đơn hàng sẽ bị huỷ và tồn kho sẽ được hoàn lại. Thao tác không thể khôi phục.
                 </p>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button
+                  <Button
                     type="button"
-                    className="wp-btn-primary"
+                    variant="primary"
                     style={{ background: "var(--c-danger, #ef4444)" }}
                     disabled={cancelling}
                     onClick={async () => {
@@ -473,17 +474,17 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                     }}
                   >
                     {cancelling ? "Đang huỷ..." : "Xác nhận huỷ"}
-                  </button>
-                  <button type="button" className="wp-btn-secondary" onClick={() => setCancelConfirm(false)} disabled={cancelling}>
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => setCancelConfirm(false)} disabled={cancelling}>
                     Không huỷ
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
               <div style={{ textAlign: "right" }}>
-                <button type="button" className="wp-btn-secondary wp-btn-sm" onClick={() => setCancelConfirm(true)}>
+                <Button type="button" variant="secondary" size="sm" onClick={() => setCancelConfirm(true)}>
                   Huỷ đơn hàng
-                </button>
+                </Button>
               </div>
             )
           )}
@@ -496,9 +497,9 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
               <CreateReturnForm orderId={order.id} lineItems={order.lineItems} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
             ) : (
               <div style={{ textAlign: "right" }}>
-                <button type="button" className="wp-btn-secondary wp-btn-sm" onClick={() => setShowReturnForm(true)}>
+                <Button type="button" variant="secondary" size="sm" onClick={() => setShowReturnForm(true)}>
                   Yêu cầu đổi trả
-                </button>
+                </Button>
               </div>
             )
           )}

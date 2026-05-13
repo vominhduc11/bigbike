@@ -9,9 +9,37 @@ type ArticleCardProps = {
   variant?: "default" | "featured";
 };
 
+function stripHtmlToText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function truncateText(text: string, maxLength = 160): string {
+  if (text.length <= maxLength) return text;
+  const cut = text.lastIndexOf(" ", maxLength);
+  const pos = cut > maxLength - 30 ? cut : maxLength;
+  return text.slice(0, pos).trimEnd() + "…";
+}
+
+function resolveArticleExcerpt(article: Article): string {
+  const excerpt = article.excerpt?.trim();
+  if (excerpt) return excerpt;
+  const bodyText = article.body ? stripHtmlToText(article.body) : "";
+  if (bodyText) return truncateText(bodyText);
+  return "Xem chi tiết bài viết từ BigBike.";
+}
+
 export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
   const title = safeText(article.title, "Bài viết đang cập nhật");
-  const excerpt = safeText(article.excerpt, "Nội dung đang được cập nhật.");
+  const excerpt = resolveArticleExcerpt(article);
   const category = safeText(article.category?.name ?? article.categories?.[0]?.name, "Tin tức");
   const publishedDate = formatDate(article.publishedAt ?? article.createdAt);
 

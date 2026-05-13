@@ -20,9 +20,9 @@ export default function GlobalRouteError({
         <section className="bb-error-state" role="alert" aria-live="assertive">
           <h1>Lỗi hệ thống</h1>
           <p>Đã xảy ra lỗi ngoài dự kiến. Vui lòng thử lại.</p>
-          <button type="button" className="bb-button bb-button-primary" onClick={unstable_retry}>
+          <Button type="button" variant="primary" onClick={unstable_retry}>
             Thử lại
-          </button>
+          </Button>
         </section>
       </div>
     </section>

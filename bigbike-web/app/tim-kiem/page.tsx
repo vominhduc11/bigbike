@@ -9,6 +9,7 @@ import { search } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { parsePositiveIntParam, parseTextParam, readSingleSearchParam } from "@/lib/utils/query";
 import { toHomePath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 
 const SEARCH_PATH = "/tim-kiem/";
 
@@ -79,12 +80,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </label>
           </div>
           <div className="bb-section-row">
-            <button className="bb-button bb-button-primary" type="submit">
-              Tìm kiếm
-            </button>
-            <Link href={SEARCH_PATH} className="bb-button bb-button-secondary">
-              Xoá
-            </Link>
+            <Button type="submit" variant="primary">Tìm kiếm</Button>
+            <Button asChild variant="secondary">
+              <Link href={SEARCH_PATH}>Xoá</Link>
+            </Button>
           </div>
         </form>
 
@@ -126,9 +125,9 @@ async function SearchResults({
         title={`Không có kết quả cho "${query}"`}
         description="Thử rút gọn từ khoá hoặc kiểm tra chính tả."
         action={
-          <Link href="/san-pham/" className="bb-button bb-button-primary">
-            XEM TẤT CẢ SẢN PHẨM
-          </Link>
+          <Button asChild variant="primary">
+            <Link href="/san-pham/">XEM TẤT CẢ SẢN PHẨM</Link>
+          </Button>
         }
       />
     );

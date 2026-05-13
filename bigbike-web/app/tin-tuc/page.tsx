@@ -18,6 +18,8 @@ import {
   parseTextParam,
   readSingleSearchParam,
 } from "@/lib/utils/query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 
 const SORT_LABELS: Record<(typeof ARTICLE_SORT_VALUES)[number], string> = {
@@ -173,21 +175,23 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           <form method="GET" className="wp-news-filter-form" aria-label="Lọc bài viết">
             <div className="wp-field wp-news-filter-search">
               <label>Tìm kiếm</label>
-              <input
+              <Input
                 name="q"
                 defaultValue={qParsed.value}
-                className="wp-input"
                 placeholder="VD: chọn size mũ, găng tay touring..."
               />
             </div>
             <div className="wp-field">
               <label>Danh mục</label>
-              <input
-                name="category"
-                defaultValue={categoryParsed.value}
-                className="wp-input"
-                placeholder="VD: tin-tuc, huong-dan..."
-              />
+              <select name="category" defaultValue={categoryParsed.value ?? ""} className="wp-input">
+                <option value="">Tất cả danh mục</option>
+                {categoryParsed.value && !categories.some((c) => c.slug === categoryParsed.value) ? (
+                  <option value={categoryParsed.value}>Danh mục hiện tại: {categoryParsed.value}</option>
+                ) : null}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
             </div>
             <div className="wp-field">
               <label>Sắp xếp</label>
@@ -200,9 +204,9 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
               </select>
             </div>
             <div className="wp-news-filter-actions">
-              <button type="submit" className="wp-btn-primary">
+              <Button type="submit" variant="primary">
                 Áp dụng
-              </button>
+              </Button>
               {hasVisibleFilters ? (
                 <Link href={toArticleListPath()} className="wp-filter-reset">
                   Xoá lọc
@@ -268,9 +272,9 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
             description="Chưa có bài viết phù hợp với bộ lọc hiện tại."
             action={
               hasVisibleFilters ? (
-                <Link href={toArticleListPath()} className="bb-button bb-button-primary">
-                  Xem tất cả bài viết
-                </Link>
+                <Button asChild variant="primary">
+                  <Link href={toArticleListPath()}>Xem tất cả bài viết</Link>
+                </Button>
               ) : null
             }
           />

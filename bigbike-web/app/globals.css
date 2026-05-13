@@ -1140,6 +1140,9 @@ textarea.bb-input {
 .bb-pagination-page:hover { border-color: var(--bb-border-brand); color: var(--bb-text-brand); }
 .bb-pagination-page.active { background: var(--bb-brand-primary); border-color: var(--bb-brand-primary); color: #fff; pointer-events: none; }
 .bb-pagination-ellipsis { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 36px; color: var(--bb-text-muted); font-size: 13px; }
+.bb-pagination-nav { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 14px; border-radius: var(--bb-radius-sm); border: 1px solid var(--bb-border-subtle); color: var(--bb-text-secondary); font-size: 13px; text-decoration: none; background: transparent; cursor: pointer; white-space: nowrap; transition: all 140ms; }
+.bb-pagination-nav:hover:not(:disabled) { border-color: var(--bb-border-brand); color: var(--bb-text-brand); }
+.bb-pagination-nav:disabled { opacity: 0.52; cursor: not-allowed; }
 
 .bb-skeleton-grid {
   display: grid;
@@ -6240,6 +6243,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   .bb-cart-icon-link,
   .wp-pagination-page,
   .bb-pagination-page,
+  .bb-pagination-nav,
   .wp-cart-remove,
   .wp-pdp-strip-nav,
   .wp-qb-close,

@@ -4,6 +4,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
 import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 
 export const revalidate = 3600;
 
@@ -47,21 +48,21 @@ export default async function NotFoundPage() {
               className="wp-404-search-input"
               aria-label="Từ khoá tìm kiếm"
             />
-            <button type="submit" className="bb-button bb-button-primary wp-404-search-btn">
+            <Button type="submit" variant="primary" className="wp-404-search-btn">
               TÌM KIẾM
-            </button>
+            </Button>
           </form>
 
           <div className="wp-404-nav">
-            <Link href={toHomePath()} className="bb-button bb-button-primary">
-              VỀ TRANG CHỦ
-            </Link>
-            <Link href={toProductListPath()} className="bb-button bb-button-secondary">
-              XEM SẢN PHẨM
-            </Link>
-            <Link href={toArticleListPath()} className="bb-button bb-button-secondary">
-              ĐỌC TIN TỨC
-            </Link>
+            <Button asChild variant="primary">
+              <Link href={toHomePath()}>VỀ TRANG CHỦ</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href={toProductListPath()}>XEM SẢN PHẨM</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href={toArticleListPath()}>ĐỌC TIN TỨC</Link>
+            </Button>
           </div>
 
           {recent.length > 0 && (

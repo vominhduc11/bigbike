@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
@@ -76,10 +78,9 @@ export default function WarrantyLookupPage() {
             Số serial <span className="req">*</span>
           </label>
           <div style={{ display: "flex", gap: 8 }}>
-            <input
+            <Input
               id="serial-input"
-              className="wp-input"
-              style={{ flex: 1 }}
+              className="flex-1"
               placeholder="VD: AGV-2024-001234"
               value={serial}
               onChange={(e) => setSerial(e.target.value)}
@@ -87,13 +88,13 @@ export default function WarrantyLookupPage() {
               autoComplete="off"
               spellCheck={false}
             />
-            <button
+            <Button
               type="submit"
-              className="wp-btn-primary"
+              variant="primary"
               disabled={isPending || !serial.trim()}
             >
               {isPending ? "Đang tra..." : "Tra cứu"}
-            </button>
+            </Button>
           </div>
           <p className="wp-muted-text" style={{ marginTop: 6 }}>
             Số serial in trên tem dán trong hộp sản phẩm hoặc trên thân sản phẩm.
