@@ -338,7 +338,7 @@ export function CatalogFilters({
                             style={opt.hex ? { background: opt.hex } : undefined}
                             aria-hidden="true"
                           >
-                            {!opt.hex && <span style={{ fontSize: 8, color: "var(--bb-text-muted)" }}>ALL</span>}
+                            {!opt.hex && <span style={{ fontSize: 11, color: "var(--bb-text-secondary)", fontWeight: 700, lineHeight: 1 }}>ALL</span>}
                           </span>
                           <span className="wp-filter-color-name">{opt.label}</span>
                         </label>

@@ -24,6 +24,8 @@ function buildEmptyForm() {
     visible: true,
     logoUrl: '',
     logoAlt: '',
+    bannerUrl: '',
+    bannerAlt: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -40,6 +42,8 @@ function buildFormFromItem(item) {
     visible: item.isVisible !== false,
     logoUrl: item.logo?.url || '',
     logoAlt: item.logo?.alt || '',
+    bannerUrl: item.bannerImage?.url || '',
+    bannerAlt: item.bannerImage?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -58,6 +62,10 @@ function toPayload(form) {
 
   payload.logo = form.logoUrl.trim()
     ? { url: form.logoUrl.trim(), alt: form.logoAlt.trim() || undefined }
+    : { url: '' }
+
+  payload.banner = form.bannerUrl.trim()
+    ? { url: form.bannerUrl.trim(), alt: form.bannerAlt.trim() || undefined }
     : { url: '' }
 
   if (
@@ -349,6 +357,26 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 className="control-input"
                 value={form.logoAlt}
                 onChange={(event) => updateField('logoAlt', event.target.value)}
+                disabled={isReadOnly}
+              />
+            </label>
+
+            <div className="form-field form-field-wide">
+              <span>{t('brands.detail.bannerUrl', { defaultValue: 'Ảnh banner thương hiệu' })}</span>
+              <ImageUrlInput
+                value={form.bannerUrl}
+                onChange={(url) => updateField('bannerUrl', url)}
+                disabled={isReadOnly}
+                error={validationErrors.bannerUrl}
+              />
+            </div>
+
+            <label className="form-field">
+              <span>{t('brands.detail.bannerAlt', { defaultValue: 'Alt text banner' })}</span>
+              <input
+                className="control-input"
+                value={form.bannerAlt}
+                onChange={(event) => updateField('bannerAlt', event.target.value)}
                 disabled={isReadOnly}
               />
             </label>

@@ -7,7 +7,8 @@ enum StockState {
   lowStock,
   outOfStock,
   preorder,
-  contactForStock;
+  contactForStock,
+  unknown;
 
   static StockState fromString(String? s) => switch (s) {
     'IN_STOCK' => inStock,
@@ -15,7 +16,7 @@ enum StockState {
     'OUT_OF_STOCK' => outOfStock,
     'PREORDER' => preorder,
     'CONTACT_FOR_STOCK' => contactForStock,
-    _ => inStock,
+    _ => unknown,
   };
 
   String get label => switch (this) {
@@ -24,10 +25,31 @@ enum StockState {
     outOfStock => 'Hết hàng',
     preorder => 'Đặt trước',
     contactForStock => 'Liên hệ',
+    unknown => 'Không rõ',
   };
 
   bool get canAddToCart =>
       this == inStock || this == lowStock || this == preorder;
+}
+
+/// Parses a backend image field that may be either:
+///   - an `ImageAsset` object `{ url, alt, width, height, mimeType }`
+///   - a legacy plain string URL (mock/older payloads)
+/// Returns the URL string, or null for any unknown shape.
+String? _parseImageUrl(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is String) {
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  if (raw is Map) {
+    final url = raw['url'];
+    if (url is String) {
+      final trimmed = url.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+  }
+  return null;
 }
 
 class ProductVariantOption {
@@ -71,11 +93,7 @@ class ProductVariant {
         .toList(),
     price: ProductPrice.fromJson(j['price'] as Map<String, dynamic>? ?? {}),
     stockState: StockState.fromString(j['stockState'] as String?),
-    // Backend serializes image as an object {url, alt, width, height, mimeType}.
-    // Fall back to flat string for forward-compat.
-    image: j['image'] is Map
-        ? (j['image'] as Map)['url'] as String?
-        : j['image'] as String? ?? j['imageUrl'] as String?,
+    image: _parseImageUrl(j['image']) ?? _parseImageUrl(j['imageUrl']),
   );
 }
 
@@ -128,7 +146,7 @@ class ProductSummary {
     id: j['id'].toString(),
     slug: j['slug'] as String? ?? '',
     name: j['name'] as String? ?? '',
-    image: j['image'] as String?,
+    image: _parseImageUrl(j['image']) ?? _parseImageUrl(j['imageUrl']),
     price: ProductPrice.fromJson(j['price'] as Map<String, dynamic>? ?? {}),
     stockState: StockState.fromString(j['stockState'] as String?),
     rating: (j['rating'] as num?)?.toDouble(),
@@ -189,7 +207,10 @@ class Product extends ProductSummary {
       isFeatured: base.isFeatured,
       shortDescription: j['shortDescription'] as String?,
       description: j['description'] as String?,
-      gallery: (j['gallery'] as List? ?? []).cast<String>(),
+      gallery: (j['gallery'] as List? ?? [])
+          .map((item) => _parseImageUrl(item))
+          .whereType<String>()
+          .toList(),
       variants: (j['variants'] as List? ?? [])
           .cast<Map<String, dynamic>>()
           .map(ProductVariant.fromJson)

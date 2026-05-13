@@ -176,6 +176,10 @@ export type Product = {
   variants?: ProductVariant[];
   specifications?: ProductSpecification[];
   stockState: ProductStockState;
+  /** Best-effort on-hand count at product level. Null when not tracked. */
+  stockQuantity?: number | null;
+  /** When true the product is forced out-of-stock regardless of variant state. */
+  forceOutOfStock?: boolean | null;
   publishStatus: PublishStatus;
   isFeatured?: boolean;
   showOnHomepage?: boolean;

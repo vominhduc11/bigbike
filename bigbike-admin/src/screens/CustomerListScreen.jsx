@@ -9,7 +9,7 @@ import { exportCustomersCsv, fetchCustomers } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 
-const STATUS_TONES = { ACTIVE: 'success', DISABLED: 'warning', BLOCKED: 'danger', UNKNOWN: 'neutral' }
+const STATUS_TONES = { ACTIVE: 'success', PENDING: 'warning', DISABLED: 'warning', BLOCKED: 'danger', UNKNOWN: 'neutral' }
 
 function CustomerStatusBadge({ value }) {
   const { t } = useTranslation()
@@ -103,6 +103,7 @@ export function CustomerListScreen({ navigate }) {
             onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}>
             <option value="ALL">{t('common.all')}</option>
             <option value="ACTIVE">{t('status.customer.ACTIVE')}</option>
+            <option value="PENDING">{t('status.customer.PENDING')}</option>
             <option value="DISABLED">{t('status.customer.DISABLED')}</option>
             <option value="BLOCKED">{t('status.customer.BLOCKED')}</option>
           </select>

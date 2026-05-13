@@ -246,6 +246,7 @@
     },
     "customer": {
       "ACTIVE": "Active",
+      "PENDING": "Pending",
       "DISABLED": "Disabled",
       "BLOCKED": "Blocked",
       "UNKNOWN": "Unknown"

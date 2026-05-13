@@ -259,6 +259,7 @@ export function normalizeProduct(input) {
       : [],
     price: normalizePrice(source.price),
     stockState: normalizeStockState(source.stockState),
+    stockQuantity: Number.isFinite(source.stockQuantity) ? Number(source.stockQuantity) : null,
     forceOutOfStock: Boolean(source.forceOutOfStock),
     publishStatus: normalizePublishStatus(source.publishStatus),
     isFeatured: Boolean(source.isFeatured),
@@ -303,6 +304,7 @@ export function normalizeBrand(input) {
     name: toTrimmedString(source.name) || 'Untitled brand',
     description: toTrimmedString(source.description) || undefined,
     logo: normalizeImageAsset(source.logo),
+    bannerImage: normalizeImageAsset(source.bannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
     createdAt: toTrimmedString(source.createdAt) || undefined,
@@ -319,6 +321,18 @@ export function normalizeContentItem(input) {
 
   const authorSource = source.author && typeof source.author === 'object' ? source.author : null
 
+  // authorId/categoryId: prefer explicit flat scalar; fall back to nested object id
+  // so existing data without the flat field still resolves correctly.
+  const authorId =
+    toTrimmedString(source.authorId) ||
+    (authorSource ? toTrimmedString(authorSource.id) : undefined) ||
+    undefined
+  const categorySource = source.category && typeof source.category === 'object' ? source.category : null
+  const categoryId =
+    toTrimmedString(source.categoryId) ||
+    (categorySource ? toTrimmedString(categorySource.id) : undefined) ||
+    undefined
+
   return {
     id,
     type,
@@ -329,6 +343,16 @@ export function normalizeContentItem(input) {
     coverImage: normalizeImageAsset(source.coverImage),
     productImage: normalizeImageAsset(source.productImage),
     pageType: toTrimmedString(source.pageType) || undefined,
+    // Flat id scalars — required by ContentDetailScreen to pre-select dropdowns
+    // and to re-send on save so backend does not clear the association.
+    authorId,
+    categoryId,
+    parentId: toTrimmedString(source.parentId) || undefined,
+    // Hero fields for PAGE type
+    heroImage: normalizeImageAsset(source.heroImage),
+    heroTitle: toTrimmedString(source.heroTitle) || undefined,
+    heroDescription: toTrimmedString(source.heroDescription) || undefined,
+    heroKicker: toTrimmedString(source.heroKicker) || undefined,
     tags: Array.isArray(source.tags)
       ? source.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim())
       : [],
@@ -505,7 +529,7 @@ export function normalizeOrder(input) {
 
 // ── Customers ────────────────────────────────────────────────────────────────
 
-export const CUSTOMER_STATUS_VALUES = ['ACTIVE', 'DISABLED', 'BLOCKED']
+export const CUSTOMER_STATUS_VALUES = ['ACTIVE', 'PENDING', 'DISABLED', 'BLOCKED']
 
 export function normalizeCustomerStatus(value) {
   return CUSTOMER_STATUS_VALUES.includes(value) ? value : 'UNKNOWN'

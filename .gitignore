@@ -13,6 +13,9 @@ bigbike-backend/target/
 # Test/screenshot output
 output/
 
+# Local backup output
+backups/
+
 # Local agent/tooling state
 .claude/
 

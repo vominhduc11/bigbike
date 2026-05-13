@@ -84,7 +84,8 @@
   /* Text on light background (body, cards, sections) */
   --bb-text-primary: var(--bb-color-black);
   --bb-text-secondary: var(--bb-color-gray-500);
-  --bb-text-muted: var(--bb-color-gray-400);
+  /* gray-400 (#abb8c3) = ~1.9:1 on white — fails WCAG AA. Use gray-500 (#6f6f6f) = 4.59:1. */
+  --bb-text-muted: var(--bb-color-gray-500);
   --bb-text-disabled: var(--bb-color-gray-400);
   /* Text on dark surfaces (header, footer, drawers) */
   --bb-text-inverse: var(--bb-color-white);
@@ -511,7 +512,7 @@
     box-shadow var(--bb-duration-fast) var(--bb-ease-standard);
 }
 
-.bb-input::placeholder { color: var(--bb-color-gray-400); }
+.bb-input::placeholder { color: var(--bb-color-gray-500); }
 .bb-input:hover { border-color: var(--bb-border-strong); }
 .bb-input:focus {
   border-color: var(--bb-color-blue);
@@ -542,7 +543,8 @@
 
 .bb-badge-stock-in {
   background: var(--bb-state-success-bg);
-  color: var(--bb-state-success);
+  /* #778866 on light-green bg = ~3:1 — fails AA. Use #3d5230 = 6:1. */
+  color: #3d5230;
   border: 1px solid var(--bb-state-success-border);
 }
 
@@ -552,7 +554,8 @@
 }
 
 .bb-badge-preorder {
-  background: var(--bb-state-info);
+  /* #007bff bg + white text = 3.78:1 — fails AA. Darken bg to #0056b3 = 6.3:1. */
+  background: var(--bb-action-secondary-hover);
   color: var(--bb-color-white);
 }
 
@@ -565,7 +568,7 @@
 }
 
 .bb-price-compare {
-  color: var(--bb-text-inverse-muted);
+  color: var(--bb-text-secondary);
   text-decoration: line-through;
 }
 

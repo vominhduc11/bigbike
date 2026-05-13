@@ -246,6 +246,7 @@
     },
     "customer": {
       "ACTIVE": "Hoạt động",
+      "PENDING": "Chờ duyệt",
       "DISABLED": "Tạm khoá",
       "BLOCKED": "Bị cấm",
       "UNKNOWN": "Không rõ"

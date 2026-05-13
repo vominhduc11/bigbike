@@ -508,7 +508,7 @@ a {
 }
 
 .bb-link:hover {
-  color: #fff;
+  color: var(--bb-brand-primary-hover);
 }
 
 .bb-card {
@@ -4403,9 +4403,9 @@ body.wp-mobile-menu-open {
 .wp-product-price b { color: var(--bb-brand-primary); font-weight: 600; font-size: 14px; }
 .wp-product-price s { color: var(--bb-text-muted); font-size: 12px; }
 .wp-stock-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: var(--bb-radius-none); letter-spacing: 0.06em; text-transform: uppercase; display: inline-block; margin-top: 2px; align-self: flex-start; }
-.wp-stock-in { background: var(--bb-state-success-bg); color: var(--bb-state-success); }
-.wp-stock-low { background: var(--bb-state-warning-bg); color: var(--bb-state-warning); }
-.wp-stock-out { background: var(--bb-state-danger-bg); color: var(--bb-brand-primary); }
+.wp-stock-in { background: var(--bb-state-success-bg); color: #3d5230; }
+.wp-stock-low { background: var(--bb-state-warning); color: var(--bb-color-black); }
+.wp-stock-out { background: var(--bb-color-gray-100); color: #4a4a4a; }
 .wp-wishlist-btn { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease; color: rgba(255,255,255,0.6); padding: 0; }
 .wp-wishlist-btn:hover { background: rgba(0,0,0,0.75); border-color: var(--bb-brand-primary-border); color: var(--bb-brand-primary); }
 .wp-wishlist-btn.active { background: rgba(160,0,0,0.25); border-color: var(--bb-brand-primary); color: var(--bb-brand-primary); }
@@ -5372,7 +5372,7 @@ html[data-header-scrolled] .wp-breadcrumb { padding-left: 24px; }
 .wp-input-error { border-color: var(--bb-brand-primary) !important; }
 /* WP `.form-control` parity - height 52px, border #cecece, padding 0 20px */
 .wp-input { background: var(--bb-color-white); border: 1px solid var(--bb-color-gray-400); color: var(--bb-text-primary); padding: 0 20px; border-radius: var(--bb-radius-none); font-size: 14px; font-family: inherit; transition: border-color 0.3s ease; width: 100%; box-sizing: border-box; height: 52px; color: var(--bb-color-black); }
-.wp-input::placeholder { color: var(--bb-color-gray-400); }
+.wp-input::placeholder { color: var(--bb-color-gray-500); }
 .wp-input:focus { outline: none; border-color: var(--bb-brand-primary); }
 .wp-input.filled { border-color: var(--bb-color-gray-500); }
 .wp-input[type="textarea"], textarea.wp-input { height: auto; padding: 12px 20px; }
@@ -7244,8 +7244,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 
 /* Stock badges using state tokens (already correct on light) */
-.wp-stock-out { background: var(--bb-color-gray-100); color: var(--bb-text-muted); }
-.bb-badge--grey { background: var(--bb-color-gray-100); color: var(--bb-text-muted); }
+/* #6f6f6f on gray-100 (#eeeeef) = ~4.03:1 — fails AA. Use #4a4a4a = 6.78:1. */
+.wp-stock-out { background: var(--bb-color-gray-100); color: #4a4a4a; }
+.bb-badge--grey { background: var(--bb-color-gray-100); color: #4a4a4a; }
 
 /* PDP below-fold dividers - were rgba(255,255,255,.07) on dark */
 .wp-pdp-below,
@@ -8840,7 +8841,7 @@ textarea.bb-input,
 .wp-input::placeholder,
 .wp-search-input::placeholder,
 .wp-404-search-input::placeholder {
-  color: var(--bb-color-gray-400);
+  color: var(--bb-color-gray-500);
 }
 
 .bb-input:focus,
@@ -9102,7 +9103,8 @@ input[type="checkbox"] {
 
 .wp-stock-in {
   background: var(--bb-state-success-bg);
-  color: var(--bb-state-success);
+  /* #778866 on light-green bg = ~3:1 — fails AA. Use #3d5230 = 6:1. */
+  color: #3d5230;
   border: 1px solid var(--bb-state-success-border);
 }
 
@@ -9115,7 +9117,8 @@ input[type="checkbox"] {
 .wp-stock-out,
 .bb-badge--grey {
   background: #dddddd;
-  color: #6f6f6f;
+  /* #6f6f6f on #dddddd = ~3.43:1 — fails WCAG AA. Use #4a4a4a = 5.77:1. */
+  color: #4a4a4a;
   border: 1px solid #dddddd;
 }
 
@@ -9515,7 +9518,7 @@ textarea.bb-input {
 }
 
 .bb-input::placeholder {
-  color: var(--bb-color-gray-400);
+  color: var(--bb-color-gray-500);
 }
 
 .bb-input:hover {
@@ -9546,7 +9549,7 @@ textarea.bb-input:focus {
 }
 
 .bb-query-input::placeholder {
-  color: var(--bb-color-gray-400);
+  color: var(--bb-color-gray-500);
 }
 
 .bb-query-input:focus,
