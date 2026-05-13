@@ -13,14 +13,16 @@ type Props = { videos: HomeVideo[] };
 
 function PlayIcon() {
   return (
-    <svg
-      className="wp-video-play-icon"
-      viewBox="0 0 14 16"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <polygon points="1,1 1,15 13,8" />
-    </svg>
+    <span className="wp-video-play-btn-ring" aria-hidden="true">
+      <svg
+        className="wp-video-play-icon"
+        viewBox="0 0 14 16"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <polygon points="1,1 1,15 13,8" />
+      </svg>
+    </span>
   );
 }
 

@@ -66,7 +66,7 @@ function IconChat() {
         d="M7 9.5C7 7.6 8.6 6 10.5 6h11C23.4 6 25 7.6 25 9.5v7.3c0 1.9-1.6 3.5-3.5 3.5h-4.3l-4.8 3.9V20.3h-1.9c-1.9 0-3.5-1.6-3.5-3.5V9.5Z"
         fill="#fff"
       />
-      <path d="M11 11.6h10M11 15h7" stroke="#00BFFF" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11 11.6h10M11 15h7" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

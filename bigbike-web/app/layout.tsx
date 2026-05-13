@@ -5,7 +5,6 @@ import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
-import { ScrollToTopButton } from "@/components/layout/ScrollToTopButton";
 import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -88,8 +87,9 @@ export default function RootLayout({
               <SiteHeader />
               <main className="bb-main">{children}</main>
               <SiteFooter />
-              <FloatingChatLoader />
-              <ScrollToTopButton />
+              <div className="wp-floating-group">
+                <FloatingChatLoader />
+              </div>
             </WishlistProvider>
           </CartProvider>
         </QueryProvider>
