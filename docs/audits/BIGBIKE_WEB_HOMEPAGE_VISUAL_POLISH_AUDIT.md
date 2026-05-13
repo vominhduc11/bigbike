@@ -162,3 +162,17 @@ Concrete actions:
 - [`bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/page-templates/page-home.php`](../../bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/page-templates/page-home.php)
 - [`bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/styles/home.css`](../../bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/styles/home.css)
 - [`bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/dist/home.css`](../../bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/dist/home.css) (minified production CSS)
+
+---
+
+## Final Decision
+
+Homepage parity workstream is closed.
+
+- Section ordering: PASS.
+- Visual parity: ~88%.
+- No P0.
+- No urgent fix required.
+- Featured Tiles dark style is treated as intentional brand evolution unless shop owner explicitly requests WP gray style.
+- Recommended next small optional polish: brand carousel padding only.
+- Do not remove JSON-LD, sr-only h1, HomeAnalytics, video modal, news CTA, or ISR behavior.
