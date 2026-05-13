@@ -1,17 +1,106 @@
 @import "tailwindcss";
 @import "../styles/brand-tokens.css";
 
+/* ─────────────────────────────────────────────────────────────
+   shadcn/ui CSS variables — mapped from BigBike brand tokens.
+   Radius = 0 (brand: sharp industrial design).
+   Color format: direct hex mapped into Tailwind via @theme inline.
+   ───────────────────────────────────────────────────────────── */
 :root {
   --background: var(--bb-bg-page);
   --foreground: var(--bb-text-primary);
   --bb-action-primary: var(--bb-brand-primary);
+
+  /* shadcn semantic layer — maps to BigBike tokens */
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #ff0c09;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #000000;
+  --muted: #f8f8f8;
+  --muted-foreground: #6f6f6f;
+  --accent: #fff4f3;
+  --accent-foreground: #000000;
+  --destructive: #ff0c09;
+  --destructive-foreground: #ffffff;
+  --border: #dddddd;
+  --input: #dddddd;
+  --ring: #007bff;
+  --radius: 0rem;
+
+  /* Link / info action */
+  --info: #007bff;
+  --info-foreground: #ffffff;
+
+  /* Dark surface used by header/footer/drawer */
+  --surface-dark: #141414;
+  --surface-dark-foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* shadcn color tokens available as Tailwind utilities:
+     bg-primary, text-primary-foreground, bg-card, etc. */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-surface-dark: var(--surface-dark);
+  --color-surface-dark-foreground: var(--surface-dark-foreground);
+
+  /* BigBike brand aliases as Tailwind utilities */
+  --color-brand: var(--bb-brand-primary);
+  --color-brand-hover: var(--bb-brand-primary-hover);
+  --color-brand-active: var(--bb-brand-primary-active);
+  --color-brand-soft: var(--bb-brand-primary-soft);
+  --color-blue: var(--bb-color-blue);
+  --color-cyan: var(--bb-color-cyan);
+
   --font-sans: var(--font-barlow-condensed);
   --font-display: var(--font-oswald);
+  --font-body: var(--bb-font-body);
+  --font-heading: var(--bb-font-heading);
+  --font-cta: var(--bb-font-cta);
+
+  /* Border radius: always 0 per brand spec */
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
+
+  /* Accordion animations */
+  --animate-accordion-down: accordion-down 220ms cubic-bezier(0.2, 0, 0, 1);
+  --animate-accordion-up: accordion-up 220ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Keyframes for Accordion */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
 }
 
 body {
@@ -1516,8 +1605,8 @@ html[data-header-hidden] .wp-header {
 
 /* -- Logo (port tu .logo + .col-md-2 trong header.php) --------"?
    WP: .logo { padding: 15px 0 0; height: 80px }. Image natural size
-   210A-190 overflows below the 80px header - red diagonal stripe baked
-   in the bitmap slices into the page. */
+   210x190. max-height gioi han overflow xuong duoi header; cho phep
+   tran nhe (~12px) de giu aesthetic soc do cua WP goc. */
 
 .wp-logo {
   flex: 0 0 auto;
@@ -1525,6 +1614,9 @@ html[data-header-hidden] .wp-header {
   padding-top: 0;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 }
 
 .wp-logo > a {
@@ -1532,11 +1624,11 @@ html[data-header-hidden] .wp-header {
   line-height: 0;
 }
 
-/* WP: header .container .logo img { max-width: 150px } trAn desktop ?1440.
-   Image natural 210A-190 - render ~150A-136 (overflow ~71px du>i header). */
 .wp-logo-img {
   display: block;
   max-width: 210px;
+  max-height: var(--bb-header-height);
+  width: auto;
   height: auto;
   transition: filter 0.3s ease, transform 0.3s ease;
 }
@@ -1552,6 +1644,35 @@ html[data-header-hidden] .wp-header {
 
 .wp-logo .hide-mobile { display: block; }
 .wp-logo .hide-desktop { display: none; }
+
+/* Desktop logo swap on scroll — mirrors WP headroom--not-top behavior:
+   logo-1 (ngang, nhỏ) ẩn sẵn dưới dạng absolute, fade-in khi cuộn. */
+@media (min-width: 768px) {
+  .wp-logo {
+    position: relative;
+  }
+  .wp-logo .hide-desktop {
+    display: block !important;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.3s ease, opacity 0.3s ease;
+  }
+  .wp-logo .hide-mobile {
+    transition: visibility 0.3s ease, opacity 0.3s ease;
+  }
+  html[data-header-scrolled] .wp-logo .hide-mobile {
+    visibility: hidden;
+    opacity: 0;
+  }
+  html[data-header-scrolled] .wp-logo .hide-desktop {
+    visibility: visible;
+    opacity: 1;
+  }
+}
 
 /* WP: @media (max-width:767px) header .logo img { max-width: 120px } */
 @media (max-width: 767px) {
@@ -4109,8 +4230,9 @@ body.wp-mobile-menu-open {
 .wp-seo-content p {
   color: var(--bb-text-secondary);
   line-height: 1.85;
-  margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  max-width: 72ch;
 }
 
 .wp-seo-content a {
@@ -4119,10 +4241,14 @@ body.wp-mobile-menu-open {
 }
 
 .wp-seo-content ul {
-  margin: 0.4rem 0 0.75rem 1.5rem;
+  margin: 0.4rem 0 1rem 1.5rem;
   color: var(--bb-text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.8;
+  font-size: 0.9375rem;
+  line-height: 1.85;
+}
+
+.wp-seo-content li {
+  margin-bottom: 0.35rem;
 }
 
 .bb-rating-stars {
@@ -6560,18 +6686,20 @@ img, picture, video, svg, canvas { max-width: 100%; }
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   background:
-    radial-gradient(circle at 50% 35%, rgba(255, 12, 9, 0.22), transparent 38%),
+    radial-gradient(circle at 50% 35%, rgba(255, 12, 9, 0.3), transparent 42%),
     linear-gradient(135deg, #1a1a1a, #2a0606);
 }
 .wp-video-thumb-fallback-mark {
   font-family: var(--bb-font-display);
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.82);
   text-transform: uppercase;
 }
 
@@ -6894,9 +7022,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 
 .wp-news-section--home .wp-news-cta-btn::after {
-  content: ">";
+  content: "→";
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -8096,6 +8224,14 @@ img, picture, video, svg, canvas { max-width: 100%; }
   height: auto;
 }
 
+/* Khi tat ca slide vua man (isLocked) - can giua, khong padding nav */
+.wp-prod-carousel-wrap--locked {
+  padding-inline: 0;
+}
+.wp-prod-carousel-wrap--locked .wp-prod-carousel-viewport .swiper-wrapper {
+  justify-content: center;
+}
+
 /* -- WP-style product card (content-product-swipe-item.php) -- */
 .wp-fp-item {
   margin: 30px 0 0;
@@ -8122,7 +8258,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   display: block;
   transition: transform 0.3s ease-in-out;
 }
-.wp-fp-item:hover .wp-fp-thumb img { transform: scale(1.05); }
 
 /* Sale badge: co 'o skewed (border-top trick) */
 .wp-fp-sale {
@@ -8155,17 +8290,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   right: -33px;
 }
 
-/* Cart bar: 'en, truot tu du>i lAn khi hover */
-.wp-fp-cart {
-  background: #000;
-  position: absolute;
-  bottom: -51px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  transition: bottom 0.32s ease;
-  z-index: 2;
-}
 .wp-fp-cart a {
   display: flex;
   align-items: center;
@@ -8180,8 +8304,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   letter-spacing: 0.02em;
   font-size: 0.95rem;
 }
-.wp-fp-item:hover .wp-fp-cart { bottom: 0; }
-
 /* Body: title trAi, price phai, rating du>i */
 .wp-fp-desc { display: flex; flex-direction: column; }
 .wp-fp-inside {
@@ -8306,8 +8428,6 @@ a:hover {
 .wp-product-card,
 .wp-fp-item,
 .wp-article-card,
-.wp-news-card,
-.wp-news-body,
 .wp-category-card,
 .wp-cat-list-item,
 .wp-brand-chip,
@@ -8321,7 +8441,6 @@ a:hover {
 .wp-mini-cart-popover,
 .wp-sub-menu,
 .wp-article-widget,
-.wp-article-body,
 .wp-cover-image,
 .wp-quick-buy-form,
 .wp-about-quality-tile,
@@ -8853,10 +8972,8 @@ input[type="checkbox"] {
 .wp-product-name,
 .wp-fp-title,
 .wp-fp-title a,
-.wp-news-card-title,
 .wp-article-title,
 .wp-category-name,
-.wp-cat-list-desc,
 .wp-brand-chip,
 .wp-mini-cart-name,
 .wp-checkout-summary-title h3,
@@ -8953,6 +9070,7 @@ input[type="checkbox"] {
   left: 0;
   right: 0;
   width: 100%;
+  z-index: 2;
 }
 
 .wp-fp-inside {

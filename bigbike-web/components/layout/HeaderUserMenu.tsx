@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
-import { BBTooltip } from "@/components/ui/BBTooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import {
   toAccountPath,
@@ -46,38 +54,11 @@ export function HeaderUserMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
-  const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [prevPathname, setPrevPathname] = useState(pathname);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const panelId = useId();
-
-  if (prevPathname !== pathname) {
-    setPrevPathname(pathname);
-    if (open) setOpen(false);
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    function onClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onClick);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onClick);
-    };
-  }, [open]);
 
   async function handleLogout() {
     setLoggingOut(true);
     await performLogout();
-    setOpen(false);
     setLoggingOut(false);
     router.push("/");
     router.refresh();
@@ -85,59 +66,58 @@ export function HeaderUserMenu() {
 
   if (auth.status === "loading") {
     return (
-      <BBTooltip content="Tài khoản">
-        <Link
-          href={toAccountPath()}
-          className="wp-icon-btn wp-account-icon"
-          aria-label="Tài khoản"
-        >
-          <UserIcon />
-        </Link>
-      </BBTooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={toAccountPath()}
+              className="wp-icon-btn wp-account-icon"
+              aria-label="Tài khoản"
+            >
+              <UserIcon />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent>Tài khoản</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
   if (auth.status === "anonymous") {
     return (
-      <div className="wp-user-menu" ref={wrapperRef}>
-        <BBTooltip content="Tài khoản">
-          <button
-            type="button"
-            className="wp-icon-btn wp-account-icon"
-            aria-label="Tài khoản"
-            aria-haspopup="true"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={() => setOpen((prev) => !prev)}
-          >
-            <UserIcon />
-          </button>
-        </BBTooltip>
-        {open && (
-          <div id={panelId} className="wp-user-dropdown" role="menu">
-            <div className="wp-user-dropdown-head">
-              <p>Chào bạn!</p>
-              <span>Đăng nhập để theo dõi đơn hàng</span>
-            </div>
-            <div className="wp-user-dropdown-actions">
-              <Link
-                href={toLoginPath(pathname ?? undefined)}
-                className="wp-user-btn wp-user-btn-primary"
-                role="menuitem"
+      <DropdownMenu>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger
+                className="wp-icon-btn wp-account-icon focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                aria-label="Tài khoản"
               >
-                Đăng nhập
-              </Link>
-              <Link
-                href={toRegisterPath()}
-                className="wp-user-btn"
-                role="menuitem"
-              >
-                Đăng ký
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
+                <UserIcon />
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Tài khoản</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuLabel className="font-normal">
+            <p className="text-sm font-semibold">Chào bạn!</p>
+            <p className="text-xs text-muted-foreground">Đăng nhập để theo dõi đơn hàng</p>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link
+              href={toLoginPath(pathname ?? undefined)}
+              className="font-semibold text-primary uppercase font-cta"
+            >
+              Đăng nhập
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={toRegisterPath()}>Đăng ký</Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
@@ -145,49 +125,43 @@ export function HeaderUserMenu() {
   const displayName = profile.displayName?.trim() || profile.email;
 
   return (
-    <div className="wp-user-menu" ref={wrapperRef}>
-      <BBTooltip content={displayName ?? "Tài khoản"}>
-        <button
-          type="button"
-          className="wp-icon-btn wp-account-icon wp-account-avatar"
-          aria-label={`Tài khoản của ${displayName}`}
-          aria-haspopup="true"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((prev) => !prev)}
+    <DropdownMenu>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger
+              className="wp-icon-btn wp-account-icon wp-account-avatar focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              aria-label={`Tài khoản của ${displayName}`}
+            >
+              <span aria-hidden="true">{initials(profile)}</span>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{displayName ?? "Tài khoản"}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="font-normal">
+          <p className="text-xs text-muted-foreground">Xin chào,</p>
+          <p className="text-sm font-semibold truncate" title={profile.email}>
+            {displayName}
+          </p>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={toAccountPath()}>Tài khoản của tôi</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={toOrderHistoryPath()}>Đơn hàng</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={handleLogout}
+          disabled={loggingOut}
+          className="text-destructive focus:text-destructive"
         >
-          <span aria-hidden="true">{initials(profile)}</span>
-        </button>
-      </BBTooltip>
-      {open && (
-        <div id={panelId} className="wp-user-dropdown" role="menu">
-          <div className="wp-user-dropdown-head">
-            <p>Xin chào,</p>
-            <span title={profile.email}>{displayName}</span>
-          </div>
-          <ul className="wp-user-dropdown-list">
-            <li>
-              <Link href={toAccountPath()} role="menuitem">
-                Tài khoản của tôi
-              </Link>
-            </li>
-            <li>
-              <Link href={toOrderHistoryPath()} role="menuitem">
-                Đơn hàng
-              </Link>
-            </li>
-          </ul>
-          <button
-            type="button"
-            className="wp-user-logout"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            role="menuitem"
-          >
-            {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
-          </button>
-        </div>
-      )}
-    </div>
+          {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

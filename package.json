@@ -1,6 +1,15 @@
 {
   "name": "bigbike",
   "private": true,
+  "scripts": {
+    "dev": "npm --prefix bigbike-web run dev",
+    "build": "npm --prefix bigbike-web run build",
+    "start": "npm --prefix bigbike-web run start",
+    "lint": "npm --prefix bigbike-web run lint",
+    "test": "npm --prefix bigbike-web run test",
+    "screenshot:product-listing": "node scripts/capture-product-listing-fullpage.js",
+    "screenshot:product-details": "node scripts/capture-product-details-fullpage.js"
+  },
   "devDependencies": {
     "playwright": "^1.60.0"
   }

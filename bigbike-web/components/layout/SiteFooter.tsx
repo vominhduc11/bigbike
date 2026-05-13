@@ -191,7 +191,7 @@ export async function SiteFooter() {
         </section>
 
         <section className="bb-footer-col">
-          <h3>{footerMenuResult.data?.name || "Menu"}</h3>
+          <h3>Liên kết nhanh</h3>
           <nav className="bb-footer-links">
             {footerLinks.map((item) => (
               <div key={item.id} className="bb-footer-group">

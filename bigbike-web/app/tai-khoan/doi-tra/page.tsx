@@ -5,6 +5,7 @@ import { createReturn, fetchMyOrder, fetchMyOrders, fetchMyReturn, fetchMyReturn
 import type { CustomerReturn, OrderLineItem, OrderListItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
 
 const RETURN_STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ duyệt",
@@ -281,9 +282,9 @@ function ReturnsContent() {
           <p className="sub">Lịch sử yêu cầu đổi trả và hoàn tiền</p>
         </div>
         {!showForm && (
-          <button type="button" className="wp-btn-primary wp-btn-sm" onClick={openForm}>
+          <Button type="button" variant="primary" size="sm" onClick={openForm}>
             Tạo yêu cầu đổi trả
-          </button>
+          </Button>
         )}
       </div>
 
@@ -390,12 +391,12 @@ function ReturnsContent() {
               </div>
             </div>
             <div className="wp-form-actions">
-              <button type="submit" className="wp-btn-primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
+              <Button type="submit" variant="primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
                 {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
-              </button>
-              <button type="button" className="wp-btn-secondary" onClick={closeForm} disabled={submitting}>
+              </Button>
+              <Button type="button" variant="secondary" onClick={closeForm} disabled={submitting}>
                 Hủy
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -1,0 +1,86 @@
+[
+  {
+    "name": "desktop-1440",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\desktop-1440.png",
+    "layoutInfo": {
+      "layoutHeight": 2972.40625,
+      "gridHeight": 436.328125,
+      "gridColumns": 3,
+      "filtersHeight": 2924.40625,
+      "filtersWidth": 260,
+      "cardCount": 2,
+      "firstCardBorder": "0px",
+      "headFontSize": "14px",
+      "docHeight": 4026,
+      "viewportInnerWidth": 1440,
+      "viewportInnerHeight": 900
+    }
+  },
+  {
+    "name": "tablet-1024",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\tablet-1024.png",
+    "layoutInfo": {
+      "layoutHeight": 3003.59375,
+      "gridHeight": 485,
+      "gridColumns": 2,
+      "filtersHeight": 2955.59375,
+      "filtersWidth": 240,
+      "cardCount": 2,
+      "firstCardBorder": "0px",
+      "headFontSize": "14px",
+      "docHeight": 4201,
+      "viewportInnerWidth": 1024,
+      "viewportInnerHeight": 768
+    }
+  },
+  {
+    "name": "tablet-768",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\tablet-768.png",
+    "layoutInfo": {
+      "layoutHeight": 672,
+      "gridHeight": 499,
+      "gridColumns": 2,
+      "filtersHeight": 58,
+      "filtersWidth": 720,
+      "cardCount": 2,
+      "firstCardBorder": "0px",
+      "headFontSize": "14px",
+      "docHeight": 1945,
+      "viewportInnerWidth": 768,
+      "viewportInnerHeight": 1024
+    }
+  },
+  {
+    "name": "mobile-390",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\mobile-390.png",
+    "layoutInfo": {
+      "layoutHeight": 497,
+      "gridHeight": 324,
+      "gridColumns": 2,
+      "filtersHeight": 58,
+      "filtersWidth": 358,
+      "cardCount": 2,
+      "firstCardBorder": "0px",
+      "headFontSize": "14px",
+      "docHeight": 2342,
+      "viewportInnerWidth": 390,
+      "viewportInnerHeight": 844
+    }
+  }
+]

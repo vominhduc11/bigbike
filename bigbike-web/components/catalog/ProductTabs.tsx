@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import type { ProductSpecification, VideoAsset } from "@/lib/contracts/public";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -15,7 +15,6 @@ function getYouTubeId(url: string): string | null {
 
 function isUploadedVideoUrl(url: string): boolean {
   if (!url) return false;
-  // Strip query/hash before extension check.
   const path = url.split(/[?#]/, 1)[0];
   return /\.(mp4|webm|ogg|mov|m4v)$/i.test(path);
 }
@@ -29,64 +28,52 @@ type ProductTabsProps = {
 
 type TabId = "description" | "specs" | "videos";
 
+function descriptionHasContent(html: string | null | undefined): boolean {
+  if (!html) return false;
+  if (/<(img|iframe|video)[^>]*>/i.test(html)) return true;
+  return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim().length > 0;
+}
+
 export function ProductTabs({ specifications, description, videos, productName }: ProductTabsProps) {
-  const hasDescription = Boolean(description?.trim());
+  const sanitizedDescription = description ? sanitizeRichHtml(description) : "";
+  const hasDescription = descriptionHasContent(sanitizedDescription);
   const hasSpecs = specifications.length > 0;
   const hasVideos = videos.length > 0;
 
-  const firstTab: TabId = hasDescription ? "description" : hasSpecs ? "specs" : "videos";
-  const [active, setActive] = useState<TabId>(firstTab);
-
   if (!hasDescription && !hasSpecs && !hasVideos) return null;
 
+  const defaultTab: TabId = hasDescription ? "description" : hasSpecs ? "specs" : "videos";
+
   return (
-    <div className="wp-pdp-tabs">
-      <div className="wp-pdp-tab-list" role="tablist">
+    <Tabs defaultValue={defaultTab} className="wp-pdp-tabs">
+      <TabsList className="w-full justify-start overflow-x-auto">
         {hasDescription && (
-          <button
-            role="tab"
-            type="button"
-            aria-selected={active === "description"}
-            className={`wp-pdp-tab${active === "description" ? " active" : ""}`}
-            onClick={() => setActive("description")}
-          >
-            Mô tả sản phẩm
-          </button>
+          <TabsTrigger value="description">Mô tả sản phẩm</TabsTrigger>
         )}
         {hasSpecs && (
-          <button
-            role="tab"
-            type="button"
-            aria-selected={active === "specs"}
-            className={`wp-pdp-tab${active === "specs" ? " active" : ""}`}
-            onClick={() => setActive("specs")}
-          >
-            Thông số kỹ thuật
-          </button>
+          <TabsTrigger value="specs">Thông số kỹ thuật</TabsTrigger>
         )}
         {hasVideos && (
-          <button
-            role="tab"
-            type="button"
-            aria-selected={active === "videos"}
-            className={`wp-pdp-tab${active === "videos" ? " active" : ""}`}
-            onClick={() => setActive("videos")}
-          >
+          <TabsTrigger value="videos" className="gap-1.5">
             Video
-            <span className="wp-pdp-tab-count">{videos.length}</span>
-          </button>
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground text-[10px] font-bold leading-none">
+              {videos.length}
+            </span>
+          </TabsTrigger>
         )}
-      </div>
+      </TabsList>
 
-      <div className="wp-pdp-tab-panel">
-        {active === "description" && hasDescription && (
+      {hasDescription && (
+        <TabsContent value="description" className="wp-pdp-tab-panel pt-4">
           <article
             className="bb-richtext wp-article-body"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(description!) }}
+            dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
           />
-        )}
+        </TabsContent>
+      )}
 
-        {active === "specs" && hasSpecs && (
+      {hasSpecs && (
+        <TabsContent value="specs" className="wp-pdp-tab-panel pt-4">
           <table className="bb-spec-table">
             <tbody>
               {specifications.flatMap((spec, idx) => {
@@ -94,11 +81,13 @@ export function ProductTabs({ specifications, description, videos, productName }
                 const prevGroup = idx > 0 ? (specifications[idx - 1].group?.trim() || null) : "__none__";
                 const showHeader = group !== null && group !== prevGroup;
                 return [
-                  ...(showHeader ? [
-                    <tr key={`group-${idx}`} className="bb-spec-group-header">
-                      <th colSpan={2}>{group}</th>
-                    </tr>
-                  ] : []),
+                  ...(showHeader
+                    ? [
+                        <tr key={`group-${idx}`} className="bb-spec-group-header">
+                          <th colSpan={2}>{group}</th>
+                        </tr>,
+                      ]
+                    : []),
                   <tr key={`${idx}-${spec.name}`}>
                     <td>{safeText(spec.name, "Thông số")}</td>
                     <td>{safeText(spec.value, "Đang cập nhật")}</td>
@@ -107,15 +96,15 @@ export function ProductTabs({ specifications, description, videos, productName }
               })}
             </tbody>
           </table>
-        )}
+        </TabsContent>
+      )}
 
-        {active === "videos" && hasVideos && (
+      {hasVideos && (
+        <TabsContent value="videos" className="wp-pdp-tab-panel pt-4">
           <div className="wp-pdp-videos">
             {videos.map((video, index) => {
               const url = video.url ?? "";
               const ytId = url ? getYouTubeId(url) : null;
-              // Treat as uploaded video when admin marked provider=upload OR
-              // the URL has a recognizable video file extension.
               const isUpload =
                 !ytId && (video.provider === "upload" || isUploadedVideoUrl(url));
               const posterImage = video.thumbnail ?? undefined;
@@ -161,8 +150,8 @@ export function ProductTabs({ specifications, description, videos, productName }
               );
             })}
           </div>
-        )}
-      </div>
-    </div>
+        </TabsContent>
+      )}
+    </Tabs>
   );
 }

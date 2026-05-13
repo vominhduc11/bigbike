@@ -8,6 +8,7 @@ import type { OrderListItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ xác nhận",
@@ -186,32 +187,34 @@ function OrderHistoryContent() {
                 </div>
               </div>
               <div className="wp-order-actions">
-                <Link href={toOrderDetailPath(order.id)} className="wp-btn-secondary wp-btn-sm">
-                  Xem chi tiết
-                </Link>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={toOrderDetailPath(order.id)}>Xem chi tiết</Link>
+                </Button>
               </div>
             </div>
           ))}
 
           {totalPages > 1 && (
             <div className="wp-pagination">
-              <button
+              <Button
                 type="button"
-                className="wp-btn-secondary wp-btn-sm"
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
                 Trang trước
-              </button>
+              </Button>
               <span className="wp-pagination-page">{page} / {totalPages}</span>
-              <button
+              <Button
                 type="button"
-                className="wp-btn-secondary wp-btn-sm"
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
               >
                 Trang sau
-              </button>
+              </Button>
             </div>
           )}
         </>

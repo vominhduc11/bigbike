@@ -5,6 +5,8 @@ import { use, useEffect, useState } from "react";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type Props = { params: Promise<{ type: string }> };
 
@@ -140,7 +142,6 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
         </div>
       )}
 
-      {/* Address list */}
       {loading ? (
         <div className="wp-address-grid" aria-busy="true" style={{ marginBottom: 20 }}>
           {[1, 2].map((i) => (
@@ -180,7 +181,6 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
         </div>
       ) : null}
 
-      {/* Form */}
       {showForm && (
         <div className="wp-info-card-form">
           <p className="wp-info-label" style={{ marginBottom: 18 }}>
@@ -190,27 +190,27 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
             <div className="wp-form-grid">
               <div className="wp-field">
                 <label>Họ tên *</label>
-                <input className="wp-input" type="text" name="fullName" required defaultValue={editing?.fullName ?? ""} placeholder="Họ và tên" />
+                <Input type="text" name="fullName" required defaultValue={editing?.fullName ?? ""} placeholder="Họ và tên" />
               </div>
               <div className="wp-field">
                 <label>Số điện thoại *</label>
-                <input className="wp-input" type="tel" name="phone" required defaultValue={editing?.phone ?? ""} placeholder="0901234567" />
+                <Input type="tel" name="phone" required defaultValue={editing?.phone ?? ""} placeholder="0901234567" />
               </div>
               <div className="wp-field">
                 <label>Tỉnh / Thành phố</label>
-                <input className="wp-input" type="text" name="province" defaultValue={editing?.province ?? ""} />
+                <Input type="text" name="province" defaultValue={editing?.province ?? ""} />
               </div>
               <div className="wp-field">
                 <label>Quận / Huyện</label>
-                <input className="wp-input" type="text" name="district" defaultValue={editing?.district ?? ""} />
+                <Input type="text" name="district" defaultValue={editing?.district ?? ""} />
               </div>
               <div className="wp-field">
                 <label>Phường / Xã</label>
-                <input className="wp-input" type="text" name="ward" defaultValue={editing?.ward ?? ""} />
+                <Input type="text" name="ward" defaultValue={editing?.ward ?? ""} />
               </div>
               <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
                 <label>Địa chỉ *</label>
-                <input className="wp-input" type="text" name="addressLine1" required defaultValue={editing?.addressLine1 ?? ""} placeholder="Số nhà, tên đường..." />
+                <Input type="text" name="addressLine1" required defaultValue={editing?.addressLine1 ?? ""} placeholder="Số nhà, tên đường..." />
               </div>
               <div className="wp-field" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="checkbox" name="isDefault" id="isDefault" defaultChecked={editing?.isDefault ?? false} />
@@ -218,10 +218,10 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
               </div>
             </div>
             <div className="wp-form-actions">
-              <button type="submit" className="wp-btn-primary" disabled={saving}>
+              <Button type="submit" variant="primary" disabled={saving}>
                 {saving ? "Đang lưu..." : "Lưu địa chỉ"}
-              </button>
-              <button type="button" className="wp-btn-secondary" onClick={cancelForm}>Hủy</button>
+              </Button>
+              <Button type="button" variant="secondary" onClick={cancelForm}>Hủy</Button>
             </div>
           </form>
         </div>

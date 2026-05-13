@@ -13,6 +13,9 @@ import {
   type ResetPasswordFormValues,
 } from "@/lib/schemas/auth";
 import { toLoginPath, toRegisterPath } from "@/lib/utils/routes";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
@@ -55,25 +58,19 @@ function RequestResetForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-          <div>
-            <label className="bb-form-label">
-              Email hoặc số điện thoại
-              <input
-                className="bb-input"
-                autoComplete="username"
-                placeholder="email@example.com"
-                {...register("login")}
-              />
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="forgot-login">Email hoặc số điện thoại</Label>
+            <Input
+              id="forgot-login"
+              autoComplete="username"
+              placeholder="email@example.com"
+              {...register("login")}
+            />
             {errors.login && <p className="wp-field-error">{errors.login.message}</p>}
           </div>
-          <button
-            type="submit"
-            className="bb-button bb-button-primary bb-btn-full"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
-          </button>
+          </Button>
         </form>
       )}
     </>
@@ -127,39 +124,31 @@ function ResetPasswordForm({ token }: { token: string }) {
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-          <div>
-            <label className="bb-form-label">
-              Mật khẩu mới
-              <input
-                className="bb-input"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Nhập mật khẩu mới"
-                {...register("password")}
-              />
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="reset-password">Mật khẩu mới</Label>
+            <Input
+              id="reset-password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Nhập mật khẩu mới"
+              {...register("password")}
+            />
             {errors.password && <p className="wp-field-error">{errors.password.message}</p>}
           </div>
-          <div>
-            <label className="bb-form-label">
-              Xác nhận mật khẩu
-              <input
-                className="bb-input"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Nhập lại mật khẩu mới"
-                {...register("confirm")}
-              />
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="reset-confirm">Xác nhận mật khẩu</Label>
+            <Input
+              id="reset-confirm"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Nhập lại mật khẩu mới"
+              {...register("confirm")}
+            />
             {errors.confirm && <p className="wp-field-error">{errors.confirm.message}</p>}
           </div>
-          <button
-            type="submit"
-            className="bb-button bb-button-primary bb-btn-full"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
-          </button>
+          </Button>
         </form>
       )}
     </>

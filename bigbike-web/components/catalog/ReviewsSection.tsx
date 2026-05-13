@@ -6,6 +6,9 @@ import {
   useInfiniteQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 type Review = {
   id: number | string;
@@ -31,7 +34,6 @@ type ReviewsData = {
 
 type ReviewsSectionProps = {
   productId: string;
-  initialRating: number | null;
 };
 
 const PAGE_SIZE = 10;
@@ -182,9 +184,8 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
       <div className="wp-review-form-field">
         <label htmlFor="review-name">Tên của bạn <span className="req">*</span></label>
-        <input
+        <Input
           id="review-name"
-          className="wp-input"
           placeholder="Nguyễn Văn A"
           value={authorName}
           onChange={(e) => setAuthorName(e.target.value)}
@@ -195,9 +196,8 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
       <div className="wp-review-form-field">
         <label htmlFor="review-comment">Nhận xét</label>
-        <textarea
+        <Textarea
           id="review-comment"
-          className="wp-input wp-textarea-resize"
           placeholder="Sản phẩm tốt, đúng size, giao hàng nhanh..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
@@ -209,12 +209,12 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       {error && <p className="wp-field-error">{error}</p>}
 
       <div className="wp-review-form-actions">
-        <button type="button" className="wp-btn-secondary" onClick={() => setOpen(false)} disabled={submitting}>
+        <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
           Huỷ
-        </button>
-        <button type="submit" className="wp-btn-primary" disabled={submitting}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Đang gửi..." : "Gửi đánh giá"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -245,7 +245,7 @@ async function fetchReviewsPage(productId: string, page: number) {
   return payload as ReviewsData;
 }
 
-export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps) {
+export function ReviewsSection({ productId }: ReviewsSectionProps) {
   const queryClient = useQueryClient();
   const queryKey = ["product-reviews", productId] as const;
 
@@ -271,8 +271,10 @@ export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps
 
   const firstPage = data?.pages[0];
   const reviews = data?.pages.flatMap((page) => page.reviews) ?? [];
-  const rating = firstPage?.avgRating || initialRating || 0;
+  // Only use verified API average — never fall back to the denormalized product.rating
+  // which can be a seeded/default value with no actual reviews behind it.
   const total = firstPage?.totalReviews ?? 0;
+  const rating = total > 0 ? (firstPage?.avgRating ?? 0) : 0;
 
   const resetToFirstPage = () => {
     queryClient.setQueryData<InfiniteData<ReviewsData>>(queryKey, (current) => {
@@ -292,9 +294,6 @@ export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps
       refetchType: "active",
     });
   };
-
-  if (isLoading && !initialRating) return null;
-  if (!firstPage && !initialRating) return null;
 
   return (
     <section className="wp-pdp-reviews">
@@ -338,20 +337,16 @@ export function ReviewsSection({ productId, initialRating }: ReviewsSectionProps
         </ul>
       )}
 
-      {firstPage && !reviews.length && rating > 0 && (
-        <p className="wp-pdp-reviews-empty">Chưa có đánh giá chi tiết.</p>
-      )}
-
       {hasNextPage && (
         <div className="wp-review-pagination">
-          <button
+          <Button
             type="button"
-            className="wp-btn-secondary"
+            variant="secondary"
             disabled={isFetchingNextPage}
             onClick={() => void fetchNextPage()}
           >
             {isFetchingNextPage ? "Đang tải thêm..." : "Xem thêm đánh giá"}
-          </button>
+          </Button>
           {isFetchNextPageError && (
             <p className="wp-field-error">Không thể tải thêm đánh giá.</p>
           )}

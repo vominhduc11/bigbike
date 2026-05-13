@@ -10,6 +10,9 @@ import { refreshAuth } from "@/lib/auth/auth-store";
 import { loginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
 import { isSafeReturnTo } from "@/lib/utils/auth";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 function LoginForm() {
   const router = useRouter();
@@ -52,44 +55,36 @@ function LoginForm() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-          <div>
-            <label className="bb-form-label">
-              Email hoặc số điện thoại
-              <input
-                className="bb-input"
-                autoComplete="username"
-                placeholder="email@example.com"
-                {...register("login")}
-              />
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="login-username">Email hoặc số điện thoại</Label>
+            <Input
+              id="login-username"
+              autoComplete="username"
+              placeholder="email@example.com"
+              {...register("login")}
+            />
             {errors.login && (
               <p className="wp-field-error">{errors.login.message}</p>
             )}
           </div>
 
-          <div>
-            <label className="bb-form-label">
-              Mật khẩu
-              <input
-                className="bb-input"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                {...register("password")}
-              />
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="login-password">Mật khẩu</Label>
+            <Input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              {...register("password")}
+            />
             {errors.password && (
               <p className="wp-field-error">{errors.password.message}</p>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="bb-button bb-button-primary bb-btn-full"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
+          </Button>
         </form>
 
         <p className="bb-auth-footer">

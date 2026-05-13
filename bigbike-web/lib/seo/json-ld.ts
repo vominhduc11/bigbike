@@ -53,7 +53,7 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
           name: product.brand.name,
         }
       : undefined,
-    category: product.category?.name ?? undefined,
+    category: product.category?.name || undefined,
     url: canonicalUrl,
     offers,
   };

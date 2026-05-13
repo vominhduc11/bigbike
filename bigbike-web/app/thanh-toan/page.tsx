@@ -16,6 +16,7 @@ import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
+import { Button } from "@/components/ui/button";
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
   return (
@@ -389,13 +390,14 @@ export default function CheckoutPage() {
                       </li>
                     ))}
                   </ul>
-                  <button
+                  <Button
                     type="button"
-                    className="wp-btn-primary wp-btn-sm"
+                    variant="primary"
+                    size="sm"
                     onClick={() => router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey))}
                   >
                     Xem xác nhận đặt hàng
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -405,8 +407,9 @@ export default function CheckoutPage() {
                 <Link href={toCartPath()} className="wp-cart-continue">
                   <span aria-hidden="true">‹</span> QUAY LẠI GIỎ HÀNG
                 </Link>
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
                   className="wp-cart-checkout-btn"
                   disabled={submitting || cartLoading || !cart?.items.length}
                 >
@@ -415,7 +418,7 @@ export default function CheckoutPage() {
                     : cart
                       ? `ĐẶT HÀNG · ${formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}`
                       : "ĐẶT HÀNG"}
-                </button>
+                </Button>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -15,29 +15,38 @@ type Props = { products: Product[] };
 
 export function FeaturedProductsCarousel({ products }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
 
   if (products.length === 0) return null;
 
   return (
-    <div className="wp-prod-carousel-wrap">
-      <button
-        className="wp-car-btn wp-car-prev"
-        onClick={() => swiperRef.current?.slidePrev()}
-        aria-label="Cuộn trái"
-      >
-        ‹
-      </button>
+    <div className={`wp-prod-carousel-wrap${isLocked ? " wp-prod-carousel-wrap--locked" : ""}`}>
+      {!isLocked && (
+        <button
+          className="wp-car-btn wp-car-prev"
+          onClick={() => swiperRef.current?.slidePrev()}
+          aria-label="Cuộn trái"
+        >
+          ‹
+        </button>
+      )}
 
       <div className="wp-prod-carousel-viewport">
         <Swiper
           modules={[Navigation, Pagination]}
           onSwiper={(s) => {
             swiperRef.current = s;
+            setIsLocked(s.isLocked);
+          }}
+          onBreakpoint={(s) => {
+            setIsLocked(s.isLocked);
           }}
           speed={700}
           slidesPerView={1}
           slidesPerGroup={1}
           spaceBetween={0}
+          watchOverflow
+          centeredSlides={false}
           pagination={{ el: ".wp-fp-pagination", clickable: true }}
           breakpoints={{
             [BB_BREAKPOINTS.xs]: { slidesPerView: 1.1, slidesPerGroup: 1, spaceBetween: 12 },
@@ -54,15 +63,17 @@ export function FeaturedProductsCarousel({ products }: Props) {
         </Swiper>
       </div>
 
-      <button
-        className="wp-car-btn wp-car-next"
-        onClick={() => swiperRef.current?.slideNext()}
-        aria-label="Cuộn phải"
-      >
-        ›
-      </button>
+      {!isLocked && (
+        <button
+          className="wp-car-btn wp-car-next"
+          onClick={() => swiperRef.current?.slideNext()}
+          aria-label="Cuộn phải"
+        >
+          ›
+        </button>
+      )}
 
-      <div className="wp-fp-pagination" aria-hidden="true" />
+      {!isLocked && <div className="wp-fp-pagination" aria-hidden="true" />}
     </div>
   );
 }

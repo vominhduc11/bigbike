@@ -9,6 +9,9 @@ import { registerCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
 import { registerSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toLoginPath } from "@/lib/utils/routes";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -71,13 +74,14 @@ export default function RegisterPage() {
                   Vui lòng kiểm tra hộp thư (kể cả thư mục spam) để xác nhận tài khoản.
                 </p>
               )}
-              <button
+              <Button
                 type="button"
-                className="bb-button bb-button-primary bb-btn-full"
+                variant="primary"
+                className="w-full"
                 onClick={() => router.push(toAccountPath())}
               >
                 Vào tài khoản
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -102,88 +106,82 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-              <div>
-                <label className="bb-form-label">
-                  Tên <span style={{ color: "var(--bb-error, red)" }}>*</span>
-                  <input
-                    className="bb-input"
-                    autoComplete="given-name"
-                    placeholder="Văn A"
-                    {...register("firstName")}
-                  />
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reg-firstName">
+                  Tên <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reg-firstName"
+                  autoComplete="given-name"
+                  placeholder="Văn A"
+                  {...register("firstName")}
+                />
                 {errors.firstName && (
                   <p className="wp-field-error">{errors.firstName.message}</p>
                 )}
               </div>
 
-              <div>
-                <label className="bb-form-label">
-                  Họ
-                  <input
-                    className="bb-input"
-                    autoComplete="family-name"
-                    placeholder="Nguyễn"
-                    {...register("lastName")}
-                  />
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reg-lastName">Họ</Label>
+                <Input
+                  id="reg-lastName"
+                  autoComplete="family-name"
+                  placeholder="Nguyễn"
+                  {...register("lastName")}
+                />
               </div>
 
-              <div>
-                <label className="bb-form-label">
-                  Email <span style={{ color: "var(--bb-error, red)" }}>*</span>
-                  <input
-                    className="bb-input"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="email@example.com"
-                    {...register("email")}
-                  />
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reg-email">
+                  Email <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reg-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="email@example.com"
+                  {...register("email")}
+                />
                 {errors.email && (
                   <p className="wp-field-error">{errors.email.message}</p>
                 )}
               </div>
 
-              <div>
-                <label className="bb-form-label">
-                  Mật khẩu <span style={{ color: "var(--bb-error, red)" }}>*</span>
-                  <input
-                    className="bb-input"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Ít nhất 8 ký tự"
-                    {...register("password")}
-                  />
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reg-password">
+                  Mật khẩu <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reg-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Ít nhất 8 ký tự"
+                  {...register("password")}
+                />
                 {errors.password && (
                   <p className="wp-field-error">{errors.password.message}</p>
                 )}
               </div>
 
-              <div>
-                <label className="bb-form-label">
-                  Xác nhận mật khẩu <span style={{ color: "var(--bb-error, red)" }}>*</span>
-                  <input
-                    className="bb-input"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Nhập lại mật khẩu"
-                    {...register("confirm")}
-                  />
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="reg-confirm">
+                  Xác nhận mật khẩu <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reg-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Nhập lại mật khẩu"
+                  {...register("confirm")}
+                />
                 {errors.confirm && (
                   <p className="wp-field-error">{errors.confirm.message}</p>
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="bb-button bb-button-primary bb-btn-full"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
-              </button>
+              </Button>
             </form>
 
             <p className="bb-auth-footer">

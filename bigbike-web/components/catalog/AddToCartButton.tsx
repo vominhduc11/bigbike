@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
+import { Button } from "@/components/ui/button";
 
 type AddToCartButtonProps = {
   productId: string;
@@ -26,21 +27,19 @@ export function AddToCartButton({ productId, variantId }: AddToCartButtonProps) 
   }
 
   return (
-    <div>
-      <button
+    <div className="flex flex-col gap-3 mt-4">
+      <Button
         type="button"
-        className="bb-button bb-button-primary"
-        style={{ width: "100%", justifyContent: "center", marginTop: "var(--bb-space-4)" }}
+        variant="primary"
+        className="w-full justify-center"
         onClick={handleAddToCart}
         disabled={loading}
       >
-        {loading ? "Đang thêm..." : "THÊM VÀO GIỎ HÀNG"}
-      </button>
-      {error ? (
-        <p className="bb-status-banner" style={{ marginTop: "var(--bb-space-3)" }}>
-          {error}
-        </p>
-      ) : null}
+        {loading ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+      </Button>
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
     </div>
   );
 }

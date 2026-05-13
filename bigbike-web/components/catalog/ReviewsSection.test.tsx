@@ -37,7 +37,7 @@ function renderReviewsSection() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <ReviewsSection productId="prod-test" initialRating={null} />
+      <ReviewsSection productId="prod-test" />
     </QueryClientProvider>,
   );
 }

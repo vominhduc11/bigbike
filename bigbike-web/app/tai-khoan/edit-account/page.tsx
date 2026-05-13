@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { AccountShell, useAccount, useAccountRefresh } from "@/components/layout/AccountShell";
 import { updateCustomerProfile } from "@/lib/api/client-api";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 function EditAccountContent() {
   const profile = useAccount();
@@ -29,7 +31,6 @@ function EditAccountContent() {
     const gender = (fd.get("gender") as string).trim();
     const dob = (fd.get("dob") as string).trim();
 
-    // Client-side password validation
     if (newPassword) {
       if (!currentPassword) {
         setPasswordError("Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu.");
@@ -92,15 +93,15 @@ function EditAccountContent() {
           <div className="wp-form-grid">
             <div className="wp-field">
               <label>Họ tên</label>
-              <input className="wp-input" type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="Họ và tên" />
+              <Input type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="Họ và tên" />
             </div>
             <div className="wp-field">
               <label>Số điện thoại</label>
-              <input className="wp-input" type="tel" name="phone" defaultValue={profile?.phone ?? ""} placeholder="0901234567" />
+              <Input type="tel" name="phone" defaultValue={profile?.phone ?? ""} placeholder="0901234567" />
             </div>
             <div className="wp-field">
               <label>Email</label>
-              <input className="wp-input" type="email" name="email" defaultValue={profile?.email ?? ""} placeholder="email@example.com" />
+              <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder="email@example.com" />
             </div>
             <div className="wp-field">
               <label>Giới tính</label>
@@ -113,7 +114,7 @@ function EditAccountContent() {
             </div>
             <div className="wp-field">
               <label>Ngày sinh</label>
-              <input className="wp-input" type="date" name="dob" defaultValue={profile?.dob ?? ""} />
+              <Input type="date" name="dob" defaultValue={profile?.dob ?? ""} />
             </div>
           </div>
 
@@ -121,26 +122,24 @@ function EditAccountContent() {
           <div className="wp-form-grid">
             <div className="wp-field">
               <label>Mật khẩu hiện tại</label>
-              <input className="wp-input" type="password" name="currentPassword" placeholder="••••••••" autoComplete="current-password" />
+              <Input type="password" name="currentPassword" placeholder="••••••••" autoComplete="current-password" />
             </div>
             <div className="wp-field">
               <label>Mật khẩu mới</label>
-              <input className="wp-input" type="password" name="newPassword" placeholder="••••••••" autoComplete="new-password" />
+              <Input type="password" name="newPassword" placeholder="••••••••" autoComplete="new-password" />
             </div>
             <div className="wp-field">
               <label>Xác nhận mật khẩu mới</label>
-              <input className="wp-input" type="password" name="confirmPassword" placeholder="••••••••" autoComplete="new-password" />
+              <Input type="password" name="confirmPassword" placeholder="••••••••" autoComplete="new-password" />
             </div>
           </div>
           {passwordError && (
-            <p style={{ color: "var(--bb-brand-primary, #FF0C09)", fontSize: "0.85rem", marginTop: 6 }}>
-              {passwordError}
-            </p>
+            <p className="text-sm text-destructive mt-1.5">{passwordError}</p>
           )}
 
-          <button type="submit" className="wp-btn-primary" style={{ marginTop: 20, flex: "none" }} disabled={saving}>
+          <Button type="submit" variant="primary" className="mt-5" disabled={saving}>
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
-          </button>
+          </Button>
         </div>
       </form>
     </>

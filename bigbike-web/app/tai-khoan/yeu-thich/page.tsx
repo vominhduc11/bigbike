@@ -8,6 +8,7 @@ import type { Product } from "@/lib/contracts/public";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/button";
 
 function WishlistContent() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -59,7 +60,7 @@ function WishlistContent() {
         <EmptyState
           title="Chưa có sản phẩm yêu thích"
           description="Nhấn vào biểu tượng trái tim trên sản phẩm bất kỳ để lưu vào đây."
-          action={<Link href="/san-pham/" className="wp-btn-primary wp-btn-sm">Khám phá sản phẩm</Link>}
+          action={<Button asChild variant="primary" size="sm"><Link href="/san-pham/">Khám phá sản phẩm</Link></Button>}
         />
       ) : (
         <div className="wp-product-grid">

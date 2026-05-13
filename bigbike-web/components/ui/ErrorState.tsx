@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 type ErrorStateProps = {
   title?: string;
@@ -16,11 +17,10 @@ export function ErrorState({
       <h2>{title}</h2>
       <p>{message}</p>
       {retryHref ? (
-        <Link href={retryHref} className="bb-button bb-button-primary">
-          Thử lại
-        </Link>
+        <Button asChild variant="primary">
+          <Link href={retryHref}>Thử lại</Link>
+        </Button>
       ) : null}
     </section>
   );
 }
-

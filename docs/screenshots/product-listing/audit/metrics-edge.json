@@ -1,0 +1,221 @@
+[
+  {
+    "name": "desktop-1440-active-filter",
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\desktop-1440-active-filter.png",
+    "measurements": {
+      "gridTemplateColumns": "285.328px 285.328px 285.328px",
+      "gridColumnCount": 3,
+      "gridRect": {
+        "x": 416,
+        "y": 523,
+        "width": 904,
+        "height": 436.328125,
+        "top": 523,
+        "right": 1320,
+        "bottom": 959.328125,
+        "left": 416
+      },
+      "cardCount": 1,
+      "cardRect": {
+        "x": 416,
+        "y": 523,
+        "width": 285.328125,
+        "height": 436.328125,
+        "top": 523,
+        "right": 701.328125,
+        "bottom": 959.328125,
+        "left": 416
+      },
+      "cardBorder": "0px solid rgb(221, 221, 221)",
+      "cardBg": "rgb(255, 255, 255)",
+      "filtersRect": {
+        "x": 120,
+        "y": 472,
+        "width": 260,
+        "height": 2965.40625,
+        "top": 472,
+        "right": 380,
+        "bottom": 3437.40625,
+        "left": 120
+      },
+      "filtersBodyDisplay": "block",
+      "layoutRect": {
+        "x": 120,
+        "y": 472,
+        "width": 1200,
+        "height": 3013.40625,
+        "top": 472,
+        "right": 1320,
+        "bottom": 3485.40625,
+        "left": 120
+      },
+      "chipsCount": 1,
+      "headFontSize": "16px",
+      "countFontSize": "14px",
+      "sortFontSize": "14px",
+      "addbarTransform": "matrix(1, 0, 0, 1, 0, 52)",
+      "addbarOpacity": "1",
+      "addbarBottom": 860.328125,
+      "docHeight": 4067
+    }
+  },
+  {
+    "name": "desktop-1440-empty",
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\desktop-1440-empty.png",
+    "measurements": {
+      "gridTemplateColumns": null,
+      "gridColumnCount": 0,
+      "gridRect": null,
+      "cardCount": 0,
+      "cardRect": null,
+      "cardBorder": null,
+      "cardBg": null,
+      "filtersRect": {
+        "x": 120,
+        "y": 472,
+        "width": 260,
+        "height": 2965.40625,
+        "top": 472,
+        "right": 380,
+        "bottom": 3437.40625,
+        "left": 120
+      },
+      "filtersBodyDisplay": "block",
+      "layoutRect": {
+        "x": 120,
+        "y": 472,
+        "width": 1200,
+        "height": 3013.40625,
+        "top": 472,
+        "right": 1320,
+        "bottom": 3485.40625,
+        "left": 120
+      },
+      "chipsCount": 1,
+      "headFontSize": "16px",
+      "countFontSize": "14px",
+      "sortFontSize": "14px",
+      "docHeight": 4067
+    }
+  },
+  {
+    "name": "mobile-390-filter-open",
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\mobile-390-filter-open.png",
+    "measurements": {
+      "gridTemplateColumns": "167px 167px",
+      "gridColumnCount": 2,
+      "gridRect": {
+        "x": 16,
+        "y": 3280.03125,
+        "width": 358,
+        "height": 324,
+        "top": 3280.03125,
+        "right": 374,
+        "bottom": 3604.03125,
+        "left": 16
+      },
+      "cardCount": 2,
+      "cardRect": {
+        "x": 16,
+        "y": 3280.03125,
+        "width": 167,
+        "height": 324,
+        "top": 3280.03125,
+        "right": 183,
+        "bottom": 3604.03125,
+        "left": 16
+      },
+      "cardBorder": "0px solid rgb(221, 221, 221)",
+      "cardBg": "rgb(255, 255, 255)",
+      "filtersRect": {
+        "x": 16,
+        "y": 384,
+        "width": 358,
+        "height": 2821.03125,
+        "top": 384,
+        "right": 374,
+        "bottom": 3205.03125,
+        "left": 16
+      },
+      "filtersBodyDisplay": "block",
+      "layoutRect": {
+        "x": 16,
+        "y": 384,
+        "width": 358,
+        "height": 3260.03125,
+        "top": 384,
+        "right": 374,
+        "bottom": 3644.03125,
+        "left": 16
+      },
+      "chipsCount": 0,
+      "headFontSize": "16px",
+      "countFontSize": "14px",
+      "sortFontSize": "14px",
+      "addbarTransform": "matrix(1, 0, 0, 1, 0, 52)",
+      "addbarOpacity": "1",
+      "addbarBottom": 3499.03125,
+      "docHeight": 5105
+    }
+  },
+  {
+    "name": "mobile-390-hover-addbar",
+    "file": "S:\\project\\bigbike\\docs\\screenshots\\product-listing\\audit\\mobile-390-hover-addbar.png",
+    "measurements": {
+      "gridTemplateColumns": "167px 167px",
+      "gridColumnCount": 2,
+      "gridRect": {
+        "x": 16,
+        "y": 517,
+        "width": 358,
+        "height": 324,
+        "top": 517,
+        "right": 374,
+        "bottom": 841,
+        "left": 16
+      },
+      "cardCount": 2,
+      "cardRect": {
+        "x": 16,
+        "y": 517,
+        "width": 167,
+        "height": 324,
+        "top": 517,
+        "right": 183,
+        "bottom": 841,
+        "left": 16
+      },
+      "cardBorder": "0px solid rgb(221, 221, 221)",
+      "cardBg": "rgb(255, 255, 255)",
+      "filtersRect": {
+        "x": 16,
+        "y": 384,
+        "width": 358,
+        "height": 58,
+        "top": 384,
+        "right": 374,
+        "bottom": 442,
+        "left": 16
+      },
+      "filtersBodyDisplay": "none",
+      "layoutRect": {
+        "x": 16,
+        "y": 384,
+        "width": 358,
+        "height": 497,
+        "top": 384,
+        "right": 374,
+        "bottom": 881,
+        "left": 16
+      },
+      "chipsCount": 0,
+      "headFontSize": "16px",
+      "countFontSize": "14px",
+      "sortFontSize": "14px",
+      "addbarTransform": "matrix(1, 0, 0, 1, 0, 52)",
+      "addbarOpacity": "1",
+      "addbarBottom": 736,
+      "docHeight": 2342
+    }
+  }
+]

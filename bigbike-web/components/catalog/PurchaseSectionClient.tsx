@@ -10,6 +10,7 @@ import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
 import { QuickBuyModal } from "./QuickBuyModal";
 import { useCart } from "@/lib/cart-context";
+import { Button } from "@/components/ui/button";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -235,8 +236,9 @@ export function PurchaseSectionClient({
         </p>
         <h1 className="wp-pdp-info-title">{productName}</h1>
 
-        {/* Rating stars — from ISR data (ReviewsSection below fold has full fresh data) */}
-        {initialRating && initialRating > 0 ? (
+        {/* Rating stars — only shown when we have verified reviews (count > 0).
+            Avoids showing a seeded/default rating with no actual customer reviews. */}
+        {initialRating && initialRating > 0 && (initialRatingCount ?? 0) > 0 ? (
           <div className="wp-pdp-rating">
             <span className="stars" aria-label={`${initialRating.toFixed(1)} sao`}>
               {Array.from({ length: 5 }, (_, i) => (
@@ -330,11 +332,12 @@ export function PurchaseSectionClient({
 
         {/* CTA buttons */}
         <div className="wp-pdp-actions">
-          <button
+          <Button
             type="button"
-            className="wp-btn-primary"
+            variant="primary"
             onClick={handleAddToCart}
             disabled={addLoading || !isAvailable}
+            className="flex-1"
           >
             {addLoading
               ? "Đang thêm..."
@@ -343,15 +346,16 @@ export function PurchaseSectionClient({
                 : isAvailable
                   ? "Thêm vào giỏ"
                   : "Tạm hết hàng"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="wp-btn-secondary"
+            variant="secondary"
             onClick={() => setQuickBuyOpen(true)}
             disabled={!isAvailable}
+            className="flex-1"
           >
             Mua ngay
-          </button>
+          </Button>
         </div>
 
         {addError && (
@@ -408,7 +412,7 @@ export function PurchaseSectionClient({
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M9.52 6.78 14.94 1h-1.28L8.95 6.02 5.21 1H1l5.7 7.66L1 14.71h1.28l4.99-5.31 3.95 5.31H15L9.52 6.78Zm-1.77 1.88-.58-.78L2.74 1.94h1.97l3.71 4.97.58.77 4.83 6.46h-1.97L7.75 8.66Z" />
             </svg>
-            X
+            Tweet
           </a>
         </div>
       </div>

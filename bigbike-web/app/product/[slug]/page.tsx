@@ -104,10 +104,21 @@ export default async function ProductDetailPage({
   const videos = safeArray(product.videos);
   const specs = safeArray(product.specifications);
 
+  // "Chưa phân loại" is an admin placeholder for un-classified imports.
+  // Treat it as no category in all public-facing surfaces (breadcrumb, info
+  // line, related products, JSON-LD, recently-viewed storage).
+  const effectiveCategory =
+    product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
+
   // ── JSON-LD ────────────────────────────────────────────────────────────────
 
-  const productJsonLd = serializeJsonLd(buildProductJsonLd(product));
-  const breadcrumbJsonLd = serializeJsonLd(buildBreadcrumbJsonLd(product));
+  // Pass an empty category name so JSON-LD builders skip the placeholder.
+  const productForJsonLd = effectiveCategory
+    ? product
+    : { ...product, category: { ...product.category, name: "" } };
+
+  const productJsonLd = serializeJsonLd(buildProductJsonLd(productForJsonLd));
+  const breadcrumbJsonLd = serializeJsonLd(buildBreadcrumbJsonLd(productForJsonLd));
   const faqJsonLd =
     specs.length > 0
       ? serializeJsonLd(
@@ -119,12 +130,12 @@ export default async function ProductDetailPage({
 
   // ── Related products (ISR-cached) ─────────────────────────────────────────
 
-  const relatedResult = product.category?.slug
+  const relatedResult = effectiveCategory?.slug
     ? await listProducts({
         page: 1,
         size: 8,
         sort: "createdAt:desc",
-        category: product.category.slug,
+        category: effectiveCategory.slug,
       })
     : null;
   const relatedProducts = (relatedResult?.data ?? [])
@@ -157,11 +168,11 @@ export default async function ProductDetailPage({
       {/* Breadcrumb */}
       <nav className="wp-breadcrumb" aria-label="Điều hướng">
         <Link href={toHomePath()}>Trang chủ</Link>
-        {product.category?.name && product.category.slug ? (
+        {effectiveCategory?.name && effectiveCategory.slug ? (
           <>
             <span className="sep" aria-hidden="true">/</span>
-            <Link href={toCategoryPath(product.category.slug)}>
-              {product.category.name}
+            <Link href={toCategoryPath(effectiveCategory.slug)}>
+              {effectiveCategory.name}
             </Link>
           </>
         ) : (
@@ -190,7 +201,7 @@ export default async function ProductDetailPage({
           productSlug={product.slug}
           productName={productName}
           brandName={safeText(product.brand?.name, "BigBike")}
-          categoryName={safeText(product.category?.name, "")}
+          categoryName={safeText(effectiveCategory?.name, "")}
           shortDescription={product.shortDescription}
           initialRating={product.rating ?? null}
           initialRatingCount={product.ratingCount ?? null}
@@ -216,10 +227,7 @@ export default async function ProductDetailPage({
         />
 
         {/* Reviews — always fresh (CSR) */}
-        <ReviewsSection
-          productId={product.id}
-          initialRating={product.rating ?? null}
-        />
+        <ReviewsSection productId={product.id} />
 
         {/* Related products — ISR-cached */}
         {relatedProducts.length > 0 && (
@@ -228,13 +236,13 @@ export default async function ProductDetailPage({
               <div>
                 <p className="wp-kicker">
                   DANH MỤC{" "}
-                  {product.category?.name?.toUpperCase() ?? "SẢN PHẨM"}
+                  {effectiveCategory?.name?.toUpperCase() ?? "SẢN PHẨM"}
                 </p>
                 <h2 className="wp-pdp-related-title">Sản phẩm liên quan</h2>
               </div>
-              {product.category?.slug && (
+              {effectiveCategory?.slug && (
                 <Link
-                  href={toCategoryPath(product.category.slug)}
+                  href={toCategoryPath(effectiveCategory.slug)}
                   className="wp-view-all-link"
                 >
                   Xem tất cả →
@@ -254,7 +262,7 @@ export default async function ProductDetailPage({
             name: productName,
             price: product.price?.salePrice ?? product.price?.retailPrice ?? null,
             imageUrl: product.image?.url ?? null,
-            categoryName: product.category?.name ?? null,
+            categoryName: effectiveCategory?.name ?? null,
           }}
         />
 

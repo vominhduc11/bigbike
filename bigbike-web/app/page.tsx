@@ -182,6 +182,7 @@ function WpNewsCard({ article }: { article: Article }) {
         <div className="wp-news-body-inside">
           <h3 className="wp-news-card-title">{title}</h3>
           {article.excerpt && <p className="wp-news-excerpt">{article.excerpt}</p>}
+          <span className="wp-news-read-more" aria-hidden="true">Đọc thêm →</span>
         </div>
       </div>
     </Link>

@@ -9,6 +9,7 @@ import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { CartSkeleton } from "@/components/ui/Skeletons";
+import { Button } from "@/components/ui/button";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -152,9 +153,9 @@ export default function CartPage() {
               <div className="wp-cart-empty">
                 <b>Giỏ hàng trống</b>
                 <p>Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
-                <Link href={toProductListPath()} className="wp-btn-primary">
-                  Xem sản phẩm
-                </Link>
+                <Button asChild variant="primary">
+                  <Link href={toProductListPath()}>Xem sản phẩm</Link>
+                </Button>
               </div>
             ) : (
               <>
@@ -244,9 +245,9 @@ export default function CartPage() {
                   <button type="button" className="wp-cart-clear-link" onClick={handleClear}>
                     Xoá toàn bộ
                   </button>
-                  <Link href={toCheckoutPath()} className="wp-cart-checkout-btn">
-                    THANH TOÁN
-                  </Link>
+                  <Button asChild variant="primary" className="wp-cart-checkout-btn">
+                    <Link href={toCheckoutPath()}>THANH TOÁN</Link>
+                  </Button>
                 </div>
               </>
             )}

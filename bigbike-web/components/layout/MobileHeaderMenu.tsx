@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
-import { useFocusTrap } from "@/lib/ui/focus-trap";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   toAccountPath,
   toCartPath,
@@ -14,6 +19,7 @@ import {
   toRegisterPath,
 } from "@/lib/utils/routes";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
+import { cn } from "@/lib/utils";
 
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
@@ -37,25 +43,6 @@ function MenuIcon() {
       <line x1="3" y1="6" x2="21" y2="6" />
       <line x1="3" y1="12" x2="21" y2="12" />
       <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
     </svg>
   );
 }
@@ -93,13 +80,16 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
   const href = normalizeMenuUrl(node.url);
   const active = isActivePath(pathname, href);
   const hasChildren = node.children.length > 0;
-  const [open, setOpen] = useState(active && hasChildren);
+  const [childOpen, setChildOpen] = useState(active && hasChildren);
 
   if (!hasChildren) {
     return (
       <Link
         href={href}
-        className={`wp-mobile-nav-link wp-mobile-nav-depth-${depth}${active ? " active" : ""}`}
+        className={cn(
+          `wp-mobile-nav-link wp-mobile-nav-depth-${depth}`,
+          active && "active",
+        )}
         onClick={onNavigate}
       >
         {node.label}
@@ -112,7 +102,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
       <div className={`wp-mobile-nav-row wp-mobile-nav-depth-${depth}`}>
         <Link
           href={href}
-          className={`wp-mobile-nav-link${active ? " active" : ""}`}
+          className={cn("wp-mobile-nav-link", active && "active")}
           onClick={onNavigate}
         >
           {node.label}
@@ -120,14 +110,14 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
         <button
           type="button"
           className="wp-mobile-nav-toggle"
-          aria-expanded={open}
-          aria-label={open ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
-          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={childOpen}
+          aria-label={childOpen ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
+          onClick={() => setChildOpen((prev) => !prev)}
         >
-          <ChevronIcon open={open} />
+          <ChevronIcon open={childOpen} />
         </button>
       </div>
-      {open && (
+      {childOpen && (
         <div className="wp-mobile-nav-children">
           {node.children.map((child) => (
             <MobileNavBranch
@@ -152,28 +142,9 @@ export function MobileHeaderMenu({
 }: MobileHeaderMenuProps) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const drawerRef = useRef<HTMLElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const auth = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-
-  useFocusTrap(drawerRef, {
-    active: open,
-    initialFocusRef: closeButtonRef,
-    lockScroll: true,
-    onEscape: () => setOpen(false),
-  });
-
-  useEffect(() => {
-    if (!open) return;
-
-    document.body.classList.add("wp-mobile-menu-open");
-
-    return () => {
-      document.body.classList.remove("wp-mobile-menu-open");
-    };
-  }, [open]);
 
   const close = () => setOpen(false);
 
@@ -198,34 +169,18 @@ export function MobileHeaderMenu({
         <MenuIcon />
       </button>
 
-      {open && (
-        <>
-          <button
-            className="wp-mobile-menu-backdrop"
-            type="button"
-            aria-label="Đóng menu"
-            onClick={close}
-          />
-          <aside
-            ref={drawerRef}
-            className="wp-mobile-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={menuLabel}
-          >
-            <div className="wp-mobile-drawer-head">
-              <span>BIGBIKE MENU</span>
-              <button
-                ref={closeButtonRef}
-                className="wp-icon-btn"
-                aria-label="Đóng menu"
-                type="button"
-                onClick={close}
-              >
-                <CloseIcon />
-              </button>
-            </div>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="w-[85vw] max-w-xs p-0 flex flex-col bg-[#141414] text-white border-r-0"
+        >
+          <SheetHeader className="px-4 py-3 border-b border-white/10 shrink-0">
+            <SheetTitle className="text-white uppercase font-heading text-sm tracking-wide">
+              {menuLabel || "BIGBIKE MENU"}
+            </SheetTitle>
+          </SheetHeader>
 
+          <div className="flex-1 overflow-y-auto">
             <nav className="wp-mobile-nav" aria-label={menuLabel}>
               {menuTree.map((node) => (
                 <MobileNavBranch
@@ -295,9 +250,9 @@ export function MobileHeaderMenu({
                 )}
               </div>
             )}
-          </aside>
-        </>
-      )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

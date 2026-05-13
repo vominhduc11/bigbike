@@ -29,7 +29,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
     return () => clearTimeout(id);
   }, [currentProductId, currentProduct]);
 
-  if (items.length === 0) return null;
+  if (items.length < 2) return null;
 
   return (
     <section className="wp-pdp-recently-viewed">
