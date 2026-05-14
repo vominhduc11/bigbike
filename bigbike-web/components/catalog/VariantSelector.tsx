@@ -132,9 +132,9 @@ export function VariantSelector({
           const currentValue = selectedOptions[group.name] ?? "";
           const isColorGroup = isColorAttribute(group.name);
           return (
-            <div key={group.name} className="wp-pdp-opt-group">
+            <div key={group.name} className="bb-pdp-opt-group">
               <h6>{group.name}</h6>
-              <div className="wp-pdp-chips">
+              <div className="bb-pdp-chips">
                 {group.values.map((info) => {
                   const { value, colorHex, swatchImageUrl } = info;
                   // For OOS detection: see whether picking this chip on top
@@ -175,8 +175,8 @@ export function VariantSelector({
                         key={`${group.name}-${value}`}
                         type="button"
                         className={[
-                          "wp-pdp-swatch",
-                          swatchMode === "image" ? "wp-pdp-swatch-image" : "wp-pdp-swatch-hex",
+                          "bb-pdp-swatch",
+                          swatchMode === "image" ? "bb-pdp-swatch-image" : "bb-pdp-swatch-hex",
                           isActive ? "active" : "",
                           !isAvailable && !isActive ? "oos" : "",
                         ]
@@ -191,11 +191,11 @@ export function VariantSelector({
                         aria-label={value}
                       >
                         <span
-                          className="wp-pdp-swatch-thumb"
+                          className="bb-pdp-swatch-thumb"
                           aria-hidden="true"
                           style={swatchStyle}
                         />
-                        <span className="wp-pdp-swatch-label">{value}</span>
+                        <span className="bb-pdp-swatch-label">{value}</span>
                       </button>
                     );
                   }
@@ -205,7 +205,7 @@ export function VariantSelector({
                       key={`${group.name}-${value}`}
                       type="button"
                       className={[
-                        "wp-pdp-chip",
+                        "bb-pdp-chip",
                         isActive ? "active" : "",
                         !isAvailable && !isActive ? "oos" : "",
                       ]
@@ -219,7 +219,7 @@ export function VariantSelector({
                       title={value}
                       aria-label={value}
                     >
-                      <span className="wp-pdp-chip-label">{value}</span>
+                      <span className="bb-pdp-chip-label">{value}</span>
                     </button>
                   );
                 })}
@@ -240,7 +240,7 @@ export function VariantSelector({
   })();
 
   return (
-    <div className="wp-pdp-opt-group">
+    <div className="bb-pdp-opt-group">
       <h6>Biến thể</h6>
       <Select
         value={currentVariantId}

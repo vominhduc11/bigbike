@@ -7,6 +7,8 @@ import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, updateAdminUser } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
@@ -53,14 +55,13 @@ function PasswordField({ value, onChange, placeholder, label, hint }) {
     <label className="au-field">
       <span className="au-field-label">{label}</span>
       <div className="au-field-row">
-        <input
-          className="control-input"
+        <Input
           type={show ? 'text' : 'password'}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           autoComplete="new-password"
-        />
+         />
         <button
           type="button"
           className="btn btn-secondary btn-sm"
@@ -324,44 +325,41 @@ export function AdminUsersScreen({ canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('adminUsers.searchPlaceholder')}
-          />
+           />
         </label>
         <label>
           {t('adminUsers.filterRole')}
-          <select
-            className="control-select"
-            value={roleFilter}
-            onChange={(e) => handleFilterChange('role', e.target.value)}
-          >
-            <option value="">{t('common.all')}</option>
+          <Select
+            value={roleFilter || '__all__'}
+            onValueChange={(val) => handleFilterChange('role', val === '__all__' ? '' : val)}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="__all__">{t('common.all')}</SelectItem>
             {roleOptions.map((r) => {
               const meta = ROLE_META[r]
               return (
-                <option key={r} value={r}>
+                <SelectItem key={r} value={r}>
                   {meta ? t(meta.labelKey) : r}
-                </option>
+                </SelectItem>
               )
             })}
-          </select>
+          </SelectContent></Select>
         </label>
         <label>
           {t('adminUsers.filterStatus')}
-          <select
-            className="control-select"
-            value={statusFilter}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-          >
-            <option value="">{t('common.all')}</option>
+          <Select
+            value={statusFilter || '__all__'}
+            onValueChange={(val) => handleFilterChange('status', val === '__all__' ? '' : val)}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="__all__">{t('common.all')}</SelectItem>
             {Object.entries(STATUS_META).map(([key, meta]) => (
-              <option key={key} value={key}>{t(meta.labelKey)}</option>
+              <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 
@@ -433,40 +431,37 @@ export function AdminUsersScreen({ canUpdate }) {
                 <div className="au-form-grid">
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
-                    <input
-                      className="control-input"
+                    <Input
                       value={editForm.displayName}
                       onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
-                    />
+                     />
                   </label>
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formRole')}</span>
-                    <select
-                      className="control-select"
+                    <Select
                       value={editForm.role}
-                      onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
-                    >
+                      onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
+                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                       {roleOptions.map((r) => {
                         const meta = ROLE_META[r]
                         return (
-                          <option key={r} value={r}>
+                          <SelectItem key={r} value={r}>
                             {meta ? t(meta.labelKey) : r}
-                          </option>
+                          </SelectItem>
                         )
                       })}
-                    </select>
+                    </SelectContent></Select>
                   </label>
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formStatus')}</span>
-                    <select
-                      className="control-select"
+                    <Select
                       value={editForm.status}
-                      onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
-                    >
+                      onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
+                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                       {Object.entries(STATUS_META).map(([key, meta]) => (
-                        <option key={key} value={key}>{t(meta.labelKey)}</option>
+                        <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
                       ))}
-                    </select>
+                    </SelectContent></Select>
                   </label>
                 </div>
               </div>
@@ -516,39 +511,36 @@ export function AdminUsersScreen({ canUpdate }) {
                 <div className="au-form-grid">
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formEmail')}</span>
-                    <input
-                      className="control-input"
+                    <Input
                       type="email"
                       value={createForm.email}
                       onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
                       required
-                    />
+                     />
                   </label>
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
-                    <input
-                      className="control-input"
+                    <Input
                       value={createForm.displayName}
                       onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))}
                       required
-                    />
+                     />
                   </label>
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formRole')}</span>
-                    <select
-                      className="control-select"
+                    <Select
                       value={createForm.role}
-                      onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
-                    >
+                      onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}
+                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                       {roleOptions.map((r) => {
                         const meta = ROLE_META[r]
                         return (
-                          <option key={r} value={r}>
+                          <SelectItem key={r} value={r}>
                             {meta ? t(meta.labelKey) : r}
-                          </option>
+                          </SelectItem>
                         )
                       })}
-                    </select>
+                    </SelectContent></Select>
                   </label>
                   <PasswordField
                     value={createForm.password}

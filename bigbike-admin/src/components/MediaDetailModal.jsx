@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMediaReferences, updateMedia } from '../lib/adminApi'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 function IconClose() {
   return (
@@ -80,9 +83,9 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
         style={{ maxWidth: 820, width: '100%' }}>
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('media.editTitle')}</h3>
-          <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label={t('common.close')}>
+          <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
             <IconClose />
-          </button>
+          </Button>
         </div>
 
         <div className="mpicker-body" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -114,29 +117,28 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
                 )}
               </div>
               {onPreview && media.publicUrl && (isImage || isVideo || isAudio) && (
-                <button
+                <Button variant="secondary"
                   type="button"
-                  className="btn btn-secondary"
                   onClick={() => onPreview()}
                   style={{ width: '100%', fontSize: '0.8rem' }}
                 >
                   {t('media.preview')}
-                </button>
+                </Button>
               )}
             </div>
 
             <form id="media-detail-form" onSubmit={handleSave} style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldAltText')}</span>
-                <input className="control-input" type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder={t('media.fieldAltTextPlaceholder')} />
+                <Input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder={t('media.fieldAltTextPlaceholder')}  />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldTitle')}</span>
-                <input className="control-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('media.fieldTitlePlaceholder')} />
+                <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('media.fieldTitlePlaceholder')}  />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldCaption')}</span>
-                <textarea className="control-input" rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('media.fieldCaptionPlaceholder')} style={{ resize: 'vertical' }} />
+                <Textarea rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('media.fieldCaptionPlaceholder')} style={{ resize: 'vertical' }}  />
               </label>
               {error && <p style={{ color: 'var(--c-danger)', fontSize: '0.8rem', margin: 0 }}>{error}</p>}
             </form>
@@ -201,10 +203,10 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
             {(media.filename ?? '').split('/').pop()}
           </span>
           <div className="mpicker-footer-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-            <button type="submit" form="media-detail-form" className="btn btn-primary" disabled={saving}>
+            <Button variant="secondary" type="button" onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+            <Button type="submit" form="media-detail-form" disabled={saving}>
               {saving ? t('common.saving') : t('common.save')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

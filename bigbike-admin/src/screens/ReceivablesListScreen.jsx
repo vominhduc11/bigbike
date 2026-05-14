@@ -23,9 +23,14 @@ import {
   MobileCardList,
   MobileCard,
 } from '../components/layout'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
 const TAB_KEYS = ['ALL', 'OPEN', 'OVERDUE', 'CLOSED']
+const AR_STATUS_VARIANT = { OPEN: 'info', PARTIALLY_PAID: 'warning', OVERDUE: 'danger', CLOSED: 'success', WRITTEN_OFF: 'muted' }
 
 function formatCurrency(amount, locale) {
   if (amount == null) return '—'
@@ -34,9 +39,9 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <span className={`status-badge status-badge--ar-${status}`}>
+    <Badge variant={AR_STATUS_VARIANT[status] ?? 'muted'}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
-    </span>
+    </Badge>
   )
 }
 
@@ -141,13 +146,12 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 
       <FilterBar>
         <FilterField label={t('receivables.filterSearchLabel')}>
-          <input
+          <Input
             type="text"
-            className="control-input"
             placeholder={t('receivables.filterSearchPlaceholder')}
             value={urlQuery.search || ''}
             onChange={handleSearch}
-          />
+           />
         </FilterField>
       </FilterBar>
 
@@ -417,40 +421,37 @@ export function RecordPaymentModal({ receivable, onClose }) {
       {error && <div className="modal-note modal-note--error">{error}</div>}
 
       <FormField label={t('receivables.recordPayment.amountLabel')} required>
-        <input
+        <Input
           type="number"
-          className="control-input"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
           min="1"
           max={outstanding}
-        />
+         />
       </FormField>
 
       <FormField label={t('receivables.recordPayment.methodLabel')} required>
-        <select className="control-select" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
           {PAYMENT_METHODS.map((m) => (
-            <option key={m} value={m}>{t(`receivables.paymentMethod.${m}`)}</option>
+            <SelectItem key={m} value={m}>{t(`receivables.paymentMethod.${m}`)}</SelectItem>
           ))}
-        </select>
+        </SelectContent></Select>
       </FormField>
 
       <FormField label={t('receivables.recordPayment.refLabel')} helper={t('receivables.recordPayment.refHelper')}>
-        <input
+        <Input
           type="text"
-          className="control-input"
           value={ref}
           onChange={(e) => setRef(e.target.value)}
-        />
+         />
       </FormField>
 
       <FormField label={t('receivables.recordPayment.noteLabel')}>
-        <textarea
-          className="control-input control-textarea"
+        <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-        />
+         />
       </FormField>
 
       {validAmount && (
@@ -532,12 +533,11 @@ export function WriteOffModal({ receivable, onClose }) {
       {error && <div className="modal-note modal-note--error">{error}</div>}
 
       <FormField label={t('receivables.writeOff.reasonLabel')} required>
-        <textarea
-          className="control-input control-textarea"
+        <Textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder={t('receivables.writeOff.reasonPlaceholder')}
-        />
+         />
       </FormField>
     </Modal>
   )

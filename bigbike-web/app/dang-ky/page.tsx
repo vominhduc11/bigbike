@@ -50,7 +50,7 @@ export default function RegisterPage() {
         <div className="bb-container">
           <div className="bb-auth-wrap">
             <Card className="p-6 text-center">
-              <div style={{ marginBottom: "var(--bb-space-4)", display: "flex", justifyContent: "center" }}>
+              <div className="mb-4 flex justify-center">
                 <svg
                   width="52"
                   height="52"
@@ -65,13 +65,13 @@ export default function RegisterPage() {
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <h1 style={{ fontSize: "clamp(1.25rem, 3vw, 1.75rem)", marginBottom: "var(--bb-space-3)" }}>
+              <h1 className="text-[clamp(1.25rem,3vw,1.75rem)] mb-3">
                 Tài khoản đã được tạo!
               </h1>
               {confirmedEmail && (
-                <p className="bb-auth-footer" style={{ marginBottom: "var(--bb-space-5)" }}>
+                <p className="bb-auth-footer mb-5">
                   Chúng tôi đã gửi email xác nhận đến{" "}
-                  <strong style={{ color: "var(--bb-text-primary)" }}>{confirmedEmail}</strong>.
+                  <strong className="text-foreground">{confirmedEmail}</strong>.
                   Vui lòng kiểm tra hộp thư (kể cả thư mục spam) để xác nhận tài khoản.
                 </p>
               )}

@@ -71,9 +71,9 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
 
   return (
     <>
-      <div className="wp-field">
-        <label>
-          Tỉnh / Thành phố{required && <span className="req"> *</span>}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">
+          {"T\u1ec9nh / Th\u00e0nh ph\u1ed1"}{required && <span className="text-brand ml-[3px]">*</span>}
         </label>
         <Select
           required={required}
@@ -85,7 +85,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="— Chọn tỉnh / thành phố —" />
+            <SelectValue placeholder={"\u2014 Ch\u1ecdn t\u1ec9nh / th\u00e0nh ph\u1ed1 \u2014"} />
           </SelectTrigger>
           <SelectContent>
             {VN_PROVINCES.map((p) => (
@@ -95,8 +95,8 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
         </Select>
       </div>
 
-      <div className="wp-field">
-        <label>Quận / Huyện</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Qu\u1eadn / Huy\u1ec7n"}</label>
         {selectedProvince ? (
           <Select
             value={value.district}
@@ -106,7 +106,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="— Chọn quận / huyện —" />
+              <SelectValue placeholder={"\u2014 Ch\u1ecdn qu\u1eadn / huy\u1ec7n \u2014"} />
             </SelectTrigger>
             <SelectContent>
               {selectedProvince.districts.map((d) => (
@@ -115,12 +115,12 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
             </SelectContent>
           </Select>
         ) : (
-          <Input placeholder="Chọn tỉnh/thành phố trước" disabled />
+          <Input placeholder={"Ch\u1ecdn t\u1ec9nh/th\u00e0nh ph\u1ed1 tr\u01b0\u1edbc"} disabled />
         )}
       </div>
 
-      <div className="wp-field">
-        <label>Phường / Xã</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Ph\u01b0\u1eddng / X\u00e3"}</label>
         {selectedDistrict ? (
           <Select
             value={value.ward}
@@ -128,7 +128,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
             onValueChange={(v) => onChange("ward", v)}
           >
             <SelectTrigger>
-              <SelectValue placeholder={wardsLoading ? "Đang tải..." : "— Chọn phường / xã —"} />
+              <SelectValue placeholder={wardsLoading ? "\u0110ang t\u1ea3i..." : "\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
             </SelectTrigger>
             <SelectContent>
               {wards.map((w) => (
@@ -137,7 +137,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
             </SelectContent>
           </Select>
         ) : (
-          <Input placeholder="Chọn quận/huyện trước" disabled />
+          <Input placeholder={"Ch\u1ecdn qu\u1eadn/huy\u1ec7n tr\u01b0\u1edbc"} disabled />
         )}
       </div>
     </>

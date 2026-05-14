@@ -16,6 +16,8 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = {
   search: '',
@@ -306,135 +308,120 @@ export function ProductListScreen({ navigate, canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('products.searchPlaceholder')}
-          />
+           />
         </label>
 
         <label>
           {t('products.filterPublish')}
-          <select
-            className="control-select"
+          <Select
             value={query.publishStatus}
-            onChange={(event) =>
-              updateQuery({ publishStatus: event.target.value }, { resetPage: true })
-            }
-            >
-              <option value="ALL">{t('common.all')}</option>
-              <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-              <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-              <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-              <option value="TRASH">{t('status.publish.TRASH')}</option>
-            </select>
+            onValueChange={(event) =>
+              updateQuery({ publishStatus: event.target.value }, { resetPage: true })}
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="ALL">{t('common.all')}</SelectItem>
+              <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
+              <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
+              <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+              <SelectItem value="TRASH">{t('status.publish.TRASH')}</SelectItem>
+            </SelectContent></Select>
           </label>
 
         <label>
           {t('products.filterStock')}
-          <select
-            className="control-select"
+          <Select
             value={query.stockState}
-            onChange={(event) =>
-              updateQuery({ stockState: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
-            <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
-            <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ stockState: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="IN_STOCK">{t('status.stock.IN_STOCK')}</SelectItem>
+            <SelectItem value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</SelectItem>
+            <SelectItem value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('products.filterBrand')}
-          <select
-            className="control-select"
+          <Select
             value={query.brandId}
-            onChange={(event) => updateQuery({ brandId: event.target.value }, { resetPage: true })}
-          >
-            <option value="">{t('common.all')}</option>
+            onValueChange={(val) => updateQuery({ brandId: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {brands.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('products.filterCategory')}
-          <select
-            className="control-select"
+          <Select
             value={query.categoryId}
-            onChange={(event) => updateQuery({ categoryId: event.target.value }, { resetPage: true })}
-          >
-            <option value="">{t('common.all')}</option>
+            onValueChange={(val) => updateQuery({ categoryId: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
 
         <label>
           Nổi bật trang chủ
-          <select
-            className="control-select"
+          <Select
             value={query.featured}
-            onChange={(event) => updateQuery({ featured: event.target.value }, { resetPage: true })}
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="true">Đang bật</option>
-            <option value="false">Đang tắt</option>
-          </select>
+            onValueChange={(val) => updateQuery({ featured: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="true">Đang bật</SelectItem>
+            <SelectItem value="false">Đang tắt</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           Hiển thị trang chủ
-          <select
-            className="control-select"
+          <Select
             value={query.showOnHomepage}
-            onChange={(event) => updateQuery({ showOnHomepage: event.target.value }, { resetPage: true })}
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="true">Đang bật</option>
-            <option value="false">Đang tắt</option>
-          </select>
+            onValueChange={(val) => updateQuery({ showOnHomepage: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="true">Đang bật</SelectItem>
+            <SelectItem value="false">Đang tắt</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('products.filterSort')}
-          <select
-            className="control-select"
+          <Select
             value={query.sort}
-            onChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-            <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-            <option value="name:asc">{t('sort.nameAZ')}</option>
-            <option value="name:desc">{t('sort.nameZA')}</option>
-            <option value="homepageOrder:asc">Thứ tự trang chủ (nhỏ → lớn)</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ sort: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
+            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
+            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
+            <SelectItem value="name:desc">{t('sort.nameZA')}</SelectItem>
+            <SelectItem value="homepageOrder:asc">Thứ tự trang chủ (nhỏ → lớn)</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('common.rowsPerPage')}
-          <select
-            className="control-select"
+          <Select
             value={query.pageSize}
-            onChange={(event) =>
+            onValueChange={(event) =>
               updateQuery(
                 { pageSize: Number(event.target.value) },
                 { resetPage: true },
-              )
-            }
-          >
+              )}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 

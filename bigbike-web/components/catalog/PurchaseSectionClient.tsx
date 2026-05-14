@@ -38,7 +38,7 @@ function IconCheck() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="wp-pdp-feat-icon"
+      className="bb-pdp-feat-icon"
     >
       <circle cx="7" cy="7" r="6" />
       <path d="M4.5 7l2 2 3-3" />
@@ -228,18 +228,18 @@ export function PurchaseSectionClient({
       />
 
       {/* Right: Info + Purchase controls */}
-      <div className="wp-pdp-info">
+      <div className="bb-pdp-info">
         {/* Static header (ISR-rendered data) */}
-        <p className="wp-pdp-info-brand">
+        <p className="bb-pdp-info-brand">
           {brandName}
           {categoryName ? ` · ${categoryName}` : ""}
         </p>
-        <h1 className="wp-pdp-info-title">{productName}</h1>
+        <h1 className="bb-pdp-info-title">{productName}</h1>
 
         {/* Rating stars — only shown when we have verified reviews (count > 0).
             Avoids showing a seeded/default rating with no actual customer reviews. */}
         {initialRating && initialRating > 0 && (initialRatingCount ?? 0) > 0 ? (
-          <div className="wp-pdp-rating">
+          <div className="bb-pdp-rating">
             <span className="stars" aria-label={`${initialRating.toFixed(1)} sao`}>
               {Array.from({ length: 5 }, (_, i) => (
                 <svg
@@ -251,7 +251,7 @@ export function PurchaseSectionClient({
                   fill={i < Math.round(initialRating) ? "currentColor" : "none"}
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  style={{ color: "var(--bb-brand-primary)" }}
+                  className="text-brand"
                 >
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
@@ -259,23 +259,23 @@ export function PurchaseSectionClient({
             </span>
             <span>{initialRating.toFixed(1)}/5</span>
             {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
-              <span className="wp-pdp-rating-count">({initialRatingCount} đánh giá)</span>
+              <span className="bb-pdp-rating-count">({initialRatingCount} đánh giá)</span>
             )}
           </div>
         ) : null}
 
         {shortDescription && (
-          <p className="wp-pdp-short-desc">{shortDescription}</p>
+          <p className="bb-pdp-short-desc">{shortDescription}</p>
         )}
 
         {/* Price + Stock — same row (matches original layout) */}
-        <div className="wp-pdp-price-row">
+        <div className="bb-pdp-price-row">
           <PricingPanel
             data={effectivePricing}
             fallback={fallbackPrice}
             isLoading={snapshotLoading && !fallbackPrice}
           />
-          <div className="wp-stock-wrap">
+          <div className="bb-stock-wrap">
             <StockStatus
               data={effectiveStockData}
               fallbackState={fallbackStockState}
@@ -287,7 +287,7 @@ export function PurchaseSectionClient({
         {/* "Please pick variant" prompt — only when product has variants the user
             hasn't fully picked AND product is not actually sold out. */}
         {requiresVariantSelection && effectiveStockState !== "OUT_OF_STOCK" && (
-          <div className="wp-pdp-variant-prompt" role="status">
+          <div className="bb-pdp-variant-prompt" role="status">
             Vui lòng chọn size/màu sắc để mua hàng:
           </div>
         )}
@@ -301,9 +301,9 @@ export function PurchaseSectionClient({
         />
 
         {/* Quantity stepper */}
-        <div className="wp-pdp-qty">
-          <p className="wp-pdp-qty-label">Số lượng</p>
-          <div className="wp-pdp-qty-stepper">
+        <div className="bb-pdp-qty">
+          <p className="bb-pdp-qty-label">Số lượng</p>
+          <div className="bb-pdp-qty-stepper">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -331,7 +331,7 @@ export function PurchaseSectionClient({
         </div>
 
         {/* CTA buttons */}
-        <div className="wp-pdp-actions">
+        <div className="bb-pdp-actions">
           <Button
             type="button"
             variant="primary"
@@ -359,13 +359,13 @@ export function PurchaseSectionClient({
         </div>
 
         {addError && (
-          <p className="wp-error-text wp-pdp-error">{addError}</p>
+          <p className="bb-error-text bb-pdp-error">{addError}</p>
         )}
 
         {/* Trust features */}
-        <div className="wp-pdp-features">
+        <div className="bb-pdp-features">
           {FEATURES.map((feat) => (
-            <div key={feat} className="wp-pdp-feat">
+            <div key={feat} className="bb-pdp-feat">
               <IconCheck />
               {feat}
             </div>
@@ -373,14 +373,14 @@ export function PurchaseSectionClient({
         </div>
 
         {/* Social share — Facebook + Zalo (mirrors WP single-product layout).
-            Reuses .wp-article-share styles already present in globals.css. */}
-        <div className="wp-article-share wp-pdp-share">
-          <span className="wp-article-share-label">Chia sẻ:</span>
+            Reuses .bb-article-share styles already present in globals.css. */}
+        <div className="bb-article-share bb-pdp-share">
+          <span className="bb-article-share-label">Chia sẻ:</span>
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="wp-article-share-btn wp-article-share-fb"
+            className="bb-article-share-btn bb-article-share-fb"
             aria-label="Chia sẻ lên Facebook"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -392,7 +392,7 @@ export function PurchaseSectionClient({
             href={`https://zalo.me/share?url=${encodeURIComponent(canonicalUrl)}&title=${encodeURIComponent(productName)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="wp-article-share-btn wp-article-share-zalo"
+            className="bb-article-share-btn bb-article-share-zalo"
             aria-label="Chia sẻ qua Zalo"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -406,7 +406,7 @@ export function PurchaseSectionClient({
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(productName)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="wp-article-share-btn wp-article-share-twitter"
+            className="bb-article-share-btn bb-article-share-twitter"
             aria-label="Chia sẻ trên X (Twitter)"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">

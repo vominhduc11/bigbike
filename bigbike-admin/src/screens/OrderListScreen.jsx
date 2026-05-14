@@ -12,6 +12,8 @@ import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const STATUS_TONES = {
   PENDING: 'warning',
@@ -130,19 +132,19 @@ export function OrderListScreen({ navigate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input className="control-input" type="search" value={searchInput}
+          <Input type="search" value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('orders.searchPlaceholder')} />
+            placeholder={t('orders.searchPlaceholder')}  />
         </label>
         <label>
           {t('orders.filterStatus')}
-          <select className="control-select" value={query.orderStatus}
-            onChange={(e) => updateQuery({ orderStatus: e.target.value }, { resetPage: true })}>
-            <option value="ALL">{t('common.all')}</option>
+          <Select value={query.orderStatus}
+            onValueChange={(val) => updateQuery({ orderStatus: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {ORDER_STATUS_KEYS.map((k) => (
-              <option key={k} value={k}>{t(`status.order.${k}`)}</option>
+              <SelectItem key={k} value={k}>{t(`status.order.${k}`)}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
         <label>
           {t('orders.filterDate', { defaultValue: 'Khoảng ngày' })}
@@ -155,21 +157,21 @@ export function OrderListScreen({ navigate }) {
         </label>
         <label>
           {t('orders.filterSort')}
-          <select className="control-select" value={query.sort}
-            onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}>
-            <option value="createdAt:desc">{t('sort.newestOrder')}</option>
-            <option value="createdAt:asc">{t('sort.oldestOrder')}</option>
-            <option value="total:desc">{t('sort.highestValue')}</option>
-          </select>
+          <Select value={query.sort}
+            onValueChange={(val) => updateQuery({ sort: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="createdAt:desc">{t('sort.newestOrder')}</SelectItem>
+            <SelectItem value="createdAt:asc">{t('sort.oldestOrder')}</SelectItem>
+            <SelectItem value="total:desc">{t('sort.highestValue')}</SelectItem>
+          </SelectContent></Select>
         </label>
         <label>
           {t('common.rowsPerPage')}
-          <select className="control-select" value={query.pageSize}
-            onChange={(e) => updateQuery({ pageSize: Number(e.target.value) }, { resetPage: true })}>
+          <Select value={query.pageSize}
+            onValueChange={(val) => updateQuery({ pageSize: Number(val) }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 

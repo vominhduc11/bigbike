@@ -15,7 +15,15 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type QuickBuyModalProps = {
   productId: string;
@@ -201,8 +209,8 @@ export function QuickBuyModal({
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <label className="text-sm font-medium font-body text-foreground">Ghi chú</label>
-                <textarea
-                  className="flex w-full min-h-[80px] px-4 py-3 border border-border bg-white text-foreground font-body text-base resize-y focus:border-ring focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,123,255,0.1)] placeholder:text-muted-foreground"
+                <Textarea
+                  className="min-h-20"
                   value={customerNote}
                   onChange={(e) => setCustomerNote(e.target.value)}
                   rows={3}
@@ -215,40 +223,38 @@ export function QuickBuyModal({
               <label className="text-sm font-medium font-body text-foreground">
                 Phương thức thanh toán <span className="text-destructive">*</span>
               </label>
-              <select
-                className="flex w-full min-h-[48px] px-4 py-3 border border-border bg-white text-foreground font-body text-base focus:border-ring focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,123,255,0.1)]"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                required
-              >
-                <option value="" disabled>Chọn phương thức</option>
-                {(checkoutOptions?.paymentMethods ?? []).map((m) => (
-                  <option key={m.code} value={m.code}>{m.title}</option>
-                ))}
-              </select>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn phương thức" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(checkoutOptions?.paymentMethods ?? []).map((m) => (
+                    <SelectItem key={m.code} value={m.code}>{m.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium font-body text-foreground">
                 Phương thức giao hàng <span className="text-destructive">*</span>
               </label>
-              <select
-                className="flex w-full min-h-[48px] px-4 py-3 border border-border bg-white text-foreground font-body text-base focus:border-ring focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,123,255,0.1)]"
-                value={shippingMethodId}
-                onChange={(e) => setShippingMethodId(e.target.value)}
-                required
-              >
-                <option value="" disabled>Chọn phương thức</option>
-                {(checkoutOptions?.shippingMethods ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.title} — {formatVnd(m.cost)}
-                  </option>
-                ))}
-              </select>
+              <Select value={shippingMethodId} onValueChange={setShippingMethodId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn phương thức" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(checkoutOptions?.shippingMethods ?? []).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.title} — {formatVnd(m.cost)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {success && <p className="text-sm text-[#778866] font-medium">{success}</p>}
+            {success && <p className="text-sm font-medium text-[var(--bb-state-success-text)]">{success}</p>}
           </form>
         </div>
 

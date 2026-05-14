@@ -1,12 +1,8 @@
-import { useEffect } from 'react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { X } from 'lucide-react'
 
-/**
- * Modal — generic action modal built on existing .modal-overlay/.modal-box CSS.
- *
- * Layout: header (title + close X) / body (children) / footer (actions).
- * Closes on Escape and on overlay click.
- */
 export function Modal({
   open,
   onClose,
@@ -14,48 +10,29 @@ export function Modal({
   children,
   actions,
   wide = false,
-  closeLabel = 'Close',
+  closeLabel = 'Đóng',
 }) {
-  useEffect(() => {
-    if (!open) return undefined
-    function onKey(e) {
-      if (e.key === 'Escape') onClose?.()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
-
-  function handleOverlayClick(e) {
-    if (e.target === e.currentTarget) onClose?.()
-  }
-
   return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={typeof title === 'string' ? title : undefined}
-      onMouseDown={handleOverlayClick}
-    >
-      <div className={`modal-box modal-box--flex${wide ? ' modal-box--wide' : ''}`}>
-        <header className="modal-header">
-          <h2 className="modal-title">{title}</h2>
-          <button
-            type="button"
-            className="btn btn-icon"
-            onClick={onClose}
-            aria-label={closeLabel}
-          >
-            <X size={18} />
-          </button>
-        </header>
-        <div className="modal-body">{children}</div>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.() }}>
+      <DialogContent
+        showClose={false}
+        className={cn('p-0 flex flex-col max-h-[90vh]', wide ? 'max-w-3xl' : 'max-w-lg')}
+      >
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0">
+          <DialogTitle className="text-base font-semibold font-body text-foreground leading-snug">
+            {title}
+          </DialogTitle>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={closeLabel} className="shrink-0">
+            <X size={16} />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {actions ? (
-          <footer className="modal-footer modal-actions">{actions}</footer>
+          <div className="flex justify-end gap-2 px-5 py-3 border-t border-border shrink-0">
+            {actions}
+          </div>
         ) : null}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

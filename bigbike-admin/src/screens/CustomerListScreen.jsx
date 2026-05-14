@@ -8,6 +8,8 @@ import { StatePanel } from '../components/StatePanel'
 import { exportCustomersCsv, fetchCustomers } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const STATUS_TONES = { ACTIVE: 'success', PENDING: 'warning', DISABLED: 'warning', BLOCKED: 'danger', UNKNOWN: 'neutral' }
 
@@ -93,20 +95,20 @@ export function CustomerListScreen({ navigate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input className="control-input" type="search" value={searchInput}
+          <Input type="search" value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('customers.searchPlaceholder')} />
+            placeholder={t('customers.searchPlaceholder')}  />
         </label>
         <label>
           {t('customers.filterStatus')}
-          <select className="control-select" value={query.status}
-            onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}>
-            <option value="ALL">{t('common.all')}</option>
-            <option value="ACTIVE">{t('status.customer.ACTIVE')}</option>
-            <option value="PENDING">{t('status.customer.PENDING')}</option>
-            <option value="DISABLED">{t('status.customer.DISABLED')}</option>
-            <option value="BLOCKED">{t('status.customer.BLOCKED')}</option>
-          </select>
+          <Select value={query.status}
+            onValueChange={(val) => updateQuery({ status: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="ACTIVE">{t('status.customer.ACTIVE')}</SelectItem>
+            <SelectItem value="PENDING">{t('status.customer.PENDING')}</SelectItem>
+            <SelectItem value="DISABLED">{t('status.customer.DISABLED')}</SelectItem>
+            <SelectItem value="BLOCKED">{t('status.customer.BLOCKED')}</SelectItem>
+          </SelectContent></Select>
         </label>
       </section>
 

@@ -22,15 +22,15 @@ function formatDate(iso: string) {
 
 function StatusBadge({ status, daysLeft }: { status: WarrantyResult["status"]; daysLeft: number }) {
   if (status === "VOIDED") {
-    return <Badge variant="outline">Đã huỷ</Badge>;
+    return <Badge variant="outline">{"\u0110\u00e3 hu\u1ef7"}</Badge>;
   }
   if (status === "EXPIRED") {
-    return <Badge variant="destructive">Hết hạn</Badge>;
+    return <Badge variant="destructive">{"H\u1ebft h\u1ea1n"}</Badge>;
   }
   if (daysLeft <= 30) {
-    return <Badge variant="warning">Sắp hết hạn ({daysLeft} ngày)</Badge>;
+    return <Badge variant="warning">{`S\u1eafp h\u1ebft h\u1ea1n (${daysLeft} ng\u00e0y)`}</Badge>;
   }
-  return <Badge variant="success">Còn hiệu lực ({daysLeft} ngày)</Badge>;
+  return <Badge variant="success">{`C\u00f2n hi\u1ec7u l\u1ef1c (${daysLeft} ng\u00e0y)`}</Badge>;
 }
 
 export default function WarrantyLookupPage() {
@@ -55,30 +55,30 @@ export default function WarrantyLookupPage() {
         );
         const payload = await res.json() as { data?: WarrantyResult; error?: { message?: string } };
         if (!res.ok) {
-          setError(payload.error?.message ?? "Không tìm thấy thông tin bảo hành.");
+          setError(payload.error?.message ?? "Kh\u00f4ng t\u00ecm th\u1ea5y th\u00f4ng tin b\u1ea3o h\u00e0nh.");
           return;
         }
         setResult(payload.data ?? null);
       } catch {
-        setError("Lỗi kết nối. Vui lòng thử lại.");
+        setError("L\u1ed7i k\u1ebft n\u1ed1i. Vui l\u00f2ng th\u1eed l\u1ea1i.");
       }
     });
   }
 
   return (
-    <div className="bb-container" style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px" }}>
-      <div className="wp-page-head">
-        <span className="kicker">Hậu mãi · BigBike</span>
-        <h1>Tra cứu bảo hành</h1>
-        <p>Nhập số serial trên tem sản phẩm để kiểm tra hạn bảo hành.</p>
+    <div className="bb-container max-w-[560px] py-10">
+      <div className="mb-7 pb-[22px] border-b border-border">
+        <span className="text-[11px] tracking-[0.18em] uppercase text-brand font-bold block mb-2">{"H\u1eadu m\u00e3i \u00b7 BigBike"}</span>
+        <h1 className="font-display uppercase text-[clamp(1.375rem,5vw,2.8rem)] tracking-[0.01em] leading-[1.1] m-0 text-foreground">{"Tra c\u1ee9u b\u1ea3o h\u00e0nh"}</h1>
+        <p className="text-muted-foreground text-sm mt-2 m-0">{"Nh\u1eadp s\u1ed1 serial tr\u00ean tem s\u1ea3n ph\u1ea9m \u0111\u1ec3 ki\u1ec3m tra h\u1ea1n b\u1ea3o h\u00e0nh."}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="wp-checkout-section" style={{ marginTop: 24 }}>
-        <div className="wp-field">
-          <label htmlFor="serial-input">
-            Số serial <span className="req">*</span>
+      <form onSubmit={handleSubmit} className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-6">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="serial-input" className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">
+            {"S\u1ed1 serial "}<span className="text-brand ml-[3px]">*</span>
           </label>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-2 max-sm:flex-col">
             <Input
               id="serial-input"
               className="flex-1"
@@ -94,57 +94,57 @@ export default function WarrantyLookupPage() {
               variant="primary"
               disabled={isPending || !serial.trim()}
             >
-              {isPending ? "Đang tra..." : "Tra cứu"}
+              {isPending ? "\u0110ang tra..." : "Tra c\u1ee9u"}
             </Button>
           </div>
-          <p className="wp-muted-text" style={{ marginTop: 6 }}>
-            Số serial in trên tem dán trong hộp sản phẩm hoặc trên thân sản phẩm.
+          <p className="text-muted-foreground text-sm mt-1.5 m-0">
+            {"S\u1ed1 serial in tr\u00ean tem d\u00e1n trong h\u1ed9p s\u1ea3n ph\u1ea9m ho\u1eb7c tr\u00ean th\u00e2n s\u1ea3n ph\u1ea9m."}
           </p>
         </div>
       </form>
 
       {error && (
-        <div className="wp-alert-error" style={{ marginTop: 16 }}>
+        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] text-sm text-destructive mt-4">
           {error}
         </div>
       )}
 
       {result && (
-        <div className="wp-checkout-section" style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>Thông tin bảo hành</h3>
+        <div className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-4">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <h3 className="m-0">{"Th\u00f4ng tin b\u1ea3o h\u00e0nh"}</h3>
             <StatusBadge status={result.status} daysLeft={result.daysLeft} />
           </div>
 
-          <table className="wp-info-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="w-full border-collapse">
             <tbody>
               <tr>
-                <td className="wp-muted-text" style={{ padding: "6px 0", width: "40%" }}>Sản phẩm</td>
-                <td style={{ padding: "6px 0", fontWeight: 600 }}>{result.productName}</td>
+                <td className="text-muted-foreground text-sm w-[40%] py-1.5">{"S\u1ea3n ph\u1ea9m"}</td>
+                <td className="py-1.5 font-semibold">{result.productName}</td>
               </tr>
               <tr>
-                <td className="wp-muted-text" style={{ padding: "6px 0" }}>Số serial</td>
-                <td style={{ padding: "6px 0", fontFamily: "monospace" }}>{result.serialNumber}</td>
+                <td className="text-muted-foreground text-sm py-1.5">{"S\u1ed1 serial"}</td>
+                <td className="py-1.5 font-mono">{result.serialNumber}</td>
               </tr>
               <tr>
-                <td className="wp-muted-text" style={{ padding: "6px 0" }}>Ngày bắt đầu</td>
-                <td style={{ padding: "6px 0" }}>{formatDate(result.startDate)}</td>
+                <td className="text-muted-foreground text-sm py-1.5">{"Ng\u00e0y b\u1eaft \u0111\u1ea7u"}</td>
+                <td className="py-1.5">{formatDate(result.startDate)}</td>
               </tr>
               <tr>
-                <td className="wp-muted-text" style={{ padding: "6px 0" }}>Ngày kết thúc</td>
-                <td style={{ padding: "6px 0" }}>{formatDate(result.endDate)}</td>
+                <td className="text-muted-foreground text-sm py-1.5">{"Ng\u00e0y k\u1ebft th\u00fac"}</td>
+                <td className="py-1.5">{formatDate(result.endDate)}</td>
               </tr>
             </tbody>
           </table>
 
           {result.status === "ACTIVE" && (
-            <p className="wp-muted-text" style={{ marginTop: 12, fontSize: "0.85em" }}>
-              Vui lòng giữ số serial để xuất trình khi yêu cầu bảo hành tại cửa hàng hoặc qua hotline.
+            <p className="text-muted-foreground text-sm mt-3 m-0">
+              {"Vui l\u00f2ng gi\u1eef s\u1ed1 serial \u0111\u1ec3 xu\u1ea5t tr\u00ecnh khi y\u00eau c\u1ea7u b\u1ea3o h\u00e0nh t\u1ea1i c\u1eeda h\u00e0ng ho\u1eb7c qua hotline."}
             </p>
           )}
           {result.status === "VOIDED" && (
-            <p style={{ marginTop: 12, fontSize: "0.85em", color: "var(--c-error, #dc2626)" }}>
-              Phiếu bảo hành này đã bị huỷ. Liên hệ cửa hàng để được hỗ trợ.
+            <p className="mt-3 text-sm text-destructive m-0">
+              {"Phi\u1ebfu b\u1ea3o h\u00e0nh n\u00e0y \u0111\u00e3 b\u1ecb hu\u1ef7. Li\u00ean h\u1ec7 c\u1eeda h\u00e0ng \u0111\u1ec3 \u0111\u01b0\u1ee3c h\u1ed7 tr\u1ee3."}
             </p>
           )}
         </div>

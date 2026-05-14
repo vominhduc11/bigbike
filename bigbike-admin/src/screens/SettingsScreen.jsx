@@ -10,6 +10,8 @@ import { StatePanel } from '../components/StatePanel'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -208,8 +210,8 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
             error={error}
           />
         ) : (
-          <input
-            className={`control-input sv2-field-input${error ? ' sv2-field-input--error' : ''}`}
+          <Input
+            className={error ? 'border-danger' : undefined}
             type={type}
             inputMode={type === 'number' ? 'numeric' : undefined}
             value={currentValue}
@@ -269,22 +271,20 @@ function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSa
             {dirtyCount === 1 ? '1 thay đổi chưa lưu' : `${dirtyCount} thay đổi chưa lưu`}
           </span>
           <div className="sv2-footer-actions">
-            <button
+            <Button variant="secondary"
               type="button"
-              className="btn btn-secondary"
               onClick={onDiscard}
               disabled={saving}
             >
               Huỷ
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn btn-primary"
               onClick={onSave}
               disabled={saving || hasError}
             >
               {saving ? 'Đang lưu...' : `Lưu (${dirtyCount})`}
-            </button>
+            </Button>
           </div>
         </div>
       )}

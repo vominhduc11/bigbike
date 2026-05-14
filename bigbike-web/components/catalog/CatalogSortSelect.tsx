@@ -30,7 +30,7 @@ export function CatalogSortSelect({ current }: { current: string }) {
   }
 
   return (
-    <div className="wp-catalog-sort">
+    <div className="flex items-center gap-[10px] text-sm text-muted-foreground">
       <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
       <Select value={current} onValueChange={handleChange}>
         <SelectTrigger id="sort-select" className="min-h-[40px] min-w-[160px] text-sm">
@@ -47,3 +47,4 @@ export function CatalogSortSelect({ current }: { current: string }) {
     </div>
   );
 }
+

@@ -6,6 +6,8 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 // ── Actions that are dangerous — shown with a warning indicator ────────────────
 const DANGEROUS_ACTIONS = new Set([
@@ -491,14 +493,13 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
           <label>
             <span>{t('auditLog.filterSearch')}</span>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <input
-                className="control-input"
+              <Input
                 type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { onSearch(); onClose() } }}
                 placeholder={t('auditLog.filterSearchPlaceholder')}
-              />
+               />
               <button type="button" className="btn btn-secondary" onClick={() => { onSearch(); onClose() }}>
                 {t('auditLog.mobileSearchBtn')}
               </button>
@@ -507,24 +508,24 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
 
           <label>
             <span>{t('auditLog.filterModule')}</span>
-            <select className="control-select" value={query.resourceType}
-              onChange={(e) => onUpdate({ resourceType: e.target.value }, { resetPage: true })}>
-              <option value="ALL">{t('common.all')}</option>
+            <Select value={query.resourceType}
+              onValueChange={(val) => onUpdate({ resourceType: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="ALL">{t('common.all')}</SelectItem>
               {RESOURCE_OPTIONS.filter((r) => r !== 'ALL').map((r) => (
-                <option key={r} value={r}>{t(`auditLog.module.${r}`, { defaultValue: r })}</option>
+                <SelectItem key={r} value={r}>{t(`auditLog.module.${r}`, { defaultValue: r })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
 
           <label>
             <span>{t('auditLog.filterActorType')}</span>
-            <select className="control-select" value={query.actorType}
-              onChange={(e) => onUpdate({ actorType: e.target.value }, { resetPage: true })}>
-              <option value="ALL">{t('common.all')}</option>
+            <Select value={query.actorType}
+              onValueChange={(val) => onUpdate({ actorType: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="ALL">{t('common.all')}</SelectItem>
               {ACTOR_OPTIONS.filter((a) => a !== 'ALL').map((a) => (
-                <option key={a} value={a}>{t(`auditLog.actorType.${a}`, { defaultValue: a })}</option>
+                <SelectItem key={a} value={a}>{t(`auditLog.actorType.${a}`, { defaultValue: a })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
 
           <div>
@@ -543,11 +544,11 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <label style={{ flex: 1 }}>
               <span>{t('auditLog.filterFrom')}</span>
-              <input className="control-input" type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)} />
+              <Input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)}  />
             </label>
             <label style={{ flex: 1 }}>
               <span>{t('auditLog.filterTo')}</span>
-              <input className="control-input" type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)} />
+              <Input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)}  />
             </label>
           </div>
           <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={applyDates}>
@@ -718,15 +719,14 @@ export function AuditLogListScreen() {
           <label className="audit-filter-search-group">
             <span>{t('auditLog.filterSearch')}</span>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <input
-                className="control-input"
+              <Input
                 type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={t('auditLog.filterSearchPlaceholder')}
                 style={{ minWidth: 220 }}
-              />
+               />
               <button type="button" className="btn btn-secondary" onClick={handleSearch}>
                 {t('auditLog.filterQuickSearch')}
               </button>
@@ -735,42 +735,39 @@ export function AuditLogListScreen() {
 
           <label>
             <span>{t('auditLog.filterModule')}</span>
-            <select
-              className="control-select"
+            <Select
               value={query.resourceType}
-              onChange={(e) => updateQuery({ resourceType: e.target.value }, { resetPage: true })}
-            >
-              <option value="ALL">{t('common.all')}</option>
+              onValueChange={(val) => updateQuery({ resourceType: val }, { resetPage: true })}
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="ALL">{t('common.all')}</SelectItem>
               {RESOURCE_OPTIONS.filter((r) => r !== 'ALL').map((r) => (
-                <option key={r} value={r}>{t(`auditLog.module.${r}`, { defaultValue: r })}</option>
+                <SelectItem key={r} value={r}>{t(`auditLog.module.${r}`, { defaultValue: r })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
 
           <label>
             <span>{t('auditLog.filterActorType')}</span>
-            <select
-              className="control-select"
+            <Select
               value={query.actorType}
-              onChange={(e) => updateQuery({ actorType: e.target.value }, { resetPage: true })}
-            >
-              <option value="ALL">{t('common.all')}</option>
+              onValueChange={(val) => updateQuery({ actorType: val }, { resetPage: true })}
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="ALL">{t('common.all')}</SelectItem>
               {ACTOR_OPTIONS.filter((a) => a !== 'ALL').map((a) => (
-                <option key={a} value={a}>{t(`auditLog.actorType.${a}`, { defaultValue: a })}</option>
+                <SelectItem key={a} value={a}>{t(`auditLog.actorType.${a}`, { defaultValue: a })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
 
           {/* #11: Page size switcher */}
           <label>
             <span>{t('auditLog.pageSizeLabel')}</span>
-            <select
-              className="control-select"
+            <Select
               value={query.pageSize}
-              onChange={(e) => updateQuery({ pageSize: Number(e.target.value), page: 1 })}
-            >
-              {[20, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+              onValueChange={(val) => updateQuery({ pageSize: Number(val), page: 1 })}
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              {[20, 50, 100].map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+            </SelectContent></Select>
           </label>
         </div>
 
@@ -797,21 +794,19 @@ export function AuditLogListScreen() {
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
             <label>
               <span>{t('auditLog.filterFrom')}</span>
-              <input
-                className="control-input"
+              <Input
                 type="date"
                 value={query.from}
                 onChange={(e) => { setActivePreset(null); updateQuery({ from: e.target.value }, { resetPage: true }) }}
-              />
+               />
             </label>
             <label>
               <span>{t('auditLog.filterTo')}</span>
-              <input
-                className="control-input"
+              <Input
                 type="date"
                 value={query.to}
                 onChange={(e) => { setActivePreset(null); updateQuery({ to: e.target.value }, { resetPage: true }) }}
-              />
+               />
             </label>
             {isFiltered && (
               <button

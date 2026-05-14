@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import type { PublicMenuItem } from "@/lib/contracts/public";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
@@ -18,6 +19,96 @@ function isNodeActive(pathname: string | null, node: HeaderNavNode): boolean {
   return node.children.some((child) => isNodeActive(pathname, child));
 }
 
+function isMegaNode(node: HeaderNavNode): boolean {
+  return node.children.length >= 5 || node.children.some((c) => c.children.length > 0);
+}
+
+// ── Mega menu panel ────────────────────────────────────────────────────────
+function MegaMenuPanel({
+  nodes,
+  onItemClick,
+  pathname,
+}: {
+  nodes: HeaderNavNode[];
+  onItemClick: () => void;
+  pathname: string | null;
+}) {
+  const quickLinks = nodes.filter((n) => n.children.length === 0);
+  const columns = nodes.filter((n) => n.children.length > 0);
+
+  return (
+    <div className="mega-panel">
+      <div className="mega-panel-inner">
+        {quickLinks.length > 0 && (
+          <div className="mega-quicklinks">
+            {quickLinks.map((node) => (
+              <Link
+                key={node.id}
+                href={normalizeMenuUrl(node.url)}
+                className={isNodeActive(pathname, node) ? "active" : undefined}
+                target={node.openInNewTab ? "_blank" : undefined}
+                rel={node.openInNewTab ? "noreferrer" : undefined}
+                onClick={onItemClick}
+              >
+                {node.label}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="mega-columns">
+          {columns.map((col) => (
+            <div key={col.id} className="mega-col">
+              <Link
+                href={normalizeMenuUrl(col.url)}
+                className={"mega-col-title" + (isNodeActive(pathname, col) ? " active" : "")}
+                target={col.openInNewTab ? "_blank" : undefined}
+                rel={col.openInNewTab ? "noreferrer" : undefined}
+                onClick={onItemClick}
+              >
+                {col.label}
+              </Link>
+              <ul className="mega-col-list">
+                {col.children.map((item) => (
+                  <li key={item.id} className="mega-col-item">
+                    <Link
+                      href={normalizeMenuUrl(item.url)}
+                      className={isNodeActive(pathname, item) ? "active" : undefined}
+                      target={item.openInNewTab ? "_blank" : undefined}
+                      rel={item.openInNewTab ? "noreferrer" : undefined}
+                      onClick={onItemClick}
+                    >
+                      {item.label}
+                    </Link>
+                    {item.children.length > 0 && (
+                      <ul className="mega-col-sublist">
+                        {item.children.map((sub) => (
+                          <li key={sub.id}>
+                            <Link
+                              href={normalizeMenuUrl(sub.url)}
+                              className={isNodeActive(pathname, sub) ? "active" : undefined}
+                              target={sub.openInNewTab ? "_blank" : undefined}
+                              rel={sub.openInNewTab ? "noreferrer" : undefined}
+                              onClick={onItemClick}
+                            >
+                              {sub.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Standard sub-menu (dropdown thường, ≤ 2 cấp) ──────────────────────────
 function SubMenu({
   nodes,
   onItemClick,
@@ -30,7 +121,7 @@ function SubMenu({
   nested?: boolean;
 }) {
   return (
-    <ul className={nested ? "wp-sub-menu wp-sub-menu-nested" : "wp-sub-menu"}>
+    <ul className={nested ? "bb-sub-menu bb-sub-menu-nested" : "bb-sub-menu"}>
       {nodes.map((child) => {
         const hasChildren = child.children.length > 0;
         const active = isNodeActive(pathname, child);
@@ -38,8 +129,8 @@ function SubMenu({
           <li
             key={child.id}
             className={
-              "wp-sub-menu-item" +
-              (hasChildren ? " wp-sub-menu-item-has-children" : "") +
+              "bb-sub-menu-item" +
+              (hasChildren ? " bb-sub-menu-item-has-children" : "") +
               (active ? " active" : "")
             }
           >
@@ -50,6 +141,15 @@ function SubMenu({
               onClick={onItemClick}
             >
               {child.label}
+              {hasChildren && (
+                <ChevronDown
+                  className="sub-chevron"
+                  size={13}
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                  style={{ transform: "rotate(-90deg)", marginLeft: "auto", flexShrink: 0 }}
+                />
+              )}
             </Link>
             {hasChildren && (
               <SubMenu
@@ -66,12 +166,14 @@ function SubMenu({
   );
 }
 
-const menuDelay: [number, number] = [80, 160];
+// ── Nav item ───────────────────────────────────────────────────────────────
+const menuDelay: [number, number] = [80, 200];
 
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
   const href = normalizeMenuUrl(node.url);
   const hasChildren = node.children.length > 0;
+  const mega = hasChildren && isMegaNode(node);
   const active = isNodeActive(pathname, node);
   const linkClass = [node.cssClass, active ? "active" : null]
     .filter(Boolean)
@@ -139,9 +241,18 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open, closeMenu]);
 
+  useEffect(() => {
+    if (!open || !mega) return;
+    function onScroll() {
+      if (window.scrollY > 10) closeMenu();
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [open, mega, closeMenu]);
+
   if (!hasChildren) {
     return (
-      <li className={"wp-navigation-item" + (active ? " active" : "")}>
+      <li className={"bb-navigation-item" + (active ? " active" : "")}>
         <Link
           href={href}
           className={linkClass || undefined}
@@ -159,7 +270,8 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     <li
       ref={wrapperRef}
       className={
-        "wp-navigation-item wp-navigation-item-has-children" +
+        "bb-navigation-item bb-navigation-item-has-children" +
+        (mega ? " mega-item" : "") +
         (active ? " active" : "") +
         (open ? " open" : "")
       }
@@ -168,9 +280,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       onFocusCapture={() => openMenu(true)}
       onBlurCapture={(event) => {
         const nextTarget = event.relatedTarget;
-        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
-          return;
-        }
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
         scheduleCloseMenu();
       }}
     >
@@ -184,26 +294,34 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
             closeMenu();
             return;
           }
-          if (event.key === "ArrowDown") {
-            event.preventDefault();
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
             openMenu(true);
             window.setTimeout(() => {
-              const firstLink = wrapperRef.current?.querySelector<HTMLAnchorElement>(".wp-sub-menu a");
+              const firstLink = wrapperRef.current?.querySelector<HTMLAnchorElement>(
+                ".mega-col-title, .bb-sub-menu a",
+              );
               firstLink?.focus();
             }, 20);
           }
         }}
       >
         {node.label}
+        <ChevronDown className="nav-chevron" size={14} strokeWidth={2.5} aria-hidden="true" />
       </Link>
+
       <div id={menuId} aria-hidden={!open} data-open={open ? "true" : "false"}>
-        <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
+        {mega ? (
+          <MegaMenuPanel nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
+        ) : (
+          <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
+        )}
       </div>
     </li>
   );

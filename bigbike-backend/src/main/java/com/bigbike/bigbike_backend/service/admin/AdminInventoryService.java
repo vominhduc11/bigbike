@@ -1,6 +1,8 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockProductGroupResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockVariantResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdjustStockRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
@@ -25,10 +27,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -77,18 +84,29 @@ public class AdminInventoryService {
         int pg = Math.max(1, page) - 1;
         int sz = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        // Empty string (not null) — Postgres can't infer type of null inside lower(?).
         String qParam = (q == null || q.isBlank()) ? "" : q.strip();
-        ProductStockState stateParam = null;
-        if (stockState != null && !stockState.isBlank() && !"ALL".equalsIgnoreCase(stockState)) {
-            try { stateParam = ProductStockState.valueOf(stockState.toUpperCase(Locale.ROOT)); }
-            catch (IllegalArgumentException ignored) {}
-        }
+        ProductStockState stateParam = parseState(stockState);
 
-        Page<ProductVariantEntity> dbPage = variantRepo.searchStock(qParam, stateParam, PublishStatus.TRASH, PageRequest.of(pg, sz));
-        List<AdminStockItemResponse> items = dbPage.getContent().stream().map(this::toStockItem).toList();
+        List<AdminStockItemResponse> variantItems = variantRepo
+                .searchStockAll(qParam, stateParam, PublishStatus.TRASH)
+                .stream().map(this::toStockItem).toList();
 
-        return new PageResult<>(items, page, sz, (int) dbPage.getTotalElements(), dbPage.getTotalPages());
+        List<AdminStockItemResponse> productItems = productRepo
+                .searchNoVariantStock(qParam, stateParam, PublishStatus.TRASH)
+                .stream().map(this::toProductStockItem).toList();
+
+        List<AdminStockItemResponse> allItems = new ArrayList<>(productItems.size() + variantItems.size());
+        allItems.addAll(productItems);
+        allItems.addAll(variantItems);
+        allItems.sort(Comparator.comparing(AdminStockItemResponse::productName, String.CASE_INSENSITIVE_ORDER));
+
+        int total = allItems.size();
+        int fromIdx = pg * sz;
+        int toIdx = Math.min(fromIdx + sz, total);
+        List<AdminStockItemResponse> pageItems = fromIdx >= total ? List.of() : allItems.subList(fromIdx, toIdx);
+        int totalPages = total == 0 ? 1 : (int) Math.ceil((double) total / sz);
+
+        return new PageResult<>(pageItems, page, sz, total, totalPages);
     }
 
     // ── Stock movements — per variant ────────────────────────────────────────
@@ -105,6 +123,25 @@ public class AdminInventoryService {
 
         List<StockMovementResponse> items = movementRepo
                 .findByVariantIdOrderByCreatedAtDesc(variantId, PageRequest.of(pg - 1, sz))
+                .stream().map(this::toMovementResponse).toList();
+
+        return new PageResult<>(items, pg, sz, (int) total, (int) Math.ceil((double) total / sz));
+    }
+
+    // ── Stock movements — per product (variant-level + product-level combined) ─
+
+    public PageResult<StockMovementResponse> listProductMovements(
+            String productId, int page, int size
+    ) {
+        if (!productRepo.existsById(productId)) {
+            throw new NotFoundException("Product not found: " + productId);
+        }
+        int pg = Math.max(1, page);
+        int sz = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        long total = movementRepo.countByProductScope(productId);
+
+        List<StockMovementResponse> items = movementRepo
+                .findByProductScopeOrderByCreatedAtDesc(productId, PageRequest.of(pg - 1, sz))
                 .stream().map(this::toMovementResponse).toList();
 
         return new PageResult<>(items, pg, sz, (int) total, (int) Math.ceil((double) total / sz));
@@ -132,10 +169,19 @@ public class AdminInventoryService {
     // ── Inventory summary ─────────────────────────────────────────────────────
 
     public InventorySummaryResponse getSummary() {
-        long total = variantRepo.count();
-        long outOfStock = variantRepo.countByStockState(ProductStockState.OUT_OF_STOCK);
-        long lowStock = variantRepo.countByStockState(ProductStockState.LOW_STOCK);
-        return new InventorySummaryResponse(total, outOfStock, lowStock);
+        long variantTotal      = variantRepo.count();
+        long variantOutOfStock = variantRepo.countByStockState(ProductStockState.OUT_OF_STOCK);
+        long variantLowStock   = variantRepo.countByStockState(ProductStockState.LOW_STOCK);
+
+        long productTotal      = productRepo.countNoVariantStock(PublishStatus.TRASH);
+        long productOutOfStock = productRepo.countNoVariantStockByState(PublishStatus.TRASH, ProductStockState.OUT_OF_STOCK);
+        long productLowStock   = productRepo.countNoVariantStockByState(PublishStatus.TRASH, ProductStockState.LOW_STOCK);
+
+        return new InventorySummaryResponse(
+                variantTotal + productTotal,
+                variantOutOfStock + productOutOfStock,
+                variantLowStock + productLowStock
+        );
     }
 
     // ── CSV export ────────────────────────────────────────────────────────────
@@ -149,6 +195,7 @@ public class AdminInventoryService {
         PrintWriter writer = response.getWriter();
         writer.println("productName,productSku,variantName,variantSku,stockState,quantityOnHand,retailPrice");
 
+        // Export variant items (chunked to avoid OOM)
         int page = 0;
         Page<ProductVariantEntity> chunk;
         do {
@@ -164,6 +211,15 @@ public class AdminInventoryService {
             ));
             page++;
         } while (chunk.hasNext());
+
+        // Export no-variant product items
+        productRepo.searchNoVariantStock("", null, PublishStatus.TRASH).forEach(p -> writer.println(
+                csvEscape(p.getName()) + "," +
+                csvEscape(p.getSku()) + ",,," +
+                (p.getStockState() != null ? p.getStockState().name() : "") + "," +
+                (p.getStockQuantity() != null ? p.getStockQuantity() : 0) + "," +
+                (p.getRetailPrice() != null ? p.getRetailPrice().toPlainString() : "")
+        ));
 
         writer.flush();
     }
@@ -218,19 +274,8 @@ public class AdminInventoryService {
         // ── Serial validation ─────────────────────────────────────────────────
         List<String> serials = parseSerials(req.serialNumbers());
 
-        if ("IN".equals(type)) {
-            // Stock-in: serials are REQUIRED and count must match quantityDelta exactly.
-            if (serials.isEmpty()) {
-                throw ValidationException.fromField("serialNumbers", "REQUIRED_FOR_STOCK_IN",
-                        "Serial numbers are required for stock-in movements.");
-            }
-            int qty = req.quantityDelta();
-            if (serials.size() != qty) {
-                throw ValidationException.fromField("serialNumbers", "COUNT_MISMATCH",
-                        "Serial count (" + serials.size() + ") must equal quantity (" + qty + ").");
-            }
-        } else if (!serials.isEmpty()) {
-            // Other movement types: serial optional, count must not exceed quantity.
+        // Serials are optional for non-tracked variants; if provided, count must not exceed quantity.
+        if (!serials.isEmpty()) {
             int qty = Math.abs(req.quantityDelta());
             if (serials.size() > qty) {
                 throw ValidationException.fromField("serialNumbers", "COUNT_EXCEEDS_QUANTITY",
@@ -334,10 +379,7 @@ public class AdminInventoryService {
 
         product.setStockQuantity(after);
 
-        int threshold = inventoryPolicyService.lowStockThreshold();
-        if (after <= 0) product.setStockState(ProductStockState.OUT_OF_STOCK);
-        else if (after <= threshold) product.setStockState(ProductStockState.LOW_STOCK);
-        else product.setStockState(ProductStockState.IN_STOCK);
+        product.setStockState(inventoryPolicyService.computeStockState(after, inventoryPolicyService.lowStockThreshold()));
 
         productRepo.save(product);
 
@@ -363,6 +405,118 @@ public class AdminInventoryService {
         }
 
         return toProductStockItem(product);
+    }
+
+    // ── List stock grouped by product ─────────────────────────────────────────
+
+    public PageResult<AdminStockProductGroupResponse> listStockGrouped(
+            int page, int size, String q, String stockState
+    ) {
+        int pg = Math.max(1, page) - 1;
+        int sz = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        String qParam = (q == null || q.isBlank()) ? "" : q.strip();
+        ProductStockState stateParam = parseState(stockState);
+
+        long withVariantCount = productRepo.countProductsWithVariantStock(qParam, stateParam, PublishStatus.TRASH);
+        long noVariantCount   = productRepo.countNoVariantStockByQueryAndState(qParam, stateParam, PublishStatus.TRASH);
+        long totalItems = withVariantCount + noVariantCount;
+        int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / sz);
+
+        if (pg * sz >= totalItems) {
+            return new PageResult<>(List.of(), page, sz, totalItems, totalPages);
+        }
+
+        List<Object[]> withVariantRows = productRepo.findProductIdAndNameWithVariantStock(qParam, stateParam, PublishStatus.TRASH);
+        List<Object[]> noVariantRows   = productRepo.findNoVariantProductIdAndName(qParam, stateParam, PublishStatus.TRASH);
+
+        List<String[]> merged = new ArrayList<>(withVariantRows.size() + noVariantRows.size());
+        for (Object[] row : withVariantRows) merged.add(new String[]{(String) row[0], (String) row[1]});
+        for (Object[] row : noVariantRows)   merged.add(new String[]{(String) row[0], (String) row[1]});
+        merged.sort((a, b) -> a[1].compareToIgnoreCase(b[1]));
+
+        int fromIdx = pg * sz;
+        int toIdx = Math.min(fromIdx + sz, merged.size());
+        List<String> pageIds = merged.subList(fromIdx, toIdx).stream().map(e -> e[0]).toList();
+
+        List<ProductEntity> loaded = productRepo.findByIdsWithVariants(pageIds);
+        Map<String, ProductEntity> byId = new HashMap<>();
+        for (ProductEntity p : loaded) byId.put(p.getId(), p);
+
+        List<AdminStockProductGroupResponse> groups = pageIds.stream()
+                .map(byId::get).filter(Objects::nonNull)
+                .map(this::toProductGroup)
+                .toList();
+
+        return new PageResult<>(groups, page, sz, totalItems, totalPages);
+    }
+
+    private AdminStockProductGroupResponse toProductGroup(ProductEntity p) {
+        List<ProductVariantEntity> variants = p.getVariants() != null ? p.getVariants() : List.of();
+
+        AdminStockItemResponse.ImageRef img = buildProductImageRef(p);
+
+        if (variants.isEmpty()) {
+            return new AdminStockProductGroupResponse(
+                    p.getId(), p.getName(), p.getSku(), img,
+                    p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
+                    p.getStockQuantity() != null ? p.getStockQuantity() : 0,
+                    p.getRetailPrice(),
+                    Boolean.TRUE.equals(p.getForceOutOfStock()),
+                    true,
+                    p.isTrackSerials(),
+                    List.of()
+            );
+        }
+
+        List<AdminStockVariantResponse> variantDtos = variants.stream()
+                .map(v -> new AdminStockVariantResponse(
+                        v.getId(), v.getName(), v.getSku(),
+                        v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
+                        v.getQuantityOnHand(),
+                        v.getRetailPrice(),
+                        v.isTrackSerials()
+                ))
+                .toList();
+
+        String aggregateState = computeAggregateState(variants);
+        int totalQty = variants.stream().mapToInt(v -> v.getQuantityOnHand()).sum();
+        BigDecimal minPrice = variants.stream()
+                .map(v -> v.getRetailPrice())
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(p.getRetailPrice());
+
+        return new AdminStockProductGroupResponse(
+                p.getId(), p.getName(), p.getSku(), img,
+                aggregateState, totalQty, minPrice,
+                Boolean.TRUE.equals(p.getForceOutOfStock()),
+                false,
+                false,
+                variantDtos
+        );
+    }
+
+    private String computeAggregateState(List<ProductVariantEntity> variants) {
+        boolean anyOut = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.OUT_OF_STOCK);
+        if (anyOut) return "OUT_OF_STOCK";
+        boolean anyLow = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.LOW_STOCK);
+        if (anyLow) return "LOW_STOCK";
+        return "IN_STOCK";
+    }
+
+    private AdminStockItemResponse.ImageRef buildProductImageRef(ProductEntity p) {
+        String url = trimToNull(p.getImageUrl());
+        if (url == null) return null;
+        return new AdminStockItemResponse.ImageRef(
+                trimToNull(p.getImageId()), url, trimToNull(p.getImageAlt()),
+                p.getImageWidth(), p.getImageHeight(), trimToNull(p.getImageMimeType())
+        );
+    }
+
+    private ProductStockState parseState(String stockState) {
+        if (stockState == null || stockState.isBlank() || "ALL".equalsIgnoreCase(stockState)) return null;
+        try { return ProductStockState.valueOf(stockState.toUpperCase(Locale.ROOT)); }
+        catch (IllegalArgumentException ignored) { return null; }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -414,7 +568,8 @@ public class AdminInventoryService {
                 p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
                 p.getStockQuantity() != null ? p.getStockQuantity() : 0,
                 p.getRetailPrice(),
-                p.isTrackSerials()
+                p.isTrackSerials(),
+                Boolean.TRUE.equals(p.getForceOutOfStock())
         );
     }
 
@@ -430,7 +585,8 @@ public class AdminInventoryService {
                 v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
                 v.getQuantityOnHand(),
                 v.getRetailPrice(),
-                v.isTrackSerials()
+                v.isTrackSerials(),
+                Boolean.TRUE.equals(v.getProduct().getForceOutOfStock())
         );
     }
 

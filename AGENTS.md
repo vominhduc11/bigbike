@@ -40,24 +40,20 @@ The project includes:
 bigbike/
 ├── AGENTS.md                       # This file — AI agent operating instructions
 ├── CLAUDE.md                       # Claude Code auto-loaded summary; mirrors Docs-First Contract
-├── BIGBIKE_BRANDGUIDELINE.pdf      # Brand identity reference (PDF)
-├── README.md                       # Project overview
 ├── docker-compose.yaml             # Full stack infrastructure
 ├── docs/                           # ⚡ Source of truth (see Docs-First Contract)
-│   ├── README.md                   # Canonical docs index + governance rules
-│   ├── DECISIONS.md                # Active decision log
-│   ├── DOCS_VERIFICATION_REPORT.md # Latest audit/report context; canonical docs win if a report is stale
 │   ├── business/                   # Canonical business docs
 │   ├── engineering/                # Canonical engineering docs
 │   ├── audits/                     # Historical module audits (not canonical)
-│   └── reports/                    # Historical implementation/verification reports (not canonical)
 ├── bigbike-web/                    # Public SEO + sales website (Next.js)
+│   ├── STYLEGUIDE.md               # Web brand/UI rules
+│   ├── styles/brand-tokens.css     # Web CSS token source
+│   └── public/brand/               # Web brand assets
 ├── bigbike-admin/                  # Internal admin dashboard (Vite + React)
+│   ├── src/styles/admin-tokens.css # Admin token source
+│   └── public/brand/               # Admin brand assets
 ├── bigbike-backend/                # Spring Boot backend
 ├── bigbike_mobile/                 # Flutter mobile companion app
-├── Bigbike Design System/          # Brand assets, CSS tokens, fonts, UI kit
-│   ├── ui_kits/website/            # Click-through prototype — design reference cho bigbike-web
-│   └── preview/                    # Design system visual previews (brand, tokens, components)
 └── bigbike_vn__2026_04_17/         # Local-only legacy WordPress export (do not commit)
 ```
 
@@ -110,14 +106,14 @@ Brand direction:
    - **Rồi mới sửa code** để khớp docs.
    - Cùng một PR phải có cả docs change và code change; không tách rời để "fix docs sau".
 5. **Bug fix vẫn phải cite docs.** Bug = code đang lệch docs. Trong PR ghi rõ docs/spec nào bị code làm sai, sau đó fix code về đúng docs. Nếu docs cũng sai, xem điều 4.
-6. **Audit report là context, canonical docs vẫn thắng.** Báo cáo verification mới nhất ở [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md). Dùng nó để đọc mismatch/risk context, nhưng nếu report đã được đánh dấu historical/stale thì phải ưu tiên current code + canonical docs đã được cập nhật.
+6. **Audit/report là context, canonical docs vẫn thắng.** Nếu repo có report verification/audit trong `docs/` hoặc `docs/audits/`, dùng nó để đọc mismatch/risk context. Nếu report không có trong repo hiện tại hoặc đã được đánh dấu historical/stale thì ưu tiên current code + canonical docs đã được cập nhật.
 
 ### Mapping docs ↔ scope
 
 | Bạn đang sửa | Phải đọc trước |
 |---|---|
 | Backend controller / service / entity / migration | [docs/engineering/API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md), [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) (mục liên quan) |
-| Frontend route / component / API call | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md) |
+| Frontend route / component / API call | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md); nếu `bigbike-web` → **thêm** [bigbike-web/STYLEGUIDE.md](bigbike-web/STYLEGUIDE.md) + [bigbike-web/styles/brand-tokens.css](bigbike-web/styles/brand-tokens.css); nếu `bigbike-admin` → **thêm** [bigbike-admin/src/styles/admin-tokens.css](bigbike-admin/src/styles/admin-tokens.css) và xem Section 5.12 |
 | Permission / role / auth | [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [USER_ROLES.md](docs/business/USER_ROLES.md) |
 | Order / payment / refund / inventory / return logic | [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md) |
 | Deployment / Dockerfile / env / CI | [DEPLOYMENT_GUIDE.md](docs/engineering/DEPLOYMENT_GUIDE.md), [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) |
@@ -131,7 +127,7 @@ Brand direction:
 - ❌ Đẩy code mà docs không phản ánh thay đổi (trừ refactor nội tại không ảnh hưởng API / contract / data / permission / state / deployment).
 - ❌ Tự suy diễn rule khi docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE`.
 - ❌ "Code-first, doc-fix-later" trừ khi user explicitly cho phép.
-- ❌ "Fix" cái đã được [DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md) Section 3 flag là code bug — đó là task riêng có ngữ cảnh riêng.
+- ❌ Tự "fix" cái đã được report/audit trong `docs/` hoặc `docs/audits/` flag là code bug — đó là task riêng có ngữ cảnh riêng.
 
 ---
 
@@ -143,12 +139,9 @@ Before modifying anything, read the relevant resources.
 
 ```text
 AGENTS.md
-docs/DOCS_VERIFICATION_REPORT.md         # Latest docs↔code audit; flags critical mismatches and risks
 docs/business/PROJECT_OVERVIEW.md        # Business + system overview; actor map
 docs/engineering/ARCHITECTURE.md         # Tech stack / layers / runtime / boundaries
-Bigbike Design System/README.md          # Brand context, copy rules, visual foundations — đọc được bằng tool
-Bigbike Design System/colors_and_type.css  # CSS token source of truth
-BIGBIKE_BRANDGUIDELINE.pdf               # PDF gốc 23 trang — không đọc trực tiếp bằng tool
+docs/audits/                             # Historical audit context, if relevant; canonical docs still win
 ```
 
 ### 3.2 For `bigbike-web` changes
@@ -161,10 +154,9 @@ docs/business/WORKFLOW_OVERVIEW.md       # ⚡ End-to-end customer workflow
 docs/business/MODULE_CATALOG.md          # ⚡ Module/feature ownership
 bigbike-web/AGENTS.md                    # Next.js version-specific agent rules — read before any code change
 bigbike-web/STYLEGUIDE.md                # Condensed brand + UI rules for bigbike-web
-Bigbike Design System/README.md          # Brand rules, copy, visual foundations
-Bigbike Design System/colors_and_type.css
-Bigbike Design System/ui_kits/website/   # Click-through prototype — design reference cho public website
-Bigbike Design System/preview/           # Visual brand tokens và component style
+bigbike-web/styles/brand-tokens.css      # Web CSS token source of truth
+bigbike-web/public/brand/                # Brand assets used by public website
+docs/audits/                             # Historical web/design audits, if relevant; not canonical
 ```
 
 Use these for:
@@ -188,8 +180,8 @@ docs/engineering/DATA_CONTRACT.md                                               
 docs/business/USER_ROLES.md                                                          # ⚡ Role definitions
 docs/business/MODULE_CATALOG.md                                                      # ⚡ Admin module catalog
 docs/business/STATE_MACHINES.md                                                      # ⚡ Allowed transitions (orders/returns/products)
-Bigbike Design System/README.md                                                      # Brand context và token guidance
-Bigbike Design System/colors_and_type.css
+bigbike-admin/src/styles/admin-tokens.css                                            # ⚡ Admin design token source of truth — xem Section 5.12 cho full rules
+bigbike-admin/public/brand/                                                          # Admin brand assets
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json                      # Raw OpenAPI (machine-readable companion)
 bigbike-backend/docs/PHASE_1J_ADMIN_SETTINGS_MENU_COUPON_API_REPORT.md                # Historical phase report
 ```
@@ -251,23 +243,23 @@ Do not commit or copy raw WordPress source, raw SQL dump data, `wp-config.php` s
 |---|---|
 | **Business overview / actors / modules / workflows / rules / states** | [docs/business/](docs/business/) — `PROJECT_OVERVIEW.md`, `MODULE_CATALOG.md`, `USER_ROLES.md`, `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md`, `WORKFLOW_OVERVIEW.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md`, `GLOSSARY.md` |
 | **Technical architecture / API contract / data contract / permission / deployment** | [docs/engineering/](docs/engineering/) — `ARCHITECTURE.md`, `API_CONTRACT.md`, `DATA_CONTRACT.md`, `API_FLOW_MAP.md`, `PERMISSION_MATRIX.md`, `TESTING_GUIDE.md`, `DEPLOYMENT_GUIDE.md`, `INTEGRATION_GUIDE.md`, `TRACEABILITY_MATRIX.md` |
-| **Docs index / governance / role separation** | [docs/README.md](docs/README.md) |
-| **Latest docs↔code audit / known mismatches** | [docs/DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md) |
-| Brand identity, logo, colors, typography, copy | `Bigbike Design System/README.md` + `Bigbike Design System/colors_and_type.css` |
-| Brand assets (logos, icons, fonts, favicons) | `Bigbike Design System/assets/` + `Bigbike Design System/fonts/` |
-| Web UI design reference | `Bigbike Design System/ui_kits/website/` |
-| Visual design previews | `Bigbike Design System/preview/` |
+| **Docs governance / role separation** | This `AGENTS.md` + canonical docs under `docs/business/` and `docs/engineering/` |
+| **Latest docs↔code audit / known mismatches** | `docs/audits/` if relevant reports exist; historical reports are not canonical |
+| Brand identity, logo, colors, typography, copy | `bigbike-web/STYLEGUIDE.md`, `bigbike-web/styles/brand-tokens.css`, `bigbike-admin/src/styles/admin-tokens.css` |
+| Brand assets (logos, icons, fonts, favicons) | `bigbike-web/public/brand/` + `bigbike-admin/public/brand/` |
+| Web UI design reference | `bigbike-web/STYLEGUIDE.md` + `bigbike-web/components/` |
+| Visual design audit context | `docs/audits/` if relevant reports exist; canonical style/token files still win |
 | bigbike-web UI rules (condensed) | `bigbike-web/STYLEGUIDE.md` |
 | Backend OpenAPI raw schema (machine-readable companion to `docs/engineering/API_CONTRACT.md`) | `bigbike-backend/src/main/resources/openapi/bigbike-openapi.json` |
 | Backend phase implementation reports (historical) | `bigbike-backend/docs/` |
-| Architecture / product decisions (what was rejected and why) | `docs/DECISIONS.md` |
+| Architecture / product decisions (what was rejected and why) | Canonical business/engineering docs; if not documented, ask user instead of inventing |
 | SEO redirect map | `bigbike-web/docs/` |
 | Legacy WordPress data and migration reference | `bigbike_vn__2026_04_17/` (local-only) |
 
 Quy tắc:
 
 - Khi docs nghiệp vụ trong `docs/business/` và docs kỹ thuật trong `docs/engineering/` mâu thuẫn nhau → **business docs thắng**, engineering docs cần được sửa lại để khớp.
-- Khi `docs/engineering/*` và code mâu thuẫn nhau → **xem [DOCS_VERIFICATION_REPORT.md](docs/DOCS_VERIFICATION_REPORT.md)** trước; nếu chưa có verdict, mặc định docs là source of truth và code cần sửa, trừ khi user nói khác.
+- Khi `docs/engineering/*` và code mâu thuẫn nhau → xem report/audit liên quan trong `docs/` hoặc `docs/audits/` nếu có; nếu chưa có verdict, mặc định docs là source of truth và code cần sửa, trừ khi user nói khác.
 - Không di chuyển trách nhiệm giữa các file trừ khi được yêu cầu rõ.
 
 ---
@@ -327,7 +319,7 @@ Bad:
 className="bg-[#F90606] px-[17px] rounded-[11px]"
 ```
 
-Better — use CSS variables from `Bigbike Design System/colors_and_type.css`:
+Better — use CSS variables from the app token file (`bigbike-web/styles/brand-tokens.css` or `bigbike-admin/src/styles/admin-tokens.css`):
 
 ```tsx
 className="bg-[var(--bb-brand-primary)] px-[var(--bb-space-4)] rounded-[var(--bb-radius-sm)]"
@@ -390,18 +382,376 @@ Do not build new features ahead of legacy discovery for the affected domain.
 Khi code bất kỳ UI component hoặc layout nào trong `bigbike-web` hoặc `bigbike-admin`:
 
 - **shadcn/ui** là component library chính — dùng `components/ui/` (Button, Input, Select, Dialog, Checkbox, Tabs, …) làm building block trước khi tự build.
-- **Tailwind CSS** cho styling — dùng utility classes, không tạo CSS class legacy mới trong `globals.css` khi Tailwind đủ dùng.
+- **Tailwind CSS** cho styling — viết utility classes **trực tiếp vào JSX** (`className="..."`) thay vì tạo class name mới trong `globals.css`.
 - **Radix UI** cho interactive primitives (Select, Dialog, Dropdown, Tooltip, Checkbox, Radio…) — không dùng native HTML `<select>`, `<dialog>`, `<details>` nếu shadcn wrapper đã tồn tại trong `components/ui/`.
 - Variants và override: dùng `cn()` + `cva()` / `buttonVariants()` — không bypass bằng cách xóa component để thay raw HTML element.
 - Tham chiếu `@theme inline` trong `globals.css` để biết Tailwind color tokens có sẵn (`text-primary`, `bg-brand`, `border-border`, …).
 
+**Quy tắc globals.css:**
+
+`globals.css` chỉ được chứa:
+1. CSS custom properties / design tokens (`@theme inline { ... }`)
+2. Base / reset styles (`body`, `*`, `html`)
+3. shadcn/ui component overrides (khi cần thiết)
+4. Những rule CSS mà Tailwind **thật sự không thể làm được** — ví dụ: complex `@keyframes`, multi-step pseudo-selector nesting, feature queries (`@supports`), hoặc third-party widget overrides.
+
+Không được thêm class mới vào `globals.css` chỉ vì muốn đặt tên ngắn — đó là lý do của Tailwind utility classes và `cn()`.
+
+**Tái sử dụng component dùng chung — bắt buộc:**
+
+Trước khi tạo component mới, **phải kiểm tra** các component dùng chung đã có:
+
+| Thư mục | Nội dung |
+|---|---|
+| `bigbike-web/components/ui/` | Primitive shadcn (Button, Input, Select, Dialog, Checkbox, Tabs, …) + custom helpers (EmptyState, LoadingGrid, PriceText, MediaImage, RatingStars, PaginationNav, ErrorState, Skeletons, VnAddressFields, BBTooltip) |
+| `bigbike-web/components/layout/` | SiteHeader, SiteFooter, PageHero, AccountShell, PolicySidebar, StickyHeaderShell, … |
+| `bigbike-web/components/catalog/` | ProductCard, ProductGallery, VariantSelector, AddToCartButton, CatalogFilters, ReviewsSection, … |
+| `bigbike-admin/src/components/` | AdminTable, AdminShell, ConfirmDialog, StatusBadge, PaginationControls, FilterChips, BulkActionBar, RichTextEditor, StatePanel, DetailSection, DateRangePicker, ExportButton, ReadOnlyBanner, TagInput, MediaPickerModal, VideoPickerModal, ImageUrlInput, MediaCard, MediaCardSkeleton, MediaPreviewLightbox, MediaListRow, MediaDetailModal, MediaDetailPanel, MediaFolderSidebar, NotificationBell, OrderNotificationToast, ErrorBoundary |
+| `bigbike-admin/src/components/layout/` | Screen, ScreenHeader, FilterBar, SummaryCard, Tabs, Modal, StickyActionBar, MobileCardList, FormField (import từ `index.js`) |
+
+❌ **Cấm code lại component đã có** — nếu `EmptyState`, `PaginationNav`, `MediaImage`, `ConfirmDialog`, `AdminTable`, … đã tồn tại, dùng luôn, không tạo phiên bản mới.
+
 Cấm:
 
-- ❌ Thêm CSS class legacy mới vào `globals.css` khi Tailwind utility là đủ.
-- ❌ Dùng native `<select>`, `<input type="checkbox">`, `<dialog>` khi shadcn `Select`, `Checkbox`, `Dialog` đã có sẵn trong `components/ui/`.
+- ❌ Viết class mới vào `globals.css` (hoặc bất kỳ file `.css` nào) khi Tailwind utility là đủ — phải viết trực tiếp vào `className` trong JSX.
+- ❌ Dùng native `<select>`, `<input type="checkbox">`, `<dialog>`, `<button>` khi shadcn `Select`, `Checkbox`, `Dialog`, `Button` đã có sẵn trong `components/ui/`.
 - ❌ Xóa hoặc bypass shadcn component (Button, Select, …) để thay bằng raw HTML với class legacy.
 - ❌ Tạo component UI từ đầu khi Radix UI / shadcn đã có primitive phù hợp.
-- ❌ Hardcode màu hex, spacing px, font string trực tiếp — dùng token từ `Bigbike Design System/colors_and_type.css` hoặc Tailwind token tương ứng.
+- ❌ Hardcode màu hex, spacing px, font string trực tiếp — dùng token từ `bigbike-web/styles/brand-tokens.css`, `bigbike-admin/src/styles/admin-tokens.css`, hoặc Tailwind token tương ứng.
+- ❌ Tạo component mới khi component tương đương đã tồn tại trong `components/ui/`, `components/layout/`, hoặc `components/catalog/`.
+
+### 5.10 Docker server access khi fix bug / vận hành hệ thống
+
+Khi cần fix lỗi hệ thống, debug runtime issue, kiểm tra log, query database thật, verify migration, hoặc làm bất kỳ task vận hành nào cần dữ liệu/trạng thái runtime:
+
+- **Được phép vào trực tiếp container Docker đang chạy** (backend, db, redis, web, admin…) qua `docker ps`, `docker logs`, `docker exec`, `docker compose exec`, mysql/psql client trong container, … để chẩn đoán và sửa lỗi.
+- Trước khi dùng, **chạy `docker ps` (hoặc `docker compose ps`) để xác nhận stack đang chạy**.
+- Nếu container cần dùng **chưa chạy hoặc đang stopped/exited** → **DỪNG lại và yêu cầu user khởi động** (`docker compose up -d <service>`). Không tự ý `up`, `start`, `restart`, `down`, `rm`, `prune` khi user chưa cho phép — đó là shared state và có thể ảnh hưởng dữ liệu/process khác.
+- Trong container, mặc định chỉ làm **thao tác đọc** (logs, `SELECT`, `SHOW`, `EXPLAIN`, `cat`, `ls`, …). Thao tác ghi/destructive (`UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, sửa file config trong container, `kill`, restart service…) phải hỏi user trước.
+- Khi report kết quả cho user, cite rõ container/service và command đã chạy (ví dụ "chạy `docker compose exec backend ...` thấy log X") để user verify được.
+
+Cấm:
+
+- ❌ Giả định container đang chạy mà không check `docker ps` trước.
+- ❌ Tự ý `docker compose up/down/restart/rm`, xoá volume, xoá network, prune image — luôn hỏi user.
+- ❌ Chạy `UPDATE`/`DELETE`/`DROP`/`TRUNCATE` hoặc sửa file bên trong container đang chạy mà không có lệnh rõ ràng từ user.
+- ❌ Mock/giả lập dữ liệu trong khi container thật đang chạy và có thể query được — luôn ưu tiên data thật để chẩn đoán đúng root cause.
+
+### 5.11 Design System Unity — toàn bộ bigbike-web phải thiết kế nhất quán
+
+Mọi trang, route, component trong `bigbike-web` phải có visual appearance bắt nguồn từ **cùng một design system duy nhất**. Không có ngoại lệ theo trang, feature, hoặc developer/agent.
+
+**Token cascade bắt buộc:**
+
+```
+bigbike-web/STYLEGUIDE.md            ← brand rules: palette, typography, component rules (source of truth cho web)
+  ↓ mapped into
+bigbike-web/styles/brand-tokens.css  ← CSS custom properties
+  ↓ exposed via
+bigbike-web/app/globals.css          ← @theme inline { ... } → Tailwind design tokens
+  ↓ used as
+Tailwind utility classes in JSX      ← text-primary, bg-brand, border-border, ...
+```
+
+**Color rules:**
+- Chỉ dùng màu trong palette `STYLEGUIDE.md` — `#FF0C09` brand red, `#007BFF` blue, `#00BFFF` chat cyan, và các neutral token.
+- Tham chiếu qua CSS variable hoặc Tailwind token — không hardcode hex trong JSX.
+- Không dùng Tailwind built-in color (`bg-red-500`, `text-blue-600`) khi brand token đã tương ứng.
+
+**Typography rules:**
+- Fonts được duyệt cho `bigbike-web`: `Barlow` (body/UI/content), `Oswald` (heading/CTA/badge), `Barlow Condensed` (display/hero).
+- Không import font ngoài danh sách trên.
+- Scale: dùng Tailwind text scale (`text-xs` → `text-5xl`) hoặc size explicit từ `STYLEGUIDE.md` — không dùng arbitrary `text-[13px]`.
+- Heading, nav, CTA, badge → uppercase. Body text → sentence case. Không dùng letter-spacing âm.
+
+**Spacing và sizing rules:**
+- Spacing thang 4px — dùng Tailwind step (`p-4` = 16px, `gap-6` = 24px, `mt-8` = 32px…).
+- Không dùng arbitrary px (`mt-[17px]`) trừ khi không có Tailwind step nào phù hợp.
+- Container max-width: `1200px`. Section spacing: desktop `72px`, tablet `52px`, mobile `32px`.
+- Touch target tối thiểu `44px`.
+
+**Border radius rules:**
+- Mặc định `rounded-none` (`0px`) cho mọi component thông thường.
+- Chỉ dùng `rounded-full` cho phần tử thực sự tròn (avatar, badge dot, chat button).
+- Không tự ý thêm `rounded-md`, `rounded-lg`, hay arbitrary radius nếu `STYLEGUIDE.md` không định nghĩa.
+
+**Visual consistency check:**
+- Trước khi ship component mới, phải so sánh visually với component đã có: màu, font, spacing, radius có cùng hệ thống không?
+- Nếu component mới trông khác biệt so với phần còn lại của site → phải align lại, không phải "trang đó đúng theo chuẩn riêng".
+- Generic shadcn default look, Tailwind UI template look, hoặc SaaS dashboard look đều sai — mọi thứ phải trông như BigBike.
+
+Cấm:
+
+- ❌ Arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`, `p-[17px]`) khi token tương đương đã tồn tại.
+- ❌ Tailwind built-in color (`bg-red-500`, `text-blue-600`) thay vì brand token.
+- ❌ Import font hoặc `@font-face` ngoài Barlow / Oswald / Barlow Condensed.
+- ❌ CSS module, `<style>` scoped per-page, hoặc class trong file `.css` riêng khi Tailwind là đủ.
+- ❌ Mỗi trang / agent tự quyết định color scheme / visual style riêng — mọi quyết định visual phải traceable về `bigbike-web/STYLEGUIDE.md`.
+- ❌ Giới thiệu component "trông đúng" theo tiêu chuẩn khác (generic SaaS, starter template) mà không align với BigBike brand.
+
+### 5.12 Design System Unity — toàn bộ bigbike-admin phải thiết kế nhất quán
+
+Mọi screen, route, component trong `bigbike-admin` phải có visual appearance bắt nguồn từ **cùng một design system của BigBike**. Không màn hình nào, không component nào được tự chọn màu, font, spacing, hay border-radius riêng ngoài hệ thống đã định nghĩa.
+
+**Token cascade bắt buộc:**
+
+```
+bigbike-admin/src/styles/admin-tokens.css   ← admin palette + type scale (source of truth)
+  ↓ imported via
+bigbike-admin/src/index.css                  ← admin CSS entry point
+  ↓ exposed via
+Tailwind utility classes / CSS variables     ← text-primary, bg-brand, var(--admin-...), ...
+```
+
+**Color rules:**
+- Chỉ dùng màu trong BigBike admin palette (red/black identity) từ `bigbike-admin/src/styles/admin-tokens.css`.
+- Tham chiếu qua CSS variable hoặc Tailwind token — không hardcode hex trong JSX.
+- Không dùng Tailwind built-in color (`bg-red-500`, `text-blue-600`) khi brand token đã tương ứng.
+
+**Typography rules:**
+- Fonts được duyệt cho `bigbike-admin`: `Bungee` (display/headline, uppercase only), `Exo` (body/UI/content, 9 weights available).
+- Không import font ngoài danh sách trên. Không dùng Barlow / Oswald / Barlow Condensed trong `bigbike-admin`.
+- Scale: dùng Tailwind text scale — không dùng arbitrary `text-[13px]`.
+
+**Spacing và sizing rules:**
+- Spacing thang 4px — dùng Tailwind step (`p-4`, `gap-6`, `mt-8`…).
+- Không dùng arbitrary px (`mt-[17px]`) trừ khi không có Tailwind step nào phù hợp.
+- Touch target tối thiểu `44px`.
+
+**Border radius rules:**
+- Mặc định `rounded-none` (`0px`) cho mọi component thông thường.
+- Chỉ dùng `rounded-full` cho phần tử thực sự tròn (avatar, badge dot).
+- Không tự ý thêm `rounded-md`, `rounded-lg` khi design system không định nghĩa.
+
+**Visual style rules:**
+- `bigbike-admin` là operational/data-first: dense, readable, table/form/filter centric.
+- Không đưa hero visuals, campaign banner, customer-facing animations vào operational screens — trừ khi module preview cụ thể yêu cầu.
+- Mọi screen phải trông như BigBike admin — không phải generic SaaS dashboard, không phải starter template.
+
+**Visual consistency check:**
+- Trước khi ship screen mới, phải so sánh visually với screen đã có: màu, font, spacing, radius có cùng hệ thống không?
+- Nếu screen mới trông khác biệt so với phần còn lại của admin → phải align lại, không phải "screen đó đúng theo chuẩn riêng".
+
+Cấm:
+
+- ❌ Arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`, `p-[17px]`) khi token tương đương đã tồn tại.
+- ❌ Tailwind built-in color (`bg-red-500`, `text-blue-600`) thay vì brand token.
+- ❌ Import font hoặc `@font-face` ngoài Bungee / Exo.
+- ❌ CSS module, `<style>` scoped per-screen, hoặc class trong file `.css` riêng khi Tailwind là đủ.
+- ❌ Mỗi màn hình / agent tự quyết định color scheme / visual style riêng — mọi quyết định visual phải traceable về `bigbike-admin/src/styles/admin-tokens.css`.
+- ❌ Dùng font/token của `bigbike-web` (Barlow / Oswald / Barlow Condensed) trong `bigbike-admin` — hai app có font system riêng.
+- ❌ Generic SaaS dashboard look, starter template look — mọi thứ phải trông như BigBike admin.
+
+### 5.13 Inline Tailwind — không tạo class CSS mới khi Tailwind là đủ
+
+Mọi styling trong `bigbike-web` và `bigbike-admin` phải được viết **trực tiếp vào `className` trong JSX** bằng Tailwind utility classes. Không tạo class CSS mới trong bất kỳ file `.css` nào chỉ để dùng lại trong component.
+
+**Sai — tạo class CSS rồi dùng trong JSX:**
+
+```css
+/* styles.css hoặc globals.css */
+.product-row {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+.confirm-btn {
+  background-color: #FF0C09;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 0;
+}
+```
+
+```jsx
+<div className="product-row">...</div>
+<button className="confirm-btn">Xác nhận</button>
+```
+
+**Đúng — viết thẳng Tailwind vào JSX:**
+
+```jsx
+<div className="flex items-center p-4 border-b border-border bg-background">...</div>
+<Button variant="default">Xác nhận</Button>
+```
+
+**Đúng — dùng `cn()` khi cần variant/điều kiện:**
+
+```jsx
+<div className={cn(
+  "flex items-center p-4 border-b border-border",
+  isSelected && "bg-muted",
+  isDisabled && "opacity-50 pointer-events-none"
+)}>
+  ...
+</div>
+```
+
+**Khi nào ĐƯỢC PHÉP viết vào file CSS:**
+
+| Được phép | Ví dụ |
+|---|---|
+| `@keyframes` animation phức tạp | `@keyframes shimmer { ... }` |
+| Pseudo-selector Tailwind không làm được | `::selection`, `scrollbar-width`, `::-webkit-scrollbar` |
+| Override style của third-party widget | Quill editor, react-datepicker, … |
+| Base/reset style trong `globals.css` | `body`, `*`, `html` |
+| Design token (`@theme inline`) trong `globals.css` | `--color-brand: #FF0C09` |
+
+**Không được phép viết vào file CSS:**
+
+- Class mới đặt tên theo component (`.product-row`, `.confirm-btn`, `.filter-bar-wrapper`)
+- Class utility tự đặt tên (`.flex-center`, `.text-muted-sm`, `.btn-primary`)
+- Style có thể viết bằng Tailwind utility class tương đương
+
+**Quy trình kiểm tra trước khi viết CSS:**
+
+1. Tailwind có utility class tương đương không? (`flex`, `p-4`, `border-b`, `text-sm`, …) → viết thẳng vào `className`.
+2. Cần combine nhiều class có điều kiện? → dùng `cn()`.
+3. Cần variant/style tái dùng nhiều chỗ? → tạo component hoặc dùng `cva()`, không tạo CSS class.
+4. Thật sự không dùng Tailwind được? → mới viết vào CSS, kèm comment giải thích lý do.
+
+Cấm:
+
+- ❌ Tạo file `.module.css` cho component.
+- ❌ Thêm `<style>` tag trong file JSX/TSX.
+- ❌ Tạo class mới trong `globals.css` hoặc bất kỳ file `.css` nào khi Tailwind utility là đủ.
+- ❌ Tạo file CSS riêng per-page, per-screen, per-feature.
+- ❌ Dùng `styled-components`, `emotion`, hoặc bất kỳ CSS-in-JS nào khác.
+
+### 5.14 Encoding và chính tả tiếng Việt — không mojibake, phải có dấu
+
+Mọi text trong source code — JSX content, string literal, comment, error message, log, placeholder, aria-label, alt text, tooltip — phải đảm bảo:
+
+1. **File encoding: UTF-8** — mọi file `.tsx`, `.jsx`, `.ts`, `.js`, `.css`, `.json`, `.md` đều phải lưu UTF-8 (không BOM). Không dùng Latin-1, Windows-1252, hay encoding khác.
+2. **Không mojibake** — text tiếng Việt không được xuất hiện dưới dạng ký tự bị vỡ.
+3. **Tiếng Việt phải có dấu** — không viết "tiếng Việt không dấu" trong bất kỳ string nào trong code.
+
+**Ví dụ sai — mojibake (encoding bị vỡ):**
+
+```jsx
+// ❌ Sai — ký tự bị vỡ do encoding sai
+<p>ThÃ nh toÃ¡n thÃ nh cÃ´ng</p>
+<p>Gi&#7843;m gi&#225;</p>
+<Button>X&#225;c nh&#7853;n &#273;&#417;n h&#224;ng</Button>
+```
+
+**Ví dụ sai — tiếng Việt không dấu:**
+
+```jsx
+// ❌ Sai — thiếu dấu tiếng Việt
+<h1>San pham noi bat</h1>
+<p>Them vao gio hang</p>
+<span>Xac nhan don hang</span>
+<Button>Thanh toan</Button>
+```
+
+**Đúng:**
+
+```jsx
+// ✅ Đúng — UTF-8, có dấu đầy đủ
+<h1>Sản phẩm nổi bật</h1>
+<p>Thêm vào giỏ hàng</p>
+<span>Xác nhận đơn hàng</span>
+<Button>Thanh toán</Button>
+```
+
+**Áp dụng cho mọi nơi có text:**
+
+| Loại text | Ví dụ đúng |
+|---|---|
+| JSX content | `<p>Đơn hàng của bạn</p>` |
+| String literal | `const msg = "Sản phẩm không tồn tại"` |
+| Placeholder | `placeholder="Tìm kiếm sản phẩm..."` |
+| aria-label / title | `aria-label="Đóng hộp thoại"` |
+| alt text | `alt="Mũ bảo hiểm BigBike đỏ đen"` |
+| Toast / notification | `toast.error("Không thể hủy đơn hàng")` |
+| Comment trong code | `// Kiểm tra tồn kho trước khi thêm vào giỏ` |
+| Console log / error | `console.error("Lỗi khi tải danh sách sản phẩm")` |
+| JSON / API mock | `{ "message": "Xác nhận thành công" }` |
+
+**Nguyên nhân thường gặp gây mojibake — phải tránh:**
+
+- Lưu file với encoding khác UTF-8 rồi mở lại bằng UTF-8.
+- Copy text từ Word/Excel không chuyển encoding.
+- Dùng `Buffer` / `TextDecoder` sai encoding khi xử lý response.
+- Template string nối ký tự Unicode escape thủ công thay vì viết thẳng.
+
+Cấm:
+
+- ❌ Text tiếng Việt không dấu trong bất kỳ string nào hiển thị ra UI.
+- ❌ Ký tự Unicode escape thủ công (`ả`, `&#7843;`) khi có thể viết thẳng ký tự UTF-8.
+- ❌ File source lưu encoding khác UTF-8.
+- ❌ Comment hoặc log tiếng Việt không dấu.
+
+### 5.15 Component reuse — bigbike-admin bắt buộc dùng lại component dùng chung
+
+Trước khi tạo bất kỳ component mới nào trong `bigbike-admin`, **phải kiểm tra** các component sau đây đã có sẵn:
+
+**`bigbike-admin/src/components/` — component dùng chung:**
+
+| Component | Dùng cho |
+|---|---|
+| `AdminTable` | Mọi bảng dữ liệu dạng list (sản phẩm, đơn hàng, khách hàng, …) |
+| `AdminShell` | Layout wrapper toàn trang admin (sidebar + header + content) |
+| `ConfirmDialog` | Mọi hành động destructive cần xác nhận (xóa, hủy, …) |
+| `StatusBadge` | Hiển thị trạng thái (đơn hàng, sản phẩm, …) |
+| `PaginationControls` | Phân trang cho mọi list/table |
+| `FilterChips` | Hiển thị filter đang active dạng chip |
+| `BulkActionBar` | Thanh action khi chọn nhiều row trong table |
+| `RichTextEditor` | Editor soạn thảo nội dung (blog, mô tả, …) |
+| `StatePanel` | Panel hiển thị trạng thái + action (state machine UI) |
+| `DetailSection` | Section có tiêu đề trong trang detail |
+| `DateRangePicker` | Chọn khoảng ngày cho filter/report |
+| `ExportButton` | Nút export dữ liệu ra file |
+| `ReadOnlyBanner` | Banner cảnh báo khi màn hình ở chế độ read-only |
+| `TagInput` | Input nhập nhiều tag/label |
+| `MediaPickerModal` | Modal chọn ảnh từ thư viện media |
+| `VideoPickerModal` | Modal chọn video từ thư viện media |
+| `ImageUrlInput` | Input nhập URL ảnh |
+| `MediaCard` | Card hiển thị một file media trong grid |
+| `MediaCardSkeleton` | Skeleton loading cho MediaCard |
+| `MediaPreviewLightbox` | Xem ảnh/video fullscreen |
+| `MediaListRow` | Row hiển thị media dạng list |
+| `MediaDetailModal` | Modal xem chi tiết một file media |
+| `MediaDetailPanel` | Panel sidebar chi tiết media |
+| `MediaFolderSidebar` | Sidebar cây thư mục media |
+| `NotificationBell` | Icon chuông thông báo trên header |
+| `OrderNotificationToast` | Toast thông báo đơn hàng mới realtime |
+| `ErrorBoundary` | Bắt lỗi render, hiển thị fallback UI |
+
+**`bigbike-admin/src/components/layout/` — layout primitives (import qua `index.js`):**
+
+| Component | Dùng cho |
+|---|---|
+| `Screen` | Wrapper chuẩn cho mọi trang (padding, max-width, scroll) |
+| `ScreenHeader` | Header trang: tiêu đề + breadcrumb + action button |
+| `FilterBar` | Thanh filter: search + select + date range |
+| `SummaryCard` | Card hiển thị chỉ số tổng quan (dashboard, report) |
+| `Tabs` | Tab navigation trong trang |
+| `Modal` | Modal wrapper chuẩn |
+| `StickyActionBar` | Thanh action dính dưới màn hình (form save/cancel) |
+| `MobileCardList` | Hiển thị list dạng card trên mobile thay table |
+| `FormField` | Field wrapper: label + input + error message |
+
+**Quy trình bắt buộc trước khi tạo component mới:**
+
+1. Tìm trong `bigbike-admin/src/components/` và `bigbike-admin/src/components/layout/` — có component nào đáp ứng không?
+2. Nếu gần đúng nhưng cần thêm prop → **extend component có sẵn**, không tạo bản copy.
+3. Nếu thực sự chưa có → tạo mới trong thư mục phù hợp, đặt tên theo convention hiện tại (PascalCase `.jsx`).
+4. Component mới phải tuân thủ design system rules (Section 5.12) — không tự ý chọn màu/font/spacing.
+
+Cấm:
+
+- ❌ Tạo `MyConfirmModal.jsx` khi `ConfirmDialog` đã có.
+- ❌ Tạo `MyTable.jsx` khi `AdminTable` đã có.
+- ❌ Tạo `MyPagination.jsx` khi `PaginationControls` đã có.
+- ❌ Tạo `MyStatusTag.jsx` khi `StatusBadge` đã có.
+- ❌ Tạo layout wrapper mới khi `Screen`, `ScreenHeader`, `FilterBar`, `Modal` đã đáp ứng.
+- ❌ Copy-paste component có sẵn rồi sửa nhỏ — phải extend hoặc dùng thẳng.
+- ❌ Tạo component mà không check danh sách trên trước.
 
 ---
 
@@ -453,6 +803,7 @@ Rules:
 - Permissions must be respected.
 - Use admin tokens, not web campaign styling.
 - No hero/campaign visuals inside operational screens unless a module preview specifically needs it.
+- **UI stack: React + Tailwind CSS + Radix UI + shadcn/ui** — bắt buộc, xem Section 5.9 (stack rules), Section 5.12 (design system), Section 5.13 (inline Tailwind), Section 5.14 (encoding/tiếng Việt), Section 5.15 (component reuse).
 
 Do not turn admin into a biker poster gallery.
 
@@ -678,10 +1029,10 @@ All UI must have:
 For `bigbike-web`, reference:
 
 ```text
-Bigbike Design System/README.md          # Brand rules, visual foundations
-Bigbike Design System/colors_and_type.css  # CSS tokens
-Bigbike Design System/ui_kits/website/   # Click-through prototype
-Bigbike Design System/preview/           # Visual reference cards
+bigbike-web/STYLEGUIDE.md                # Brand rules, visual foundations
+bigbike-web/styles/brand-tokens.css      # CSS tokens
+bigbike-web/public/brand/                # Brand assets used by public website
+docs/audits/                             # Historical visual/design audit context, if relevant
 ```
 
 Priorities:
@@ -783,12 +1134,18 @@ Do not rename assets randomly without updating references.
 
 ### 15.2 Fonts
 
-Use BigBike-approved fonts from `Bigbike Design System/fonts/`:
+Approved fonts per project:
 
+**`bigbike-web`** (xem `bigbike-web/STYLEGUIDE.md` để biết size/weight cụ thể):
+- `Barlow` — body / UI / content / link.
+- `Oswald` — heading / CTA / badge / nav.
+- `Barlow Condensed` — display / hero / campaign.
+
+**`bigbike-admin`** và các project khác:
 - `Bungee` — display / campaign / headline (sparingly, uppercase only).
-- `Exo` — body / UI / admin / product / content (9 weights available).
+- `Exo` — body / UI / content (9 weights available).
 
-Do not introduce unrelated fonts.
+Do not introduce unrelated fonts. Font choice must match the project — không dùng Bungee/Exo trong `bigbike-web`, không dùng Barlow/Oswald trong `bigbike-admin` trừ khi có lý do rõ ràng.
 
 ### 15.3 Uploaded media
 
@@ -1005,7 +1362,7 @@ Do not claim imaginary test results. The CI gods are petty and they keep receipt
 ```text
 AGENTS.md
 CLAUDE.md
-docs/DOCS_VERIFICATION_REPORT.md
+docs/audits/ (if relevant)
 docs/engineering/API_CONTRACT.md
 docs/engineering/API_FLOW_MAP.md
 docs/engineering/DATA_CONTRACT.md
@@ -1013,10 +1370,8 @@ docs/business/WORKFLOW_OVERVIEW.md
 docs/business/MODULE_CATALOG.md
 bigbike-web/AGENTS.md
 bigbike-web/STYLEGUIDE.md
-Bigbike Design System/README.md
-Bigbike Design System/colors_and_type.css
-Bigbike Design System/ui_kits/website/
-Bigbike Design System/preview/
+bigbike-web/styles/brand-tokens.css
+bigbike-web/public/brand/
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```
 
@@ -1025,15 +1380,15 @@ bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```text
 AGENTS.md
 CLAUDE.md
-docs/DOCS_VERIFICATION_REPORT.md
+docs/audits/ (if relevant)
 docs/engineering/API_CONTRACT.md
 docs/engineering/PERMISSION_MATRIX.md
 docs/engineering/DATA_CONTRACT.md
 docs/business/USER_ROLES.md
 docs/business/MODULE_CATALOG.md
 docs/business/STATE_MACHINES.md
-Bigbike Design System/README.md
-Bigbike Design System/colors_and_type.css
+bigbike-admin/src/styles/admin-tokens.css
+bigbike-admin/public/brand/
 bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```
 
@@ -1042,7 +1397,7 @@ bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```text
 AGENTS.md
 CLAUDE.md
-docs/DOCS_VERIFICATION_REPORT.md
+docs/audits/ (if relevant)
 docs/engineering/API_CONTRACT.md
 docs/engineering/DATA_CONTRACT.md
 docs/engineering/PERMISSION_MATRIX.md
@@ -1061,7 +1416,7 @@ bigbike-backend/src/main/resources/openapi/bigbike-openapi.json
 ```text
 AGENTS.md
 CLAUDE.md
-docs/DOCS_VERIFICATION_REPORT.md
+docs/audits/ (if relevant)
 docs/engineering/API_CONTRACT.md
 docs/engineering/API_FLOW_MAP.md
 docs/business/WORKFLOW_OVERVIEW.md

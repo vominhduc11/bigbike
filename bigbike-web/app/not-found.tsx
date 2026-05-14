@@ -5,6 +5,7 @@ import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
 import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const revalidate = 3600;
 
@@ -13,7 +14,7 @@ export default async function NotFoundPage() {
   const recent = recentResult.data ?? [];
 
   return (
-    <section className="bb-page wp-404-page">
+    <section className="min-h-[62vh] bg-background py-20 text-center">
       <PageHero
         title="Xin lỗi, nội dung bạn tìm kiếm không còn tồn tại có thể nội dung đã cũ hoặc bị xóa."
         breadcrumb={[
@@ -22,38 +23,39 @@ export default async function NotFoundPage() {
         ]}
       />
       <div className="bb-container">
-        <div className="wp-404-inner">
-          <div className="wp-404-image">
+        <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7">
+          <div className="flex justify-center">
             <Image
               src="/wp/404.png"
               alt="Không tìm thấy trang"
               width={480}
               height={320}
+              className="max-w-full h-auto"
               priority
             />
           </div>
-          <p className="wp-404-lead">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
+          <p className="text-base text-muted-foreground">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
 
           <form
             action={toProductListPath()}
             method="get"
-            className="wp-404-search"
+            className="flex flex-col sm:flex-row w-full max-w-[560px] mx-auto border border-border overflow-hidden bg-card"
             role="search"
             aria-label="Tìm kiếm sản phẩm"
           >
-            <input
+            <Input
               type="search"
               name="q"
               placeholder="Tìm sản phẩm, thương hiệu..."
-              className="wp-404-search-input"
+              className="flex-1 border-0 rounded-none bg-transparent h-12 min-h-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Từ khoá tìm kiếm"
             />
-            <Button type="submit" variant="primary" className="wp-404-search-btn">
+            <Button type="submit" variant="primary" className="rounded-none h-12 shrink-0 w-full sm:w-auto">
               TÌM KIẾM
             </Button>
           </form>
 
-          <div className="wp-404-nav">
+          <div className="flex flex-wrap gap-3 justify-center">
             <Button asChild variant="primary">
               <Link href={toHomePath()}>VỀ TRANG CHỦ</Link>
             </Button>
@@ -66,9 +68,9 @@ export default async function NotFoundPage() {
           </div>
 
           {recent.length > 0 && (
-            <section className="wp-404-recent" aria-label="Bài viết mới">
-              <h2 className="wp-404-recent-title">BÀI VIẾT MỚI</h2>
-              <div className="wp-news-grid">
+            <section className="mt-6 text-left" aria-label="Bài viết mới">
+              <h2 className="font-display text-2xl font-semibold uppercase tracking-wider mb-[18px] text-foreground">BÀI VIẾT MỚI</h2>
+              <div className="grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-3">
                 {recent.map((article) => (
                   <ArticleCard key={article.id} article={article} />
                 ))}

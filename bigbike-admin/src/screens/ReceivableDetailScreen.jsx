@@ -13,6 +13,16 @@ import {
   StickyActionBar,
 } from '../components/layout'
 import { RecordPaymentModal, WriteOffModal } from './ReceivablesListScreen'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+
+const AR_STATUS_VARIANT = {
+  OPEN: 'info',
+  PARTIALLY_PAID: 'warning',
+  OVERDUE: 'danger',
+  CLOSED: 'success',
+  WRITTEN_OFF: 'muted',
+}
 
 function formatCurrency(amount, locale) {
   if (amount == null) return '—'
@@ -21,9 +31,9 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <span className={`status-badge status-badge--ar-${status}`}>
+    <Badge variant={AR_STATUS_VARIANT[status] ?? 'muted'}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
-    </span>
+    </Badge>
   )
 }
 
@@ -69,15 +79,14 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
 
   return (
     <Screen>
-      <button
+      <Button variant="ghost" size="sm"
         type="button"
-        className="btn btn-secondary-ghost btn-sm"
         onClick={() => navigate('/admin/receivables')}
         style={{ alignSelf: 'flex-start' }}
       >
         <ArrowLeft size={14} aria-hidden="true" />
         {t('receivables.detail.backToList')}
-      </button>
+      </Button>
 
       <ScreenHeader
         eyebrow={t('receivables.eyebrow')}
@@ -175,26 +184,24 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
               <>
                 <span className="info-grid-label">{t('receivables.detail.rowCustomerId')}</span>
                 <span className="info-grid-value">
-                  <button
+                  <Button variant="ghost" size="sm"
                     type="button"
-                    className="btn btn-secondary-ghost btn-sm"
                     onClick={() => navigate(`/admin/customers/${ar.customerId}`)}
                   >
                     {t('receivables.detail.viewProfile')}
-                  </button>
+                  </Button>
                 </span>
               </>
             )}
 
             <span className="info-grid-label">{t('receivables.detail.rowOrderId')}</span>
             <span className="info-grid-value">
-              <button
+              <Button variant="ghost" size="sm"
                 type="button"
-                className="btn btn-secondary-ghost btn-sm"
                 onClick={() => navigate(`/admin/orders/${ar.orderId}`)}
               >
                 {ar.orderNumber || ar.orderId}
-              </button>
+              </Button>
             </span>
           </div>
         </DetailSection>
@@ -218,23 +225,21 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
       {showActions && (
         <StickyActionBar>
           {canRecordPayment && (
-            <button
+            <Button
               type="button"
-              className="btn btn-primary"
               onClick={() => setPaymentTarget(ar)}
             >
               {t('receivables.detail.recordPaymentBtn')}
-            </button>
+            </Button>
           )}
           {canWriteOff && (
-            <button
+            <Button variant="ghost" className="text-danger hover:bg-danger-bg has-tooltip"
               type="button"
-              className="btn btn-ghost-danger has-tooltip"
               onClick={() => setWriteOffTarget(ar)}
               title={t('receivables.btn.writeOffTooltip')}
             >
               {t('receivables.detail.writeOffBtn')}
-            </button>
+            </Button>
           )}
         </StickyActionBar>
       )}

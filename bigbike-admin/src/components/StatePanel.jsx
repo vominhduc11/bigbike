@@ -1,3 +1,13 @@
+import { Button } from '@/components/ui/button'
+
+const TONE_CLASSES = {
+  neutral: 'bg-surface-muted text-foreground',
+  success: 'bg-success-bg text-success',
+  warning: 'bg-warning-bg text-warning',
+  danger:  'bg-danger-bg text-danger',
+  info:    'bg-info-bg text-info',
+}
+
 export function StatePanel({
   tone = 'neutral',
   title,
@@ -6,13 +16,16 @@ export function StatePanel({
   onAction,
 }) {
   return (
-    <section className={`state-panel state-panel-${tone}`} role="status">
-      <h2>{title}</h2>
-      {description ? <p>{description}</p> : null}
+    <section
+      className={`flex flex-col items-center justify-center gap-3 rounded-[var(--admin-radius-sm)] px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
+      role="status"
+    >
+      <h2 className="text-base font-semibold font-body">{title}</h2>
+      {description ? <p className="text-sm opacity-80">{description}</p> : null}
       {actionLabel && onAction ? (
-        <button type="button" className="btn btn-secondary" onClick={onAction}>
+        <Button variant="secondary" onClick={onAction} className="mt-1">
           {actionLabel}
-        </button>
+        </Button>
       ) : null}
     </section>
   )

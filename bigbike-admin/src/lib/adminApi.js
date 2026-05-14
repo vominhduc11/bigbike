@@ -1877,6 +1877,54 @@ export async function fetchInventory(query = {}) {
   }
 }
 
+export async function fetchInventoryGrouped(query = {}) {
+  try {
+    const payload = await requestJson('/admin/inventory/grouped', {
+      query: {
+        page: query.page,
+        size: query.pageSize,
+        q: query.q || undefined,
+        stockState: query.stockState === 'ALL' ? undefined : query.stockState,
+      },
+    })
+    return withLiveData(parseListPayload(payload, normalizeStockGroup, Number(query.pageSize) || 20))
+  } catch (error) {
+    const e = normalizeError(error)
+    if (!shouldFallbackToMockOnLiveError()) throw e
+    return withMockFallback(e.message, { items: [], pagination: normalizePagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 }, 20) })
+  }
+}
+
+function normalizeStockVariant(v) {
+  const input = v && typeof v === 'object' ? v : {}
+  return {
+    variantId: input.variantId || '',
+    variantName: input.variantName || '',
+    variantSku: input.variantSku || undefined,
+    stockState: input.stockState || 'UNKNOWN',
+    quantityOnHand: Number(input.quantityOnHand) || 0,
+    retailPrice: Number(input.retailPrice) || 0,
+    trackSerials: Boolean(input.trackSerials),
+  }
+}
+
+function normalizeStockGroup(g) {
+  const input = g && typeof g === 'object' ? g : {}
+  return {
+    productId: input.productId || '',
+    productName: input.productName || '',
+    productSku: input.productSku || undefined,
+    productImage: normalizeImageAsset(input.productImage),
+    aggregateStockState: input.aggregateStockState || 'UNKNOWN',
+    totalQuantity: Number(input.totalQuantity) || 0,
+    minRetailPrice: Number(input.minRetailPrice) || 0,
+    forceOutOfStock: Boolean(input.forceOutOfStock),
+    isNoVariant: Boolean(input.isNoVariant),
+    trackSerials: Boolean(input.trackSerials),
+    variants: Array.isArray(input.variants) ? input.variants.map(normalizeStockVariant) : [],
+  }
+}
+
 function normalizeStockItem(input) {
   const s = input && typeof input === 'object' ? input : {}
   return {
@@ -1885,13 +1933,14 @@ function normalizeStockItem(input) {
     productName: s.productName || '',
     productSku: s.productSku || undefined,
     productImage: normalizeImageAsset(s.productImage || s.image || s.product?.image),
-    variantId: s.variantId || '',
+    variantId: s.variantId || null,
     variantName: s.variantName || '',
     variantSku: s.variantSku || undefined,
     stockState: s.stockState || 'UNKNOWN',
     quantityOnHand: Number(s.quantityOnHand) || 0,
     retailPrice: Number(s.retailPrice) || 0,
     trackSerials: Boolean(s.trackSerials),
+    forceOutOfStock: Boolean(s.forceOutOfStock),
   }
 }
 
@@ -2036,12 +2085,12 @@ export async function fetchInventorySummary() {
     const payload = await requestJson('/admin/inventory/summary')
     const d = payload?.data || payload || {}
     return {
-      totalVariants: Number(d.totalVariants) || 0,
+      totalItems: Number(d.totalItems) || 0,
       outOfStockCount: Number(d.outOfStockCount) || 0,
       lowStockCount: Number(d.lowStockCount) || 0,
     }
   } catch {
-    return { totalVariants: 0, outOfStockCount: 0, lowStockCount: 0 }
+    return { totalItems: 0, outOfStockCount: 0, lowStockCount: 0 }
   }
 }
 
@@ -2059,6 +2108,13 @@ export async function fetchAllMovements(query = {}) {
 
 export async function fetchVariantMovements(variantId, query = {}) {
   const payload = await requestJson(`/admin/inventory/variants/${variantId}/movements`, {
+    query: { page: query.page, size: query.pageSize },
+  })
+  return parseListPayload(payload, normalizeMovement, Number(query.pageSize) || 20)
+}
+
+export async function fetchProductMovements(productId, query = {}) {
+  const payload = await requestJson(`/admin/inventory/products/${productId}/movements`, {
     query: { page: query.page, size: query.pageSize },
   })
   return parseListPayload(payload, normalizeMovement, Number(query.pageSize) || 20)

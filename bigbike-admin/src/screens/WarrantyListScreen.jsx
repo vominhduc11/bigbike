@@ -5,6 +5,7 @@ import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { fetchWarranties, voidWarranty } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const STATUSES = ['ALL', 'ACTIVE', 'EXPIRED', 'VOIDED']
 const STATUS_COLORS = {
@@ -200,12 +201,12 @@ export function WarrantyListScreen({ canUpdate }) {
       <section className="filter-bar">
         <label>
           Trạng thái
-          <select className="control-select" value={query.status}
-            onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}>
+          <Select value={query.status}
+            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {STATUSES.map((s) => (
-              <option key={s} value={s}>{s === 'ALL' ? 'Tất cả' : (STATUS_LABELS[s] ?? s)}</option>
+              <SelectItem key={s} value={s}>{s === 'ALL' ? 'Tất cả' : (STATUS_LABELS[s] ?? s)}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 

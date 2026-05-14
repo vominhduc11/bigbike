@@ -64,20 +64,20 @@ async function goto(page: Page, url: string, waitFor?: string) {
 
 async function auditStyles(page: Page, label: string) {
   const checks: [string, string, string][] = [
-    [".wp-header",              "height",           "header height"],
-    [".wp-header",              "background-color", "header bg"],
+    [".bb-site-header",              "height",           "header height"],
+    [".bb-site-header",              "background-color", "header bg"],
     [".bb-main",                "padding-top",      "main padding-top"],
     [".bb-footer",              "background-color", "footer top bg"],
     [".bb-footer-bottom",       "background-color", "footer bottom bg"],
     [".bb-footer-bottom",       "padding-top",      "footer bottom padding-top"],
     [".bb-footer-bottom-slogan","color",             "slogan color"],
-    [".wp-product-card",        "border-width",     "product card border-width"],
-    [".wp-product-name",        "font-size",        "product name font-size"],
-    [".wp-product-price b",     "font-weight",      "price font-weight"],
-    [".wp-product-price b",     "font-size",        "price font-size"],
-    [".wp-scroll-to-top",       "background-color", "scroll-btn bg"],
-    [".wp-scroll-to-top",       "width",            "scroll-btn width"],
-    [".wp-scroll-to-top",       "height",           "scroll-btn height"],
+    [".bb-product-card",        "border-width",     "product card border-width"],
+    [".bb-product-name",        "font-size",        "product name font-size"],
+    [".bb-product-price b",     "font-weight",      "price font-weight"],
+    [".bb-product-price b",     "font-size",        "price font-size"],
+    [".bb-scroll-to-top",       "background-color", "scroll-btn bg"],
+    [".bb-scroll-to-top",       "width",            "scroll-btn width"],
+    [".bb-scroll-to-top",       "height",           "scroll-btn height"],
     ["--bb-header-height",      "",                 ""], // token — handled separately
   ];
 
@@ -150,7 +150,7 @@ async function main() {
       await shotViewport(page, `${vp.name}--home-top`);
 
       // Header dimensions from DOM
-      const headerRect = await getRect(page, ".wp-header");
+      const headerRect = await getRect(page, ".bb-site-header");
       console.log(`  header rect: h=${headerRect?.height}px (expected 80)`);
 
       if (vp.width >= 1200) {
@@ -165,7 +165,7 @@ async function main() {
         await page.waitForTimeout(600);
 
         // Scroll-to-top button viewport coords
-        const btnRect = await getRect(page, ".wp-scroll-to-top");
+        const btnRect = await getRect(page, ".bb-scroll-to-top");
         console.log(`  scroll-btn rect: ${JSON.stringify(btnRect)}`);
         await shotViewport(page, `${vp.name}--home-bottom`);
         if (btnRect) {
@@ -184,20 +184,20 @@ async function main() {
 
     // ── CATALOG ─────────────────────────────────────────────────────────────
     console.log("\n  → /san-pham/");
-    if (await goto(page, `${BASE_URL}/san-pham/`, ".wp-product-card")) {
+    if (await goto(page, `${BASE_URL}/san-pham/`, ".bb-product-card")) {
       await shotViewport(page, `${vp.name}--catalog-top`);
       if (vp.width >= 1200) {
         // Product card clip from DOM coords
-        const cardRect = await getRect(page, ".wp-product-card");
+        const cardRect = await getRect(page, ".bb-product-card");
         if (cardRect) {
           await shotClipCoords(page, `${vp.name}--product-card`,
             cardRect.x, cardRect.y, cardRect.width, cardRect.height);
         }
         // Product name font size
-        const nameSz = await getStyle(page, ".wp-product-name", "font-size");
-        const priceSz = await getStyle(page, ".wp-product-price b", "font-size");
-        const priceWt = await getStyle(page, ".wp-product-price b", "font-weight");
-        const borderW  = await getStyle(page, ".wp-product-card", "border-width");
+        const nameSz = await getStyle(page, ".bb-product-name", "font-size");
+        const priceSz = await getStyle(page, ".bb-product-price b", "font-size");
+        const priceWt = await getStyle(page, ".bb-product-price b", "font-weight");
+        const borderW  = await getStyle(page, ".bb-product-card", "border-width");
         console.log(`  card border-width: ${borderW} (expect 0px)`);
         console.log(`  product-name font-size: ${nameSz} (expect 16px)`);
         console.log(`  price b font-size: ${priceSz} (expect 14px)`);
@@ -207,22 +207,22 @@ async function main() {
 
     // ── 404 ─────────────────────────────────────────────────────────────────
     console.log("\n  → /this-page-does-not-exist/");
-    if (await goto(page, `${BASE_URL}/this-page-does-not-exist/`, ".wp-404-page")) {
+    if (await goto(page, `${BASE_URL}/this-page-does-not-exist/`, ".bb-404-page")) {
       await shotViewport(page, `${vp.name}--404-top`);
       if (vp.width >= 1200) {
-        const img404Rect = await getRect(page, ".wp-404-image");
+        const img404Rect = await getRect(page, ".bb-404-image");
         if (img404Rect) {
           await shotClipCoords(page, `${vp.name}--404-image`,
             img404Rect.x, img404Rect.y, img404Rect.width, Math.min(img404Rect.height, 400));
         } else {
-          console.log("  ⚠ .wp-404-image not found");
+          console.log("  ⚠ .bb-404-image not found");
         }
       }
     }
 
     // ── BLOG ────────────────────────────────────────────────────────────────
     console.log("\n  → /tin-tuc/");
-    if (await goto(page, `${BASE_URL}/tin-tuc/`, ".wp-article-card")) {
+    if (await goto(page, `${BASE_URL}/tin-tuc/`, ".bb-article-card")) {
       await shotViewport(page, `${vp.name}--blog-top`);
     }
 

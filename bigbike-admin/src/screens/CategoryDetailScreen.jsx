@@ -18,6 +18,10 @@ import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 const MENU_NOTICE_DISMISSED_KEY = 'bigbike-admin-cat-menu-notice-dismissed'
@@ -597,13 +601,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
             <label className="form-field" data-field="name">
               <span>{t('categories.detail.name')}</span>
-              <input
+              <Input
                 name="name"
-                className="control-input"
                 value={form.name}
                 onChange={(event) => handleNameChange(event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.name ? (
                 <small className="field-error">{validationErrors.name}</small>
               ) : null}
@@ -611,17 +614,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
             <label className="form-field">
               <span>{t('categories.detail.parentId')}</span>
-              <select
-                className="control-select"
-                value={form.parentId}
-                onChange={(event) => updateField('parentId', event.target.value)}
+              <Select
+                value={form.parentId || '__none__'}
+                onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
                 disabled={isReadOnly}
-              >
-                <option value="">{t('categories.detail.parentIdNone')}</option>
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="__none__">{t('categories.detail.parentIdNone')}</SelectItem>
                 {parentOptions.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
+                  <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                 ))}
-              </select>
+              </SelectContent></Select>
               <small className="field-hint">{t('categories.detail.parentIdHint')}</small>
               {validationErrors.parentId ? (
                 <small className="field-error">{validationErrors.parentId}</small>
@@ -659,8 +661,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
             <div className="form-checkbox-group">
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.visible}
                   onChange={(event) => {
                     const nextVisible = event.target.checked
@@ -674,17 +675,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     }))
                   }}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('categories.detail.isVisible')}</span>
               </label>
 
               <label className={`form-checkbox${!form.visible ? ' is-disabled' : ''}`}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.showOnHomepage}
-                  onChange={(event) => updateField('showOnHomepage', event.target.checked)}
+                  onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
                   disabled={isReadOnly || !form.visible}
-                />
+                 />
                 <span>
                   {t('categories.detail.showOnHomepage')}
                   {!form.visible && (
@@ -730,14 +730,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <div className="form-grid" style={{ marginBottom: 'var(--admin-space-4)' }}>
               <label className="form-field" data-field="slug">
                 <span>{t('categories.detail.slug')}</span>
-                <input
+                <Input
                   name="slug"
-                  className="control-input"
                   value={form.slug}
                   onChange={(event) => handleSlugChange(event.target.value)}
                   disabled={isReadOnly}
                   placeholder={t('categories.slugPlaceholder')}
-                />
+                 />
                 <small className="field-hint">{t('categories.detail.slugHint')}</small>
                 {validationErrors.slug ? (
                   <small className="field-error">{validationErrors.slug}</small>
@@ -769,13 +768,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   {t('categories.detail.seoTitle')}
                   <CharCounter value={form.seoTitle} max={SEO_TITLE_RECOMMENDED} />
                 </span>
-                <input
+                <Input
                   name="seoTitle"
-                  className="control-input"
                   value={form.seoTitle}
                   onChange={(event) => updateField('seoTitle', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
                 {validationErrors.seoTitle ? (
                   <small className="field-error">{validationErrors.seoTitle}</small>
                 ) : null}
@@ -783,13 +781,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
               <label className="form-field" data-field="seoCanonicalUrl">
                 <span>{t('categories.detail.seoCanonicalUrl')}</span>
-                <input
+                <Input
                   name="seoCanonicalUrl"
-                  className="control-input"
                   value={form.seoCanonicalUrl}
                   onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
                 {validationErrors.seoCanonicalUrl ? (
                   <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
                 ) : null}
@@ -800,14 +797,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   {t('categories.detail.seoDescription')}
                   <CharCounter value={form.seoDescription} max={SEO_DESCRIPTION_RECOMMENDED} />
                 </span>
-                <textarea
+                <Textarea
                   name="seoDescription"
-                  className="control-input"
                   rows={3}
                   value={form.seoDescription}
                   onChange={(event) => updateField('seoDescription', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
                 {validationErrors.seoDescription ? (
                   <small className="field-error">{validationErrors.seoDescription}</small>
                 ) : null}
@@ -815,12 +811,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
 
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.seoNoIndex}
-                  onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('categories.detail.seoNoIndex')}</span>
               </label>
             </div>

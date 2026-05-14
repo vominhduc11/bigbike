@@ -8,6 +8,8 @@ import {
   Minus, Quote, Redo, Strikethrough, Underline, Undo,
 } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 function ToolbarButton({ onClick, active, disabled, title, children }) {
   return (
@@ -194,10 +196,9 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
           <label style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', whiteSpace: 'nowrap' }}>
             URL:
           </label>
-          <input
+          <Input
             ref={linkInputRef}
             type="url"
-            className="control-input"
             style={{ flex: 1, fontSize: 'var(--admin-text-xs)', padding: '4px 8px' }}
             placeholder="https://..."
             value={linkModal.value}
@@ -206,13 +207,13 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               if (e.key === 'Enter') { e.preventDefault(); applyLink() }
               if (e.key === 'Escape') cancelLink()
             }}
-          />
-          <button type="button" className="btn btn-primary" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={applyLink}>
+           />
+          <Button type="button" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={applyLink}>
             Áp dụng
-          </button>
-          <button type="button" className="btn btn-secondary" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={cancelLink}>
+          </Button>
+          <Button variant="secondary" type="button" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={cancelLink}>
             Huỷ
-          </button>
+          </Button>
         </div>
       )}
 

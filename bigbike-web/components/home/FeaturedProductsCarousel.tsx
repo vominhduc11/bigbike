@@ -8,7 +8,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import type { Product } from "@/lib/contracts/public";
-import { WpFeaturedProductCard } from "@/components/home/WpFeaturedProductCard";
+import { ProductCard } from "@/components/catalog/ProductCard";
 import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 
 type Props = { products: Product[] };
@@ -20,10 +20,10 @@ export function FeaturedProductsCarousel({ products }: Props) {
   if (products.length === 0) return null;
 
   return (
-    <div className={`wp-prod-carousel-wrap${isLocked ? " wp-prod-carousel-wrap--locked" : ""}`}>
+    <div className={`bb-prod-carousel-wrap${isLocked ? " bb-prod-carousel-wrap--locked" : ""}`}>
       {!isLocked && (
         <button
-          className="wp-car-btn wp-car-prev"
+          className="bb-car-btn bb-car-prev"
           onClick={() => swiperRef.current?.slidePrev()}
           aria-label="Cuộn trái"
         >
@@ -31,7 +31,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
         </button>
       )}
 
-      <div className="wp-prod-carousel-viewport">
+      <div className="bb-prod-carousel-viewport">
         <Swiper
           modules={[Navigation, Pagination]}
           onSwiper={(s) => {
@@ -47,7 +47,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
           spaceBetween={0}
           watchOverflow
           centeredSlides={false}
-          pagination={{ el: ".wp-fp-pagination", clickable: true }}
+          pagination={{ el: ".bb-fp-pagination", clickable: true }}
           breakpoints={{
             [BB_BREAKPOINTS.xs]: { slidesPerView: 1.1, slidesPerGroup: 1, spaceBetween: 12 },
             [BB_BREAKPOINTS.sm]: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 20 },
@@ -56,8 +56,8 @@ export function FeaturedProductsCarousel({ products }: Props) {
           }}
         >
           {products.map((p) => (
-            <SwiperSlide key={p.id} className="wp-prod-carousel-item">
-              <WpFeaturedProductCard product={p} />
+            <SwiperSlide key={p.id} className="bb-prod-carousel-item">
+              <ProductCard product={p} variant="featured" />
             </SwiperSlide>
           ))}
         </Swiper>
@@ -65,7 +65,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
 
       {!isLocked && (
         <button
-          className="wp-car-btn wp-car-next"
+          className="bb-car-btn bb-car-next"
           onClick={() => swiperRef.current?.slideNext()}
           aria-label="Cuộn phải"
         >
@@ -73,7 +73,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
         </button>
       )}
 
-      {!isLocked && <div className="wp-fp-pagination" aria-hidden="true" />}
+      {!isLocked && <div className="bb-fp-pagination" aria-hidden="true" />}
     </div>
   );
 }

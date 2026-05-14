@@ -71,12 +71,12 @@ export async function SiteHeader() {
 
   return (
     <StickyHeaderShell>
-      <div className="wp-header-container">
-        <div className="wp-header-row">
-          <div className="wp-logo">
+      <div className="bb-header-container">
+        <div className="bb-header-row">
+          <div className="bb-logo">
             <Link href="/" aria-label={`${siteName} Home`} title={siteName}>
               <Image
-                className="wp-logo-img hide-mobile"
+                className="bb-logo-img hide-mobile"
                 src="/wp/logo.png"
                 alt={siteName}
                 width={210}
@@ -84,7 +84,7 @@ export async function SiteHeader() {
                 priority
               />
               <Image
-                className="wp-logo-img hide-desktop"
+                className="bb-logo-img hide-desktop"
                 src="/wp/logo-1.png"
                 alt={siteName}
                 width={120}
@@ -94,19 +94,19 @@ export async function SiteHeader() {
             </Link>
           </div>
 
-          <div className="wp-right-header">
+          <div className="bb-right-header">
             <nav
-              className="wp-navigation"
+              className="bb-navigation"
               aria-label={menuResult.data?.name ?? "Điều hướng chính"}
             >
-              <ul className="wp-header-nav">
+              <ul className="bb-header-nav">
                 {resolvedMenuTree.map((node) => (
                   <HeaderNavItem key={node.id} node={node} />
                 ))}
               </ul>
             </nav>
 
-            <div className="wp-user-control">
+            <div className="bb-user-control">
               <SearchToggle />
               <CartIcon />
               <HeaderUserMenu />

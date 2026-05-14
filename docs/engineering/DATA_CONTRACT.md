@@ -149,6 +149,34 @@ Evidence:
 - `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
 
+### stockState — derived field `CONFIRMED_FROM_CODE`
+
+`stockState` trên `product_variants` và `products` là **derived field** — luôn tính từ `quantityOnHand` / `stock_quantity`. Không được set thủ công qua catalog create/update API.
+
+| Bảng | Quantity field | stockState owner |
+|---|---|---|
+| `product_variants` | `quantity_on_hand` | `variant.stockState` |
+| `products` | `stock_quantity` (dùng cho sản phẩm không có variant) | `product.stockState` |
+
+**Quy tắc:**
+- `quantity <= 0` → `OUT_OF_STOCK`
+- `0 < quantity <= low_stock_threshold` → `LOW_STOCK`
+- `quantity > low_stock_threshold` → `IN_STOCK`
+
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest`. Nếu client gửi trường này lên, backend bỏ qua.
+
+**API response contract:** `stockState` vẫn có trong response (read-only) để FE và client hiển thị.
+
+**forceOutOfStock:** field này vẫn là manual override (emergency disable) và khác biệt với `stockState`. Checkout sẽ từ chối ngay cả khi `stockState = IN_STOCK` nếu `forceOutOfStock = true`.
+
+Evidence:
+
+- `InventoryPolicyService.java`
+- `AdminCatalogMutationService.java` (removed stockState from create/update path)
+- `CheckoutService.java`
+- `BUSINESS_RULES.md` STOCK_RULE_001–007
+- `V108__backfill_stock_state_from_quantity.sql`
+
 ### Product homepage flags and ordering
 
 Three columns on the `products` table control homepage surface placement:

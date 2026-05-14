@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import type { ImageAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
 
 type ProductGalleryProps = {
   mainImage: ImageAsset | null | undefined;
@@ -165,13 +166,15 @@ export function ProductGallery({
 
   return (
     <>
-      <div className="wp-pdp-gallery">
+      <div className="bb-pdp-gallery">
         {/* Left: vertical thumbnail strip */}
         {count > 1 && (
-          <div className="wp-pdp-strip">
-            <button
+          <div className="bb-pdp-strip">
+            <Button
               type="button"
-              className="wp-pdp-strip-nav"
+              variant="ghost"
+              size="icon"
+              className="bb-pdp-strip-nav"
               onClick={stripUp}
               disabled={!canStripUp}
               aria-label="Cuộn lên"
@@ -179,29 +182,32 @@ export function ProductGallery({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                 <path d="M18 15l-6-6-6 6" />
               </svg>
-            </button>
+            </Button>
 
-            <div className="wp-pdp-strip-track">
+            <div className="bb-pdp-strip-track">
               {visibleThumbs.map((image, vi) => {
                 const i = stripStart + vi;
                 return (
-                  <button
+                  <Button
                     key={image.id ?? image.url ?? i}
                     type="button"
-                    className={`wp-pdp-thumb${i === selectedIndex ? " active" : ""}`}
+                    variant="ghost"
+                    className={`bb-pdp-thumb${i === selectedIndex ? " active" : ""}`}
                     onClick={() => selectThumb(i)}
                     aria-label={`Xem ảnh ${i + 1}`}
                     aria-pressed={i === selectedIndex}
                   >
                     <MediaImage image={image} altFallback={altFallback} width={160} height={160} />
-                  </button>
+                  </Button>
                 );
               })}
             </div>
 
-            <button
+            <Button
               type="button"
-              className="wp-pdp-strip-nav"
+              variant="ghost"
+              size="icon"
+              className="bb-pdp-strip-nav"
               onClick={stripDown}
               disabled={!canStripDown}
               aria-label="Cuộn xuống"
@@ -209,16 +215,17 @@ export function ProductGallery({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Right: main image (with elevateZoom-style hover lens + zoom window) */}
-        <div className={`wp-pdp-main-wrap${zoomActive ? " is-zooming" : ""}`}>
-          <button
+        <div className={`bb-pdp-main-wrap${zoomActive ? " is-zooming" : ""}`}>
+          <Button
             ref={mainRef}
             type="button"
-            className="wp-pdp-main wp-pdp-main-btn"
+            variant="ghost"
+            className="bb-pdp-main bb-pdp-main-btn"
             onClick={() => setLightboxOpen(true)}
             onMouseEnter={handleMainMouseEnter}
             onMouseMove={handleMainMouseMove}
@@ -226,7 +233,7 @@ export function ProductGallery({
             aria-label="Xem ảnh phóng to"
           >
             <MediaImage image={selectedImage} altFallback={altFallback} priority width={1200} height={1200} />
-            <span className="wp-pdp-zoom-hint" aria-hidden="true">
+            <span className="bb-pdp-zoom-hint" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35M11 8v6M8 11h6" />
@@ -234,7 +241,7 @@ export function ProductGallery({
             </span>
             {zoomActive && (
               <span
-                className="wp-pdp-zoom-lens"
+                className="bb-pdp-zoom-lens"
                 style={{
                   width: `${LENS_SIZE_PCT}%`,
                   height: `${LENS_SIZE_PCT}%`,
@@ -244,10 +251,10 @@ export function ProductGallery({
                 aria-hidden="true"
               />
             )}
-          </button>
+          </Button>
           {zoomActive && zoomImageUrl && (
             <div
-              className="wp-pdp-zoom-window"
+              className="bb-pdp-zoom-window"
               style={{
                 backgroundImage: `url("${zoomImageUrl.replaceAll('"', '%22')}")`,
                 backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
@@ -261,32 +268,32 @@ export function ProductGallery({
 
       {/* Lightbox */}
       {lightboxOpen && (
-        <div className="wp-lightbox" role="dialog" aria-modal="true" aria-label="Xem ảnh">
-          <div className="wp-lightbox-backdrop" onClick={() => setLightboxOpen(false)} />
+        <div className="bb-lightbox" role="dialog" aria-modal="true" aria-label="Xem ảnh">
+          <div className="bb-lightbox-backdrop" onClick={() => setLightboxOpen(false)} />
 
-          <button type="button" className="wp-lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Đóng">
+          <Button type="button" variant="ghost" size="icon" className="bb-lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Đóng">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
 
-          <div className="wp-lightbox-img">
+          <div className="bb-lightbox-img">
             <MediaImage image={selectedImage} altFallback={altFallback} width={1600} height={1600} priority />
           </div>
 
           {count > 1 && (
             <>
-              <button type="button" className="wp-lightbox-nav wp-lightbox-prev" onClick={prev} aria-label="Ảnh trước">
+              <Button type="button" variant="ghost" size="icon" className="bb-lightbox-nav bb-lightbox-prev" onClick={prev} aria-label="Ảnh trước">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M15 18l-6-6 6-6" />
                 </svg>
-              </button>
-              <button type="button" className="wp-lightbox-nav wp-lightbox-next" onClick={next} aria-label="Ảnh tiếp">
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="bb-lightbox-nav bb-lightbox-next" onClick={next} aria-label="Ảnh tiếp">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M9 18l6-6-6-6" />
                 </svg>
-              </button>
-              <div className="wp-lightbox-counter">{selectedIndex + 1} / {count}</div>
+              </Button>
+              <div className="bb-lightbox-counter">{selectedIndex + 1} / {count}</div>
             </>
           )}
         </div>

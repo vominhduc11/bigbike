@@ -96,11 +96,11 @@ function SkelButton({ w = 140 }: { w?: number | string }) {
 
 function ProductCardSkel() {
   return (
-    <div className="wp-product-card" aria-hidden="true">
-      <div className="wp-product-image">
+    <div className="bb-product-card" aria-hidden="true">
+      <div className="bb-product-image">
         <SkelBlock w="80%" h="80%" rounded={false} style={{ borderRadius: 0 }} />
       </div>
-      <div className="wp-product-body">
+      <div className="bb-product-body">
         <SkelText w="40%" />
         <SkelTitle w="80%" h="1.05em" />
         <SkelText w="50%" />
@@ -112,11 +112,11 @@ function ProductCardSkel() {
 
 function ArticleCardSkel() {
   return (
-    <div className="wp-news-card" aria-hidden="true" style={{ pointerEvents: "none" }}>
-      <div className="wp-news-img-wrap">
+    <div className="bb-news-card" aria-hidden="true" style={{ pointerEvents: "none" }}>
+      <div className="bb-news-img-wrap">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
-      <div className="wp-news-body">
+      <div className="bb-news-body">
         <SkelTitle w="85%" h="1em" />
         <SkelText w="100%" />
         <SkelText w="60%" />
@@ -127,7 +127,7 @@ function ArticleCardSkel() {
 
 function CategoryTileSkel() {
   return (
-    <div className="wp-cat-img-cell" aria-hidden="true">
+    <div className="bb-cat-img-cell" aria-hidden="true">
       <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
     </div>
   );
@@ -138,17 +138,17 @@ function CategoryTileSkel() {
 /** Homepage — hero + trust rail + 3-tile + 5 carousel + cat-grid + about + experience + news + brands. */
 export function HomeSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải trang chủ" className="wp-home">
+    <SkeletonRoot label="Đang tải trang chủ" className="bb-home">
       {/* Hero slider */}
-      <div className="wp-slider" style={{ position: "relative" }}>
+      <div className="bb-slider" style={{ position: "relative" }}>
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
 
       {/* Trust rail */}
       <div className="bb-container">
-        <div className="wp-feature-row">
+        <div className="bb-feature-row">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="wp-feature-tile">
+            <div key={i} className="bb-feature-tile">
               <SkelCircle size={52} />
               <div className="bb-skel-col" style={{ flex: 1 }}>
                 <SkelTitle w="60%" />
@@ -159,17 +159,17 @@ export function HomeSkeleton() {
         </div>
 
         {/* Featured 3-tile */}
-        <div className="wp-section">
-          <div className="wp-section-head">
+        <div className="bb-section">
+          <div className="bb-section-head">
             <div className="bb-skel-col" style={{ flex: 1 }}>
               <SkelText w="20%" />
               <SkelTitle w="40%" h="1.6em" />
             </div>
             <SkelButton w={120} />
           </div>
-          <div className="wp-featured-grid-3">
+          <div className="bb-featured-grid-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="wp-tile-3">
+              <div key={i} className="bb-tile-3">
                 <div className="bb-skel-col" style={{ width: "62%" }}>
                   <SkelText w="40%" />
                   <SkelTitle w="80%" />
@@ -182,8 +182,8 @@ export function HomeSkeleton() {
         </div>
 
         {/* Product carousel */}
-        <div className="wp-section">
-          <div className="wp-section-head">
+        <div className="bb-section">
+          <div className="bb-section-head">
             <div className="bb-skel-col" style={{ flex: 1 }}>
               <SkelText w="18%" />
               <SkelTitle w="36%" h="1.6em" />
@@ -204,14 +204,14 @@ export function HomeSkeleton() {
         </div>
 
         {/* Category grid (image tiles) */}
-        <div className="wp-section">
-          <div className="wp-section-head">
+        <div className="bb-section">
+          <div className="bb-section-head">
             <div className="bb-skel-col" style={{ flex: 1 }}>
               <SkelText w="22%" />
               <SkelTitle w="42%" h="1.6em" />
             </div>
           </div>
-          <div className="wp-cat-grid-img">
+          <div className="bb-cat-grid-img">
             {Array.from({ length: 4 }).map((_, i) => (
               <CategoryTileSkel key={i} />
             ))}
@@ -219,15 +219,15 @@ export function HomeSkeleton() {
         </div>
 
         {/* News strip */}
-        <div className="wp-section">
-          <div className="wp-section-head">
+        <div className="bb-section">
+          <div className="bb-section-head">
             <div className="bb-skel-col" style={{ flex: 1 }}>
               <SkelText w="14%" />
               <SkelTitle w="34%" h="1.6em" />
             </div>
             <SkelButton w={120} />
           </div>
-          <div className="wp-articles-grid-v2">
+          <div className="bb-articles-grid-v2">
             {Array.from({ length: 3 }).map((_, i) => (
               <ArticleCardSkel key={i} />
             ))}
@@ -243,12 +243,12 @@ export function PdpSkeleton() {
   return (
     <SkeletonRoot label="Đang tải chi tiết sản phẩm">
       {/* Breadcrumb */}
-      <div className="wp-breadcrumb">
+      <div className="bb-breadcrumb">
         <SkelText w={220} />
       </div>
 
       {/* Two-col PDP */}
-      <div className="wp-pdp">
+      <div className="bb-pdp">
         {/* Gallery */}
         <div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -291,7 +291,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Below-fold: tabs + related */}
-      <div className="wp-pdp-below">
+      <div className="bb-pdp-below">
         <div className="bb-skel-row" style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ padding: "14px 22px" }}>
@@ -332,23 +332,23 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <SkeletonRoot label="Đang tải danh mục sản phẩm">
       {withHero && (
-        <div className="wp-cat-hero" style={{ position: "relative" }}>
+        <div className="bb-cat-hero" style={{ position: "relative" }}>
           <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
         </div>
       )}
       {!withHero && (
         <>
-          <div className="wp-breadcrumb"><SkelText w={180} /></div>
-          <div className="wp-page-head">
+          <div className="bb-breadcrumb"><SkelText w={180} /></div>
+          <div className="bb-page-head">
             <SkelText w="15%" />
             <SkelTitle w="40%" h="2em" />
           </div>
         </>
       )}
 
-      <div className="wp-cat-layout">
+      <div className="bb-cat-layout">
         {/* Sidebar filters */}
-        <aside className="wp-filters-v2">
+        <aside className="bb-filters-v2">
           <div className="bb-skel-stack">
             <SkelTitle w="50%" />
             {Array.from({ length: 5 }).map((_, i) => (
@@ -364,11 +364,11 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
 
         {/* Grid */}
         <div>
-          <div className="wp-catalog-head">
+          <div className="bb-catalog-head">
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className="wp-product-grid">
+          <div className="bb-product-grid">
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>
@@ -381,12 +381,12 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
 export function CategoryListSkeleton() {
   return (
     <SkeletonRoot label="Đang tải danh sách danh mục">
-      <div className="wp-breadcrumb"><SkelText w={160} /></div>
-      <div className="wp-page-head">
+      <div className="bb-breadcrumb"><SkelText w={160} /></div>
+      <div className="bb-page-head">
         <SkelText w="15%" />
         <SkelTitle w="40%" h="2em" />
       </div>
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px 64px" }}>
+      <div className="bb-container pb-16">
         <div className="bb-grid-categories">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="bb-card">
@@ -407,12 +407,12 @@ export function CategoryListSkeleton() {
 export function BrandListSkeleton() {
   return (
     <SkeletonRoot label="Đang tải danh sách thương hiệu">
-      <div className="wp-breadcrumb"><SkelText w={150} /></div>
-      <div className="wp-page-head">
+      <div className="bb-breadcrumb"><SkelText w={150} /></div>
+      <div className="bb-page-head">
         <SkelText w="15%" />
         <SkelTitle w="35%" h="2em" />
       </div>
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px" }}>
+      <div className="bb-container">
         <div
           style={{
             display: "grid",
@@ -433,17 +433,17 @@ export function BrandListSkeleton() {
 export function BrandDetailSkeleton() {
   return (
     <SkeletonRoot label="Đang tải trang thương hiệu">
-      <div className="wp-breadcrumb"><SkelText w={220} /></div>
-      <div className="wp-page-head">
+      <div className="bb-breadcrumb"><SkelText w={220} /></div>
+      <div className="bb-page-head">
         <SkelText w="12%" />
         <SkelTitle w="35%" h="2em" />
         <SkelText w="60%" />
       </div>
-      <div style={{ maxWidth: 1440, margin: "0 auto 24px", padding: "0 24px" }}>
+      <div className="bb-container mb-6">
         <SkelBlock w="100%" h={180} />
       </div>
-      <div className="wp-cat-layout">
-        <aside className="wp-filters-v2">
+      <div className="bb-cat-layout">
+        <aside className="bb-filters-v2">
           <div className="bb-skel-stack">
             <SkelTitle w="50%" />
             {Array.from({ length: 4 }).map((_, i) => (
@@ -455,11 +455,11 @@ export function BrandDetailSkeleton() {
           </div>
         </aside>
         <div>
-          <div className="wp-catalog-head">
+          <div className="bb-catalog-head">
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className="wp-product-grid">
+          <div className="bb-product-grid">
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>
@@ -471,10 +471,10 @@ export function BrandDetailSkeleton() {
 /** Article list (tin-tuc) — hero + filter + 3-col article grid */
 export function ArticleListSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải danh sách bài viết" className="wp-news-page">
-      <div style={{ maxWidth: "var(--bb-container-xl)", margin: "24px auto", padding: "0 24px" }}>
-        <div className="wp-news-hero">
-          <div className="wp-news-hero-copy bb-skel-stack">
+    <SkeletonRoot label="Đang tải danh sách bài viết" className="bb-news-page">
+      <div className="bb-container mt-6">
+        <div className="bb-news-hero">
+          <div className="bb-news-hero-copy bb-skel-stack">
             <SkelText w="20%" />
             <SkelTitle w="80%" h="2em" />
             <SkelText w="100%" />
@@ -485,13 +485,13 @@ export function ArticleListSkeleton() {
           </div>
         </div>
       </div>
-      <div className="wp-news-section">
+      <div className="bb-news-section">
         <div className="bb-skel-row" style={{ marginBottom: 28 }}>
           <SkelButton w={120} />
           <SkelButton w={140} />
           <SkelButton w={120} />
         </div>
-        <div className="wp-articles-grid-v2">
+        <div className="bb-articles-grid-v2">
           {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkel key={i} />)}
         </div>
       </div>
@@ -503,8 +503,8 @@ export function ArticleListSkeleton() {
 export function ArticleDetailSkeleton() {
   return (
     <SkeletonRoot label="Đang tải bài viết">
-      <div className="wp-breadcrumb"><SkelText w={280} /></div>
-      <div className="wp-article-wrap">
+      <div className="bb-breadcrumb"><SkelText w={280} /></div>
+      <div className="bb-article-wrap">
         <header className="bb-skel-stack" style={{ marginBottom: 24 }}>
           <div className="bb-skel-row">
             <SkelChip w={80} />
@@ -533,15 +533,15 @@ export function ArticleDetailSkeleton() {
 export function CartSkeleton() {
   return (
     <SkeletonRoot label="Đang tải giỏ hàng">
-      <div className="wp-breadcrumb"><SkelText w={140} /></div>
-      <div className="wp-page-head">
+      <div className="bb-breadcrumb"><SkelText w={140} /></div>
+      <div className="bb-page-head">
         <SkelText w="10%" />
         <SkelTitle w="22%" h="2em" />
       </div>
-      <div className="wp-cart-layout">
+      <div className="bb-cart-layout">
         <div>
-          <div className="wp-cart-list">
-            <div className="wp-cart-header-row">
+          <div className="bb-cart-list">
+            <div className="bb-cart-header-row">
               <SkelText w="30%" />
               <SkelText w="50%" />
               <SkelText w="50%" />
@@ -549,8 +549,8 @@ export function CartSkeleton() {
               <span />
             </div>
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="wp-cart-item">
-                <div className="wp-cart-item-prod">
+              <div key={i} className="bb-cart-item">
+                <div className="bb-cart-item-prod">
                   <SkelBlock w={72} h={72} />
                   <div className="bb-skel-col" style={{ flex: 1 }}>
                     <SkelText w="40%" />
@@ -566,7 +566,7 @@ export function CartSkeleton() {
             ))}
           </div>
         </div>
-        <aside className="wp-summary-card">
+        <aside className="bb-summary-card">
           <div className="bb-skel-stack">
             <SkelTitle w="50%" />
             <SkelText w="100%" />
@@ -585,17 +585,17 @@ export function CartSkeleton() {
 export function CheckoutSkeleton() {
   return (
     <SkeletonRoot label="Đang tải trang thanh toán">
-      <div className="wp-breadcrumb"><SkelText w={180} /></div>
-      <div className="wp-page-head">
+      <div className="bb-breadcrumb"><SkelText w={180} /></div>
+      <div className="bb-page-head">
         <SkelText w="10%" />
         <SkelTitle w="25%" h="2em" />
       </div>
-      <div className="wp-checkout-layout">
+      <div className="bb-checkout-layout">
         <div>
           {/* Stepper */}
-          <div className="wp-stepper">
+          <div className="bb-stepper">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="wp-step" style={{ flex: 1 }}>
+              <div key={i} className="bb-step" style={{ flex: 1 }}>
                 <SkelCircle size={28} />
                 <div className="bb-skel-col" style={{ flex: 1 }}>
                   <SkelText w="60%" />
@@ -605,7 +605,7 @@ export function CheckoutSkeleton() {
             ))}
           </div>
           {/* Form section 1 */}
-          <div className="wp-checkout-section">
+          <div className="bb-checkout-section">
             <SkelTitle w="40%" />
             <div
               style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr", marginTop: 18 }}
@@ -618,7 +618,7 @@ export function CheckoutSkeleton() {
               ))}
             </div>
           </div>
-          <div className="wp-checkout-section">
+          <div className="bb-checkout-section">
             <SkelTitle w="35%" />
             <div className="bb-skel-stack" style={{ marginTop: 18 }}>
               <SkelBlock w="100%" h={56} />
@@ -626,7 +626,7 @@ export function CheckoutSkeleton() {
             </div>
           </div>
         </div>
-        <aside className="wp-order-summary">
+        <aside className="bb-order-summary">
           <div className="bb-skel-stack">
             <SkelTitle w="60%" />
             {Array.from({ length: 2 }).map((_, i) => (
@@ -653,7 +653,7 @@ export function CheckoutSkeleton() {
 export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <SkeletonRoot label="Đang tải nội dung tài khoản">
-      <div className="wp-account-header">
+      <div className="bb-account-header">
         <div className="bb-skel-col" style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="50%" />
@@ -671,8 +671,8 @@ export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
 /** Full Account layout (sidebar + main) — used when AccountShell hasn't loaded yet */
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <SkeletonRoot label="Đang tải trang tài khoản" className="wp-account-layout">
-      <aside className="wp-account-sidebar">
+    <SkeletonRoot label="Đang tải trang tài khoản" className="bb-account-layout">
+      <aside className="bb-account-sidebar">
         <div style={{ padding: "24px 22px", borderBottom: "1px solid var(--bb-border-subtle)" }}>
           <SkelCircle size={56} />
           <div className="bb-skel-stack" style={{ marginTop: 12 }}>
@@ -686,8 +686,8 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
           ))}
         </div>
       </aside>
-      <div className="wp-account-main">
-        <div className="wp-account-header">
+      <div className="bb-account-main">
+        <div className="bb-account-header">
           <div className="bb-skel-col" style={{ flex: 1 }}>
             <SkelTitle w="30%" h="1.6em" />
             <SkelText w="50%" />
@@ -707,7 +707,7 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
 export function OrderListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <SkeletonRoot label="Đang tải danh sách đơn hàng">
-      <div className="wp-account-header">
+      <div className="bb-account-header">
         <div className="bb-skel-col" style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="40%" />
@@ -720,8 +720,8 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
       </div>
       <div className="bb-skel-stack">
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="wp-order-card">
-            <div className="wp-order-head">
+          <div key={i} className="bb-order-card">
+            <div className="bb-order-head">
               <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
                 <div className="bb-skel-col"><SkelText w={50} /><SkelText w={80} /></div>
                 <div className="bb-skel-col"><SkelText w={50} /><SkelText w={90} /></div>
@@ -729,7 +729,7 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
               </div>
               <SkelChip w={90} />
             </div>
-            <div className="wp-order-body">
+            <div className="bb-order-body">
               <div className="bb-skel-row">
                 {Array.from({ length: 3 }).map((_, j) => <SkelBlock key={j} w={56} h={56} />)}
               </div>
@@ -753,7 +753,7 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
 export function OrderDetailSkeleton() {
   return (
     <SkeletonRoot label="Đang tải chi tiết đơn hàng">
-      <div className="wp-account-header">
+      <div className="bb-account-header">
         <div className="bb-skel-col" style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="20%" />
@@ -775,7 +775,7 @@ export function FormSkeleton({
 }: { fields?: number; twoCol?: boolean }) {
   return (
     <SkeletonRoot label="Đang tải biểu mẫu">
-      <div className="wp-account-header">
+      <div className="bb-account-header">
         <div className="bb-skel-col" style={{ flex: 1 }}>
           <SkelTitle w="25%" h="1.6em" />
           <SkelText w="40%" />
@@ -894,7 +894,7 @@ export function SearchSkeleton() {
 export function OrderConfirmSkeleton() {
   return (
     <SkeletonRoot label="Đang xác nhận đơn hàng">
-      <div className="wp-success">
+      <div className="bb-success">
         <SkelCircle size={88} />
         <div className="bb-skel-stack" style={{ marginTop: 22, alignItems: "center" }}>
           <SkelText w={120} />

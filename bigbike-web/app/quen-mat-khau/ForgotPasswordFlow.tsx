@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
@@ -81,13 +81,15 @@ function RequestResetForm() {
 function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!success) return undefined;
+    const redirectTimer = setTimeout(() => router.replace(toLoginPath()), 1500);
+
     return () => {
-      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      clearTimeout(redirectTimer);
     };
-  }, []);
+  }, [router, success]);
 
   const {
     register,
@@ -102,7 +104,6 @@ function ResetPasswordForm({ token }: { token: string }) {
     try {
       await resetCustomerPassword(token, values.password);
       setSuccess(true);
-      redirectTimerRef.current = setTimeout(() => router.replace(toLoginPath()), 1500);
     } catch (err: unknown) {
       setError("root", { message: (err as Error).message });
     }
@@ -119,7 +120,7 @@ function ResetPasswordForm({ token }: { token: string }) {
       {success ? (
         <Card className="p-5 mb-5">
           <p>Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...</p>
-          <Link href={toLoginPath()} className="bb-link bb-auth-footer-link" style={{ marginTop: "var(--bb-space-3)" }}>
+          <Link href={toLoginPath()} className="bb-link bb-auth-footer-link mt-3">
             Đi đến trang đăng nhập
           </Link>
         </Card>
@@ -167,7 +168,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
           <h1 className="bb-auth-title">
             {hasToken ? "Đặt lại mật khẩu" : "Quên mật khẩu"}
           </h1>
-          <p className="bb-page-subtitle" style={{ marginInline: "auto" }}>
+          <p className="bb-page-subtitle mx-auto">
             {hasToken
               ? "Nhập mật khẩu mới để hoàn tất."
               : "Nhập email hoặc số điện thoại để nhận liên kết đặt lại mật khẩu."}
@@ -180,7 +181,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
           <RequestResetForm />
         )}
 
-        <div className="bb-auth-footer" style={{ marginTop: "var(--bb-space-5)" }}>
+        <div className="bb-auth-footer mt-5">
           <Link href={toLoginPath()} className="bb-link">Quay lại đăng nhập</Link>
           {" "}
           <span aria-hidden="true">·</span>

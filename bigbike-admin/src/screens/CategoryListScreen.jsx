@@ -27,6 +27,9 @@ import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 
@@ -473,14 +476,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   const selectAllCheckbox = canUpdate ? (
     <th className="cat-select-cell">
-      <input
-        type="checkbox"
+      <Checkbox
         aria-label={t('categories.selectAllAria')}
         checked={allCurrentSelected}
         ref={(el) => { if (el) el.indeterminate = someCurrentSelected }}
-        onChange={toggleSelectAllOnPage}
+        onCheckedChange={toggleSelectAllOnPage}
         disabled={Boolean(bulkProgress) || currentPageIds.length === 0}
-      />
+       />
     </th>
   ) : null
 
@@ -509,13 +511,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         ].filter(Boolean).join(' ')}>
         {canUpdate && (
           <td className="cat-select-cell">
-            <input
-              type="checkbox"
+            <Checkbox
               aria-label={t('categories.selectRowAria')}
               checked={selectedIds.has(category.id)}
-              onChange={() => toggleSelected(category.id)}
+              onCheckedChange={() => toggleSelected(category.id)}
               disabled={Boolean(bulkProgress)}
-            />
+             />
           </td>
         )}
         {/* Name cell with tree indent */}
@@ -684,42 +685,37 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('categories.searchPlaceholder')}
-          />
+           />
         </label>
         <label>
           {t('categories.filterVisibility')}
-          <select
-            className="control-select"
+          <Select
             value={query.visibility}
-            onChange={(event) =>
-              updateQuery({ visibility: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="ALL">{t('categories.filterVisibilityAll')}</option>
-            <option value="VISIBLE">{t('categories.filterVisibilityVisible')}</option>
-            <option value="HIDDEN">{t('categories.filterVisibilityHidden')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ visibility: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('categories.filterVisibilityAll')}</SelectItem>
+            <SelectItem value="VISIBLE">{t('categories.filterVisibilityVisible')}</SelectItem>
+            <SelectItem value="HIDDEN">{t('categories.filterVisibilityHidden')}</SelectItem>
+          </SelectContent></Select>
         </label>
         <label>
           {t('categories.filterSort')}
-          <select
-            className="control-select"
+          <Select
             value={query.sort}
-            onChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="sortOrder:asc">{t('sort.sortOrder')}</option>
-            <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-            <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-            <option value="name:asc">{t('sort.nameAZ')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ sort: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="sortOrder:asc">{t('sort.sortOrder')}</SelectItem>
+            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
+            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
+            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
+          </SelectContent></Select>
         </label>
         {useTreeMode && (
           <div className="filter-bar-actions">

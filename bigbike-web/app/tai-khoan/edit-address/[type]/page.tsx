@@ -7,6 +7,7 @@ import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Props = { params: Promise<{ type: string }> };
 
@@ -15,16 +16,16 @@ type ValidAddressType = "billing" | "shipping";
 function InvalidAddressType({ type }: { type: string }) {
   return (
     <>
-      <div className="wp-account-header">
+      <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2>Địa chỉ không hợp lệ</h2>
-          <p className="sub">Loại địa chỉ không được hỗ trợ.</p>
+          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">Địa chỉ không hợp lệ</h2>
+          <p className="text-xs text-muted-foreground mt-1 m-0">Loại địa chỉ không được hỗ trợ.</p>
         </div>
       </div>
-      <div className="wp-empty-state">
-        <p className="wp-muted-text">
+      <div className="text-center py-[60px] text-muted-foreground">
+        <p className="text-muted-foreground text-sm m-0">
           Không tìm thấy loại địa chỉ &ldquo;{type}&rdquo;.{" "}
-          <Link href="/tai-khoan/" style={{ color: "var(--bb-brand-primary, #FF0C09)" }}>
+          <Link href="/tai-khoan/" className="bb-link">
             Quay lại tài khoản
           </Link>
         </p>
@@ -124,33 +125,33 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
 
   return (
     <>
-      <div className="wp-account-header">
+      <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2>Địa chỉ</h2>
-          <p className="sub">{label}</p>
+          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">Địa chỉ</h2>
+          <p className="text-xs text-muted-foreground mt-1 m-0">{label}</p>
         </div>
       </div>
 
       {success && (
-        <div className="wp-alert-success">
-          <p>{success}</p>
+        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[14px_18px] mb-5 text-sm text-[var(--bb-state-success-text)]">
+          <p className="m-0">{success}</p>
         </div>
       )}
       {error && (
-        <div className="wp-alert-error">
-          <p>{error}</p>
+        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-5 text-sm text-destructive">
+          <p className="m-0">{error}</p>
         </div>
       )}
 
       {loading ? (
-        <div className="wp-address-grid" aria-busy="true" style={{ marginBottom: 20 }}>
+        <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2 mb-5" aria-busy="true">
           {[1, 2].map((i) => (
-            <div key={i} className="wp-address-card">
+            <div key={i} className="bg-card border border-border p-[18px_20px] relative">
               <span className="bb-skel bb-skel--title bb-skel-w-50" />
               <span className="bb-skel bb-skel--text bb-skel-w-40" style={{ marginTop: 8 }} />
               <span className="bb-skel bb-skel--text bb-skel-w-100" style={{ marginTop: 10 }} />
               <span className="bb-skel bb-skel--text bb-skel-w-80" style={{ marginTop: 4 }} />
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10 }}>
+              <div className="mt-3.5 flex gap-2.5 border-t border-border pt-3">
                 <span className="bb-skel bb-skel--text" style={{ width: 60 }} />
                 <span className="bb-skel bb-skel--text" style={{ width: 40 }} />
               </div>
@@ -158,66 +159,89 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
           ))}
         </div>
       ) : addresses.length > 0 ? (
-        <div className="wp-address-grid" style={{ marginBottom: 20 }}>
+        <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2 mb-5">
           {addresses.map((addr) => (
-            <div key={addr.id} className={`wp-address-card${addr.isDefault ? " default" : ""}`}>
-              {addr.isDefault && <span className="default-tag">Mặc định</span>}
-              <b>{addr.fullName ?? "—"}</b>
-              {addr.phone && <p className="phone">{addr.phone}</p>}
-              <p>{[addr.addressLine1, addr.ward, addr.district, addr.province].filter(Boolean).join(", ") || "Chưa có địa chỉ"}</p>
-              <div className="actions">
-                <button type="button" onClick={() => startEdit(addr)}>Chỉnh sửa</button>
-                <button type="button" onClick={() => handleDelete(addr.id)} style={{ color: "var(--bb-text-muted)" }}>Xóa</button>
+            <div
+              key={addr.id}
+              className={`bg-card border p-[18px_20px] relative${addr.isDefault ? " border-[rgba(255,12,9,0.36)]" : " border-border"}`}
+            >
+              {addr.isDefault && (
+                <span className="absolute top-[14px] right-[14px] bg-brand text-white text-[9px] px-[7px] py-[3px] tracking-[0.1em] font-bold uppercase">
+                  Mặc định
+                </span>
+              )}
+              <b className="block font-display text-sm tracking-[0.04em] uppercase text-foreground mb-1">{addr.fullName ?? "—"}</b>
+              {addr.phone && <p className="text-[11px] text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{addr.phone}</p>}
+              <p className="text-xs text-muted-foreground leading-[1.5] m-0 mb-[14px]">
+                {[addr.addressLine1, addr.ward, addr.district, addr.province].filter(Boolean).join(", ") || "Chưa có địa chỉ"}
+              </p>
+              <div className="flex gap-2 pt-3 border-t border-border">
+                <Button type="button" variant="ghost" size="sm" onClick={() => startEdit(addr)}>Chỉnh sửa</Button>
+                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={() => handleDelete(addr.id)}>Xóa</Button>
               </div>
             </div>
           ))}
           {!showForm && (
-            <button type="button" className="wp-address-add" onClick={startAdd}>+ Thêm địa chỉ mới</button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="border border-dashed border-[var(--bb-border-default)] flex items-center justify-center text-muted-foreground text-xs font-bold tracking-[0.1em] uppercase min-h-[160px] transition-all duration-150 hover:border-brand hover:text-brand w-full"
+              onClick={startAdd}
+            >
+              + Thêm địa chỉ mới
+            </Button>
           )}
         </div>
       ) : !showForm ? (
-        <div style={{ marginBottom: 20 }}>
-          <button type="button" className="wp-address-add" onClick={startAdd}>+ Thêm địa chỉ mới</button>
+        <div className="mb-5">
+          <Button
+            type="button"
+            variant="ghost"
+            className="border border-dashed border-[var(--bb-border-default)] flex items-center justify-center text-muted-foreground text-xs font-bold tracking-[0.1em] uppercase min-h-[160px] transition-all duration-150 hover:border-brand hover:text-brand w-full"
+            onClick={startAdd}
+          >
+            + Thêm địa chỉ mới
+          </Button>
         </div>
       ) : null}
 
       {showForm && (
-        <div className="wp-info-card-form">
-          <p className="wp-info-label" style={{ marginBottom: 18 }}>
+        <div className="bg-card border border-border p-[22px_24px]">
+          <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[18px]">
             {editing ? `Chỉnh sửa — ${label}` : `Thêm — ${label}`}
           </p>
           <form onSubmit={handleSubmit}>
-            <div className="wp-form-grid">
-              <div className="wp-field">
-                <label>Họ tên *</label>
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Họ tên *</label>
                 <Input type="text" name="fullName" required defaultValue={editing?.fullName ?? ""} placeholder="Họ và tên" />
               </div>
-              <div className="wp-field">
-                <label>Số điện thoại *</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Số điện thoại *</label>
                 <Input type="tel" name="phone" required defaultValue={editing?.phone ?? ""} placeholder="0901234567" />
               </div>
-              <div className="wp-field">
-                <label>Tỉnh / Thành phố</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Tỉnh / Thành phố</label>
                 <Input type="text" name="province" defaultValue={editing?.province ?? ""} />
               </div>
-              <div className="wp-field">
-                <label>Quận / Huyện</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Quận / Huyện</label>
                 <Input type="text" name="district" defaultValue={editing?.district ?? ""} />
               </div>
-              <div className="wp-field">
-                <label>Phường / Xã</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Phường / Xã</label>
                 <Input type="text" name="ward" defaultValue={editing?.ward ?? ""} />
               </div>
-              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
-                <label>Địa chỉ *</label>
+              <div className="flex flex-col gap-1.5 col-span-full">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Địa chỉ *</label>
                 <Input type="text" name="addressLine1" required defaultValue={editing?.addressLine1 ?? ""} placeholder="Số nhà, tên đường..." />
               </div>
-              <div className="wp-field" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="checkbox" name="isDefault" id="isDefault" defaultChecked={editing?.isDefault ?? false} />
-                <label htmlFor="isDefault" style={{ margin: 0 }}>Đặt làm địa chỉ mặc định</label>
+              <div className="flex items-center gap-2 col-span-full">
+                <Checkbox name="isDefault" id="isDefault" defaultChecked={editing?.isDefault ?? false} />
+                <label htmlFor="isDefault" className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground m-0">Đặt làm địa chỉ mặc định</label>
               </div>
             </div>
-            <div className="wp-form-actions">
+            <div className="flex gap-3 mt-5">
               <Button type="submit" variant="primary" disabled={saving}>
                 {saving ? "Đang lưu..." : "Lưu địa chỉ"}
               </Button>

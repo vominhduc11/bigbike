@@ -77,7 +77,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
             __html: sanitizeRichHtml(page.body),
           }}
         />
-        <p style={{ color: "var(--bb-text-muted)", fontSize: "var(--bb-text-xs)", marginTop: "var(--bb-space-4)" }}>
+        <p className="text-muted-foreground text-xs mt-4">
           Cập nhật {formatDate(page.updatedAt)}
         </p>
       </div>

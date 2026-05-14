@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { ConfirmDialogProvider } from './ConfirmDialog'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { ThemeToggle } from './ThemeToggle'
+import { Button } from '@/components/ui/button'
 
 function isRouteActive(activePath, candidatePath) {
   return (
@@ -156,15 +157,14 @@ export function AdminShell({
           <header className="topbar">
             <div className="topbar-left">
               {/* Hamburger — visible only on mobile via CSS */}
-              <button
+              <Button variant="secondary" className="hamburger-btn"
                 type="button"
-                className="hamburger-btn"
                 onClick={() => setSidebarOpen((v) => !v)}
                 aria-label={sidebarOpen ? t('common.close') : t('nav.openMenu')}
                 aria-expanded={sidebarOpen}
               >
                 {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-              </button>
+              </Button>
 
               {pageTitle && (
                 <span className="topbar-page-title">{pageTitle}</span>
@@ -186,9 +186,8 @@ export function AdminShell({
 
               {/* User dropdown */}
               <div className="topbar-user-menu" ref={userMenuRef}>
-                <button
+                <Button variant="secondary" className="topbar-user-btn"
                   type="button"
-                  className="topbar-user-btn"
                   onClick={() => setUserMenuOpen((v) => !v)}
                   aria-expanded={userMenuOpen}
                   aria-haspopup="menu"
@@ -201,7 +200,7 @@ export function AdminShell({
                     <span>{formatRoles(user.roles)}</span>
                   </span>
                   <ChevronDown size={13} className={`topbar-chevron${userMenuOpen ? ' open' : ''}`} aria-hidden="true" />
-                </button>
+                </Button>
 
                 {userMenuOpen && (
                   <div className="user-dropdown" role="menu">

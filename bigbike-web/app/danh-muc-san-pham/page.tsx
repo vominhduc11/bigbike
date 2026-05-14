@@ -58,18 +58,18 @@ export default async function CategoryListPage() {
 
   return (
     <>
-      <div className="wp-breadcrumb">
+      <div className="bb-breadcrumb">
         <Link href={toHomePath()}>Trang chủ</Link>
         <span className="sep">/</span>
-        <span className="wp-breadcrumb-active">Danh mục sản phẩm</span>
+        <span className="text-foreground">Danh mục sản phẩm</span>
       </div>
 
-      <div className="wp-page-head">
+      <div className="bb-page-head">
         <span className="kicker">Shop gear biker</span>
         <h1>Danh mục sản phẩm</h1>
       </div>
 
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px 64px" }}>
+      <div className="bb-container pb-16">
         {result.error && visible.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toCategoryListPath()} />
         ) : roots.length === 0 ? (

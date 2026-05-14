@@ -52,7 +52,7 @@ function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
           fill={i < rounded ? "currentColor" : "none"}
           stroke="currentColor"
           strokeWidth="1.8"
-          style={{ color: "var(--bb-brand-primary)" }}
+          className="text-brand"
         >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
@@ -65,7 +65,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   const [hovered, setHovered] = useState(0);
   const display = hovered || value;
   return (
-    <div className="wp-review-star-picker" role="radiogroup" aria-label="Chọn số sao">
+    <div className="bb-review-star-picker" role="radiogroup" aria-label="Chọn số sao">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
@@ -73,7 +73,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           role="radio"
           aria-checked={value === n}
           aria-label={`${n} sao`}
-          className={`wp-review-star-btn${display >= n ? " active" : ""}`}
+          className={`bb-review-star-btn${display >= n ? " active" : ""}`}
           onClick={() => onChange(n)}
           onMouseEnter={() => setHovered(n)}
           onMouseLeave={() => setHovered(0)}
@@ -144,7 +144,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
   if (done) {
     return (
-      <div className="wp-review-done">
+      <div className="bb-review-done">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
         Cảm ơn bạn đã đánh giá! Đánh giá đang chờ kiểm duyệt.
       </div>
@@ -153,18 +153,18 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
   if (!open) {
     return (
-      <button type="button" className="wp-review-open-btn" onClick={() => setOpen(true)}>
+      <Button type="button" variant="ghost" className="bb-review-open-btn" onClick={() => setOpen(true)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
         Viết đánh giá
-      </button>
+      </Button>
     );
   }
 
   return (
-    <form className="wp-review-form" onSubmit={handleSubmit} noValidate>
-      <h4 className="wp-review-form-title">Đánh giá của bạn</h4>
+    <form className="bb-review-form" onSubmit={handleSubmit} noValidate>
+      <h4 className="bb-review-form-title">Đánh giá của bạn</h4>
       {/* Honeypot — ẩn khỏi user, bot auto-fill sẽ bị block */}
       <input
         type="text"
@@ -177,12 +177,12 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
         style={{ position: "absolute", left: "-9999px", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
       />
 
-      <div className="wp-review-form-field">
+      <div className="bb-review-form-field">
         <label>Số sao <span className="req">*</span></label>
         <StarPicker value={rating} onChange={setRating} />
       </div>
 
-      <div className="wp-review-form-field">
+      <div className="bb-review-form-field">
         <label htmlFor="review-name">Tên của bạn <span className="req">*</span></label>
         <Input
           id="review-name"
@@ -194,7 +194,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
         />
       </div>
 
-      <div className="wp-review-form-field">
+      <div className="bb-review-form-field">
         <label htmlFor="review-comment">Nhận xét</label>
         <Textarea
           id="review-comment"
@@ -208,7 +208,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="wp-review-form-actions">
+      <div className="bb-review-form-actions">
         <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
           Huỷ
         </Button>
@@ -251,7 +251,6 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
 
   const {
     data,
-    isLoading,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -296,15 +295,15 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   };
 
   return (
-    <section className="wp-pdp-reviews">
-      <div className="wp-pdp-reviews-header">
+    <section className="bb-pdp-reviews">
+      <div className="bb-pdp-reviews-header">
         <h2>Đánh giá sản phẩm</h2>
         {rating > 0 && (
-          <div className="wp-pdp-rating-summary">
-            <span className="wp-pdp-rating-score">{rating.toFixed(1)}</span>
+          <div className="bb-pdp-rating-summary">
+            <span className="bb-pdp-rating-score">{rating.toFixed(1)}</span>
             <StarRow rating={rating} size={20} />
             {total > 0 && (
-              <span className="wp-pdp-rating-count">({total} đánh giá)</span>
+              <span className="bb-pdp-rating-count">({total} đánh giá)</span>
             )}
           </div>
         )}
@@ -316,21 +315,21 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
       />
 
       {!!reviews.length && (
-        <ul className="wp-pdp-review-list">
+        <ul className="bb-pdp-review-list">
           {reviews.map((review) => (
-            <li key={review.id} className="wp-pdp-review-item">
-              <div className="wp-pdp-review-meta">
-                <span className="wp-pdp-review-author">{review.authorName}</span>
+            <li key={review.id} className="bb-pdp-review-item">
+              <div className="bb-pdp-review-meta">
+                <span className="bb-pdp-review-author">{review.authorName}</span>
                 <StarRow rating={review.rating} size={14} />
                 <time
-                  className="wp-pdp-review-date"
+                  className="bb-pdp-review-date"
                   dateTime={review.createdAt}
                 >
                   {new Date(review.createdAt).toLocaleDateString("vi-VN")}
                 </time>
               </div>
               {review.comment && (
-                <p className="wp-pdp-review-comment">{review.comment}</p>
+                <p className="bb-pdp-review-comment">{review.comment}</p>
               )}
             </li>
           ))}
@@ -338,7 +337,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
       )}
 
       {hasNextPage && (
-        <div className="wp-review-pagination">
+        <div className="bb-review-pagination">
           <Button
             type="button"
             variant="secondary"

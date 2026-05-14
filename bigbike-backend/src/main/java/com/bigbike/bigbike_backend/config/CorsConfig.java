@@ -18,7 +18,7 @@ public class CorsConfig {
 
     private static final Set<String> DEV_PROFILES = Set.of("dev", "mock", "test", "local");
 
-    @Value("${bigbike.cors.allowed-origins:http://localhost:3000,http://localhost:4000}")
+    @Value("${bigbike.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:4000,http://localhost:4001}")
     private String allowedOriginsRaw;
 
     private final Environment environment;

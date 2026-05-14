@@ -166,7 +166,7 @@ export default async function ProductDetailPage({
       <AnalyticsView product={product} />
 
       {/* Breadcrumb */}
-      <nav className="wp-breadcrumb" aria-label="Điều hướng">
+      <nav className="bb-breadcrumb" aria-label="Điều hướng">
         <Link href={toHomePath()}>Trang chủ</Link>
         {effectiveCategory?.name && effectiveCategory.slug ? (
           <>
@@ -195,7 +195,7 @@ export default async function ProductDetailPage({
        * Static content is passed as props from the ISR-rendered server component.
        * Dynamic content is fetched fresh via /api/products/[id]/* routes.
        */}
-      <div className="wp-pdp">
+      <div className="bb-pdp">
         <PurchaseSectionClient
           productId={product.id}
           productSlug={product.slug}
@@ -217,7 +217,7 @@ export default async function ProductDetailPage({
       </div>
 
       {/* Below-fold: tabs, reviews, related products */}
-      <div className="wp-pdp-below">
+      <div className="bb-pdp-below">
         {/* Tabbed static content — ISR-cached */}
         <ProductTabs
           specifications={specs}
@@ -231,19 +231,19 @@ export default async function ProductDetailPage({
 
         {/* Related products — ISR-cached */}
         {relatedProducts.length > 0 && (
-          <section className="wp-pdp-related">
-            <div className="wp-pdp-related-header">
+          <section className="bb-pdp-related">
+            <div className="bb-pdp-related-header">
               <div>
-                <p className="wp-kicker">
+                <p className="bb-kicker">
                   DANH MỤC{" "}
                   {effectiveCategory?.name?.toUpperCase() ?? "SẢN PHẨM"}
                 </p>
-                <h2 className="wp-pdp-related-title">Sản phẩm liên quan</h2>
+                <h2 className="bb-pdp-related-title">Sản phẩm liên quan</h2>
               </div>
               {effectiveCategory?.slug && (
                 <Link
                   href={toCategoryPath(effectiveCategory.slug)}
-                  className="wp-view-all-link"
+                  className="bb-view-all-link"
                 >
                   Xem tất cả →
                 </Link>
@@ -270,7 +270,7 @@ export default async function ProductDetailPage({
             when admin has filled it in — most products leave it empty. */}
         {product.contentBottom && product.contentBottom.trim() && (
           <section
-            className="wp-pdp-content-bottom wp-content"
+            className="bb-pdp-content-bottom bb-content"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.contentBottom) }}
           />
         )}

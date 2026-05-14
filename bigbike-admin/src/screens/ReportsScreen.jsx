@@ -9,6 +9,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAnalytics, exportOrdersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
+import { Input } from '@/components/ui/input'
 
 const PRESET_VALUES = [
   { key: 'preset7d',  value: '7d',  days: 7 },
@@ -206,21 +207,19 @@ export function ReportsScreen() {
         </button>
         {preset === 'custom' && (
           <>
-            <input
+            <Input
               type="date"
-              className="control-input"
               style={{ fontSize: '0.8rem' }}
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-            />
+             />
             <span style={{ color: 'var(--admin-color-text-muted)' }}>→</span>
-            <input
+            <Input
               type="date"
-              className="control-input"
               style={{ fontSize: '0.8rem' }}
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-            />
+             />
           </>
         )}
       </div>

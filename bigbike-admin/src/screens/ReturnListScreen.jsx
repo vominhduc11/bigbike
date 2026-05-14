@@ -8,6 +8,9 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchReturnDetail, fetchReturns, updateReturnStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const STATUSES = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED', 'REFUNDED']
 const STATUS_COLORS = {
@@ -218,21 +221,21 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--admin-color-border)', paddingTop: 14 }}>
               <div className="form-field">
                 <label className="field-label">Trạng thái mới *</label>
-                <select className="control-select" value={newStatus} onChange={(e) => setNewStatus(e.target.value)} required>
-                  {next.map((s) => <option key={s} value={s}>{STATUS_LABELS_VI[s] ?? s}</option>)}
-                </select>
+                <Select value={newStatus} onValueChange={setNewStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  {next.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS_VI[s] ?? s}</SelectItem>)}
+                </SelectContent></Select>
               </div>
               {newStatus === 'REFUNDED' && (
                 <div className="form-field">
                   <label className="field-label">{t('returns.detailRefund')}</label>
-                  <input type="number" className="control-input" value={refundAmount}
-                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="0" />
+                  <Input type="number" value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="0"  />
                 </div>
               )}
               <div className="form-field">
                 <label className="field-label">{t('returns.detailAdminNote')}</label>
-                <textarea className="control-input" rows={2} value={note}
-                  onChange={(e) => setNote(e.target.value)} />
+                <Textarea rows={2} value={note}
+                  onChange={(e) => setNote(e.target.value)}  />
               </div>
               {error && <p className="field-error">{error}</p>}
               <div style={{ display: 'flex', gap: 8 }}>
@@ -348,15 +351,15 @@ export function ReturnListScreen({ canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('returns.searchLabel')}
-          <input type="search" className="control-input" placeholder={t('returns.searchPlaceholder')}
-            value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+          <Input type="search" placeholder={t('returns.searchPlaceholder')}
+            value={searchInput} onChange={(e) => setSearchInput(e.target.value)}  />
         </label>
         <label>
           {t('returns.filterStatus')}
-          <select className="control-select" value={query.status}
-            onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s === 'ALL' ? t('common.all') : (STATUS_LABELS_VI[s] ?? s)}</option>)}
-          </select>
+          <Select value={query.status}
+            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            {STATUSES.map((s) => <SelectItem key={s} value={s}>{s === 'ALL' ? t('common.all') : (STATUS_LABELS_VI[s] ?? s)}</SelectItem>)}
+          </SelectContent></Select>
         </label>
       </section>
 

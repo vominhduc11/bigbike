@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -249,19 +251,18 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               onChange={handleFileChange}
               disabled={uploading}
             />
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
               title="Kéo thả ảnh vào cửa sổ này hoặc click để chọn file"
             >
               <IconUpload />
               {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
-            </button>
-            <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label="Đóng">
+            </Button>
+            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label="Đóng">
               <IconClose />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -282,13 +283,12 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
 
         {/* Search */}
         <div className="mpicker-search">
-          <input
-            className="control-input"
+          <Input
             type="search"
             placeholder="Tìm kiếm ảnh..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-          />
+           />
         </div>
 
         {uploadError && (
@@ -360,23 +360,21 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         {/* Pagination */}
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || isLoading}
             >
               ← Trước
-            </button>
+            </Button>
             <span className="mpicker-page-info">Trang {page} / {state.totalPages}</span>
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => setPage((p) => Math.min(state.totalPages, p + 1))}
               disabled={page >= state.totalPages || isLoading}
             >
               Sau →
-            </button>
+            </Button>
           </div>
         )}
 
@@ -392,19 +390,18 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             </span>
           )}
           <div className="mpicker-footer-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <Button variant="secondary" type="button" onClick={onClose}>
               Hủy
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn btn-primary"
               onClick={handleConfirm}
               disabled={!hasSelection}
             >
               {multiSelect
                 ? `Chọn ${selectionCount > 0 ? `${selectionCount} ảnh` : 'ảnh'}`
                 : 'Chọn ảnh này'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

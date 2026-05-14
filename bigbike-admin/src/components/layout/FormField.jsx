@@ -1,19 +1,21 @@
-/**
- * FormField — label + control + helper/error.
- * Used inside modals and detail forms.
- */
+import { Label } from '@/components/ui/label'
+
 export function FormField({ label, required, helper, error, htmlFor, children }) {
   return (
-    <div className="form-field">
+    <div className="flex flex-col gap-1.5">
       {label ? (
-        <label className="form-field-label" htmlFor={htmlFor}>
+        <Label htmlFor={htmlFor} className="flex items-center gap-0.5">
           {label}
-          {required ? <span className="form-field-required" aria-hidden="true">*</span> : null}
-        </label>
+          {required ? <span className="text-danger ml-0.5" aria-hidden="true">*</span> : null}
+        </Label>
       ) : null}
       {children}
-      {helper && !error ? <span className="form-field-helper">{helper}</span> : null}
-      {error ? <span className="form-field-error" role="alert">{error}</span> : null}
+      {helper && !error ? (
+        <span className="text-xs text-muted-foreground">{helper}</span>
+      ) : null}
+      {error ? (
+        <span className="text-xs text-danger" role="alert">{error}</span>
+      ) : null}
     </div>
   )
 }

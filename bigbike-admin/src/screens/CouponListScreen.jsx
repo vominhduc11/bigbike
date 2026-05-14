@@ -7,6 +7,8 @@ import { StatePanel } from '../components/StatePanel'
 import { createCoupon, fetchCoupons, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const STATUS_TONES = { ACTIVE: 'success', INACTIVE: 'warning', EXPIRED: 'neutral', ARCHIVED: 'neutral' }
 function CouponStatusBadge({ value }) {
@@ -190,18 +192,18 @@ export function CouponListScreen({ canUpdate }) {
           <h3 style={{ marginBottom: '1rem' }}>{t('coupons.createTitle')}</h3>
           {formError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{formError}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <label>{t('coupons.formCode')} <input className="control-input" required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))} /></label>
-            <label>{t('coupons.formName')} <input className="control-input" required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} /></label>
+            <label>{t('coupons.formCode')} <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}  /></label>
+            <label>{t('coupons.formName')} <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}  /></label>
             <label>{t('coupons.formDiscountType')}
-              <select className="control-select" value={form.discountType} onChange={(e) => setForm((p) => ({ ...p, discountType: e.target.value }))}>
-                <option value="FIXED">{t('coupons.formFixed')}</option>
-                <option value="PERCENT">{t('coupons.formPercent')}</option>
-              </select>
+              <Select value={form.discountType} onValueChange={(val) => setForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
+                <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
+              </SelectContent></Select>
             </label>
-            <label>{t('coupons.formValue')} <input className="control-input" type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} /></label>
-            <label>{t('coupons.formMinOrder')} <input className="control-input" type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} /></label>
-            <label>{t('coupons.formMaxUses')} <input className="control-input" type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))} /></label>
-            <label>{t('coupons.formExpires')} <input className="control-input" type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))} /></label>
+            <label>{t('coupons.formValue')} <Input type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))}  /></label>
+            <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
+            <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
+            <label>{t('coupons.formExpires')} <Input type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? t('coupons.creating') : t('coupons.createBtn')}</button>
@@ -216,15 +218,15 @@ export function CouponListScreen({ canUpdate }) {
           {editError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{editError}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <label>{t('coupons.formDiscountType')}
-              <select className="control-select" value={editForm.discountType} onChange={(e) => setEditForm((p) => ({ ...p, discountType: e.target.value }))}>
-                <option value="FIXED">{t('coupons.formFixed')}</option>
-                <option value="PERCENT">{t('coupons.formPercent')}</option>
-              </select>
+              <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
+                <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
+              </SelectContent></Select>
             </label>
-            <label>{t('coupons.formValue')} <input className="control-input" type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))} /></label>
-            <label>{t('coupons.formMinOrder')} <input className="control-input" type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} /></label>
-            <label>{t('coupons.formMaxUses')} <input className="control-input" type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))} /></label>
-            <label>{t('coupons.formExpires')} <input className="control-input" type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))} /></label>
+            <label>{t('coupons.formValue')} <Input type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))}  /></label>
+            <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
+            <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
+            <label>{t('coupons.formExpires')} <Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>
@@ -237,17 +239,17 @@ export function CouponListScreen({ canUpdate }) {
 
       <section className="filter-bar">
         <label>{t('common.search')}
-          <input className="control-input" type="search" value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')} />
+          <Input type="search" value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')}  />
         </label>
         <label>{t('coupons.filterStatus')}
-          <select className="control-select" value={query.status}
-            onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}>
-            <option value="ALL">{t('common.all')}</option>
-            <option value="ACTIVE">{t('coupons.statusActive')}</option>
-            <option value="INACTIVE">{t('coupons.statusInactive')}</option>
-            <option value="EXPIRED">{t('coupons.statusExpired')}</option>
-          </select>
+          <Select value={query.status}
+            onValueChange={(val) => updateQuery({ status: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="ACTIVE">{t('coupons.statusActive')}</SelectItem>
+            <SelectItem value="INACTIVE">{t('coupons.statusInactive')}</SelectItem>
+            <SelectItem value="EXPIRED">{t('coupons.statusExpired')}</SelectItem>
+          </SelectContent></Select>
         </label>
       </section>
 

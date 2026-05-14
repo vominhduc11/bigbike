@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
@@ -339,7 +338,6 @@ class AdminMutationApiTest {
         create.setCompareAtPrice(new BigDecimal("2900000"));
         create.setSalePrice(new BigDecimal("2300000"));
         create.setCurrency("VND");
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(PublishStatus.DRAFT);
 
         VariantRequest variant = new VariantRequest();
@@ -348,7 +346,6 @@ class AdminMutationApiTest {
         variant.setRetailPrice(new BigDecimal("1800000"));
         variant.setCompareAtPrice(new BigDecimal("2100000"));
         variant.setSalePrice(new BigDecimal("1700000"));
-        variant.setStockState(ProductStockState.IN_STOCK);
         variant.setIsAvailable(true);
         variant.setSortOrder(0);
         variant.setOptions(List.of(variantOption("Size", "M")));

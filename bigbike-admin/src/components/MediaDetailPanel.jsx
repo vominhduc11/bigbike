@@ -5,6 +5,9 @@ import { X as XIcon, Copy, Maximize2, Edit2, Trash2, RotateCcw, AlertTriangle, M
 import { fetchMediaFolders, fetchMediaReferences, replaceMediaFile, updateMedia } from '../lib/adminApi'
 import { TagInput } from './TagInput'
 import styles from './MediaDetailPanel.module.css'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const TYPE_LABEL = {
   PRODUCT: 'Sản phẩm',
@@ -180,7 +183,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           </button>
 
           <div className={styles.urlRow}>
-            <input type="text" readOnly value={media.publicUrl || ''} className="control-input" style={{ fontSize: '0.75rem' }} />
+            <Input type="text" readOnly value={media.publicUrl || ''} style={{ fontSize: '0.75rem' }}  />
             <button type="button" onClick={() => handleCopyUrl()} className="btn btn-secondary" style={{ flexShrink: 0 }}
               title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
               <Copy size={14} />
@@ -210,31 +213,30 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           <fieldset disabled={!canUpdate || isTrash} style={{ all: 'unset', display: 'contents' }}>
             <label className={styles.field}>
               <span>{t('media.fieldAltText')}</span>
-              <input className="control-input" type="text" value={altText}
+              <Input type="text" value={altText}
                 onChange={(e) => setAltText(e.target.value)}
-                placeholder={t('media.fieldAltTextPlaceholder')} />
+                placeholder={t('media.fieldAltTextPlaceholder')}  />
             </label>
             <label className={styles.field}>
               <span>{t('media.fieldTitle')}</span>
-              <input className="control-input" type="text" value={title}
+              <Input type="text" value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('media.fieldTitlePlaceholder')} />
+                placeholder={t('media.fieldTitlePlaceholder')}  />
             </label>
             <label className={styles.field}>
               <span>{t('media.fieldCaption')}</span>
-              <textarea className="control-input" rows={2} value={caption}
+              <Textarea rows={2} value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder={t('media.fieldCaptionPlaceholder')} style={{ resize: 'vertical' }} />
+                placeholder={t('media.fieldCaptionPlaceholder')} style={{ resize: 'vertical' }}  />
             </label>
             <label className={styles.field}>
               <span>{t('media.folder')}</span>
-              <select className="control-select" value={folderId}
-                onChange={(e) => setFolderId(e.target.value)}>
-                <option value="">{t('media.uncategorized')}</option>
+              <Select value={folderId}
+                onValueChange={setFolderId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {folders.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
-              </select>
+              </SelectContent></Select>
             </label>
             <label className={styles.field}>
               <span>{t('media.tags')}</span>

@@ -27,23 +27,23 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   if (count === 0) {
     return (
-      <section className="wp-hero-fallback" aria-label="BigBike">
-        <div className="wp-hero-fallback-content">
-          <span className="wp-hero-kicker">BIGBIKE · SINCE 2013</span>
-          <p className="wp-hero-title">
+      <section className="bb-hero-fallback" aria-label="BigBike">
+        <div className="bb-hero-fallback-content">
+          <span className="bb-hero-kicker">BIGBIKE · SINCE 2013</span>
+          <p className="bb-hero-title">
             Gear moto chính hãng
             <br />
             <em>cho rider đi đường dài</em>
           </p>
-          <p className="wp-hero-sub">
+          <p className="bb-hero-sub">
             Mũ bảo hiểm, áo giáp, găng tay, intercom và phụ kiện touring được
             chọn lọc theo tinh thần garage cao cấp: rõ ràng, đáng tin, tư vấn kỹ.
           </p>
-          <Link href="/san-pham/" className="wp-hero-cta">
+          <Link href="/san-pham/" className="bb-hero-cta">
             Xem sản phẩm <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <div className="wp-hero-fallback-mark" aria-hidden="true">
+        <div className="bb-hero-fallback-mark" aria-hidden="true">
           <Image
             src="/wp/logo.png"
             alt=""
@@ -56,7 +56,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
   }
 
   return (
-    <div className="wp-slider" aria-roledescription="carousel">
+    <div className="bb-slider" aria-roledescription="carousel">
       <Swiper
         modules={[Autoplay]}
         loop={true}
@@ -67,20 +67,20 @@ export function HeroSlider({ slides }: HeroSliderProps) {
         style={{ width: "100%", height: "100%" }}
       >
         {slides.map((slide, i) => (
-          <SwiperSlide key={slide.id} style={{ width: "100%", height: "100%" }}>
+          <SwiperSlide key={slide.id} style={{ width: "100%", height: "100%" }} suppressHydrationWarning>
             <Link
               href={slide.href}
               tabIndex={i !== activeIndex ? -1 : 0}
-              style={{ display: "block", width: "100%", height: "100%" }}
+              className="block w-full h-full"
             >
-              <picture className="wp-slide-picture">
+              <picture className="bb-slide-picture">
                 {slide.mobileSrc && (
                   <source media="(max-width: 768px)" srcSet={slide.mobileSrc} />
                 )}
                 <img
                   src={slide.desktopSrc || ""}
                   alt={slide.alt}
-                  className="wp-slide-img"
+                  className="bb-slide-img"
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
@@ -94,7 +94,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       {count > 1 && (
         <>
           <button
-            className="wp-slider-btn wp-slider-prev"
+            className="bb-slider-btn bb-slider-prev"
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
           >
@@ -103,7 +103,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             </svg>
           </button>
           <button
-            className="wp-slider-btn wp-slider-next"
+            className="bb-slider-btn bb-slider-next"
             onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
           >
@@ -111,14 +111,14 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               <path d="M6.5 3.5L12 9l-5.5 5.5" />
             </svg>
           </button>
-          <div className="wp-slider-dots" role="tablist" aria-label="Điều hướng slide">
+          <div className="bb-slider-dots" role="tablist" aria-label="Điều hướng slide">
             {slides.map((_, i) => (
               <button
                 key={i}
                 role="tab"
                 aria-selected={i === activeIndex}
                 aria-label={`Slide ${i + 1}`}
-                className={`wp-slider-dot${i === activeIndex ? " is-active" : ""}`}
+                className={`bb-slider-dot${i === activeIndex ? " is-active" : ""}`}
                 onClick={() => swiperRef.current?.slideToLoop(i)}
               />
             ))}

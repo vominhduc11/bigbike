@@ -71,7 +71,7 @@ export function HeaderUserMenu() {
           <TooltipTrigger asChild>
             <Link
               href={toAccountPath()}
-              className="wp-icon-btn wp-account-icon"
+              className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white cursor-pointer transition-colors hover:text-brand hover:bg-white/5 [@media(max-width:420px)]:hidden"
               aria-label="Tài khoản"
             >
               <UserIcon />
@@ -90,7 +90,7 @@ export function HeaderUserMenu() {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger
-                className="wp-icon-btn wp-account-icon focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white cursor-pointer transition-colors hover:text-brand hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
                 aria-label="Tài khoản"
               >
                 <UserIcon />
@@ -130,7 +130,7 @@ export function HeaderUserMenu() {
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger
-              className="wp-icon-btn wp-account-icon wp-account-avatar focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              className="bb-round inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border bg-brand-soft text-brand border-[var(--bb-brand-primary-border)] text-[0.72rem] font-bold tracking-[0.04em] uppercase cursor-pointer transition-colors rounded-full hover:bg-brand hover:text-black hover:border-brand focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
               aria-label={`Tài khoản của ${displayName}`}
             >
               <span aria-hidden="true">{initials(profile)}</span>

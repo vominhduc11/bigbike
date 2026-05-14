@@ -7,6 +7,10 @@ import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
 import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 const PAYMENT_STATUSES = ['UNPAID', 'PENDING', 'PAID', 'PARTIALLY_PAID', 'FAILED', 'REFUNDED', 'CANCELLED', 'PARTIALLY_REFUNDED']
 
@@ -63,9 +67,9 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-field">
               <label className="field-label">Lý do *</label>
-              <select className="control-select" value={reason} onChange={(e) => setReason(e.target.value)}>
-                {RETURN_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+              <Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent></Select>
             </div>
 
             <div className="form-field">
@@ -87,15 +91,14 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
                       </td>
                       <td style={{ textAlign: 'center', padding: '6px 8px' }}>{item.quantity}</td>
                       <td style={{ textAlign: 'center', padding: '6px 8px' }}>
-                        <input
+                        <Input
                           type="number"
                           min={0}
                           max={item.quantity}
-                          className="control-input"
                           style={{ width: 60, textAlign: 'center', padding: '3px 6px' }}
                           value={qtys[item.id] ?? 0}
                           onChange={(e) => setQtys((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, Math.max(0, Number(e.target.value))) }))}
-                        />
+                         />
                       </td>
                     </tr>
                   ))}
@@ -105,8 +108,8 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
 
             <div className="form-field">
               <label className="field-label">Ghi chú (tuỳ chọn)</label>
-              <textarea className="control-input" rows={2} value={customerNote}
-                onChange={(e) => setCustomerNote(e.target.value)} />
+              <Textarea rows={2} value={customerNote}
+                onChange={(e) => setCustomerNote(e.target.value)}  />
             </div>
 
             {error && <p className="field-error">{error}</p>}
@@ -338,21 +341,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         <DetailSection title={t('orders.detail.orderStatus')}>
           <label style={{ display: 'block', marginBottom: '0.75rem' }}>
             {t('orders.detail.deliveryStatus')}
-            <select
-              className="control-select"
+            <Select
               value={order.orderStatus}
-              onChange={handleStatusChange}
+              onValueChange={handleStatusChange}
               disabled={!canUpdate || saving || allowedTransitions.length === 0}
-            >
-              <option value={order.orderStatus}>
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value={order.orderStatus}>
                 {t(`status.order.${order.orderStatus}`, { defaultValue: order.orderStatus })}
-              </option>
+              </SelectItem>
               {allowedTransitions
                 .filter((s) => s !== order.orderStatus)
                 .map((s) => (
-                  <option key={s} value={s}>{t(`status.order.${s}`, { defaultValue: s })}</option>
+                  <SelectItem key={s} value={s}>{t(`status.order.${s}`, { defaultValue: s })}</SelectItem>
                 ))}
-            </select>
+            </SelectContent></Select>
             {allowedTransitions.length === 0 && (
               <small style={{ color: 'var(--c-text-muted)' }}>
                 {t('orders.detail.noTransition')}
@@ -361,29 +363,27 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </label>
           <label style={{ display: 'block' }}>
             {t('orders.detail.paymentStatus')}
-            <select
-              className="control-select"
+            <Select
               value={pendingPaymentStatus ?? order.paymentStatus}
-              onChange={handlePaymentStatusChange}
+              onValueChange={handlePaymentStatusChange}
               disabled={!canUpdate || saving}
-            >
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
               {PAYMENT_STATUSES.map((s) => (
-                <option key={s} value={s}>{t(`status.payment.${s}`, { defaultValue: s })}</option>
+                <SelectItem key={s} value={s}>{t(`status.payment.${s}`, { defaultValue: s })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
           {pendingPaymentStatus === 'PARTIALLY_PAID' && (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
-              <input
+              <Input
                 type="number"
                 min="0"
-                className="control-input"
                 style={{ flex: 1 }}
                 placeholder={t('orders.detail.partialAmountPlaceholder')}
                 value={partialPaidAmount}
                 onChange={(e) => setPartialPaidAmount(e.target.value)}
                 disabled={saving}
-              />
+               />
               <button type="button" className="btn btn-primary" onClick={handlePartialPaidConfirm} disabled={saving}>
                 {t('common.confirm')}
               </button>
@@ -480,16 +480,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
               {showShipForm && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 400, marginTop: 4 }}>
-                  <input type="text" className="control-input"
+                  <Input type="text"
                     placeholder="Mã vận đơn (tuỳ chọn)"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
-                    disabled={fulfillmentSaving} />
-                  <input type="text" className="control-input"
+                    disabled={fulfillmentSaving}  />
+                  <Input type="text"
                     placeholder="Đơn vị vận chuyển — GHN, GHTK, ViettelPost…"
                     value={shippingCarrier}
                     onChange={(e) => setShippingCarrier(e.target.value)}
-                    disabled={fulfillmentSaving} />
+                    disabled={fulfillmentSaving}  />
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button type="button" className="btn btn-primary" disabled={fulfillmentSaving}
                       onClick={() => handleFulfillmentUpdate('SHIPPED')}>
@@ -668,23 +668,21 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         )}
         {canUpdate && (
           <form onSubmit={handleAddNote} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <textarea
-              className="control-input"
+            <Textarea
               rows={3}
               placeholder={t('orders.detail.notePlaceholder')}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               disabled={submittingNote}
               style={{ resize: 'vertical' }}
-            />
+             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={noteCustomerVisible}
-                  onChange={(e) => setNoteCustomerVisible(e.target.checked)}
+                  onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
                   disabled={submittingNote}
-                />
+                 />
                 {t('orders.detail.noteCustomerVisible')}
               </label>
               <button type="submit" className="btn btn-primary" disabled={submittingNote || !noteContent.trim()}>

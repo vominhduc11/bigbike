@@ -10,6 +10,8 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { parsePositiveIntParam, parseTextParam, readSingleSearchParam } from "@/lib/utils/query";
 import { toHomePath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SearchScopeSelect } from "@/components/search/SearchScopeSelect";
 
 const SEARCH_PATH = "/tim-kiem/";
 
@@ -60,7 +62,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <div className="bb-query-row">
             <label className="bb-query-label">
               Từ khoá
-              <input
+              <Input
                 name="q"
                 defaultValue={query}
                 className="bb-query-input"
@@ -72,11 +74,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </label>
             <label className="bb-query-label">
               Phạm vi
-              <select name="post_type" defaultValue={postType || ""} className="bb-query-select">
-                <option value="">Tất cả nội dung</option>
-                <option value="product">Sản phẩm</option>
-                <option value="article">Bài viết</option>
-              </select>
+              <SearchScopeSelect current={postType} />
             </label>
           </div>
           <div className="bb-section-row">

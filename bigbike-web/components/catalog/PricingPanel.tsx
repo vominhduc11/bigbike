@@ -17,13 +17,13 @@ type PricingPanelProps = {
   isLoading?: boolean;
 };
 
-// Renders only the inner wp-pdp-price content.
-// Wrap with wp-pdp-price-row alongside StockStatus in PurchaseSectionClient.
+// Renders only the inner bb-pdp-price content.
+// Wrap with bb-pdp-price-row alongside StockStatus in PurchaseSectionClient.
 export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
   if (isLoading) {
     return (
-      <div className="wp-pdp-price">
-        <b style={{ opacity: 0.4 }}>Đang tải...</b>
+      <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+        <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal opacity-40">Đang tải...</b>
       </div>
     );
   }
@@ -35,8 +35,8 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
 
   if (!current) {
     return (
-      <div className="wp-pdp-price">
-        <b>Liên hệ</b>
+      <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+        <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal">Liên hệ</b>
       </div>
     );
   }
@@ -44,11 +44,11 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
   const savings = compare && compare > current ? compare - current : 0;
 
   return (
-    <div className="wp-pdp-price">
-      <b>{formatVnd(current)}</b>
-      {compare && compare > current && <s>{formatVnd(compare)}</s>}
+    <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+      <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal">{formatVnd(current)}</b>
+      {compare && compare > current && <s className="text-[#cecece] text-base">{formatVnd(compare)}</s>}
       {savings > 0 && (
-        <span className="save">Tiết kiệm {formatVnd(savings)}</span>
+        <span className="bg-brand text-white py-1 px-[10px] font-bold text-[11px] tracking-[0.1em]">Tiết kiệm {formatVnd(savings)}</span>
       )}
     </div>
   );

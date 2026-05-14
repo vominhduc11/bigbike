@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { setConfirmHandler } from '../lib/confirm'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 export function ConfirmDialogProvider() {
   const { t } = useTranslation()
@@ -22,31 +24,22 @@ export function ConfirmDialogProvider() {
     resolveRef.current?.(result)
   }, [])
 
-  useEffect(() => {
-    if (!dialog) return
-    const handleKey = (e) => {
-      if (e.key === 'Escape') handleClose(false)
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [dialog, handleClose])
-
-  if (!dialog) return null
-
   return (
-    <div className="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={() => handleClose(false)}>
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3 className="confirm-title" id="confirm-title">{dialog.title}</h3>
-        <p className="confirm-message">{dialog.message}</p>
-        <div className="confirm-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => handleClose(false)}>
+    <Dialog open={!!dialog} onOpenChange={(o) => { if (!o) handleClose(false) }}>
+      <DialogContent showClose={false} className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{dialog?.title}</DialogTitle>
+        </DialogHeader>
+        <p className="px-6 pb-2 text-sm text-muted-foreground">{dialog?.message}</p>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => handleClose(false)}>
             {t('common.cancel')}
-          </button>
-          <button type="button" className="btn btn-danger" onClick={() => handleClose(true)} autoFocus>
+          </Button>
+          <Button variant="danger" onClick={() => handleClose(true)} autoFocus>
             {t('common.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

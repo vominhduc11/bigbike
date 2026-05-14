@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { Button } from '@/components/ui/button'
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -31,20 +32,18 @@ export class ErrorBoundary extends Component {
             {this.state.error?.message || 'Vui lòng tải lại trang hoặc liên hệ kỹ thuật viên.'}
           </p>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button
+            <Button
               type="button"
-              className="btn btn-primary"
               onClick={() => window.location.reload()}
             >
               Tải lại trang
-            </button>
-            <button
+            </Button>
+            <Button variant="secondary"
               type="button"
-              className="btn btn-secondary"
               onClick={() => this.handleReset()}
             >
               Thử lại
-            </button>
+            </Button>
           </div>
         </div>
       )

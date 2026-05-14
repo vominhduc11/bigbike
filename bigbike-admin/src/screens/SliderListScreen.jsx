@@ -26,6 +26,9 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { validateSafePublicLink } from '../lib/urlPolicies'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const LOCATIONS = ['home', 'category', 'promotion']
 const EMPTY_FORM = {
@@ -381,9 +384,9 @@ export function SliderListScreen({ canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('sliders.filterLocation')}
-          <select className="control-select" value={location} onChange={(e) => { setLocation(e.target.value); closeForm() }}>
-            {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
-          </select>
+          <Select value={location} onValueChange={(val) => { setLocation(val); closeForm() }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+          </SelectContent></Select>
         </label>
       </section>
 
@@ -397,20 +400,19 @@ export function SliderListScreen({ canUpdate }) {
             <div className="form-grid">
               <label className="form-field">
                 {t('sliders.formLocation')}
-                <select className="control-select" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}>
-                  {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
-                </select>
+                <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                </SelectContent></Select>
               </label>
               <label className="form-field">
                 {t('sliders.formSortOrder')}
-                <input className="control-input" type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
+                <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))}  />
               </label>
               <label className="form-field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.isActive}
                   onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
-                />
+                 />
                 {t('sliders.formIsActive')}
               </label>
 
@@ -423,7 +425,7 @@ export function SliderListScreen({ canUpdate }) {
               </div>
               <label className="form-field form-field-wide">
                 {t('sliders.formDesktopAlt')}
-                <input className="control-input" value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))} />
+                <Input value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))}  />
               </label>
 
               <div className="form-field form-field-wide">
@@ -435,17 +437,17 @@ export function SliderListScreen({ canUpdate }) {
               </div>
               <label className="form-field form-field-wide">
                 {t('sliders.formMobileAlt')}
-                <input className="control-input" value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
+                <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))}  />
               </label>
 
               <label className="form-field form-field-wide">
                 {t('sliders.formExternalLink')}
-                <input className="control-input" placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} />
+                <Input placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))}  />
                 <small className="field-help">{t('sliders.formExternalLinkHint')}</small>
               </label>
               <label className="form-field">
                 {t('sliders.formProductId')}
-                <input className="control-input" value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))} />
+                <Input value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))}  />
               </label>
             </div>
             <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>

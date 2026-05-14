@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -24,7 +23,7 @@ public class VariantRequest {
     private BigDecimal salePrice;
     private boolean salePricePresent = false;
 
-    private ProductStockState stockState;
+    // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
 
     @Size(max = 2048, message = "Variant image URL is too long.")
     private String imageUrl;
@@ -79,9 +78,6 @@ public class VariantRequest {
     }
 
     public boolean isSalePricePresent() { return salePricePresent; }
-
-    public ProductStockState getStockState() { return stockState; }
-    public void setStockState(ProductStockState stockState) { this.stockState = stockState; }
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }

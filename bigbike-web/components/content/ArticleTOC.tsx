@@ -10,7 +10,7 @@ type TocItem = {
 };
 
 const SCROLL_OFFSET_PERCENT = 0.14;
-const CONTENT_SELECTOR = ".wp-article-body";
+const CONTENT_SELECTOR = "[data-article-body]";
 
 function slugify(text: string, fallback: string): string {
   const base = text
@@ -86,12 +86,15 @@ export function ArticleTOC() {
   }
 
   return (
-    <div className={`wp-toc${expanded ? " wp-toc--expanded" : ""}`} aria-label="Mục lục">
-      <div className="wp-toc-title">
+    <div
+      className={`px-4 py-[10px] bg-card border border-foreground mb-[14px] max-w-full ${expanded ? "w-full" : "w-fit"}`}
+      aria-label="Mục lục"
+    >
+      <div className="text-[1.2rem] leading-[1.4rem] pb-1 font-semibold text-foreground flex items-center gap-2">
         <span>Mục lục</span>
         <button
           type="button"
-          className="wp-toc-toggle"
+          className="bg-transparent text-foreground border-none cursor-pointer font-[inherit] p-0 hover:text-brand"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
@@ -99,10 +102,17 @@ export function ArticleTOC() {
         </button>
       </div>
       {expanded && (
-        <ul className="wp-toc-list">
+        <ul className="list-none p-0 m-0">
           {items.map((item) => (
-            <li key={item.id} className={`wp-toc-item wp-toc-h${item.level}`}>
-              <a href={`#${item.id}`} onClick={(e) => handleClick(e, item.id)}>
+            <li
+              key={item.id}
+              className={`block ${item.level === 3 ? "ml-5" : item.level === 4 ? "ml-10" : ""}`}
+            >
+              <a
+                href={`#${item.id}`}
+                onClick={(e) => handleClick(e, item.id)}
+                className="inline-block my-[2px] underline text-foreground transition-colors duration-300 hover:text-brand"
+              >
                 {item.numbering}. {item.text}
               </a>
             </li>

@@ -5,6 +5,7 @@ import type { Article, Category, HomeSlider } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
+import { ProductCard } from "@/components/catalog/ProductCard";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
@@ -27,21 +28,18 @@ import {
 } from "@/lib/seo/json-ld";
 import {
   formatDate,
-  formatVnd,
   isSafeHomeVideoUrl,
   resolveMediaUrl,
   safeText,
   toSafePublicHref,
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { RatingStars } from "@/components/ui/RatingStars";
 import {
   toArticleListPath,
   toArticlePath,
   toCategoryPath,
   toHomePath,
   toProductListPath,
-  toProductPath,
 } from "@/lib/utils/routes";
 
 export const revalidate = 3600;
@@ -124,8 +122,8 @@ function WpCategoryListItem({ category }: { category: Category }) {
   const src = imgAsset?.url ? resolveMediaUrl(imgAsset.url.trim()) : null;
 
   return (
-    <Link href={toCategoryPath(category.slug)} className="wp-cat-list-item">
-      <span className="wp-cat-list-img" aria-hidden="true">
+    <Link href={toCategoryPath(category.slug)} className="bb-cat-list-item">
+      <span className="bb-cat-list-img" aria-hidden="true">
         {src ? (
           <Image
             src={src}
@@ -137,9 +135,9 @@ function WpCategoryListItem({ category }: { category: Category }) {
           />
         ) : null}
       </span>
-      <span className="wp-cat-list-desc">{name}</span>
+      <span className="bb-cat-list-desc">{name}</span>
       <svg
-        className="wp-cat-list-arrow"
+        className="bb-cat-list-arrow"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -159,102 +157,36 @@ function WpNewsCard({ article }: { article: Article }) {
   const dateStr = formatDate(article.publishedAt ?? article.createdAt);
 
   return (
-    <Link href={toArticlePath(article.slug)} className="wp-news-card">
-      <div className="wp-news-img-wrap">
+    <Link href={toArticlePath(article.slug)} className="bb-news-card">
+      <div className="bb-news-img-wrap">
         {src ? (
           <Image
             src={src}
             alt={safeText(article.coverImage?.alt, title)}
             fill
-            className="wp-news-img"
+            className="bb-news-img"
             sizes="(max-width: 600px) 100vw, 33vw"
           />
         ) : (
-          <div className="wp-news-img-placeholder" aria-hidden="true">
-            <span className="wp-news-img-placeholder-mark">BIGBIKE</span>
+          <div className="bb-news-img-placeholder" aria-hidden="true">
+            <span className="bb-news-img-placeholder-mark">BIGBIKE</span>
           </div>
         )}
       </div>
-      <div className="wp-news-body">
-        <span className="wp-news-date" aria-hidden="true">
+      <div className="bb-news-body">
+        <span className="bb-news-date" aria-hidden="true">
           {dateStr}
         </span>
-        <div className="wp-news-body-inside">
-          <h3 className="wp-news-card-title">{title}</h3>
-          {article.excerpt && <p className="wp-news-excerpt">{article.excerpt}</p>}
-          <span className="wp-news-read-more" aria-hidden="true">Đọc thêm →</span>
+        <div className="bb-news-body-inside">
+          <h3 className="bb-news-card-title">{title}</h3>
+          {article.excerpt && <p className="bb-news-excerpt">{article.excerpt}</p>}
+          <span className="bb-news-read-more" aria-hidden="true">Đọc thêm →</span>
         </div>
       </div>
     </Link>
   );
 }
 
-function mapTileStockState(state: import("@/lib/contracts/public").Product["stockState"]) {
-  switch (state) {
-    case "IN_STOCK":    return { label: "Còn hàng",      className: "wp-stock-in" };
-    case "LOW_STOCK":   return { label: "Sắp hết hàng",  className: "wp-stock-low" };
-    case "OUT_OF_STOCK":return { label: "Hết hàng",      className: "wp-stock-out" };
-    default:            return { label: "Đang cập nhật", className: "wp-stock-out" };
-  }
-}
-
-function FeaturedProductTile({ product }: { product: import("@/lib/contracts/public").Product }) {
-  const name = safeText(product.name, "Sản phẩm");
-  const href = toProductPath(product.slug);
-  const src = resolveMediaUrl(product.image?.url?.trim());
-  const categoryName = product.category?.name ?? "";
-  const brandName = product.brand?.name ?? "";
-
-  const retail  = product.price?.retailPrice ?? 0;
-  const sale    = product.price?.salePrice && product.price.salePrice > 0 ? product.price.salePrice : null;
-  const compare = product.price?.compareAtPrice && product.price.compareAtPrice > 0 ? product.price.compareAtPrice : null;
-  const current = sale ?? retail;
-  const isSale  = Boolean((sale && sale < retail) || (compare && compare > current));
-  const { label: stockLabel, className: stockClass } = mapTileStockState(product.stockState);
-
-  return (
-    <Link href={href} className="wp-tile-3">
-      <div style={{ position: "relative", zIndex: 1 }}>
-        {brandName && <p className="wp-tile-3-brand">{brandName}</p>}
-        {categoryName && <p className="wp-tile-3-cat">{categoryName}</p>}
-        <h3 className="wp-tile-3-name">{name}</h3>
-        {product.rating != null && product.rating > 0 && (
-          <div className="wp-tile-3-rating">
-            <RatingStars value={product.rating} />
-            {product.ratingCount != null && product.ratingCount > 0 && (
-              <span className="wp-tile-3-rating-count">({product.ratingCount})</span>
-            )}
-          </div>
-        )}
-        <div className="wp-tile-3-price">
-          {product.price ? (
-            <>
-              <b className="wp-tile-3-price-current">{formatVnd(current)}</b>
-              {isSale && compare && compare > current && (
-                <s className="wp-tile-3-price-compare">{formatVnd(compare)}</s>
-              )}
-            </>
-          ) : (
-            <b className="wp-tile-3-price-current">Liên hệ</b>
-          )}
-        </div>
-        <span className={`wp-tile-3-stock ${stockClass}`}>{stockLabel}</span>
-        <span className="wp-tile-3-cta">Xem sản phẩm</span>
-      </div>
-      {src && (
-        <div className="wp-tile-3-img-wrap">
-          <Image
-            src={src}
-            alt={safeText(product.image?.alt, name)}
-            fill
-            className="wp-tile-3-img"
-            sizes="(max-width: 600px) 100vw, 33vw"
-          />
-        </div>
-      )}
-    </Link>
-  );
-}
 
 export default async function HomePage() {
   const [
@@ -331,7 +263,7 @@ export default async function HomePage() {
   const jsonLdFaq = serializeJsonLd(buildFaqPageJsonLd(HOME_FAQS));
 
   return (
-    <div className="wp-home">
+    <div className="bb-home">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
       <script
@@ -342,43 +274,43 @@ export default async function HomePage() {
 
       {/* Block 1: Hero Banner — WP page-home.php main-banner swiper */}
       {/* H1 ở đây là sr-only cho SEO — WP không có tagline strip */}
-      <h1 className="bb-sr-only">{homeH1}</h1>
+      <h1 className="sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
 
       <div className="bb-container">
         {/* Block 2: Featured Products (ISR) */}
         {featuredProducts.length > 0 && (
           <section aria-label="Sản phẩm nổi bật">
-            <div className="wp-featured-grid-3">
+            <div className="bb-featured-grid-3">
               {featuredProducts.map((p) => (
-                <FeaturedProductTile key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} variant="tile" />
               ))}
             </div>
           </section>
         )}
 
         {/* Block 3: About BigBike */}
-        <section className="wp-about" aria-labelledby="home-about-heading">
-          <div className="wp-about-inner">
-            <div className="wp-about-mark" aria-hidden="true">
+        <section className="bb-about" aria-labelledby="home-about-heading">
+          <div className="bb-about-inner">
+            <div className="bb-about-mark" aria-hidden="true">
               <Image src={HOME_ORG_LOGO} alt="" width={260} height={160} />
             </div>
-            <div className="wp-about-text">
+            <div className="bb-about-text">
               {hasSettingsAbout ? (
                 <>
-                  <p className="wp-kicker">{aboutSubtitle}</p>
-                  <h2 id="home-about-heading" className="wp-about-title">
+                  <p className="bb-kicker">{aboutSubtitle}</p>
+                  <h2 id="home-about-heading" className="bb-about-title">
                     {aboutTitle}
                   </h2>
                   <div
-                    className="wp-about-richtext"
+                    className="bb-about-richtext"
                     dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(aboutContentHtml) }}
                   />
                 </>
               ) : (
                 <>
-                  <p className="wp-kicker">Về BigBike · Est. 2013</p>
-                  <h2 id="home-about-heading" className="wp-about-title">
+                  <p className="bb-kicker">Về BigBike · Est. 2013</p>
+                  <h2 id="home-about-heading" className="bb-about-title">
                     Gear bảo hộ chính hãng cho rider biết mình cần gì
                   </h2>
                   <p>
@@ -390,16 +322,16 @@ export default async function HomePage() {
                     Tinh thần của shop: nhìn nhanh biết món nào đáng tin, so sánh dễ, chọn đúng
                     size, đúng nhu cầu — và luôn có người hỗ trợ khi cần.
                   </p>
-                  <div className="wp-about-stats">
-                    <div className="wp-about-stat">
+                  <div className="bb-about-stats">
+                    <div className="bb-about-stat">
                       <b>Từ 2013</b>
                       <span>Năm thành lập</span>
                     </div>
-                    <div className="wp-about-stat">
+                    <div className="bb-about-stat">
                       <b>100%</b>
                       <span>Hàng chính hãng</span>
                     </div>
-                    <div className="wp-about-stat">
+                    <div className="bb-about-stat">
                       <b>Toàn quốc</b>
                       <span>Giao hàng</span>
                     </div>
@@ -413,17 +345,17 @@ export default async function HomePage() {
 
       {/* Block 4: Product Carousel (ISR) — admin-curated picks */}
       {carouselProducts.length > 0 && (
-        <section className="wp-products-section" aria-labelledby="home-products-heading">
+        <section className="bb-products-section" aria-labelledby="home-products-heading">
           <div className="bb-container">
-            <div className="wp-products-header">
-              <p className="wp-kicker">SẢN PHẨM NỔI BẬT</p>
-              <h2 id="home-products-heading" className="wp-products-title wp-section-title">
+            <div className="bb-products-header">
+              <p className="bb-kicker">SẢN PHẨM NỔI BẬT</p>
+              <h2 id="home-products-heading" className="bb-products-title bb-section-title">
                 SẢN PHẨM NỔI BẬT TẠI BIGBIKE
               </h2>
             </div>
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
-              <div className="wp-cat-list" aria-label="Danh mục sản phẩm">
+              <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
                 {categoriesResult.data.map((cat) => (
                   <WpCategoryListItem key={cat.id} category={cat} />
                 ))}
@@ -435,9 +367,9 @@ export default async function HomePage() {
 
       {/* Block 5: Category Grid (standalone) — chỉ render khi KHÔNG có carousel sản phẩm để vẫn cho user thấy danh mục */}
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
-        <section className="wp-products-section" aria-label="Danh mục sản phẩm">
+        <section className="bb-products-section" aria-label="Danh mục sản phẩm">
           <div className="bb-container">
-            <div className="wp-cat-list">
+            <div className="bb-cat-list">
               {categoriesResult.data.map((cat) => (
                 <WpCategoryListItem key={cat.id} category={cat} />
               ))}
@@ -450,16 +382,15 @@ export default async function HomePage() {
       {promoImageSrc ? (
         <Link
           href={promoHref}
-          className="wp-promo-banner wp-promo-banner-image"
-          style={{ display: "block", textDecoration: "none" }}
+          className="bb-promo-banner bb-promo-banner-image block no-underline"
           aria-label="Khuyến mãi BigBike"
         >
-          <div className="bb-container wp-promo-image-container">
+          <div className="bb-container bb-promo-image-container">
             <Image
               src={promoImageSrc}
               alt="Banner khuyến mãi BigBike"
               fill
-              className="wp-promo-image"
+              className="bb-promo-image"
               sizes="(max-width: 768px) 100vw, 1440px"
             />
           </div>
@@ -467,22 +398,21 @@ export default async function HomePage() {
       ) : (
         <Link
           href={promoHref}
-          className="wp-promo-banner"
-          style={{ display: "block", textDecoration: "none" }}
+          className="bb-promo-banner block no-underline"
         >
           <div className="bb-container">
-            <div className="wp-promo-content">
-              <p className="wp-promo-subtitle">HOT OFFER</p>
-              <h2 className="wp-promo-title">
+            <div className="bb-promo-content">
+              <p className="bb-promo-subtitle">HOT OFFER</p>
+              <h2 className="bb-promo-title">
                 {promoTitle.split("\n").map((line, i) => (
-                  <span key={i} style={{ display: "block" }}>
+                  <span key={i} className="block">
                     {line}
                   </span>
                 ))}{" "}
-                <span className="wp-promo-off">{promoOff}</span>
+                <span className="bb-promo-off">{promoOff}</span>
               </h2>
             </div>
-            <span className="wp-promo-bg-text" aria-hidden="true">
+            <span className="bb-promo-bg-text" aria-hidden="true">
               BIGBIKE
             </span>
           </div>
@@ -491,14 +421,14 @@ export default async function HomePage() {
 
       {/* Block 7: Experience Section */}
       {expArticles.length > 0 && (
-        <section className="wp-experience" aria-labelledby="home-exp-heading">
+        <section className="bb-experience" aria-labelledby="home-exp-heading">
           <div className="bb-container">
-            <div className="wp-experience-header">
-              <p className="wp-kicker">{expSubtitle}</p>
-              <h2 id="home-exp-heading" className="wp-experience-title">
+            <div className="bb-experience-header">
+              <p className="bb-kicker">{expSubtitle}</p>
+              <h2 id="home-exp-heading" className="bb-experience-title">
                 {expTitle}
               </h2>
-              <p className="wp-experience-desc">{expDesc}</p>
+              <p className="bb-experience-desc">{expDesc}</p>
             </div>
           </div>
           <ExperienceCarousel articles={expArticles} />
@@ -508,23 +438,23 @@ export default async function HomePage() {
       {/* Block 8: News Section */}
       {newsArticles.length > 0 && (
         <section
-          className="wp-news-section wp-news-section--home"
+          className="bb-news-section bb-news-section--home"
           aria-labelledby="home-news-heading"
         >
           <div className="bb-container">
-            <div className="wp-news-block-title">
-              <p className="wp-news-kicker">TIN TỨC MỚI UPDATE</p>
-              <h2 id="home-news-heading" className="wp-news-heading">
+            <div className="bb-news-block-title">
+              <p className="bb-news-kicker">TIN TỨC MỚI UPDATE</p>
+              <h2 id="home-news-heading" className="bb-news-heading">
                 CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE
               </h2>
             </div>
-            <div className="wp-articles-grid-v2">
+            <div className="bb-articles-grid-v2">
               {newsArticles.map((article) => (
                 <WpNewsCard key={article.id} article={article} />
               ))}
             </div>
-            <div className="wp-news-cta-row">
-              <Link href={toArticleListPath()} className="wp-news-cta-btn">
+            <div className="bb-news-cta-row">
+              <Link href={toArticleListPath()} className="bb-news-cta-btn">
                 XEM TẤT CẢ TIN TỨC
               </Link>
             </div>
@@ -534,11 +464,11 @@ export default async function HomePage() {
 
       {/* Block 9: Home Video Carousel */}
       {homeVideos.length > 0 && (
-        <section className="wp-video-section" aria-labelledby="home-video-heading">
-          <div className="wp-video-section-inner">
+        <section className="bb-video-section" aria-labelledby="home-video-heading">
+          <div className="bb-video-section-inner">
             <div className="bb-container">
-              <div className="wp-video-section-header">
-                <h2 id="home-video-heading" className="wp-video-section-title">
+              <div className="bb-video-section-header">
+                <h2 id="home-video-heading" className="bb-video-section-title">
                   TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN
                 </h2>
               </div>
@@ -550,13 +480,13 @@ export default async function HomePage() {
 
       {/* Block 10: Brand Carousel */}
       {brandsResult.data.length > 0 && (
-        <section className="wp-brands-section" aria-label="Thương hiệu đối tác">
+        <section className="bb-brands-section" aria-label="Thương hiệu đối tác">
           <BrandCarousel brands={brandsResult.data} />
         </section>
       )}
 
       {/* Block 11: SEO Content */}
-      <div className="wp-seo-content">
+      <div className="bb-seo-content">
         <div className="bb-container">
           {homeContentBottomHtml ? (
             <div

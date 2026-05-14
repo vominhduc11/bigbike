@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BBTooltip } from "@/components/ui/BBTooltip";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useFocusTrap } from "@/lib/ui/focus-trap";
 import { toProductListPath, toProductPath } from "@/lib/utils/routes";
 import { formatVnd } from "@/lib/utils/format";
@@ -133,9 +135,10 @@ export function SearchToggle() {
   return (
     <>
       <BBTooltip content="Tìm kiếm">
-      <button
+      <Button
         ref={triggerRef}
-        className="wp-icon-btn"
+        variant="ghost"
+        className="bb-icon-btn"
         aria-label="Tìm kiếm"
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -154,14 +157,14 @@ export function SearchToggle() {
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.35-4.35" />
         </svg>
-      </button>
+      </Button>
       </BBTooltip>
 
       {open && (
         <>
           {/* Backdrop */}
           <div
-            className="wp-search-overlay"
+            className="bb-search-overlay"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
@@ -169,14 +172,15 @@ export function SearchToggle() {
           {/* Search shell */}
           <div
             ref={shellRef}
-            className="wp-search-shell"
+            className="bb-search-shell"
             role="dialog"
             aria-modal="true"
             aria-label="Tìm kiếm"
           >
-            <button
+            <Button
               type="button"
-              className="wp-search-close"
+              variant="ghost"
+              className="bb-search-close"
               aria-label="Đóng tìm kiếm"
               onClick={() => setOpen(false)}
             >
@@ -184,10 +188,10 @@ export function SearchToggle() {
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
               <span>ESC</span>
-            </button>
+            </Button>
 
             <form
-              className="wp-search-bar"
+              className="bb-search-bar"
               onSubmit={(e) => {
                 e.preventDefault();
                 doSearch(query);
@@ -208,7 +212,7 @@ export function SearchToggle() {
                 <path d="m21 21-4.35-4.35" />
               </svg>
 
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 placeholder="Tìm sản phẩm, thương hiệu..."
@@ -218,59 +222,62 @@ export function SearchToggle() {
               />
 
               {suggestLoading && (
-                <span className="wp-search-spinner" aria-hidden="true" />
+                <span className="bb-search-spinner" aria-hidden="true" />
               )}
 
               {query && !suggestLoading && (
-                <button
+                <Button
                   type="button"
-                  className="wp-search-clear"
+                  variant="ghost"
+                  size="icon"
+                  className="bb-search-clear"
                   aria-label="Xoá"
                   onClick={() => setQuery("")}
                 >
                   ✕
-                </button>
+                </Button>
               )}
             </form>
 
             {/* Instant suggestions */}
             {hasSuggestions && (
-              <div className="wp-search-body">
-                <div className="wp-search-main" style={{ gridColumn: "1 / -1" }}>
-                  <div className="wp-search-block">
-                    <div className="wp-search-block-head">
+              <div className="bb-search-body">
+                <div className="bb-search-main col-span-full">
+                  <div className="bb-search-block">
+                    <div className="bb-search-block-head">
                       <span className="label">Sản phẩm gợi ý</span>
                     </div>
-                    <ul className="wp-search-suggest-list">
+                    <ul className="bb-search-suggest-list">
                       {suggestions.map((p) => {
                         const price = p.price?.salePrice ?? p.price?.retailPrice;
                         return (
                           <li key={p.id}>
                             <Link
                               href={toProductPath(p.slug)}
-                              className="wp-search-suggest-item"
+                              className="bb-search-suggest-item"
                               onClick={() => {
                                 saveSearch(p.name);
                                 setOpen(false);
                               }}
                             >
-                              <span className="wp-search-suggest-name">{p.name}</span>
+                              <span className="bb-search-suggest-name">{p.name}</span>
                               {price != null && price > 0 && (
-                                <span className="wp-search-suggest-price">{formatVnd(price)}</span>
+                                <span className="bb-search-suggest-price">{formatVnd(price)}</span>
                               )}
                             </Link>
                           </li>
                         );
                       })}
                     </ul>
-                    <div className="wp-search-suggest-all">
-                      <button
+                    <div className="bb-search-suggest-all">
+                      <Button
                         type="button"
+                        variant="ghost"
                         className="tiny"
                         onClick={() => doSearch(query)}
                       >
                         Xem tất cả kết quả cho &ldquo;{query.trim()}&rdquo; →
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -279,23 +286,24 @@ export function SearchToggle() {
 
             {/* Recent searches (when no query yet) */}
             {showRecent && (
-              <div className="wp-search-body">
-                <div className="wp-search-main" style={{ gridColumn: "1 / -1" }}>
-                  <div className="wp-search-block">
-                    <div className="wp-search-block-head">
+              <div className="bb-search-body">
+                <div className="bb-search-main col-span-full">
+                  <div className="bb-search-block">
+                    <div className="bb-search-block-head">
                       <span className="label">Tìm kiếm gần đây</span>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         className="tiny"
                         onClick={clearRecent}
                       >
                         Xoá tất cả
-                      </button>
+                      </Button>
                     </div>
-                    <ul className="wp-search-recent">
+                    <ul className="bb-search-recent">
                       {recent.map((s) => (
                         <li key={s}>
-                          <button type="button" onClick={() => doSearch(s)}>
+                          <Button type="button" variant="ghost" onClick={() => doSearch(s)}>
                             <svg
                               width="14"
                               height="14"
@@ -325,7 +333,7 @@ export function SearchToggle() {
                             >
                               <path d="M5 12h14M12 5l7 7-7 7" />
                             </svg>
-                          </button>
+                          </Button>
                         </li>
                       ))}
                     </ul>
@@ -334,15 +342,15 @@ export function SearchToggle() {
               </div>
             )}
 
-            <div className="wp-search-footer">
-              <span className="wp-search-shortcut">
+            <div className="bb-search-footer">
+              <span className="bb-search-shortcut">
                 <kbd>↵</kbd> Tìm kiếm
               </span>
-              <span className="wp-search-shortcut">
+              <span className="bb-search-shortcut">
                 <kbd>ESC</kbd> Đóng
               </span>
-              <span className="wp-search-footer-spacer" />
-              <span className="wp-search-hint">
+              <span className="bb-search-footer-spacer" />
+              <span className="bb-search-hint">
                 Hoặc{" "}
                 <Link href={toProductListPath()} onClick={() => setOpen(false)}>
                   xem tất cả sản phẩm →

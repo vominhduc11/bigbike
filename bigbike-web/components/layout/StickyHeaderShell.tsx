@@ -18,7 +18,11 @@ export function StickyHeaderShell({ children }: { children: React.ReactNode }) {
       const y = window.scrollY;
       const root = document.documentElement;
 
-      root.toggleAttribute(SCROLL_ATTR, y > SCROLL_THRESHOLD);
+      if (y > SCROLL_THRESHOLD) {
+        root.setAttribute(SCROLL_ATTR, "");
+      } else {
+        root.removeAttribute(SCROLL_ATTR);
+      }
 
       const diff = y - lastY.current;
       if (Math.abs(diff) < DELTA) return;
@@ -41,5 +45,5 @@ export function StickyHeaderShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  return <header className="wp-header">{children}</header>;
+  return <header className="bb-site-header">{children}</header>;
 }

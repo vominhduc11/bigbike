@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
-import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import {
   adjustStock,
-  fetchAllMovements,
+  adjustProductStock,
   fetchInventory,
+  fetchInventoryGrouped,
   fetchInventorySummary,
+  fetchProductMovements,
+  fetchVariantMovements,
   fetchSerialInventoryOnly,
   downloadInventoryCsv,
   fetchVariantSerials,
@@ -22,6 +24,9 @@ import {
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const STOCK_STATES = ['ALL', 'IN_STOCK', 'OUT_OF_STOCK', 'LOW_STOCK']
 
@@ -102,24 +107,24 @@ function MovementTypeBadge({ type }) {
 }
 
 function SummaryBanner({ summary }) {
-  if (!summary || summary.totalVariants === 0) return null
+  if (!summary || summary.totalItems === 0) return null
   return (
     <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
       {summary.outOfStockCount > 0 && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 16px' }}>
-          <span style={{ color: '#dc2626', fontWeight: 700 }}>{summary.outOfStockCount}</span>
-          <span style={{ color: '#dc2626', marginLeft: 6, fontSize: '0.85rem' }}>Hết hàng</span>
+        <div style={{ background: 'var(--admin-color-status-danger-bg)', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
+          <span style={{ color: 'var(--admin-color-status-danger-text)', fontWeight: 700 }}>{summary.outOfStockCount}</span>
+          <span style={{ color: 'var(--admin-color-status-danger-text)', marginLeft: 6, fontSize: '0.85rem' }}>Hết hàng</span>
         </div>
       )}
       {summary.lowStockCount > 0 && (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 16px' }}>
-          <span style={{ color: '#d97706', fontWeight: 700 }}>{summary.lowStockCount}</span>
-          <span style={{ color: '#d97706', marginLeft: 6, fontSize: '0.85rem' }}>Sắp hết hàng</span>
+        <div style={{ background: 'var(--admin-color-status-warning-bg)', border: '1px solid var(--admin-color-status-warning-border)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
+          <span style={{ color: 'var(--admin-color-status-warning-text)', fontWeight: 700 }}>{summary.lowStockCount}</span>
+          <span style={{ color: 'var(--admin-color-status-warning-text)', marginLeft: 6, fontSize: '0.85rem' }}>Sắp hết hàng</span>
         </div>
       )}
-      <div style={{ background: 'var(--admin-color-surface)', border: '1px solid var(--admin-color-border)', borderRadius: 8, padding: '8px 16px' }}>
-        <span style={{ fontWeight: 700 }}>{summary.totalVariants}</span>
-        <span style={{ marginLeft: 6, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>Tổng variants</span>
+      <div style={{ background: 'var(--admin-color-surface-base)', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
+        <span style={{ fontWeight: 700 }}>{summary.totalItems}</span>
+        <span style={{ marginLeft: 6, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>Tổng mục</span>
       </div>
     </div>
   )
@@ -361,10 +366,9 @@ function SerialListInput({ onChange, disabled, maxCount }) {
           <label htmlFor="serial-batch-input" style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
             {t('inventory.stockIn.serialsBatchPanelLabel')}
           </label>
-          <textarea
+          <Textarea
             id="serial-batch-input"
             ref={textareaRef}
-            className="control-input"
             rows={8}
             value={batchText}
             onChange={handleTextChange}
@@ -372,7 +376,7 @@ function SerialListInput({ onChange, disabled, maxCount }) {
             placeholder={t('inventory.stockIn.serialsBulkPlaceholder')}
             style={{ fontFamily: 'monospace', fontSize: '0.82rem', resize: 'vertical', width: '100%', maxHeight: 320 }}
             aria-label={t('inventory.stockIn.serialsBatchPanelLabel')}
-          />
+           />
         </div>
       )}
 
@@ -561,6 +565,8 @@ function StockInModal({ item, onSuccess, onClose }) {
   function handleSelectVariant(candidate) {
     setSelectedItem(candidate)
     setShowPicker(false)
+    setQuantity('')
+    setSerials([])
     setFormError('')
     setTimeout(() => qtyRef.current?.focus(), 60)
   }
@@ -568,22 +574,23 @@ function StockInModal({ item, onSuccess, onClose }) {
   function handleChangeVariant() {
     setSelectedItem(null)
     setShowPicker(true)
+    setQuantity('')
+    setSerials([])
     setFormError('')
     setTimeout(() => searchRef.current?.focus(), 60)
   }
 
+  const isVariantItem = Boolean(selectedItem?.variantId)
+
   function validate() {
     const qty = parseInt(quantity, 10)
-    if (!selectedItem?.variantId) {
-      return t('inventory.stockIn.errorVariantRequired', { defaultValue: 'Vui lòng chọn variant cần nhập hàng.' })
+    if (!selectedItem?.variantId && !selectedItem?.productId) {
+      return t('inventory.stockIn.errorVariantRequired', { defaultValue: 'Vui lòng chọn sản phẩm cần nhập hàng.' })
     }
     if (!quantity || isNaN(qty) || qty < 1) {
       return t('inventory.stockIn.errorQtyRequired')
     }
-    if (serials.length < qty) {
-      return t('inventory.stockIn.errorSerialCountTooFew', { serials: serials.length, qty })
-    }
-    if (serials.length > qty) {
+    if (selectedItem?.trackSerials && serials.length > qty) {
       return t('inventory.stockIn.errorSerialCount', { serials: serials.length, qty })
     }
     return ''
@@ -597,13 +604,11 @@ function StockInModal({ item, onSuccess, onClose }) {
     setSubmitting(true)
     try {
       const qty = parseInt(quantity, 10)
-      await adjustStock(
-        selectedItem.variantId,
-        qty,
-        'IN',
-        note.trim() || undefined,
-        serials,
-      )
+      if (isVariantItem) {
+        await adjustStock(selectedItem.variantId, qty, 'IN', note.trim() || undefined, serials)
+      } else {
+        await adjustProductStock(selectedItem.productId, qty, 'IN', note.trim() || undefined)
+      }
       toast.success(t('inventory.stockIn.success', { qty }))
       onSuccess()
     } catch (err) {
@@ -649,18 +654,17 @@ function StockInModal({ item, onSuccess, onClose }) {
           {!item && showPicker && (
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label" htmlFor="stock-in-variant-search">
-                {t('inventory.stockIn.selectVariant', { defaultValue: 'Chọn variant' })}
+                {t('inventory.stockIn.selectItem', { defaultValue: 'Chọn sản phẩm / biến thể' })}
               </label>
-              <input
+              <Input
                 id="stock-in-variant-search"
                 ref={searchRef}
                 type="search"
-                className="control-input"
                 value={pickerSearch}
                 onChange={(e) => { setPickerSearch(e.target.value); setFormError('') }}
                 placeholder={t('inventory.stockIn.searchPlaceholder', { defaultValue: 'Tìm tên sản phẩm, SKU...' })}
                 disabled={submitting}
-              />
+               />
               <div className="variant-picker-list">
                 {pickerState.status === 'loading' && (
                   <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
@@ -674,7 +678,7 @@ function StockInModal({ item, onSuccess, onClose }) {
                 )}
                 {pickerState.status === 'success' && pickerState.items.length === 0 && (
                   <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
-                    {t('inventory.stockIn.noVariantResults', { defaultValue: 'Không tìm thấy variant phù hợp.' })}
+                    {t('inventory.stockIn.noItemResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
                   </div>
                 )}
                 {pickerState.status === 'success' && pickerState.items.map((candidate) => {
@@ -691,7 +695,10 @@ function StockInModal({ item, onSuccess, onClose }) {
                       <span className="variant-picker-item__name">
                         {candidate.productName || '—'}
                         <span className="variant-picker-item__meta">
-                          {[candidate.variantName, candidate.variantSku].filter(Boolean).join(' · ') || '—'}
+                          {candidate.variantId
+                            ? ([candidate.variantName, candidate.variantSku].filter(Boolean).join(' · ') || '—')
+                            : <em style={{ fontStyle: 'italic', color: 'var(--admin-color-text-muted)' }}>Không có biến thể</em>
+                          }
                         </span>
                       </span>
                       <span className="variant-picker-item__qty">
@@ -704,42 +711,57 @@ function StockInModal({ item, onSuccess, onClose }) {
             </div>
           )}
 
-          {/* Selected variant summary */}
+          {/* Selected item summary */}
           {selectedItem && (
-            <div className="variant-summary">
-              <div className="variant-summary__info">
-                <div>
-                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
-                    {t('inventory.colProduct')}:{' '}
-                  </span>
-                  <strong className="variant-summary__product-name">
-                    {selectedItem.productName || '—'}
-                  </strong>
+            <>
+              <div className="variant-summary">
+                <div className="variant-summary__info">
+                  <div>
+                    <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                      {t('inventory.colProduct')}:{' '}
+                    </span>
+                    <strong className="variant-summary__product-name">
+                      {selectedItem.productName || '—'}
+                    </strong>
+                  </div>
+                  {isVariantItem && (
+                    <div>
+                      <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                        {t('inventory.colVariant')}:{' '}
+                      </span>
+                      <strong>{variantLabel}</strong>
+                    </div>
+                  )}
+                  <div>
+                    <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                      {t('inventory.stockIn.currentQty')}:{' '}
+                    </span>
+                    <strong>{selectedItem.quantityOnHand ?? '—'}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
-                    {t('inventory.colVariant')}:{' '}
-                  </span>
-                  <strong>{variantLabel}</strong>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
-                    {t('inventory.stockIn.currentQty')}:{' '}
-                  </span>
-                  <strong>{selectedItem.quantityOnHand ?? '—'}</strong>
-                </div>
+                {!item && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleChangeVariant}
+                    disabled={submitting}
+                  >
+                    {t('inventory.stockIn.changeItem', { defaultValue: 'Đổi sản phẩm' })}
+                  </button>
+                )}
               </div>
-              {!item && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleChangeVariant}
-                  disabled={submitting}
-                >
-                  {t('inventory.stockIn.changeVariant', { defaultValue: 'Đổi variant' })}
-                </button>
+              {selectedItem.forceOutOfStock && (
+                <div role="alert" style={{
+                  background: 'var(--admin-color-status-warning-bg)',
+                  border: '1px solid var(--admin-color-status-warning-border)',
+                  borderRadius: 'var(--admin-radius-sm)',
+                  padding: '8px 12px', marginBottom: 12,
+                  fontSize: '0.82rem', color: 'var(--admin-color-status-warning-text)',
+                }}>
+                  <strong>Lưu ý:</strong> Sản phẩm đang bị khoá trạng thái "Hết hàng" (forceOutOfStock). Sau khi nhập hàng, sản phẩm vẫn hiển thị là "Hết hàng" trên website cho đến khi tắt cờ này trong trang chỉnh sửa sản phẩm.
+                </div>
               )}
-            </div>
+            </>
           )}
 
           {/* Form fields — id links to submit button in footer */}
@@ -749,42 +771,42 @@ function StockInModal({ item, onSuccess, onClose }) {
                 {t('inventory.stockIn.labelQty')}{' '}
                 <span aria-hidden="true" style={{ color: 'var(--admin-color-brand-red)' }}>*</span>
               </label>
-              <input
+              <Input
                 id="stock-in-qty"
                 ref={qtyRef}
                 type="number"
-                className="control-input"
                 min="1"
                 step="1"
                 value={quantity}
                 onChange={(e) => { setQuantity(e.target.value); setFormError('') }}
                 disabled={submitting}
                 placeholder="1"
-              />
+               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label" htmlFor="stock-in-note">
                 {t('inventory.stockIn.labelNote')}
               </label>
-              <input
+              <Input
                 id="stock-in-note"
                 type="text"
-                className="control-input"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={submitting}
                 placeholder={t('inventory.stockIn.notePlaceholder')}
-              />
+               />
             </div>
 
-            <div className="form-group">
-              <SerialListInput
-                onChange={(next) => { setSerials(next); setFormError('') }}
-                disabled={submitting}
-                maxCount={parseInt(quantity, 10) || 0}
-              />
-            </div>
+            {selectedItem?.trackSerials && (
+              <div className="form-group">
+                <SerialListInput
+                  onChange={(next) => { setSerials(next); setFormError('') }}
+                  disabled={submitting}
+                  maxCount={parseInt(quantity, 10) || 0}
+                />
+              </div>
+            )}
           </form>
         </div>
 
@@ -1004,15 +1026,14 @@ function AddSerialsPanel({ item, onSuccess }) {
           Số phiếu xuất / hoá đơn nhà phân phối
           <span style={{ fontWeight: 400, color: 'var(--admin-color-text-muted)', marginLeft: 6 }}>(tuỳ chọn)</span>
         </label>
-        <input
+        <Input
           id="serial-supplier-note"
-          className="control-input"
           style={{ width: '100%' }}
           placeholder="VD: HD-2025-001, Phiếu xuất kho ABC..."
           value={supplierNote}
           onChange={(e) => setSupplierNote(e.target.value)}
           disabled={submitting}
-        />
+         />
         <p style={{ fontSize: '0.76rem', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
           Ghi chú sẽ được lưu kèm mỗi serial trong lô nhập này.
         </p>
@@ -1062,11 +1083,11 @@ function AddSerialsPanel({ item, onSuccess }) {
             <tr key={i}>
               <td style={{ padding: '4px 6px', color: 'var(--admin-color-text-muted)' }}>{i + 1}</td>
               <td style={{ padding: '4px 6px' }}>
-                <input className="control-input" style={{ width: '100%' }}
+                <Input style={{ width: '100%' }}
                   placeholder="VD: SN-20240001"
                   value={row.serial}
                   onChange={(e) => updateRow(i, 'serial', e.target.value)}
-                  disabled={submitting} />
+                  disabled={submitting}  />
               </td>
               <td style={{ padding: '4px 6px' }}>
                 {rows.length > 1 && (
@@ -1260,14 +1281,12 @@ function SerialListPanel({ item, refreshKey }) {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
         <label style={{ fontSize: '0.82rem' }}>
           Lọc trạng thái:
-          <select className="control-select" style={{ marginLeft: 6 }}
-            value={query.status}
-            onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}>
-            <option value="">Tất cả</option>
+          <Select style={{ marginLeft: 6 }} value={(query.status) || '__all__'}
+            onValueChange={(val) => { const v = val === '__all__' ? '' : val; setQuery((q) => ({ ...q, status: v, page: 1 })) }}><SelectTrigger><SelectValue placeholder="Tất cả" /></SelectTrigger><SelectContent>
             {Object.keys(SERIAL_STATUS_LABELS).map((s) => (
-              <option key={s} value={s}>{SERIAL_STATUS_LABELS[s]}</option>
+              <SelectItem key={s} value={s}>{SERIAL_STATUS_LABELS[s]}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
       </div>
 
@@ -1321,16 +1340,15 @@ function SerialListPanel({ item, refreshKey }) {
                       )}
                       {isChanging && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <select className="control-select" value={statusChangeValue}
-                            onChange={(e) => setStatusChangeValue(e.target.value)} disabled={changing}>
-                            <option value="">-- Chọn --</option>
+                          <Select value={(statusChangeValue) || '__all__'}
+                            onValueChange={(val) => setStatusChangeValue(val === '__all__' ? '' : val)} disabled={changing}><SelectTrigger><SelectValue placeholder="-- Chọn --" /></SelectTrigger><SelectContent>
                             {allowedTo.map((st) => (
-                              <option key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</option>
+                              <SelectItem key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</SelectItem>
                             ))}
-                          </select>
-                          <input className="control-input" placeholder="Ghi chú (tuỳ chọn)"
+                          </SelectContent></Select>
+                          <Input placeholder="Ghi chú (tuỳ chọn)"
                             value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
-                            disabled={changing} style={{ fontSize: '0.78rem' }} />
+                            disabled={changing} style={{ fontSize: '0.78rem' }}  />
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button type="button" className="btn btn-primary"
                               style={{ fontSize: '0.75rem', padding: '2px 8px' }}
@@ -1461,12 +1479,291 @@ function SerialManageModal({ item, onClose }) {
   )
 }
 
-// ── All-movements tab ─────────────────────────────────────────────────────────
+// ── Grouped inventory table ───────────────────────────────────────────────────
 
-const INITIAL_MV_QUERY = { page: 1, pageSize: 20, movementType: '', referenceType: '' }
+function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialManage, onViewHistory, canUpdate, serialOnlyMode }) {
+  const hasVariants = !group.isNoVariant && group.variants.length > 0
 
-function AllMovementsTab({ refreshKey = 0 }) {
-  const [query, setQuery] = useState(INITIAL_MV_QUERY)
+  function buildVariantItem(variant) {
+    return {
+      productId: group.productId,
+      productName: group.productName,
+      variantId: variant.variantId,
+      variantName: variant.variantName,
+      variantSku: variant.variantSku,
+      quantityOnHand: variant.quantityOnHand,
+      retailPrice: variant.retailPrice,
+      trackSerials: variant.trackSerials,
+      forceOutOfStock: group.forceOutOfStock,
+      productImage: group.productImage,
+    }
+  }
+
+  function buildProductItem() {
+    return {
+      productId: group.productId,
+      productName: group.productName,
+      productSku: group.productSku,
+      variantId: null,
+      variantName: null,
+      variantSku: null,
+      quantityOnHand: group.totalQuantity,
+      retailPrice: group.minRetailPrice,
+      trackSerials: group.trackSerials,
+      forceOutOfStock: group.forceOutOfStock,
+      productImage: group.productImage,
+    }
+  }
+
+  return (
+    <>
+      <tr style={{
+        borderBottom: '1px solid var(--admin-color-border)',
+        background: 'var(--admin-color-surface-raised, var(--admin-color-surface-alt, #f9fafb))',
+      }}>
+        <td style={{ padding: '6px 4px 6px 8px', width: 32, verticalAlign: 'middle' }}>
+          {hasVariants ? (
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? 'Thu gọn' : 'Mở rộng'}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--admin-color-text-muted)',
+                fontSize: '0.65rem', width: 20, height: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+              }}
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+          ) : (
+            <span style={{ display: 'inline-block', width: 20 }} aria-hidden="true" />
+          )}
+        </td>
+
+        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ProductThumbnail image={group.productImage} alt={group.productName} size={36} />
+            <span>
+              <p style={{ fontWeight: 600, margin: 0 }}>{group.productName}</p>
+              {group.productSku && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', margin: 0, fontFamily: 'monospace' }}>
+                  {group.productSku}
+                </p>
+              )}
+            </span>
+          </span>
+        </td>
+
+        <td style={{ padding: '8px 12px', fontSize: '0.8rem', color: 'var(--admin-color-text-muted)', verticalAlign: 'middle' }}>
+          {group.isNoVariant ? <em>Không có biến thể</em> : `${group.variants.length} biến thể`}
+        </td>
+
+        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+          <StockBadge state={group.aggregateStockState} />
+          {group.forceOutOfStock && (
+            <span style={{ marginLeft: 6, fontSize: '0.75rem', color: 'var(--admin-color-state-warning, #d97706)', fontWeight: 600 }}>
+              Khoá
+            </span>
+          )}
+        </td>
+
+        <td style={{ padding: '8px 12px', textAlign: 'right', verticalAlign: 'middle' }}>
+          <strong style={{ fontSize: '1rem' }}>{group.totalQuantity}</strong>
+        </td>
+
+        <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.85rem', verticalAlign: 'middle' }}>
+          {formatCurrencyVnd(group.minRetailPrice)}
+        </td>
+
+        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+              onClick={() => onViewHistory({
+                scope: 'product',
+                productId: group.productId,
+                productName: group.productName,
+                variantName: null,
+              })}>
+              Lịch sử
+            </button>
+            {canUpdate && group.isNoVariant && (
+              (group.trackSerials || serialOnlyMode) ? (
+                <button type="button" className="btn btn-secondary"
+                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                  onClick={() => onSerialManage(buildProductItem())}>
+                  Quản lý serial
+                </button>
+              ) : (
+                <button type="button" className="btn btn-secondary"
+                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                  onClick={() => onStockIn(buildProductItem())}>
+                  Nhập hàng
+                </button>
+              )
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {hasVariants && isExpanded && group.variants.map((variant) => {
+        const item = buildVariantItem(variant)
+        return (
+          <tr
+            key={variant.variantId}
+            style={{
+              borderBottom: '1px solid var(--admin-color-border-subtle, var(--admin-color-border))',
+              background: 'transparent',
+            }}
+          >
+            <td style={{ padding: 0, width: 32 }} />
+
+            <td style={{ padding: '6px 12px 6px 40px', verticalAlign: 'middle' }}>
+              <p style={{ fontWeight: 500, fontSize: '0.875rem', margin: 0 }}>{variant.variantName || '—'}</p>
+              {variant.variantSku && (
+                <p style={{ fontSize: '0.72rem', color: 'var(--admin-color-text-muted)', margin: 0, fontFamily: 'monospace' }}>
+                  {variant.variantSku}
+                </p>
+              )}
+            </td>
+
+            <td style={{ padding: '6px 12px' }} />
+
+            <td style={{ padding: '6px 12px', verticalAlign: 'middle' }}>
+              <StockBadge state={variant.stockState} />
+            </td>
+
+            <td style={{ padding: '6px 12px', textAlign: 'right', verticalAlign: 'middle' }}>
+              <strong>{variant.quantityOnHand}</strong>
+              {variant.trackSerials && (
+                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-color-primary)', fontWeight: 600 }}>
+                  Serial
+                </span>
+              )}
+            </td>
+
+            <td style={{ padding: '6px 12px', textAlign: 'right', fontSize: '0.82rem', color: 'var(--admin-color-text-muted)', verticalAlign: 'middle' }}>
+              {formatCurrencyVnd(variant.retailPrice)}
+            </td>
+
+            <td style={{ padding: '6px 12px', verticalAlign: 'middle' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" className="btn btn-secondary"
+                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                  onClick={() => onViewHistory({
+                    scope: 'variant',
+                    variantId: variant.variantId,
+                    productName: group.productName,
+                    variantName: variant.variantName,
+                  })}>
+                  Lịch sử
+                </button>
+                {canUpdate && ((variant.trackSerials || serialOnlyMode) ? (
+                  <button type="button" className="btn btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                    onClick={() => onSerialManage(item)}>
+                    Quản lý serial
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                    onClick={() => onStockIn(item)}>
+                    Nhập hàng
+                  </button>
+                ))}
+              </div>
+            </td>
+          </tr>
+        )
+      })}
+    </>
+  )
+}
+
+function InventoryGroupedTable({ groups, loading, pageSize, canUpdate, serialOnlyMode, onStockIn, onSerialManage, onViewHistory }) {
+  const { t } = useTranslation()
+  const [expandedIds, setExpandedIds] = useState(() => new Set())
+  const prevGroupsRef = useRef(null)
+
+  useEffect(() => {
+    if (prevGroupsRef.current !== null && prevGroupsRef.current !== groups) {
+      setExpandedIds(new Set())
+    }
+    prevGroupsRef.current = groups
+  }, [groups])
+
+  function toggleGroup(productId) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(productId)) next.delete(productId)
+      else next.add(productId)
+      return next
+    })
+  }
+
+  const colCount = 7
+
+  return (
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid var(--admin-color-border)' }}>
+            <th style={{ width: 32, padding: '8px 4px 8px 8px' }} />
+            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('inventory.colProduct')}
+            </th>
+            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('inventory.colVariant')}
+            </th>
+            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('inventory.colStockState')}
+            </th>
+            <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('inventory.colQty')}
+            </th>
+            <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('inventory.colPrice')}
+            </th>
+            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+              {t('common.actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading
+            ? Array.from({ length: pageSize }, (_, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+                  <td colSpan={colCount} style={{ padding: '10px 12px' }}>
+                    <div className="skeleton" style={{ height: 14, width: '100%' }} />
+                  </td>
+                </tr>
+              ))
+            : groups.map((group) => (
+                <InventoryGroupRow
+                  key={group.productId}
+                  group={group}
+                  isExpanded={expandedIds.has(group.productId)}
+                  onToggle={() => toggleGroup(group.productId)}
+                  onStockIn={onStockIn}
+                  onSerialManage={onSerialManage}
+                  onViewHistory={onViewHistory}
+                  canUpdate={canUpdate}
+                  serialOnlyMode={serialOnlyMode}
+                />
+              ))
+          }
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Movement history modal (per product / per variant) ───────────────────────
+
+function MovementHistoryModal({ scope, onClose }) {
+  const [query, setQuery] = useState({ page: 1, pageSize: 20 })
   const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
 
   useEffect(() => {
@@ -1474,89 +1771,86 @@ function AllMovementsTab({ refreshKey = 0 }) {
     Promise.resolve().then(() => {
       if (active) setState((s) => ({ ...s, status: 'loading' }))
     })
-    fetchAllMovements(query)
-      .then((r) => { if (active) setState({ status: 'success', items: r.items, pagination: r.pagination }) })
+    const promise = scope.scope === 'variant'
+      ? fetchVariantMovements(scope.variantId, query)
+      : fetchProductMovements(scope.productId, query)
+    promise
+      .then((r) => { if (active) setState({ status: 'success', items: r.items || [], pagination: r.pagination || null }) })
       .catch((e) => { if (active) setState({ status: 'error', items: [], pagination: null, error: e.message }) })
     return () => { active = false }
-  }, [query, refreshKey])
+  }, [scope, query])
 
-  const MV_TYPE_OPTIONS = ['', 'IN', 'OUT', 'ADJUSTMENT', 'RETURN']
-  const REF_TYPE_OPTIONS = ['', 'ORDER', 'ORDER_CANCEL', 'RETURN', 'MANUAL']
+  const title = [scope.productName, scope.variantName].filter(Boolean).join(' · ')
 
   return (
-    <section>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-        <label>
-          Loại biến động
-          <select className="control-select" value={query.movementType}
-            onChange={(e) => setQuery((q) => ({ ...q, movementType: e.target.value, page: 1 }))}>
-            {MV_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t || 'Tất cả'}</option>)}
-          </select>
-        </label>
-        <label>
-          Nguồn
-          <select className="control-select" value={query.referenceType}
-            onChange={(e) => setQuery((q) => ({ ...q, referenceType: e.target.value, page: 1 }))}>
-            {REF_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t || 'Tất cả'}</option>)}
-          </select>
-        </label>
-      </div>
+    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="modal-box modal-box--wide" onClick={(e) => e.stopPropagation()}>
+        <header className="modal-header">
+          <h2 className="modal-title">Lịch sử biến động — {title || '—'}</h2>
+          <button type="button" className="btn-icon btn-secondary-ghost"
+            onClick={onClose} aria-label="Đóng">✕</button>
+        </header>
 
-      {state.status === 'error' && (
-        <StatePanel tone="danger" title="Lỗi tải dữ liệu" description={state.error}
-          actionLabel="Thử lại" onAction={() => setQuery((q) => ({ ...q }))} />
-      )}
-      {state.status === 'success' && state.items.length === 0 && (
-        <StatePanel tone="neutral" title="Không có dữ liệu" description="Không tìm thấy biến động nào." />
-      )}
-
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <>
-          <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                {['Loại', 'Sản phẩm / Variant', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {state.status === 'loading'
-                ? Array.from({ length: 8 }, (_, i) => (
-                  <tr key={i}><td colSpan={8} style={{ padding: '8px' }}>
-                    <div className="skeleton" style={{ height: 14, width: '100%' }} />
-                  </td></tr>
-                ))
-                : state.items.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                    <td style={{ padding: '6px 8px' }}><MovementTypeBadge type={m.movementType} /></td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <span style={{ fontWeight: 500 }}>{m.productName || '—'}</span>
-                      {m.variantName && <span style={{ color: 'var(--admin-color-text-muted)', marginLeft: 4 }}>· {m.variantName}</span>}
-                    </td>
-                    <td style={{ padding: '6px 8px', fontWeight: 700, color: m.quantityDelta > 0 ? '#16a34a' : '#dc2626' }}>
-                      {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>{m.quantityAfter}</td>
-                    <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.referenceType || '—'}</td>
-                    <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
-                      {m.serialCount > 0
-                        ? <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{m.serialCount} S/N</span>
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.note || '—'}</td>
-                    <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-          {state.status === 'success' && state.pagination && (
-            <PaginationControls pagination={state.pagination}
-              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
+        <div className="modal-body">
+          {state.status === 'error' && (
+            <StatePanel tone="danger" title="Lỗi tải dữ liệu" description={state.error}
+              actionLabel="Thử lại" onAction={() => setQuery((q) => ({ ...q }))} />
           )}
-        </>
-      )}
-    </section>
+          {state.status === 'success' && state.items.length === 0 && (
+            <StatePanel tone="neutral" title="Chưa có biến động"
+              description="Sản phẩm này chưa có biến động nào được ghi nhận." />
+          )}
+
+          {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
+            <>
+              <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+                    {['Loại', 'Biến thể', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading'
+                    ? Array.from({ length: 6 }, (_, i) => (
+                        <tr key={i}><td colSpan={8} style={{ padding: '8px' }}>
+                          <div className="skeleton" style={{ height: 14, width: '100%' }} />
+                        </td></tr>
+                      ))
+                    : state.items.map((m) => (
+                        <tr key={m.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+                          <td style={{ padding: '6px 8px' }}><MovementTypeBadge type={m.movementType} /></td>
+                          <td style={{ padding: '6px 8px' }}>
+                            {m.variantName
+                              ? <span>{m.variantName}{m.variantSku ? ` · ${m.variantSku}` : ''}</span>
+                              : <em style={{ color: 'var(--admin-color-text-muted)' }}>(Sản phẩm)</em>}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontWeight: 700, color: m.quantityDelta > 0 ? '#16a34a' : '#dc2626' }}>
+                            {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>{m.quantityAfter}</td>
+                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.referenceType || '—'}</td>
+                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
+                            {m.serialCount > 0
+                              ? <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{m.serialCount} S/N</span>
+                              : '—'}
+                          </td>
+                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.note || '—'}</td>
+                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+              {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
+                <PaginationControls pagination={state.pagination}
+                  onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1566,7 +1860,6 @@ const INITIAL_QUERY = { q: '', stockState: 'ALL', page: 1, pageSize: 20 }
 
 export function InventoryScreen({ canUpdate = false }) {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('stock') // 'stock' | 'movements'
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState('')
   const debouncedSearch = useDebounce(searchInput, 250)
@@ -1577,8 +1870,8 @@ export function InventoryScreen({ canUpdate = false }) {
   const [isStockInOpen, setIsStockInOpen] = useState(false)
   const [serialTarget, setSerialTarget] = useState(null)
   const [isSerialOpen, setIsSerialOpen] = useState(false)
+  const [historyTarget, setHistoryTarget] = useState(null)
   const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
-  const [movementsRefreshKey, setMovementsRefreshKey] = useState(0)
   const [csvDownloading, setCsvDownloading] = useState(false)
   const [serialOnlyMode, setSerialOnlyMode] = useState(false)
 
@@ -1593,12 +1886,11 @@ export function InventoryScreen({ canUpdate = false }) {
   }, [debouncedSearch])
 
   useEffect(() => {
-    if (activeTab !== 'stock') return
     let active = true
     Promise.resolve().then(() => {
       if (active) setState((s) => ({ ...s, status: 'loading' }))
     })
-    fetchInventory(query)
+    fetchInventoryGrouped(query)
       .then((r) => {
         if (!active) return
         setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' })
@@ -1608,13 +1900,12 @@ export function InventoryScreen({ canUpdate = false }) {
         setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
       })
     return () => { active = false }
-  }, [query, activeTab, inventoryRefreshKey])
+  }, [query, inventoryRefreshKey])
 
   function handleStockInSuccess() {
     setIsStockInOpen(false)
     setStockInTarget(null)
     setInventoryRefreshKey((k) => k + 1)
-    setMovementsRefreshKey((k) => k + 1)
     fetchInventorySummary().then(setSummary)
   }
 
@@ -1644,73 +1935,6 @@ export function InventoryScreen({ canUpdate = false }) {
     fetchInventorySummary().then(setSummary)
   }
 
-  const columns = useMemo(() => [
-    {
-      key: 'product', label: t('inventory.colProduct'), skeletonWidth: '80%',
-      render: (item) => (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <ProductThumbnail image={item.productImage} alt={item.productName} size={40} />
-          <span>
-            <p style={{ fontWeight: 500 }}>{item.productName}</p>
-            {item.productSku && <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.productSku}</p>}
-          </span>
-        </span>
-      ),
-    },
-    {
-      key: 'variant', label: t('inventory.colVariant'), skeletonWidth: '65%',
-      render: (item) => (
-        <span>
-          <p>{item.variantName}</p>
-          {item.variantSku && <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', fontFamily: 'monospace' }}>{item.variantSku}</p>}
-        </span>
-      ),
-    },
-    {
-      key: 'retailPrice', label: t('inventory.colPrice'), align: 'right', skeletonWidth: '55%',
-      render: (item) => formatCurrencyVnd(item.retailPrice),
-    },
-    {
-      key: 'stockState', label: t('inventory.colStockState'), skeletonWidth: '50%',
-      render: (item) => <StockBadge state={item.stockState} />,
-    },
-    {
-      key: 'quantityOnHand', label: t('inventory.colQty'), align: 'right', skeletonWidth: '30%',
-      render: (item) => (
-        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-          <strong style={{ fontSize: '1rem' }}>{item.quantityOnHand}</strong>
-          {item.trackSerials && (
-            <span style={{ fontSize: '0.7rem', color: 'var(--admin-color-primary)', fontWeight: 600 }}>
-              Serial
-            </span>
-          )}
-        </span>
-      ),
-    },
-    canUpdate ? {
-      key: 'actions', label: t('common.actions'), skeletonWidth: '40%',
-      render: (item) => (item.trackSerials || serialOnlyMode) ? (
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ fontSize: '0.8rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
-          onClick={() => openSerialManage(item)}
-        >
-          Quản lý serial
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ fontSize: '0.8rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
-          onClick={() => openStockIn(item)}
-        >
-          {t('inventory.stockIn.btnLabel')}
-        </button>
-      ),
-    } : null,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ].filter(Boolean), [t, canUpdate, serialOnlyMode])
 
   return (
     <section className="screen">
@@ -1721,11 +1945,6 @@ export function InventoryScreen({ canUpdate = false }) {
           <p>{t('inventory.description')}</p>
         </div>
         <div className="screen-actions">
-          {canUpdate && !serialOnlyMode && (
-            <button type="button" className="btn btn-primary" onClick={() => openStockIn()}>
-              {t('inventory.stockIn.btnLabel')}
-            </button>
-          )}
           <button
             type="button"
             className="btn btn-secondary"
@@ -1757,67 +1976,49 @@ export function InventoryScreen({ canUpdate = false }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--admin-color-border)', marginBottom: 20 }}>
-        {[['stock', 'Tồn kho'], ['movements', 'Lịch sử biến động']].map(([id, label]) => (
-          <button key={id} type="button"
-            style={{
-              background: 'none', border: 'none', padding: '8px 20px', cursor: 'pointer',
-              fontWeight: activeTab === id ? 700 : 400,
-              borderBottom: activeTab === id ? '2px solid var(--admin-color-primary)' : '2px solid transparent',
-              marginBottom: -2, color: activeTab === id ? 'var(--admin-color-primary)' : 'var(--admin-color-text-muted)',
-            }}
-            onClick={() => setActiveTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      {activeTab === 'movements' && <AllMovementsTab refreshKey={movementsRefreshKey} />}
+      <section className="filter-bar">
+        <label>
+          {t('common.search')}
+          <Input type="search"
+            placeholder={t('inventory.searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}  />
+        </label>
+        <label>
+          {t('inventory.filterStock')}
+          <Select value={query.stockState}
+            onValueChange={(val) => setQuery((q) => ({ ...q, stockState: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            {STOCK_STATES.map((s) => (
+              <SelectItem key={s} value={s}>{s === 'ALL' ? t('common.all') : s.replace(/_/g, ' ')}</SelectItem>
+            ))}
+          </SelectContent></Select>
+        </label>
+      </section>
 
-      {activeTab === 'stock' && (
+      {state.status === 'error' && (
+        <StatePanel tone="danger" title={t('inventory.loadError')} description={state.error}
+          actionLabel={t('common.retry')} onAction={() => setQuery((q) => ({ ...q }))} />
+      )}
+      {state.status === 'success' && state.items.length === 0 && (
+        <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
+      )}
+      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
         <>
-          {state.warning && <ReadOnlyBanner warning={state.warning} />}
-
-          <section className="filter-bar">
-            <label>
-              {t('common.search')}
-              <input type="search" className="control-input"
-                placeholder={t('inventory.searchPlaceholder')}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)} />
-            </label>
-            <label>
-              {t('inventory.filterStock')}
-              <select className="control-select" value={query.stockState}
-                onChange={(e) => setQuery((q) => ({ ...q, stockState: e.target.value, page: 1 }))}>
-                {STOCK_STATES.map((s) => (
-                  <option key={s} value={s}>{s === 'ALL' ? t('common.all') : s.replace(/_/g, ' ')}</option>
-                ))}
-              </select>
-            </label>
-          </section>
-
-          {state.status === 'error' && (
-            <StatePanel tone="danger" title={t('inventory.loadError')} description={state.error}
-              actionLabel={t('common.retry')} onAction={() => setQuery((q) => ({ ...q }))} />
-          )}
-          {state.status === 'success' && state.items.length === 0 && (
-            <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
-          )}
-          {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-            <>
-              <AdminTable
-                caption={t('inventory.tableCaption')}
-                columns={columns}
-                rows={state.items}
-                loading={state.status === 'loading'}
-                pageSize={query.pageSize}
-              />
-              {state.status === 'success' && state.pagination && (
-                <PaginationControls pagination={state.pagination}
-                  onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
-              )}
-            </>
+          <InventoryGroupedTable
+            groups={state.items}
+            loading={state.status === 'loading'}
+            pageSize={query.pageSize}
+            canUpdate={canUpdate}
+            serialOnlyMode={serialOnlyMode}
+            onStockIn={openStockIn}
+            onSerialManage={openSerialManage}
+            onViewHistory={setHistoryTarget}
+          />
+          {state.status === 'success' && state.pagination && (
+            <PaginationControls pagination={state.pagination}
+              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
           )}
         </>
       )}
@@ -1834,6 +2035,13 @@ export function InventoryScreen({ canUpdate = false }) {
         <SerialManageModal
           item={serialTarget}
           onClose={closeSerialManage}
+        />
+      )}
+
+      {historyTarget && (
+        <MovementHistoryModal
+          scope={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </section>

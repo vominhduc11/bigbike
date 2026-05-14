@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ApiClientError } from '../lib/adminApi'
 import { useAuth } from '../lib/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function LoginScreen() {
   const { login } = useAuth()
@@ -46,15 +48,14 @@ export function LoginScreen() {
 
         <label>
           {t('auth.email')}
-          <input
-            className="control-input"
+          <Input
             type="email"
             autoComplete="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             disabled={submitting}
-          />
+           />
         </label>
 
         <label>
@@ -77,8 +78,7 @@ export function LoginScreen() {
               {t('auth.forgotPassword')}
             </button>
           </div>
-          <input
-            className="control-input"
+          <Input
             type="password"
             autoComplete="current-password"
             required
@@ -87,7 +87,7 @@ export function LoginScreen() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             disabled={submitting}
-          />
+           />
         </label>
 
         {showForgot && (
@@ -104,9 +104,9 @@ export function LoginScreen() {
           </div>
         )}
 
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? t('auth.loggingIn') : t('auth.login')}
-        </button>
+        </Button>
 
         <div style={{
           paddingTop: 'var(--admin-space-3)',

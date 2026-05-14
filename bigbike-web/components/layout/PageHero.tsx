@@ -37,23 +37,23 @@ export function PageHero({
   const isFallbackBg = !customSrc;
 
   return (
-    <div className={`wp-cat-hero${isFallbackBg ? " wp-cat-hero--wp" : ""}`}>
+    <div className={`bb-cat-hero${isFallbackBg ? " bb-cat-hero--wp" : ""}`}>
       <Image
         src={resolvedUrl}
         alt={altText}
         fill
-        className="wp-cat-hero-bg"
+        className="bb-cat-hero-bg"
         priority
         sizes="100vw"
       />
-      {!isFallbackBg && <div className="wp-cat-hero-overlay" />}
-      <div className="wp-cat-hero-content bb-container">
+      {!isFallbackBg && <div className="bb-cat-hero-overlay" />}
+      <div className="bb-cat-hero-content bb-container">
         {breadcrumb && breadcrumb.length > 0 ? (
-          <nav className="wp-cat-hero-breadcrumb" aria-label="Điều hướng">
+          <nav className="bb-cat-hero-breadcrumb" aria-label="Điều hướng">
             {breadcrumb.map((item, index) => {
               const isLast = index === breadcrumb.length - 1;
               return (
-                <span key={`${item.label}-${index}`} style={{ display: "contents" }}>
+                <span key={`${item.label}-${index}`} className="contents">
                   {index > 0 ? <span aria-hidden="true">/</span> : null}
                   {!isLast && item.href ? (
                     <Link href={item.href}>{item.label}</Link>
@@ -65,13 +65,13 @@ export function PageHero({
             })}
           </nav>
         ) : null}
-        {kicker ? <p className="wp-cat-hero-kicker">{kicker}</p> : null}
-        <h1 className="wp-cat-hero-title">{title}</h1>
-        {description ? <p className="wp-cat-hero-desc">{description}</p> : null}
-        {meta ? <span className="wp-cat-hero-count">{meta}</span> : null}
+        {kicker ? <p className="bb-cat-hero-kicker">{kicker}</p> : null}
+        <h1 className="bb-cat-hero-title">{title}</h1>
+        {description ? <p className="bb-cat-hero-desc">{description}</p> : null}
+        {meta ? <span className="bb-cat-hero-count">{meta}</span> : null}
       </div>
       {isFallbackBg && (
-        <div className="wp-cat-hero-illustration" aria-hidden="true">
+        <div className="bb-cat-hero-illustration" aria-hidden="true">
           <Image src={WP_HERO_ILLUSTRATION} alt="" width={420} height={420} />
         </div>
       )}

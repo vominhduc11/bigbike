@@ -52,8 +52,8 @@ export function ContactForm({ hotline, email }: { hotline: string; email: string
 
   if (success) {
     return (
-      <div className="p-5 bg-[rgba(119,136,102,0.08)] border border-[rgba(119,136,102,0.34)]">
-        <p className="text-[#778866] font-semibold mb-2">Gửi tin nhắn thành công!</p>
+      <div className="border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-5">
+        <p className="mb-2 font-semibold text-[var(--bb-state-success-text)]">Gửi tin nhắn thành công!</p>
         <p className="text-sm text-muted-foreground">
           Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể.
         </p>

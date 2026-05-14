@@ -137,7 +137,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               {menuResult.error ? (
                 <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
               ) : menuItems.length === 0 ? (
-                <p className="wp-muted-text">Chưa có mục hướng dẫn.</p>
+                <p className="text-muted-foreground text-sm">Chưa có mục hướng dẫn.</p>
               ) : (
                 <nav className="bb-nav-links">
                   {menuItems.map((item) => {
@@ -147,9 +147,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                       <Link
                         key={item.id}
                         href={href}
-                        className="bb-link"
+                        className={active ? "bb-link font-bold text-brand" : "bb-link font-medium"}
                         aria-current={active ? "page" : undefined}
-                        style={{ fontWeight: active ? 700 : 500, color: active ? "var(--bb-text-brand)" : undefined }}
                       >
                         {safeText(item.label, "Hướng dẫn")}
                       </Link>
@@ -162,7 +161,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             {subSegments && subSegments.length > 0 ? (
               <div className="bb-card bb-card-content">
                 <h2 className="bb-sidebar-heading">Đường dẫn hiện tại</h2>
-                <p className="wp-muted-text">{currentPath}</p>
+                <p className="text-muted-foreground text-sm">{currentPath}</p>
               </div>
             ) : null}
           </aside>

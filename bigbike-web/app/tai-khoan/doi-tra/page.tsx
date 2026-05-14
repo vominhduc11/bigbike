@@ -7,6 +7,7 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -35,15 +36,15 @@ const RETURN_REASON_LABELS: Record<string, string> = {
 
 const RETURNABLE_STATUSES = ["COMPLETED"];
 
-function returnStatusClass(status: string): string {
+function returnStatusBadgeClass(status: string): string {
   const map: Record<string, string> = {
-    COMPLETED: "delivered",
-    REFUNDED: "delivered",
-    APPROVED: "processing",
-    RECEIVED: "processing",
-    REJECTED: "cancelled",
+    COMPLETED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
+    REFUNDED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
+    APPROVED: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
+    RECEIVED: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
+    REJECTED: "bg-[rgba(255,12,9,0.16)] text-brand",
   };
-  return map[status] ?? "";
+  return map[status] ?? "bg-[var(--bb-bg-surface-raised)] text-muted-foreground";
 }
 
 function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
@@ -59,76 +60,80 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
   }, [id]);
 
   return (
-    <div className="wp-detail-overlay" role="dialog" aria-modal="true">
-      <div className="wp-detail-panel">
-        <div className="wp-detail-panel-head">
-          <h3>Chi tiết yêu cầu đổi trả</h3>
-          <button type="button" className="wp-detail-close" onClick={onClose} aria-label="Đóng">✕</button>
+    <div className="fixed inset-0 bg-black/65 z-[2000] flex justify-end" role="dialog" aria-modal="true">
+      <div className="w-[min(480px,100vw)] h-full bg-card border-l border-border flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center py-[18px] px-[22px] border-b border-border flex-shrink-0">
+          <h3 className="text-[14px] font-bold text-foreground m-0 tracking-[0.04em]">Chi tiết yêu cầu đổi trả</h3>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Đóng">✕</Button>
         </div>
 
         {loading && (
-          <div className="bb-skel-stack" style={{ padding: 24 }}>
+          <div className="bb-skel-stack p-6">
             {[1, 2, 3].map((i) => <div key={i} className="bb-skel bb-skel--text" style={{ width: "100%", height: 18, marginBottom: 12 }} />)}
           </div>
         )}
 
-        {error && <p className="wp-error-text" style={{ padding: 24 }}>{error}</p>}
+        {error && <p className="text-brand text-sm m-0 p-6">{error}</p>}
 
         {detail && !loading && (
-          <div className="wp-detail-panel-body">
+          <div className="flex-1 overflow-y-auto py-5 px-[22px] flex flex-col gap-[18px]">
             {/* Meta */}
-            <div className="wp-detail-meta">
-              <div><span>Mã yêu cầu</span><b style={{ fontFamily: "monospace" }}>{detail.returnNumber}</b></div>
-              {detail.orderNumber && <div><span>Đơn hàng</span><b>#{detail.orderNumber}</b></div>}
-              <div><span>Lý do</span><b>{RETURN_REASON_LABELS[detail.reason] ?? detail.reason}</b></div>
-              <div><span>Trạng thái</span>
-                <span className={`wp-order-status ${returnStatusClass(detail.status)}`}>
-                  {RETURN_STATUS_LABELS[detail.status] ?? detail.status}
-                </span>
-              </div>
-              {detail.refundAmount > 0 && (
-                <div><span>Hoàn tiền</span><b>{formatVnd(detail.refundAmount)}</b></div>
-              )}
-              <div><span>Ngày tạo</span><b>{formatDate(detail.createdAt)}</b></div>
+            <div className="flex flex-col gap-[10px]">
+              {[
+                { label: "Mã yêu cầu", value: <b className="text-foreground font-semibold font-mono">{detail.returnNumber}</b> },
+                detail.orderNumber ? { label: "Đơn hàng", value: <b className="text-foreground font-semibold">#{detail.orderNumber}</b> } : null,
+                { label: "Lý do", value: <b className="text-foreground font-semibold">{RETURN_REASON_LABELS[detail.reason] ?? detail.reason}</b> },
+                {
+                  label: "Trạng thái",
+                  value: <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${returnStatusBadgeClass(detail.status)}`}>{RETURN_STATUS_LABELS[detail.status] ?? detail.status}</span>,
+                },
+                detail.refundAmount > 0 ? { label: "Hoàn tiền", value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
+                { label: "Ngày tạo", value: <b className="text-foreground font-semibold">{formatDate(detail.createdAt)}</b> },
+              ].filter(Boolean).map((row, i) => (
+                <div key={i} className="flex justify-between items-center text-[12px]">
+                  <span className="text-muted-foreground">{row!.label}</span>
+                  {row!.value}
+                </div>
+              ))}
             </div>
 
             {/* Customer note */}
             {detail.customerNote && (
-              <div className="wp-detail-note wp-detail-note--grey">
-                <p className="wp-detail-note-label">Ghi chú của bạn</p>
+              <div className="py-3 px-[14px] text-[12px] leading-[1.6] bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
+                <p className="text-xs font-bold tracking-[0.1em] uppercase mb-[6px]">Ghi chú của bạn</p>
                 <p>{detail.customerNote}</p>
               </div>
             )}
 
             {/* Admin note */}
             {detail.adminNote && (
-              <div className="wp-detail-note wp-detail-note--yellow">
-                <p className="wp-detail-note-label">Phản hồi từ cửa hàng</p>
+              <div className="py-3 px-[14px] text-[12px] leading-[1.6] bg-[rgba(249,157,28,0.1)] text-[#f99d1c] border border-[rgba(249,157,28,0.25)] [&_p]:m-0">
+                <p className="text-xs font-bold tracking-[0.1em] uppercase mb-[6px]">Phản hồi từ cửa hàng</p>
                 <p>{detail.adminNote}</p>
               </div>
             )}
 
             {/* Items */}
             {detail.items && detail.items.length > 0 && (
-              <div className="wp-detail-section">
-                <p className="wp-detail-section-title">Sản phẩm đổi trả</p>
-                <table className="wp-detail-table">
+              <div>
+                <p className="text-xs font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">Sản phẩm đổi trả</p>
+                <table className="w-full border-collapse text-[12px] text-foreground">
                   <thead>
                     <tr>
-                      <th>Sản phẩm</th>
-                      <th style={{ textAlign: "center" }}>SL</th>
-                      <th style={{ textAlign: "right" }}>Đơn giá</th>
+                      <th className="text-left text-xs tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">Sản phẩm</th>
+                      <th className="text-center text-xs tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">SL</th>
+                      <th className="text-right text-xs tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">Đơn giá</th>
                     </tr>
                   </thead>
                   <tbody>
                     {detail.items.map((item) => (
                       <tr key={item.id}>
-                        <td>
+                        <td className="py-2 border-b border-border align-middle">
                           <span>{item.productName}</span>
-                          {item.variantName && <span style={{ color: "var(--bb-text-muted)", fontSize: "0.8rem", display: "block" }}>{item.variantName}</span>}
+                          {item.variantName && <span className="text-muted-foreground text-[0.8rem] block">{item.variantName}</span>}
                         </td>
-                        <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                        <td style={{ textAlign: "right" }}>{formatVnd(item.unitPrice)}</td>
+                        <td className="text-center py-2 border-b border-border align-middle">{item.quantity}</td>
+                        <td className="text-right py-2 border-b border-border align-middle">{formatVnd(item.unitPrice)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -138,19 +143,19 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 
             {/* History */}
             {detail.history && detail.history.length > 0 && (
-              <div className="wp-detail-section">
-                <p className="wp-detail-section-title">Lịch sử xử lý</p>
-                <ol className="wp-return-timeline">
+              <div>
+                <p className="text-xs font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">Lịch sử xử lý</p>
+                <ol className="list-none m-0 p-0 flex flex-col">
                   {detail.history.map((h, i) => (
-                    <li key={i} className="wp-return-timeline-item">
-                      <span className="wp-timeline-dot" />
-                      <div className="wp-timeline-content">
-                        <p className="wp-timeline-label">
+                    <li key={i} className="flex gap-3 pb-4 relative last:pb-0 [&:not(:last-child)]:before:content-[''] [&:not(:last-child)]:before:absolute [&:not(:last-child)]:before:left-[5px] [&:not(:last-child)]:before:top-[14px] [&:not(:last-child)]:before:bottom-0 [&:not(:last-child)]:before:w-px [&:not(:last-child)]:before:bg-border">
+                      <span className="bb-round w-[11px] h-[11px] rounded-full bg-brand flex-shrink-0 mt-[2px]" />
+                      <div className="flex-1">
+                        <p className="text-[12px] font-semibold text-foreground m-0 mb-[3px]">
                           {h.fromStatus ? `${RETURN_STATUS_LABELS[h.fromStatus] ?? h.fromStatus} → ` : ""}
                           {RETURN_STATUS_LABELS[h.toStatus] ?? h.toStatus}
                         </p>
-                        <p className="wp-timeline-date">{formatDate(h.createdAt)}</p>
-                        {h.note && <p className="wp-timeline-note">{h.note}</p>}
+                        <p className="text-[11px] text-muted-foreground m-0 mb-[3px]">{formatDate(h.createdAt)}</p>
+                        {h.note && <p className="text-[11px] text-muted-foreground m-0 italic">{h.note}</p>}
                       </div>
                     </li>
                   ))}
@@ -285,10 +290,10 @@ function ReturnsContent() {
 
   return (
     <>
-      <div className="wp-account-header">
+      <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2>Đổi trả</h2>
-          <p className="sub">Lịch sử yêu cầu đổi trả và hoàn tiền</p>
+          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">Đổi trả</h2>
+          <p className="text-xs text-muted-foreground mt-1 m-0">Lịch sử yêu cầu đổi trả và hoàn tiền</p>
         </div>
         {!showForm && (
           <Button type="button" variant="primary" size="sm" onClick={openForm}>
@@ -298,30 +303,30 @@ function ReturnsContent() {
       </div>
 
       {formSuccess && (
-        <div className="wp-alert-success">
-          <p>{formSuccess}</p>
+        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[14px_18px] mb-5 text-sm text-[var(--bb-state-success-text)]">
+          <p className="m-0">{formSuccess}</p>
         </div>
       )}
 
-      {error && <p className="wp-error-text">{error}</p>}
+      {error && <p className="text-brand text-sm mb-4 m-0">{error}</p>}
 
       {/* Create return form */}
       {showForm && (
-        <div className="wp-info-card-form" style={{ marginBottom: 24 }}>
-          <p className="wp-info-label" style={{ marginBottom: 16 }}>Tạo yêu cầu đổi trả</p>
+        <div className="bg-card border border-border p-[22px_24px] mb-6">
+          <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-4">Tạo yêu cầu đổi trả</p>
           {formError && (
-            <div className="wp-alert-error" style={{ marginBottom: 12 }}>
-              <p>{formError}</p>
+            <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-3 text-sm text-destructive">
+              <p className="m-0">{formError}</p>
             </div>
           )}
           <form onSubmit={handleSubmit}>
-            <div className="wp-form-grid">
-              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
-                <label>Đơn hàng</label>
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5 col-span-full">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Đơn hàng</label>
                 {ordersLoading ? (
                   <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 38 }} />
                 ) : returnableOrders.length === 0 ? (
-                  <p style={{ fontSize: "0.85rem", color: "var(--bb-text-muted)" }}>
+                  <p className="text-sm text-muted-foreground">
                     Không có đơn hàng nào đủ điều kiện đổi trả (cần trạng thái Hoàn thành).
                   </p>
                 ) : (
@@ -340,25 +345,24 @@ function ReturnsContent() {
 
               {/* Line items appear after an order is chosen */}
               {selectedOrderId && (
-                <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ marginBottom: 8, display: "block" }}>Chọn sản phẩm đổi trả</label>
+                <div className="flex flex-col gap-1.5 col-span-full">
+                  <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">Chọn sản phẩm đổi trả</label>
                   {lineItemsLoading ? (
                     <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 32 }} />
                   ) : selectedLineItems.length === 0 ? (
-                    <p style={{ fontSize: "0.85rem", color: "var(--bb-text-muted)" }}>Không có sản phẩm nào trong đơn hàng này.</p>
+                    <p className="text-sm text-muted-foreground">Không có sản phẩm nào trong đơn hàng này.</p>
                   ) : (
                     selectedLineItems.map((li) => (
-                      <div key={li.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <input
-                          type="checkbox"
+                      <div key={li.id} className="flex items-center gap-2.5 mb-2.5">
+                        <Checkbox
                           id={`dt-item-${li.id}`}
                           checked={itemSelections[li.id]?.selected ?? false}
-                          onChange={() => toggleLineItem(li.id)}
+                          onCheckedChange={() => toggleLineItem(li.id)}
                         />
-                        <label htmlFor={`dt-item-${li.id}`} style={{ flex: 1, cursor: "pointer", fontSize: 14 }}>
+                        <label htmlFor={`dt-item-${li.id}`} className="flex-1 cursor-pointer text-sm">
                           {li.productName}
-                          {li.variantName ? <span style={{ color: "var(--c-muted)" }}> ({li.variantName})</span> : null}
-                          <span style={{ color: "var(--c-muted)", marginLeft: 6 }}>×{li.quantity}</span>
+                          {li.variantName ? <span className="text-muted-foreground"> ({li.variantName})</span> : null}
+                          <span className="ml-1.5 text-muted-foreground">×{li.quantity}</span>
                         </label>
                         {itemSelections[li.id]?.selected && (
                           <Input
@@ -377,8 +381,8 @@ function ReturnsContent() {
                 </div>
               )}
 
-              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
-                <label>Lý do đổi trả</label>
+              <div className="flex flex-col gap-1.5 col-span-full">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Lý do đổi trả</label>
                 <Select name="reason" required>
                   <SelectTrigger>
                     <SelectValue placeholder="-- Chọn lý do --" />
@@ -390,8 +394,8 @@ function ReturnsContent() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="wp-field" style={{ gridColumn: "1 / -1" }}>
-                <label>Mô tả thêm (không bắt buộc)</label>
+              <div className="flex flex-col gap-1.5 col-span-full">
+                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Mô tả thêm (không bắt buộc)</label>
                 <Textarea
                   name="customerNote"
                   rows={3}
@@ -400,7 +404,7 @@ function ReturnsContent() {
                 />
               </div>
             </div>
-            <div className="wp-form-actions">
+            <div className="flex gap-3 mt-5">
               <Button type="submit" variant="primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
                 {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
               </Button>
@@ -415,8 +419,8 @@ function ReturnsContent() {
       {loading ? (
         <div className="bb-skel-stack" aria-busy="true">
           {[1, 2].map((i) => (
-            <div key={i} className="wp-order-card">
-              <div className="wp-order-head">
+            <div key={i} className="bg-card border border-border mb-[14px] overflow-hidden">
+              <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
                 <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
                   <div className="bb-skel-col">
                     <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
@@ -433,47 +437,47 @@ function ReturnsContent() {
           ))}
         </div>
       ) : returns.length === 0 ? (
-        <div className="wp-empty-state">
-          <p className="wp-muted-text">Bạn chưa có yêu cầu đổi trả nào.</p>
+        <div className="text-center py-[60px] text-muted-foreground">
+          <p className="text-muted-foreground text-sm m-0">Bạn chưa có yêu cầu đổi trả nào.</p>
         </div>
       ) : (
         <>
-          <div className="bb-skel-stack">
+          <div className="flex flex-col gap-0">
             {returns.map((ret) => (
               <button
                 key={ret.id}
                 type="button"
-                className="wp-order-card wp-order-card--clickable"
+                className="w-full text-left cursor-pointer bg-card border border-border mb-[14px] overflow-hidden transition-[border-color] duration-[140ms] hover:border-[var(--bb-border-strong)]"
                 onClick={() => setSelectedId(ret.id)}
               >
-                <div className="wp-order-head">
-                  <div className="meta">
-                    <div>
+                <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
+                  <div className="flex gap-[22px] max-sm:flex-wrap max-sm:gap-x-[18px] max-sm:gap-y-3">
+                    <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
                       Mã yêu cầu
-                      <b style={{ fontFamily: "monospace" }}>{ret.returnNumber}</b>
+                      <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{ret.returnNumber}</b>
                     </div>
                     {ret.orderNumber && (
-                      <div>
+                      <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
                         Đơn hàng
-                        <b>#{ret.orderNumber}</b>
+                        <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">#{ret.orderNumber}</b>
                       </div>
                     )}
-                    <div>
+                    <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
                       Lý do
-                      <b>{RETURN_REASON_LABELS[ret.reason] ?? ret.reason}</b>
+                      <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case">{RETURN_REASON_LABELS[ret.reason] ?? ret.reason}</b>
                     </div>
-                    <div>
+                    <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
                       Ngày tạo
-                      <b>{formatDate(ret.createdAt)}</b>
+                      <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{formatDate(ret.createdAt)}</b>
                     </div>
                     {ret.refundAmount > 0 && (
-                      <div>
+                      <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
                         Hoàn tiền
-                        <b>{formatVnd(ret.refundAmount)}</b>
+                        <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case">{formatVnd(ret.refundAmount)}</b>
                       </div>
                     )}
                   </div>
-                  <span className={`wp-order-status ${returnStatusClass(ret.status)}`}>
+                  <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${returnStatusBadgeClass(ret.status)}`}>
                     {RETURN_STATUS_LABELS[ret.status] ?? ret.status}
                   </span>
                 </div>
@@ -497,3 +501,4 @@ export default function ReturnsPage() {
     </AccountShell>
   );
 }
+

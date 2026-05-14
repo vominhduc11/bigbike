@@ -19,32 +19,34 @@ export function CartIcon() {
   const [loading, setLoading] = useState(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingRef = useRef(false);
+  const lastLoadedCartCount = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
     if (openTimer.current) clearTimeout(openTimer.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
-  const loadCart = useCallback(() => {
-    if (loading || cart) return;
+  const refreshCart = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
-    fetchCart()
-      .then(setCart)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [loading, cart]);
-
-  // Re-fetch when cartCount changes (item added/removed elsewhere)
-  useEffect(() => {
-    if (open && cartCount != null) {
-      setLoading(true);
-      fetchCart()
-        .then(setCart)
-        .catch(() => {})
-        .finally(() => setLoading(false));
+    try {
+      const nextCart = await fetchCart();
+      setCart(nextCart);
+      lastLoadedCartCount.current = cartCount ?? null;
+    } catch {
+      // Mini cart is a convenience surface; keep the current state on transient failures.
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartCount]);
+
+  const loadCart = useCallback(() => {
+    if (cart && lastLoadedCartCount.current === (cartCount ?? null)) return;
+    void refreshCart();
+  }, [cart, cartCount, refreshCart]);
 
   function handleEnter() {
     clearTimers();
@@ -63,7 +65,7 @@ export function CartIcon() {
 
   return (
     <div
-      className="wp-cart-icon-wrap"
+      className="bb-cart-icon-wrap"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onFocus={handleEnter}
@@ -92,62 +94,62 @@ export function CartIcon() {
       </Link>
 
       {open && (
-        <div className="wp-mini-cart-popover" role="dialog" aria-label="Giỏ hàng nhanh">
-          <div className="wp-mini-cart-arrow" aria-hidden="true" />
-          <div className="wp-mini-cart-head">
+        <div className="bb-mini-cart-popover" role="dialog" aria-label="Giỏ hàng nhanh">
+          <div className="bb-mini-cart-arrow" aria-hidden="true" />
+          <div className="bb-mini-cart-head">
             <h3>GIỎ HÀNG</h3>
-            <span className="wp-mini-cart-count">{cartCount ?? 0} sản phẩm</span>
+            <span className="bb-mini-cart-count">{cartCount ?? 0} sản phẩm</span>
           </div>
 
           {loading && !cart ? (
-            <div className="wp-mini-cart-loading">Đang tải...</div>
+            <div className="bb-mini-cart-loading">Đang tải...</div>
           ) : !cart || cart.items.length === 0 ? (
-            <div className="wp-mini-cart-empty">
+            <div className="bb-mini-cart-empty">
               <p>Giỏ hàng trống</p>
-              <Link href="/san-pham/" className="wp-mini-cart-shop">
+              <Link href="/san-pham/" className="bb-mini-cart-shop">
                 Xem sản phẩm
               </Link>
             </div>
           ) : (
             <>
-              <div className="wp-mini-cart-list">
+              <div className="bb-mini-cart-list">
                 {cart.items.slice(0, 4).map((item) => (
-                  <div key={item.id} className="wp-mini-cart-item">
-                    <div className="wp-mini-cart-thumb">
+                  <div key={item.id} className="bb-mini-cart-item">
+                    <div className="bb-mini-cart-thumb">
                       {item.image?.url ? (
                         <MediaImage image={item.image} altFallback={item.productName} width={56} height={56} />
                       ) : (
                         <span>{item.productName.slice(0, 2)}</span>
                       )}
                     </div>
-                    <div className="wp-mini-cart-info">
-                      <p className="wp-mini-cart-name">{item.productName}</p>
+                    <div className="bb-mini-cart-info">
+                      <p className="bb-mini-cart-name">{item.productName}</p>
                       {item.variantName && (
-                        <p className="wp-mini-cart-variant">{item.variantName}</p>
+                        <p className="bb-mini-cart-variant">{item.variantName}</p>
                       )}
-                      <p className="wp-mini-cart-qty">
+                      <p className="bb-mini-cart-qty">
                         {item.quantity} × {formatVnd(item.unitPrice)}
                       </p>
                     </div>
                   </div>
                 ))}
                 {cart.items.length > 4 && (
-                  <p className="wp-mini-cart-more">
+                  <p className="bb-mini-cart-more">
                     + {cart.items.length - 4} sản phẩm khác
                   </p>
                 )}
               </div>
 
-              <div className="wp-mini-cart-total">
+              <div className="bb-mini-cart-total">
                 <span>Tổng:</span>
                 <b>{formatVnd(cart.totals.totalAmount)}</b>
               </div>
 
-              <div className="wp-mini-cart-actions">
-                <Link href={toCartPath()} className="wp-mini-cart-btn-secondary">
+              <div className="bb-mini-cart-actions">
+                <Link href={toCartPath()} className="bb-mini-cart-btn-secondary">
                   XEM GIỎ HÀNG
                 </Link>
-                <Link href={toCheckoutPath()} className="wp-mini-cart-btn-primary">
+                <Link href={toCheckoutPath()} className="bb-mini-cart-btn-primary">
                   THANH TOÁN
                 </Link>
               </div>

@@ -59,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`}>
+    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="bb-theme min-h-full flex flex-col">
         {GTM_ID && (
           <Script
@@ -87,7 +87,7 @@ export default function RootLayout({
               <SiteHeader />
               <main className="bb-main">{children}</main>
               <SiteFooter />
-              <div className="wp-floating-group">
+              <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2">
                 <FloatingChatLoader />
               </div>
             </WishlistProvider>

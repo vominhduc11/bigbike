@@ -7,16 +7,18 @@ import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviewDetail, updateReviewStatus } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'neutral', TRASH: 'neutral' }
 
 function ReviewStatusBadge({ review, t }) {
   return (
-    <span className={`status-badge status-${STATUS_TONES[review.status] || 'neutral'}`}>
+    <Badge variant={STATUS_TONES[review.status] || 'neutral' === 'neutral' ? 'muted' : STATUS_TONES[review.status] || 'neutral'}>
       {t(`reviews.status${review.status.charAt(0) + review.status.slice(1).toLowerCase()}`, {
         defaultValue: review.status,
       })}
-    </span>
+    </Badge>
   )
 }
 
@@ -112,9 +114,9 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <h1>{t('reviews.detail.title')}</h1>
           <p>{formatText(review.productName, review.productId || t('reviews.unknownProduct'))}</p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin/reviews')}>
+        <Button variant="secondary" type="button" onClick={() => navigate('/admin/reviews')}>
           {t('reviews.detail.backToList')}
-        </button>
+        </Button>
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
@@ -137,9 +139,9 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
             <p><strong>{t('reviews.detail.productSlug')}</strong> {formatText(review.productSlug, '(---)')}</p>
             <p><strong>{t('reviews.detail.productId')}</strong> {formatText(review.productId, '(---)')}</p>
             {review.productId ? (
-              <button type="button" className="btn btn-secondary" onClick={() => navigate(`/admin/products/${review.productId}`)}>
+              <Button variant="secondary" type="button" onClick={() => navigate(`/admin/products/${review.productId}`)}>
                 {t('reviews.detail.openProduct')}
-              </button>
+              </Button>
             ) : null}
           </div>
         </DetailSection>
@@ -153,19 +155,19 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         <DetailSection title={t('reviews.detail.sectionActions')}>
           <div className="row-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
             {canUpdate && review.status !== 'APPROVED' ? (
-              <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => handleStatusChange('APPROVED')}>
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('APPROVED')}>
                 {t('reviews.approve')}
-              </button>
+              </Button>
             ) : null}
             {canUpdate && review.status !== 'SPAM' ? (
-              <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => handleStatusChange('SPAM')}>
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('SPAM')}>
                 {t('reviews.spam')}
-              </button>
+              </Button>
             ) : null}
             {canUpdate ? (
-              <button type="button" className="btn btn-danger" disabled={busy} onClick={handleDelete}>
+              <Button variant="danger" type="button" disabled={busy} onClick={handleDelete}>
                 {t('common.delete')}
-              </button>
+              </Button>
             ) : null}
           </div>
         </DetailSection>

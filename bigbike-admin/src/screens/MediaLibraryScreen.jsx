@@ -32,6 +32,9 @@ import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
 import { useKeyboardNav } from '../lib/useKeyboardNav'
 import styles from './MediaLibraryScreen.module.css'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const ALLOWED_MIME = [
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -399,10 +402,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         <label style={{ flex: '1 1 220px', minWidth: 200 }}>
           {t('common.search')}
           <div className={styles.searchWrap}>
-            <input className="control-input" type="search" value={searchInput}
+            <Input type="search" value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('media.searchPlaceholder')}
-              style={{ paddingRight: searchInput ? 32 : 12 }} />
+              style={{ paddingRight: searchInput ? 32 : 12 }}  />
             {searchInput && (
               <button type="button" onClick={() => setSearchInput('')}
                 aria-label={t('common.clear')} className={styles.searchClear}>
@@ -414,36 +417,36 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
         <label>
           {t('media.filterType')}
-          <select className="control-select" value={query.mimeType}
-            onChange={(e) => updateQuery({ mimeType: e.target.value })}>
-            <option value="ALL">{t('media.allFiles')}{stats ? ` (${formatNumber(stats.total)})` : ''}</option>
-            <option value="image/">{t('media.images')}{stats?.byMimeGroup?.image != null ? ` (${formatNumber(stats.byMimeGroup.image)})` : ''}</option>
-            <option value="video/">{t('media.videos')}{stats?.byMimeGroup?.video != null ? ` (${formatNumber(stats.byMimeGroup.video)})` : ''}</option>
-            <option value="audio/">{t('media.audios')}{stats?.byMimeGroup?.audio != null ? ` (${formatNumber(stats.byMimeGroup.audio)})` : ''}</option>
-          </select>
+          <Select value={query.mimeType}
+            onValueChange={(val) => updateQuery({ mimeType: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('media.allFiles')}{stats ? ` (${formatNumber(stats.total)})` : ''}</SelectItem>
+            <SelectItem value="image/">{t('media.images')}{stats?.byMimeGroup?.image != null ? ` (${formatNumber(stats.byMimeGroup.image)})` : ''}</SelectItem>
+            <SelectItem value="video/">{t('media.videos')}{stats?.byMimeGroup?.video != null ? ` (${formatNumber(stats.byMimeGroup.video)})` : ''}</SelectItem>
+            <SelectItem value="audio/">{t('media.audios')}{stats?.byMimeGroup?.audio != null ? ` (${formatNumber(stats.byMimeGroup.audio)})` : ''}</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('media.filterUsage')}
-          <select className="control-select" value={query.usageFilter}
-            onChange={(e) => updateQuery({ usageFilter: e.target.value })}>
-            <option value="ALL">{t('common.all')}{stats ? ` (${formatNumber(stats.total)})` : ''}</option>
-            <option value="USED">{t('media.usageUsed')}{stats ? ` (${formatNumber(stats.used)})` : ''}</option>
-            <option value="UNUSED">{t('media.usageUnusedOption')}{stats ? ` (${formatNumber(stats.unused)})` : ''}</option>
-          </select>
+          <Select value={query.usageFilter}
+            onValueChange={(val) => updateQuery({ usageFilter: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}{stats ? ` (${formatNumber(stats.total)})` : ''}</SelectItem>
+            <SelectItem value="USED">{t('media.usageUsed')}{stats ? ` (${formatNumber(stats.used)})` : ''}</SelectItem>
+            <SelectItem value="UNUSED">{t('media.usageUnusedOption')}{stats ? ` (${formatNumber(stats.unused)})` : ''}</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <label>
           {t('common.sort')}
-          <select className="control-select" value={`${query.sort}:${query.dir}`}
-            onChange={(e) => { const [sort, dir] = e.target.value.split(':'); updateQuery({ sort, dir }) }}>
-            <option value="createdAt:desc">{t('media.sortNewest')}</option>
-            <option value="createdAt:asc">{t('media.sortOldest')}</option>
-            <option value="fileSize:desc">{t('media.sortLargest')}</option>
-            <option value="fileSize:asc">{t('media.sortSmallest')}</option>
-            <option value="title:asc">{t('media.sortNameAZ')}</option>
-            <option value="usageCount:desc">{t('media.sortMostUsed')}</option>
-          </select>
+          <Select value={`${query.sort}:${query.dir}`}
+            onValueChange={(val) => { const [sort, dir] = val.split(':'); updateQuery({ sort, dir }) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="createdAt:desc">{t('media.sortNewest')}</SelectItem>
+            <SelectItem value="createdAt:asc">{t('media.sortOldest')}</SelectItem>
+            <SelectItem value="fileSize:desc">{t('media.sortLargest')}</SelectItem>
+            <SelectItem value="fileSize:asc">{t('media.sortSmallest')}</SelectItem>
+            <SelectItem value="title:asc">{t('media.sortNameAZ')}</SelectItem>
+            <SelectItem value="usageCount:desc">{t('media.sortMostUsed')}</SelectItem>
+          </SelectContent></Select>
         </label>
 
         <button type="button" className="btn btn-secondary" onClick={() => setShowAdvanced((s) => !s)}
@@ -454,18 +457,18 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
       {showAdvanced && (
         <section className={styles.filterBar}>
-          <label>{t('media.uploadedFrom')}<input className="control-input" type="date" value={query.uploadedFrom} onChange={(e) => updateQuery({ uploadedFrom: e.target.value })} /></label>
-          <label>{t('media.uploadedTo')}<input className="control-input" type="date" value={query.uploadedTo} onChange={(e) => updateQuery({ uploadedTo: e.target.value })} /></label>
-          <label>{t('media.minSizeMB')}<input className="control-input" type="number" min="0" step="0.1"
+          <label>{t('media.uploadedFrom')}<Input type="date" value={query.uploadedFrom} onChange={(e) => updateQuery({ uploadedFrom: e.target.value })}  /></label>
+          <label>{t('media.uploadedTo')}<Input type="date" value={query.uploadedTo} onChange={(e) => updateQuery({ uploadedTo: e.target.value })}  /></label>
+          <label>{t('media.minSizeMB')}<Input type="number" min="0" step="0.1"
             value={query.minSize ? (Number(query.minSize) / (1024 * 1024)).toFixed(1) : ''}
             onChange={(e) => updateQuery({ minSize: e.target.value ? Math.round(Number(e.target.value) * 1024 * 1024) : '' })}
-            placeholder="0" /></label>
-          <label>{t('media.maxSizeMB')}<input className="control-input" type="number" min="0" step="0.1"
+            placeholder="0"  /></label>
+          <label>{t('media.maxSizeMB')}<Input type="number" min="0" step="0.1"
             value={query.maxSize ? (Number(query.maxSize) / (1024 * 1024)).toFixed(1) : ''}
             onChange={(e) => updateQuery({ maxSize: e.target.value ? Math.round(Number(e.target.value) * 1024 * 1024) : '' })}
-            placeholder="50" /></label>
-          <label>{t('media.minWidthPx')}<input className="control-input" type="number" min="0" value={query.minWidth} onChange={(e) => updateQuery({ minWidth: e.target.value })} placeholder="1920" /></label>
-          <label>{t('media.minHeightPx')}<input className="control-input" type="number" min="0" value={query.minHeight} onChange={(e) => updateQuery({ minHeight: e.target.value })} placeholder="1080" /></label>
+            placeholder="50"  /></label>
+          <label>{t('media.minWidthPx')}<Input type="number" min="0" value={query.minWidth} onChange={(e) => updateQuery({ minWidth: e.target.value })} placeholder="1920"  /></label>
+          <label>{t('media.minHeightPx')}<Input type="number" min="0" value={query.minHeight} onChange={(e) => updateQuery({ minHeight: e.target.value })} placeholder="1080"  /></label>
         </section>
       )}
 
@@ -549,8 +552,8 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {canUpdate && state.status === 'success' && state.items.length > 0 && (
         <div style={{ marginBottom: 8, fontSize: '0.8rem' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-            <input type="checkbox" checked={allOnPageSelected}
-              onChange={(e) => e.target.checked ? selectAllOnPage() : clearSelection()} />
+            <Checkbox checked={allOnPageSelected}
+              onCheckedChange={(checked) => checked ? selectAllOnPage() : clearSelection()}  />
             <span>{t('media.selectAllOnPage')}</span>
           </label>
         </div>
@@ -590,10 +593,10 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             <PaginationControls pagination={state.pagination} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
             <label className={styles.pageSizeWrap}>
               {t('common.pageSize')}
-              <select className="control-select" value={query.pageSize}
-                onChange={(e) => updateQuery({ pageSize: Number(e.target.value) })}>
-                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <Select value={query.pageSize}
+                onValueChange={(val) => updateQuery({ pageSize: Number(val) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                {PAGE_SIZE_OPTIONS.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+              </SelectContent></Select>
             </label>
           </div>
         </>

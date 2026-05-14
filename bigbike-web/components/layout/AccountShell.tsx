@@ -8,6 +8,7 @@ import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import { toLoginPath } from "@/lib/utils/routes";
 import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
+import { Button } from "@/components/ui/button";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
 const AccountRefreshContext = createContext<(() => Promise<void>) | null>(null);
@@ -73,15 +74,15 @@ export function AccountShell({ children, loginRedirect }: Props) {
   return (
     <AccountRefreshContext.Provider value={refreshProfile}>
     <AccountContext.Provider value={profile}>
-      <div className="wp-account-layout">
-        <aside className="wp-account-sidebar">
-          <div className="wp-account-user">
-            <div className="wp-account-avatar">{avatarInitials(profile)}</div>
+      <div className="bb-account-layout">
+        <aside className="bb-account-sidebar">
+          <div className="bb-account-user">
+            <div className="bb-account-avatar">{avatarInitials(profile)}</div>
             <b>{profile.displayName ?? profile.email.split("@")[0]}</b>
             <span>{profile.email}</span>
-            <div className="wp-account-tier">Thành viên</div>
+            <div className="bb-account-tier">Thành viên</div>
           </div>
-          <nav className="wp-account-nav">
+          <nav className="bb-account-nav">
             {NAV.map(({ href, label, exact }) => (
               <Link
                 key={href}
@@ -93,31 +94,32 @@ export function AccountShell({ children, loginRedirect }: Props) {
             ))}
             <div className="logout">
               {logoutConfirm ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ fontSize: "var(--bb-text-sm)", color: "var(--bb-text-secondary)" }}>Đăng xuất khỏi tài khoản?</span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" className="wp-logout-btn" onClick={handleLogout} disabled={loggingOut}>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm text-muted-foreground">Đăng xuất khỏi tài khoản?</span>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="ghost" className="bb-logout-btn" onClick={handleLogout} disabled={loggingOut}>
                       {loggingOut ? "Đang xử lý..." : "Xác nhận"}
-                    </button>
-                    <button type="button" className="wp-logout-btn" onClick={() => setLogoutConfirm(false)}>
+                    </Button>
+                    <Button type="button" variant="ghost" className="bb-logout-btn" onClick={() => setLogoutConfirm(false)}>
                       Huỷ
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
-                <button
+                <Button
                   type="button"
-                  className="wp-logout-btn"
+                  variant="ghost"
+                  className="bb-logout-btn"
                   onClick={() => setLogoutConfirm(true)}
                   disabled={loggingOut}
                 >
                   Đăng xuất
-                </button>
+                </Button>
               )}
             </div>
           </nav>
         </aside>
-        <div className="wp-account-main">
+        <div className="bb-account-main">
           {children}
         </div>
       </div>

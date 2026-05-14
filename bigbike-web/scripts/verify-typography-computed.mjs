@@ -49,7 +49,7 @@ const ROUTES = [
   { path: "/lien-he", label: "contact" },
   { path: "/dang-nhap", label: "login" },
   { path: "/gioi-thieu", label: "about-static" },
-  // Phase 2 additions: routes that render .wp-btn-primary without backend data
+  // Phase 2 additions: routes that render .bb-btn-primary without backend data
   { path: "/bao-hanh", label: "warranty" },
   { path: "/gio-hang", label: "cart" },
 ];
@@ -161,7 +161,7 @@ const EXPECTED_CHECKS = [
   // Use :not(.active) to skip the active nav item which correctly shows
   // brand-primary color (#ff0c09) instead of white — that is intended behavior.
   {
-    selector: ".wp-navigation-item:not(.active) > a",
+    selector: ".bb-navigation-item:not(.active) > a",
     label: "nav-item-link",
     checks: [
       {
@@ -202,7 +202,7 @@ const EXPECTED_CHECKS = [
   // Element is in DOM but visibility:hidden when not hovered.
   // getComputedStyle() still returns correct font/text props.
   {
-    selector: ".wp-sub-menu-item > a",
+    selector: ".bb-sub-menu-item > a",
     label: "sub-menu-link",
     checks: [
       {
@@ -234,7 +234,7 @@ const EXPECTED_CHECKS = [
 
   // ── product card title ────────────────────────────────────────────────────
   {
-    selector: ".wp-product-name",
+    selector: ".bb-product-name",
     label: "product-card-name",
     checks: [
       {
@@ -266,7 +266,7 @@ const EXPECTED_CHECKS = [
 
   // ── product price ─────────────────────────────────────────────────────────
   {
-    selector: ".wp-product-price b",
+    selector: ".bb-product-price b",
     label: "product-price-current",
     checks: [
       {
@@ -298,7 +298,7 @@ const EXPECTED_CHECKS = [
 
   // ── section title ─────────────────────────────────────────────────────────
   {
-    selector: ".wp-section-title",
+    selector: ".bb-section-title",
     label: "section-title",
     checks: [
       {
@@ -338,7 +338,7 @@ const EXPECTED_CHECKS = [
 
   // ── breadcrumb container ──────────────────────────────────────────────────
   {
-    selector: ".wp-breadcrumb",
+    selector: ".bb-breadcrumb",
     label: "breadcrumb",
     checks: [
       {
@@ -370,7 +370,7 @@ const EXPECTED_CHECKS = [
 
   // ── breadcrumb link ───────────────────────────────────────────────────────
   {
-    selector: ".wp-breadcrumb a",
+    selector: ".bb-breadcrumb a",
     label: "breadcrumb-link",
     checks: [
       {
@@ -486,10 +486,10 @@ const EXPECTED_CHECKS = [
     ],
   },
 
-  // ── wp-btn-primary (if different element) ─────────────────────────────────
+  // ── bb-btn-primary (if different element) ─────────────────────────────────
   {
-    selector: ".wp-btn-primary",
-    label: "wp-btn-primary",
+    selector: ".bb-btn-primary",
+    label: "bb-btn-primary",
     checks: [
       {
         prop: "font-family",
@@ -524,7 +524,7 @@ const EXPECTED_CHECKS = [
 
   // ── page h1 ───────────────────────────────────────────────────────────────
   {
-    selector: ".wp-page-head h1",
+    selector: ".bb-page-head h1",
     label: "page-h1",
     checks: [
       {
@@ -544,9 +544,9 @@ const EXPECTED_CHECKS = [
 
   // ── h2 (product detail related-products title) ────────────────────────────
   // .bb-page h2 was too broad — it matches empty-state h2s that inherit body
-  // font (Barlow). Use the specific .wp-pdp-related-title class instead.
+  // font (Barlow). Use the specific .bb-pdp-related-title class instead.
   {
-    selector: ".wp-pdp-related-title",
+    selector: ".bb-pdp-related-title",
     label: "pdp-related-title",
     checks: [
       {

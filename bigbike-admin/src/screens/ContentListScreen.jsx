@@ -10,6 +10,8 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = {
   search: '',
@@ -150,43 +152,38 @@ export function ContentListScreen({ navigate, canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('content.searchPlaceholder')}
-          />
+           />
         </label>
         <label>
           {t('content.filterType')}
-          <select
-            className="control-select"
+          <Select
             value={query.type}
-            onChange={(event) =>
-              updateQuery({ type: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="ARTICLE">{t('content.typeArticle')}</option>
-            <option value="PAGE">{t('content.typePage')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ type: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="ARTICLE">{t('content.typeArticle')}</SelectItem>
+            <SelectItem value="PAGE">{t('content.typePage')}</SelectItem>
+          </SelectContent></Select>
         </label>
         <label>
           {t('content.filterPublish')}
-          <select
-            className="control-select"
+          <Select
             value={query.publishStatus}
-            onChange={(event) =>
-              updateQuery({ publishStatus: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-            <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-            <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-            <option value="TRASH">{t('status.publish.TRASH')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ publishStatus: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
+            <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
+            <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+            <SelectItem value="TRASH">{t('status.publish.TRASH')}</SelectItem>
+          </SelectContent></Select>
         </label>
       </section>
 

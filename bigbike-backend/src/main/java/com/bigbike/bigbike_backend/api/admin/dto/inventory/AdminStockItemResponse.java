@@ -13,7 +13,8 @@ public record AdminStockItemResponse(
         String stockState,
         int quantityOnHand,
         BigDecimal retailPrice,
-        boolean trackSerials
+        boolean trackSerials,
+        boolean forceOutOfStock
 ) {
     public record ImageRef(
             String id,

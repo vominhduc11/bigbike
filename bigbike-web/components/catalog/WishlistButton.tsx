@@ -30,7 +30,7 @@ export function WishlistButton({ productId }: WishlistButtonProps) {
   return (
     <button
       type="button"
-      className={`wp-wishlist-btn${active ? " active" : ""}`}
+      className={`bb-round absolute top-[10px] right-[10px] z-[3] rounded-full w-[34px] h-[34px] flex items-center justify-center cursor-pointer transition-colors duration-300 p-0 border ${active ? "bg-brand-soft border-brand text-brand" : "bg-white/95 border-border text-muted-foreground hover:bg-white hover:border-brand hover:text-brand"}`}
       aria-label={active ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
       disabled={auth.status === "loading"}
       onClick={handleClick}

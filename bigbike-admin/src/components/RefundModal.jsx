@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { createRefund } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 const REFUND_REASONS = [
   'Khách yêu cầu huỷ',
@@ -81,52 +85,48 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
               <label className="form-label" htmlFor="refund-amount">
                 {t('refund.labelAmount')} <span aria-hidden="true">*</span>
               </label>
-              <input
+              <Input
                 id="refund-amount"
-                className="control-input"
                 type="number"
                 min="1"
                 max={maxRefundable}
                 step="1"
                 value={form.refundAmount}
                 onChange={(e) => setForm((p) => ({ ...p, refundAmount: e.target.value }))}
-              />
+               />
               {errors.refundAmount && <p className="field-error">{errors.refundAmount}</p>}
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label" htmlFor="refund-reason">{t('refund.labelReason')}</label>
-              <select
+              <Select
                 id="refund-reason"
-                className="control-select"
                 value={form.refundReason}
-                onChange={(e) => setForm((p) => ({ ...p, refundReason: e.target.value }))}
-              >
-                {REFUND_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+                onValueChange={(val) => setForm((p) => ({ ...p, refundReason: val }))}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                {REFUND_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent></Select>
               {errors.refundReason && <p className="field-error">{errors.refundReason}</p>}
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label" htmlFor="refund-note">{t('refund.labelNote')}</label>
-              <textarea
+              <Textarea
                 id="refund-note"
-                className="control-input"
                 rows={3}
                 value={form.note}
                 onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
                 placeholder={t('refund.notePlaceholder')}
                 style={{ resize: 'vertical', minHeight: 72 }}
-              />
+               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.customerVisible}
                   onChange={(e) => setForm((p) => ({ ...p, customerVisible: e.target.checked }))}
-                />
+                 />
                 {t('refund.labelCustomerVisible')}
               </label>
             </div>

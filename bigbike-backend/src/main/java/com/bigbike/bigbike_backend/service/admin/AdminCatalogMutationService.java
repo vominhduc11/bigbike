@@ -464,9 +464,7 @@ public class AdminCatalogMutationService {
             if (request.getRetailPrice() == null) {
                 errors.add(new ApiErrorDetail("retailPrice", "REQUIRED", "retailPrice is required."));
             }
-            if (request.getStockState() == null) {
-                errors.add(new ApiErrorDetail("stockState", "REQUIRED", "stockState is required."));
-            }
+            // stockState is a derived field — not required from client. Always computed from quantityOnHand.
             if (request.getPublishStatus() == null) {
                 errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
             }
@@ -785,8 +783,8 @@ public class AdminCatalogMutationService {
         } else if (entity.getCurrency() == null) {
             entity.setCurrency("VND");
         }
-        if (create || request.getStockState() != null) {
-            entity.setStockState(request.getStockState() != null ? request.getStockState() : ProductStockState.OUT_OF_STOCK);
+        if (create) {
+            entity.setStockState(ProductStockState.OUT_OF_STOCK);
         }
         if (create || request.getForceOutOfStock() != null) {
             entity.setForceOutOfStock(Boolean.TRUE.equals(request.getForceOutOfStock()));
@@ -1019,8 +1017,8 @@ public class AdminCatalogMutationService {
                 variant.setSalePrice(req.getSalePrice());
             }
             variant.setCurrency("VND");
-            if (createVariant || req.getStockState() != null) {
-                variant.setStockState(req.getStockState() != null ? req.getStockState() : com.bigbike.bigbike_backend.domain.catalog.ProductStockState.OUT_OF_STOCK);
+            if (createVariant) {
+                variant.setStockState(ProductStockState.OUT_OF_STOCK);
             }
             variant.setImageUrl(colorKey != null ? imageByColor.getOrDefault(colorKey, null) : null);
             variant.setImageAlt(AdminMutationValidators.trimToNull(req.getImageAlt()));

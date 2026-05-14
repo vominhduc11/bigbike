@@ -88,14 +88,29 @@ Evidence:
 - Current serial handling is movement-log based, not a fully modeled product-serial lifecycle table. `CONFIRMED_FROM_CODE`
 - Receipt tables exist in migrations, but an active receiving service/controller is not documented. `NOT_FOUND_IN_REPO`
 
+### Stock State Derivation Rules `CONFIRMED_FROM_CODE`
+
+- `stockState` (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`) is always **derived** from `quantityOnHand` (or `stockQuantity` for no-variant products). Admin cannot set it manually via the catalog create/update API.
+- `STOCK_RULE_001`: New product or variant is always created with `stockState = OUT_OF_STOCK` (initial `quantityOnHand = 0`).
+- `STOCK_RULE_002`: Every time `quantityOnHand` changes (stock-in, sale, cancel, return), `stockState` is recomputed via `InventoryPolicyService.recomputeStockState()`.
+- `STOCK_RULE_003`: Thresholds — `quantityOnHand <= 0` → `OUT_OF_STOCK`; `0 < quantityOnHand <= low_stock_threshold` → `LOW_STOCK`; `quantityOnHand > low_stock_threshold` → `IN_STOCK`. Default threshold is 5 (configurable via `low_stock_threshold` site setting).
+- `STOCK_RULE_004`: `forceOutOfStock` (product-level boolean) is a separate emergency override. It disables purchase on web even when `stockState = IN_STOCK`. It is still manually controlled by admin.
+- `STOCK_RULE_005`: For products with variants, checkout enforces stock via `variant.quantityOnHand` directly (not `variant.stockState`). `variant.stockState` is used for display only (web UI disables "Mua ngay" when `OUT_OF_STOCK`).
+- `STOCK_RULE_006`: For no-variant products, checkout enforces via `product.stockState == OUT_OF_STOCK` AND `product.stockQuantity`. Both are derived from stock movements.
+- `STOCK_RULE_007`: Sản phẩm có tồn kho = 0 → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải nhập hàng về trước (tồn kho > 0) thì khách mới đặt được.
+
 Evidence:
 
 - `AdminInventoryService.java`
+- `InventoryPolicyService.java`
+- `CheckoutService.java` (lines 323–357, 862–901)
+- `AdminCatalogMutationService.java`
 - `StockMovementSerialEntity.java`
 - `V52__add_stock_receipts.sql`
 - `V53__add_stock_receipt_lines.sql`
 - `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
+- `V108__backfill_stock_state_from_quantity.sql`
 
 ## WebSocket Rules
 

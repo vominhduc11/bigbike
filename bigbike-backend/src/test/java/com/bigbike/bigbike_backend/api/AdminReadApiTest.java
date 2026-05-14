@@ -8,7 +8,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,7 +87,6 @@ class AdminReadApiTest {
         create.setName("Phase 3 Read SEO Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("2500000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(PublishStatus.DRAFT);
         create.setContentBottom("<p>Phase 3 read content " + suffix + "</p>");
 
@@ -127,7 +125,6 @@ class AdminReadApiTest {
         create.setName("Trash List Product " + suffix);
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("1250000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(PublishStatus.DRAFT);
 
         Product created = adminCatalogMutationService.createProduct(create, DEV_ADMIN_ID);

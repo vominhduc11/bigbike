@@ -40,15 +40,15 @@ function EditAccountContent() {
 
     if (newPassword) {
       if (!currentPassword) {
-        setPasswordError("Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu.");
+        setPasswordError("Vui l\u00f2ng nh\u1eadp m\u1eadt kh\u1ea9u hi\u1ec7n t\u1ea1i \u0111\u1ec3 \u0111\u1ed5i m\u1eadt kh\u1ea9u.");
         return;
       }
       if (newPassword.length < 8) {
-        setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+        setPasswordError("M\u1eadt kh\u1ea9u m\u1edbi ph\u1ea3i c\u00f3 \u00edt nh\u1ea5t 8 k\u00fd t\u1ef1.");
         return;
       }
       if (newPassword !== confirmPassword) {
-        setPasswordError("Mật khẩu xác nhận không khớp.");
+        setPasswordError("M\u1eadt kh\u1ea9u x\u00e1c nh\u1eadn kh\u00f4ng kh\u1edbp.");
         return;
       }
     }
@@ -67,7 +67,7 @@ function EditAccountContent() {
       await refreshProfile?.();
       setSuccess(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.");
+      setError(err instanceof Error ? err.message : "C\u00f3 l\u1ed7i x\u1ea3y ra, vui l\u00f2ng th\u1eed l\u1ea1i.");
     } finally {
       setSaving(false);
     }
@@ -75,73 +75,73 @@ function EditAccountContent() {
 
   return (
     <>
-      <div className="wp-account-header">
+      <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2>Tài khoản</h2>
-          <p className="sub">Thông tin cá nhân</p>
+          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">{"T\u00e0i kho\u1ea3n"}</h2>
+          <p className="text-xs text-muted-foreground mt-1 m-0">{"Th\u00f4ng tin c\u00e1 nh\u00e2n"}</p>
         </div>
       </div>
 
       {success && (
-        <div className="wp-alert-success">
-          <p>Thông tin đã được cập nhật.</p>
+        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[14px_18px] mb-5 text-sm text-[var(--bb-state-success-text)]">
+          <p className="m-0">{"Th\u00f4ng tin \u0111\u00e3 \u0111\u01b0\u1ee3c c\u1eadp nh\u1eadt."}</p>
         </div>
       )}
 
       {error && (
-        <div className="wp-alert-error">
-          <p>{error}</p>
+        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-5 text-sm text-destructive">
+          <p className="m-0">{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="wp-info-card-form">
-          <p className="wp-info-label">Thông tin tài khoản</p>
-          <div className="wp-form-grid">
-            <div className="wp-field">
-              <label>Họ tên</label>
-              <Input type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="Họ và tên" />
+        <div className="bg-card border border-border p-[22px_24px]">
+          <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px]">{"Th\u00f4ng tin t\u00e0i kho\u1ea3n"}</p>
+          <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"H\u1ecd t\u00ean"}</label>
+              <Input type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="H\u1ecd v\u00e0 t\u00ean" />
             </div>
-            <div className="wp-field">
-              <label>Số điện thoại</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"S\u1ed1 \u0111i\u1ec7n tho\u1ea1i"}</label>
               <Input type="tel" name="phone" defaultValue={profile?.phone ?? ""} placeholder="0901234567" />
             </div>
-            <div className="wp-field">
-              <label>Email</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Email</label>
               <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder="email@example.com" />
             </div>
-            <div className="wp-field">
-              <label>Giới tính</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Gi\u1edbi t\u00ednh"}</label>
               <Select name="gender" defaultValue={profile?.gender ?? undefined}>
                 <SelectTrigger>
-                  <SelectValue placeholder="-- Chọn --" />
+                  <SelectValue placeholder={"-- Ch\u1ecdn --"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">Nam</SelectItem>
-                  <SelectItem value="female">Nữ</SelectItem>
-                  <SelectItem value="other">Khác</SelectItem>
+                  <SelectItem value="female">{"N\u1eef"}</SelectItem>
+                  <SelectItem value="other">{"Kh\u00e1c"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="wp-field">
-              <label>Ngày sinh</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Ng\u00e0y sinh"}</label>
               <Input type="date" name="dob" defaultValue={profile?.dob ?? ""} />
             </div>
           </div>
 
-          <p className="wp-info-label" style={{ marginTop: 24 }}>Đổi mật khẩu (để trống nếu không đổi)</p>
-          <div className="wp-form-grid">
-            <div className="wp-field">
-              <label>Mật khẩu hiện tại</label>
-              <Input type="password" name="currentPassword" placeholder="••••••••" autoComplete="current-password" />
+          <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] mt-6">{"\u0110\u1ed5i m\u1eadt kh\u1ea9u (\u0111\u1ec3 tr\u1ed1ng n\u1ebfu kh\u00f4ng \u0111\u1ed5i)"}</p>
+          <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"M\u1eadt kh\u1ea9u hi\u1ec7n t\u1ea1i"}</label>
+              <Input type="password" name="currentPassword" placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} autoComplete="current-password" />
             </div>
-            <div className="wp-field">
-              <label>Mật khẩu mới</label>
-              <Input type="password" name="newPassword" placeholder="••••••••" autoComplete="new-password" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"M\u1eadt kh\u1ea9u m\u1edbi"}</label>
+              <Input type="password" name="newPassword" placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} autoComplete="new-password" />
             </div>
-            <div className="wp-field">
-              <label>Xác nhận mật khẩu mới</label>
-              <Input type="password" name="confirmPassword" placeholder="••••••••" autoComplete="new-password" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"X\u00e1c nh\u1eadn m\u1eadt kh\u1ea9u m\u1edbi"}</label>
+              <Input type="password" name="confirmPassword" placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} autoComplete="new-password" />
             </div>
           </div>
           {passwordError && (
@@ -149,7 +149,7 @@ function EditAccountContent() {
           )}
 
           <Button type="submit" variant="primary" className="mt-5" disabled={saving}>
-            {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            {saving ? "\u0110ang l\u01b0u..." : "L\u01b0u thay \u0111\u1ed5i"}
           </Button>
         </div>
       </form>

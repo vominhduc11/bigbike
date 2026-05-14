@@ -5,6 +5,8 @@ import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posSearchProducts } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']
 
@@ -142,32 +144,30 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
       <div className="pos-modal" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="pos-modal-close btn btn-secondary btn-icon" onClick={onClose}>
+        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose}>
           <X size={16} />
-        </button>
+        </Button>
         <h3 style={{ marginTop: 0, marginBottom: 16 }}>{t('pos.paymentMethod')}</h3>
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             <div>
               <label className="field-label">Tên khách (tuỳ chọn)</label>
-              <input
-                className="control-input"
+              <Input
                 style={{ width: '100%' }}
                 placeholder="Nguyễn Văn A"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-              />
+               />
             </div>
             <div>
               <label className="field-label">Số điện thoại (tuỳ chọn)</label>
-              <input
-                className="control-input"
+              <Input
                 style={{ width: '100%' }}
                 placeholder="0901 234 567"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-              />
+               />
             </div>
           </div>
 
@@ -187,15 +187,14 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           {method === 'CASH' && (
             <div style={{ marginTop: 12 }}>
               <label className="field-label">Tiền khách đưa (tuỳ chọn)</label>
-              <input
-                className="control-input"
+              <Input
                 style={{ width: '100%' }}
                 type="number"
                 min={0}
                 placeholder="Nhập số tiền khách đưa..."
                 value={tendered}
                 onChange={(e) => setTendered(e.target.value)}
-              />
+               />
               {change !== null && change >= 0 && (
                 <p style={{ marginTop: 4, fontSize: '0.85rem', color: 'var(--admin-color-success, #22c55e)' }}>
                   Tiền thừa trả lại: <strong>{formatCurrencyVnd(change)}</strong>
@@ -210,13 +209,12 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           {method === 'CARD_TERMINAL' && (
             <div style={{ marginTop: 12 }}>
               <label className="field-label">Mã giao dịch thẻ (tuỳ chọn)</label>
-              <input
-                className="control-input"
+              <Input
                 style={{ width: '100%' }}
                 placeholder="REF-12345"
                 value={cardRef}
                 onChange={(e) => setCardRef(e.target.value)}
-              />
+               />
             </div>
           )}
 
@@ -224,8 +222,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
             <div style={{ marginTop: 12 }}>
               <label className="field-label">Tìm khách hàng *</label>
               <div style={{ position: 'relative' }}>
-                <input
-                  className="control-input"
+                <Input
                   style={{ width: '100%' }}
                   placeholder="Nhập tên hoặc email khách hàng..."
                   value={customerQuery}
@@ -236,7 +233,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                     searchCustomers(e.target.value)
                   }}
                   autoComplete="off"
-                />
+                 />
                 {customerResults.length > 0 && (
                   <div style={{
                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
@@ -330,8 +327,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
               {selectedCustomer && !creditBlocked && (
                 <div style={{ marginTop: 10 }}>
                   <label className="field-label">Thanh toán trước (tùy chọn)</label>
-                  <input
-                    className="control-input"
+                  <Input
                     style={{ width: '100%' }}
                     type="number"
                     min={0}
@@ -339,7 +335,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                     placeholder="0 = ghi nợ toàn bộ"
                     value={downPayment}
                     onChange={(e) => setDownPayment(e.target.value)}
-                  />
+                   />
                   {downPaymentInvalid && (
                     <p className="field-error" style={{ marginTop: 4 }}>Thanh toán trước phải từ 0 đến {formatCurrencyVnd(total)}.</p>
                   )}
@@ -350,13 +346,12 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
 
           <div style={{ marginTop: 12 }}>
             <label className="field-label">{t('pos.note')}</label>
-            <input
-              className="control-input"
+            <Input
               style={{ width: '100%' }}
               placeholder={t('pos.notePlaceholder')}
               value={staffNote}
               onChange={(e) => setStaffNote(e.target.value)}
-            />
+             />
           </div>
 
           <div className="pos-pay-total">
@@ -366,14 +361,13 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
 
           {error && <p className="field-error" style={{ marginBottom: 8 }}>{error}</p>}
 
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary"
             style={{ width: '100%' }}
             disabled={submitDisabled}
           >
             {submitting ? t('common.saving') : t('pos.confirmPayment')}
-          </button>
+          </Button>
         </form>
       </div>
     </div>
@@ -443,9 +437,9 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
       <div className="pos-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="pos-modal-close btn btn-secondary btn-icon" onClick={onClose}>
+        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose}>
           <X size={16} />
-        </button>
+        </Button>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--admin-color-success,#22c55e)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" />
@@ -507,17 +501,16 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
         )}
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
+          <Button variant="secondary"
             type="button"
-            className="btn btn-secondary"
             style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={() => printReceipt(order, cart)}
           >
             <Printer size={14} /> In hóa đơn
-          </button>
-          <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={onClose}>
+          </Button>
+          <Button type="button" style={{ flex: 1 }} onClick={onClose}>
             {t('pos.newSale')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -653,13 +646,12 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
         <div className="pos-search-col">
           <div className="pos-search-wrap">
             <Search size={16} className="pos-search-icon" />
-            <input
-              className="control-input pos-search-input"
+            <Input
               placeholder={t('pos.searchPlaceholder')}
               value={q}
               onChange={(e) => handleSearchChange(e.target.value)}
               autoFocus
-            />
+             className="pos-search-input" />
           </div>
 
           {searching && (
@@ -731,11 +723,10 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                     )}
                     {editingPriceId === item.variantId ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                        <input
+                        <Input
                           ref={priceInputRef}
                           type="number"
                           min={0}
-                          className="control-input"
                           style={{ width: 110, padding: '2px 6px', fontSize: '0.8rem' }}
                           value={priceInput}
                           onChange={(e) => setPriceInput(e.target.value)}
@@ -744,7 +735,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                             if (e.key === 'Escape') cancelEditPrice()
                           }}
                           onBlur={() => commitEditPrice(item.variantId)}
-                        />
+                         />
                       </div>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -757,24 +748,23 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                           )}
                         </span>
                         {canOverridePrice && (
-                          <button
+                          <Button variant="secondary" size="sm"
                             type="button"
-                            className="btn btn-icon btn-sm"
                             title="Sửa giá"
                             style={{ opacity: 0.6 }}
                             onClick={() => startEditPrice(item)}
                           >
                             <Pencil size={11} />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
                   </div>
                   <div className="pos-cart-item-qty">
-                    <button type="button" className="btn btn-icon btn-sm" onClick={() => updateQty(item.variantId, -1)}><Minus size={12} /></button>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.variantId, -1)}><Minus size={12} /></Button>
                     <span>{item.qty}</span>
-                    <button type="button" className="btn btn-icon btn-sm" onClick={() => updateQty(item.variantId, 1)}><Plus size={12} /></button>
-                    <button type="button" className="btn btn-icon btn-sm btn-danger-ghost" onClick={() => removeFromCart(item.variantId)}><Trash2 size={12} /></button>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.variantId, 1)}><Plus size={12} /></Button>
+                    <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg" type="button" onClick={() => removeFromCart(item.variantId)}><Trash2 size={12} /></Button>
                   </div>
                   <span className="pos-cart-item-subtotal">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</span>
                 </div>
@@ -784,9 +774,8 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
           <div className="pos-cart-footer">
             {cart.length > 0 && (
-              <button
+              <Button variant="secondary" size="sm"
                 type="button"
-                className="btn btn-secondary btn-sm"
                 style={{ marginBottom: 8, alignSelf: 'flex-start' }}
                 onClick={() => {
                   if (window.confirm('Xoá toàn bộ giỏ hàng?')) {
@@ -796,20 +785,19 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                 }}
               >
                 <Trash2 size={13} style={{ marginRight: 4 }} /> Xoá giỏ hàng
-              </button>
+              </Button>
             )}
             <div className="pos-cart-total">
               <span>{t('pos.total')}</span>
               <strong>{formatCurrencyVnd(total)}</strong>
             </div>
-            <button
+            <Button className="pos-checkout-btn"
               type="button"
-              className="btn btn-primary pos-checkout-btn"
               disabled={cart.length === 0 || !canUpdate}
               onClick={() => setModal('payment')}
             >
               {t('pos.checkout')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -47,14 +47,14 @@ export default async function HowToBuyPage() {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container wp-static-layout">
+      <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
         <PolicySidebar activeHref="/huong-dan-mua-hang" title="HƯỚNG DẪN" />
-        <div className="wp-static-content">
+        <div className="min-w-0">
           <article
             className="bb-richtext"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
           />
-          <p className="wp-about-updated">Cập nhật {formatDate(page.updatedAt)}</p>
+          <p className="text-muted-foreground text-xs text-right mb-10">Cập nhật {formatDate(page.updatedAt)}</p>
         </div>
       </div>
     </section>

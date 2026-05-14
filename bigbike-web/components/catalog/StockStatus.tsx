@@ -21,11 +21,11 @@ type StockStatusProps = {
 // returns 18 for a LOW_STOCK product, "Chỉ còn 18" undermines urgency.
 const LOW_STOCK_URGENCY_THRESHOLD = 10;
 
-function badgeClass(state: string): string {
+function stockBadgeColorClass(state: string): string {
   switch (state) {
-    case "IN_STOCK": return "wp-stock-in";
-    case "LOW_STOCK": return "wp-stock-low";
-    case "OUT_OF_STOCK": return "wp-stock-out";
+    case "IN_STOCK": return "bg-[var(--bb-state-success-bg)] text-[#3d5230] border-[var(--bb-state-success-border)]";
+    case "LOW_STOCK": return "bg-[var(--bb-state-warning)] text-black border-[var(--bb-state-warning)]";
+    case "OUT_OF_STOCK": return "bg-[#dddddd] text-[#4a4a4a] border-[#dddddd]";
     default: return "";
   }
 }
@@ -49,7 +49,7 @@ export function StockStatus({ data, fallbackState, isLoading }: StockStatusProps
       : baseLabel;
 
   return (
-    <span className={`wp-stock-badge ${badgeClass(rawState)}`}>
+    <span className={`font-body text-[12px] leading-3 font-bold tracking-normal uppercase py-[3px] px-2 inline-block mt-[2px] self-start border ${stockBadgeColorClass(rawState)}`}>
       {label}
     </span>
   );

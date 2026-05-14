@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@/components/ui/button'
 
 export function ExportButton({ onExport, filename = 'export.csv', label }) {
   const { t } = useTranslation()
@@ -26,15 +27,14 @@ export function ExportButton({ onExport, filename = 'export.csv', label }) {
   }
 
   return (
-    <button
+    <Button variant="secondary"
       type="button"
-      className="btn btn-secondary"
       onClick={handleExport}
       disabled={exporting}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
     >
       <Download size={14} />
       {exporting ? t('export.exporting') : (label || t('export.exportCsv'))}
-    </button>
+    </Button>
   )
 }

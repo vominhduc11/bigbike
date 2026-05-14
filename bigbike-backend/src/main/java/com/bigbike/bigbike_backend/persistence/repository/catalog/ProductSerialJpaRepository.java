@@ -123,7 +123,7 @@ public interface ProductSerialJpaRepository extends JpaRepository<ProductSerialE
 
     @Query("""
         SELECT s FROM ProductSerialEntity s
-        WHERE (:q IS NULL OR LOWER(s.serialNumber) LIKE LOWER(CONCAT('%', :q, '%')))
+        WHERE (:q IS NULL OR LOWER(s.serialNumber) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
           AND (:status IS NULL OR s.status = :status)
           AND (:productId IS NULL OR s.product.id = :productId)
         ORDER BY s.createdAt DESC

@@ -7,14 +7,19 @@ export function LoadingGrid({ title = "Đang tải dữ liệu", count = 8 }: Lo
   return (
     <section className="bb-page">
       <div className="bb-container">
-        <p className="bb-kicker">{title}</p>
-        <div className="bb-skeleton-grid" aria-hidden="true">
+        <p className="mb-3 font-cta text-xs font-semibold uppercase tracking-normal text-brand">{title}</p>
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-hidden="true"
+        >
           {Array.from({ length: count }).map((_, index) => (
-            <div key={index} className="bb-skeleton-item" />
+            <div
+              key={index}
+              className="min-h-[280px] border border-border bg-secondary animate-pulse"
+            />
           ))}
         </div>
       </div>
     </section>
   );
 }
-

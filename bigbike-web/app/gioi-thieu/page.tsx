@@ -95,26 +95,31 @@ export default async function AboutPage() {
         ]}
       />
       <div className="bb-container">
-        <div className="wp-about-row-1">
-          <div className="wp-about-head">
-            <h3>Bigbike</h3>
-            <p>Cửa hàng chuyên phân phối phụ kiện bảo hộ moto chính hãng uy tín tại TP HCM</p>
+        {/* Row 1: intro text + richtext + brand logos */}
+        <div className="grid grid-cols-1 gap-6 py-10 items-start lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
+          <div>
+            <h3 className="font-display text-[1.71rem] font-semibold uppercase text-foreground mb-4">Bigbike</h3>
+            <p className="text-muted-foreground text-base leading-snug m-0">Cửa hàng chuyên phân phối phụ kiện bảo hộ moto chính hãng uy tín tại TP HCM</p>
           </div>
           <article
-            className="wp-about-text bb-richtext"
+            className="bb-richtext text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
           />
           {brands.length > 0 && (
-            <div className="wp-about-brands" aria-label="Thương hiệu phân phối">
+            <div className="grid grid-cols-2 gap-2" aria-label="Thương hiệu phân phối">
               {brands.slice(0, 8).map((brand) => {
                 const logoSrc = resolveMediaUrl(brand.logo?.url?.trim());
                 return (
-                  <Link key={brand.id} href={toBrandPath(brand.slug)} className="wp-about-brand-cell">
+                  <Link
+                    key={brand.id}
+                    href={toBrandPath(brand.slug)}
+                    className="flex items-center justify-center p-4 bg-white border border-border aspect-[4/3] no-underline transition-colors duration-150 hover:border-brand"
+                  >
                     {logoSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoSrc} alt={brand.name} loading="lazy" />
+                      <img src={logoSrc} alt={brand.name} loading="lazy" className="max-w-full max-h-full object-contain" />
                     ) : (
-                      <span className="wp-about-brand-fallback">{brand.name}</span>
+                      <span className="font-display font-semibold text-xs text-foreground text-center uppercase">{brand.name}</span>
                     )}
                   </Link>
                 );
@@ -123,61 +128,63 @@ export default async function AboutPage() {
           )}
         </div>
 
-        <div className="wp-about-row-2">
-          <div className="wp-about-quality-head">
-            <h3>Chất lượng dịch vụ tạo nên sự khác biệt</h3>
-            <p>
+        {/* Row 2: quality section */}
+        <div className="grid grid-cols-1 gap-[30px] py-[60px] items-start lg:grid-cols-[4fr_8fr]">
+          <div>
+            <h3 className="font-display text-[1.71rem] font-semibold uppercase text-foreground mb-4 leading-tight">Chất lượng dịch vụ tạo nên sự khác biệt</h3>
+            <p className="text-muted-foreground text-[15px] leading-relaxed m-0">
               Bigbike đã đồng hành cùng các sự kiện sinh nhật, kỉ niệm và từ thiện của câu lạc bộ
               xe exciter và moto Việt Nam. Chúng tôi luôn lắng nghe khách hàng để không ngừng nâng
               cao chất lượng dịch vụ. Sự hài lòng của khách hàng là sự thành công của Bigbike.
             </p>
           </div>
-          <div className="wp-about-quality-grid">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {SERVICE_TILES.map((tile) => (
               <div
                 key={tile.title}
-                className={`wp-about-quality-tile${tile.highlight ? " wp-about-quality-tile--red" : ""}`}
+                className={`p-6 ${tile.highlight ? "bg-brand" : "bg-[#f8f8f8]"}`}
               >
-                <h4>{tile.title}</h4>
-                <p>{tile.body}</p>
+                <h4 className={`font-display text-base font-semibold uppercase mb-[10px] leading-tight ${tile.highlight ? "text-white" : "text-foreground"}`}>{tile.title}</h4>
+                <p className={`text-sm leading-[1.55] m-0 ${tile.highlight ? "text-white" : "text-muted-foreground"}`}>{tile.body}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="wp-about-contact">
-          <h3>KẾT NỐI ĐỂ CHÚNG TÔI CÓ THỂ GẦN BẠN HƠN</h3>
-          <p>
+        {/* Contact CTA */}
+        <div className="py-10 text-center">
+          <h3 className="font-display text-[1.71rem] font-semibold uppercase text-foreground mb-3">KẾT NỐI ĐỂ CHÚNG TÔI CÓ THỂ GẦN BẠN HƠN</h3>
+          <p className="text-muted-foreground mb-2">
             Bigbike hiện đã nhận được hơn 80 lượt review 5 sao trên Google map và nhận được nhiều
             lời khen ngợi khác. Đây chính là những động lực to lớn để chúng tôi tiếp tục cố gắng
             trở thành người bạn đồng hành tốt nhất của cộng đồng biker Việt Nam.
           </p>
-          <p>
+          <p className="text-muted-foreground mb-2">
             Hãy liên hệ với chúng tôi để được tư vấn thêm về các thông tin chi tiết sản phẩm và để
             nhận được giá ưu đãi tốt nhất.
           </p>
-          <div className="wp-about-contact-grid">
-            <div className="wp-about-contact-item">
-              <span className="wp-about-contact-icon" aria-hidden="true">
+          <div className="grid grid-cols-1 gap-[14px] mt-8 text-left md:grid-cols-3 md:gap-6">
+            <div className="px-5 py-[22px] bg-card border border-border">
+              <span className="inline-flex items-center justify-center w-[54px] h-[54px] mb-3 bg-brand/[0.08] text-brand rounded-full" aria-hidden="true">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M13 9h.01M9 13h.01M13 13h.01M9 17h6"/></svg>
               </span>
-              <p><b>Cửa hàng chính</b></p>
-              <p>{address}</p>
+              <p className="text-muted-foreground text-sm mb-1 leading-snug"><b className="text-foreground font-bold">Cửa hàng chính</b></p>
+              <p className="text-muted-foreground text-sm mb-0 leading-snug">{address}</p>
             </div>
-            <div className="wp-about-contact-item">
-              <span className="wp-about-contact-icon" aria-hidden="true">
+            <div className="px-5 py-[22px] bg-card border border-border">
+              <span className="inline-flex items-center justify-center w-[54px] h-[54px] mb-3 bg-brand/[0.08] text-brand rounded-full" aria-hidden="true">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               </span>
-              <p><b>Hotline</b></p>
-              <p>{hotline}</p>
-              {zalo && <p>{zalo}</p>}
+              <p className="text-muted-foreground text-sm mb-1 leading-snug"><b className="text-foreground font-bold">Hotline</b></p>
+              <p className="text-muted-foreground text-sm mb-0 leading-snug">{hotline}</p>
+              {zalo && <p className="text-muted-foreground text-sm mb-0 leading-snug">{zalo}</p>}
             </div>
-            <div className="wp-about-contact-item">
-              <span className="wp-about-contact-icon" aria-hidden="true">
+            <div className="px-5 py-[22px] bg-card border border-border">
+              <span className="inline-flex items-center justify-center w-[54px] h-[54px] mb-3 bg-brand/[0.08] text-brand rounded-full" aria-hidden="true">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
               </span>
-              <p><b>Facebook</b></p>
-              <p>
+              <p className="text-muted-foreground text-sm mb-1 leading-snug"><b className="text-foreground font-bold">Facebook</b></p>
+              <p className="text-muted-foreground text-sm mb-0 leading-snug">
                 <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
                   {facebookHandle || "facebook.com/bigbikegear"}
                 </a>
@@ -186,7 +193,7 @@ export default async function AboutPage() {
           </div>
         </div>
 
-        <p className="wp-about-updated">Cập nhật {formatDate(page.updatedAt)}</p>
+        <p className="text-muted-foreground text-xs text-right mb-10">Cập nhật {formatDate(page.updatedAt)}</p>
       </div>
     </section>
   );

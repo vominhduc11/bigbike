@@ -44,6 +44,22 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
             Pageable pageable
     );
 
+    @Query("""
+        SELECT v FROM ProductVariantEntity v JOIN FETCH v.product p
+        WHERE (:q = ''
+               OR LOWER(CAST(v.sku AS string)) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(v.name) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:state IS NULL OR v.stockState = :state)
+          AND p.publishStatus <> :trashStatus
+        ORDER BY p.name ASC, v.name ASC
+        """)
+    List<ProductVariantEntity> searchStockAll(
+            @Param("q") String q,
+            @Param("state") ProductStockState state,
+            @Param("trashStatus") PublishStatus trashStatus
+    );
+
     @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.stockState = :state")
     long countByStockState(@Param("state") ProductStockState state);
 

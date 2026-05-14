@@ -15,6 +15,10 @@ import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 
 function buildEmptyForm() {
   return {
@@ -228,17 +232,15 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <p>{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
-          <button
+          <Button variant="secondary"
             type="button"
-            className="btn btn-secondary"
             onClick={() => navigate('/admin/brands')}
           >
             {t('brands.detail.backToList')}
-          </button>
+          </Button>
           {!isCreate && canUpdate && (
-            <button
+            <Button variant="danger"
               type="button"
-              className="btn btn-danger"
               disabled={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
@@ -251,7 +253,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               }}
             >
               {isSubmitting ? t('brands.detail.hidingBtn') : t('brands.detail.hideBtn')}
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -286,12 +288,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <div className="detail-section-content form-grid">
             <label className="form-field">
               <span>{t('brands.detail.slug')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.slug}
                 onChange={(event) => updateField('slug', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.slug ? (
                 <small className="field-error">{validationErrors.slug}</small>
               ) : null}
@@ -299,24 +300,22 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
             <label className="form-field">
               <span>{t('brands.detail.name')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.name}
                 onChange={(event) => updateField('name', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.name ? (
                 <small className="field-error">{validationErrors.name}</small>
               ) : null}
             </label>
 
             <label className="form-checkbox">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={form.visible}
-                onChange={(event) => updateField('visible', event.target.checked)}
+                onCheckedChange={(checked) => updateField('visible', checked)}
                 disabled={isReadOnly}
-              />
+               />
               <span>{t('brands.detail.isVisible')}</span>
             </label>
 
@@ -353,12 +352,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
             <label className="form-field">
               <span>{t('brands.detail.logoAlt')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.logoAlt}
                 onChange={(event) => updateField('logoAlt', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
 
             <div className="form-field form-field-wide">
@@ -373,12 +371,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
             <label className="form-field">
               <span>{t('brands.detail.bannerAlt', { defaultValue: 'Alt text banner' })}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.bannerAlt}
                 onChange={(event) => updateField('bannerAlt', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
           </div>
         </section>
@@ -390,32 +387,29 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <div className="detail-section-content form-grid">
             <label className="form-field form-field-wide">
               <span>{t('brands.detail.seoTitle')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.seoTitle}
                 onChange={(event) => updateField('seoTitle', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
 
             <label className="form-field form-field-wide">
               <span>{t('brands.detail.seoDescription')}</span>
-              <textarea
-                className="control-input control-textarea"
+              <Textarea
                 value={form.seoDescription}
                 onChange={(event) => updateField('seoDescription', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
 
             <label className="form-field form-field-wide">
               <span>{t('brands.detail.seoCanonicalUrl')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.seoCanonicalUrl}
                 onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.seoCanonicalUrl ? (
                 <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
               ) : null}
@@ -423,12 +417,11 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
 
             <label className="form-checkbox">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={form.seoNoIndex}
-                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
                 disabled={isReadOnly}
-              />
+               />
               <span>{t('brands.detail.seoNoIndex')}</span>
             </label>
           </div>
@@ -444,9 +437,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             ) : null}
           </div>
           <div className="screen-actions">
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary"
               disabled={isReadOnly || !isDirty}
             >
               {isSubmitting
@@ -454,7 +446,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 : isCreate
                   ? t('brands.detail.createBtn')
                   : t('brands.detail.saveBtn')}
-            </button>
+            </Button>
           </div>
         </div>
 

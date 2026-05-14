@@ -17,11 +17,18 @@ import { MediaImage } from "@/components/ui/MediaImage";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+const PAY_LOGO_STYLE: Record<string, string> = {
+  cod: "bg-[#222] text-white border border-white/20",
+  momo: "bg-[#a50064] text-white",
+  vnpay: "bg-[#005ba4] text-white",
+};
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
   return (
-    <div className="wp-radio-stack" aria-busy="true">
+    <div className="grid gap-[10px]" aria-busy="true">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="bb-skel" style={{ height: 56, borderRadius: "var(--bb-radius-sm)", width: "100%" }} />
       ))}
@@ -60,12 +67,12 @@ function toGtmCartItems(items: CartItem[]) {
 
 function MiniCartThumb({ item }: { item: CartItem }) {
   return (
-    <div className="wp-mini-thumb">
-      <span className="qty-badge">{item.quantity}</span>
+    <div className="relative w-14 h-14 bg-card border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <span className="bb-round absolute -top-1.5 -right-1.5 bg-brand text-white min-w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center px-1.5">{item.quantity}</span>
       {item.image?.url ? (
         <MediaImage image={item.image} altFallback={item.productName} width={112} height={112} />
       ) : (
-        <span className="wp-thumb-initials">{item.productName.slice(0, 2)}</span>
+        <span className="font-display text-xs text-white/20 uppercase">{item.productName.slice(0, 2)}</span>
       )}
     </div>
   );
@@ -176,51 +183,56 @@ export default function CheckoutPage() {
 
   if (cartError) {
     return (
-      <div className="bb-container" style={{ paddingBlock: "var(--bb-space-8)" }}>
-        <p className="wp-error-text">Không tải được giỏ hàng. <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link></p>
+      <div className="bb-container py-8">
+        <p className="text-brand text-sm mb-4 m-0">Không tải được giỏ hàng. <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link></p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="wp-breadcrumb">
+      <div className="bb-container py-4 text-muted-foreground flex flex-wrap items-center [&_a]:text-muted-foreground [&_a]:font-semibold [&_a]:no-underline [&_a:hover]:text-brand">
         <Link href="/">Trang chủ</Link>
-        <span className="sep">/</span>
+        <span className="text-brand mx-[10px]">/</span>
         <Link href={toCartPath()}>Giỏ hàng</Link>
-        <span className="sep">/</span>
+        <span className="text-brand mx-[10px]">/</span>
         <span>Thanh toán</span>
       </div>
 
-      <div className="wp-checkout-page bb-container">
-        <div className="wp-cart-title-row">
-          <h1>Thanh toán</h1>
+      <div className="bb-container py-6 pb-[60px]">
+        <div className="py-3 pb-6">
+          <h1 className="font-display font-semibold text-3xl uppercase text-foreground m-0 tracking-[0.01em]">Thanh toán</h1>
         </div>
 
         <form
           name="checkout"
-          className="wp-checkout-form-1page"
           onSubmit={handleSubmit(placeOrder)}
           noValidate
         >
-          <div className="wp-cart-grid">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-[30px] items-start">
             {/* LEFT: customer details + payment + shipping */}
-            <div className="wp-cart-main">
-              <div className="wp-checkout-title-bar">
-                <h3>THANH TOÁN</h3>
+            <div className="min-w-0">
+              <div className="bg-[var(--bb-color-gray-50)] border border-border py-[14px] px-5">
+                <h3 className="m-0 font-display font-semibold text-[18px] uppercase text-foreground tracking-[0.04em]">THANH TOÁN</h3>
               </div>
 
-              <div className="wp-checkout-step-block">
-                <div className="wp-checkout-step-title">
-                  <h3><span><b>1</b></span> Thông tin giao hàng</h3>
+              {/* Step 1: Shipping info */}
+              <div className="bg-card border border-border border-t-0 py-[22px] px-6">
+                <div className="mb-4">
+                  <h3 className="m-0 font-display font-semibold text-[16px] uppercase text-foreground flex items-center gap-3 tracking-[0.04em]">
+                    <span className="bb-round inline-flex items-center justify-center w-[30px] h-[30px] bg-brand text-white rounded-full"><b className="font-bold text-[15px]">1</b></span>
+                    Thông tin giao hàng
+                  </h3>
                 </div>
 
-                <div className="wp-form-grid">
-                  <div className="wp-field">
-                    <label>Họ và tên <span className="req">*</span></label>
-                    <input
-                      className={`wp-input${address.fullName ? " filled" : ""}${addressErrors.fullName ? " wp-input-error" : ""}`}
+                <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">
+                      Họ và tên <span className="text-brand ml-[3px]">*</span>
+                    </label>
+                    <Input
                       placeholder="Nguyễn Văn A"
+                      aria-invalid={!!addressErrors.fullName}
                       {...register("fullName")}
                     />
                     {addressErrors.fullName && (
@@ -228,14 +240,16 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <div className="wp-field">
-                    <label>Số điện thoại <span className="req">*</span></label>
-                    <input
-                      className={`wp-input${address.phone ? " filled" : ""}${addressErrors.phone ? " wp-input-error" : ""}`}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">
+                      Số điện thoại <span className="text-brand ml-[3px]">*</span>
+                    </label>
+                    <Input
                       type="tel"
                       inputMode="numeric"
                       maxLength={10}
                       placeholder="0901234567"
+                      aria-invalid={!!addressErrors.phone}
                       {...register("phone")}
                     />
                     {addressErrors.phone && (
@@ -243,12 +257,12 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <div className="wp-field full">
-                    <label>Email</label>
-                    <input
-                      className={`wp-input${address.email ? " filled" : ""}${addressErrors.email ? " wp-input-error" : ""}`}
+                  <div className="flex flex-col gap-1.5 col-span-full">
+                    <label className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">Email</label>
+                    <Input
                       type="email"
                       placeholder="email@example.com"
+                      aria-invalid={!!addressErrors.email}
                       {...register("email")}
                     />
                     {addressErrors.email && (
@@ -271,11 +285,13 @@ export default function CheckoutPage() {
                     </p>
                   )}
 
-                  <div className="wp-field full">
-                    <label>Địa chỉ chi tiết <span className="req">*</span></label>
-                    <input
-                      className={`wp-input${address.addressLine1 ? " filled" : ""}${addressErrors.addressLine1 ? " wp-input-error" : ""}`}
+                  <div className="flex flex-col gap-1.5 col-span-full">
+                    <label className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">
+                      Địa chỉ chi tiết <span className="text-brand ml-[3px]">*</span>
+                    </label>
+                    <Input
                       placeholder="Số nhà, tên đường..."
+                      aria-invalid={!!addressErrors.addressLine1}
                       {...register("addressLine1")}
                     />
                     {addressErrors.addressLine1 && (
@@ -283,11 +299,12 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <div className="wp-field full">
-                    <label>Ghi chú đơn hàng (tuỳ chọn)</label>
+                  <div className="flex flex-col gap-1.5 col-span-full">
+                    <label className="text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground">
+                      Ghi chú đơn hàng (tuỳ chọn)
+                    </label>
                     <Textarea
                       className="min-h-[80px] resize-y"
-                      style={{ fontFamily: "inherit" }}
                       placeholder="Ví dụ: gọi trước khi giao 15 phút..."
                       value={customerNote}
                       onChange={(e) => setCustomerNote(e.target.value)}
@@ -296,18 +313,22 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="wp-checkout-step-block">
-                <div className="wp-checkout-step-title">
-                  <h3><span><b>2</b></span> Phương thức thanh toán</h3>
+              {/* Step 2: Payment method */}
+              <div className="bg-card border border-border border-t-0 py-[22px] px-6">
+                <div className="mb-4">
+                  <h3 className="m-0 font-display font-semibold text-[16px] uppercase text-foreground flex items-center gap-3 tracking-[0.04em]">
+                    <span className="bb-round inline-flex items-center justify-center w-[30px] h-[30px] bg-brand text-white rounded-full"><b className="font-bold text-[15px]">2</b></span>
+                    Phương thức thanh toán
+                  </h3>
                 </div>
                 {optionsLoading ? (
                   <MiniRadioStackSkeleton rows={3} />
                 ) : checkoutOptions?.paymentMethods.length ? (
-                  <div className="wp-radio-stack">
+                  <div className="grid gap-[10px]">
                     {checkoutOptions.paymentMethods.map((method) => (
                       <label
                         key={method.code}
-                        className={`wp-radio-tile${paymentMethod === method.code ? " active" : ""}`}
+                        className={`flex items-center gap-[14px] py-[14px] px-4 bg-white border cursor-pointer transition-all duration-[140ms] ${paymentMethod === method.code ? "border-brand bg-brand/[0.04]" : "border-[var(--bb-border-default)] hover:border-[var(--bb-brand-primary-border)]"}`}
                       >
                         <input
                           type="radio"
@@ -315,38 +336,43 @@ export default function CheckoutPage() {
                           value={method.code}
                           checked={paymentMethod === method.code}
                           onChange={() => setPaymentMethod(method.code)}
+                          className="accent-brand m-0"
                         />
-                        <span className={`pay-logo ${method.code}`}>
+                        <span className={`w-[42px] h-7 flex items-center justify-center font-bold text-xs tracking-[0.06em] ${PAY_LOGO_STYLE[method.code] ?? "bg-white text-black"}`}>
                           {method.code.toUpperCase()}
                         </span>
-                        <div className="wp-radio-tile-body">
-                          <b>{method.title}</b>
+                        <div className="flex-1">
+                          <b className="block text-sm text-foreground tracking-[0.02em] mb-[2px] font-bold uppercase">{method.title}</b>
                           {PAYMENT_DESC[method.code] && (
-                            <span>{PAYMENT_DESC[method.code]}</span>
+                            <span className="text-[11px] text-muted-foreground tracking-[0.02em]">{PAYMENT_DESC[method.code]}</span>
                           )}
                         </div>
                       </label>
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">
+                  <p className="text-brand text-sm mb-4 m-0">
                     Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
                   </p>
                 )}
               </div>
 
-              <div className="wp-checkout-step-block">
-                <div className="wp-checkout-step-title">
-                  <h3><span><b>3</b></span> Phương thức vận chuyển</h3>
+              {/* Step 3: Shipping method */}
+              <div className="bg-card border border-border border-t-0 py-[22px] px-6 mb-[18px]">
+                <div className="mb-4">
+                  <h3 className="m-0 font-display font-semibold text-[16px] uppercase text-foreground flex items-center gap-3 tracking-[0.04em]">
+                    <span className="bb-round inline-flex items-center justify-center w-[30px] h-[30px] bg-brand text-white rounded-full"><b className="font-bold text-[15px]">3</b></span>
+                    Phương thức vận chuyển
+                  </h3>
                 </div>
                 {optionsLoading ? (
                   <MiniRadioStackSkeleton rows={2} />
                 ) : checkoutOptions?.shippingMethods.length ? (
-                  <div className="wp-radio-stack">
+                  <div className="grid gap-[10px]">
                     {checkoutOptions.shippingMethods.map((method) => (
                       <label
                         key={method.id}
-                        className={`wp-radio-tile${shippingMethodId === method.id ? " active" : ""}`}
+                        className={`flex items-center gap-[14px] py-[14px] px-4 bg-white border cursor-pointer transition-all duration-[140ms] ${shippingMethodId === method.id ? "border-brand bg-brand/[0.04]" : "border-[var(--bb-border-default)] hover:border-[var(--bb-brand-primary-border)]"}`}
                       >
                         <input
                           type="radio"
@@ -354,24 +380,25 @@ export default function CheckoutPage() {
                           value={method.id}
                           checked={shippingMethodId === method.id}
                           onChange={() => setShippingMethodId(method.id)}
+                          className="accent-brand m-0"
                         />
-                        <div className="wp-radio-tile-body">
-                          <b>{method.title}</b>
+                        <div className="flex-1">
+                          <b className="block text-sm text-foreground tracking-[0.02em] mb-[2px] font-bold uppercase">{method.title}</b>
                         </div>
-                        <div className={`price${method.cost === 0 ? " free" : ""}`}>
+                        <div className={`font-display text-brand tracking-[0.01em] ${method.cost === 0 ? "text-[12px] tracking-[0.12em] uppercase" : "text-[16px]"}`}>
                           {method.cost === 0 ? "MIỄN PHÍ" : formatVnd(method.cost)}
                         </div>
                       </label>
                     ))}
                   </div>
                 ) : (
-                  <p className="wp-error-text">
+                  <p className="text-brand text-sm mb-4 m-0">
                     Phương thức giao hàng tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
                   </p>
                 )}
               </div>
 
-              <div className="wp-terms-notice">
+              <div className="my-3 mb-[18px] py-3 px-4 bg-[var(--bb-color-gray-50)] border border-border text-sm text-muted-foreground leading-[1.6] [&_a]:text-brand [&_a]:underline">
                 Bằng việc đặt hàng, bạn đồng ý với{" "}
                 <Link href="/chinh-sach/dieu-khoan/">Điều khoản dịch vụ</Link>
                 {" "}và{" "}
@@ -380,11 +407,11 @@ export default function CheckoutPage() {
               </div>
 
               {priceChanges.length > 0 && pendingOrderNav && (
-                <div className="wp-alert-warning" style={{ marginBottom: 12 }}>
-                  <p style={{ fontWeight: 600, marginBottom: 6 }}>
+                <div className="bg-[var(--bb-color-gray-50)] border border-border p-[14px_18px] mb-3 text-sm text-foreground">
+                  <p className="font-semibold mb-1.5 m-0">
                     ⚠️ Giá một số sản phẩm đã thay đổi khi đặt hàng:
                   </p>
-                  <ul style={{ margin: "0 0 8px 16px", fontSize: "0.9em" }}>
+                  <ul className="m-0 mb-2 ml-4 text-[0.9em]">
                     {priceChanges.map((pc, i) => (
                       <li key={i}>
                         {pc.productName}: {formatVnd(pc.oldPrice)} → {formatVnd(pc.newPrice)}
@@ -402,16 +429,18 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {submitError && <p className="wp-error-text">{submitError}</p>}
+              {submitError && <p className="text-brand text-sm mb-4 m-0">{submitError}</p>}
 
-              <div className="wp-checkout-1page-actions">
-                <Link href={toCartPath()} className="wp-cart-continue">
+              <div className="flex items-center justify-between gap-[14px] mt-[18px] px-1 flex-wrap max-sm:gap-[10px]">
+                <Link
+                  href={toCartPath()}
+                  className="font-display font-semibold text-sm tracking-[0.06em] uppercase no-underline text-foreground inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-brand"
+                >
                   <span aria-hidden="true">‹</span> QUAY LẠI GIỎ HÀNG
                 </Link>
                 <Button
                   type="submit"
                   variant="primary"
-                  className="wp-cart-checkout-btn"
                   disabled={submitting || cartLoading || !cart?.items.length}
                 >
                   {submitting
@@ -424,66 +453,68 @@ export default function CheckoutPage() {
             </div>
 
             {/* RIGHT: order review (sticky) */}
-            <aside className="wp-cart-side">
-              <div className="wp-checkout-summary-card">
-                <div className="wp-checkout-summary-title">
-                  <h3>Thông tin đơn đặt hàng</h3>
+            <aside className="flex flex-col gap-5">
+              <div className="bg-card border border-border self-start overflow-hidden sticky top-[calc(var(--bb-header-height)+20px)] max-[992px]:static">
+                <div className="bg-[var(--bb-color-gray-50)] py-[14px] px-5 border-b border-border">
+                  <h3 className="m-0 font-display font-semibold text-[16px] uppercase text-foreground tracking-[0.04em]">Thông tin đơn đặt hàng</h3>
                 </div>
 
                 {cartLoading ? (
-                  <MiniSummarySkeleton />
+                  <div className="p-5"><MiniSummarySkeleton /></div>
                 ) : !cart || cart.items.length === 0 ? (
-                  <>
-                    <p style={{ marginBottom: 12, color: "var(--bb-text-muted)" }}>Giỏ hàng trống.</p>
+                  <div className="p-5">
+                    <p className="mb-3 m-0 text-muted-foreground text-sm">Giỏ hàng trống.</p>
                     <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link>
-                  </>
+                  </div>
                 ) : (
                   <>
-                    <div className="wp-checkout-mini-list">
+                    <div className="py-3 px-5 pb-1 max-h-[320px] overflow-y-auto">
                       {cart.items.map((item) => (
-                        <div key={item.id} className="wp-mini-item">
+                        <div key={item.id} className="flex gap-3 py-2.5 border-b border-border last:border-b-0 last:pb-[14px] last:mb-1">
                           <MiniCartThumb item={item} />
-                          <div className="wp-mini-body">
-                            <p className="name">{item.productName}</p>
-                            {item.variantName && <p className="variant">{item.variantName}</p>}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground m-0 mb-[2px] leading-[1.3]">{item.productName}</p>
+                            {item.variantName && <p className="text-[11px] text-muted-foreground m-0">{item.variantName}</p>}
                           </div>
-                          <span className="wp-mini-price">{formatVnd(item.lineTotal)}</span>
+                          <span className="text-sm font-bold text-foreground self-center whitespace-nowrap">{formatVnd(item.lineTotal)}</span>
                         </div>
                       ))}
                     </div>
 
-                    <div className="wp-cart-summary" style={{ padding: 0, border: "none", marginTop: 12 }}>
-                      <div className="wp-cart-summary-row">
-                        <p>Tạm tính:</p>
-                        <p><b>{formatVnd(cart.totals.subtotalAmount)}</b></p>
+                    <div className="py-3 px-5 border-t border-border">
+                      <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
+                        <p className="m-0">Tạm tính:</p>
+                        <p className="m-0"><b className="text-foreground font-bold">{formatVnd(cart.totals.subtotalAmount)}</b></p>
                       </div>
                       {cart.couponCodes && cart.couponCodes.length > 0 && (
-                        <div className="wp-cart-summary-row">
-                          <p>Mã giảm giá:</p>
-                          <p><b>{cart.couponCodes.join(", ")}</b></p>
+                        <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
+                          <p className="m-0">Mã giảm giá:</p>
+                          <p className="m-0"><b className="text-foreground font-bold">{cart.couponCodes.join(", ")}</b></p>
                         </div>
                       )}
                       {cart.totals.discountAmount > 0 && (
-                        <div className="wp-cart-summary-row discount">
-                          <p>Giảm giá:</p>
-                          <p className="discount"><b>−{formatVnd(cart.totals.discountAmount)}</b></p>
+                        <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
+                          <p className="m-0">Giảm giá:</p>
+                          <p className="m-0"><b className="text-brand font-bold">−{formatVnd(cart.totals.discountAmount)}</b></p>
                         </div>
                       )}
-                      <div className="wp-cart-summary-row">
-                        <p>Phí vận chuyển:</p>
-                        <p>
+                      <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
+                        <p className="m-0">Phí vận chuyển:</p>
+                        <p className="m-0">
                           {selectedShipping && selectedShipping.cost > 0
-                            ? <b>{formatVnd(selectedShipping.cost)}</b>
-                            : <span className="wp-cart-ship-note">Miễn phí</span>}
+                            ? <b className="text-foreground font-bold">{formatVnd(selectedShipping.cost)}</b>
+                            : <span className="text-xs text-muted-foreground italic">Miễn phí</span>}
                         </p>
                       </div>
                     </div>
 
-                    <div className="wp-cart-total-summary" style={{ marginTop: 12 }}>
-                      <div className="wp-cart-summary-row">
-                        <p>Tổng:</p>
-                        <p className="wp-cart-total-price">
-                          <b>{formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}</b>
+                    <div className="bg-[var(--bb-color-gray-50)] border-t border-border py-[14px] px-5">
+                      <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
+                        <p className="m-0 font-display uppercase font-semibold text-foreground tracking-[0.04em] text-[14px]">Tổng:</p>
+                        <p className="m-0">
+                          <b className="font-display text-[22px] text-brand font-bold tracking-[0.01em]">
+                            {formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}
+                          </b>
                         </p>
                       </div>
                     </div>
@@ -497,3 +528,4 @@ export default function CheckoutPage() {
     </>
   );
 }
+

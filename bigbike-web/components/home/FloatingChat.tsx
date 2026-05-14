@@ -137,20 +137,20 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: FloatingChatPro
   if (items.length === 0) return null;
 
   return (
-    <div className="wp-chat-float" ref={wrapperRef}>
-      {!open && <span className="wp-chat-label">Bạn cần hỗ trợ?</span>}
+    <div className="bb-chat-float" ref={wrapperRef}>
+      {!open && <span className="bb-chat-label">Bạn cần hỗ trợ?</span>}
       {open && (
-        <div className="wp-chat-popup" role="dialog" aria-label="Liên hệ hỗ trợ">
+        <div className="bb-chat-popup" role="dialog" aria-label="Liên hệ hỗ trợ">
           {items.map((item) => (
             <a
               key={item.key}
               href={item.href}
-              className="wp-chat-item"
+              className="bb-chat-item"
               target={item.key === "hotline" ? undefined : "_blank"}
               rel={item.key === "hotline" ? undefined : "noreferrer noopener"}
             >
-              <span className="wp-chat-item-icon">{item.icon}</span>
-              <span className="wp-chat-item-label">
+              <span className="bb-chat-item-icon">{item.icon}</span>
+              <span className="bb-chat-item-label">
                 {item.label}: <strong>{item.value}</strong>
               </span>
             </a>
@@ -159,7 +159,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: FloatingChatPro
       )}
       <button
         type="button"
-        className="wp-chat-btn"
+        className="bb-chat-btn"
         aria-label={open ? "Đóng hỗ trợ" : "Mở liên hệ hỗ trợ"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}

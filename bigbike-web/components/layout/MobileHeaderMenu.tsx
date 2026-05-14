@@ -87,7 +87,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
       <Link
         href={href}
         className={cn(
-          `wp-mobile-nav-link wp-mobile-nav-depth-${depth}`,
+          `bb-mobile-nav-link bb-mobile-nav-depth-${depth}`,
           active && "active",
         )}
         onClick={onNavigate}
@@ -98,18 +98,18 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
   }
 
   return (
-    <div className="wp-mobile-nav-branch">
-      <div className={`wp-mobile-nav-row wp-mobile-nav-depth-${depth}`}>
+    <div className="bb-mobile-nav-branch">
+      <div className={`bb-mobile-nav-row bb-mobile-nav-depth-${depth}`}>
         <Link
           href={href}
-          className={cn("wp-mobile-nav-link", active && "active")}
+          className={cn("bb-mobile-nav-link", active && "active")}
           onClick={onNavigate}
         >
           {node.label}
         </Link>
         <button
           type="button"
-          className="wp-mobile-nav-toggle"
+          className="bb-mobile-nav-toggle"
           aria-expanded={childOpen}
           aria-label={childOpen ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
           onClick={() => setChildOpen((prev) => !prev)}
@@ -118,7 +118,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
         </button>
       </div>
       {childOpen && (
-        <div className="wp-mobile-nav-children">
+        <div className="bb-mobile-nav-children">
           {node.children.map((child) => (
             <MobileNavBranch
               key={child.id}
@@ -160,7 +160,7 @@ export function MobileHeaderMenu({
   return (
     <>
       <button
-        className="wp-icon-btn wp-menu-toggle"
+        className="bb-icon-btn bb-menu-toggle"
         aria-label="Mở menu"
         aria-expanded={open}
         type="button"
@@ -172,7 +172,7 @@ export function MobileHeaderMenu({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="left"
-          className="w-[85vw] max-w-xs p-0 flex flex-col bg-[#141414] text-white border-r-0"
+          className="w-[85vw] max-w-xs p-0 flex flex-col bg-surface-dark text-white border-r-0"
         >
           <SheetHeader className="px-4 py-3 border-b border-white/10 shrink-0">
             <SheetTitle className="text-white uppercase font-heading text-sm tracking-wide">
@@ -181,7 +181,7 @@ export function MobileHeaderMenu({
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <nav className="wp-mobile-nav" aria-label={menuLabel}>
+            <nav className="bb-mobile-nav" aria-label={menuLabel}>
               {menuTree.map((node) => (
                 <MobileNavBranch
                   key={node.id}
@@ -194,15 +194,15 @@ export function MobileHeaderMenu({
             </nav>
 
             {auth.status === "authenticated" && (
-              <div className="wp-mobile-drawer-account">
-                <span className="wp-mobile-drawer-account-label">Đang đăng nhập</span>
+              <div className="bb-mobile-drawer-account">
+                <span className="bb-mobile-drawer-account-label">Đang đăng nhập</span>
                 <strong title={auth.profile.email}>
                   {auth.profile.displayName?.trim() || auth.profile.email}
                 </strong>
               </div>
             )}
 
-            <div className="wp-mobile-drawer-actions">
+            <div className="bb-mobile-drawer-actions">
               <Link href={toCartPath()} onClick={close}>
                 Giỏ hàng
               </Link>
@@ -216,7 +216,7 @@ export function MobileHeaderMenu({
                   </Link>
                   <button
                     type="button"
-                    className="wp-mobile-drawer-logout"
+                    className="bb-mobile-drawer-logout"
                     onClick={handleLogout}
                     disabled={loggingOut}
                   >
@@ -236,7 +236,7 @@ export function MobileHeaderMenu({
             </div>
 
             {(hotline || zaloUrl) && (
-              <div className="wp-mobile-drawer-contact">
+              <div className="bb-mobile-drawer-contact">
                 {hotline && (
                   <>
                     <span>HOTLINE</span>

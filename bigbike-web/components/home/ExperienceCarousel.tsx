@@ -196,8 +196,8 @@ export function ExperienceCarousel({ articles }: Props) {
       activeDisplayIndex * (layout.slideWidth + layout.gap)
     : 0;
   const trackStyle = {
-    "--wp-exp-gap": layout ? `${layout.gap}px` : `${DESKTOP_GAP}px`,
-    "--wp-exp-slide-w": layout ? `${layout.slideWidth}px` : "42vw",
+    "--bb-exp-gap": layout ? `${layout.gap}px` : `${DESKTOP_GAP}px`,
+    "--bb-exp-slide-w": layout ? `${layout.slideWidth}px` : "42vw",
     opacity: layout ? 1 : 0,
     transform: `translate3d(${activeOffset}px, 0, 0)`,
   } as CSSProperties;
@@ -215,10 +215,10 @@ export function ExperienceCarousel({ articles }: Props) {
   }
 
   return (
-    <div className="wp-exp-carousel">
-      <div className="wp-exp-carousel-vp" ref={viewportRef}>
+    <div className="bb-exp-carousel">
+      <div className="bb-exp-carousel-vp" ref={viewportRef}>
         <div
-          className={`wp-exp-carousel-track${isRecenterJumping ? " is-jumping" : ""}`}
+          className={`bb-exp-carousel-track${isRecenterJumping ? " is-jumping" : ""}`}
           style={trackStyle}
           onTransitionEnd={(event) => {
             if (event.target === event.currentTarget && event.propertyName === "transform") {
@@ -241,49 +241,43 @@ export function ExperienceCarousel({ articles }: Props) {
             return (
               <div
                 key={`${article.id}-${i}`}
-                className={`wp-exp-carousel-slide${active ? " is-active" : ""}`}
+                className={`bb-exp-carousel-slide${active ? " is-active" : ""}`}
                 onClick={!active ? () => setActiveDisplayIndex(i) : undefined}
                 onKeyDown={!active ? (event) => handleSlideKeyDown(event, i) : undefined}
                 role={!active ? "button" : undefined}
                 tabIndex={!active ? 0 : undefined}
                 aria-label={!active ? `Chuyển đến: ${title}` : undefined}
               >
-                <div className="wp-experience-img-wrap">
+                <div className="bb-experience-img-wrap">
                   {bgSrc ? (
                     <Image
                       src={bgSrc}
                       alt={safeText(article.coverImage?.alt, title)}
                       fill
-                      className="wp-exp-bg"
+                      className="bb-exp-bg"
                       sizes="(max-width: 767px) 84vw, 42vw"
                     />
                   ) : (
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        background: "linear-gradient(135deg, #c00, #8b0000)",
-                      }}
-                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]" />
                   )}
-                  <div className="wp-exp-overlay" />
+                  <div className="bb-exp-overlay" />
                 </div>
-                <div className="wp-exp-content">
+                <div className="bb-exp-content">
                   {productSrc && (
-                    <div className="wp-exp-product-wrap" aria-hidden="true">
+                    <div className="bb-exp-product-wrap" aria-hidden="true">
                       <Image
                         src={productSrc}
                         alt={safeText(article.productImage?.alt, title)}
                         fill
-                        className="wp-exp-product-img"
+                        className="bb-exp-product-img"
                         sizes="(max-width: 767px) 42vw, 22vw"
                       />
                     </div>
                   )}
-                  <div className="wp-exp-content-body">
-                    <p className="wp-exp-title">{title}</p>
+                  <div className="bb-exp-content-body">
+                    <p className="bb-exp-title">{title}</p>
                     {active && (
-                      <Link href={toArticlePath(article.slug)} className="wp-exp-cta">
+                      <Link href={toArticlePath(article.slug)} className="bb-exp-cta">
                         XEM CHI TIẾT
                       </Link>
                     )}

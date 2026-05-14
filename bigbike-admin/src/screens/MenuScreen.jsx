@@ -32,6 +32,9 @@ import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 function safeMenuDetailCache(data) {
   if (!data) return data
@@ -205,18 +208,16 @@ function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   return (
     <label className="form-field">
       {label}
-      <select
-        className="control-select"
+      <Select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">{rootLabel}</option>
+        onValueChange={onChange}
+      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
         {options.map((item) => (
-          <option key={item.id} value={item.id}>
+          <SelectItem key={item.id} value={item.id}>
             {formatParentOption(item)}
-          </option>
+          </SelectItem>
         ))}
-      </select>
+      </SelectContent></Select>
     </label>
   )
 }
@@ -228,24 +229,22 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
       {/* Label — required */}
       <label className="form-field form-field-wide">
         {t('menus.itemLabel')}
-        <input
-          className="control-input"
+        <Input
           value={value.label}
           onChange={(e) => onChange({ label: e.target.value })}
           placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
-        />
+         />
       </label>
 
       {/* URL */}
       <label className="form-field form-field-wide">
         {t('menus.itemUrlCustom')}
-        <input
-          className="control-input"
+        <Input
           value={value.url}
           onChange={(e) => onChange({ url: e.target.value })}
           placeholder="/danh-muc-san-pham/... hoặc https://..."
-        />
+         />
         {value.url.trim() ? (
           !isValidCustomUrl(value.url) && (
             <small className="menu-form-hint menu-form-hint--danger">
@@ -269,14 +268,13 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
       {/* Status */}
       <label className="form-field">
         {t('menus.itemStatus')}
-        <select
-          className="control-select"
+        <Select
           value={value.status}
-          onChange={(e) => onChange({ status: e.target.value })}
-        >
-          <option value="ACTIVE">{t('menus.statusActive')}</option>
-          <option value="INACTIVE">{t('menus.statusInactive')}</option>
-        </select>
+          onValueChange={(val) => onChange({ status: val })}
+        ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+          <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
+          <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
+        </SelectContent></Select>
         {value.status === 'INACTIVE' && (
           <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
         )}
@@ -284,11 +282,10 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
 
       {/* Open in new tab */}
       <label className="form-checkbox">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={value.openInNewTab}
           onChange={(e) => onChange({ openInNewTab: e.target.checked })}
-        />
+         />
         {t('menus.itemOpenInNewTab')}
       </label>
     </div>

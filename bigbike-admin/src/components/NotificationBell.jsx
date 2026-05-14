@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, Package, RefreshCw } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { Button } from '@/components/ui/button'
 
 const MAX_STORED = 50
 const STORAGE_KEY = 'admin_notifications'
@@ -173,14 +174,14 @@ export function NotificationBell({ navigate }) {
             </div>
             <div className="noti-panel-actions">
               {unreadCount > 0 && (
-                <button type="button" onClick={markAllRead} className="noti-action-btn noti-action-btn--primary">
+                <Button variant="secondary" className="noti-action-btn noti-action-btn--primary" type="button" onClick={markAllRead}>
                   Đánh dấu đã đọc
-                </button>
+                </Button>
               )}
               {items.length > 0 && (
-                <button type="button" onClick={clearAll} className="noti-action-btn">
+                <Button variant="secondary" className="noti-action-btn" type="button" onClick={clearAll}>
                   Xoá tất cả
-                </button>
+                </Button>
               )}
             </div>
           </div>

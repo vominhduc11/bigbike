@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -49,7 +48,7 @@ public class UpsertProductRequest {
     @Pattern(regexp = "^(VND)$", message = "Currency must be VND.")
     private String currency;
 
-    private ProductStockState stockState;
+    // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
     private PublishStatus publishStatus;
 
     private Boolean forceOutOfStock;
@@ -205,14 +204,6 @@ public class UpsertProductRequest {
 
     public void setCurrency(String currency) {
         this.currency = currency;
-    }
-
-    public ProductStockState getStockState() {
-        return stockState;
-    }
-
-    public void setStockState(ProductStockState stockState) {
-        this.stockState = stockState;
     }
 
     public PublishStatus getPublishStatus() {

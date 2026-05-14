@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AddSerialsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminSerialResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockProductGroupResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdjustStockRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportRequest;
@@ -69,6 +70,18 @@ public class AdminInventoryController {
         return inventoryService.listStock(page, size, q, stockState);
     }
 
+    @GetMapping("/grouped")
+    public PageResult<AdminStockProductGroupResponse> listStockGrouped(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String stockState,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return inventoryService.listStockGrouped(page, size, q, stockState);
+    }
+
     @GetMapping("/summary")
     public InventorySummaryResponse getSummary(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.read");
@@ -102,6 +115,17 @@ public class AdminInventoryController {
     ) {
         devAdminAuthService.requirePermission(request, "products.read");
         return inventoryService.listMovements(variantId, page, size);
+    }
+
+    @GetMapping("/products/{productId}/movements")
+    public PageResult<StockMovementResponse> listProductMovements(
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.read");
+        return inventoryService.listProductMovements(productId, page, size);
     }
 
     @PostMapping("/variants/{variantId}/adjust")

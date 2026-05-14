@@ -8,14 +8,15 @@ import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
 
 type Props = { videos: HomeVideo[] };
 
 function PlayIcon() {
   return (
-    <span className="wp-video-play-btn-ring" aria-hidden="true">
+    <span className="bb-video-play-btn-ring" aria-hidden="true">
       <svg
-        className="wp-video-play-icon"
+        className="bb-video-play-icon"
         viewBox="0 0 14 16"
         fill="currentColor"
         aria-hidden="true"
@@ -87,20 +88,20 @@ function VideoModal({
   return (
     <div
       ref={backdropRef}
-      className="wp-video-modal-backdrop"
+      className="bb-video-modal-backdrop"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={safeText(video.title, "Video")}
     >
-      <div className="wp-video-modal-inner" onClick={(e) => e.stopPropagation()}>
-        <button className="wp-video-modal-close" onClick={onClose} aria-label="Đóng video">
+      <div className="bb-video-modal-inner" onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="icon" className="bb-video-modal-close" onClick={onClose} aria-label="Đóng video">
           ×
-        </button>
+        </Button>
         {video.embedUrl ? (
           <iframe
             ref={iframeRef}
-            className="wp-video-modal-player"
+            className="bb-video-modal-player"
             src={video.embedUrl}
             title={safeText(video.title, "Video")}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -108,7 +109,7 @@ function VideoModal({
           />
         ) : isSafeHomeVideoUrl(video.videoUrl) ? (
           <video
-            className="wp-video-modal-player"
+            className="bb-video-modal-player"
             src={video.videoUrl}
             controls
             autoPlay
@@ -116,11 +117,11 @@ function VideoModal({
             playsInline
           />
         ) : (
-          <div className="wp-video-modal-player wp-video-thumb-fallback" aria-hidden="true">
-            <span className="wp-video-thumb-fallback-mark">BIGBIKE</span>
+          <div className="bb-video-modal-player bb-video-thumb-fallback" aria-hidden="true">
+            <span className="bb-video-thumb-fallback-mark">BIGBIKE</span>
           </div>
         )}
-        <p className="wp-video-modal-title">{safeText(video.title, "Video")}</p>
+        <p className="bb-video-modal-title">{safeText(video.title, "Video")}</p>
       </div>
     </div>
   );
@@ -144,17 +145,17 @@ function VideoCard({
     <button
       ref={btnRef}
       type="button"
-      className="wp-video-card"
+      className="bb-video-card"
       onClick={() => { if (btnRef.current) onOpen(btnRef.current); }}
       aria-label={`Xem video: ${title}`}
     >
-      <div className="wp-video-thumb-wrap">
+      <div className="bb-video-thumb-wrap">
         {thumbSrc ? (
           <Image
             src={thumbSrc}
             alt={safeText(video.thumbnail?.alt, title)}
             fill
-            className="wp-video-thumb"
+            className="bb-video-thumb"
             sizes="(max-width: 600px) 100vw, (max-width: 767px) 50vw, 33vw"
             onError={() => setImgError(true)}
           />
@@ -163,19 +164,18 @@ function VideoCard({
             src={video.videoUrl}
             preload="metadata"
             muted
-            className="wp-video-thumb"
-            style={{ objectFit: "cover", pointerEvents: "none" }}
+            className="bb-video-thumb object-cover pointer-events-none"
             aria-hidden="true"
           />
         ) : (
-          <div className="wp-video-thumb-fallback" aria-hidden="true">
-            <span className="wp-video-thumb-fallback-mark">BIGBIKE</span>
+          <div className="bb-video-thumb-fallback" aria-hidden="true">
+            <span className="bb-video-thumb-fallback-mark">BIGBIKE</span>
           </div>
         )}
         <PlayIcon />
       </div>
-      <div className="wp-video-card-desc">
-        <p className="wp-video-card-title">{title}</p>
+      <div className="bb-video-card-desc">
+        <p className="bb-video-card-title">{title}</p>
       </div>
     </button>
   );
@@ -199,8 +199,8 @@ export function HomeVideoCarousel({ videos }: Props) {
 
   return (
     <>
-      <div className="wp-video-carousel">
-        <div className="wp-video-carousel-vp">
+      <div className="bb-video-carousel">
+        <div className="bb-video-carousel-vp">
           <Swiper
             onSwiper={(s) => {
               swiperRef.current = s;
@@ -219,7 +219,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             }}
           >
             {videos.map((video) => (
-              <SwiperSlide key={video.id} className="wp-video-carousel-slide">
+              <SwiperSlide key={video.id} className="bb-video-carousel-slide">
                 <VideoCard
                   video={video}
                   onOpen={(el) => handleOpen(video, el)}
@@ -232,7 +232,7 @@ export function HomeVideoCarousel({ videos }: Props) {
           <>
             <button
               type="button"
-              className="wp-slider-btn wp-slider-prev"
+              className="bb-slider-btn bb-slider-prev"
               onClick={() => swiperRef.current?.slidePrev()}
               aria-label="Video trước"
             >
@@ -242,7 +242,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             </button>
             <button
               type="button"
-              className="wp-slider-btn wp-slider-next"
+              className="bb-slider-btn bb-slider-next"
               onClick={() => swiperRef.current?.slideNext()}
               aria-label="Video tiếp"
             >
@@ -255,12 +255,12 @@ export function HomeVideoCarousel({ videos }: Props) {
       </div>
 
       {showControls && videos.length > 1 && (
-        <div className="wp-video-dots" aria-label="Chuyển slide video">
+        <div className="bb-video-dots" aria-label="Chuyển slide video">
           {videos.map((_, idx) => (
             <button
               key={idx}
               type="button"
-              className={`wp-video-dot${idx === selectedIndex ? " is-active" : ""}`}
+              className={`bb-video-dot${idx === selectedIndex ? " is-active" : ""}`}
               onClick={() => {
                 if (loopEnabled) swiperRef.current?.slideToLoop(idx);
                 else swiperRef.current?.slideTo(idx);

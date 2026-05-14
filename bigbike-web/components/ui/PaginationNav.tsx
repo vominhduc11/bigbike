@@ -27,7 +27,7 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
   const pages = buildPageList(page, totalPages);
 
   return (
-    <nav className="bb-pagination" aria-label="Phân trang">
+    <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label="Phân trang">
       {page > 1 ? (
         <Button asChild variant="secondary" size="sm">
           <Link href={makeHref(page - 1)}>Trang trước</Link>
@@ -36,16 +36,20 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
         <Button variant="secondary" size="sm" disabled>Trang trước</Button>
       )}
 
-      <div className="bb-pagination-pages">
+      <div className="flex items-center gap-1 flex-wrap">
         {pages.map((p, i) =>
           p === "…" ? (
-            <span key={`ellipsis-${i}`} className="bb-pagination-ellipsis">…</span>
+            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-sm text-muted-foreground">…</span>
           ) : (
             <Link
               key={p}
               href={makeHref(p)}
-              className={`bb-pagination-page${p === page ? " active" : ""}`}
               aria-current={p === page ? "page" : undefined}
+              className={
+                p === page
+                  ? "bb-pagination-page inline-flex items-center justify-center min-w-9 h-9 px-[6px] border text-sm no-underline bg-brand border-brand text-white pointer-events-none"
+                  : "bb-pagination-page inline-flex items-center justify-center min-w-9 h-9 px-[6px] border border-border text-muted-foreground text-sm no-underline transition-all duration-[var(--bb-duration-fast)] hover:border-[var(--bb-border-brand)] hover:text-brand"
+              }
             >
               {p}
             </Link>

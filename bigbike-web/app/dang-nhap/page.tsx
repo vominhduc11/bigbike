@@ -110,12 +110,12 @@ function LoginFormSkeleton() {
         <div className="bb-skel-stack">
           <span className="bb-skel bb-skel--text bb-skel-w-25" />
           <span className="bb-skel bb-skel--title bb-skel-w-50" style={{ height: "1.8em" }} />
-          <div style={{ height: 8 }} />
+          <div className="h-2" />
           <span className="bb-skel bb-skel--text bb-skel-w-40" />
           <span className="bb-skel" style={{ height: 42, width: "100%", borderRadius: "var(--bb-radius-input)" }} />
           <span className="bb-skel bb-skel--text bb-skel-w-25" />
           <span className="bb-skel" style={{ height: 42, width: "100%", borderRadius: "var(--bb-radius-input)" }} />
-          <span className="bb-skel bb-skel--btn" style={{ width: "100%" }} />
+          <span className="bb-skel bb-skel--btn w-full" />
           <span className="bb-skel bb-skel--text bb-skel-w-60" />
         </div>
       </Card>

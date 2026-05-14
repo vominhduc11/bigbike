@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import styles from '../screens/MediaLibraryScreen.module.css'
 import { formatText } from '../lib/formatters'
+import { Checkbox } from '@/components/ui/checkbox'
 
 function formatSize(bytes) {
   if (!bytes) return '—'
@@ -36,9 +37,9 @@ export function MediaListRow({
   return (
     <div className={`${styles.listRow} ${selected ? styles.selected : ''}`}>
       {onToggleSelect ? (
-        <input type="checkbox" checked={selected} onChange={onToggleSelect}
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect}
           aria-label={t('media.select')} className={styles.cardCheckbox}
-          style={{ position: 'static' }} />
+          style={{ position: 'static' }}  />
       ) : <span />}
 
       <button type="button" onClick={onPreview} aria-label={t('media.preview')}

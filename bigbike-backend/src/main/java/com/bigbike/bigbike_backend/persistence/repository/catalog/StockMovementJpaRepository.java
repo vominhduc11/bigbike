@@ -27,6 +27,27 @@ public interface StockMovementJpaRepository extends JpaRepository<StockMovementE
     long countByProductId(String productId);
 
     @Query("""
+        SELECT m FROM StockMovementEntity m
+        LEFT JOIN FETCH m.variant v
+        LEFT JOIN FETCH v.product p
+        WHERE m.productId = :productId
+           OR (v IS NOT NULL AND p.id = :productId)
+        ORDER BY m.createdAt DESC
+        """)
+    List<StockMovementEntity> findByProductScopeOrderByCreatedAtDesc(
+            @Param("productId") String productId, Pageable pageable
+    );
+
+    @Query("""
+        SELECT COUNT(m) FROM StockMovementEntity m
+        LEFT JOIN m.variant v
+        LEFT JOIN v.product p
+        WHERE m.productId = :productId
+           OR (v IS NOT NULL AND p.id = :productId)
+        """)
+    long countByProductScope(@Param("productId") String productId);
+
+    @Query("""
         SELECT m FROM StockMovementEntity m LEFT JOIN FETCH m.variant v LEFT JOIN FETCH v.product
         WHERE (:movementType IS NULL OR m.movementType = :movementType)
           AND (:referenceType IS NULL OR m.referenceType = :referenceType)

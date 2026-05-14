@@ -32,17 +32,17 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   if (items.length < 2) return null;
 
   return (
-    <section className="wp-pdp-recently-viewed">
-      <div className="wp-pdp-recently-header">
-        <p className="wp-kicker">VỪA XEM</p>
-        <h2 className="wp-pdp-recently-title">Sản phẩm đã xem gần đây</h2>
+    <section className="bb-pdp-recently-viewed">
+      <div className="bb-pdp-recently-header">
+        <p className="bb-kicker">VỪA XEM</p>
+        <h2 className="bb-pdp-recently-title">Sản phẩm đã xem gần đây</h2>
       </div>
-      <div className="wp-pdp-recently-grid">
+      <div className="bb-pdp-recently-grid">
         {items.map((p) => {
           const src = p.imageUrl ? resolveMediaUrl(p.imageUrl) : null;
           return (
-            <Link key={p.id} href={toProductPath(p.slug)} className="wp-pdp-recently-card">
-              <div className="wp-pdp-recently-img">
+            <Link key={p.id} href={toProductPath(p.slug)} className="bb-pdp-recently-card">
+              <div className="bb-pdp-recently-img">
                 {src ? (
                   <Image
                     src={src}
@@ -51,14 +51,14 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
                     sizes="(max-width: 600px) 50vw, 200px"
                   />
                 ) : (
-                  <div className="wp-pdp-recently-img-fallback" />
+                  <div className="bb-pdp-recently-img-fallback" />
                 )}
               </div>
-              <div className="wp-pdp-recently-body">
-                {p.categoryName && <p className="wp-pdp-recently-cat">{p.categoryName}</p>}
-                <p className="wp-pdp-recently-name">{p.name}</p>
+              <div className="bb-pdp-recently-body">
+                {p.categoryName && <p className="bb-pdp-recently-cat">{p.categoryName}</p>}
+                <p className="bb-pdp-recently-name">{p.name}</p>
                 {p.price != null && p.price > 0 && (
-                  <p className="wp-pdp-recently-price">{formatVnd(p.price)}</p>
+                  <p className="bb-pdp-recently-price">{formatVnd(p.price)}</p>
                 )}
               </div>
             </Link>

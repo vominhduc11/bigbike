@@ -6,6 +6,8 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchAllSerials, updateSerialStatus } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const ALL_STATUSES = ['ALL', 'IN_STOCK', 'RESERVED', 'SOLD', 'RETURNED', 'INSPECTION', 'DAMAGED', 'SCRAPPED']
 
@@ -166,27 +168,23 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
               <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Chuyển sang trạng thái mới</p>
               <label style={{ fontSize: '0.85rem' }}>
                 Trạng thái
-                <select
-                  className="control-select"
-                  value={targetStatus}
-                  onChange={(e) => setTargetStatus(e.target.value)}
+                <Select value={(targetStatus) || '__all__'}
+                  onValueChange={(val) => setTargetStatus(val === '__all__' ? '' : val)}
                   required
-                >
-                  <option value="">— Chọn —</option>
+                ><SelectTrigger><SelectValue placeholder="— Chọn —" /></SelectTrigger><SelectContent>
                   {transitions.map((s) => (
-                    <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>
                   ))}
-                </select>
+                </SelectContent></Select>
               </label>
               <label style={{ fontSize: '0.85rem' }}>
                 Ghi chú {(targetStatus === 'DAMAGED' || targetStatus === 'SCRAPPED') && <span style={{ color: '#dc2626' }}>*</span>}
-                <input
+                <Input
                   type="text"
-                  className="control-input"
                   placeholder="Lý do thay đổi…"
                   value={statusNote}
                   onChange={(e) => setStatusNote(e.target.value)}
-                />
+                 />
               </label>
               {error && <p style={{ color: '#dc2626', fontSize: '0.8rem' }}>{error}</p>}
               <div style={{ display: 'flex', gap: 8 }}>
@@ -310,25 +308,23 @@ export function SerialListScreen({ canUpdate = false }) {
       <section className="filter-bar">
         <label>
           Tìm kiếm
-          <input
+          <Input
             type="search"
-            className="control-input"
             placeholder="Nhập số serial…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-          />
+           />
         </label>
         <label>
           Trạng thái
-          <select
-            className="control-select"
+          <Select
             value={query.status}
-            onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
-          >
+            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>{s === 'ALL' ? 'Tất cả' : STATUS_LABELS[s] ?? s}</option>
+              <SelectItem key={s} value={s}>{s === 'ALL' ? 'Tất cả' : STATUS_LABELS[s] ?? s}</SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 

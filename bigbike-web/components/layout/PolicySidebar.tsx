@@ -21,14 +21,23 @@ type Props = {
 
 export function PolicySidebar({ activeHref, title = "TRANG TĨNH", items = POLICY_LINKS }: Props) {
   return (
-    <aside className="wp-static-sidebar" aria-label={title}>
-      <h3 className="wp-static-sidebar-title">{title}</h3>
-      <ul className="wp-static-navigation">
+    <aside className="min-w-0" aria-label={title}>
+      <h3 className="font-display text-base font-semibold uppercase text-foreground mb-4 pb-3 border-b-2 border-brand tracking-normal">
+        {title}
+      </h3>
+      <ul className="list-none p-0 m-0">
         {items.map((item) => {
           const active = activeHref === item.href;
           return (
-            <li key={item.href} className={active ? "current" : ""}>
-              <Link href={item.href}>{item.label}</Link>
+            <li key={item.href} className="border-b border-border">
+              <Link
+                href={item.href}
+                className={`block py-3 font-body text-sm no-underline uppercase tracking-[0.02em] transition-all duration-150 hover:text-brand hover:pl-1.5 ${
+                  active ? "text-brand font-semibold" : "text-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
             </li>
           );
         })}

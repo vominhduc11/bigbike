@@ -7,6 +7,9 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchCustomerCredit, fetchCustomerDetail, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
 
@@ -196,16 +199,15 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
         <DetailSection title={t('customers.detail.sectionStatus')}>
           <label>
             {t('customers.detail.accountStatus')}
-            <select
-              className="control-select"
+            <Select
               value={customer.status}
-              onChange={handleStatusChange}
+              onValueChange={handleStatusChange}
               disabled={!canUpdate || saving}
-            >
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
               {CUSTOMER_STATUSES.map((s) => (
-                <option key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</option>
+                <SelectItem key={s} value={s}>{t(`status.customer.${s}`, { defaultValue: s })}</SelectItem>
               ))}
-            </select>
+            </SelectContent></Select>
           </label>
         </DetailSection>
 
@@ -223,34 +225,31 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
             <form onSubmit={handleEditSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <label>
                 Tên hiển thị
-                <input
-                  className="control-input"
+                <Input
                   type="text"
                   value={editForm.displayName}
                   onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
                   disabled={editSaving}
-                />
+                 />
               </label>
               <label>
                 Email
-                <input
-                  className="control-input"
+                <Input
                   type="text"
                   value={customer.email || ''}
                   readOnly
                   disabled
                   style={{ opacity: 0.6 }}
-                />
+                 />
               </label>
               <label>
                 Số điện thoại
-                <input
-                  className="control-input"
+                <Input
                   type="text"
                   value={editForm.phone}
                   onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
                   disabled={editSaving}
-                />
+                 />
               </label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" disabled={editSaving}>
@@ -402,31 +401,28 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
             ) : (
               <form onSubmit={handleCreditSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 480 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={creditForm.creditEnabled}
                     onChange={(e) => setCreditForm((p) => ({ ...p, creditEnabled: e.target.checked }))}
                     disabled={creditSaving}
-                  />
+                   />
                   Cho phép bán chịu
                 </label>
                 <label>
                   Trạng thái tín dụng
-                  <select
-                    className="control-select"
+                  <Select
                     value={creditForm.creditStatus}
-                    onChange={(e) => setCreditForm((p) => ({ ...p, creditStatus: e.target.value }))}
+                    onValueChange={(val) => setCreditForm((p) => ({ ...p, creditStatus: val }))}
                     disabled={creditSaving}
-                  >
-                    <option value="ACTIVE">Hoạt động</option>
-                    <option value="SUSPENDED">Tạm khóa</option>
-                    <option value="BLOCKED">Chặn vĩnh viễn</option>
-                  </select>
+                  ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                    <SelectItem value="ACTIVE">Hoạt động</SelectItem>
+                    <SelectItem value="SUSPENDED">Tạm khóa</SelectItem>
+                    <SelectItem value="BLOCKED">Chặn vĩnh viễn</SelectItem>
+                  </SelectContent></Select>
                 </label>
                 <label>
                   Hạn mức tín dụng (VND)
-                  <input
-                    className="control-input"
+                  <Input
                     type="number"
                     min="0"
                     step="1000"
@@ -434,12 +430,11 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     onChange={(e) => setCreditForm((p) => ({ ...p, creditLimit: e.target.value }))}
                     placeholder="Không giới hạn nếu để trống"
                     disabled={creditSaving}
-                  />
+                   />
                 </label>
                 <label>
                   Thời hạn thanh toán (ngày)
-                  <input
-                    className="control-input"
+                  <Input
                     type="number"
                     min="1"
                     max="365"
@@ -447,17 +442,16 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     onChange={(e) => setCreditForm((p) => ({ ...p, paymentTermsDays: e.target.value }))}
                     placeholder="VD: 30"
                     disabled={creditSaving}
-                  />
+                   />
                 </label>
                 <label>
                   Ghi chú tín dụng
-                  <input
-                    className="control-input"
+                  <Input
                     type="text"
                     value={creditForm.creditNote}
                     onChange={(e) => setCreditForm((p) => ({ ...p, creditNote: e.target.value }))}
                     disabled={creditSaving}
-                  />
+                   />
                 </label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button type="submit" className="btn btn-primary" disabled={creditSaving}>

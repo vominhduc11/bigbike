@@ -113,45 +113,54 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
-      <div className="wp-breadcrumb">
+      <div className="bb-container py-4 text-muted-foreground flex flex-wrap items-center [&_a]:text-muted-foreground [&_a]:font-semibold [&_a]:no-underline [&_a:hover]:text-brand">
         <Link href="/">Trang chủ</Link>
-        <span className="sep">/</span>
+        <span className="text-brand mx-[10px]">/</span>
         <Link href="/tin-tuc/">Tin tức</Link>
         {article.category?.name && (
           <>
-            <span className="sep">/</span>
+            <span className="text-brand mx-[10px]">/</span>
             <span>{article.category.name}</span>
           </>
         )}
-        <span className="sep">/</span>
+        <span className="text-brand mx-[10px]">/</span>
         <span>{articleTitle}</span>
       </div>
 
-      <div className="wp-article-layout">
-       <div className="wp-article-wrap">
-        <header className="wp-article-header">
-          <div className="wp-article-meta-row">
-            <Link href={categoryHref} className="wp-article-meta-chip">
+      <div className="grid grid-cols-1 max-w-[1200px] mx-auto mb-[60px] px-6 gap-10 lg:grid-cols-[8fr_4fr] lg:items-start">
+       <div className="min-w-0 p-0">
+        <header className="mb-7 p-[28px_32px] border border-border [background:radial-gradient(circle_at_88%_0%,rgba(255,12,9,0.18),transparent_32%),linear-gradient(145deg,#111,#171717)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-[14px] text-muted-foreground text-[11px] font-bold tracking-[0.1em] uppercase">
+            <Link
+              href={categoryHref}
+              className="inline-flex items-center min-h-[28px] px-[10px] border border-brand rounded-full bg-brand/[0.4] text-white no-underline transition-all hover:text-brand hover:bg-brand/[0.18]"
+            >
               {articleCategory}
             </Link>
-            {article.author?.name ? <span>{article.author.name}</span> : null}
-            <time dateTime={articleDate}>{formatDate(articleDate)}</time>
+            {article.author?.name ? (
+              <span className="inline-flex items-center gap-2 before:content-[''] before:w-1 before:h-1 before:rounded-full before:bg-brand before:opacity-75">
+                {article.author.name}
+              </span>
+            ) : null}
+            <time dateTime={articleDate} className="inline-flex items-center gap-2 before:content-[''] before:w-1 before:h-1 before:rounded-full before:bg-brand before:opacity-75">
+              {formatDate(articleDate)}
+            </time>
           </div>
-          <h1 className="wp-article-h1">{articleTitle}</h1>
+          <h1 className="font-display text-[clamp(1.8rem,3vw,2.6rem)] uppercase tracking-[0.01em] leading-[1.1] m-0 mb-[14px] text-white">{articleTitle}</h1>
           {article.excerpt && (
-            <p className="wp-article-excerpt">{article.excerpt}</p>
+            <p className="text-muted-foreground text-[15px] leading-[1.65] m-0">{article.excerpt}</p>
           )}
           {article.tags && article.tags.length > 0 ? (
-            <div className="wp-article-tags" aria-label="Thẻ bài viết">
+            <div className="flex flex-wrap gap-2 mt-[18px]" aria-label="Thẻ bài viết">
               {article.tags.slice(0, 8).map((tag) => (
-                <span key={tag}>{tag}</span>
+                <span key={tag} className="border border-border rounded-full px-[10px] py-[5px] text-muted-foreground text-[11px] font-bold tracking-[0.08em] uppercase">{tag}</span>
               ))}
             </div>
           ) : null}
         </header>
 
         {article.coverImage && (
-          <div className="wp-cover-image">
+          <div className="overflow-hidden mb-8 bg-card border border-border">
             <MediaImage
               image={article.coverImage}
               altFallback={articleTitle}
@@ -165,18 +174,19 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         <ArticleTOC />
 
         <article
-          className="bb-richtext wp-article-body"
+          data-article-body=""
+          className="bb-richtext bg-card border border-border px-[34px] py-[30px]"
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(article.body) }}
         />
 
         {/* Social share */}
-        <div className="wp-article-share">
-          <span className="wp-article-share-label">Chia sẻ:</span>
+        <div className="flex items-center gap-[10px] mt-6 pt-5 border-t border-border flex-wrap">
+          <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-muted-foreground">Chia sẻ:</span>
           <a
             href={fbShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="wp-article-share-btn wp-article-share-fb"
+            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-xs font-bold no-underline transition-opacity hover:opacity-80 bg-[#1877f2] text-white"
             aria-label="Chia sẻ lên Facebook"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -188,7 +198,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             href={zaloShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="wp-article-share-btn wp-article-share-zalo"
+            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-xs font-bold no-underline transition-opacity hover:opacity-80 bg-[#0068ff] text-white"
             aria-label="Chia sẻ qua Zalo"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -200,7 +210,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </a>
         </div>
 
-        <nav className="wp-article-footer-nav" aria-label="Điều hướng bài viết">
+        <nav className="flex flex-wrap gap-3 mt-7" aria-label="Điều hướng bài viết">
           <Button asChild variant="secondary">
             <Link href={toArticleListPath()}>Tất cả bài viết</Link>
           </Button>
@@ -212,25 +222,25 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         </nav>
        </div>
 
-       <aside className="wp-article-sidebar" aria-label="Tin tức nổi bật">
+       <aside className="min-w-0" aria-label="Tin tức nổi bật">
         {featuredArticles.length > 0 && (
-          <div className="wp-article-widget">
-            <h3 className="wp-article-widget-title">TIN TỨC NỔI BẬT</h3>
-            <ul className="wp-article-widget-list">
+          <div className="bg-white border border-border p-5 mb-5">
+            <h3 className="font-display text-[1.143rem] font-semibold text-foreground mb-4 pb-3 border-b-2 border-brand uppercase tracking-normal m-0">TIN TỨC NỔI BẬT</h3>
+            <ul className="list-none p-0 m-0 flex flex-col gap-[14px]">
               {featuredArticles.map((a) => (
-                <li key={a.id} className="wp-article-widget-item">
-                  <Link href={toArticlePath(a.slug)} className="wp-article-widget-link">
+                <li key={a.id} className="block">
+                  <Link href={toArticlePath(a.slug)} className="group grid grid-cols-[90px_1fr] gap-3 no-underline text-inherit items-start">
                     {a.coverImage?.url && (
-                      <span className="wp-article-widget-thumb">
-                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} />
+                      <span className="block aspect-[4/3] overflow-hidden bg-[#f2f2f2]">
+                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} className="w-full h-full object-cover" />
                       </span>
                     )}
-                    <span className="wp-article-widget-body">
-                      <span className="wp-article-widget-cat">
+                    <span className="flex flex-col gap-1 min-w-0">
+                      <span className="font-display text-[11px] font-semibold text-brand uppercase tracking-[0.04em]">
                         {safeText(a.category?.name, "Tin tức")}
                       </span>
-                      <span className="wp-article-widget-name">{safeText(a.title, "Bài viết")}</span>
-                      <time dateTime={a.publishedAt ?? a.createdAt} className="wp-article-widget-date">
+                      <span className="font-display font-semibold text-sm leading-[1.3] text-foreground line-clamp-2 group-hover:text-brand">{safeText(a.title, "Bài viết")}</span>
+                      <time dateTime={a.publishedAt ?? a.createdAt} className="text-xs text-muted-foreground font-body">
                         {formatDate(a.publishedAt ?? a.createdAt)}
                       </time>
                     </span>
@@ -241,23 +251,23 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </div>
         )}
         {recentArticles.length > 0 && (
-          <div className="wp-article-widget">
-            <h3 className="wp-article-widget-title">TIN TỨC MỚI</h3>
-            <ul className="wp-article-widget-list">
+          <div className="bg-white border border-border p-5 mb-5">
+            <h3 className="font-display text-[1.143rem] font-semibold text-foreground mb-4 pb-3 border-b-2 border-brand uppercase tracking-normal m-0">TIN TỨC MỚI</h3>
+            <ul className="list-none p-0 m-0 flex flex-col gap-[14px]">
               {recentArticles.map((a) => (
-                <li key={a.id} className="wp-article-widget-item">
-                  <Link href={toArticlePath(a.slug)} className="wp-article-widget-link">
+                <li key={a.id} className="block">
+                  <Link href={toArticlePath(a.slug)} className="group grid grid-cols-[90px_1fr] gap-3 no-underline text-inherit items-start">
                     {a.coverImage?.url && (
-                      <span className="wp-article-widget-thumb">
-                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} />
+                      <span className="block aspect-[4/3] overflow-hidden bg-[#f2f2f2]">
+                        <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} className="w-full h-full object-cover" />
                       </span>
                     )}
-                    <span className="wp-article-widget-body">
-                      <span className="wp-article-widget-cat">
+                    <span className="flex flex-col gap-1 min-w-0">
+                      <span className="font-display text-[11px] font-semibold text-brand uppercase tracking-[0.04em]">
                         {safeText(a.category?.name, "Tin tức")}
                       </span>
-                      <span className="wp-article-widget-name">{safeText(a.title, "Bài viết")}</span>
-                      <time dateTime={a.publishedAt ?? a.createdAt} className="wp-article-widget-date">
+                      <span className="font-display font-semibold text-sm leading-[1.3] text-foreground line-clamp-2 group-hover:text-brand">{safeText(a.title, "Bài viết")}</span>
+                      <time dateTime={a.publishedAt ?? a.createdAt} className="text-xs text-muted-foreground font-body">
                         {formatDate(a.publishedAt ?? a.createdAt)}
                       </time>
                     </span>
@@ -272,9 +282,9 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
 
       {/* Related articles — WP shows 4 in same category */}
       {relatedArticles.length > 0 && (
-        <section className="wp-related-articles bb-container">
-          <h2 className="wp-related-articles-title">TIN TỨC LIÊN QUAN</h2>
-          <div className="wp-news-grid wp-news-grid--4">
+        <section className="bb-container mt-12 pt-9 border-t border-border">
+          <h2 className="text-base font-extrabold uppercase tracking-[0.08em] text-foreground mb-6 m-0">TIN TỨC LIÊN QUAN</h2>
+          <div className="grid grid-cols-1 gap-[22px] pt-6 sm:grid-cols-2 lg:grid-cols-4">
             {relatedArticles.slice(0, 4).map((a) => (
               <ArticleCard key={a.id} article={a} />
             ))}

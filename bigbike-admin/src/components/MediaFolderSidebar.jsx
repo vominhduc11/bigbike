@@ -10,6 +10,7 @@ import {
   updateMediaFolder,
 } from '../lib/adminApi'
 import styles from './MediaFolderSidebar.module.css'
+import { Input } from '@/components/ui/input'
 
 /**
  * Left-rail sidebar with three sections:
@@ -181,11 +182,10 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }}
       className={styles.editForm}>
-      <input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
+      <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
         onBlur={() => { if (!value.trim()) onCancel() }}
-        onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}
-        className="control-input" placeholder={placeholder}
-        style={{ fontSize: '0.8rem', padding: '4px 8px' }} />
+        onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
+        style={{ fontSize: '0.8rem', padding: '4px 8px' }}  />
     </form>
   )
 }

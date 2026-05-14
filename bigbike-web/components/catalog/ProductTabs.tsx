@@ -45,7 +45,7 @@ export function ProductTabs({ specifications, description, videos, productName }
   const defaultTab: TabId = hasDescription ? "description" : hasSpecs ? "specs" : "videos";
 
   return (
-    <Tabs defaultValue={defaultTab} className="wp-pdp-tabs">
+    <Tabs defaultValue={defaultTab} className="bb-pdp-tabs">
       <TabsList className="w-full justify-start overflow-x-auto">
         {hasDescription && (
           <TabsTrigger value="description">Mô tả sản phẩm</TabsTrigger>
@@ -56,7 +56,7 @@ export function ProductTabs({ specifications, description, videos, productName }
         {hasVideos && (
           <TabsTrigger value="videos" className="gap-1.5">
             Video
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground text-[10px] font-bold leading-none">
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground text-xs font-bold leading-none">
               {videos.length}
             </span>
           </TabsTrigger>
@@ -64,16 +64,16 @@ export function ProductTabs({ specifications, description, videos, productName }
       </TabsList>
 
       {hasDescription && (
-        <TabsContent value="description" className="wp-pdp-tab-panel pt-4">
+        <TabsContent value="description" className="bb-pdp-tab-panel pt-4">
           <article
-            className="bb-richtext wp-article-body"
+            className="bb-richtext bb-article-body"
             dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
           />
         </TabsContent>
       )}
 
       {hasSpecs && (
-        <TabsContent value="specs" className="wp-pdp-tab-panel pt-4">
+        <TabsContent value="specs" className="bb-pdp-tab-panel pt-4">
           <table className="bb-spec-table">
             <tbody>
               {specifications.flatMap((spec, idx) => {
@@ -100,8 +100,8 @@ export function ProductTabs({ specifications, description, videos, productName }
       )}
 
       {hasVideos && (
-        <TabsContent value="videos" className="wp-pdp-tab-panel pt-4">
-          <div className="wp-pdp-videos">
+        <TabsContent value="videos" className="bb-pdp-tab-panel pt-4">
+          <div className="bb-pdp-videos">
             {videos.map((video, index) => {
               const url = video.url ?? "";
               const ytId = url ? getYouTubeId(url) : null;
@@ -109,9 +109,9 @@ export function ProductTabs({ specifications, description, videos, productName }
                 !ytId && (video.provider === "upload" || isUploadedVideoUrl(url));
               const posterImage = video.thumbnail ?? undefined;
               return (
-                <article key={video.id ?? url ?? index} className="wp-pdp-video-card">
+                <article key={video.id ?? url ?? index} className="bb-pdp-video-card">
                   {ytId ? (
-                    <div className="wp-pdp-video-embed">
+                    <div className="bb-pdp-video-embed">
                       <iframe
                         src={`https://www.youtube.com/embed/${ytId}`}
                         title={safeText(video.title, "Video sản phẩm")}
@@ -121,7 +121,7 @@ export function ProductTabs({ specifications, description, videos, productName }
                       />
                     </div>
                   ) : isUpload && url ? (
-                    <div className="wp-pdp-video-embed">
+                    <div className="bb-pdp-video-embed">
                       <video
                         src={url}
                         controls
@@ -131,7 +131,7 @@ export function ProductTabs({ specifications, description, videos, productName }
                       />
                     </div>
                   ) : (
-                    <div className="wp-pdp-video-thumb">
+                    <div className="bb-pdp-video-thumb">
                       <MediaImage
                         image={posterImage}
                         altFallback={safeText(video.title, productName)}
@@ -140,7 +140,7 @@ export function ProductTabs({ specifications, description, videos, productName }
                       />
                     </div>
                   )}
-                  <h3 className="wp-video-title">{safeText(video.title, "Video sản phẩm")}</h3>
+                  <h3 className="bb-video-title">{safeText(video.title, "Video sản phẩm")}</h3>
                   {url && !ytId && !isUpload && (
                     <a className="bb-link" href={url} target="_blank" rel="noreferrer">
                       Xem video →

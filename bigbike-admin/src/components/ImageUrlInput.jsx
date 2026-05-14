@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MediaPickerModal } from './MediaPickerModal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 function IconLibrary() {
   return (
@@ -43,32 +45,29 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
   return (
     <div className="image-url-input">
       <div className="image-url-input-row">
-        <button
+        <Button variant="secondary" size="sm" className="image-url-pick-btn"
           type="button"
-          className="btn btn-secondary btn-sm image-url-pick-btn"
           onClick={() => setPickerOpen(true)}
           disabled={disabled}
         >
           <IconLibrary />
           {hasImage ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
-        </button>
+        </Button>
         {hasImage && (
-          <button
+          <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
             type="button"
-            className="btn btn-icon btn-danger-ghost"
             onClick={() => { onChange(''); onAltChange?.('') }}
             disabled={disabled}
             aria-label={t('imageInput.removeImage')}
           >
             ✕
-          </button>
+          </Button>
         )}
       </div>
       {error && <small className="field-error">{error}</small>}
       <ImagePreview url={value} />
       {hasImage && onAltChange !== undefined && (
-        <input
-          className="control-input"
+        <Input
           type="text"
           placeholder={t('imageInput.altPlaceholder')}
           value={alt ?? ''}
@@ -76,7 +75,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
           disabled={disabled}
           maxLength={255}
           style={{ marginTop: 8 }}
-        />
+         />
       )}
       {pickerOpen && (
         <MediaPickerModal

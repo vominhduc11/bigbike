@@ -3,6 +3,8 @@ import { DayPicker } from 'react-day-picker'
 import { vi } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
 import { CalendarDays, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function formatDateLabel(date) {
   if (!date) return ''
@@ -34,47 +36,31 @@ export function DateRangePicker({ value, onChange, placeholder = 'Tất cả th�
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
+    <div ref={ref} className="relative">
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => setOpen((v) => !v)}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          height: 34, padding: '0 10px',
-          border: `1px solid ${open ? 'var(--admin-color-brand-red)' : 'var(--admin-color-border-default)'}`,
-          borderRadius: 'var(--admin-radius-sm)',
-          background: 'var(--admin-color-surface-base)',
-          color: hasValue ? 'var(--admin-color-text-primary)' : 'var(--admin-color-text-muted)',
-          fontSize: 'var(--admin-text-sm)',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          transition: 'var(--admin-transition-fast)',
-          minWidth: 180,
-        }}
+        className={cn(
+          'min-w-[180px] justify-start gap-2 font-normal',
+          open && 'border-primary',
+          !hasValue && 'text-muted-foreground',
+        )}
       >
-        <CalendarDays size={14} style={{ flexShrink: 0, color: 'var(--admin-color-text-muted)' }} />
-        <span style={{ flex: 1, textAlign: 'left' }}>{label}</span>
+        <CalendarDays size={14} className="shrink-0 text-muted-foreground" />
+        <span className="flex-1 text-left">{label}</span>
         {hasValue && (
           <X
             size={13}
             onClick={handleClear}
-            style={{ color: 'var(--admin-color-text-muted)', flexShrink: 0 }}
+            className="text-muted-foreground shrink-0 hover:text-foreground"
           />
         )}
-      </button>
+      </Button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          zIndex: 200,
-          background: 'var(--admin-color-surface-base)',
-          border: '1px solid var(--admin-color-border-subtle)',
-          borderRadius: 'var(--admin-radius-lg)',
-          boxShadow: 'var(--admin-shadow-lg)',
-          padding: 8,
-        }}>
+        <div className="absolute top-[calc(100%+6px)] left-0 z-50 bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
           <DayPicker
             locale={vi}
             mode="range"
@@ -85,15 +71,20 @@ export function DateRangePicker({ value, onChange, placeholder = 'Tất cả th�
             }}
             disabled={{ after: new Date() }}
             styles={{
-              root: { '--rdp-accent-color': 'var(--admin-color-brand-red)', '--rdp-accent-background-color': 'var(--admin-color-brand-red-subtle)', fontFamily: 'inherit', fontSize: '0.8125rem' },
+              root: {
+                '--rdp-accent-color': 'var(--admin-color-brand-red)',
+                '--rdp-accent-background-color': 'var(--admin-color-surface-selected)',
+                fontFamily: 'inherit',
+                fontSize: '0.8125rem',
+              },
             }}
           />
           {hasValue && (
-            <div style={{ borderTop: '1px solid var(--admin-color-border-subtle)', padding: '8px 8px 4px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="border-t border-border pt-2 pb-1 px-2 flex justify-end">
               <button
                 type="button"
                 onClick={handleClear}
-                style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+                className="text-xs text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer px-1 py-0.5"
               >
                 Xoá bộ lọc ngày
               </button>

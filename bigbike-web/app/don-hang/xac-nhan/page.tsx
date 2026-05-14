@@ -57,44 +57,44 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         />
       )}
 
-      <div className="wp-success">
-        <div className="wp-success-icon">
+      <div className="max-w-[720px] mx-auto my-[60px] px-6 text-center max-sm:px-4 max-sm:my-8">
+        <div className="bb-round w-[88px] h-[88px] rounded-full bg-[rgba(255,12,9,0.08)] text-brand flex items-center justify-center mx-auto mb-[22px] border-2 border-[var(--bb-brand-primary-border)]">
           <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </div>
-        <div className="kicker">Thanh toán thành công</div>
-        <h1>Cảm ơn anh em đã tin BigBike!</h1>
-        <p>
+        <div className="text-[11px] tracking-[0.2em] uppercase text-brand font-bold mb-[10px]">Thanh toán thành công</div>
+        <h1 className="font-display text-[40px] tracking-[0.01em] uppercase m-0 mb-[10px]">Cảm ơn anh em đã tin BigBike!</h1>
+        <p className="text-muted-foreground m-0 mb-7">
           Đơn hàng đã được xác nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc.
         </p>
 
         {orderNumber && (
-          <ul className="wp-order-overview">
-            <li>
-              <span className="label">Mã đơn hàng:</span>
-              <strong className="red">#{orderNumber}</strong>
+          <ul className="list-none mx-auto mb-7 p-0 max-w-[760px] bg-card border border-border flex flex-wrap gap-0">
+            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:[&:nth-child(2n)]:border-r-0 max-sm:last:border-b-0">
+              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Mã đơn hàng:</span>
+              <strong className="font-display text-[15px] text-brand font-semibold tracking-[0.01em]">#{orderNumber}</strong>
             </li>
             {order && (
-              <li>
-                <span className="label">Ngày đặt:</span>
-                <strong>{formatDate(order.placedAt)}</strong>
+              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
+                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Ngày đặt:</span>
+                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{formatDate(order.placedAt)}</strong>
               </li>
             )}
             {order?.customerEmail && (
-              <li>
-                <span className="label">Email:</span>
-                <strong>{order.customerEmail}</strong>
+              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
+                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Email:</span>
+                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order.customerEmail}</strong>
               </li>
             )}
-            <li>
-              <span className="label">Tổng giá trị:</span>
-              <strong>{order ? formatVnd(order.totalAmount) : "—"}</strong>
+            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
+              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Tổng giá trị:</span>
+              <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order ? formatVnd(order.totalAmount) : "—"}</strong>
             </li>
             {order?.payments?.[0]?.paymentMethod && (
-              <li>
-                <span className="label">Phương thức thanh toán:</span>
-                <strong>
+              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
+                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Phương thức thanh toán:</span>
+                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">
                   {order.payments[0].paymentMethod === "cod"
                     ? "Thanh toán khi nhận hàng (COD)"
                     : order.payments[0].paymentMethod === "bacs"
@@ -103,72 +103,72 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
                 </strong>
               </li>
             )}
-            <li>
-              <span className="label">Trạng thái:</span>
-              <strong>{order ? orderStatusLabel(order.status) : "Đã tiếp nhận"}</strong>
+            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
+              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Trạng thái:</span>
+              <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order ? orderStatusLabel(order.status) : "Đã tiếp nhận"}</strong>
             </li>
           </ul>
         )}
 
         {order && (
-          <div className="wp-info-card" style={{ maxWidth: 560, margin: "0 auto 22px", textAlign: "left" }}>
-            <p className="wp-info-label">Sản phẩm đã đặt</p>
+          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
+            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Sản phẩm đã đặt</p>
             {order.lineItems.map((item) => (
-              <div key={item.id} className="wp-order-confirm-row">
-                <span className="wp-checkout-address">
+              <div key={item.id} className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">
                   {safeText(item.productName, "Sản phẩm")}
                   {item.variantName ? ` · ${item.variantName}` : ""} × {item.quantity}
                 </span>
-                <b className="wp-order-confirm-total">{formatVnd(item.lineTotal)}</b>
+                <b className="text-foreground whitespace-nowrap font-bold">{formatVnd(item.lineTotal)}</b>
               </div>
             ))}
             {order.customerNote && (
-              <p className="wp-muted-text" style={{ marginTop: 10 }}>Ghi chú: {order.customerNote}</p>
+              <p className="text-muted-foreground text-sm m-0 mt-[10px]">Ghi chú: {order.customerNote}</p>
             )}
           </div>
         )}
 
         {order?.payments?.[0]?.paymentMethod === "bacs" && (bankNumber || bankName) && (
-          <div className="wp-info-card" style={{ maxWidth: 560, margin: "0 auto 22px", textAlign: "left" }}>
-            <p className="wp-info-label">Thông tin chuyển khoản</p>
+          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
+            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
             {bankName && (
-              <div className="wp-order-confirm-row">
-                <span className="wp-checkout-address">Ngân hàng</span>
-                <b className="wp-order-confirm-total">{bankName}</b>
+              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">Ngân hàng</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankName}</b>
               </div>
             )}
             {bankNumber && (
-              <div className="wp-order-confirm-row">
-                <span className="wp-checkout-address">Số tài khoản</span>
-                <b className="wp-order-confirm-total">{bankNumber}</b>
+              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">Số tài khoản</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankNumber}</b>
               </div>
             )}
             {bankHolder && (
-              <div className="wp-order-confirm-row">
-                <span className="wp-checkout-address">Chủ tài khoản</span>
-                <b className="wp-order-confirm-total">{bankHolder}</b>
+              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">Chủ tài khoản</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankHolder}</b>
               </div>
             )}
             {bankBranch && (
-              <div className="wp-order-confirm-row">
-                <span className="wp-checkout-address">Chi nhánh</span>
-                <b className="wp-order-confirm-total">{bankBranch}</b>
+              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">Chi nhánh</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankBranch}</b>
               </div>
             )}
             {order.orderNumber && (
-              <div className="wp-order-confirm-row">
-                <span className="wp-checkout-address">Nội dung chuyển khoản</span>
-                <b className="wp-order-confirm-total">BIGBIKE {order.orderNumber}</b>
+              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
+                <span className="text-sm leading-[1.7] text-muted-foreground">Nội dung chuyển khoản</span>
+                <b className="text-foreground whitespace-nowrap font-bold">BIGBIKE {order.orderNumber}</b>
               </div>
             )}
           </div>
         )}
 
         {orderLookup.error && !order && orderNumber && (
-          <p className="wp-error-text">Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.</p>
+          <p className="text-brand text-sm mb-4 m-0">Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.</p>
         )}
 
-        <div className="cta-row">
+        <div className="flex gap-[10px] justify-center max-sm:flex-col">
           <Button asChild variant="secondary">
             <Link href={toProductListPath()}>Tiếp tục mua hàng</Link>
           </Button>
@@ -180,3 +180,4 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
     </>
   );
 }
+

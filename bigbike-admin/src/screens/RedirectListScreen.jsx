@@ -16,6 +16,10 @@ import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { formatDateTime } from '../lib/formatters'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 const INITIAL_QUERY = {
   search: '',
@@ -297,74 +301,67 @@ export function RedirectListScreen({ canUpdate }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
             <label>
               {t('redirects.formSource', { defaultValue: 'Source pattern' })}
-              <input
-                className="control-input"
+              <Input
                 value={form.sourcePattern}
                 onChange={(e) => setForm((prev) => ({ ...prev, sourcePattern: e.target.value }))}
                 placeholder="/old-url"
-              />
+               />
             </label>
             <label>
               {t('redirects.formTarget', { defaultValue: 'Target URL' })}
-              <input
-                className="control-input"
+              <Input
                 value={form.targetUrl}
                 onChange={(e) => setForm((prev) => ({ ...prev, targetUrl: e.target.value }))}
                 placeholder="/new-url"
-              />
+               />
             </label>
             <label>
               {t('redirects.formType', { defaultValue: 'Redirect type' })}
-              <select
-                className="control-select"
+              <Select
                 value={form.redirectType}
-                onChange={(e) => setForm((prev) => ({ ...prev, redirectType: e.target.value }))}
-              >
-                <option value="PERMANENT">Permanent</option>
-                <option value="TEMPORARY">Temporary</option>
-                <option value="CUSTOM">Custom</option>
-              </select>
+                onValueChange={(val) => setForm((prev) => ({ ...prev, redirectType: val }))}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="PERMANENT">Permanent</SelectItem>
+                <SelectItem value="TEMPORARY">Temporary</SelectItem>
+                <SelectItem value="CUSTOM">Custom</SelectItem>
+              </SelectContent></Select>
             </label>
             <label>
               {t('redirects.formStatusCode', { defaultValue: 'Status code' })}
-              <select
-                className="control-select"
+              <Select
                 value={form.statusCode}
-                onChange={(e) => setForm((prev) => ({ ...prev, statusCode: e.target.value }))}
-              >
-                <option value="301">301 Permanent</option>
-                <option value="302">302 Temporary</option>
-                <option value="307">307 Temporary</option>
-                <option value="308">308 Permanent</option>
-              </select>
+                onValueChange={(val) => setForm((prev) => ({ ...prev, statusCode: val }))}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="301">301 Permanent</SelectItem>
+                <SelectItem value="302">302 Temporary</SelectItem>
+                <SelectItem value="307">307 Temporary</SelectItem>
+                <SelectItem value="308">308 Permanent</SelectItem>
+              </SelectContent></Select>
             </label>
             <label>
               {t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}
-              <input
-                className="control-input"
+              <Input
                 type="number"
                 min="0"
                 value={form.legacyId}
                 onChange={(e) => setForm((prev) => ({ ...prev, legacyId: e.target.value }))}
-              />
+               />
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24 }}>
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={form.enabled}
                 onChange={(e) => setForm((prev) => ({ ...prev, enabled: e.target.checked }))}
-              />
+               />
               {t('redirects.formEnabled', { defaultValue: 'Enabled' })}
             </label>
             <label style={{ gridColumn: '1 / -1' }}>
               {t('redirects.formNotes', { defaultValue: 'Notes' })}
-              <textarea
-                className="control-input"
+              <Textarea
                 rows={3}
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Optional notes for SEO migration or content review.' })}
-              />
+               />
             </label>
           </div>
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
@@ -381,39 +378,36 @@ export function RedirectListScreen({ canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Source, target, notes, legacy ID' })}
-          />
+           />
         </label>
         <label>
           {t('redirects.filterEnabled', { defaultValue: 'Enabled' })}
-          <select
-            className="control-select"
+          <Select
             value={query.enabled}
-            onChange={(e) => updateQuery({ enabled: e.target.value }, { resetPage: true })}
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="true">{t('common.on')}</option>
-            <option value="false">{t('common.off')}</option>
-          </select>
+            onValueChange={(val) => updateQuery({ enabled: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="true">{t('common.on')}</SelectItem>
+            <SelectItem value="false">{t('common.off')}</SelectItem>
+          </SelectContent></Select>
         </label>
         <label>
           {t('redirects.filterStatusCode', { defaultValue: 'Status code' })}
-          <select
-            className="control-select"
+          <Select
             value={query.statusCode}
-            onChange={(e) => updateQuery({ statusCode: e.target.value }, { resetPage: true })}
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="301">301</option>
-            <option value="302">302</option>
-            <option value="307">307</option>
-            <option value="308">308</option>
-          </select>
+            onValueChange={(val) => updateQuery({ statusCode: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="301">301</SelectItem>
+            <SelectItem value="302">302</SelectItem>
+            <SelectItem value="307">307</SelectItem>
+            <SelectItem value="308">308</SelectItem>
+          </SelectContent></Select>
         </label>
       </section>
 

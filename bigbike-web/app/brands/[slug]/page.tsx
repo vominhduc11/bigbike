@@ -194,7 +194,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <div className="wp-breadcrumb">
+      <div className="bb-breadcrumb">
         <Link href={toHomePath()}>Trang chủ</Link>
         <span className="sep">/</span>
         <Link href={toBrandListPath()}>Thương hiệu</Link>
@@ -202,24 +202,17 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         <span>{brandName}</span>
       </div>
 
-      <div className="wp-page-head">
+      <div className="bb-page-head">
         <span className="kicker">Thương hiệu</span>
         <h1>{brandName}</h1>
         {brand.description && (
-          <p className="wp-entity-desc">{brand.description}</p>
+          <p className="bb-entity-desc">{brand.description}</p>
         )}
       </div>
 
       {(brand.bannerImage ?? brand.logo) && (
-        <div style={{ maxWidth: 1440, margin: "0 auto 24px", padding: "0 24px" }}>
-          <div
-            style={{
-              padding: 16,
-              background: "var(--bb-bg-surface)",
-              border: "1px solid var(--bb-border-subtle)",
-              borderRadius: "var(--bb-radius-card)",
-            }}
-          >
+        <div className="bb-container mb-6">
+          <div className="p-4 bg-card border border-border rounded-none">
             <MediaImage
               image={(brand.bannerImage ?? brand.logo)!}
               altFallback={brandName}
@@ -230,7 +223,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         </div>
       )}
 
-      <div className="wp-cat-layout">
+      <div className="bb-cat-layout">
         <CatalogFilters
           brands={brandsResult.data}
           current={currentFilters}
@@ -238,8 +231,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         />
 
         <div>
-          <div className="wp-catalog-head">
-            <div className="wp-catalog-count">
+          <div className="bb-catalog-head">
+            <div className="bb-catalog-count">
               {productsResult.data.length > 0 && pagination ? (
                 <>
                   Hiển thị{" "}
@@ -265,7 +258,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
             />
           ) : (
             <>
-              <div className="wp-product-grid">
+              <div className="bb-product-grid">
                 {productsResult.data.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

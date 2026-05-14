@@ -17,6 +17,10 @@ import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { StatePanel } from '../components/StatePanel'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 function normalizeContentType(value) {
   return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
@@ -387,12 +391,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           <div className="detail-section-content form-grid">
             <label className="form-field">
               <span>{t('content.detail.slug')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.slug}
                 onChange={(event) => updateField('slug', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.slug ? (
                 <small className="field-error">{validationErrors.slug}</small>
               ) : null}
@@ -400,12 +403,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
             <label className="form-field">
               <span>{t('content.detail.title')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.title}
                 onChange={(event) => updateField('title', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.title ? (
                 <small className="field-error">{validationErrors.title}</small>
               ) : null}
@@ -413,16 +415,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
             <label className="form-field">
               <span>{t('content.detail.publishStatus')}</span>
-              <select
-                className="control-select"
+              <Select
                 value={form.publishStatus}
-                onChange={(event) => updateField('publishStatus', event.target.value)}
+                onValueChange={(val) => updateField('publishStatus', val)}
                 disabled={isReadOnly}
-              >
-                <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-                <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-                <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-              </select>
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
+                <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
+                <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+              </SelectContent></Select>
               {validationErrors.publishStatus ? (
                 <small className="field-error">{validationErrors.publishStatus}</small>
               ) : null}
@@ -431,12 +432,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {!isArticle ? (
               <label className="form-field">
                 <span>{t('content.detail.pageType')}</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.pageType}
                   onChange={(event) => updateField('pageType', event.target.value)}
                   disabled={isReadOnly || !isCreate}
-                />
+                 />
                 {validationErrors.pageType ? (
                   <small className="field-error">{validationErrors.pageType}</small>
                 ) : null}
@@ -447,17 +447,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {isArticle ? (
               <label className="form-field">
                 <span>{t('content.detail.author', { defaultValue: 'Tác giả' })}</span>
-                <select
-                  className="control-select"
+                <Select
                   value={form.authorId}
-                  onChange={(event) => updateField('authorId', event.target.value)}
+                  onValueChange={(val) => updateField('authorId', val)}
                   disabled={isReadOnly}
-                >
-                  <option value="">{t('content.detail.authorNone', { defaultValue: '— Không chọn —' })}</option>
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   {authors.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
-                </select>
+                </SelectContent></Select>
               </label>
             ) : null}
 
@@ -465,17 +463,15 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {isArticle ? (
               <label className="form-field">
                 <span>{t('content.detail.category', { defaultValue: 'Danh mục' })}</span>
-                <select
-                  className="control-select"
+                <Select
                   value={form.categoryId}
-                  onChange={(event) => updateField('categoryId', event.target.value)}
+                  onValueChange={(val) => updateField('categoryId', val)}
                   disabled={isReadOnly}
-                >
-                  <option value="">{t('content.detail.categoryNone', { defaultValue: '— Không chọn —' })}</option>
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
-                </select>
+                </SelectContent></Select>
               </label>
             ) : null}
 
@@ -483,12 +479,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {isArticle ? (
               <label className="form-field form-field-wide">
                 <span>{t('content.detail.excerpt')}</span>
-                <textarea
-                  className="control-input control-textarea"
+                <Textarea
                   value={form.excerpt}
                   onChange={(event) => updateField('excerpt', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
               </label>
             ) : null}
 
@@ -528,12 +523,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               <label className="form-field">
                 <span>{t('content.detail.coverImageAlt')}</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.coverImageAlt}
                   onChange={(event) => updateField('coverImageAlt', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
               </label>
 
               <div className="form-field form-field-wide">
@@ -548,23 +542,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               <label className="form-field">
                 <span>{t('content.detail.productImageAlt')}</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.productImageAlt}
                   onChange={(event) => updateField('productImageAlt', event.target.value)}
                   disabled={isReadOnly}
-                />
+                 />
               </label>
 
               <label className="form-field form-field-wide">
                 <span>{t('content.detail.tags')}</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.tags}
                   onChange={(event) => updateField('tags', event.target.value)}
                   disabled={isReadOnly}
                   placeholder={t('content.detail.tagsPlaceholder')}
-                />
+                 />
               </label>
             </div>
           </section>
@@ -594,38 +586,35 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
               <label className="form-field">
                 <span>Kicker (chip nhỏ trên tiêu đề)</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.heroKicker}
                   onChange={(event) => updateField('heroKicker', event.target.value)}
                   disabled={isReadOnly}
                   placeholder="vd: GIỚI THIỆU"
                   maxLength={128}
-                />
+                 />
               </label>
 
               <label className="form-field">
                 <span>Tiêu đề hero</span>
-                <input
-                  className="control-input"
+                <Input
                   value={form.heroTitle}
                   onChange={(event) => updateField('heroTitle', event.target.value)}
                   disabled={isReadOnly}
                   placeholder="Để trống nếu muốn dùng tên trang"
                   maxLength={256}
-                />
+                 />
               </label>
 
               <label className="form-field form-field-wide">
                 <span>Mô tả ngắn dưới tiêu đề</span>
-                <textarea
-                  className="control-input control-textarea"
+                <Textarea
                   value={form.heroDescription}
                   onChange={(event) => updateField('heroDescription', event.target.value)}
                   disabled={isReadOnly}
                   maxLength={1024}
                   rows={2}
-                />
+                 />
               </label>
             </div>
           </section>
@@ -638,32 +627,29 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           <div className="detail-section-content form-grid">
             <label className="form-field form-field-wide">
               <span>{t('content.detail.seoTitle')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.seoTitle}
                 onChange={(event) => updateField('seoTitle', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
 
             <label className="form-field form-field-wide">
               <span>{t('content.detail.seoDescription')}</span>
-              <textarea
-                className="control-input control-textarea"
+              <Textarea
                 value={form.seoDescription}
                 onChange={(event) => updateField('seoDescription', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
             </label>
 
             <label className="form-field form-field-wide">
               <span>{t('content.detail.seoCanonicalUrl')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.seoCanonicalUrl}
                 onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.seoCanonicalUrl ? (
                 <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
               ) : null}
@@ -671,12 +657,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
 
             <label className="form-checkbox">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={form.seoNoIndex}
-                onChange={(event) => updateField('seoNoIndex', event.target.checked)}
+                onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
                 disabled={isReadOnly}
-              />
+               />
               <span>{t('content.detail.seoNoIndex')}</span>
             </label>
           </div>

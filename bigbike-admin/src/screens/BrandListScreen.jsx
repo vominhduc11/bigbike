@@ -9,6 +9,8 @@ import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = {
   search: '',
@@ -133,41 +135,36 @@ export function BrandListScreen({ navigate, canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('brands.searchPlaceholder')}
-          />
+           />
         </label>
         <label>
           {t('brands.filterVisibility')}
-          <select
-            className="control-select"
+          <Select
             value={query.visibility}
-            onChange={(event) =>
-              updateQuery({ visibility: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="ALL">{t('common.all')}</option>
-            <option value="VISIBLE">{t('common.visible')}</option>
-            <option value="HIDDEN">{t('common.hidden')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ visibility: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            <SelectItem value="VISIBLE">{t('common.visible')}</SelectItem>
+            <SelectItem value="HIDDEN">{t('common.hidden')}</SelectItem>
+          </SelectContent></Select>
         </label>
         <label>
           {t('brands.filterSort')}
-          <select
-            className="control-select"
+          <Select
             value={query.sort}
-            onChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })
-            }
-          >
-            <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-            <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-            <option value="name:asc">{t('sort.nameAZ')}</option>
-          </select>
+            onValueChange={(event) =>
+              updateQuery({ sort: event.target.value }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
+            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
+            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
+          </SelectContent></Select>
         </label>
       </section>
 

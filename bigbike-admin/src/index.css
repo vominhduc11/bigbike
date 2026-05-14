@@ -1,5 +1,85 @@
+@import "tailwindcss";
 @import './styles/admin-tokens.css';
 @import './styles/admin-layout.css';
+
+/* ── shadcn/ui semantic token mapping (derives from admin-tokens.css) ─────── */
+:root {
+  --background:                 var(--admin-color-surface-base);
+  --foreground:                 var(--admin-color-text-primary);
+  --card:                       var(--admin-color-surface-base);
+  --card-foreground:            var(--admin-color-text-primary);
+  --popover:                    var(--admin-color-surface-raised);
+  --popover-foreground:         var(--admin-color-text-primary);
+  --primary:                    var(--admin-color-brand-red);
+  --primary-foreground:         var(--admin-color-text-inverse);
+  --secondary:                  var(--admin-color-surface-raised);
+  --secondary-foreground:       var(--admin-color-text-primary);
+  --muted:                      var(--admin-color-surface-muted);
+  --muted-foreground:           var(--admin-color-text-muted);
+  --accent:                     var(--admin-color-surface-selected);
+  --accent-foreground:          var(--admin-color-text-primary);
+  --destructive:                var(--admin-color-status-danger-text);
+  --destructive-foreground:     var(--admin-color-text-inverse);
+  --border:                     var(--admin-color-border-subtle);
+  --input:                      var(--admin-color-border-default);
+  --ring:                       var(--admin-color-primary);
+  --radius:                     var(--admin-radius-sm);
+}
+
+@theme inline {
+  /* shadcn core colors → Tailwind utilities (bg-primary, text-muted-foreground…) */
+  --color-background:              var(--background);
+  --color-foreground:              var(--foreground);
+  --color-card:                    var(--card);
+  --color-card-foreground:         var(--card-foreground);
+  --color-popover:                 var(--popover);
+  --color-popover-foreground:      var(--popover-foreground);
+  --color-primary:                 var(--primary);
+  --color-primary-foreground:      var(--primary-foreground);
+  --color-secondary:               var(--secondary);
+  --color-secondary-foreground:    var(--secondary-foreground);
+  --color-muted:                   var(--muted);
+  --color-muted-foreground:        var(--muted-foreground);
+  --color-accent:                  var(--accent);
+  --color-accent-foreground:       var(--accent-foreground);
+  --color-destructive:             var(--destructive);
+  --color-destructive-foreground:  var(--destructive-foreground);
+  --color-border:                  var(--border);
+  --color-input:                   var(--input);
+  --color-ring:                    var(--ring);
+
+  /* Status colors (bg-success-bg, text-warning, border-danger-border…) */
+  --color-success:                 var(--admin-color-status-success-text);
+  --color-success-bg:              var(--admin-color-status-success-bg);
+  --color-success-border:          var(--admin-color-status-success-border);
+  --color-warning:                 var(--admin-color-status-warning-text);
+  --color-warning-bg:              var(--admin-color-status-warning-bg);
+  --color-warning-border:          var(--admin-color-status-warning-border);
+  --color-danger:                  var(--admin-color-status-danger-text);
+  --color-danger-bg:               var(--admin-color-status-danger-bg);
+  --color-danger-border:           var(--admin-color-status-danger-border);
+  --color-info:                    var(--admin-color-status-info-text);
+  --color-info-bg:                 var(--admin-color-status-info-bg);
+  --color-info-border:             var(--admin-color-status-info-border);
+
+  /* Surface tokens */
+  --color-surface:                 var(--admin-color-surface-base);
+  --color-surface-muted:           var(--admin-color-surface-muted);
+  --color-surface-raised:          var(--admin-color-surface-raised);
+  --color-surface-hover:           var(--admin-color-surface-hover);
+  --color-surface-selected:        var(--admin-color-surface-selected);
+
+  /* Radius tokens */
+  --radius-xs:   var(--admin-radius-xs);
+  --radius-sm:   var(--admin-radius-sm);
+  --radius-md:   var(--admin-radius-md);
+  --radius-lg:   var(--admin-radius-lg);
+  --radius-full: var(--admin-radius-full);
+
+  /* Font families */
+  --font-display: var(--admin-font-display);
+  --font-body:    var(--admin-font-body);
+}
 
 /* ─── Reset ──────────────────────────────────────────────────────────────────*/
 *,
@@ -175,7 +255,7 @@ a {
 
 .sidebar-link.active {
   background: rgba(255, 255, 255, 0.11);
-  color: #ffffff;
+  color: var(--admin-color-text-inverse);
   font-weight: 600;
 }
 
@@ -188,7 +268,7 @@ a {
   width: 3px;
   height: 22px;
   background: var(--admin-color-brand-red);
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--admin-radius-xs) var(--admin-radius-xs) 0;
 }
 
 /* ─── Hamburger button ───────────────────────────────────────────────────────*/
@@ -490,7 +570,7 @@ a {
 
 .lang-btn.active {
   background: var(--admin-color-brand-red);
-  color: #ffffff;
+  color: var(--admin-color-text-inverse);
 }
 
 /* ─── Page content ───────────────────────────────────────────────────────────*/
@@ -896,7 +976,7 @@ a {
   display: block;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   background: currentColor;
   opacity: 0.6;
   flex-shrink: 0;
@@ -1033,7 +1113,7 @@ a {
 
 .section-nav-pill.is-active {
   background: var(--admin-color-brand-red);
-  color: #fff;
+  color: var(--admin-color-text-inverse);
   border-color: var(--admin-color-brand-red);
 }
 
@@ -1150,7 +1230,7 @@ a {
 .form-checkbox input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   accent-color: var(--admin-color-brand-red);
   cursor: pointer;
   flex-shrink: 0;
@@ -1459,7 +1539,7 @@ a {
 .rich-editor-content .tiptap code {
   background: var(--admin-color-surface-muted);
   border: 1px solid var(--admin-color-border-subtle);
-  border-radius: 3px;
+  border-radius: var(--admin-radius-xs);
   padding: 0.1em 0.35em;
   font-size: 0.875em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -2072,7 +2152,7 @@ a {
   color: var(--admin-color-text-muted);
   background: var(--admin-color-surface-muted);
   border: 1px solid var(--admin-color-border-subtle);
-  border-radius: 3px;
+  border-radius: var(--admin-radius-xs);
   padding: 1px 5px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -2319,16 +2399,19 @@ a {
    In dark mode both surfaces are dark, so add a visible separator.
    ─────────────────────────────────────────────────────────────────────────── */
 [data-theme="dark"] .sidebar {
-  border-right-color: #21262d;
+  border-right-color: var(--admin-color-border-subtle);
 }
 
 [data-theme="dark"] .topbar {
-  box-shadow: 0 1px 0 #21262d;
+  box-shadow: 0 1px 0 var(--admin-color-border-subtle);
 }
 
 /* ─── Dark mode: input/select background ────────────────────────────────────*/
 [data-theme="dark"] .control-input,
-[data-theme="dark"] .control-select {
+[data-theme="dark"] .control-select,
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
   color-scheme: dark;
 }
 
@@ -2358,7 +2441,7 @@ a {
 }
 
 .btn-danger-ghost:not(:disabled):hover {
-  background: var(--admin-color-status-danger-subtle);
+  background: var(--admin-color-status-danger-bg);
   border-color: var(--admin-color-status-danger-border);
 }
 
@@ -2425,7 +2508,7 @@ a {
 
 .img-preview-error {
   color: var(--admin-color-status-danger-text);
-  background: var(--admin-color-status-danger-subtle);
+  background: var(--admin-color-status-danger-bg);
 }
 
 /* ─── List editor (gallery, videos) ─────────────────────────────────────────*/
@@ -2536,7 +2619,7 @@ a {
   font-weight: 400;
   background: var(--admin-color-background-app);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--admin-radius-full);
 }
 
 .variant-card-actions {
@@ -2556,7 +2639,7 @@ a {
 }
 
 .variant-card--error {
-  border-color: var(--admin-color-danger-border, #f87171);
+  border-color: var(--admin-color-status-danger-border);
 }
 
 .variant-card-error-badge {
@@ -2565,9 +2648,9 @@ a {
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
-  background: var(--admin-color-danger, #ef4444);
-  color: #fff;
+  border-radius: var(--admin-radius-full);
+  background: var(--admin-color-brand-red);
+  color: var(--admin-color-text-inverse);
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
@@ -2587,7 +2670,8 @@ a {
   gap: var(--admin-space-2);
 }
 
-.variant-option-row .control-input {
+.variant-option-row .control-input,
+.variant-option-row input {
   flex: 1;
 }
 
@@ -2669,7 +2753,7 @@ a {
 }
 
 .gallery-card--error {
-  border-color: var(--admin-color-status-danger-border, #f87171);
+  border-color: var(--admin-color-status-danger-border);
 }
 
 .gallery-card-thumb {
@@ -2685,7 +2769,7 @@ a {
 }
 
 .gallery-card-thumb:hover {
-  background: var(--admin-color-surface-hover, #f3f4f6);
+  background: var(--admin-color-surface-hover);
 }
 
 .gallery-card-thumb img {
@@ -2713,10 +2797,10 @@ a {
   right: 5px;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   border: none;
   background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  color: var(--admin-color-text-inverse);
   font-size: 11px;
   line-height: 1;
   display: flex;
@@ -2762,8 +2846,8 @@ a {
 }
 
 .gallery-card-add:hover:not(:disabled) {
-  border-color: var(--admin-color-primary, #4f46e5);
-  color: var(--admin-color-primary, #4f46e5);
+  border-color: var(--admin-color-primary);
+  color: var(--admin-color-primary);
 }
 
 .gallery-add-icon {
@@ -2823,7 +2907,8 @@ a {
   flex-shrink: 0;
 }
 
-.mpicker-search .control-input {
+.mpicker-search .control-input,
+.mpicker-search input {
   width: 100%;
 }
 
@@ -2834,7 +2919,7 @@ a {
   gap: var(--admin-space-2);
   margin: 0 var(--admin-space-5);
   padding: var(--admin-space-2) var(--admin-space-3);
-  background: var(--admin-color-status-danger-subtle);
+  background: var(--admin-color-status-danger-bg);
   color: var(--admin-color-status-danger-text);
   border: 1px solid var(--admin-color-status-danger-border);
   border-radius: var(--admin-radius-sm);
@@ -2934,8 +3019,8 @@ a {
   width: 22px;
   height: 22px;
   background: var(--admin-color-brand-red);
-  color: #fff;
-  border-radius: 50%;
+  color: var(--admin-color-text-inverse);
+  border-radius: var(--admin-radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4219,7 +4304,7 @@ a {
   gap: var(--admin-space-2);
   align-items: center;
 }
-.discount-row .control-input { flex: 1; }
+.discount-row .control-input, .discount-row input { flex: 1; }
 .discount-pct-btn { white-space: nowrap; }
 .discount-helper {
   display: flex;
@@ -4231,7 +4316,7 @@ a {
   background: var(--admin-color-surface-raised);
   border-radius: var(--admin-radius-sm);
 }
-.discount-helper .control-input { max-width: 120px; }
+.discount-helper .control-input, .discount-helper input { max-width: 120px; }
 .discount-helper .detail-section-desc { flex-basis: 100%; }
 
 /* ─── Gallery multi-pick ─────────────────────────────────────────────────────*/
@@ -4280,7 +4365,7 @@ a {
   gap: var(--admin-space-2);
   font-size: var(--admin-text-xs);
 }
-.mpicker-upload-item--error .mpicker-upload-name { color: var(--admin-color-danger); }
+.mpicker-upload-item--error .mpicker-upload-name { color: var(--admin-color-status-danger-text); }
 .mpicker-upload-name { flex-shrink: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mpicker-upload-bar {
   flex: 1;
@@ -4294,14 +4379,14 @@ a {
   background: var(--admin-color-primary);
   transition: width 0.2s;
 }
-.mpicker-upload-err { color: var(--admin-color-danger); font-size: var(--admin-text-xs); }
+.mpicker-upload-err { color: var(--admin-color-status-danger-text); font-size: var(--admin-text-xs); }
 .mpicker-mode-badge {
   margin-left: var(--admin-space-2);
   font-size: var(--admin-text-xs);
   font-weight: 500;
   background: var(--admin-color-primary);
-  color: #fff;
-  border-radius: 999px;
+  color: var(--admin-color-text-inverse);
+  border-radius: var(--admin-radius-full);
   padding: 2px 8px;
   vertical-align: middle;
 }
@@ -4578,7 +4663,7 @@ a {
 }
 
 .pos-product-stock.out {
-  color: var(--admin-color-danger, #ef4444);
+  color: var(--admin-color-status-danger-text);
   font-weight: 600;
 }
 
@@ -5543,7 +5628,8 @@ a {
   gap: var(--admin-space-2);
   align-items: center;
 }
-.au-field-row .control-input {
+.au-field-row .control-input,
+.au-field-row input {
   flex: 1;
   min-width: 0;
 }
@@ -5653,20 +5739,20 @@ a {
   gap: 1rem;
   margin-top: 2rem;
   padding: 1rem 1.25rem;
-  border: 1px solid var(--color-danger-border, #f87171);
-  border-radius: 8px;
-  background: var(--color-danger-subtle, rgba(239,68,68,0.05));
+  border: 1px solid var(--admin-color-status-danger-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-color-status-danger-bg);
 }
 
 .danger-zone-info strong {
   display: block;
   font-size: 0.875rem;
-  color: var(--color-danger, #ef4444);
+  color: var(--admin-color-status-danger-text);
   margin-bottom: 0.25rem;
 }
 
 .danger-zone-info p {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #888);
+  color: var(--admin-color-text-muted);
   margin: 0;
 }

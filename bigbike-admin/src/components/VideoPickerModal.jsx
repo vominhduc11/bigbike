@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const ALLOWED_MIME = ['video/mp4']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -164,9 +166,8 @@ export function VideoPickerModal({ onSelect, onClose }) {
               onChange={handleFileChange}
               disabled={uploading}
             />
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
             >
@@ -174,16 +175,15 @@ export function VideoPickerModal({ onSelect, onClose }) {
               {uploading
                 ? t('homeVideos.picker.uploading', { progress: uploadProgress || 0 })
                 : t('homeVideos.picker.uploadButton')}
-            </button>
-            <button type="button" className="btn btn-icon btn-secondary" onClick={onClose} aria-label={t('homeVideos.picker.close')}>
+            </Button>
+            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('homeVideos.picker.close')}>
               <IconClose />
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="mpicker-search">
-          <input
-            className="control-input"
+          <Input
             type="search"
             placeholder={t('homeVideos.picker.searchPlaceholder')}
             value={search}
@@ -192,7 +192,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
               setSearch(event.target.value)
             }}
             autoFocus
-          />
+           />
         </div>
 
         {uploadError && (
@@ -252,9 +252,8 @@ export function VideoPickerModal({ onSelect, onClose }) {
 
         {state.totalPages > 1 && (
           <div className="mpicker-pagination">
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => {
                 markLoading()
                 setPage((value) => Math.max(1, value - 1))
@@ -262,11 +261,10 @@ export function VideoPickerModal({ onSelect, onClose }) {
               disabled={page <= 1 || isLoading}
             >
               {t('homeVideos.picker.prev')}
-            </button>
+            </Button>
             <span className="mpicker-page-info">{t('homeVideos.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
-            <button
+            <Button variant="secondary" size="sm"
               type="button"
-              className="btn btn-secondary btn-sm"
               onClick={() => {
                 markLoading()
                 setPage((value) => Math.min(state.totalPages, value + 1))
@@ -274,7 +272,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
               disabled={page >= state.totalPages || isLoading}
             >
               {t('homeVideos.picker.next')}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -287,10 +285,10 @@ export function VideoPickerModal({ onSelect, onClose }) {
             <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
           )}
           <div className="mpicker-footer-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
-            <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={!selectedUrl}>
+            <Button variant="secondary" type="button" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button type="button" onClick={handleConfirm} disabled={!selectedUrl}>
               {t('homeVideos.picker.confirm')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

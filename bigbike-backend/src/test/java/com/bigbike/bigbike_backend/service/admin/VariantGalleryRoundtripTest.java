@@ -9,7 +9,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
@@ -61,18 +60,16 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_persistsAndIsReadBack() {
-        // ── 1. Create product with one variant carrying a 3-image gallery ──
+        // â”€â”€ 1. Create product with one variant carrying a 3-image gallery â”€â”€
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("vgallery-product-1");
         create.setName("VGallery Product 1");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest variant = new VariantRequest();
-        variant.setName("Đỏ / M");
-        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setName("Äá» / M");
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", "Red"), option("Size", "M")));
         variant.setGallery(List.of(
@@ -88,7 +85,7 @@ class VariantGalleryRoundtripTest {
                 .as("gallery present on the immediate save response")
                 .hasSize(3);
 
-        // ── 2. Re-read the product through the same path the admin GET uses ─
+        // â”€â”€ 2. Re-read the product through the same path the admin GET uses â”€
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
 
         assertThat(reread.variants()).hasSize(1);
@@ -102,18 +99,16 @@ class VariantGalleryRoundtripTest {
 
     @Test
     void variantGallery_isReplacedOnUpdateAndReadBack() {
-        // ── Initial save with 2 images ──
+        // â”€â”€ Initial save with 2 images â”€â”€
         UpsertProductRequest create = new UpsertProductRequest();
         create.setSlug("vgallery-product-2");
         create.setName("VGallery Product 2");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest v1 = new VariantRequest();
-        v1.setName("Đen / L");
-        v1.setStockState(ProductStockState.IN_STOCK);
+        v1.setName("Äen / L");
         v1.setIsAvailable(true);
         v1.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v1.setGallery(List.of(
@@ -125,19 +120,17 @@ class VariantGalleryRoundtripTest {
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
         String variantId = saved.variants().get(0).id();
 
-        // ── Update with 4 different images, reusing the same variant ID ──
+        // â”€â”€ Update with 4 different images, reusing the same variant ID â”€â”€
         UpsertProductRequest update = new UpsertProductRequest();
         update.setSlug("vgallery-product-2");
         update.setName("VGallery Product 2");
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
-        update.setStockState(ProductStockState.IN_STOCK);
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest v2 = new VariantRequest();
         v2.setId(variantId);
-        v2.setName("Đen / L");
-        v2.setStockState(ProductStockState.IN_STOCK);
+        v2.setName("Äen / L");
         v2.setIsAvailable(true);
         v2.setOptions(List.of(option("Color", "Black"), option("Size", "L")));
         v2.setGallery(List.of(
@@ -171,7 +164,6 @@ class VariantGalleryRoundtripTest {
         create.setName("VGallery Product Color Scope");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest redS = variant("Red / S", "Red", "S");
@@ -202,10 +194,9 @@ class VariantGalleryRoundtripTest {
         create.setName("VImage Product Color Scope");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        // Red-S carries the main image; Red-M does not — backend should apply Red's image to both.
+        // Red-S carries the main image; Red-M does not â€” backend should apply Red's image to both.
         VariantRequest redS = variant("Red / S", "Red", "S");
         redS.setImageUrl("https://cdn.example.com/red-main.jpg");
         VariantRequest redM = variant("Red / M", "Red", "M");
@@ -234,7 +225,6 @@ class VariantGalleryRoundtripTest {
         create.setName("VImage Product Update");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest greenS = variant("Green / S", "Green", "S");
@@ -252,7 +242,6 @@ class VariantGalleryRoundtripTest {
         update.setName("VImage Product Update");
         update.setCategoryId(category.getId());
         update.setRetailPrice(new BigDecimal("1000000"));
-        update.setStockState(ProductStockState.IN_STOCK);
         update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest updatedS = variant("Green / S", "Green", "S");
@@ -280,12 +269,10 @@ class VariantGalleryRoundtripTest {
         create.setName("VImage Product No Color");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setName("Size M");
-        sizeOnly.setStockState(ProductStockState.IN_STOCK);
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         sizeOnly.setImageUrl("https://cdn.example.com/ignored.jpg");
@@ -313,7 +300,6 @@ class VariantGalleryRoundtripTest {
         create.setName("VImage Legacy Inconsistent");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest yellowS = variant("Yellow / S", "Yellow", "S");
@@ -327,7 +313,7 @@ class VariantGalleryRoundtripTest {
         String idM = saved.variants().get(1).id();
         String idL = saved.variants().get(2).id();
 
-        // Plant inconsistent imageUrls directly via JPA — simulating data that
+        // Plant inconsistent imageUrls directly via JPA â€” simulating data that
         // landed in the DB through the WP migration importer (or any other
         // write path that bypasses AdminCatalogMutationService.applyVariants).
         ProductVariantEntity variantS = variantRepo.findById(idS).orElseThrow();
@@ -366,12 +352,10 @@ class VariantGalleryRoundtripTest {
         create.setName("VImage No Color Read");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setName("Size XL");
-        sizeOnly.setStockState(ProductStockState.IN_STOCK);
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "XL")));
         create.setVariants(List.of(sizeOnly));
@@ -400,12 +384,10 @@ class VariantGalleryRoundtripTest {
         create.setName("VGallery Product No Color");
         create.setCategoryId(category.getId());
         create.setRetailPrice(new BigDecimal("1000000"));
-        create.setStockState(ProductStockState.IN_STOCK);
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest sizeOnly = new VariantRequest();
         sizeOnly.setName("Size M");
-        sizeOnly.setStockState(ProductStockState.IN_STOCK);
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
         sizeOnly.setGallery(List.of(galleryItem("https://cdn.example.com/size-m.jpg", "Size M", 0)));
@@ -419,7 +401,6 @@ class VariantGalleryRoundtripTest {
     private VariantRequest variant(String name, String color, String size) {
         VariantRequest variant = new VariantRequest();
         variant.setName(name);
-        variant.setStockState(ProductStockState.IN_STOCK);
         variant.setIsAvailable(true);
         variant.setOptions(List.of(option("Color", color), option("Size", size)));
         return variant;

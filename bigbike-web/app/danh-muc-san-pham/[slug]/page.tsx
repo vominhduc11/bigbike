@@ -242,15 +242,15 @@ export default async function CategoryDetailPage({
 
       {/* ── Sub-categories ────────────────────────────────────── */}
       {childCategories.length > 0 && (
-        <div className="wp-cat-children">
-          <div className="bb-container wp-cat-children-inner">
-            <span className="wp-cat-children-label">Danh mục con:</span>
-            <div className="wp-cat-children-chips">
+        <div className="bb-cat-children">
+          <div className="bb-container bb-cat-children-inner">
+            <span className="bb-cat-children-label">Danh mục con:</span>
+            <div className="bb-cat-children-chips">
               {childCategories.map((child) => (
                 <Link
                   key={child.id}
                   href={toCategoryPath(child.slug)}
-                  className="wp-cat-child-chip"
+                  className="bb-cat-child-chip"
                 >
                   {safeText(child.name, child.slug)}
                 </Link>
@@ -261,7 +261,7 @@ export default async function CategoryDetailPage({
       )}
 
       {/* ── Catalog body ──────────────────────────────────────── */}
-      <div className="wp-cat-layout">
+      <div className="bb-cat-layout">
         <CatalogFilters
           key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
@@ -270,8 +270,8 @@ export default async function CategoryDetailPage({
         />
 
         <div>
-          <div className="wp-catalog-head">
-            <div className="wp-catalog-count">
+          <div className="bb-catalog-head">
+            <div className="bb-catalog-count">
               {productsResult.data.length > 0 && pagination ? (
                 <>
                   Hiển thị{" "}
@@ -289,9 +289,8 @@ export default async function CategoryDetailPage({
             <Suspense
               fallback={
                 <span
-                  className="bb-skel"
+                  className="bb-skel w-40 h-9"
                   aria-hidden="true"
-                  style={{ width: 160, height: 36, borderRadius: "var(--bb-radius-input)" }}
                 />
               }
             >
@@ -311,7 +310,7 @@ export default async function CategoryDetailPage({
             />
           ) : (
             <>
-              <div className="wp-product-grid">
+              <div className="bb-product-grid">
                 {productsResult.data.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -341,9 +340,9 @@ export default async function CategoryDetailPage({
 
       {/* ── SEO description (full HTML) ────────────────────────── */}
       {isHtmlDescription && rawDescription && (
-        <div className="wp-cat-seo">
+        <div className="bb-cat-seo">
           <div
-            className="wp-cat-seo-prose"
+            className="bb-cat-seo-prose"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(rawDescription) }}
           />
         </div>

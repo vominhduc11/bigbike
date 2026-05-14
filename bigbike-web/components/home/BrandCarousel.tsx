@@ -15,7 +15,7 @@ export function BrandCarousel({ brands }: Props) {
 
   return (
     <div className="bb-container">
-      <div className="wp-brands-wrap">
+      <div className="relative">
         <Swiper
           speed={1000}
           slidesPerView={2}
@@ -28,8 +28,8 @@ export function BrandCarousel({ brands }: Props) {
           {brands.map((b) => {
             const logo = b.logo?.url ? resolveMediaUrl(b.logo.url.trim()) : null;
             return (
-              <SwiperSlide key={b.id} className="wp-brand-slide">
-                <Link href={toBrandPath(b.slug)} className="wp-brand-item">
+              <SwiperSlide key={b.id} className="text-center flex items-center justify-center">
+                <Link href={toBrandPath(b.slug)} className="flex items-center justify-center no-underline">
                   {logo ? (
                     <Image
                       src={logo}
@@ -39,7 +39,7 @@ export function BrandCarousel({ brands }: Props) {
                       style={{ objectFit: "contain", width: "auto", height: 56 }}
                     />
                   ) : (
-                    <span className="wp-brand-text-fallback">{b.name}</span>
+                    <span className="text-[0.82rem] font-bold text-muted-foreground uppercase">{b.name}</span>
                   )}
                 </Link>
               </SwiperSlide>

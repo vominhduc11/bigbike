@@ -180,7 +180,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
         meta={pagination ? `${pagination.totalItems} sản phẩm` : undefined}
       />
 
-      <div className="wp-cat-layout">
+      <div className="bb-cat-layout">
         <CatalogFilters
           key={[currentFilters.category, currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
@@ -190,8 +190,8 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
         />
 
         <div>
-          <div className="wp-catalog-head">
-            <div className="wp-catalog-count">
+          <div className="bb-catalog-head">
+            <div className="bb-catalog-count">
               {result.data.length > 0 && pagination ? (
                 <>
                   Hiển thị{" "}
@@ -206,9 +206,8 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
             <Suspense
               fallback={
                 <span
-                  className="bb-skel"
+                  className="bb-skel w-40 h-9"
                   aria-hidden="true"
-                  style={{ width: 160, height: 36, borderRadius: "var(--bb-radius-input)" }}
                 />
               }
             >
@@ -225,7 +224,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
             />
           ) : (
             <>
-              <div className="wp-product-grid">
+              <div className="bb-product-grid">
                 {result.data.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

@@ -33,6 +33,9 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const EMPTY_FORM = {
   title: '',
@@ -73,7 +76,7 @@ function VideoPreviewModal({ video, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative', width: '90vw', maxWidth: 800,
-          background: '#000', borderRadius: 10, overflow: 'hidden',
+          background: '#000', borderRadius: 'var(--admin-radius-md)', overflow: 'hidden',
         }}
       >
         <button
@@ -81,8 +84,8 @@ function VideoPreviewModal({ video, onClose }) {
           onClick={onClose}
           style={{
             position: 'absolute', top: 10, right: 12, zIndex: 1,
-            background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff',
-            fontSize: 22, lineHeight: 1, cursor: 'pointer', borderRadius: 4,
+            background: 'rgba(0,0,0,0.6)', border: 'none', color: 'var(--admin-color-text-inverse)',
+            fontSize: 22, lineHeight: 1, cursor: 'pointer', borderRadius: 'var(--admin-radius-xs)',
             padding: '2px 8px',
           }}
           aria-label="Đóng"
@@ -108,7 +111,7 @@ function VideoPreviewModal({ video, onClose }) {
         </div>
 
         {video.title && (
-          <p style={{ margin: 0, padding: '10px 16px', color: '#fff', fontSize: 13, fontWeight: 600, background: '#111' }}>
+          <p style={{ margin: 0, padding: '10px 16px', color: 'var(--admin-color-text-inverse)', fontSize: 13, fontWeight: 600, background: '#111' }}>
             {video.title}
           </p>
         )}
@@ -138,7 +141,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       ref={setNodeRef}
       style={{
         ...style,
-        background: selected ? 'var(--admin-color-primary-subtle, #1a2a3a)' : 'var(--admin-color-surface-base)',
+        background: selected ? 'var(--admin-color-surface-selected)' : 'var(--admin-color-surface-base)',
         border: selected ? '1px solid var(--admin-color-primary)' : '1px solid var(--admin-color-border-subtle)',
         borderRadius: 'var(--admin-radius-md)',
         padding: '12px 16px',
@@ -151,13 +154,12 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
     >
       {canUpdate && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={selected}
-            onChange={(e) => onSelect(video.id, e.target.checked)}
+            onCheckedChange={(checked) => onSelect(video.id, checked)}
             style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
             aria-label={`Chọn video ${video.title}`}
-          />
+           />
           {!selectionMode && (
             <button
               type="button"
@@ -180,7 +182,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         onClick={onPreview}
         style={{
           flexShrink: 0, width: 96, height: 58,
-          borderRadius: 6, overflow: 'hidden',
+          borderRadius: 'var(--admin-radius-sm)', overflow: 'hidden',
           background: '#111', border: 'none', padding: 0,
           cursor: 'pointer', position: 'relative',
         }}
@@ -215,9 +217,9 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           <span style={{
             display: 'inline-block',
             padding: '2px 8px',
-            borderRadius: 99,
-            background: video.isActive ? 'var(--admin-color-success-subtle)' : 'var(--admin-color-surface-raised)',
-            color: video.isActive ? 'var(--admin-color-success)' : 'var(--admin-color-text-muted)',
+            borderRadius: 'var(--admin-radius-full)',
+            background: video.isActive ? 'var(--admin-color-status-success-bg)' : 'var(--admin-color-surface-raised)',
+            color: video.isActive ? 'var(--admin-color-status-success-text)' : 'var(--admin-color-text-muted)',
             fontWeight: 600,
           }}>
             {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
@@ -230,21 +232,21 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           <button
             type="button"
             onClick={() => onToggleActive(video)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer' }}
+            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
           >
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
           </button>
           <button
             type="button"
             onClick={() => onEdit(video)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer' }}
+            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
           >
             {t('common.edit')}
           </button>
           <button
             type="button"
             onClick={() => onDelete(video.id)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-danger-border)', borderRadius: 6, background: 'none', cursor: 'pointer', color: 'var(--admin-color-danger)' }}
+            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', color: 'var(--c-danger)' }}
           >
             {t('common.delete')}
           </button>
@@ -521,31 +523,24 @@ export function HomeVideoListScreen({ canUpdate }) {
           style={{
             flex: 1, padding: '7px 12px',
             border: '1px solid var(--admin-color-border-subtle)',
-            borderRadius: 8, fontSize: 13,
+            borderRadius: 'var(--admin-radius-sm)', fontSize: 13,
             background: 'var(--admin-color-surface-base)',
             color: 'inherit', outline: 'none',
           }}
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setSelectedIds(new Set()) }}
-          style={{
-            padding: '7px 10px',
-            border: '1px solid var(--admin-color-border-subtle)',
-            borderRadius: 8, fontSize: 13,
-            background: 'var(--admin-color-surface-base)',
-            color: 'inherit', cursor: 'pointer',
-          }}
-        >
-          <option value="ALL">Tất cả ({items.length})</option>
-          <option value="active">Đang hiện ({items.filter((v) => v.isActive).length})</option>
-          <option value="hidden">Đang ẩn ({items.filter((v) => !v.isActive).length})</option>
-        </select>
+        <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
+          <SelectTrigger className="w-auto text-xs h-8"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tất cả ({items.length})</SelectItem>
+            <SelectItem value="active">Đang hiện ({items.filter((v) => v.isActive).length})</SelectItem>
+            <SelectItem value="hidden">Đang ẩn ({items.filter((v) => !v.isActive).length})</SelectItem>
+          </SelectContent>
+        </Select>
         {isFiltering && (
           <button
             type="button"
             onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}
-            style={{ fontSize: 12, padding: '7px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 8, background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 12, padding: '7px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             Xoá bộ lọc
           </button>
@@ -558,14 +553,13 @@ export function HomeVideoListScreen({ canUpdate }) {
 
       {canUpdate && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px' }}>
-          <input
+          <Checkbox
             ref={selectAllRef}
-            type="checkbox"
             checked={allSelected}
-            onChange={(e) => handleSelectAll(e.target.checked)}
+            onCheckedChange={(checked) => handleSelectAll(checked)}
             style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
             aria-label="Chọn tất cả"
-          />
+           />
           <span style={{ fontSize: 13, color: 'var(--admin-color-text-muted)' }}>
             {selectionMode ? `Đã chọn ${selectedIds.size} / ${items.length}` : 'Chọn tất cả'}
           </span>
@@ -573,7 +567,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              style={{ fontSize: 12, padding: '2px 8px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: 'pointer', marginLeft: 4 }}
+              style={{ fontSize: 12, padding: '2px 8px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', marginLeft: 4 }}
             >
               Bỏ chọn
             </button>
@@ -596,7 +590,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             type="button"
             disabled={isBulkBusy}
             onClick={() => handleBulkSetActive(false)}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
           >
             Ẩn
           </button>
@@ -604,7 +598,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             type="button"
             disabled={isBulkBusy}
             onClick={() => handleBulkSetActive(true)}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
           >
             Hiện
           </button>
@@ -612,7 +606,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             type="button"
             disabled={isBulkBusy}
             onClick={handleBulkDelete}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-danger-border)', borderRadius: 6, background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', color: 'var(--admin-color-danger)', opacity: isBulkBusy ? 0.6 : 1 }}
+            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', color: 'var(--c-danger)', opacity: isBulkBusy ? 0.6 : 1 }}
           >
             Xoá
           </button>
@@ -653,7 +647,7 @@ export function HomeVideoListScreen({ canUpdate }) {
           <button
             type="button"
             onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
-            style={{ padding: '8px 16px', background: 'var(--admin-color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '8px 16px', background: 'var(--admin-color-primary)', color: 'var(--admin-color-text-inverse)', border: 'none', borderRadius: 'var(--admin-radius-sm)', fontWeight: 600, cursor: 'pointer' }}
           >
             {t('homeVideos.addButton')}
           </button>
@@ -679,7 +673,7 @@ export function HomeVideoListScreen({ canUpdate }) {
           </h3>
 
           {formError ? (
-            <p style={{ color: 'var(--admin-color-danger)', margin: 0 }}>{formError}</p>
+            <p style={{ color: 'var(--c-danger)', margin: 0 }}>{formError}</p>
           ) : null}
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
@@ -689,7 +683,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               value={form.title}
               onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
               placeholder={t('homeVideos.formTitlePlaceholder')}
-              style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, fontSize: 14 }}
+              style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', fontSize: 14 }}
             />
           </label>
 
@@ -728,7 +722,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 value={form.videoUrl}
                 onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
                 placeholder="https://www.youtube.com/watch?v=..."
-                style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 6, fontSize: 14 }}
+                style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', fontSize: 14 }}
               />
               <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
                 {t('homeVideos.youtubeHint')}
@@ -737,7 +731,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 <img
                   src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
                   alt={t('homeVideos.youtubePreviewAlt')}
-                  style={{ marginTop: 6, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
+                  style={{ marginTop: 6, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 'var(--admin-radius-xs)', border: '1px solid var(--admin-color-border-subtle)' }}
                 />
               )}
             </label>
@@ -745,28 +739,26 @@ export function HomeVideoListScreen({ canUpdate }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
               {t('homeVideos.formUpload')}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button
+                <Button variant="secondary" size="sm"
                   type="button"
-                  className="btn btn-secondary btn-sm"
                   onClick={() => setVideoPickerOpen(true)}
                   disabled={!canUpdate}
                 >
                   {form.videoUrl ? t('homeVideos.changeVideo') : t('homeVideos.pickVideo')}
-                </button>
+                </Button>
                 {form.videoUrl && (
-                  <button
+                  <Button variant="ghost" size="icon" className="text-danger hover:bg-danger-bg"
                     type="button"
-                    className="btn btn-icon btn-danger-ghost"
                     onClick={() => setForm((prev) => ({ ...prev, videoUrl: '' }))}
                     aria-label={t('homeVideos.removeVideo')}
                     disabled={!canUpdate}
                   >
                     ✕
-                  </button>
+                  </Button>
                 )}
               </div>
               {form.videoUrl ? (
-                <span style={{ fontSize: 11, color: 'var(--admin-color-text-success)', fontWeight: 400 }}>
+                <span style={{ fontSize: 11, color: 'var(--admin-color-status-success-text)', fontWeight: 400 }}>
                   ✓ {form.videoUrl.split('/').pop()}
                 </span>
               ) : (
@@ -788,11 +780,10 @@ export function HomeVideoListScreen({ canUpdate }) {
           </div>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={form.isActive}
               onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-            />
+             />
             {t('homeVideos.formIsActive')}
           </label>
 
@@ -800,14 +791,14 @@ export function HomeVideoListScreen({ canUpdate }) {
             <button
               type="submit"
               disabled={isBusy}
-              style={{ padding: '8px 20px', background: 'var(--admin-color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.7 : 1 }}
+              style={{ padding: '8px 20px', background: 'var(--admin-color-primary)', color: 'var(--admin-color-text-inverse)', border: 'none', borderRadius: 'var(--admin-radius-sm)', fontWeight: 600, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.7 : 1 }}
             >
               {isBusy ? t('homeVideos.saving') : editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
             </button>
             <button
               type="button"
               onClick={resetForm}
-              style={{ padding: '8px 16px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 8, background: 'none', cursor: 'pointer' }}
+              style={{ padding: '8px 16px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
             >
               {t('common.cancel')}
             </button>

@@ -10,6 +10,9 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 type FilterState = {
@@ -106,25 +109,25 @@ export function CatalogFilters({
   const defaultOpenValues: string[] = ["category", "brand", "price"];
 
   return (
-    <aside className="wp-filters-v2">
+    <aside className="bb-filters-v2">
       {/* Header */}
-      <div className="wp-filters-v2-header">
-        <span className="wp-filters-v2-title">BỘ LỌC</span>
-        <div className="wp-filters-v2-header-actions">
+      <div className="bb-filters-v2-header">
+        <span className="bb-filters-v2-title">BỘ LỌC</span>
+        <div className="bb-filters-v2-header-actions">
           {hasActiveFilters && (
-            <Link href={resetHref} className="wp-filters-v2-clear">
+            <Link href={resetHref} className="bb-filters-v2-clear">
               Xoá tất cả
             </Link>
           )}
           <button
             type="button"
-            className="wp-filters-mobile-toggle"
+            className="bb-filters-mobile-toggle"
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}
           >
             <svg
-              className={cn("wp-filter-chevron", mobileOpen && "open")}
+              className={cn("bb-filter-chevron", mobileOpen && "open")}
               width="12"
               height="12"
               viewBox="0 0 12 12"
@@ -141,15 +144,15 @@ export function CatalogFilters({
         </div>
       </div>
 
-      <div className={cn("wp-filters-v2-body", mobileOpen && "is-open")}>
+      <div className={cn("bb-filters-v2-body", mobileOpen && "is-open")}>
         {/* Active filter chips */}
         {chips.length > 0 && (
-          <div className="wp-filter-chips">
+          <div className="bb-filter-chips">
             {chips.map((chip) => (
               <Link
                 key={chip.label}
                 href={chip.removeHref}
-                className="wp-filter-chip"
+                className="bb-filter-chip"
                 aria-label={`Bỏ bộ lọc: ${chip.label}`}
               >
                 {chip.label}
@@ -161,7 +164,7 @@ export function CatalogFilters({
           </div>
         )}
 
-        <form method="GET" className="wp-filters-v2-form">
+        <form method="GET" className="bb-filters-v2-form">
           {Object.entries(hiddenParams).map(([key, value]) =>
             value ? <input key={key} type="hidden" name={key} value={value} /> : null,
           )}
@@ -178,23 +181,18 @@ export function CatalogFilters({
                   Danh mục
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="flex flex-col gap-1 pb-1">
-                    <label className="wp-filter-row">
-                      <input type="radio" name="category" value="" defaultChecked={!current.category} />
-                      <span className="wp-filter-row-label">Tất cả sản phẩm</span>
+                  <RadioGroup name="category" defaultValue={current.category ?? ""} className="flex flex-col gap-1 pb-1">
+                    <label className="bb-filter-row">
+                      <RadioGroupItem value="" />
+                      <span className="bb-filter-row-label">Tất cả sản phẩm</span>
                     </label>
                     {visibleCategories.map((category) => (
-                      <label key={category.id} className="wp-filter-row">
-                        <input
-                          type="radio"
-                          name="category"
-                          value={category.slug}
-                          defaultChecked={current.category === category.slug}
-                        />
-                        <span className="wp-filter-row-label">{category.name}</span>
+                      <label key={category.id} className="bb-filter-row">
+                        <RadioGroupItem value={category.slug} />
+                        <span className="bb-filter-row-label">{category.name}</span>
                       </label>
                     ))}
-                  </div>
+                  </RadioGroup>
                 </AccordionContent>
               </AccordionItem>
             )}
@@ -208,14 +206,14 @@ export function CatalogFilters({
                 <AccordionContent>
                   <div className="flex flex-col gap-1 pb-1">
                     {brands.length > 6 && (
-                      <div className="wp-filter-search-wrap mb-2">
-                        <svg className="wp-filter-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                      <div className="bb-filter-search-wrap mb-2">
+                        <svg className="bb-filter-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                           <circle cx="5.5" cy="5.5" r="4" />
                           <path d="M8.5 8.5l3 3" />
                         </svg>
-                        <input
+                        <Input
                           type="text"
-                          className="wp-filter-search"
+                          className="bb-filter-search"
                           placeholder="Tìm thương hiệu..."
                           value={brandSearch}
                           onChange={(e) => setBrandSearch(e.target.value)}
@@ -223,23 +221,20 @@ export function CatalogFilters({
                         />
                       </div>
                     )}
-                    <label className="wp-filter-row">
-                      <input type="radio" name="pwb-brand" value="" defaultChecked={!current.brand} />
-                      <span className="wp-filter-row-label">Tất cả</span>
-                    </label>
-                    {filteredBrands.map((b) => (
-                      <label key={b.id} className="wp-filter-row">
-                        <input
-                          type="radio"
-                          name="pwb-brand"
-                          value={b.slug}
-                          defaultChecked={current.brand === b.slug}
-                        />
-                        <span className="wp-filter-row-label">{b.name}</span>
+                    <RadioGroup name="pwb-brand" defaultValue={current.brand ?? ""} className="flex flex-col gap-1">
+                      <label className="bb-filter-row">
+                        <RadioGroupItem value="" />
+                        <span className="bb-filter-row-label">Tất cả</span>
                       </label>
-                    ))}
+                      {filteredBrands.map((b) => (
+                        <label key={b.id} className="bb-filter-row">
+                          <RadioGroupItem value={b.slug} />
+                          <span className="bb-filter-row-label">{b.name}</span>
+                        </label>
+                      ))}
+                    </RadioGroup>
                     {filteredBrands.length === 0 && (
-                      <p className="wp-filter-empty text-xs text-muted-foreground">Không tìm thấy</p>
+                      <p className="bb-filter-empty text-xs text-muted-foreground">Không tìm thấy</p>
                     )}
                   </div>
                 </AccordionContent>
@@ -253,10 +248,10 @@ export function CatalogFilters({
               </AccordionTrigger>
               <AccordionContent>
                 <div className="pb-2">
-                  <div className="wp-filter-price-row">
-                    <div className="wp-filter-price-field">
-                      <label className="wp-filter-price-label" htmlFor="min_price">Từ (₫)</label>
-                      <input
+                  <div className="bb-filter-price-row">
+                    <div className="bb-filter-price-field">
+                      <label className="bb-filter-price-label" htmlFor="min_price">Từ (₫)</label>
+                      <Input
                         id="min_price"
                         name="min_price"
                         type="number"
@@ -264,13 +259,13 @@ export function CatalogFilters({
                         step="50000"
                         defaultValue={current.minPrice}
                         placeholder="0"
-                        className="wp-filter-price-input"
+                        className="bb-filter-price-input"
                       />
                     </div>
-                    <span className="wp-filter-price-sep">—</span>
-                    <div className="wp-filter-price-field">
-                      <label className="wp-filter-price-label" htmlFor="max_price">Đến (₫)</label>
-                      <input
+                    <span className="bb-filter-price-sep">—</span>
+                    <div className="bb-filter-price-field">
+                      <label className="bb-filter-price-label" htmlFor="max_price">Đến (₫)</label>
+                      <Input
                         id="max_price"
                         name="max_price"
                         type="number"
@@ -278,11 +273,11 @@ export function CatalogFilters({
                         step="50000"
                         defaultValue={current.maxPrice}
                         placeholder="∞"
-                        className="wp-filter-price-input"
+                        className="bb-filter-price-input"
                       />
                     </div>
                   </div>
-                  <div className="wp-filter-price-presets">
+                  <div className="bb-filter-price-presets">
                     {[
                       { label: "< 1tr", min: undefined, max: 1000000 },
                       { label: "1–3tr", min: 1000000, max: 3000000 },
@@ -303,7 +298,7 @@ export function CatalogFilters({
                         <Link
                           key={p.label}
                           href={`${resetHref}${qs}`}
-                          className={cn("wp-filter-preset", active && "active")}
+                          className={cn("bb-filter-preset", active && "active")}
                         >
                           {p.label}
                         </Link>
@@ -320,43 +315,41 @@ export function CatalogFilters({
                 Màu sắc
               </AccordionTrigger>
               <AccordionContent>
-                <div className="wp-filter-color-grid pb-1">
+                <RadioGroup name="filter_color" defaultValue={current.color ?? ""} className="bb-filter-color-grid pb-1">
                   {COLOR_OPTIONS.map((opt) => {
                     const isActive = (current.color ?? "") === opt.value;
                     return (
                       <BBTooltip key={opt.value || "all-color"} content={opt.label} placement="top">
-                        <label className={cn("wp-filter-color-swatch", isActive && "active")}>
-                          <input
-                            type="radio"
-                            name="filter_color"
+                        <label className={cn("bb-filter-color-swatch", isActive && "active")}>
+                          <RadioGroupItem
                             value={opt.value}
-                            defaultChecked={isActive}
-                            className="wp-filter-color-input"
+                            className="bb-filter-color-input"
+                            aria-label={opt.label}
                           />
                           <span
-                            className="wp-filter-color-dot"
+                            className="bb-filter-color-dot"
                             style={opt.hex ? { background: opt.hex } : undefined}
                             aria-hidden="true"
                           >
-                            {!opt.hex && <span style={{ fontSize: 11, color: "var(--bb-text-secondary)", fontWeight: 700, lineHeight: 1 }}>ALL</span>}
+                            {!opt.hex && <span className="text-xs text-muted-foreground font-bold leading-none">ALL</span>}
                           </span>
-                          <span className="wp-filter-color-name">{opt.label}</span>
+                          <span className="bb-filter-color-name">{opt.label}</span>
                         </label>
                       </BBTooltip>
                     );
                   })}
-                </div>
+                </RadioGroup>
               </AccordionContent>
             </AccordionItem>
 
           </Accordion>
 
-          <button className="wp-filter-apply mt-4 w-full" type="submit">
+          <Button className="bb-filter-apply mt-4 w-full" type="submit">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M1 3h12M3 7h8M5 11h4" />
             </svg>
             Áp dụng bộ lọc
-          </button>
+          </Button>
         </form>
       </div>
     </aside>

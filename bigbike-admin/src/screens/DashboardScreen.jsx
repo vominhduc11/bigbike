@@ -29,6 +29,7 @@ import {
   fetchInventorySummary,
   fetchReturns,
 } from '../lib/adminApi'
+import { Badge } from '@/components/ui/badge'
 import {
   Screen,
   ScreenHeader,
@@ -50,12 +51,12 @@ const ORDER_STATUS_TONES = {
 }
 
 const ORDER_STATUS_COLORS = {
-  PENDING:    '#f59e0b',
+  PENDING:    '#92400e',
   ON_HOLD:    '#6b7280',
-  PROCESSING: '#8b5cf6',
-  COMPLETED:  '#10b981',
-  CANCELLED:  '#ef4444',
-  FAILED:     '#ef4444',
+  PROCESSING: '#1d4ed8',
+  COMPLETED:  '#15803d',
+  CANCELLED:  '#b91c1c',
+  FAILED:     '#b91c1c',
   REFUNDED:   '#6b7280',
 }
 
@@ -114,9 +115,9 @@ function OrderStatusBadge({ status }) {
   const { t } = useTranslation()
   const tone = ORDER_STATUS_TONES[status] || 'neutral'
   return (
-    <span className={`status-badge status-${tone}`}>
+    <Badge variant={tone === 'neutral' ? 'muted' : tone}>
       {t(`status.order.${status}`, status)}
-    </span>
+    </Badge>
   )
 }
 
@@ -196,7 +197,7 @@ export function DashboardScreen({ navigate }) {
     ? data.orderStatusBreakdown.map((d) => ({
         ...d,
         name: t(`status.order.${d.status}`, d.status),
-        color: ORDER_STATUS_COLORS[d.status] ?? '#9ca3af',
+        color: ORDER_STATUS_COLORS[d.status] ?? '#6b7280',
         total: pieTotal,
       }))
     : []
@@ -535,4 +536,3 @@ export function DashboardScreen({ navigate }) {
     </Screen>
   )
 }
-

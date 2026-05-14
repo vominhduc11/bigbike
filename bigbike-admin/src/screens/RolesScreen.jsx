@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { Shield, Edit2, Check, X, AlertTriangle, ChevronLeft, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // Fallback catalog used when the backend /admin/permissions API is unavailable.
 // Keep in sync with PermissionCatalog.java groups.
@@ -233,8 +236,8 @@ function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel }) {
           {msg}
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel}>{t('roles.cancelBtn')}</button>
-          <button className="btn btn-primary btn-sm" onClick={onConfirm}>{t('roles.confirmBtn')}</button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>{t('roles.cancelBtn')}</Button>
+          <Button size="sm" onClick={onConfirm}>{t('roles.confirmBtn')}</Button>
         </div>
       </div>
     </div>
@@ -317,15 +320,14 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onCon
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>{t('roles.cancelBtn')}</button>
-          <button
-            className="btn btn-primary btn-sm"
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>{t('roles.cancelBtn')}</Button>
+          <Button size="sm"
             onClick={onConfirm}
             disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {saving ? t('roles.saving') : t('roles.confirmSaveBtn')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -384,15 +386,14 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
             <label htmlFor="create-role-name" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
               {t('roles.createRoleNameLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
             </label>
-            <input
+            <Input
               id="create-role-name"
               type="text"
-              className="control-input"
               value={name}
               onChange={e => handleNameChange(e.target.value)}
               placeholder={t('roles.createRoleNamePlaceholder')}
               autoFocus
-            />
+             />
           </div>
 
           {/* Technical ID — hidden by default, auto-generated from name */}
@@ -415,15 +416,14 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
               <label htmlFor="create-role-id" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
                 {t('roles.createRoleIdLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
               </label>
-              <input
+              <Input
                 id="create-role-id"
                 type="text"
-                className="control-input"
                 value={id}
                 onChange={e => handleIdChange(e.target.value)}
                 placeholder={t('roles.createRoleIdPlaceholder')}
                 style={{ fontFamily: 'var(--admin-font-mono)' }}
-              />
+               />
               <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
                 {t('roles.createRoleIdHint')}
               </div>
@@ -434,14 +434,13 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
             <label htmlFor="create-role-desc" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
               {t('roles.createRoleDescLabel')}
             </label>
-            <input
+            <Input
               id="create-role-desc"
               type="text"
-              className="control-input"
               value={desc}
               onChange={e => setDesc(e.target.value)}
               placeholder={t('roles.createRoleDescPlaceholder')}
-            />
+             />
           </div>
         </div>
 
@@ -452,17 +451,16 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
+          <Button variant="ghost" size="sm" type="button" onClick={onCancel} disabled={saving}>
             {t('roles.cancelBtn')}
-          </button>
-          <button
+          </Button>
+          <Button size="sm"
             type="submit"
-            className="btn btn-primary btn-sm"
             disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {saving ? t('common.saving') : t('roles.createRoleBtn')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -496,11 +494,10 @@ function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
           {t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) })}
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
             {t('roles.cancelBtn')}
-          </button>
-          <button
-            className="btn btn-sm"
+          </Button>
+          <Button variant="secondary" size="sm"
             style={{
               background: 'var(--admin-color-status-danger-text)',
               color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
@@ -511,7 +508,7 @@ function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
             disabled={saving}
           >
             {saving ? t('common.deleting') : t('roles.deleteRoleBtn')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -556,14 +553,13 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
 
       {canUpdate && (
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--admin-color-border-subtle)' }}>
-          <button
-            className="btn btn-ghost btn-sm"
+          <Button variant="ghost" size="sm"
             onClick={onCreateRole}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
           >
             <Plus size={14} aria-hidden />
             {t('roles.createRoleBtn')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -596,13 +592,12 @@ function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
         return (
           <div key={perm.key} className="roles-perm-row">
             {canEdit ? (
-              <input
-                type="checkbox"
+              <Checkbox
                 id={permId}
                 checked={granted}
-                onChange={() => onToggle(perm.key, label)}
+                onCheckedChange={() => onToggle(perm.key, label)}
                 style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
-              />
+               />
             ) : (
               <div
                 style={{ width: 16, height: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}
@@ -727,39 +722,36 @@ function RoleDetail({
         <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
           {!editMode && canUpdate && !isSuperAdmin && (
             <>
-              <button
-                className="btn btn-secondary btn-sm"
+              <Button variant="secondary" size="sm"
                 onClick={onStartEdit}
                 style={{ display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <Edit2 size={14} aria-hidden />
                 {t('roles.editBtn')}
-              </button>
+              </Button>
               {!role.isSystem && (
-                <button
-                  className="btn btn-ghost btn-sm"
+                <Button variant="ghost" size="sm"
                   onClick={onDeleteRole}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--admin-color-status-danger-text)' }}
                 >
                   <Trash2 size={14} aria-hidden />
                   {t('roles.deleteRoleBtn')}
-                </button>
+                </Button>
               )}
             </>
           )}
           {editMode && (
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-ghost btn-sm" onClick={onCancelEdit} disabled={saving}>
+              <Button variant="ghost" size="sm" onClick={onCancelEdit} disabled={saving}>
                 {t('roles.cancelBtn')}
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
+              </Button>
+              <Button size="sm"
                 onClick={onRequestSave}
                 disabled={saving || !isDirty}
                 style={{ display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 {saving ? t('roles.saving') : t('roles.saveBtn')}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1125,14 +1117,13 @@ export function RolesScreen({ canUpdate = false }) {
         <>
           {/* Mobile: back to list */}
           {mobileShowDetail && selected && (
-            <button
-              className="roles-back-btn btn btn-ghost btn-sm"
+            <Button variant="ghost" size="sm" className="roles-back-btn"
               style={{ alignItems: 'center', gap: 6, marginBottom: 12 }}
               onClick={() => { setMobileShowDetail(false); setEditMode(false); setDraft(null) }}
             >
               <ChevronLeft size={16} aria-hidden />
               {t('roles.backToList')}
-            </button>
+            </Button>
           )}
 
           <div className={`roles-layout${mobileShowDetail ? ' detail-open' : ''}`}>

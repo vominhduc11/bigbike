@@ -18,6 +18,10 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
 import { VideoPickerModal } from '../components/VideoPickerModal'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 function extractYouTubeId(url) {
@@ -715,13 +719,12 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
 
               {type === 'youtube' ? (
                 <div>
-                  <input
-                    className={`control-input${urlError ? ' input-error' : ''}`}
+                  <Input className={urlError  ? 'border-danger' : undefined}
                     placeholder="URL video YouTube (https://...)"
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
-                  />
+                   />
                   {urlError && <small className="field-error">{urlError}</small>}
                   {ytId && (
                     <img
@@ -768,23 +771,21 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                       style={{ marginTop: 8, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
                     />
                   )}
-                  <input
-                    className="control-input"
+                  <Input
                     placeholder="Thumbnail URL (tuỳ chọn)"
                     value={item.thumbnailUrl || ''}
                     onChange={(e) => updateItem(index, { thumbnailUrl: e.target.value })}
                     disabled={disabled}
-                  />
+                   />
                 </div>
               )}
 
-              <input
-                className="control-input"
+              <Input
                 placeholder="Tiêu đề video"
                 value={item.title}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
                 disabled={disabled}
-              />
+               />
             </div>
             <button
               type="button"
@@ -850,37 +851,34 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
             </div>
             <div className="list-editor-fields list-editor-fields-3col" style={{ flex: 1 }}>
               <div>
-                <input
-                  className={`control-input${errGroup ? ' input-error' : ''}`}
+                <Input className={errGroup  ? 'border-danger' : undefined}
                   placeholder="Nhóm (vd: Vật liệu, Kích thước)"
                   title="Tên nhóm gộp nhiều thông số lại"
                   value={item.groupName}
                   onChange={(e) => updateItem(index, 'groupName', e.target.value)}
                   disabled={disabled}
                   maxLength={100}
-                />
+                 />
                 {errGroup && <small className="field-error">{errGroup}</small>}
               </div>
               <div>
-                <input
-                  className={`control-input${errName ? ' input-error' : ''}`}
+                <Input className={errName  ? 'border-danger' : undefined}
                   placeholder="Tên thông số *"
                   value={item.name}
                   onChange={(e) => updateItem(index, 'name', e.target.value)}
                   disabled={disabled}
                   maxLength={255}
-                />
+                 />
                 {errName && <small className="field-error">{errName}</small>}
               </div>
               <div>
-                <input
-                  className={`control-input${errValue ? ' input-error' : ''}`}
+                <Input className={errValue  ? 'border-danger' : undefined}
                   placeholder="Giá trị *"
                   value={item.value}
                   onChange={(e) => updateItem(index, 'value', e.target.value)}
                   disabled={disabled}
                   maxLength={2000}
-                />
+                 />
                 {errValue && <small className="field-error">{errValue}</small>}
               </div>
             </div>
@@ -919,20 +917,18 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
     <div className="variant-options-editor">
       {options.map((opt, i) => (
         <div key={i} className="list-editor-row variant-option-row">
-          <input
-            className="control-input"
+          <Input
             placeholder="Thuộc tính (vd: Màu)"
             value={opt.name}
             onChange={(e) => updateOption(i, 'name', e.target.value)}
             disabled={disabled}
-          />
-          <input
-            className="control-input"
+           />
+          <Input
             placeholder="Giá trị (vd: Đỏ)"
             value={opt.value}
             onChange={(e) => updateOption(i, 'value', e.target.value)}
             disabled={disabled}
-          />
+           />
           <button
             type="button"
             className="btn btn-icon btn-danger-ghost"
@@ -1009,24 +1005,22 @@ function VariantCard({
         <div className="variant-card-body form-grid">
           <label className="form-field">
             <span>Tên biến thể *</span>
-            <input
-              className="control-input"
+            <Input
               value={variant.name}
               onChange={(e) => updateField('name', e.target.value)}
               disabled={disabled}
               placeholder="vd: Size M - Đỏ"
-            />
+             />
             {fieldErrors.name && <small className="field-error">{fieldErrors.name}</small>}
           </label>
 
           <label className="form-field">
             <span>SKU</span>
-            <input
-              className="control-input"
+            <Input
               value={variant.sku}
               onChange={(e) => updateField('sku', e.target.value)}
               disabled={disabled}
-            />
+             />
           </label>
 
           {/* Variant price inputs removed: storefront, cart, and checkout use
@@ -1036,16 +1030,15 @@ function VariantCard({
 
           <label className="form-field">
             <span>Trạng thái kho</span>
-            <select
-              className="control-select"
+            <Select
               value={variant.stockState}
-              onChange={(e) => updateField('stockState', e.target.value)}
+              onValueChange={(val) => updateField('stockState', val)}
               disabled={disabled}
-            >
-              <option value="IN_STOCK">Còn hàng</option>
-              <option value="LOW_STOCK">Còn ít</option>
-              <option value="OUT_OF_STOCK">Hết hàng</option>
-            </select>
+            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="IN_STOCK">Còn hàng</SelectItem>
+              <SelectItem value="LOW_STOCK">Còn ít</SelectItem>
+              <SelectItem value="OUT_OF_STOCK">Hết hàng</SelectItem>
+            </SelectContent></Select>
           </label>
 
           <div className="form-field form-field-wide">
@@ -1071,12 +1064,11 @@ function VariantCard({
           </div>
 
           <label className="form-checkbox form-field-wide">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={variant.isAvailable}
-              onChange={(e) => updateField('isAvailable', e.target.checked)}
+              onCheckedChange={(checked) => updateField('isAvailable', checked)}
               disabled={disabled}
-            />
+             />
             <span>Kích hoạt bán</span>
           </label>
 
@@ -1290,15 +1282,14 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
     <div className="variants-editor">
       <div className="variants-editor-toolbar">
         {showFilter && (
-          <input
-            type="search"
-            className="control-input variants-filter-input"
+          <Input
+            type="search" className="variants-filter-input"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder={`Lọc theo tên / SKU / thuộc tính (${items.length} biến thể)`}
             disabled={disabled}
             aria-label="Lọc biến thể"
-          />
+           />
         )}
         {showFilter && filterTerm && (
           <span className="variants-filter-status">
@@ -1465,18 +1456,16 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
         <div className="wizard-attrs">
           {attributes.map((attr, i) => (
             <div key={i} className="wizard-attr-row">
-              <input
-                className="control-input"
+              <Input
                 placeholder="Thuộc tính (vd: Màu sắc)"
                 value={attr.name}
                 onChange={(e) => updateAttr(i, 'name', e.target.value)}
-              />
-              <input
-                className="control-input wizard-attr-values"
+               />
+              <Input className="wizard-attr-values"
                 placeholder="Giá trị (vd: Đỏ, Xanh, Trắng)"
                 value={attr.values}
                 onChange={(e) => updateAttr(i, 'values', e.target.value)}
-              />
+               />
               <button
                 type="button"
                 className="btn btn-icon btn-danger-ghost"
@@ -1888,13 +1877,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.name.length} / 255
                 </span>
               </div>
-              <input
-                className="control-input"
+              <Input
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 disabled={isReadOnly}
                 maxLength={255}
-              />
+               />
               {validationErrors.name ? (
                 <small className="field-error">{validationErrors.name}</small>
               ) : null}
@@ -1902,15 +1890,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field">
               <span>{t('products.detail.slug')}</span>
-              <input
-                className="control-input"
+              <Input
                 value={form.slug}
                 placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
                 onChange={(e) => handleSlugChange(e.target.value)}
                 onBlur={(e) => handleSlugBlur(e.target.value)}
                 disabled={isReadOnly}
                 maxLength={200}
-              />
+               />
               {validationErrors.slug ? (
                 <small className="field-error">{validationErrors.slug}</small>
               ) : (
@@ -1927,13 +1914,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.sku.length} / 100
                 </span>
               </div>
-              <input
-                className="control-input"
+              <Input
                 value={form.sku}
                 onChange={(e) => updateField('sku', e.target.value)}
                 disabled={isReadOnly}
                 maxLength={100}
-              />
+               />
               <small className="detail-section-desc" style={{ marginTop: 2 }}>
                 {t('products.detail.skuHint')}
               </small>
@@ -1941,20 +1927,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field">
               <span>{t('products.detail.categoryId')}</span>
-              <select
-                className="control-select"
+              <Select
                 value={form.categoryId}
-                onChange={(e) => updateField('categoryId', e.target.value)}
+                onValueChange={(val) => updateField('categoryId', val)}
                 disabled={isReadOnly}
-              >
-                <option value="" disabled>{t('products.detail.categoryPlaceholder')}</option>
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
-                  <option value={form.categoryId} disabled>ID: {form.categoryId} (không tìm thấy)</option>
+                  <SelectItem value={form.categoryId} disabled>ID: {form.categoryId} (không tìm thấy)</SelectItem>
                 )}
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
-              </select>
+              </SelectContent></Select>
               {validationErrors.categoryId ? (
                 <small className="field-error">{validationErrors.categoryId}</small>
               ) : null}
@@ -1962,20 +1946,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field">
               <span>{t('products.detail.brandId')}</span>
-              <select
-                className="control-select"
+              <Select
                 value={form.brandId}
-                onChange={(e) => updateField('brandId', e.target.value)}
+                onValueChange={(val) => updateField('brandId', val)}
                 disabled={isReadOnly}
-              >
-                <option value="">{t('products.detail.brandPlaceholder')}</option>
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {form.brandId && !brands.some((b) => b.id === form.brandId) && (
-                  <option value={form.brandId} disabled>ID: {form.brandId} (không tìm thấy)</option>
+                  <SelectItem value={form.brandId} disabled>ID: {form.brandId} (không tìm thấy)</SelectItem>
                 )}
                 {brands.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
-              </select>
+              </SelectContent></Select>
             </label>
 
             <div className="form-field form-field-wide">
@@ -1985,14 +1967,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.shortDescription.length} / 500
                 </span>
               </div>
-              <textarea
-                className={`control-input control-textarea${validationErrors.shortDescription ? ' input-error' : ''}`}
+              <Textarea className="${validationErrors.shortDescription ? ' input-error' : ''}"
                 value={form.shortDescription}
                 onChange={(e) => updateField('shortDescription', e.target.value)}
                 maxLength={500}
                 placeholder="Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…"
                 disabled={isReadOnly}
-              />
+               />
               <small className="detail-section-desc" style={{ marginTop: 4 }}>
                 Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.
               </small>
@@ -2025,21 +2006,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <div className="form-field form-checkboxes-row form-field-wide">
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.isFeatured}
-                  onChange={(e) => updateField('isFeatured', e.target.checked)}
+                  onCheckedChange={(checked) => updateField('isFeatured', checked)}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('products.detail.isFeatured')}</span>
               </label>
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.showOnHomepage}
-                  onChange={(e) => updateField('showOnHomepage', e.target.checked)}
+                  onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('products.detail.showOnHomepage')}</span>
               </label>
               <small className="detail-section-desc" style={{ marginTop: 4, width: '100%' }}>
@@ -2086,8 +2065,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <div className="detail-section-content form-grid">
             <label className="form-field">
               <span>{t('products.detail.retailPrice')}</span>
-              <input
-                className="control-input"
+              <Input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -2095,7 +2073,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 value={formatPrice(form.retailPrice)}
                 onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.retailPrice ? (
                 <small className="field-error">{validationErrors.retailPrice}</small>
               ) : null}
@@ -2105,8 +2083,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <span title="Giá gốc sẽ hiển thị gạch ngang khi có giá khuyến mãi">
                 Giá gốc (gạch ngang) ℹ
               </span>
-              <input
-                className="control-input"
+              <Input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -2114,7 +2091,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 value={formatPrice(form.compareAtPrice)}
                 onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.compareAtPrice ? (
                 <small className="field-error">{validationErrors.compareAtPrice}</small>
               ) : null}
@@ -2123,8 +2100,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             <div className="form-field">
               <span>{t('products.detail.salePrice')}</span>
               <div className="discount-row">
-                <input
-                  className="control-input"
+                <Input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -2132,7 +2108,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   value={formatPrice(form.salePrice)}
                   onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
                   disabled={isReadOnly}
-                />
+                 />
                 {!isReadOnly && (
                   <button
                     type="button"
@@ -2146,15 +2122,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               </div>
               {showDiscountHelper && !isReadOnly && (
                 <div className="discount-helper">
-                  <input
-                    className="control-input"
+                  <Input
                     type="number"
                     min="1"
                     max="99"
                     placeholder="% giảm (vd: 20)"
                     value={discountPct}
                     onChange={(e) => setDiscountPct(e.target.value)}
-                  />
+                   />
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
@@ -2187,16 +2162,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field">
               <span>{t('products.detail.stockState')}</span>
-              <select
-                className="control-select"
+              <Select
                 value={form.stockState}
-                onChange={(e) => updateField('stockState', e.target.value)}
+                onValueChange={(val) => updateField('stockState', val)}
                 disabled={isReadOnly || form.forceOutOfStock}
-              >
-                <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
-                <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
-                <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
-              </select>
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="IN_STOCK">{t('status.stock.IN_STOCK')}</SelectItem>
+                <SelectItem value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</SelectItem>
+                <SelectItem value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</SelectItem>
+              </SelectContent></Select>
               {validationErrors.stockState ? (
                 <small className="field-error">{validationErrors.stockState}</small>
               ) : null}
@@ -2204,21 +2178,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field">
               <span>{t('products.detail.publishStatus')}</span>
-              <select
-                className="control-select"
+              <Select
                 value={form.publishStatus}
-                onChange={(e) => updateField('publishStatus', e.target.value)}
+                onValueChange={(val) => updateField('publishStatus', val)}
                 disabled={isReadOnly}
-              >
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {!['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
                   <option value={form.publishStatus} disabled>
                     {t('products.detail.specialPublishNote', { state: form.publishStatus })}
                   </option>
                 )}
-                <option value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</option>
-                <option value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</option>
-                <option value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</option>
-              </select>
+                <SelectItem value="DRAFT" disabled ={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
+                <SelectItem value="PUBLISHED" disabled ={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
+                <SelectItem value="HIDDEN" disabled ={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
+              </SelectContent></Select>
               {validationErrors.publishStatus ? (
                 <small className="field-error">{validationErrors.publishStatus}</small>
               ) : null}
@@ -2226,12 +2199,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <div className="form-field">
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.forceOutOfStock}
-                  onChange={(e) => updateField('forceOutOfStock', e.target.checked)}
+                  onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('products.detail.forceOutOfStock')}</span>
               </label>
               {form.forceOutOfStock && (
@@ -2270,14 +2242,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.seoTitle.length} / 255
                 </span>
               </div>
-              <input
-                className={`control-input${validationErrors.seoTitle ? ' input-error' : ''}`}
+              <Input className={validationErrors.seoTitle  ? 'border-danger' : undefined}
                 type="text"
                 maxLength={255}
                 value={form.seoTitle}
                 onChange={(e) => updateField('seoTitle', e.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.seoTitle ? (
                 <small className="field-error">{validationErrors.seoTitle}</small>
               ) : null}
@@ -2290,14 +2261,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.seoDescription.length.toLocaleString()} / 5 000
                 </span>
               </div>
-              <textarea
-                className={`control-input control-textarea${validationErrors.seoDescription ? ' input-error' : ''}`}
+              <Textarea className="${validationErrors.seoDescription ? ' input-error' : ''}"
                 value={form.seoDescription}
                 onChange={(e) => updateField('seoDescription', e.target.value)}
                 maxLength={5000}
                 placeholder="Nhập mô tả SEO ngắn gọn cho kết quả tìm kiếm..."
                 disabled={isReadOnly}
-              />
+               />
               {validationErrors.seoDescription ? (
                 <small className="field-error">{validationErrors.seoDescription}</small>
               ) : null}
@@ -2305,15 +2275,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <label className="form-field form-field-wide">
               <span>{t('products.detail.seoCanonicalUrl')}</span>
-              <input
-                className={`control-input${validationErrors.seoCanonicalUrl ? ' input-error' : ''}`}
+              <Input className={validationErrors.seoCanonicalUrl  ? 'border-danger' : undefined}
                 type="url"
                 maxLength={2048}
                 placeholder="https://bigbike.vn/san-pham/..."
                 value={form.seoCanonicalUrl}
                 onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
                 disabled={isReadOnly}
-              />
+               />
               <small className="detail-section-desc" style={{ marginTop: 4 }}>
                 URL chuẩn để search engine index đúng trang sản phẩm.
               </small>
@@ -2339,12 +2308,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
             <div className="form-field form-checkboxes-row form-field-wide">
               <label className="form-checkbox">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={form.seoNoIndex}
-                  onChange={(e) => updateField('seoNoIndex', e.target.checked)}
+                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
                   disabled={isReadOnly}
-                />
+                 />
                 <span>{t('products.detail.seoNoIndex')}</span>
               </label>
             </div>

@@ -8,6 +8,8 @@ import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
 const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'neutral', TRASH: 'neutral' }
@@ -211,29 +213,27 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       <section className="filter-bar">
         <label>
           {t('common.search')}
-          <input
-            className="control-input"
+          <Input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('reviews.searchPlaceholder')}
-          />
+           />
         </label>
         <label>
           {t('reviews.filterStatus')}
-          <select
-            className="control-select"
+          <Select
             value={query.status}
-            onChange={(event) => updateQuery({ status: event.target.value }, { resetPage: true })}
-          >
+            onValueChange={(val) => updateQuery({ status: val }, { resetPage: true })}
+          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
+              <SelectItem key={status} value={status}>
                 {status === 'ALL'
                   ? t('common.all')
                   : t(`reviews.status${status.charAt(0) + status.slice(1).toLowerCase()}`, { defaultValue: status })}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+          </SelectContent></Select>
         </label>
       </section>
 

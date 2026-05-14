@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { addToWishlist, fetchWishlist, removeFromWishlist } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
 
@@ -11,6 +11,7 @@ type WishlistContextValue = {
 };
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
+const EMPTY_WISHLIST = new Set<string>();
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -18,17 +19,26 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (auth.status !== "authenticated") {
-      setWishlist(new Set());
-      return;
+      return undefined;
     }
+
+    let active = true;
     fetchWishlist()
-      .then((ids) => setWishlist(new Set(ids)))
+      .then((ids) => {
+        if (active) setWishlist(new Set(ids));
+      })
       .catch(() => {});
+
+    return () => {
+      active = false;
+    };
   }, [auth.status]);
+
+  const visibleWishlist = auth.status === "authenticated" ? wishlist : EMPTY_WISHLIST;
 
   const toggle = useCallback(async (productId: string) => {
     if (auth.status !== "authenticated") return;
-    if (wishlist.has(productId)) {
+    if (visibleWishlist.has(productId)) {
       setWishlist((prev) => { const next = new Set(prev); next.delete(productId); return next; });
       await removeFromWishlist(productId).catch(() => {
         setWishlist((prev) => new Set([...prev, productId]));
@@ -39,12 +49,16 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         setWishlist((prev) => { const next = new Set(prev); next.delete(productId); return next; });
       });
     }
-  }, [wishlist]);
+  }, [auth.status, visibleWishlist]);
 
-  const isWishlisted = useCallback((productId: string) => wishlist.has(productId), [wishlist]);
+  const isWishlisted = useCallback((productId: string) => visibleWishlist.has(productId), [visibleWishlist]);
+  const value = useMemo(
+    () => ({ wishlist: visibleWishlist, toggle, isWishlisted }),
+    [isWishlisted, toggle, visibleWishlist],
+  );
 
   return (
-    <WishlistContext.Provider value={{ wishlist, toggle, isWishlisted }}>
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   );
