@@ -2070,9 +2070,12 @@ export async function adjustStock(variantId, quantityDelta, movementType, note, 
   return { item: normalizeStockItem(payload?.data || payload || {}) }
 }
 
-export async function adjustProductStock(productId, quantityDelta, movementType, note) {
+export async function adjustProductStock(productId, quantityDelta, movementType, note, serialNumbers) {
   assertMutationEnabled()
   const body = { quantityDelta, movementType: movementType || 'ADJUSTMENT', note }
+  if (Array.isArray(serialNumbers) && serialNumbers.length > 0) {
+    body.serialNumbers = serialNumbers
+  }
   const payload = await requestJson(`/admin/inventory/products/${productId}/adjust`, {
     method: 'POST',
     body,

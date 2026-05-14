@@ -590,8 +590,11 @@ function StockInModal({ item, onSuccess, onClose }) {
     if (!quantity || isNaN(qty) || qty < 1) {
       return t('inventory.stockIn.errorQtyRequired')
     }
-    if (selectedItem?.trackSerials && serials.length > qty) {
+    if (serials.length > qty) {
       return t('inventory.stockIn.errorSerialCount', { serials: serials.length, qty })
+    }
+    if (serials.length < qty) {
+      return t('inventory.stockIn.errorSerialCountTooFew', { serials: serials.length, qty })
     }
     return ''
   }
@@ -607,7 +610,7 @@ function StockInModal({ item, onSuccess, onClose }) {
       if (isVariantItem) {
         await adjustStock(selectedItem.variantId, qty, 'IN', note.trim() || undefined, serials)
       } else {
-        await adjustProductStock(selectedItem.productId, qty, 'IN', note.trim() || undefined)
+        await adjustProductStock(selectedItem.productId, qty, 'IN', note.trim() || undefined, serials)
       }
       toast.success(t('inventory.stockIn.success', { qty }))
       onSuccess()
@@ -798,15 +801,13 @@ function StockInModal({ item, onSuccess, onClose }) {
                />
             </div>
 
-            {selectedItem?.trackSerials && (
-              <div className="form-group">
-                <SerialListInput
-                  onChange={(next) => { setSerials(next); setFormError('') }}
-                  disabled={submitting}
-                  maxCount={parseInt(quantity, 10) || 0}
-                />
-              </div>
-            )}
+            <div className="form-group">
+              <SerialListInput
+                onChange={(next) => { setSerials(next); setFormError('') }}
+                disabled={submitting}
+                maxCount={parseInt(quantity, 10) || 0}
+              />
+            </div>
           </form>
         </div>
 

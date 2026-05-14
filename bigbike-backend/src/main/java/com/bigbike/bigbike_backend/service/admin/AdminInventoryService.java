@@ -15,8 +15,11 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
+import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementSerialEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementSerialJpaRepository;
@@ -54,6 +57,7 @@ public class AdminInventoryService {
     private final ProductVariantJpaRepository variantRepo;
     private final StockMovementJpaRepository movementRepo;
     private final StockMovementSerialJpaRepository serialRepo;
+    private final ProductSerialJpaRepository productSerialRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
@@ -63,6 +67,7 @@ public class AdminInventoryService {
             ProductVariantJpaRepository variantRepo,
             StockMovementJpaRepository movementRepo,
             StockMovementSerialJpaRepository serialRepo,
+            ProductSerialJpaRepository productSerialRepo,
             InventoryPolicyService inventoryPolicyService,
             WebRevalidationService webRevalidationService,
             AuditLogJpaRepository auditLogRepo
@@ -71,6 +76,7 @@ public class AdminInventoryService {
         this.variantRepo = variantRepo;
         this.movementRepo = movementRepo;
         this.serialRepo = serialRepo;
+        this.productSerialRepo = productSerialRepo;
         this.inventoryPolicyService = inventoryPolicyService;
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepo;
@@ -245,13 +251,6 @@ public class AdminInventoryService {
                     "Manual quantity adjustment is disabled. Use serial import/status transition. " +
                     "(serial_inventory_only=true in site_settings)");
         }
-        // Guard: serial-tracked variants — quantity is driven by serial lifecycle, not manual input
-        if (variant.isTrackSerials()) {
-            throw ValidationException.fromField("variantId", "SERIAL_TRACKED",
-                    "This variant uses serial-based inventory. Use the serial management API instead " +
-                    "(POST /inventory/variants/{id}/serials to add stock, " +
-                    "PATCH /inventory/serials/{id}/status to change serial state).");
-        }
 
         if (req.quantityDelta() == null) {
             throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
@@ -316,12 +315,24 @@ public class AdminInventoryService {
         // ── Persist serials (same transaction — rollback if this fails) ────────
         if (!serials.isEmpty()) {
             Instant now = Instant.now();
+            ProductEntity product = variant.getProduct();
             for (String s : serials) {
-                StockMovementSerialEntity serial = new StockMovementSerialEntity();
-                serial.setMovement(movement);
-                serial.setSerialNumber(s);
-                serial.setCreatedAt(now);
-                serialRepo.save(serial);
+                StockMovementSerialEntity mvSerial = new StockMovementSerialEntity();
+                mvSerial.setMovement(movement);
+                mvSerial.setSerialNumber(s);
+                mvSerial.setCreatedAt(now);
+                serialRepo.save(mvSerial);
+
+                ProductSerialEntity ps = new ProductSerialEntity();
+                ps.setProduct(product);
+                ps.setVariant(variant);
+                ps.setSerialNumber(s);
+                ps.setStatus(ProductSerialStatus.IN_STOCK);
+                ps.setReceivedAt(now);
+                ps.setAdminId(adminId);
+                ps.setCreatedAt(now);
+                ps.setUpdatedAt(now);
+                productSerialRepo.save(ps);
             }
         }
 
@@ -351,15 +362,10 @@ public class AdminInventoryService {
                     "Manual quantity adjustment is disabled. Use serial import/status transition. " +
                     "(serial_inventory_only=true in site_settings)");
         }
-        if (product.isTrackSerials()) {
-            throw ValidationException.fromField("productId", "SERIAL_TRACKED",
-                    "This product uses serial-based inventory. Use the serial management API instead " +
-                    "(POST /inventory/products/{id}/serials to add stock).");
-        }
-
         if (req.quantityDelta() == null) {
             throw ValidationException.fromField("quantityDelta", "REQUIRED", "quantityDelta is required.");
         }
+        int delta = req.quantityDelta();
 
         String type = req.movementType() != null
                 ? req.movementType().toUpperCase(Locale.ROOT) : "ADJUSTMENT";
@@ -368,25 +374,36 @@ public class AdminInventoryService {
                     "movementType must be one of: IN, OUT, ADJUSTMENT, RETURN.");
         }
 
-        // Serials not supported for product-level non-tracking adjustments.
+        List<String> serials = parseSerials(req.serialNumbers());
+
+        if (!serials.isEmpty()) {
+            int qty = Math.abs(delta);
+            if (serials.size() > qty) {
+                throw ValidationException.fromField("serialNumbers", "COUNT_EXCEEDS_QUANTITY",
+                        "Serial count (" + serials.size() + ") exceeds quantity (" + qty + ").");
+            }
+            List<String> existing = serialRepo.findExistingSerialNumbers(serials);
+            if (!existing.isEmpty()) {
+                throw ValidationException.fromField("serialNumbers", "ALREADY_EXISTS",
+                        "Serial numbers already registered: " + existing);
+            }
+        }
 
         int before = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
-        int after = before + req.quantityDelta();
+        int after = before + delta;
         if (after < 0) {
             throw ValidationException.fromField("quantityDelta", "BELOW_ZERO",
-                    "Resulting quantity would be negative. Current: " + before + ", delta: " + req.quantityDelta());
+                    "Resulting quantity would be negative. Current: " + before + ", delta: " + delta);
         }
 
         product.setStockQuantity(after);
-
         product.setStockState(inventoryPolicyService.computeStockState(after, inventoryPolicyService.lowStockThreshold()));
-
         productRepo.save(product);
 
         StockMovementEntity movement = new StockMovementEntity();
         movement.setProductId(product.getId());
         movement.setMovementType(type);
-        movement.setQuantityDelta(req.quantityDelta());
+        movement.setQuantityDelta(delta);
         movement.setQuantityBefore(before);
         movement.setQuantityAfter(after);
         movement.setReferenceType("MANUAL");
@@ -395,9 +412,30 @@ public class AdminInventoryService {
         movement.setCreatedAt(Instant.now());
         movementRepo.save(movement);
 
+        if (!serials.isEmpty()) {
+            Instant now = Instant.now();
+            for (String s : serials) {
+                StockMovementSerialEntity mvSerial = new StockMovementSerialEntity();
+                mvSerial.setMovement(movement);
+                mvSerial.setSerialNumber(s);
+                mvSerial.setCreatedAt(now);
+                serialRepo.save(mvSerial);
+
+                ProductSerialEntity ps = new ProductSerialEntity();
+                ps.setProduct(product);
+                ps.setSerialNumber(s);
+                ps.setStatus(ProductSerialStatus.IN_STOCK);
+                ps.setReceivedAt(now);
+                ps.setAdminId(adminId);
+                ps.setCreatedAt(now);
+                ps.setUpdatedAt(now);
+                productSerialRepo.save(ps);
+            }
+        }
+
         auditLogRepo.save(buildAudit(adminId, "INVENTORY_PRODUCT_STOCK_ADJUSTED", "INVENTORY",
                 "{\"productId\":\"" + productId + "\",\"type\":\"" + type + "\"" +
-                ",\"delta\":" + req.quantityDelta() + ",\"before\":" + before + ",\"after\":" + after + "}"));
+                ",\"delta\":" + delta + ",\"before\":" + before + ",\"after\":" + after + "}"));
 
         String slug = product.getSlug();
         if (slug != null && !slug.isBlank()) {
