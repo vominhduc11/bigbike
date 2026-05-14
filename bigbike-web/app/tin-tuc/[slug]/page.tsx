@@ -53,10 +53,10 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 
   const article = result.data;
   return buildPublicMetadata({
-    title: article.seo?.title ?? article.title,
-    description: article.seo?.description ?? article.excerpt ?? "Chi tiết bài viết BigBike.",
-    canonicalPath: article.seo?.canonicalUrl ?? toArticlePath(article.slug),
-    noIndex: article.seo?.noIndex ?? false,
+    title: article.title,
+    description: article.excerpt ?? "Chi tiết bài viết BigBike.",
+    canonicalPath: toArticlePath(article.slug),
+    noIndex: false,
     ogImage: article.coverImage?.url ?? undefined,
   });
 }

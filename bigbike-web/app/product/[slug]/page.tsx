@@ -66,14 +66,13 @@ export async function generateMetadata({
   }
 
   return buildPublicMetadata({
-    title: product.seo?.title ?? product.name,
+    title: product.name,
     description:
-      product.seo?.description ??
       product.shortDescription ??
       "Chi tiết sản phẩm bảo hộ biker BigBike.",
-    canonicalPath: product.seo?.canonicalUrl ?? toProductPath(product.slug),
-    noIndex: product.seo?.noIndex ?? false,
-    ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
+    canonicalPath: toProductPath(product.slug),
+    noIndex: false,
+    ogImage: product.image?.url ?? undefined,
   });
 }
 
@@ -210,9 +209,7 @@ export default async function ProductDetailPage({
           fallbackPrice={product.price}
           fallbackStockState={product.stockState}
           fallbackVariants={product.variants ?? []}
-          canonicalUrl={toCanonicalUrl(
-            product.seo?.canonicalUrl ?? toProductPath(product.slug),
-          )}
+          canonicalUrl={toCanonicalUrl(toProductPath(product.slug))}
         />
       </div>
 

@@ -206,16 +206,15 @@ export default async function HomePage() {
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, filterFeatured: true, size: 12, sort: "homepageOrder:asc" }),
-    listProducts({ page: 1, showOnHomepage: true, size: 10, sort: "homepageOrder:asc" }),
+    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 12, sort: "homepageOrder:asc" }),
+    listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc" }),
     listHomeVideos(),
   ]);
 
-  // Dedupe so a product flagged BOTH "isFeatured" + "showOnHomepage" only appears once on
-  // the homepage. The Featured grid (Block 2) wins because it is the most prominent slot.
+  // Each product lives in exactly one homepage block (enum FEATURED_GRID | RECOMMENDED_CAROUSEL | NONE),
+  // so the prior dedupe pass is no longer required.
   const featuredProducts = featuredProductsResult.data;
-  const featuredIds = new Set(featuredProducts.map((p) => p.id));
-  const carouselProducts = carouselProductsResult.data.filter((p) => !featuredIds.has(p.id));
+  const carouselProducts = carouselProductsResult.data;
 
   const settings = settingsResult.data ?? [];
   const hotline = findSetting(settings, "hotline") || findSetting(settings, "phone");

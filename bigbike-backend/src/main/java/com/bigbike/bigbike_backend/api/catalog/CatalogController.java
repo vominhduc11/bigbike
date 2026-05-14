@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
@@ -32,6 +33,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+    private static final String HOMEPAGE_BLOCK_REGEX =
+            "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
 
     private static final Map<ProductStockState, String> STOCK_LABELS = Map.of(
             ProductStockState.IN_STOCK, "Còn hàng",
@@ -59,8 +62,9 @@ public class CatalogController {
             @RequestParam(name = "filter_gender", required = false) String filterGender,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
-            @RequestParam(required = false) Boolean featured,
-            @RequestParam(required = false) Boolean showOnHomepage,
+            @RequestParam(name = "homepage_block", required = false)
+                @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepage_block.")
+                String homepageBlock,
             HttpServletRequest request
     ) {
         if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
@@ -70,10 +74,11 @@ public class CatalogController {
                     "min_price must be less than or equal to max_price."
             );
         }
+        HomepageBlock block = homepageBlock == null ? null : HomepageBlock.valueOf(homepageBlock);
         return apiResponseFactory.list(
                 catalogReadService.listProducts(
                         page, size, sort, category, brand, q, filterColor, null,
-                        minPrice, maxPrice, featured, showOnHomepage),
+                        minPrice, maxPrice, block),
                 request
         );
     }

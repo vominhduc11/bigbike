@@ -115,6 +115,20 @@ class ProductSpecification {
       );
 }
 
+/// Homepage placement slot for a product (mirrors backend `HomepageBlock`).
+enum HomepageBlock { none, featuredGrid, recommendedCarousel }
+
+HomepageBlock _parseHomepageBlock(String? raw) {
+  switch (raw) {
+    case 'FEATURED_GRID':
+      return HomepageBlock.featuredGrid;
+    case 'RECOMMENDED_CAROUSEL':
+      return HomepageBlock.recommendedCarousel;
+    default:
+      return HomepageBlock.none;
+  }
+}
+
 class ProductSummary {
   final String id;
   final String slug;
@@ -126,7 +140,7 @@ class ProductSummary {
   final int? reviewCount;
   final BrandSummary? brand;
   final CategorySummary? category;
-  final bool isFeatured;
+  final HomepageBlock homepageBlock;
 
   const ProductSummary({
     required this.id,
@@ -139,7 +153,7 @@ class ProductSummary {
     this.reviewCount,
     this.brand,
     this.category,
-    this.isFeatured = false,
+    this.homepageBlock = HomepageBlock.none,
   });
 
   factory ProductSummary.fromJson(Map<String, dynamic> j) => ProductSummary(
@@ -159,7 +173,7 @@ class ProductSummary {
     category: j['category'] != null
         ? CategorySummary.fromJson(j['category'] as Map<String, dynamic>)
         : null,
-    isFeatured: j['isFeatured'] as bool? ?? false,
+    homepageBlock: _parseHomepageBlock(j['homepageBlock'] as String?),
   );
 }
 
@@ -182,7 +196,7 @@ class Product extends ProductSummary {
     super.reviewCount,
     super.brand,
     super.category,
-    super.isFeatured,
+    super.homepageBlock,
     this.shortDescription,
     this.description,
     required this.gallery,
@@ -204,7 +218,7 @@ class Product extends ProductSummary {
       reviewCount: base.reviewCount,
       brand: base.brand,
       category: base.category,
-      isFeatured: base.isFeatured,
+      homepageBlock: base.homepageBlock,
       shortDescription: j['shortDescription'] as String?,
       description: j['description'] as String?,
       gallery: (j['gallery'] as List? ?? [])

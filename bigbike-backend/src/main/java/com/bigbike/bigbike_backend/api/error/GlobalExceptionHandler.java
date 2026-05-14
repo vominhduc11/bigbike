@@ -11,6 +11,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -65,6 +66,15 @@ public class GlobalExceptionHandler {
                 "Malformed request body or invalid enum value."
         );
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", List.of(detail), request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        LOG.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT, "DATA_CONFLICT",
+                "Operation violates a data integrity constraint (e.g. duplicate serial number).",
+                List.of(), request);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)

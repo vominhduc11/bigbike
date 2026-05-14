@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -52,8 +53,7 @@ public class UpsertProductRequest {
     private PublishStatus publishStatus;
 
     private Boolean forceOutOfStock;
-    private Boolean isFeatured;
-    private Boolean showOnHomepage;
+    private HomepageBlock homepageBlock;
     private Integer homepageOrder;
     private boolean homepageOrderPresent;
 
@@ -222,20 +222,12 @@ public class UpsertProductRequest {
         this.forceOutOfStock = forceOutOfStock;
     }
 
-    public Boolean getFeatured() {
-        return isFeatured;
+    public HomepageBlock getHomepageBlock() {
+        return homepageBlock;
     }
 
-    public void setFeatured(Boolean featured) {
-        isFeatured = featured;
-    }
-
-    public Boolean getShowOnHomepage() {
-        return showOnHomepage;
-    }
-
-    public void setShowOnHomepage(Boolean showOnHomepage) {
-        this.showOnHomepage = showOnHomepage;
+    public void setHomepageBlock(HomepageBlock homepageBlock) {
+        this.homepageBlock = homepageBlock;
     }
 
     public Integer getHomepageOrder() {

@@ -74,16 +74,15 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
 
   return buildPublicMetadata({
     title:
-      buildCatalogTitle(brand.seo?.title ?? brand.name, {
+      buildCatalogTitle(brand.name, {
         page,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
         colorName: color,
       }),
-    description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
-    canonicalPath: brand.seo?.canonicalUrl ?? toBrandPath(brand.slug),
+    description: brand.description ?? "Chi tiết thương hiệu BigBike.",
+    canonicalPath: toBrandPath(brand.slug),
     noIndex:
-      (brand.seo?.noIndex ?? false) ||
       page > 1 ||
       Boolean(brandFilter) ||
       Boolean(q) ||
@@ -177,7 +176,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   }
 
   const brand = brandResult.data;
-  const canonicalPath = brand.seo?.canonicalUrl ?? toBrandPath(brand.slug);
+  const canonicalPath = toBrandPath(brand.slug);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
 
   const brandName = safeText(brand.name, "Thương hiệu");

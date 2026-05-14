@@ -6,49 +6,22 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchAllSerials, updateSerialStatus } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import {
+  SERIAL_STATUS_LABELS,
+  SERIAL_STATUS_CLASSES,
+  SERIAL_ALLOWED_TRANSITIONS,
+  NOTE_REQUIRED_STATUSES,
+} from '../lib/serialStateMachine'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
 const ALL_STATUSES = ['ALL', 'IN_STOCK', 'RESERVED', 'SOLD', 'RETURNED', 'INSPECTION', 'DAMAGED', 'SCRAPPED']
 
-const STATUS_LABELS = {
-  IN_STOCK: 'Còn hàng',
-  RESERVED: 'Đang giữ',
-  SOLD: 'Đã bán',
-  RETURNED: 'Khách trả',
-  INSPECTION: 'Đang kiểm',
-  DAMAGED: 'Hỏng',
-  SCRAPPED: 'Đã hủy',
-}
-
-const STATUS_COLORS = {
-  IN_STOCK: '#16a34a',
-  RESERVED: '#2563eb',
-  SOLD: '#7c3aed',
-  RETURNED: '#d97706',
-  INSPECTION: '#0891b2',
-  DAMAGED: '#dc2626',
-  SCRAPPED: '#9ca3af',
-}
-
-const ALLOWED_TRANSITIONS = {
-  IN_STOCK: ['DAMAGED', 'SCRAPPED'],
-  RESERVED: ['IN_STOCK'],
-  SOLD: ['RETURNED'],
-  RETURNED: ['INSPECTION'],
-  INSPECTION: ['IN_STOCK', 'DAMAGED', 'SCRAPPED'],
-  DAMAGED: ['SCRAPPED'],
-  SCRAPPED: [],
-}
-
 function SerialStatusBadge({ status }) {
-  const color = STATUS_COLORS[status] ?? '#9ca3af'
-  const label = STATUS_LABELS[status] ?? status
+  const classes = SERIAL_STATUS_CLASSES[status] ?? 'text-muted-foreground bg-muted'
+  const label = SERIAL_STATUS_LABELS[status] ?? status
   return (
-    <span style={{
-      display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-      background: color + '18', color, fontWeight: 600, fontSize: '0.78rem',
-    }}>
+    <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${classes}`}>
       {label}
     </span>
   )
@@ -61,6 +34,8 @@ function formatDate(iso) {
 
 // ── Detail modal ──────────────────────────────────────────────────────────────
 
+const TERMINAL_STATES = new Set(['SCRAPPED'])
+
 function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
   const [detail, setDetail] = useState(item)
   const [changingStatus, setChangingStatus] = useState(false)
@@ -68,84 +43,91 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
   const [statusNote, setStatusNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [confirmTerminal, setConfirmTerminal] = useState(false)
 
-  const transitions = ALLOWED_TRANSITIONS[detail.status] ?? []
+  const transitions = SERIAL_ALLOWED_TRANSITIONS[detail.status] ?? []
+  const noteRequired = NOTE_REQUIRED_STATUSES.has(targetStatus)
 
   async function handleStatusChange(e) {
     e.preventDefault()
     if (!targetStatus) return
+    if (noteRequired && !statusNote.trim()) {
+      setError('Lý do bắt buộc khi chuyển sang trạng thái này.')
+      return
+    }
+    if (TERMINAL_STATES.has(targetStatus) && !confirmTerminal) {
+      setConfirmTerminal(true)
+      return
+    }
     setSaving(true)
     setError('')
     try {
-      const res = await updateSerialStatus(detail.id, targetStatus, statusNote || undefined)
+      const res = await updateSerialStatus(detail.id, targetStatus, statusNote.trim() || undefined)
       setDetail(res.item)
       onUpdated(res.item)
       setChangingStatus(false)
       setTargetStatus('')
       setStatusNote('')
-      toast.success(`Đã chuyển serial sang ${STATUS_LABELS[targetStatus] ?? targetStatus}.`)
+      setConfirmTerminal(false)
+      toast.success(`Đã chuyển serial sang ${SERIAL_STATUS_LABELS[targetStatus] ?? targetStatus}.`)
     } catch (err) {
       setError(err.message || 'Lỗi khi đổi trạng thái.')
+      setConfirmTerminal(false)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="serial-detail-title">
+      <div className="modal-box modal-box--flex" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Chi tiết serial</h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
+          <h2 className="modal-title" id="serial-detail-title">Chi tiết serial</h2>
+          <button type="button" className="btn-icon btn-secondary-ghost" onClick={onClose} aria-label="Đóng">✕</button>
         </div>
 
-        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="modal-body flex flex-col gap-4">
           {/* Serial number */}
-          <div style={{
-            background: 'var(--admin-color-surface)', border: '1px solid var(--admin-color-border)',
-            borderRadius: 8, padding: '12px 16px', textAlign: 'center',
-          }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 4 }}>Số serial</p>
-            <p style={{ fontFamily: 'monospace', fontSize: '1.25rem', fontWeight: 700, letterSpacing: 1 }}>
-              {detail.serialNumber}
-            </p>
+          <div className="bg-surface border border-border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Số serial</p>
+            <p className="font-mono text-xl font-bold tracking-wide">{detail.serialNumber}</p>
           </div>
 
           {/* Info grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.85rem' }}>
+          <div className="grid grid-cols-2 gap-2.5 text-sm">
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Sản phẩm: </span>
-              <span style={{ fontWeight: 500 }}>{detail.productName || '—'}</span>
+              <span className="text-muted-foreground">Sản phẩm: </span>
+              <span className="font-medium">{detail.productName || '—'}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Phiên bản: </span>
+              <span className="text-muted-foreground">Phiên bản: </span>
               <span>{detail.variantName || '—'}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Trạng thái: </span>
+              <span className="text-muted-foreground">Trạng thái: </span>
               <SerialStatusBadge status={detail.status} />
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày nhập: </span>
+              <span className="text-muted-foreground">Ngày nhập: </span>
               <span>{formatDate(detail.receivedAt)}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày bán: </span>
+              <span className="text-muted-foreground">Ngày bán: </span>
               <span>{formatDate(detail.soldAt)}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày trả: </span>
+              <span className="text-muted-foreground">Ngày trả: </span>
               <span>{formatDate(detail.returnedAt)}</span>
             </div>
             {detail.reservedUntil && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <span style={{ color: 'var(--admin-color-text-muted)' }}>Giữ đến: </span>
-                <span style={{ color: '#2563eb' }}>{formatDateTime(detail.reservedUntil)}</span>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Giữ đến: </span>
+                <span className="text-primary">{formatDateTime(detail.reservedUntil)}</span>
               </div>
             )}
             {detail.note && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <span style={{ color: 'var(--admin-color-text-muted)' }}>Ghi chú: </span>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Ghi chú: </span>
                 <span>{detail.note}</span>
               </div>
             )}
@@ -155,8 +137,7 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
           {canUpdate && transitions.length > 0 && !changingStatus && (
             <button
               type="button"
-              className="btn btn-secondary"
-              style={{ alignSelf: 'flex-start' }}
+              className="btn btn-secondary self-start"
               onClick={() => setChangingStatus(true)}
             >
               Đổi trạng thái
@@ -164,34 +145,40 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
           )}
 
           {canUpdate && changingStatus && (
-            <form onSubmit={handleStatusChange} style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--admin-color-border)', paddingTop: 12 }}>
-              <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Chuyển sang trạng thái mới</p>
-              <label style={{ fontSize: '0.85rem' }}>
+            <form onSubmit={handleStatusChange} className="flex flex-col gap-2.5 border-t border-border pt-3">
+              <p className="text-sm font-semibold">Chuyển sang trạng thái mới</p>
+              <label className="text-sm">
                 Trạng thái
-                <Select value={(targetStatus) || '__all__'}
-                  onValueChange={(val) => setTargetStatus(val === '__all__' ? '' : val)}
+                <Select value={targetStatus || '__all__'}
+                  onValueChange={(val) => { setTargetStatus(val === '__all__' ? '' : val); setError(''); setConfirmTerminal(false) }}
                   required
                 ><SelectTrigger><SelectValue placeholder="— Chọn —" /></SelectTrigger><SelectContent>
                   {transitions.map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>
+                    <SelectItem key={s} value={s}>{SERIAL_STATUS_LABELS[s] ?? s}</SelectItem>
                   ))}
                 </SelectContent></Select>
               </label>
-              <label style={{ fontSize: '0.85rem' }}>
-                Ghi chú {(targetStatus === 'DAMAGED' || targetStatus === 'SCRAPPED') && <span style={{ color: '#dc2626' }}>*</span>}
+              <label className="text-sm">
+                Ghi chú {noteRequired && <span className="text-destructive">*</span>}
                 <Input
                   type="text"
                   placeholder="Lý do thay đổi…"
                   value={statusNote}
                   onChange={(e) => setStatusNote(e.target.value)}
-                 />
+                  required={noteRequired}
+                />
               </label>
-              {error && <p style={{ color: '#dc2626', fontSize: '0.8rem' }}>{error}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
+              {confirmTerminal && (
+                <div className="bg-destructive/10 border border-destructive/30 px-3 py-2 text-sm text-destructive">
+                  Trạng thái <strong>{SERIAL_STATUS_LABELS[targetStatus]}</strong> không thể hoàn tác. Bấm Xác nhận lần nữa để tiếp tục.
+                </div>
+              )}
+              {error && <p className="text-destructive text-xs">{error}</p>}
+              <div className="flex gap-2">
                 <button type="submit" className="btn btn-primary" disabled={saving || !targetStatus}>
-                  {saving ? 'Đang lưu…' : 'Xác nhận'}
+                  {saving ? 'Đang lưu…' : confirmTerminal ? 'Xác nhận lần cuối' : 'Xác nhận'}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={() => { setChangingStatus(false); setTargetStatus(''); setStatusNote(''); setError('') }}>
+                <button type="button" className="btn btn-secondary" onClick={() => { setChangingStatus(false); setTargetStatus(''); setStatusNote(''); setError(''); setConfirmTerminal(false) }}>
                   Huỷ
                 </button>
               </div>
@@ -322,7 +309,7 @@ export function SerialListScreen({ canUpdate = false }) {
             onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             {ALL_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>{s === 'ALL' ? 'Tất cả' : STATUS_LABELS[s] ?? s}</SelectItem>
+              <SelectItem key={s} value={s}>{s === 'ALL' ? 'Tất cả' : SERIAL_STATUS_LABELS[s] ?? s}</SelectItem>
             ))}
           </SelectContent></Select>
         </label>

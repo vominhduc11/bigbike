@@ -55,14 +55,6 @@ public class ProductEntity {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "product_category_map",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    private Set<CategoryEntity> categories = new LinkedHashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
             name = "product_tag_map",
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id")
@@ -129,8 +121,9 @@ public class ProductEntity {
     @Column(nullable = false)
     private PublishStatus publishStatus;
 
-    private Boolean isFeatured;
-    private Boolean showOnHomepage;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "homepage_block", nullable = false, length = 32)
+    private com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
 
     @Column(name = "homepage_order")
     private Integer homepageOrder;
@@ -251,14 +244,6 @@ public class ProductEntity {
 
     public void setCategory(CategoryEntity category) {
         this.category = category;
-    }
-
-    public Set<CategoryEntity> getCategories() {
-        return categories;
-    }
-
-    public void setCategories(Set<CategoryEntity> categories) {
-        this.categories = categories;
     }
 
     public Set<ProductTagEntity> getTags() {
@@ -445,20 +430,14 @@ public class ProductEntity {
         this.publishStatus = publishStatus;
     }
 
-    public Boolean getFeatured() {
-        return isFeatured;
+    public com.bigbike.bigbike_backend.domain.catalog.HomepageBlock getHomepageBlock() {
+        return homepageBlock;
     }
 
-    public void setFeatured(Boolean featured) {
-        isFeatured = featured;
-    }
-
-    public Boolean getShowOnHomepage() {
-        return showOnHomepage;
-    }
-
-    public void setShowOnHomepage(Boolean showOnHomepage) {
-        this.showOnHomepage = showOnHomepage;
+    public void setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock) {
+        this.homepageBlock = homepageBlock == null
+                ? com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE
+                : homepageBlock;
     }
 
     public Integer getHomepageOrder() {

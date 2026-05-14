@@ -31,25 +31,25 @@ class HomepagePublicApiTest {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
-    // ── Product: filterFeatured ──────────────────────────────────────────────
+    // ── Product: homepage_block=FEATURED_GRID ────────────────────────────────
 
     @Test
     void listFeaturedProducts_returnsOnlyFeaturedPublishedProducts() throws Exception {
         mockMvc.perform(get("/api/v1/products")
-                        .param("featured", "true")
+                        .param("homepage_block", "FEATURED_GRID")
                         .param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$.data[0].isFeatured").value(true))
+                .andExpect(jsonPath("$.data[0].homepageBlock").value("FEATURED_GRID"))
                 .andExpect(jsonPath("$.data[0].rating").exists())
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 
     @Test
     void listFeaturedProducts_excludesNonFeatured() throws Exception {
-        // prod_kyt_nxrace is HIDDEN and not featured — none of those should appear
+        // prod_kyt_nxrace is HIDDEN and not in FEATURED_GRID — should not appear
         mockMvc.perform(get("/api/v1/products")
-                        .param("featured", "true"))
+                        .param("homepage_block", "FEATURED_GRID"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.slug == 'mu-bao-hiem-kyt-nx-race')]").doesNotExist());
     }

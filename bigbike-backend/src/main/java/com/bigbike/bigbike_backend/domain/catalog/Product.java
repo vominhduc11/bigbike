@@ -24,9 +24,9 @@ public record Product(
         Integer stockQuantity,
         Boolean forceOutOfStock,
         PublishStatus publishStatus,
-        Boolean isFeatured,
-        Boolean showOnHomepage,
-        /** Pin priority inside homepage featured/showOnHomepage blocks. Lower = earlier; null = end. */
+        /** Homepage placement slot — see {@link HomepageBlock}. Never null; NONE means not pinned. */
+        HomepageBlock homepageBlock,
+        /** Pin priority inside the homepage block. Lower = earlier; null = end. Ignored when homepageBlock == NONE. */
         Integer homepageOrder,
         /** Denormalized cache of the approved-review average used by product list/detail reads. */
         java.math.BigDecimal rating,

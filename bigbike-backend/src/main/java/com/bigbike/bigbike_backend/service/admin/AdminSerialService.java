@@ -190,21 +190,27 @@ public class AdminSerialService {
     // ── Enable serial tracking on a variant ───────────────────────────────────
 
     @Transactional
-    public void enableVariantTracking(String variantId, boolean enabled) {
+    public void enableVariantTracking(String variantId, boolean enabled, UUID adminId) {
         ProductVariantEntity variant = variantRepo.findById(variantId)
                 .orElseThrow(() -> new NotFoundException("Variant not found: " + variantId));
         variant.setTrackSerials(enabled);
         variantRepo.save(variant);
+
+        auditLogRepo.save(buildAudit(adminId, "SERIAL_TRACKING_CHANGED", "VARIANT",
+                "{\"variantId\":\"" + variantId + "\",\"trackSerials\":" + enabled + "}"));
     }
 
     // ── Enable serial tracking on a no-variant product ────────────────────────
 
     @Transactional
-    public void enableProductTracking(String productId, boolean enabled) {
+    public void enableProductTracking(String productId, boolean enabled, UUID adminId) {
         ProductEntity product = productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
         product.setTrackSerials(enabled);
         productRepo.save(product);
+
+        auditLogRepo.save(buildAudit(adminId, "SERIAL_TRACKING_CHANGED", "PRODUCT",
+                "{\"productId\":\"" + productId + "\",\"trackSerials\":" + enabled + "}"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

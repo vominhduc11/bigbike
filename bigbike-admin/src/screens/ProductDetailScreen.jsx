@@ -18,6 +18,7 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
 import { VideoPickerModal } from '../components/VideoPickerModal'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,7 +39,7 @@ function inferVideoType(url, provider) {
 
 // ── Collapsible section ────────────────────────────────────────────────────────
 
-function CollapsibleSection({ id, title, description, children }) {
+function CollapsibleSection({ id, title, description, children, forceOpen = false }) {
   const storageKey = `product-section-open:${id}`
   const [open, setOpen] = useState(() => {
     try {
@@ -55,15 +56,17 @@ function CollapsibleSection({ id, title, description, children }) {
     })
   }
 
+  const isOpen = open || forceOpen
+
   return (
-    <section id={id} className={`detail-section${open ? '' : ' is-collapsed'}`}>
+    <section id={id} className={`detail-section${isOpen ? '' : ' is-collapsed'}`}>
       <header className="detail-section-header detail-section-header--toggle" onClick={toggle}>
         <div>
           <h2>{title}</h2>
           {description ? <p className="detail-section-desc">{description}</p> : null}
         </div>
         <span className="section-collapse-icon" aria-hidden="true">
-          {open ? <IconChevronUp /> : <IconChevronDown />}
+          {isOpen ? <IconChevronUp /> : <IconChevronDown />}
         </span>
       </header>
       <div className="detail-section-collapse-wrap">
@@ -81,8 +84,6 @@ const SECTION_ITEMS = [
   { id: 'section-basic', label: 'Cơ bản' },
   { id: 'section-pricing', label: 'Giá' },
   { id: 'section-media', label: 'Ảnh' },
-  { id: 'section-seo', label: 'SEO' },
-  { id: 'section-content-bottom', label: 'Nội dung SEO' },
   { id: 'section-gallery', label: 'Gallery' },
   { id: 'section-videos', label: 'Video' },
   { id: 'section-specs', label: 'Thông số' },
@@ -214,20 +215,6 @@ function clearFormFromStorage(key) {
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
 function getPublishReadiness(form) {
-  // Detect color groups that have a main image but no gallery.
-  // On the storefront these colors show a single hero with no thumbnail strip.
-  const colorKeys = [...new Set(form.variants.map(getVariantColorKey).filter(Boolean))]
-  const colorsImageOnly = colorKeys.filter((colorKey) => {
-    const peers = form.variants.filter((v) => getVariantColorKey(v) === colorKey)
-    const hasImage = peers.some((v) => String(v.imageUrl || '').trim())
-    const hasGallery = peers.some((v) => hasGalleryImages(v.gallery))
-    return hasImage && !hasGallery
-  })
-  const colorsImageOnlyLabels = colorsImageOnly.map((colorKey) => {
-    const v = form.variants.find((v) => getVariantColorKey(v) === colorKey)
-    return getVariantColorValue(v) || colorKey
-  })
-
   const items = [
     { id: 'name',      label: 'Tên sản phẩm',           ok: Boolean(form.name.trim()),                             required: true },
     { id: 'image',     label: 'Ảnh đại diện',            ok: Boolean(form.imageUrl.trim()),                         required: false },
@@ -236,14 +223,6 @@ function getPublishReadiness(form) {
     { id: 'desc',      label: 'Mô tả chi tiết',          ok: form.description.trim().length > 50,                   required: false },
   ]
 
-  if (colorsImageOnly.length > 0) {
-    items.push({
-      id: 'variantGallery',
-      label: `Màu chỉ có ảnh chính, chưa có gallery: ${colorsImageOnlyLabels.join(', ')} — storefront chỉ hiện 1 ảnh, không có thumbnail strip`,
-      ok: false,
-      required: false,
-    })
-  }
 
   return items
 }
@@ -328,7 +307,6 @@ function buildEmptyForm() {
     retailPrice: '',
     compareAtPrice: '',
     salePrice: '',
-    stockState: 'IN_STOCK',
     forceOutOfStock: false,
     publishStatus: 'DRAFT',
     imageUrl: '',
@@ -339,8 +317,7 @@ function buildEmptyForm() {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     seoNoIndex: false,
-    isFeatured: false,
-    showOnHomepage: false,
+    homepageBlock: 'NONE',
     homepageOrder: '',
     gallery: [],
     videos: [],
@@ -357,7 +334,6 @@ function buildFormFromItem(item) {
     id: v.id || '',
     sku: v.sku || '',
     name: v.name || '',
-    stockState: v.stockState === 'UNKNOWN' ? 'IN_STOCK' : (v.stockState || 'IN_STOCK'),
     imageUrl: v.image?.url || '',
     isAvailable: v.isAvailable !== false,
     options: (v.options || []).map((o) => ({ name: o.name || '', value: o.value || '' })),
@@ -385,7 +361,6 @@ function buildFormFromItem(item) {
       Number.isInteger(item.price?.salePrice) && item.price.salePrice > 0
         ? String(item.price.salePrice)
         : '',
-    stockState: item.stockState === 'UNKNOWN' ? 'IN_STOCK' : item.stockState,
     forceOutOfStock: Boolean(item.forceOutOfStock),
     publishStatus: item.publishStatus,
     imageUrl: item.image?.url || '',
@@ -396,8 +371,7 @@ function buildFormFromItem(item) {
     seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
-    isFeatured: Boolean(item.isFeatured),
-    showOnHomepage: Boolean(item.showOnHomepage),
+    homepageBlock: item.homepageBlock || 'NONE',
     homepageOrder: Number.isFinite(item.homepageOrder) ? String(item.homepageOrder) : '',
     gallery: (item.gallery || []).map((img) => ({ url: img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
@@ -450,11 +424,9 @@ function toPayload(form) {
     compareAtPrice: toIntegerOrNull(form.compareAtPrice),
     salePrice: toIntegerOrNull(form.salePrice),
     currency: 'VND',
-    stockState: form.stockState,
     forceOutOfStock: Boolean(form.forceOutOfStock),
     publishStatus: form.publishStatus,
-    featured: Boolean(form.isFeatured),
-    showOnHomepage: Boolean(form.showOnHomepage),
+    homepageBlock: form.homepageBlock || 'NONE',
     homepageOrder: form.homepageOrder === '' ? null : toIntegerOrNull(form.homepageOrder),
     seo: hasSeo
       ? {
@@ -518,7 +490,6 @@ function toPayload(form) {
       name: v.name.trim(),
       // Variant price fields intentionally omitted — see ProductDetailScreen
       // variant form section. Cart/checkout always use product price.
-      stockState: v.stockState,
       imageUrl: shouldSendImage ? imageUrl : undefined,
       isAvailable: Boolean(v.isAvailable),
       sortOrder: i,
@@ -692,29 +663,25 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
         return (
           <div key={index} className="list-editor-row">
             <div className="list-editor-fields">
-              <div className="video-source-toggle" style={{ display: 'flex', gap: 16, fontSize: 13 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name={`video-type-${index}`}
-                    value="youtube"
-                    checked={type === 'youtube'}
-                    onChange={() => updateItem(index, { type: 'youtube', url: '' })}
-                    disabled={disabled}
-                  />
+              <div className="flex gap-1 p-1 bg-muted w-fit">
+                <Button
+                  type="button"
+                  variant={type === 'youtube' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => updateItem(index, { type: 'youtube', url: '', thumbnailUrl: '' })}
+                  disabled={disabled}
+                >
                   YouTube
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name={`video-type-${index}`}
-                    value="upload"
-                    checked={type === 'upload'}
-                    onChange={() => updateItem(index, { type: 'upload', url: '' })}
-                    disabled={disabled}
-                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant={type === 'upload' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => updateItem(index, { type: 'upload', url: '' })}
+                  disabled={disabled}
+                >
                   Từ thư viện
-                </label>
+                </Button>
               </div>
 
               {type === 'youtube' ? (
@@ -771,12 +738,14 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                       style={{ marginTop: 8, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
                     />
                   )}
-                  <Input
-                    placeholder="Thumbnail URL (tuỳ chọn)"
-                    value={item.thumbnailUrl || ''}
-                    onChange={(e) => updateItem(index, { thumbnailUrl: e.target.value })}
-                    disabled={disabled}
-                   />
+                  <div className="flex flex-col gap-1 mt-2">
+                    <span className="text-xs text-muted-foreground">Ảnh thumbnail (tuỳ chọn)</span>
+                    <ImageUrlInput
+                      value={item.thumbnailUrl || ''}
+                      onChange={(url) => updateItem(index, { thumbnailUrl: url })}
+                      disabled={disabled}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1028,19 +997,6 @@ function VariantCard({
               per-variant prices here would silently diverge from what the
               customer sees and pays. */}
 
-          <label className="form-field">
-            <span>Trạng thái kho</span>
-            <Select
-              value={variant.stockState}
-              onValueChange={(val) => updateField('stockState', val)}
-              disabled={disabled}
-            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value="IN_STOCK">Còn hàng</SelectItem>
-              <SelectItem value="LOW_STOCK">Còn ít</SelectItem>
-              <SelectItem value="OUT_OF_STOCK">Hết hàng</SelectItem>
-            </SelectContent></Select>
-          </label>
-
           <div className="form-field form-field-wide">
             <span className="form-field-label">
               {hasColor ? `Ảnh chính theo màu: ${colorValue}` : 'Ảnh chính theo màu'}
@@ -1088,7 +1044,7 @@ function VariantCard({
             <p className="detail-section-desc" style={{ marginTop: 0, marginBottom: 8 }}>
               {hasColor
                 ? 'Gallery này dùng chung cho mọi size/biến thể có cùng màu. Đổi size trong cùng màu sẽ không đổi danh sách ảnh.'
-                : 'Thêm thuộc tính Màu/Color cho biến thể để cấu hình gallery theo màu. Biến thể không có màu sẽ dùng gallery chung của sản phẩm.'}
+                : 'Thêm thuộc tính Màu/Color cho biến thể để cấu hình gallery riêng theo màu. Nếu để trống, storefront sẽ dùng gallery chung của sản phẩm.'}
             </p>
             {fieldErrors.gallery && <small className="field-error">{fieldErrors.gallery}</small>}
             {hasColor && (
@@ -1170,17 +1126,28 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
       const previousColorKey = getVariantColorKey(current)
       const nextColorKey = getVariantColorKey(nextCurrent)
       if (previousColorKey !== nextColorKey) {
-        const existingColorGallery = nextColorKey
-          ? items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery))?.gallery
-          : []
-        const existingColorImage = nextColorKey
-          ? (items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && String(v.imageUrl || '').trim())?.imageUrl ?? '')
-          : ''
-        onChange(items.map((v) => (
-          v._key === key
-            ? { ...nextCurrent, gallery: cloneGallery(existingColorGallery || []), imageUrl: existingColorImage }
-            : v
-        )))
+        const applyColorChange = () => {
+          const existingColorGallery = nextColorKey
+            ? items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery))?.gallery
+            : []
+          const existingColorImage = nextColorKey
+            ? (items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && String(v.imageUrl || '').trim())?.imageUrl ?? '')
+            : ''
+          onChange(items.map((v) => (
+            v._key === key
+              ? { ...nextCurrent, gallery: cloneGallery(existingColorGallery || []), imageUrl: existingColorImage }
+              : v
+          )))
+        }
+        const hasData = hasGalleryImages(current.gallery) || String(current.imageUrl || '').trim()
+        if (hasData) {
+          showConfirm(
+            'Biến thể này đang có ảnh và gallery riêng. Đổi màu sẽ xóa toàn bộ ảnh hiện tại. Tiếp tục?',
+            'Đổi màu biến thể',
+          ).then((confirmed) => { if (confirmed) applyColorChange() })
+          return
+        }
+        applyColorChange()
         return
       }
     }
@@ -1194,7 +1161,6 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
       id: '',
       sku: '',
       name: '',
-      stockState: 'IN_STOCK',
       imageUrl: '',
       isAvailable: true,
       options: [],
@@ -1435,7 +1401,6 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
       id: '',
       sku: '',
       name: combo.map((o) => o.value).join(' - '),
-      stockState: 'IN_STOCK',
       imageUrl: '',
       isAvailable: true,
       options: combo.map((o) => ({ name: o.name, value: o.value })),
@@ -1598,8 +1563,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           slug: '',
           sku: base.sku ? `${base.sku}-COPY` : '',
           publishStatus: 'DRAFT',
-          isFeatured: false,
-          showOnHomepage: false,
+          homepageBlock: 'NONE',
           homepageOrder: '',
           // Clear variants IDs so they create as new
           variants: base.variants.map((v) => ({ ...v, _key: crypto.randomUUID(), id: '' })),
@@ -1781,6 +1745,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     )
   }
 
+  const errKeys = Object.keys(validationErrors)
+  const se = (prefixes) => prefixes.some((p) => errKeys.some((k) => k === p || k.startsWith(p + '.')))
+  const sectionErrors = {
+    basic:    se(['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus']),
+    pricing:  se(['retailPrice','compareAtPrice','salePrice']),
+    media:    se(['imageUrl']),
+    gallery:  se(['gallery']),
+    videos:   se(['videos']),
+    specs:    se(['specifications']),
+    variants: se(['variants']),
+  }
+
   return (
     <section className="screen">
       <header className="screen-header">
@@ -1868,7 +1844,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         }}
       >
         {/* ── Thông tin cơ bản ── */}
-        <CollapsibleSection id="section-basic" title={t('products.detail.sectionBasic')}>
+        <CollapsibleSection id="section-basic" title={t('products.detail.sectionBasic')} forceOpen={sectionErrors.basic}>
           <div className="detail-section-content form-grid">
             <label className="form-field">
               <div className="form-field-label-row">
@@ -1967,7 +1943,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {form.shortDescription.length} / 500
                 </span>
               </div>
-              <Textarea className="${validationErrors.shortDescription ? ' input-error' : ''}"
+              <Textarea className={validationErrors.shortDescription ? 'border-danger' : undefined}
                 value={form.shortDescription}
                 onChange={(e) => updateField('shortDescription', e.target.value)}
                 maxLength={500}
@@ -2004,39 +1980,32 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               )}
             </div>
 
-            <div className="form-field form-checkboxes-row form-field-wide">
-              <label className="form-checkbox">
-                <Checkbox
-                  checked={form.isFeatured}
-                  onCheckedChange={(checked) => updateField('isFeatured', checked)}
-                  disabled={isReadOnly}
-                 />
-                <span>{t('products.detail.isFeatured')}</span>
-              </label>
-              <label className="form-checkbox">
-                <Checkbox
-                  checked={form.showOnHomepage}
-                  onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
-                  disabled={isReadOnly}
-                 />
-                <span>{t('products.detail.showOnHomepage')}</span>
-              </label>
-              <small className="detail-section-desc" style={{ marginTop: 4, width: '100%' }}>
-                Trang chủ chỉ hiển thị tối đa 12 sản phẩm <b>Nổi bật</b> và 10 sản phẩm <b>Trang chủ</b>.
-                Một sản phẩm bật cả hai cờ chỉ hiện ở khối "Nổi bật" để tránh trùng. Dùng ô
-                "Thứ tự trang chủ" bên dưới để ghim sản phẩm lên đầu (số nhỏ = lên trước).
+            <label className="form-field form-field-wide">
+              <span>Vị trí trên trang chủ</span>
+              <Select
+                value={form.homepageBlock || 'NONE'}
+                onValueChange={(val) => updateField('homepageBlock', val)}
+                disabled={isReadOnly}
+              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="NONE">Không hiển thị trang chủ</SelectItem>
+                <SelectItem value="FEATURED_GRID">Sản phẩm nổi bật — grid trên trang chủ (tối đa 12)</SelectItem>
+                <SelectItem value="RECOMMENDED_CAROUSEL">Gợi ý dành cho bạn — carousel trên trang chủ (tối đa 10)</SelectItem>
+              </SelectContent></Select>
+              <small className="detail-section-desc" style={{ marginTop: 4 }}>
+                Mỗi sản phẩm chỉ có thể ở một trong hai khối. Số sản phẩm vượt quá hạn mức của khối sẽ không hiển thị —
+                dùng ô "Thứ tự trang chủ" để chọn ra sản phẩm lên trang chủ trước.
               </small>
-              {(form.isFeatured || form.showOnHomepage) && form.publishStatus !== 'PUBLISHED' && (
-                <small className="detail-section-desc" style={{ color: 'var(--admin-color-warning, #d97706)', marginTop: 4, width: '100%' }}>
-                  Sản phẩm chưa được Xuất bản — bật tùy chọn này sẽ không hiển thị trên web cho đến khi trạng thái chuyển sang Xuất bản.
+              {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
+                <small className="detail-section-desc" style={{ color: 'var(--admin-color-warning, #d97706)', marginTop: 4 }}>
+                  Sản phẩm chưa được Xuất bản — chỉ hiển thị trên web sau khi chuyển trạng thái sang Xuất bản.
                 </small>
               )}
-            </div>
+            </label>
 
-            {(form.isFeatured || form.showOnHomepage) && (
+            {form.homepageBlock && form.homepageBlock !== 'NONE' && (
               <label className="form-field" style={{ maxWidth: 240 }}>
                 <span>Thứ tự trang chủ</span>
-                <input
+                <Input
                   type="number"
                   inputMode="numeric"
                   step={1}
@@ -2045,7 +2014,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(e) => updateField('homepageOrder', e.target.value)}
                   placeholder="VD: 1"
                   disabled={isReadOnly}
-                />
+                 />
                 <small className="detail-section-desc">
                   Để trống nếu không cần ghim — sản phẩm sẽ xếp theo ngày tạo mới nhất.
                   Số nhỏ hơn sẽ hiển thị trước.
@@ -2056,7 +2025,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Giá & Trạng thái ── */}
-        <CollapsibleSection id="section-pricing" title={t('products.detail.sectionPricing')}>
+        <CollapsibleSection id="section-pricing" title={t('products.detail.sectionPricing')} forceOpen={sectionErrors.pricing}>
           {form.variants.length > 0 && (
             <div className="section-info-banner">
               Sản phẩm này có biến thể — giá dưới đây áp dụng chung cho tất cả biến thể. Giỏ hàng và thanh toán đều dùng giá này.
@@ -2161,36 +2130,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </div>
 
             <label className="form-field">
-              <span>{t('products.detail.stockState')}</span>
-              <Select
-                value={form.stockState}
-                onValueChange={(val) => updateField('stockState', val)}
-                disabled={isReadOnly || form.forceOutOfStock}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="IN_STOCK">{t('status.stock.IN_STOCK')}</SelectItem>
-                <SelectItem value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</SelectItem>
-                <SelectItem value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</SelectItem>
-              </SelectContent></Select>
-              {validationErrors.stockState ? (
-                <small className="field-error">{validationErrors.stockState}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
               <span>{t('products.detail.publishStatus')}</span>
               <Select
                 value={form.publishStatus}
                 onValueChange={(val) => updateField('publishStatus', val)}
                 disabled={isReadOnly}
               ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {!['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
-                  <option value={form.publishStatus} disabled>
+                {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
+                  <SelectItem value={form.publishStatus} disabled>
                     {t('products.detail.specialPublishNote', { state: form.publishStatus })}
-                  </option>
+                  </SelectItem>
                 )}
-                <SelectItem value="DRAFT" disabled ={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
-                <SelectItem value="PUBLISHED" disabled ={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
-                <SelectItem value="HIDDEN" disabled ={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
+                <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
+                <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
+                <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
+                {form.publishStatus === 'TRASH' && (
+                  <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
+                )}
               </SelectContent></Select>
               {validationErrors.publishStatus ? (
                 <small className="field-error">{validationErrors.publishStatus}</small>
@@ -2216,15 +2172,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Ảnh đại diện ── */}
-        <CollapsibleSection id="section-media" title="Ảnh đại diện">
+        <CollapsibleSection id="section-media" title="Ảnh đại diện" forceOpen={sectionErrors.media}>
           <div className="detail-section-content form-grid">
             <div className="form-field form-field-wide">
               <span className="form-field-label">{t('products.detail.imageUrl')}</span>
               <ImageUrlInput
                 value={form.imageUrl}
                 onChange={(url) => updateField('imageUrl', url)}
-                alt={form.imageAlt}
-                onAltChange={(alt) => updateField('imageAlt', alt)}
                 disabled={isReadOnly}
                 error={validationErrors.imageUrl}
               />
@@ -2233,121 +2187,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── SEO ── */}
-        <CollapsibleSection id="section-seo" title={t('products.detail.sectionSeo')}>
-          <div className="detail-section-content form-grid">
-            <label className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.seoTitle')}</span>
-                <span className={`char-counter${form.seoTitle.length > 220 ? ' char-counter-warn' : ''}`}>
-                  {form.seoTitle.length} / 255
-                </span>
-              </div>
-              <Input className={validationErrors.seoTitle  ? 'border-danger' : undefined}
-                type="text"
-                maxLength={255}
-                value={form.seoTitle}
-                onChange={(e) => updateField('seoTitle', e.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.seoTitle ? (
-                <small className="field-error">{validationErrors.seoTitle}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.seoDescription')}</span>
-                <span className={`char-counter${form.seoDescription.length > 4500 ? ' char-counter-warn' : ''}`}>
-                  {form.seoDescription.length.toLocaleString()} / 5 000
-                </span>
-              </div>
-              <Textarea className="${validationErrors.seoDescription ? ' input-error' : ''}"
-                value={form.seoDescription}
-                onChange={(e) => updateField('seoDescription', e.target.value)}
-                maxLength={5000}
-                placeholder="Nhập mô tả SEO ngắn gọn cho kết quả tìm kiếm..."
-                disabled={isReadOnly}
-               />
-              {validationErrors.seoDescription ? (
-                <small className="field-error">{validationErrors.seoDescription}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field form-field-wide">
-              <span>{t('products.detail.seoCanonicalUrl')}</span>
-              <Input className={validationErrors.seoCanonicalUrl  ? 'border-danger' : undefined}
-                type="url"
-                maxLength={2048}
-                placeholder="https://bigbike.vn/san-pham/..."
-                value={form.seoCanonicalUrl}
-                onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                disabled={isReadOnly}
-               />
-              <small className="detail-section-desc" style={{ marginTop: 4 }}>
-                URL chuẩn để search engine index đúng trang sản phẩm.
-              </small>
-              {validationErrors.seoCanonicalUrl ? (
-                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
-              ) : null}
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span className="form-field-label">{t('products.detail.seoOgImageUrl')}</span>
-              <ImageUrlInput
-                value={form.seoOgImageUrl}
-                onChange={(url) => updateField('seoOgImageUrl', url)}
-                alt={form.seoOgImageAlt}
-                onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
-                disabled={isReadOnly}
-                error={validationErrors.seoOgImageUrl}
-              />
-              {validationErrors.seoOgImageAlt ? (
-                <small className="field-error">{validationErrors.seoOgImageAlt}</small>
-              ) : null}
-            </div>
-
-            <div className="form-field form-checkboxes-row form-field-wide">
-              <label className="form-checkbox">
-                <Checkbox
-                  checked={form.seoNoIndex}
-                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                  disabled={isReadOnly}
-                 />
-                <span>{t('products.detail.seoNoIndex')}</span>
-              </label>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── Nội dung SEO dài ── */}
-        <CollapsibleSection id="section-content-bottom" title={t('products.detail.sectionContentBottom')}>
-          <div className="detail-section-content">
-            <div className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.contentBottom')}</span>
-                {form.contentBottom.length > 15000 && (
-                  <span className={`char-counter${form.contentBottom.length > 45000 ? ' char-counter-warn' : ''}`}>
-                    {form.contentBottom.length.toLocaleString()} / 50 000
-                  </span>
-                )}
-              </div>
-              <RichTextEditor
-                value={form.contentBottom}
-                onChange={(html) => updateField('contentBottom', html)}
-                placeholder="Nhập nội dung SEO dài hiển thị dưới phần mô tả sản phẩm..."
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.contentBottom)}
-                enableImagePicker
-              />
-              {validationErrors.contentBottom ? (
-                <small className="field-error">{validationErrors.contentBottom}</small>
-              ) : null}
-            </div>
-          </div>
-        </CollapsibleSection>
 
         {/* ── Gallery ── */}
-        <CollapsibleSection id="section-gallery" title="Gallery ảnh" description="Các ảnh bổ sung hiển thị trong slider sản phẩm">
+        <CollapsibleSection id="section-gallery" title="Gallery ảnh" description="Ảnh dùng chung cho mọi màu: chứng chỉ, lớp lót, size chart, đóng gói... Hiển thị khi chưa chọn biến thể hoặc khi màu chưa có gallery riêng." forceOpen={sectionErrors.gallery}>
           <div className="detail-section-content">
             <GalleryEditor
               items={form.gallery}
@@ -2359,7 +2201,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Videos ── */}
-        <CollapsibleSection id="section-videos" title="Video" description="Link YouTube hoặc video sản phẩm">
+        <CollapsibleSection id="section-videos" title="Video" description="Link YouTube hoặc video sản phẩm" forceOpen={sectionErrors.videos}>
           <div className="detail-section-content">
             <VideoEditor
               items={form.videos}
@@ -2371,7 +2213,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Thông số kỹ thuật ── */}
-        <CollapsibleSection id="section-specs" title="Thông số kỹ thuật" description={'Hiển thị trong tab "Thông số kỹ thuật" trang sản phẩm'}>
+        <CollapsibleSection id="section-specs" title="Thông số kỹ thuật" description={'Hiển thị trong tab "Thông số kỹ thuật" trang sản phẩm'} forceOpen={sectionErrors.specs}>
           <div className="detail-section-content">
             <SpecificationsEditor
               items={form.specifications}
@@ -2383,7 +2225,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Biến thể ── */}
-        <CollapsibleSection id="section-variants" title="Biến thể sản phẩm" description="Size, màu sắc và các tùy chọn khác">
+        <CollapsibleSection id="section-variants" title="Biến thể sản phẩm" description="Size, màu sắc và các tùy chọn khác" forceOpen={sectionErrors.variants}>
           <div className="detail-section-content">
             <VariantsEditor
               items={form.variants}

@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.catalog;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
@@ -52,8 +53,7 @@ public class CatalogReadService {
             String filterGender, // reserved — always null; filter_gender is rejected at controller layer
             Long minPrice,
             Long maxPrice,
-            Boolean featured,
-            Boolean showOnHomepage
+            HomepageBlock homepageBlock
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
 
@@ -64,8 +64,7 @@ public class CatalogReadService {
                 .filter(product -> matchesQuery(product, q))
                 .filter(product -> matchesColor(product, filterColor))
                 .filter(product -> matchesPrice(product, minPrice, maxPrice))
-                .filter(product -> matchesFlag(product.isFeatured(), featured))
-                .filter(product -> matchesFlag(product.showOnHomepage(), showOnHomepage))
+                .filter(product -> homepageBlock == null || product.homepageBlock() == homepageBlock)
                 .sorted(productComparator(sortSpec))
                 .toList();
 

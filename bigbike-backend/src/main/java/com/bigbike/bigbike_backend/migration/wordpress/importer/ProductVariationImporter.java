@@ -194,13 +194,11 @@ public class ProductVariationImporter implements DomainImporter {
             return categoryRepo.save(fallback);
         });
         entity.setCategory(category);
-        entity.setCategories(new java.util.LinkedHashSet<>(java.util.Set.of(category)));
         entity.setRetailPrice(BigDecimal.ZERO);
         entity.setCurrency("VND");
         entity.setStockState(ProductStockState.IN_STOCK);
         entity.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
-        entity.setFeatured(false);
-        entity.setShowOnHomepage(false);
+        entity.setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE);
         entity.setCreatedAt(Instant.now());
         entity.setUpdatedAt(Instant.now());
         return entity;

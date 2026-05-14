@@ -47,24 +47,29 @@ public class AdminCatalogReadService {
             String stockState,
             String brandId,
             String categoryId,
-            Boolean featured,
-            Boolean showOnHomepage
+            String homepageBlock
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
+        com.bigbike.bigbike_backend.domain.catalog.HomepageBlock blockFilter = parseHomepageBlock(homepageBlock);
 
         List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId)
                 .stream()
-                .filter(product -> matchesFlag(product.isFeatured(), featured))
-                .filter(product -> matchesFlag(product.showOnHomepage(), showOnHomepage))
+                .filter(product -> blockFilter == null || product.homepageBlock() == blockFilter)
                 .sorted(productComparator(sortSpec))
                 .toList();
 
         return paginationService.paginate(result, page, size);
     }
 
-    private static boolean matchesFlag(Boolean actual, Boolean expected) {
-        return expected == null || Boolean.TRUE.equals(actual) == expected;
+    private static com.bigbike.bigbike_backend.domain.catalog.HomepageBlock parseHomepageBlock(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            // Controller already validated via @Pattern; defensive fallthrough.
+            return null;
+        }
     }
 
     public Product getProductById(String id) {

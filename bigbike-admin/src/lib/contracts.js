@@ -31,6 +31,12 @@ export function normalizeStockState(value) {
   return isKnownStockState(value) ? value : 'UNKNOWN'
 }
 
+export const HOMEPAGE_BLOCKS = ['NONE', 'FEATURED_GRID', 'RECOMMENDED_CAROUSEL']
+
+export function normalizeHomepageBlock(value) {
+  return HOMEPAGE_BLOCKS.includes(value) ? value : 'NONE'
+}
+
 export function normalizeContentType(value) {
   return isKnownContentType(value) ? value : 'ARTICLE'
 }
@@ -262,8 +268,7 @@ export function normalizeProduct(input) {
     stockQuantity: Number.isFinite(source.stockQuantity) ? Number(source.stockQuantity) : null,
     forceOutOfStock: Boolean(source.forceOutOfStock),
     publishStatus: normalizePublishStatus(source.publishStatus),
-    isFeatured: Boolean(source.isFeatured),
-    showOnHomepage: Boolean(source.showOnHomepage),
+    homepageBlock: normalizeHomepageBlock(source.homepageBlock),
     homepageOrder: Number.isFinite(source.homepageOrder) ? Number(source.homepageOrder) : null,
     seo: normalizeSeoMeta(source.seo),
     createdAt: toTrimmedString(source.createdAt) || undefined,

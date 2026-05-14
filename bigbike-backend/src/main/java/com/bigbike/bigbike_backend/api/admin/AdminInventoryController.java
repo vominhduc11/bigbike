@@ -233,7 +233,7 @@ public class AdminInventoryController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        serialService.enableVariantTracking(variantId, enabled);
+        serialService.enableVariantTracking(variantId, enabled, resolveAdminId());
     }
 
     @PostMapping("/products/{productId}/enable-tracking")
@@ -243,7 +243,7 @@ public class AdminInventoryController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
-        serialService.enableProductTracking(productId, enabled);
+        serialService.enableProductTracking(productId, enabled, resolveAdminId());
     }
 
     /**

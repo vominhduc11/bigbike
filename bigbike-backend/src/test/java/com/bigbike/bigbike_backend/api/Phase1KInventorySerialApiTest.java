@@ -112,7 +112,7 @@ class Phase1KInventorySerialApiTest {
                                 """.formatted(s1, s2, s3)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details[0].code").value("COUNT_MISMATCH"));
+                .andExpect(jsonPath("$.error.details[0].code").value("COUNT_EXCEEDS_QUANTITY"));
     }
 
     // ── 3. Duplicate serial within the same request → 400 ───────────────────────
@@ -219,7 +219,8 @@ class Phase1KInventorySerialApiTest {
     // ── 8. Stock in with too few serials → 400 ───────────────────────────────────
 
     @Test
-    void stockIn_serialCountTooFew_returns400() throws Exception {
+    void stockIn_serialCountFewerThanQuantity_returns200() throws Exception {
+        // Providing fewer serials than quantityDelta is allowed (partial serial tracking).
         String s1 = "SN-FEW-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
 
         mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
@@ -232,9 +233,7 @@ class Phase1KInventorySerialApiTest {
                                   "serialNumbers": ["%s"]
                                 }
                                 """.formatted(s1)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details[0].code").value("COUNT_MISMATCH"));
+                .andExpect(status().isOk());
     }
 
     // ── 7. Movement list includes serialCount field ──────────────────────────────

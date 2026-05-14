@@ -54,7 +54,6 @@ export function createProductSchema(t, isCreate = false) {
       retailPrice: z.string().optional(),
       compareAtPrice: z.string().optional(),
       salePrice: z.string().optional(),
-      stockState: z.string().min(1, t('products.detail.errStockRequired')),
       publishStatus: z.string().min(1, t('products.detail.errPublishRequired')),
       imageUrl: z.string().optional(),
       seoTitle: z.string().optional(),

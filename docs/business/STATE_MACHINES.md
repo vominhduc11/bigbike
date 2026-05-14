@@ -489,8 +489,9 @@ From `ProductStockState.java`:
 
 ### Initial State
 
-- Product create requires `stockState` in request.
-- Variant/product exact default state depends on DTO/entity flow; needs deeper audit.
+- Product create forces `stockState = OUT_OF_STOCK` regardless of request payload — `stockState` is a derived field, computed from `quantityOnHand` once stock is recorded via the Inventory module.
+- The admin product form does not expose a stockState picker (removed 2026-05-14). Inventory module (`AdminInventoryController`) and `InventoryPolicyService` are the only writers.
+- Variants inherit the same rule via `applyVariants` in `AdminCatalogMutationService`.
 
 ### Allowed Transitions
 

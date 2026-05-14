@@ -23,7 +23,7 @@ final _homeDataProvider = FutureProvider.autoDispose<_HomeData>((ref) async {
     client.get<Map<String, dynamic>>(ApiEndpoints.sliders,
         queryParams: {'location': 'home'}),
     client.get<Map<String, dynamic>>(ApiEndpoints.products,
-        queryParams: {'featured': 'true', 'size': '8'}),
+        queryParams: {'homepage_block': 'FEATURED_GRID', 'size': '8'}),
     client.get<Map<String, dynamic>>(ApiEndpoints.categories,
         queryParams: {
           'size': '8',

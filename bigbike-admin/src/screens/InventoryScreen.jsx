@@ -6,6 +6,12 @@ import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import {
+  SERIAL_STATUS_LABELS,
+  SERIAL_STATUS_CLASSES,
+  SERIAL_ALLOWED_TRANSITIONS,
+  NOTE_REQUIRED_STATUSES,
+} from '../lib/serialStateMachine'
+import {
   adjustStock,
   adjustProductStock,
   fetchInventory,
@@ -843,40 +849,10 @@ function StockInModal({ item, onSuccess, onClose }) {
 
 // ── Serial management modal ───────────────────────────────────────────────────
 
-const SERIAL_STATUS_LABELS = {
-  IN_STOCK: 'Có sẵn',
-  RESERVED: 'Đang giữ',
-  SOLD: 'Đã bán',
-  DAMAGED: 'Hư hỏng',
-  INSPECTION: 'Kiểm tra',
-  RETURNED: 'Đã trả lại',
-  SCRAPPED: 'Thanh lý',
-}
-
-const SERIAL_STATUS_COLORS = {
-  IN_STOCK: '#16a34a',
-  RESERVED: '#d97706',
-  SOLD: '#6b7280',
-  DAMAGED: '#dc2626',
-  INSPECTION: '#7c3aed',
-  RETURNED: '#0ea5e9',
-  SCRAPPED: '#9ca3af',
-}
-
-const ALLOWED_TRANSITIONS = {
-  IN_STOCK:   ['DAMAGED', 'INSPECTION', 'SCRAPPED'],
-  RESERVED:   ['IN_STOCK'],
-  SOLD:       ['RETURNED'],
-  RETURNED:   ['INSPECTION'],
-  INSPECTION: ['IN_STOCK', 'DAMAGED', 'SCRAPPED'],
-  DAMAGED:    ['SCRAPPED'],
-  SCRAPPED:   [],
-}
-
 function SerialStatusBadge({ status }) {
   const label = SERIAL_STATUS_LABELS[status] || status
-  const color = SERIAL_STATUS_COLORS[status] || '#6b7280'
-  return <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{label}</span>
+  const classes = SERIAL_STATUS_CLASSES[status] || 'text-muted-foreground bg-muted'
+  return <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${classes}`}>{label}</span>
 }
 
 // ── File parser: CSV/Excel 1 cột mã serial ────────────────────────────────────
@@ -1042,7 +1018,7 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* File import */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-        <p className="form-label" style={{ margin: 0 }}>Danh sách xe nhận về</p>
+        <p className="form-label" style={{ margin: 0 }}>Danh sách serial nhận về</p>
         <button type="button" className="btn btn-secondary btn-sm"
           onClick={() => fileInputRef.current?.click()} disabled={submitting || parsing}>
           {parsing ? 'Đang đọc file…' : 'Import từ file'}
@@ -1056,11 +1032,7 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* Parse preview */}
       {parsePreview && (
-        <div style={{
-          background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6,
-          padding: '8px 12px', marginBottom: 10, fontSize: '0.8rem', color: '#166534',
-          display: 'flex', gap: 16, flexWrap: 'wrap',
-        }}>
+        <div className="flex flex-wrap gap-4 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-2 mb-2.5">
           <span>Tổng dòng: <strong>{parsePreview.total}</strong></span>
           <span>Hợp lệ: <strong>{parsePreview.valid}</strong></span>
           {parsePreview.blank > 0 && <span>Dòng trống bỏ qua: <strong>{parsePreview.blank}</strong></span>}
@@ -1069,7 +1041,7 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* Manual row table */}
       <p style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', marginBottom: 6 }}>
-        Mỗi dòng là một xe — nhập số khung và/hoặc số máy.
+        Mỗi dòng là một sản phẩm — nhập mã serial.
       </p>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 10 }}>
         <thead>
@@ -1106,7 +1078,7 @@ function AddSerialsPanel({ item, onSuccess }) {
       </button>
 
       {error && (
-        <p role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginBottom: 8 }}>{error}</p>
+        <p role="alert" className="text-destructive text-xs mb-2">{error}</p>
       )}
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1117,16 +1089,13 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* Import result — skipped rows with reasons */}
       {importResult && importResult.skipped > 0 && (
-        <div style={{
-          marginTop: 16, background: '#fefce8', border: '1px solid #fde68a',
-          borderRadius: 6, padding: '12px 14px',
-        }}>
-          <p style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 6 }}>
+        <div className="mt-4 bg-amber-50 border border-amber-200 px-3.5 py-3">
+          <p className="font-semibold text-sm mb-1.5">
             Kết quả: {importResult.inserted} nhập thành công · {importResult.skipped} dòng bị bỏ qua
           </p>
           <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #fde68a' }}>
+              <tr className="border-b border-amber-200">
                 <th style={{ textAlign: 'left', padding: '3px 6px' }}>Dòng</th>
                 <th style={{ textAlign: 'left', padding: '3px 6px' }}>Trường</th>
                 <th style={{ textAlign: 'left', padding: '3px 6px' }}>Lý do</th>
@@ -1134,15 +1103,15 @@ function AddSerialsPanel({ item, onSuccess }) {
             </thead>
             <tbody>
               {importResult.errors.map((err, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #fef9c3' }}>
+                <tr key={idx} className="border-b border-amber-100">
                   <td style={{ padding: '3px 6px', fontFamily: 'monospace' }}>{err.rowIndex + 1}</td>
-                  <td style={{ padding: '3px 6px', color: '#92400e' }}>{err.field}</td>
+                  <td className="text-amber-800" style={{ padding: '3px 6px' }}>{err.field}</td>
                   <td style={{ padding: '3px 6px' }}>{err.message}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button type="button" className="btn btn-secondary" style={{ marginTop: 10, fontSize: '0.8rem' }}
+          <button type="button" className="btn btn-secondary mt-2.5 text-xs"
             onClick={handleRetrySkipped}>
             Tải lại {importResult.skipped} dòng lỗi để sửa
           </button>
@@ -1150,10 +1119,7 @@ function AddSerialsPanel({ item, onSuccess }) {
       )}
 
       {importResult && importResult.skipped === 0 && importResult.inserted > 0 && (
-        <div style={{
-          marginTop: 12, background: '#f0fdf4', border: '1px solid #bbf7d0',
-          borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem', color: '#166534',
-        }}>
+        <div className="mt-3 bg-green-50 border border-green-200 px-3.5 py-2.5 text-sm text-green-700">
           ✓ Đã nhập thành công {importResult.inserted} serial vào kho.
         </div>
       )}
@@ -1258,14 +1224,21 @@ function SerialListPanel({ item, refreshKey }) {
 
   async function handleStatusChange(serialId) {
     if (!statusChangeValue) return
+    if (NOTE_REQUIRED_STATUSES.has(statusChangeValue) && !statusNote.trim()) {
+      toast.error('Lý do bắt buộc khi chuyển sang trạng thái ' + (SERIAL_STATUS_LABELS[statusChangeValue] ?? statusChangeValue) + '.')
+      return
+    }
     setChanging(true)
     try {
-      await updateSerialStatus(serialId, statusChangeValue, statusNote.trim() || undefined)
-      toast.success('Cập nhật trạng thái serial thành công.')
+      const res = await updateSerialStatus(serialId, statusChangeValue, statusNote.trim() || undefined)
+      setState((s) => ({
+        ...s,
+        items: s.items.map((i) => i.id === serialId ? res.item : i),
+      }))
+      toast.success(`Đã chuyển serial sang ${SERIAL_STATUS_LABELS[statusChangeValue] ?? statusChangeValue}.`)
       setStatusChangeId(null)
       setStatusChangeValue('')
       setStatusNote('')
-      setQuery((q) => ({ ...q }))
     } catch (err) {
       toast.error(err.message || 'Lỗi cập nhật trạng thái.')
     } finally {
@@ -1274,7 +1247,7 @@ function SerialListPanel({ item, refreshKey }) {
   }
 
   if (state.status === 'error') {
-    return <p style={{ color: '#dc2626', fontSize: '0.82rem' }}>Lỗi: {state.error}</p>
+    return <p className="text-destructive text-xs">Lỗi: {state.error}</p>
   }
 
   return (
@@ -1284,6 +1257,7 @@ function SerialListPanel({ item, refreshKey }) {
           Lọc trạng thái:
           <Select style={{ marginLeft: 6 }} value={(query.status) || '__all__'}
             onValueChange={(val) => { const v = val === '__all__' ? '' : val; setQuery((q) => ({ ...q, status: v, page: 1 })) }}><SelectTrigger><SelectValue placeholder="Tất cả" /></SelectTrigger><SelectContent>
+            <SelectItem value="__all__">Tất cả trạng thái</SelectItem>
             {Object.keys(SERIAL_STATUS_LABELS).map((s) => (
               <SelectItem key={s} value={s}>{SERIAL_STATUS_LABELS[s]}</SelectItem>
             ))}
@@ -1313,7 +1287,7 @@ function SerialListPanel({ item, refreshKey }) {
           <tbody>
             {state.items.map((s) => {
               const isChanging = statusChangeId === s.id
-              const allowedTo = ALLOWED_TRANSITIONS[s.status] || []
+              const allowedTo = SERIAL_ALLOWED_TRANSITIONS[s.status] || []
               return (
                 <tr key={s.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
                   <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.serialNumber || '—'}</td>
@@ -1347,9 +1321,14 @@ function SerialListPanel({ item, refreshKey }) {
                               <SelectItem key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</SelectItem>
                             ))}
                           </SelectContent></Select>
-                          <Input placeholder="Ghi chú (tuỳ chọn)"
+                          {statusChangeValue === 'SCRAPPED' && (
+                            <p className="text-destructive text-xs">Cảnh báo: trạng thái Đã hủy không thể hoàn tác.</p>
+                          )}
+                          <Input
+                            placeholder={NOTE_REQUIRED_STATUSES.has(statusChangeValue) ? 'Lý do (bắt buộc)' : 'Ghi chú (tuỳ chọn)'}
                             value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
-                            disabled={changing} style={{ fontSize: '0.78rem' }}  />
+                            disabled={changing}
+                            required={NOTE_REQUIRED_STATUSES.has(statusChangeValue)} />
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button type="button" className="btn btn-primary"
                               style={{ fontSize: '0.75rem', padding: '2px 8px' }}
@@ -1426,7 +1405,7 @@ function SerialManageModal({ item, onClose }) {
               <strong>{title}</strong> hiện dùng quản lý tồn kho thủ công (số lượng).
             </p>
             <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: 16 }}>
-              Bật quản lý serial sẽ chuyển sang theo dõi từng chiếc xe theo số khung / số máy.
+              Bật quản lý serial sẽ chuyển sang theo dõi từng sản phẩm theo mã serial.
               Tồn kho sẽ tự động tính từ số serial đang trạng thái "Có sẵn".
             </p>
             <button type="button" className="btn btn-primary"

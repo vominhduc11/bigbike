@@ -45,6 +45,8 @@ public class AdminCatalogController {
             "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
     private static final String STOCK_STATE_REGEX = "^(IN_STOCK|LOW_STOCK|OUT_OF_STOCK)$";
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
+    private static final String HOMEPAGE_BLOCK_REGEX =
+            "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
     private final AdminCatalogMutationService adminCatalogMutationService;
@@ -75,8 +77,7 @@ public class AdminCatalogController {
             @RequestParam(required = false) @Pattern(regexp = STOCK_STATE_REGEX, message = "Invalid stockState.") String stockState,
             @RequestParam(required = false) @Size(max = 100) String brandId,
             @RequestParam(required = false) @Size(max = 100) String categoryId,
-            @RequestParam(required = false) Boolean featured,
-            @RequestParam(required = false) Boolean showOnHomepage,
+            @RequestParam(required = false) @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepageBlock.") String homepageBlock,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.read");
@@ -92,8 +93,7 @@ public class AdminCatalogController {
                         stockState,
                         brandId,
                         categoryId,
-                        featured,
-                        showOnHomepage
+                        homepageBlock
                 ),
                 request
         );
@@ -237,8 +237,7 @@ public class AdminCatalogController {
     /**
      * Hard-delete: physically removes the category from the database.
      * Rejected if the category has any children or if any product uses it
-     * as its primary category. Secondary product_category_map links are
-     * removed automatically by JPA cascade.
+     * as its primary category.
      */
     @DeleteMapping("/categories/{id}")
     public org.springframework.http.ResponseEntity<Void> hardDeleteCategory(

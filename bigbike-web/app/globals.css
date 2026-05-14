@@ -4034,18 +4034,19 @@ select.bb-input { cursor: pointer; }
 /* -- Search overlay ---------------------------------------- */
 .bb-search-overlay { position: fixed; left: 0; right: 0; top: var(--bb-header-stack); bottom: 0; background: rgba(0,0,0,0.82); z-index: 98; animation: bb-fade-in 200ms ease; }
 @keyframes bb-fade-in { from { opacity: 0; } to { opacity: 1; } }
-.bb-search-shell { position: fixed; left: 0; right: 0; top: var(--bb-header-stack); z-index: 99; background: var(--bb-bg-surface); border-bottom: 1px solid rgba(255,255,255,0.07); box-shadow: 0 32px 80px rgba(0,0,0,0.72), 0 2px 0 rgba(255, 12, 9,0.5); display: flex; flex-direction: column; max-height: calc(100dvh - var(--bb-header-stack)); animation: bb-slide-down 0.3s ease; }
+.bb-search-shell { position: fixed; left: 0; right: 0; top: var(--bb-header-stack); z-index: 99; background: var(--bb-bg-surface-dark); border-bottom: 1px solid rgba(255,255,255,0.07); box-shadow: 0 32px 80px rgba(0,0,0,0.72), 0 2px 0 rgba(255, 12, 9,0.5); display: flex; flex-direction: column; max-height: calc(100dvh - var(--bb-header-stack)); animation: bb-slide-down 0.3s ease; color: var(--bb-text-inverse); }
 @keyframes bb-slide-down { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.bb-search-bar { display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 4vw, 40px); border-bottom: 1px solid rgba(255,255,255,0.07); background: var(--bb-bg-surface); max-width: 1440px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.bb-search-bar { display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 4vw, 40px); border-bottom: 1px solid rgba(255,255,255,0.07); background: var(--bb-bg-surface-dark); max-width: 1440px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 .bb-search-bar > svg { color: var(--bb-brand-primary); width: 20px; height: 20px; flex-shrink: 0; }
-.bb-search-bar input { flex: 1; background: transparent; border: none; color: #fff; font-size: 17px; outline: none; letter-spacing: 0.01em; font-family: inherit; font-weight: 500; }
-.bb-search-bar input::placeholder { color: rgba(255,255,255,0.32); font-weight: 400; }
+.bb-search-bar input { flex: 1; background: transparent !important; border: none !important; color: #fff !important; font-size: 17px; outline: none; letter-spacing: 0.01em; font-family: inherit; font-weight: 500; box-shadow: none !important; }
+.bb-search-bar input:focus { box-shadow: none !important; }
+.bb-search-bar input::placeholder { color: rgba(255,255,255,0.45) !important; font-weight: 400; }
 .bb-search-clear { background: rgba(255,255,255,0.06); border: none; color: var(--bb-text-muted); width: 24px; height: 24px; border-radius: 999px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 140ms; }
 .bb-search-clear:hover { background: var(--bb-brand-primary); color: #fff; }
 .bb-search-close { position: absolute; top: 14px; right: 24px; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: var(--bb-text-muted); padding: 5px 10px 5px 8px; border-radius: var(--bb-radius-none); cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: all 160ms; z-index: 1; }
 .bb-search-close:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); color: #fff; }
-.bb-search-body { display: grid; grid-template-columns: 280px 1fr; width: 100%; min-height: 380px; max-height: calc(100dvh - var(--bb-header-stack) - 70px); overflow: hidden; }
-.bb-search-main { padding: 20px 28px; overflow-y: auto; background: var(--bb-bg-surface); }
+.bb-search-body { display: block; width: 100%; max-width: 1440px; margin: 0 auto; min-height: 0; max-height: calc(100dvh - var(--bb-header-stack) - 110px); overflow-y: auto; }
+.bb-search-main { padding: 16px clamp(16px, 4vw, 40px); background: var(--bb-bg-surface-dark); }
 .bb-search-block { margin-bottom: 22px; }
 .bb-search-block:last-child { margin-bottom: 0; }
 .bb-search-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px; }

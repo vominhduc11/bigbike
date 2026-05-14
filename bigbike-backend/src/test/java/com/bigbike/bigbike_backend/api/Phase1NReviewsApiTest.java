@@ -941,8 +941,8 @@ class Phase1NReviewsApiTest {
         entity.setStockQuantity(source.getStockQuantity());
         entity.setForceOutOfStock(source.getForceOutOfStock());
         entity.setPublishStatus(source.getPublishStatus());
-        entity.setFeatured(source.getFeatured());
-        entity.setShowOnHomepage(source.getShowOnHomepage());
+        entity.setHomepageBlock(source.getHomepageBlock());
+        entity.setHomepageOrder(source.getHomepageOrder());
         entity.setCreatedAt(Instant.now());
         entity.setUpdatedAt(Instant.now());
         entity.setRating(null);

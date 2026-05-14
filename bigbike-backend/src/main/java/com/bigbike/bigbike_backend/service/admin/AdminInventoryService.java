@@ -282,9 +282,9 @@ public class AdminInventoryService {
             }
         }
 
-        // No duplicates in DB (applies to all movement types when serials present).
+        // No duplicates in DB — check product_serials (the authoritative serial table).
         if (!serials.isEmpty()) {
-            List<String> existing = serialRepo.findExistingSerialNumbers(serials);
+            List<String> existing = productSerialRepo.findExistingSerialNumbers(serials);
             if (!existing.isEmpty()) {
                 throw ValidationException.fromField("serialNumbers", "ALREADY_EXISTS",
                         "Serial numbers already registered: " + existing);
@@ -382,7 +382,7 @@ public class AdminInventoryService {
                 throw ValidationException.fromField("serialNumbers", "COUNT_EXCEEDS_QUANTITY",
                         "Serial count (" + serials.size() + ") exceeds quantity (" + qty + ").");
             }
-            List<String> existing = serialRepo.findExistingSerialNumbers(serials);
+            List<String> existing = productSerialRepo.findExistingSerialNumbers(serials);
             if (!existing.isEmpty()) {
                 throw ValidationException.fromField("serialNumbers", "ALREADY_EXISTS",
                         "Serial numbers already registered: " + existing);

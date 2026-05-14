@@ -684,6 +684,158 @@ class Phase1MPosApiTest {
         assertThat(logs.get(0).getAfterData()).contains("CREDIT");
     }
 
+    // ── POS Refund flow ──────────────────────────────────────────────────────
+
+    @Test
+    void posRefund_cashFullRefund_setsRefundedAndRestoresStock() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 200000);
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 2,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+        int qtyAfterSale = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfterSale).isEqualTo(8);
+
+        // Full refund: 200000 × 2 = 400000
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":400000,\"reason\":\"Khách yêu cầu huỷ\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUND_APPLIED"));
+
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getStatus()).isEqualTo("REFUNDED");
+        assertThat(order.getPaymentStatus()).isEqualTo("REFUNDED");
+        assertThat(order.getRefundAmount()).isEqualByComparingTo(new BigDecimal("400000"));
+        assertThat(order.getRefundedAt()).isNotNull();
+
+        // Stock restored for non-serial variant (8 + 2 = 10)
+        int qtyAfterRefund = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfterRefund).isEqualTo(10);
+        assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("ORDER_REFUND",
+                UUID.fromString(orderId))).isTrue();
+
+        // Audit log written
+        var refundLogs = auditLogRepo.findByResourceTypeAndResourceId("ORDER", UUID.fromString(orderId))
+                .stream().filter(l -> "ORDER_REFUND_CREATED".equals(l.getAction())).toList();
+        assertThat(refundLogs).isNotEmpty();
+    }
+
+    @Test
+    void posRefund_cashPartialRefund_setsPartiallyRefundedAndDoesNotRestoreStock() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 200000);
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 2,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        // Partial refund: 150000 of 400000
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":150000,\"reason\":\"Lập sai giá\"}"))
+                .andExpect(status().isOk());
+
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getStatus()).isEqualTo("COMPLETED"); // not flipped on partial
+        assertThat(order.getPaymentStatus()).isEqualTo("PARTIALLY_REFUNDED");
+        assertThat(order.getRefundAmount()).isEqualByComparingTo(new BigDecimal("150000"));
+
+        // Stock NOT restored on partial refund
+        int qtyAfterPartial = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfterPartial).isEqualTo(8);
+        assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("ORDER_REFUND",
+                UUID.fromString(orderId))).isFalse();
+
+        // Second refund completes the remaining 250000 → flips to REFUNDED + restores stock
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":250000,\"reason\":\"Khách yêu cầu huỷ\"}"))
+                .andExpect(status().isOk());
+
+        var orderAfter = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(orderAfter.getPaymentStatus()).isEqualTo("REFUNDED");
+        assertThat(orderAfter.getStatus()).isEqualTo("REFUNDED");
+        int qtyAfterFull = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfterFull).isEqualTo(10);
+    }
+
+    @Test
+    void posRefund_creditUnpaidOrder_returns409() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 300000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"))
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        // Refunding an UNPAID credit order must be rejected
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":300000,\"reason\":\"Khách yêu cầu huỷ\"}"))
+                .andExpect(status().isConflict());
+
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getRefundAmount()).isNull();
+    }
+
+    @Test
+    void posRefund_exceedsPaidAmount_returns400() throws Exception {
+        TestVariant tv = createProductWithVariant(10, 100000);
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBody("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        // Try to refund 200000 when only 100000 was paid
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":200000,\"reason\":\"Lập sai giá\"}"))
+                .andExpect(status().isBadRequest());
+
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getRefundAmount()).isNull();
+    }
+
+    @Test
+    void posRefund_noAuth_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + UUID.randomUUID() + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":1000,\"reason\":\"x\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private record TestVariant(String productId, String variantId) {}

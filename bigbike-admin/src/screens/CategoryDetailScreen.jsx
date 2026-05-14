@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertTriangle, Check, ChevronDown, Copy, ExternalLink, FolderOpen, Hash, Package, Search, X as XIcon } from 'lucide-react'
+import { AlertTriangle, Check, Copy, ExternalLink, FolderOpen, Hash, Package, X as XIcon } from 'lucide-react'
 import {
   createCategory,
   fetchCategoryDetail,
@@ -37,11 +37,6 @@ function countDescendants(rootId, allCategories) {
   }
   return count
 }
-
-// Google search result truncation limits — used by SEO char counters and
-// the Google preview snippet so editors see exactly what the public will see.
-const SEO_TITLE_RECOMMENDED = 60
-const SEO_DESCRIPTION_RECOMMENDED = 155
 
 function toSlug(text) {
   return text
@@ -136,16 +131,6 @@ function toPayload(form) {
   return payload
 }
 
-function CharCounter({ value, max }) {
-  const len = (value || '').trim().length
-  const tone = len === 0 ? 'empty' : len > max ? 'over' : len > max * 0.9 ? 'near' : 'ok'
-  return (
-    <span className={`char-counter is-${tone}`} aria-live="polite">
-      {len}/{max}
-    </span>
-  )
-}
-
 export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -154,10 +139,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
-  // SEO is collapsed by default to keep the basic-info above the fold.
-  // Auto-expand once we detect existing SEO data so editors of legacy
-  // entries don't miss filled fields hidden under the toggle.
-  const [seoExpanded, setSeoExpanded] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
   const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
     try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
@@ -247,15 +228,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
       setSlugManuallyEdited(true)
-      // Auto-open the SEO panel only when there is something to see;
-      // an editor opening a legacy entry shouldn't have to discover that
-      // hidden fields contain data.
-      const hasSeo = Boolean(
-        nextForm.seoTitle || nextForm.seoDescription || nextForm.seoCanonicalUrl
-        || nextForm.seoNoIndex
-      )
-      if (hasSeo) setSeoExpanded(true)
-      if (nextForm.slug) setSeoExpanded(true)
     })
     return () => { cancelled = true }
   }, [fetchResult])
@@ -294,7 +266,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     onError: (error) => {
       const errs = mapValidationErrors(error)
       setValidationErrors(errs)
-      if (errs.slug) setSeoExpanded(true)
       toast.error(error.message || t('common.error'))
       setIsSubmitting(false)
     },
@@ -358,7 +329,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
-      if (clientErrors.slug) setSeoExpanded(true)
       // Scroll the first error into view + focus its control. Without this,
       // submitting from the bottom of a long form leaves the user staring at
       // a frozen Save button while the actual error is offscreen above.
@@ -697,130 +667,25 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           </div>
         </section>
 
-        <section className={`detail-section${seoExpanded ? '' : ' is-collapsed'}`}>
-          <header
-            className="detail-section-header detail-section-header--toggle"
-            role="button"
-            tabIndex={0}
-            aria-expanded={seoExpanded}
-            aria-controls="category-seo-section"
-            onClick={() => setSeoExpanded((v) => !v)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                setSeoExpanded((v) => !v)
-              }
-            }}
-          >
-            <div>
-              <h2>
-                <Search size={16} aria-hidden="true" className="detail-section-icon" />
-                {t('categories.sectionSeo')}
-              </h2>
-              <p className="detail-section-desc">{t('categories.sectionSeoDesc')}</p>
-            </div>
-            <span className="section-collapse-icon" aria-hidden="true">
-              <ChevronDown size={16} className="detail-section-chevron" />
-            </span>
+        <section className="detail-section">
+          <header className="detail-section-header">
+            <h2>{t('categories.detail.slug')}</h2>
           </header>
-          <div className="detail-section-collapse-wrap" id="category-seo-section">
-            <div className="detail-section-collapse-inner">
-              <div className="detail-section-content">
-
-            <div className="form-grid" style={{ marginBottom: 'var(--admin-space-4)' }}>
-              <label className="form-field" data-field="slug">
-                <span>{t('categories.detail.slug')}</span>
-                <Input
-                  name="slug"
-                  value={form.slug}
-                  onChange={(event) => handleSlugChange(event.target.value)}
-                  disabled={isReadOnly}
-                  placeholder={t('categories.slugPlaceholder')}
-                 />
-                <small className="field-hint">{t('categories.detail.slugHint')}</small>
-                {validationErrors.slug ? (
-                  <small className="field-error">{validationErrors.slug}</small>
-                ) : null}
-              </label>
-            </div>
-
-            {/* Google search preview — what will actually show up on the SERP.
-                Updates live so editors see exactly what they're shipping. */}
-            <div className="seo-preview" aria-label={t('categories.detail.seoPreviewLabel')}>
-              <div className="seo-preview-label">{t('categories.detail.seoPreviewLabel')}</div>
-              <div className="seo-preview-snippet">
-                <div className="seo-preview-url">
-                  {form.seoCanonicalUrl?.trim()
-                    || `${STOREFRONT_BASE}/${form.slug || form.name?.toLowerCase().replace(/\s+/g, '-') || 'slug'}`}
-                </div>
-                <div className="seo-preview-title">
-                  {form.seoTitle?.trim() || form.name?.trim() || t('categories.detail.seoPreviewFallbackTitle')}
-                </div>
-                <div className="seo-preview-desc">
-                  {form.seoDescription?.trim() || t('categories.detail.seoPreviewFallbackDesc')}
-                </div>
-              </div>
-            </div>
-
-            <div className="form-grid" style={{ marginTop: 'var(--admin-space-4)' }}>
-              <label className="form-field" data-field="seoTitle">
-                <span className="form-field-label-row">
-                  {t('categories.detail.seoTitle')}
-                  <CharCounter value={form.seoTitle} max={SEO_TITLE_RECOMMENDED} />
-                </span>
-                <Input
-                  name="seoTitle"
-                  value={form.seoTitle}
-                  onChange={(event) => updateField('seoTitle', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-                {validationErrors.seoTitle ? (
-                  <small className="field-error">{validationErrors.seoTitle}</small>
-                ) : null}
-              </label>
-
-              <label className="form-field" data-field="seoCanonicalUrl">
-                <span>{t('categories.detail.seoCanonicalUrl')}</span>
-                <Input
-                  name="seoCanonicalUrl"
-                  value={form.seoCanonicalUrl}
-                  onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-                {validationErrors.seoCanonicalUrl ? (
-                  <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
-                ) : null}
-              </label>
-
-              <label className="form-field form-field-wide" data-field="seoDescription">
-                <span className="form-field-label-row">
-                  {t('categories.detail.seoDescription')}
-                  <CharCounter value={form.seoDescription} max={SEO_DESCRIPTION_RECOMMENDED} />
-                </span>
-                <Textarea
-                  name="seoDescription"
-                  rows={3}
-                  value={form.seoDescription}
-                  onChange={(event) => updateField('seoDescription', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-                {validationErrors.seoDescription ? (
-                  <small className="field-error">{validationErrors.seoDescription}</small>
-                ) : null}
-              </label>
-
-
-              <label className="form-checkbox">
-                <Checkbox
-                  checked={form.seoNoIndex}
-                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                  disabled={isReadOnly}
-                 />
-                <span>{t('categories.detail.seoNoIndex')}</span>
-              </label>
-            </div>
-              </div>
-            </div>
+          <div className="detail-section-content form-grid">
+            <label className="form-field" data-field="slug">
+              <span>{t('categories.detail.slug')}</span>
+              <Input
+                name="slug"
+                value={form.slug}
+                onChange={(event) => handleSlugChange(event.target.value)}
+                disabled={isReadOnly}
+                placeholder={t('categories.slugPlaceholder')}
+               />
+              <small className="field-hint">{t('categories.detail.slugHint')}</small>
+              {validationErrors.slug ? (
+                <small className="field-error">{validationErrors.slug}</small>
+              ) : null}
+            </label>
           </div>
         </section>
 

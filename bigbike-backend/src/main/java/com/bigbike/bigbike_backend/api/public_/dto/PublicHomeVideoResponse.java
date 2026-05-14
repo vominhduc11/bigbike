@@ -19,7 +19,7 @@ public record PublicHomeVideoResponse(
                 ? "https://www.youtube-nocookie.com/embed/" + ytId + "?autoplay=1&rel=0"
                 : null;
         String autoThumb = ytId != null
-                ? "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg"
+                ? "https://img.youtube.com/vi/" + ytId + "/maxresdefault.jpg"
                 : null;
         return new PublicHomeVideoResponse(
                 video.id(),

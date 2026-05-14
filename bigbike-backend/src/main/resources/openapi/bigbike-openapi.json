@@ -244,19 +244,13 @@
             }
           },
           {
-            "name": "featured",
+            "name": "homepage_block",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"]
             },
-            "description": "When true, returns products tagged product_visibility=featured in WordPress."
-          },
-          {
-            "name": "showOnHomepage",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
+            "description": "Filter to a single homepage placement slot."
           }
         ],
         "responses": {
@@ -2906,20 +2900,13 @@
             }
           },
           {
-            "name": "featured",
+            "name": "homepageBlock",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"]
             },
-            "description": "Filter by isFeatured flag (true = on homepage 'Sản phẩm nổi bật' grid)."
-          },
-          {
-            "name": "showOnHomepage",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            },
-            "description": "Filter by showOnHomepage flag (true = on homepage 'Sản phẩm BigBike' carousel)."
+            "description": "Filter to a single homepage placement slot."
           }
         ],
         "responses": {
@@ -7782,19 +7769,16 @@
           "image": {
             "$ref": "#/components/schemas/ImageAsset"
           },
-          "isFeatured": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "showOnHomepage": {
-            "type": "boolean",
-            "nullable": true
+          "homepageBlock": {
+            "type": "string",
+            "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"],
+            "description": "Homepage placement slot. NONE = not pinned."
           },
           "homepageOrder": {
             "type": "integer",
             "format": "int32",
             "nullable": true,
-            "description": "Manual pin priority inside homepage featured/showOnHomepage blocks. Lower = appears earlier; null = unpinned (sorted to the end by createdAt DESC)."
+            "description": "Manual pin priority inside the homepageBlock. Lower = appears earlier; null = unpinned."
           },
           "rating": {
             "type": "number",

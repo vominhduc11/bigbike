@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Minus, Pencil, Plus, Printer, Search, ShoppingCart, Trash2, X } from 'lucide-react'
+import { Minus, Pencil, Plus, Printer, RotateCcw, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
-import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posSearchProducts } from '../lib/adminApi'
+import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posCreateRefund, posSearchProducts } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']
 
@@ -429,11 +432,145 @@ function printReceipt(order, cart) {
   setTimeout(() => { w.print(); w.close() }, 300)
 }
 
+function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess }) {
+  const { t } = useTranslation()
+  const REASONS = [
+    { value: 'CUSTOMER_REQUEST', label: t('pos.refundReasonCustomerRequest') },
+    { value: 'WRONG_PRICE', label: t('pos.refundReasonWrongPrice') },
+    { value: 'DEFECTIVE', label: t('pos.refundReasonDefective') },
+    { value: 'WRONG_ITEM', label: t('pos.refundReasonWrongItem') },
+    { value: 'OTHER', label: t('pos.refundReasonOther') },
+  ]
+  const [amount, setAmount] = useState(String(maxRefundable))
+  const [reasonValue, setReasonValue] = useState(REASONS[0].value)
+  const [note, setNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const amountNum = Number(amount)
+  const amountInvalid = !amount || isNaN(amountNum) || amountNum <= 0
+  const amountExceeds = amountNum > maxRefundable
+  const submitDisabled = submitting || amountInvalid || amountExceeds
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (submitDisabled) return
+    setError('')
+    if (amountInvalid) { setError(t('pos.refundErrorAmountRequired')); return }
+    if (amountExceeds) {
+      setError(t('pos.refundErrorAmountExceeds', { max: formatCurrencyVnd(maxRefundable) }))
+      return
+    }
+    setSubmitting(true)
+    try {
+      const selectedReason = REASONS.find((r) => r.value === reasonValue)?.label || ''
+      await posCreateRefund(order.orderId, {
+        refundAmount: amountNum,
+        reason: selectedReason,
+        note: note.trim() || undefined,
+      })
+      toast.success(`${t('pos.refundSuccess')} ${order.orderNumber || ''}`.trim())
+      onSuccess(amountNum)
+    } catch (err) {
+      const msg = err?.message || t('pos.refundError')
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="pos-modal-overlay" onClick={onClose}>
+      <div className="pos-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose} aria-label={t('common.close')}>
+          <X size={16} />
+        </Button>
+        <h3 style={{ marginTop: 0, marginBottom: 4 }}>{t('pos.refundTitle')}</h3>
+        <p style={{ marginTop: 0, marginBottom: 12, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
+          {t('pos.orderNumber')}: <strong>{order?.orderNumber || '—'}</strong>
+          {' · '}{t('pos.refundMax')}: <strong>{formatCurrencyVnd(maxRefundable)}</strong>
+        </p>
+
+        {hasSerialItems && (
+          <div role="note" className="bg-warning-bg text-warning border border-warning" style={{
+            padding: '8px 10px', marginBottom: 12, fontSize: '0.8rem',
+            background: 'var(--admin-color-warning-bg, #fef3c7)',
+            color: 'var(--admin-color-warning, #b45309)',
+            borderLeft: '3px solid var(--admin-color-warning, #f59e0b)',
+          }}>
+            {t('pos.refundSerialWarning')}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 12 }}>
+            <label className="field-label" htmlFor="pos-refund-amount">{t('pos.refundLabelAmount')} *</label>
+            <Input
+              id="pos-refund-amount"
+              type="number"
+              min={1}
+              max={maxRefundable}
+              step={1}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label className="field-label" htmlFor="pos-refund-reason">{t('pos.refundLabelReason')}</label>
+            <Select value={reasonValue} onValueChange={setReasonValue}>
+              <SelectTrigger id="pos-refund-reason"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label className="field-label" htmlFor="pos-refund-note">{t('pos.refundLabelNote')}</label>
+            <Textarea
+              id="pos-refund-note"
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t('pos.refundNotePlaceholder')}
+              style={{ width: '100%', resize: 'vertical', minHeight: 56 }}
+            />
+          </div>
+
+          {error && (
+            <p style={{ marginTop: 0, marginBottom: 12, fontSize: '0.82rem', color: 'var(--admin-color-danger, #dc2626)' }}>
+              {error}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button variant="secondary" type="button" onClick={onClose} disabled={submitting}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" type="submit" disabled={submitDisabled}>
+              {submitting ? t('pos.refundProcessing') : t('pos.refundConfirm')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function ReceiptModal({ order, paymentMethod, cart, onClose }) {
   const { t } = useTranslation()
   const isCreditOrder = paymentMethod === 'CREDIT' || order?.paymentMethod === 'CREDIT'
   const items = cart || []
   const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
+  const hasSerialItems = items.some((it) => it.hasSerial === true)
+  const isPaid = order?.paymentStatus === 'PAID'
+  const [refundedAmount, setRefundedAmount] = useState(0)
+  const [showRefund, setShowRefund] = useState(false)
+  const refundableRemaining = isPaid ? Math.max(0, total - refundedAmount) : 0
+  const canRefund = isPaid && refundableRemaining > 0
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
       <div className="pos-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
@@ -499,19 +636,60 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
             Tiền thừa: <strong style={{ color: 'var(--admin-color-success, #22c55e)' }}>{formatCurrencyVnd(order.changeAmount)}</strong>
           </p>
         )}
+        {refundedAmount > 0 && (
+          <p style={{ fontSize: '0.85rem', marginBottom: 8, textAlign: 'center', color: 'var(--admin-color-danger, #dc2626)' }}>
+            {t('pos.refundedBadge')}: <strong>{formatCurrencyVnd(refundedAmount)}</strong>
+          </p>
+        )}
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Button variant="secondary"
             type="button"
-            style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={() => printReceipt(order, cart)}
           >
             <Printer size={14} /> In hóa đơn
           </Button>
-          <Button type="button" style={{ flex: 1 }} onClick={onClose}>
+          {isPaid && (
+            <Button
+              variant="destructive"
+              type="button"
+              disabled={!canRefund}
+              title={!canRefund ? t('pos.refundedBadge') : undefined}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setShowRefund(true)}
+            >
+              <RotateCcw size={14} /> {t('pos.refundButton')}
+            </Button>
+          )}
+          {!isPaid && isCreditOrder && (
+            <span style={{
+              flex: '0 0 auto',
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.78rem',
+              color: 'var(--admin-color-text-muted)',
+              alignSelf: 'center',
+            }}>
+              {t('pos.refundUnavailableCredit')}
+            </span>
+          )}
+          <Button type="button" style={{ flex: 1, minWidth: 120 }} onClick={onClose}>
             {t('pos.newSale')}
           </Button>
         </div>
+
+        {showRefund && (
+          <RefundDialog
+            order={order}
+            maxRefundable={refundableRemaining}
+            hasSerialItems={hasSerialItems}
+            onClose={() => setShowRefund(false)}
+            onSuccess={(amount) => {
+              setRefundedAmount((prev) => prev + amount)
+              setShowRefund(false)
+            }}
+          />
+        )}
       </div>
     </div>
   )

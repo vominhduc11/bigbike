@@ -67,29 +67,50 @@ Status: `CONFIRMED_FROM_CODE`
 
 ## Admin Catalog Contract
 
-### Product list — filter and sort params (V95+)
+### Product list — filter and sort params (V111+)
 
-`GET /api/v1/admin/products` accepts additional query parameters added alongside the `homepageOrder` feature:
+`GET /api/v1/admin/products` and `GET /api/v1/products` accept the homepage placement filter:
 
 | Param | Type | Purpose |
 |---|---|---|
-| `featured` | `boolean` (optional) | Filter by `isFeatured` flag. `true` → only featured; `false` → only non-featured; omit → all. |
-| `showOnHomepage` | `boolean` (optional) | Filter by `showOnHomepage` flag. Same tri-state semantics as `featured`. |
-| `sort` | `string` (optional) | Accepts `homepageOrder:asc` and `homepageOrder:desc` in addition to the existing `name`, `price`, `createdAt`, `updatedAt` options. Null-last behaviour: unpinned products always appear after pinned ones regardless of direction. |
+| `homepageBlock` (admin) / `homepage_block` (public) | enum `NONE \| FEATURED_GRID \| RECOMMENDED_CAROUSEL` (optional) | Filter to a single homepage slot. Omit for all. |
+| `sort` | `string` (optional) | Accepts `homepageOrder:asc` and `homepageOrder:desc` in addition to `name`, `price`, `createdAt`, `updatedAt`. Null-last: unpinned products always appear after pinned ones. |
+
+**Schema:** Each product carries exactly one `homepageBlock` enum. Migration `V111__refactor_product_homepage_block.sql` (2026-05-14) backfilled from the legacy boolean pair (`is_featured`, `show_on_homepage`) with the rule: `is_featured=true` → `FEATURED_GRID`, else `show_on_homepage=true` → `RECOMMENDED_CAROUSEL`, else `NONE`. The legacy columns are dropped.
 
 **Homepage placement limits** (enforced on the web frontend, not the backend API):
-- Block 1 ("Sản phẩm nổi bật") — max 12 `isFeatured` products shown
-- Block 2 ("Gợi ý dành cho bạn") — max 5 `showOnHomepage` products shown; products already in Block 1 are excluded
+- `FEATURED_GRID` — max 12 products shown in the "Sản phẩm nổi bật" grid
+- `RECOMMENDED_CAROUSEL` — max 10 products shown in the "Gợi ý dành cho bạn" carousel
 
-The admin UI shows a warning banner when the filtered count exceeds the applicable limit.
+A product is in exactly one slot, so the prior web dedupe pass is no longer needed. Admin UI shows a warning banner when the filtered count of a slot exceeds its limit.
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `AdminCatalogController.java` — `@RequestParam(required = false) Boolean featured`, `@RequestParam(required = false) Boolean showOnHomepage`
-- `AdminCatalogReadService.listProducts()` — in-memory flag filter via `matchesFlag()` helper
-- `AdminCatalogReadService.productComparator()` — `homepageOrder` compound sort
-- `bigbike-openapi.json` — `featured` and `showOnHomepage` filter params on admin product list endpoint
+- `HomepageBlock.java` — enum definition
+- `AdminCatalogController.java` — `@RequestParam(...) String homepageBlock` with `@Pattern` validation
+- `CatalogController.java` — `@RequestParam(name = "homepage_block", ...) String homepageBlock`
+- `AdminCatalogReadService.listProducts()` / `CatalogReadService.listProducts()` — single-slot filter
+- `bigbike-openapi.json` — `homepage_block` param + `homepageBlock` enum field on Product schema
+- `V111__refactor_product_homepage_block.sql` — schema change + backfill
+
+### Product upsert — `stockState` is read-only
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field is derived from `quantityOnHand` via `InventoryPolicyService` and can only be mutated through the Inventory module endpoints (`/api/v1/admin/inventory/...`).
+
+- On create: backend forces `stockState = OUT_OF_STOCK` regardless of payload.
+- On update: backend never reads `stockState` from the request.
+- DTO `UpsertProductRequest` has no setter for the field; admin form does not render a picker.
+
+Status: `CONFIRMED_BACKEND_ENFORCED`
+
+Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMutationService.applyProductPatch` (`if (create) entity.setStockState(OUT_OF_STOCK)`), `InventoryPolicyService.java` (sole writer post-create).
+
+### Product upsert — single category only
+
+A product belongs to exactly one category, written via `categoryId`. The legacy `product_category_map` M:N side table was dropped in migration `V110__drop_product_category_map.sql` (2026-05-14). The `categories[]` array in product responses now always contains exactly the primary category, preserved for API compatibility.
+
+Status: `CONFIRMED_BACKEND_ENFORCED`
 
 ## POS Contract
 

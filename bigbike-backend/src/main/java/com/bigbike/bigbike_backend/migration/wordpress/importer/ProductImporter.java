@@ -15,7 +15,6 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,8 +96,16 @@ public class ProductImporter implements DomainImporter {
                 entity.setStockQuantity(mp.stockQuantity());
                 entity.setManageStock(mp.manageStock());
                 entity.setBackorders(mp.backorders());
-                entity.setFeatured(Boolean.TRUE.equals(mp.isFeatured()));
-                entity.setShowOnHomepage(mp.showOnHomepage());
+                // Mirror the prior web dedupe: isFeatured wins over showOnHomepage.
+                com.bigbike.bigbike_backend.domain.catalog.HomepageBlock block;
+                if (Boolean.TRUE.equals(mp.isFeatured())) {
+                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID;
+                } else if (Boolean.TRUE.equals(mp.showOnHomepage())) {
+                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.RECOMMENDED_CAROUSEL;
+                } else {
+                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
+                }
+                entity.setHomepageBlock(block);
                 entity.setRating(mp.rating());
 
                 // Duplicate SKU handling: append suffix to avoid constraint violation
@@ -143,7 +150,6 @@ public class ProductImporter implements DomainImporter {
                     continue;
                 }
                 if (category != null) entity.setCategory(category);
-                entity.setCategories(resolveCategories(category, rp.categorySlugs()));
 
                 // Brand link (optional)
                 if (rp.brandSlug() != null) {
@@ -279,20 +285,4 @@ public class ProductImporter implements DomainImporter {
         return base + "/wp-uploads/" + path;
     }
 
-    private Set<CategoryEntity> resolveCategories(CategoryEntity primaryCategory, List<String> categorySlugs) {
-        Set<CategoryEntity> categories = new LinkedHashSet<>();
-        if (primaryCategory != null) {
-            categories.add(primaryCategory);
-        }
-        if (categorySlugs != null) {
-            for (String slug : categorySlugs) {
-                String normalized = slug == null ? null : slug.trim();
-                if (normalized == null || normalized.isBlank()) {
-                    continue;
-                }
-                categoryRepo.findBySlug(normalized).ifPresent(categories::add);
-            }
-        }
-        return categories;
-    }
 }

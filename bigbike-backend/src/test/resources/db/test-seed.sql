@@ -138,12 +138,12 @@ SELECT 'cat_jacket', 'ao-giap-bao-ho', 'Ao giap bao ho', true, true, 1, CURRENT_
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 'cat_jacket');
 
 -- ── Products ──────────────────────────────────────────────────────────────────
-INSERT INTO products (id, slug, name, category_id, brand_id, retail_price, currency, stock_state, publish_status, is_featured, rating, image_url, created_at, updated_at)
-SELECT 'prod_ls2_ff800', 'mu-bao-hiem-ls2-ff800', 'LS2 FF800 Storm', 'cat_helmet', 'brand_ls2', 3290000, 'VND', 'IN_STOCK', 'PUBLISHED', true, 4.5, 'https://cdn.bigbike.local/products/ls2-ff800.jpg', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO products (id, slug, name, category_id, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, image_url, created_at, updated_at)
+SELECT 'prod_ls2_ff800', 'mu-bao-hiem-ls2-ff800', 'LS2 FF800 Storm', 'cat_helmet', 'brand_ls2', 3290000, 'VND', 'IN_STOCK', 'PUBLISHED', 'FEATURED_GRID', 4.5, 'https://cdn.bigbike.local/products/ls2-ff800.jpg', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 'prod_ls2_ff800');
 
-INSERT INTO products (id, slug, name, category_id, brand_id, retail_price, currency, stock_state, publish_status, is_featured, rating, created_at, updated_at)
-SELECT 'prod_ls2_jacket_city', 'ao-giap-ls2-city-rider', 'Ao giap LS2 City Rider', 'cat_jacket', 'brand_ls2', 1890000, 'VND', 'IN_STOCK', 'PUBLISHED', false, 4.8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO products (id, slug, name, category_id, brand_id, retail_price, currency, stock_state, publish_status, homepage_block, rating, created_at, updated_at)
+SELECT 'prod_ls2_jacket_city', 'ao-giap-ls2-city-rider', 'Ao giap LS2 City Rider', 'cat_jacket', 'brand_ls2', 1890000, 'VND', 'IN_STOCK', 'PUBLISHED', 'NONE', 4.8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE id = 'prod_ls2_jacket_city');
 
 -- ── Content categories ────────────────────────────────────────────────────────

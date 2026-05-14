@@ -244,39 +244,6 @@ public class AdminCatalogMutationService {
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
-    /**
-     * Soft-delete a category. Categories have no publishStatus column; the
-     * closest equivalent to TRASH is is_visible=false. Restoration is just a
-     * normal PATCH that flips visible back to true.
-     *
-     * Rejects if the category has visible children — hiding a parent while
-     * children remain visible creates orphaned categories on the storefront.
-     * The caller must hide or re-parent children first.
-     */
-    @Transactional
-    public Category softDeleteCategory(String categoryId, UUID adminId) {
-        requireJpaPersistenceEnabled();
-
-        CategoryEntity entity = categoryJpaRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("Category not found."));
-
-        if (!entity.isVisible()) {
-            return catalogReadRepository.findCategoryById(entity.getId())
-                    .orElseThrow(() -> new NotFoundException("Category not found."));
-        }
-
-        assertNoVisibleChildren(categoryId);
-
-        entity.setVisible(false);
-        entity.setUpdatedAt(Instant.now());
-        categoryJpaRepository.save(entity);
-        auditLog("CATEGORY_SOFT_DELETED", "CATEGORY", adminId, null, categoryJson(entity));
-        revalidateCategory(entity, null);
-
-        return catalogReadRepository.findCategoryById(entity.getId())
-                .orElseThrow(() -> new NotFoundException("Category not found."));
-    }
-
     @Transactional
     public Category createCategory(UpsertCategoryRequest request, UUID adminId) {
         requireJpaPersistenceEnabled();
@@ -542,6 +509,13 @@ public class AdminCatalogMutationService {
                             "Variant gallery is controlled by Color. Add a Color/Mau option or use product gallery."
                     ));
                 }
+                if (AdminMutationValidators.trimToNull(v.getImageUrl()) != null && variantColorKey(v) == null) {
+                    errors.add(new ApiErrorDetail(
+                            "variants[" + i + "].imageUrl",
+                            "COLOR_REQUIRED",
+                            "Variant image is controlled by Color. Add a Color/Mau option or use product image."
+                    ));
+                }
             }
         }
 
@@ -765,9 +739,6 @@ public class AdminCatalogMutationService {
         }
         if (create || request.getCategoryId() != null) {
             entity.setCategory(category);
-            if (category != null) {
-                entity.setCategories(new LinkedHashSet<>(List.of(category)));
-            }
         }
         if (create || request.isRetailPricePresent()) {
             entity.setRetailPrice(request.getRetailPrice() == null ? BigDecimal.ZERO : request.getRetailPrice());
@@ -778,11 +749,8 @@ public class AdminCatalogMutationService {
         if (create || request.isSalePricePresent()) {
             entity.setSalePrice(request.getSalePrice());
         }
-        if (create || request.getCurrency() != null) {
-            entity.setCurrency(AdminMutationValidators.trimToNull(request.getCurrency()) == null ? "VND" : "VND");
-        } else if (entity.getCurrency() == null) {
-            entity.setCurrency("VND");
-        }
+        // BigBike is VND-only. DTO validator rejects anything else; persistence is hardcoded.
+        entity.setCurrency("VND");
         if (create) {
             entity.setStockState(ProductStockState.OUT_OF_STOCK);
         }
@@ -792,11 +760,10 @@ public class AdminCatalogMutationService {
         if (create || request.getPublishStatus() != null) {
             entity.setPublishStatus(request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus());
         }
-        if (create || request.getFeatured() != null) {
-            entity.setFeatured(Boolean.TRUE.equals(request.getFeatured()));
-        }
-        if (create || request.getShowOnHomepage() != null) {
-            entity.setShowOnHomepage(Boolean.TRUE.equals(request.getShowOnHomepage()));
+        if (create || request.getHomepageBlock() != null) {
+            entity.setHomepageBlock(request.getHomepageBlock() == null
+                    ? com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE
+                    : request.getHomepageBlock());
         }
         if (create || request.isHomepageOrderPresent()) {
             entity.setHomepageOrder(request.getHomepageOrder());
@@ -1461,7 +1428,6 @@ public class AdminCatalogMutationService {
      * (any depth, any visibility) from the database in leaf-first order.
      * Rejects with 409 if any category in the subtree has products assigned
      * to it as their primary category — those products must be reassigned first.
-     * Secondary category links (product_category_map) are removed by JPA cascade.
      */
     @Transactional
     public void hardDeleteCategory(String categoryId, UUID adminId) {

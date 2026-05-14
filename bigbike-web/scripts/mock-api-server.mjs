@@ -96,8 +96,7 @@ const PRODUCTS = [
     shortDescription: "Đai lưng bảo vệ thận LS2 cho rider.",
     stockState: "IN_STOCK",
     publishStatus: "PUBLISHED",
-    isFeatured: true,
-    showOnHomepage: true,
+    homepageBlock: "FEATURED_GRID",
     homepageOrder: 1,
     rating: 4.8,
     ratingCount: 24,
@@ -119,8 +118,7 @@ const PRODUCTS = [
     shortDescription: "Túi chống nước gắn ghi đông.",
     stockState: "IN_STOCK",
     publishStatus: "PUBLISHED",
-    isFeatured: true,
-    showOnHomepage: true,
+    homepageBlock: "FEATURED_GRID",
     homepageOrder: 2,
     rating: 4.5,
     ratingCount: 12,
@@ -141,8 +139,7 @@ const PRODUCTS = [
     shortDescription: "Mũ fullface AGV K6 Racing.",
     stockState: "IN_STOCK",
     publishStatus: "PUBLISHED",
-    isFeatured: false,
-    showOnHomepage: true,
+    homepageBlock: "RECOMMENDED_CAROUSEL",
     homepageOrder: 3,
     rating: 4.9,
     ratingCount: 31,
@@ -163,8 +160,7 @@ const PRODUCTS = [
     shortDescription: "Mũ fullface LS2 FF800 STORM II.",
     stockState: "IN_STOCK",
     publishStatus: "PUBLISHED",
-    isFeatured: false,
-    showOnHomepage: true,
+    homepageBlock: "RECOMMENDED_CAROUSEL",
     homepageOrder: 4,
     rating: 4.7,
     ratingCount: 18,
@@ -266,11 +262,8 @@ function filterProducts(products, query) {
   if (query.category) {
     result = result.filter((p) => p.category?.slug === query.category);
   }
-  if (query.featured === "true") {
-    result = result.filter((p) => p.isFeatured);
-  }
-  if (query.showOnHomepage === "true") {
-    result = result.filter((p) => p.showOnHomepage);
+  if (query.homepage_block) {
+    result = result.filter((p) => p.homepageBlock === query.homepage_block);
   }
   if (query.q) {
     const q = query.q.toLowerCase();

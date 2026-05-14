@@ -97,6 +97,7 @@ body {
   background: var(--admin-color-background-app);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
 button,
@@ -112,7 +113,8 @@ a {
 }
 
 #root {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* ─── Global scrollbar ───────────────────────────────────────────────────────*/
@@ -583,9 +585,11 @@ a {
 
 /* ─── Screen layout ──────────────────────────────────────────────────────────*/
 .screen {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--admin-space-4);
   max-width: 1400px;
+  min-height: 100%;
 }
 
 .screen-header {
@@ -1192,8 +1196,14 @@ a {
 
 /* ─── Form layout ────────────────────────────────────────────────────────────*/
 .entity-form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--admin-space-4);
+  flex: 1 0 auto;
+}
+
+.entity-form > .form-footer {
+  margin-top: auto;
 }
 
 .form-grid {

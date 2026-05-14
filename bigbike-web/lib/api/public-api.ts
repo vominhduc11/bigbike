@@ -230,8 +230,8 @@ export type ProductListQuery = {
   filterColor?: string;
   minPrice?: number;
   maxPrice?: number;
-  filterFeatured?: boolean;
-  showOnHomepage?: boolean;
+  /** Filter to a single homepage placement slot. */
+  homepageBlock?: "NONE" | "FEATURED_GRID" | "RECOMMENDED_CAROUSEL";
 };
 
 export function listProducts(query: ProductListQuery): Promise<ListResult<Product>> {
@@ -247,8 +247,7 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       filter_color: query.filterColor,
       min_price: query.minPrice,
       max_price: query.maxPrice,
-      featured: query.filterFeatured ? "true" : undefined,
-      showOnHomepage: query.showOnHomepage ? "true" : undefined,
+      homepage_block: query.homepageBlock,
     },
     3600,
     ["products"],

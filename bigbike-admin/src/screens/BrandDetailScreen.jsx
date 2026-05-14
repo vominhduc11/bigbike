@@ -380,53 +380,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </div>
         </section>
 
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>{t('brands.detail.sectionSeo')}</h2>
-          </header>
-          <div className="detail-section-content form-grid">
-            <label className="form-field form-field-wide">
-              <span>{t('brands.detail.seoTitle')}</span>
-              <Input
-                value={form.seoTitle}
-                onChange={(event) => updateField('seoTitle', event.target.value)}
-                disabled={isReadOnly}
-               />
-            </label>
-
-            <label className="form-field form-field-wide">
-              <span>{t('brands.detail.seoDescription')}</span>
-              <Textarea
-                value={form.seoDescription}
-                onChange={(event) => updateField('seoDescription', event.target.value)}
-                disabled={isReadOnly}
-               />
-            </label>
-
-            <label className="form-field form-field-wide">
-              <span>{t('brands.detail.seoCanonicalUrl')}</span>
-              <Input
-                value={form.seoCanonicalUrl}
-                onChange={(event) => updateField('seoCanonicalUrl', event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.seoCanonicalUrl ? (
-                <small className="field-error">{validationErrors.seoCanonicalUrl}</small>
-              ) : null}
-            </label>
-
-
-            <label className="form-checkbox">
-              <Checkbox
-                checked={form.seoNoIndex}
-                onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                disabled={isReadOnly}
-               />
-              <span>{t('brands.detail.seoNoIndex')}</span>
-            </label>
-          </div>
-        </section>
-
         <div className="form-footer">
           <div className="form-status">
             <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>

@@ -135,11 +135,21 @@ function VideoCard({
   onOpen: (el: HTMLButtonElement) => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
-  const [imgError, setImgError] = useState(false);
   const title = safeText(video.title, "Video");
-  const thumbSrc = imgError
-    ? null
-    : resolveMediaUrl(video.thumbnail?.url?.trim()) || video.autoThumbnailUrl || null;
+
+  // Fallback chain: custom thumbnail → maxresdefault (portrait, works for Shorts) → hqdefault → gradient
+  const thumbUrls: string[] = [];
+  const custom = resolveMediaUrl(video.thumbnail?.url?.trim());
+  if (custom) thumbUrls.push(custom);
+  if (video.youtubeId) {
+    thumbUrls.push(`https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`);
+    thumbUrls.push(`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`);
+  } else if (video.autoThumbnailUrl) {
+    thumbUrls.push(video.autoThumbnailUrl);
+  }
+
+  const [thumbIdx, setThumbIdx] = useState(0);
+  const thumbSrc = thumbIdx < thumbUrls.length ? thumbUrls[thumbIdx] : null;
 
   return (
     <button
@@ -152,20 +162,13 @@ function VideoCard({
       <div className="bb-video-thumb-wrap">
         {thumbSrc ? (
           <Image
+            key={thumbSrc}
             src={thumbSrc}
             alt={safeText(video.thumbnail?.alt, title)}
             fill
             className="bb-video-thumb"
             sizes="(max-width: 600px) 100vw, (max-width: 767px) 50vw, 33vw"
-            onError={() => setImgError(true)}
-          />
-        ) : video.videoUrl ? (
-          <video
-            src={video.videoUrl}
-            preload="metadata"
-            muted
-            className="bb-video-thumb object-cover pointer-events-none"
-            aria-hidden="true"
+            onError={() => setThumbIdx((prev) => prev + 1)}
           />
         ) : (
           <div className="bb-video-thumb-fallback" aria-hidden="true">
@@ -181,9 +184,40 @@ function VideoCard({
   );
 }
 
+function HomeVideoCarouselFallback({ videos }: Props) {
+  const previewVideos = videos.slice(0, Math.min(videos.length, 3));
+
+  return (
+    <div className="bb-video-carousel">
+      <div className="bb-video-carousel-vp">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {previewVideos.map((video) => {
+            const title = safeText(video.title, "Video");
+
+            return (
+              <div key={video.id} className="bb-video-card pointer-events-none">
+                <div className="bb-video-thumb-wrap">
+                  <div className="bb-video-thumb-fallback">
+                    <span className="bb-video-thumb-fallback-mark">BIGBIKE</span>
+                  </div>
+                  <PlayIcon />
+                </div>
+                <div className="bb-video-card-desc">
+                  <p className="bb-video-card-title">{title}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeVideoCarousel({ videos }: Props) {
   const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
 
@@ -192,7 +226,12 @@ export function HomeVideoCarousel({ videos }: Props) {
     setActiveVideo(video);
   }, []);
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (videos.length === 0) return null;
+  if (!isMounted) return <HomeVideoCarouselFallback videos={videos} />;
 
   const showControls = videos.length > 1;
   const loopEnabled = videos.length > 1;
@@ -219,7 +258,11 @@ export function HomeVideoCarousel({ videos }: Props) {
             }}
           >
             {videos.map((video) => (
-              <SwiperSlide key={video.id} className="bb-video-carousel-slide">
+              <SwiperSlide
+                key={video.id}
+                className="bb-video-carousel-slide"
+                suppressHydrationWarning
+              >
                 <VideoCard
                   video={video}
                   onOpen={(el) => handleOpen(video, el)}

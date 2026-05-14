@@ -15,7 +15,9 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineIt
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnHistoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnItemEntity;
+import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ReturnItemSerialEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
@@ -227,6 +229,11 @@ public class AdminReturnService {
             serialLifecycleService.receiveReturnForReturn(ret.getId());
         }
 
+        // Move serial-tracked items from RETURNED → INSPECTION when QC process begins.
+        if ("INSPECTING".equals(newStatus)) {
+            serialLifecycleService.moveReturnedToInspection(ret.getId());
+        }
+
         // Non-serial items: restore stock immediately on COMPLETED/REFUNDED.
         // Serial-tracked items: stock is only restored after admin sets INSPECTION → IN_STOCK
         // via PATCH /admin/inventory/serials/{id}/status.
@@ -285,12 +292,31 @@ public class AdminReturnService {
                     "result phải là một trong: " + INSPECTION_RESULTS);
         }
 
+        // note is required for FAIL — it drives the DAMAGED serial note.
+        if ("FAIL".equals(result) && (req.note() == null || req.note().isBlank())) {
+            throw ValidationException.fromField("note", "REQUIRED",
+                    "Lý do bắt buộc khi kết quả kiểm tra là FAIL.");
+        }
+
         Instant now = Instant.now();
         item.setInspectionResult(result);
         item.setInspectionNote(req.note());
         item.setInspectedAt(now);
         item.setInspectedByAdminId(adminId);
         itemRepo.save(item);
+
+        // Sync serial status for serial-tracked return items.
+        // PASS → IN_STOCK (resellable), FAIL → DAMAGED (excluded from stock restore).
+        List<ReturnItemSerialEntity> serialBridges = risRepo.findByReturnItemId(itemId);
+        if (!serialBridges.isEmpty()) {
+            ProductSerialStatus targetStatus = "PASS".equals(result)
+                    ? ProductSerialStatus.IN_STOCK
+                    : ProductSerialStatus.DAMAGED;
+            for (ReturnItemSerialEntity bridge : serialBridges) {
+                serialLifecycleService.markInspectionResult(
+                        bridge.getSerialId(), targetStatus, req.note());
+            }
+        }
 
         ret.setUpdatedAt(now);
         returnRepo.save(ret);

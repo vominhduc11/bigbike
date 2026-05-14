@@ -42,18 +42,10 @@ export function ProductGallery({
 }: ProductGalleryProps) {
   // Color isolation rules:
   //   cover  = variantImage (if set)        ELSE product.mainImage
-  //   strip  = variantGallery (if non-empty)
-  //            ELSE if variantImage set → [] (single-hero, no fallback to product
-  //            gallery to avoid showing other-color shots)
-  //            ELSE product.gallery
+  //   strip  = variantGallery (if non-empty) ELSE product.gallery
   // Cover is always prepended to strip (deduped), so allImages[0] is the hero.
   const hasVariantGallery = Boolean(variantGallery && variantGallery.length > 0);
-  const hasVariantImage = Boolean(variantImage);
-  const stripBody: ImageAsset[] = hasVariantGallery
-    ? variantGallery!
-    : hasVariantImage
-      ? []
-      : gallery;
+  const stripBody: ImageAsset[] = hasVariantGallery ? variantGallery! : gallery;
   const coverImage: ImageAsset | null = variantImage ?? mainImage ?? null;
   const allImages: ImageAsset[] = coverImage
     ? [coverImage, ...stripBody.filter((img) => img.url !== coverImage.url)]

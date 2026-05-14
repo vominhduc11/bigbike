@@ -286,7 +286,7 @@ public class AdminReportService {
                         "category", "brand",
                         "retail_price", "sale_price", "currency",
                         "stock_state", "publish_status",
-                        "is_featured", "created_at")
+                        "homepage_block", "created_at")
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(sw, format)) {
@@ -303,7 +303,7 @@ public class AdminReportService {
                         p.getCurrency(),
                         p.getStockState() != null ? p.getStockState().name() : "",
                         p.getPublishStatus() != null ? p.getPublishStatus().name() : "",
-                        Boolean.TRUE.equals(p.getFeatured()),
+                        p.getHomepageBlock() != null ? p.getHomepageBlock().name() : "NONE",
                         formatInstant(p.getCreatedAt())
                 );
             }

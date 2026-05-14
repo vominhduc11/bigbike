@@ -277,12 +277,6 @@ function assertMutationEnabled() {
   )
 }
 
-function normalizeFlagFilter(value) {
-  if (value === true || value === 'true') return 'true'
-  if (value === false || value === 'false') return 'false'
-  return undefined
-}
-
 function buildProductQuery(query) {
   return {
     page: query?.page,
@@ -293,8 +287,7 @@ function buildProductQuery(query) {
     stockState: query?.stockState,
     brandId: query?.brandId || undefined,
     categoryId: query?.categoryId || undefined,
-    featured: normalizeFlagFilter(query?.featured),
-    showOnHomepage: normalizeFlagFilter(query?.showOnHomepage),
+    homepageBlock: query?.homepageBlock,
   }
 }
 
@@ -2288,6 +2281,15 @@ export async function posCreateOrder(body) {
   const payload = await requestJson('/admin/pos/orders', {
     method: 'POST',
     body,
+  })
+  return payload?.data ?? null
+}
+
+export async function posCreateRefund(orderId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/pos/orders/${orderId}/refund`, {
+    method: 'POST',
+    body: input,
   })
   return payload?.data ?? null
 }

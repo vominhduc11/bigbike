@@ -77,16 +77,15 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   const maxPrice = readSingleSearchParam(query.max_price);
 
   return buildPublicMetadata({
-    title: buildCatalogTitle(category.seo?.title ?? category.name, {
+    title: buildCatalogTitle(category.name, {
       page,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       colorName: color,
     }),
-    description: category.seo?.description ?? category.description ?? "Chi tiết danh mục sản phẩm BigBike.",
-    canonicalPath: category.seo?.canonicalUrl ?? toCategoryPath(category.slug),
+    description: category.description ?? "Chi tiết danh mục sản phẩm BigBike.",
+    canonicalPath: toCategoryPath(category.slug),
     noIndex:
-      (category.seo?.noIndex ?? false) ||
       page > 1 ||
       Boolean(brand) ||
       Boolean(q) ||
@@ -186,7 +185,7 @@ export default async function CategoryDetailPage({
   }
 
   const category = categoryResult.data;
-  const canonicalPath = category.seo?.canonicalUrl ?? toCategoryPath(category.slug);
+  const canonicalPath = toCategoryPath(category.slug);
 
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId

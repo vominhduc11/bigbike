@@ -5,9 +5,11 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse.RowError;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
@@ -26,15 +28,18 @@ public class AdminSerialImportService {
     private final ProductSerialJpaRepository serialRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminSerialImportService(
             ProductSerialJpaRepository serialRepo,
             ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo
+            ProductVariantJpaRepository variantRepo,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.serialRepo = serialRepo;
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
+        this.auditLogRepo = auditLogRepo;
     }
 
     /**
@@ -154,6 +159,18 @@ public class AdminSerialImportService {
 
             inserted++;
         }
+
+        AuditLogEntity audit = new AuditLogEntity();
+        audit.setActorType("ADMIN");
+        audit.setActorId(adminId);
+        audit.setAction("SERIALS_BULK_IMPORTED");
+        audit.setResourceType("SERIAL");
+        audit.setAfterData("{\"requested\":" + req.rows().size()
+                + ",\"inserted\":" + inserted
+                + ",\"skipped\":" + skipped
+                + ",\"partialMode\":" + req.partialMode() + "}");
+        audit.setCreatedAt(Instant.now());
+        auditLogRepo.save(audit);
 
         return new SerialImportResponse(inserted, skipped, errors);
     }

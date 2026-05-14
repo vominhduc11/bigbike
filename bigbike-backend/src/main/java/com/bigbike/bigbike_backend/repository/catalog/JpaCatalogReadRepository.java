@@ -103,15 +103,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     private Product toDomainListItem(ProductEntity entity) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
-        List<CategorySummary> categories = entity.getCategories() == null
+        List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
-                : entity.getCategories().stream()
-                        .map(this::toCategorySummary)
-                        .sorted(Comparator.comparing(CategorySummary::name, String.CASE_INSENSITIVE_ORDER))
-                        .toList();
-        if (categories.isEmpty() && primaryCategory != null) {
-            categories = List.of(primaryCategory);
-        }
+                : List.of(primaryCategory);
         return new Product(
                 entity.getId(),
                 entity.getSku(),
@@ -144,8 +138,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getStockQuantity(),
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
-                entity.getFeatured(),
-                entity.getShowOnHomepage(),
+                entity.getHomepageBlock(),
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
@@ -298,16 +291,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     private Product toDomain(ProductEntity entity, boolean publicView) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
-        List<CategorySummary> categories = entity.getCategories() == null
+        List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
-                : entity.getCategories().stream()
-                        .map(this::toCategorySummary)
-                        .sorted(Comparator.comparing(CategorySummary::name, String.CASE_INSENSITIVE_ORDER))
-                        .toList();
-
-        if (categories.isEmpty() && primaryCategory != null) {
-            categories = List.of(primaryCategory);
-        }
+                : List.of(primaryCategory);
 
         return new Product(
                 entity.getId(),
@@ -341,8 +327,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getStockQuantity(),
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
-                entity.getFeatured(),
-                entity.getShowOnHomepage(),
+                entity.getHomepageBlock(),
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),

@@ -25,8 +25,7 @@ const INITIAL_QUERY = {
   stockState: 'ALL',
   brandId: '',
   categoryId: '',
-  featured: 'ALL',
-  showOnHomepage: 'ALL',
+  homepageBlock: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,
   pageSize: 20,
@@ -35,8 +34,15 @@ const INITIAL_QUERY = {
 // Mirror of the homepage block sizes in bigbike-web/app/page.tsx — anything beyond these
 // caps is fetched but not rendered by the storefront, so admin should know the surplus
 // is silently dropped.
-const HOMEPAGE_FEATURED_LIMIT = 12
-const HOMEPAGE_CAROUSEL_LIMIT = 5
+const HOMEPAGE_BLOCK_LIMITS = {
+  FEATURED_GRID: 12,
+  RECOMMENDED_CAROUSEL: 10,
+}
+const HOMEPAGE_BLOCK_LABELS = {
+  NONE: 'Không hiển thị trang chủ',
+  FEATURED_GRID: 'Sản phẩm nổi bật (grid)',
+  RECOMMENDED_CAROUSEL: 'Gợi ý dành cho bạn (carousel)',
+}
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -188,16 +194,17 @@ export function ProductListScreen({ navigate, canUpdate }) {
         key: 'homepage',
         label: 'Trang chủ',
         render: (product) => {
-          const flags = []
-          if (product.isFeatured) flags.push('Nổi bật')
-          if (product.showOnHomepage) flags.push('Trang chủ')
-          if (flags.length === 0) return <span style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>—</span>
+          const block = product.homepageBlock
+          if (!block || block === 'NONE') {
+            return <span style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>—</span>
+          }
+          const label = block === 'FEATURED_GRID' ? 'Nổi bật (grid)' : 'Gợi ý (carousel)'
           const orderText = Number.isFinite(product.homepageOrder)
             ? ` · #${product.homepageOrder}`
             : ''
           return (
             <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
-              <strong style={{ fontSize: 12 }}>{flags.join(' + ')}</strong>
+              <strong style={{ fontSize: 12 }}>{label}</strong>
               {orderText && <small style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>Thứ tự{orderText}</small>}
             </span>
           )
@@ -320,8 +327,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {t('products.filterPublish')}
           <Select
             value={query.publishStatus}
-            onValueChange={(event) =>
-              updateQuery({ publishStatus: event.target.value }, { resetPage: true })}
+            onValueChange={(val) =>
+              updateQuery({ publishStatus: val }, { resetPage: true })}
             ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
               <SelectItem value="ALL">{t('common.all')}</SelectItem>
               <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
@@ -335,8 +342,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {t('products.filterStock')}
           <Select
             value={query.stockState}
-            onValueChange={(event) =>
-              updateQuery({ stockState: event.target.value }, { resetPage: true })}
+            onValueChange={(val) =>
+              updateQuery({ stockState: val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             <SelectItem value="IN_STOCK">{t('status.stock.IN_STOCK')}</SelectItem>
@@ -348,9 +355,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
         <label>
           {t('products.filterBrand')}
           <Select
-            value={query.brandId}
-            onValueChange={(val) => updateQuery({ brandId: val }, { resetPage: true })}
+            value={query.brandId || 'ALL'}
+            onValueChange={(val) => updateQuery({ brandId: val === 'ALL' ? '' : val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {brands.map((b) => (
               <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
             ))}
@@ -360,9 +368,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
         <label>
           {t('products.filterCategory')}
           <Select
-            value={query.categoryId}
-            onValueChange={(val) => updateQuery({ categoryId: val }, { resetPage: true })}
+            value={query.categoryId || 'ALL'}
+            onValueChange={(val) => updateQuery({ categoryId: val === 'ALL' ? '' : val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {categories.map((c) => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
@@ -370,26 +379,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </label>
 
         <label>
-          Nổi bật trang chủ
+          Khối trang chủ
           <Select
-            value={query.featured}
-            onValueChange={(val) => updateQuery({ featured: val }, { resetPage: true })}
+            value={query.homepageBlock}
+            onValueChange={(val) => updateQuery({ homepageBlock: val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="true">Đang bật</SelectItem>
-            <SelectItem value="false">Đang tắt</SelectItem>
-          </SelectContent></Select>
-        </label>
-
-        <label>
-          Hiển thị trang chủ
-          <Select
-            value={query.showOnHomepage}
-            onValueChange={(val) => updateQuery({ showOnHomepage: val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="true">Đang bật</SelectItem>
-            <SelectItem value="false">Đang tắt</SelectItem>
+            <SelectItem value="NONE">Không trên trang chủ</SelectItem>
+            <SelectItem value="FEATURED_GRID">Nổi bật (grid)</SelectItem>
+            <SelectItem value="RECOMMENDED_CAROUSEL">Gợi ý (carousel)</SelectItem>
           </SelectContent></Select>
         </label>
 
@@ -397,8 +395,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {t('products.filterSort')}
           <Select
             value={query.sort}
-            onValueChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })}
+            onValueChange={(val) =>
+              updateQuery({ sort: val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
             <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
@@ -411,25 +409,25 @@ export function ProductListScreen({ navigate, canUpdate }) {
         <label>
           {t('common.rowsPerPage')}
           <Select
-            value={query.pageSize}
-            onValueChange={(event) =>
+            value={String(query.pageSize)}
+            onValueChange={(val) =>
               updateQuery(
-                { pageSize: Number(event.target.value) },
+                { pageSize: Number(val) },
                 { resetPage: true },
               )}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
           </SelectContent></Select>
         </label>
       </section>
 
-      {state.status === 'success' && (query.featured === 'true' || query.showOnHomepage === 'true') ? (
+      {state.status === 'success' && HOMEPAGE_BLOCK_LIMITS[query.homepageBlock] ? (
         (() => {
           const totalFlagged = state.pagination?.totalItems ?? state.items.length
-          const limit = query.featured === 'true' ? HOMEPAGE_FEATURED_LIMIT : HOMEPAGE_CAROUSEL_LIMIT
-          const blockLabel = query.featured === 'true' ? '"Sản phẩm nổi bật"' : '"Gợi ý dành cho bạn"'
+          const limit = HOMEPAGE_BLOCK_LIMITS[query.homepageBlock]
+          const blockLabel = HOMEPAGE_BLOCK_LABELS[query.homepageBlock]
           if (totalFlagged <= limit) return null
           return (
             <div
@@ -444,8 +442,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 fontSize: 13,
               }}
             >
-              <strong>Đang bật cờ này: {totalFlagged} sản phẩm.</strong>{' '}
-              Trang chủ chỉ hiển thị tối đa <strong>{limit} sản phẩm</strong> ở khối {blockLabel}.
+              <strong>Đang ở khối này: {totalFlagged} sản phẩm.</strong>{' '}
+              Trang chủ chỉ hiển thị tối đa <strong>{limit} sản phẩm</strong> ở khối "{blockLabel}".
               Số dư sẽ bị bỏ qua âm thầm — sắp xếp theo cột "Thứ tự trang chủ" để chọn ra
               {' '}{limit} sản phẩm hiển thị.
             </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -62,7 +62,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (productId: string, quantity: number, variantId?: string) => {
       await addCartItem(productId, quantity, variantId);
       refreshCount();
-      showToast("ÄĂƒ THĂM VĂ€O GIá»", "Tiáº¿p tá»¥c mua hoáº·c vĂ o giá» Ä‘á»ƒ thanh toĂ¡n.");
+      showToast("ĐÃ THÊM VÀO GIỎ", "Tiếp tục mua hoặc vào giỏ để thanh toán.");
     },
     [refreshCount, showToast],
   );
@@ -76,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <b className="block text-sm font-bold tracking-[0.08em] uppercase text-brand mb-[2px]">{toast.title}</b>
             <span className="text-sm text-muted-foreground">{toast.message}</span>
           </div>
-          <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-[0.04em] shrink-0 hover:text-brand-hover">Xem giá» â†’</Link>
+          <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-[0.04em] shrink-0 hover:text-brand-hover">Xem giỏ →</Link>
         </div>
       ))}
     </CartContext.Provider>

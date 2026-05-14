@@ -181,10 +181,10 @@ export type Product = {
   /** When true the product is forced out-of-stock regardless of variant state. */
   forceOutOfStock?: boolean | null;
   publishStatus: PublishStatus;
-  isFeatured?: boolean;
-  showOnHomepage?: boolean;
+  /** Homepage placement slot. NONE = not pinned to homepage. */
+  homepageBlock: "NONE" | "FEATURED_GRID" | "RECOMMENDED_CAROUSEL";
   /**
-   * Manual pin priority inside homepage Featured/ShowOnHomepage blocks.
+   * Manual pin priority inside the homepageBlock.
    * Lower number = appears earlier; null = unpinned (sorted to the end by createdAt DESC).
    */
   homepageOrder?: number | null;

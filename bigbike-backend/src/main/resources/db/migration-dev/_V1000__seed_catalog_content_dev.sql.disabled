@@ -148,8 +148,7 @@ insert into products (
     currency,
     stock_state,
     publish_status,
-    is_featured,
-    show_on_homepage,
+    homepage_block,
     rating,
     seo_title,
     seo_description,
@@ -179,8 +178,7 @@ insert into products (
     'VND',
     'IN_STOCK',
     'PUBLISHED',
-    true,
-    true,
+    'FEATURED_GRID',
     4.50,
     'Mu bao hiem LS2 FF800',
     'Mu fullface LS2 FF800 chinh hang tai BigBike.',
@@ -210,8 +208,7 @@ insert into products (
     'VND',
     'PREORDER',
     'HIDDEN',
-    false,
-    false,
+    'NONE',
     null,
     'Mu bao hiem KYT NX Race',
     'KYT NX Race hang chinh hang.',
@@ -241,8 +238,7 @@ insert into products (
     'VND',
     'LOW_STOCK',
     'PUBLISHED',
-    true,
-    false,
+    'FEATURED_GRID',
     4.80,
     'Ao giap LS2 City Rider',
     'Ao giap LS2 cho touring va daily ride.',
@@ -251,11 +247,6 @@ insert into products (
     '2026-04-05T05:00:00Z',
     '2026-04-18T09:10:00Z'
 ) ON CONFLICT DO NOTHING;
-
-insert into product_category_map (product_id, category_id) values
-('prod_ls2_ff800', 'cat_helmet'),
-('prod_kyt_nxrace', 'cat_helmet'),
-('prod_ls2_jacket_city', 'cat_jacket');
 
 insert into product_gallery_images (
     product_id,
