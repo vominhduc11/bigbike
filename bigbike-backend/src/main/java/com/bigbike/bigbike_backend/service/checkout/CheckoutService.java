@@ -445,7 +445,9 @@ public class CheckoutService {
                         m.getId(),
                         m.getMethodCode(),
                         m.getTitle(),
-                        m.getCost() != null ? m.getCost() : BigDecimal.ZERO
+                        m.getCost() != null ? m.getCost() : BigDecimal.ZERO,
+                        m.getFreeShippingThreshold(),
+                        m.getMinOrderAmount()
                 ))
                 .toList();
         return new CheckoutOptionsResponse(paymentMethods, shippingMethods);

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-const VN_PHONE_RE = /^0[3-9][0-9]{8}$/;
+// Match backend regex in CheckoutService.validateAddress
+const VN_PHONE_RE = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
 
 export const checkoutAddressSchema = z.object({
   fullName: z.string().min(1, "Vui lòng nhập họ và tên"),
   phone: z
     .string()
-    .regex(VN_PHONE_RE, "Số điện thoại không hợp lệ (ví dụ: 0901234567)"),
+    .regex(VN_PHONE_RE, "Số điện thoại không hợp lệ (ví dụ: 0901234567 hoặc +84901234567)"),
   email: z
     .string()
     .email("Email không hợp lệ")

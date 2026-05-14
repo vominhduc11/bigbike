@@ -21,9 +21,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const PAY_LOGO_STYLE: Record<string, string> = {
-  cod: "bg-[#222] text-white border border-white/20",
-  momo: "bg-[#a50064] text-white",
-  vnpay: "bg-[#005ba4] text-white",
+  COD: "bg-[#222] text-white border border-white/20",
+  BACS: "bg-[#005ba4] text-white",
+  MOMO: "bg-[#a50064] text-white",
+  VNPAY: "bg-[#005ba4] text-white",
+};
+
+const PAYMENT_DESC: Record<string, string> = {
+  COD: "Thanh toán khi nhận hàng — kiểm tra hàng rồi mới trả tiền.",
+  BACS: "Chuyển khoản ngân hàng — thông tin TK gửi qua email sau khi đặt hàng.",
 };
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
@@ -77,11 +83,6 @@ function MiniCartThumb({ item }: { item: CartItem }) {
     </div>
   );
 }
-
-const PAYMENT_DESC: Record<string, string> = {
-  cod: "Thanh toán khi nhận hàng — kiểm tra hàng rồi mới trả tiền.",
-  bacs: "Chuyển khoản ngân hàng — thông tin TK gửi qua email sau khi đặt hàng.",
-};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -177,6 +178,21 @@ export default function CheckoutPage() {
 
   const selectedShipping = checkoutOptions?.shippingMethods.find((m) => m.id === shippingMethodId);
 
+  const cartSubtotal = cart?.totals.subtotalAmount ?? 0;
+  const cartTotal = cart?.totals.totalAmount ?? 0;
+  const freeShippingThreshold = selectedShipping?.freeShippingThreshold ?? null;
+  const minOrderAmount = selectedShipping?.minOrderAmount ?? null;
+  const qualifiesForFreeShipping =
+    freeShippingThreshold !== null && freeShippingThreshold !== undefined && freeShippingThreshold > 0
+      ? cartSubtotal >= freeShippingThreshold
+      : false;
+  const effectiveShippingCost = qualifiesForFreeShipping ? 0 : (selectedShipping?.cost ?? 0);
+  const grandTotal = cartTotal + effectiveShippingCost;
+  const belowMinOrder =
+    minOrderAmount !== null && minOrderAmount !== undefined && minOrderAmount > 0
+      ? cartSubtotal < minOrderAmount
+      : false;
+
   if (cartLoading && optionsLoading && !cart) {
     return <CheckoutSkeleton />;
   }
@@ -246,8 +262,8 @@ export default function CheckoutPage() {
                     </label>
                     <Input
                       type="tel"
-                      inputMode="numeric"
-                      maxLength={10}
+                      inputMode="tel"
+                      maxLength={12}
                       placeholder="0901234567"
                       aria-invalid={!!addressErrors.phone}
                       {...register("phone")}
@@ -338,13 +354,13 @@ export default function CheckoutPage() {
                           onChange={() => setPaymentMethod(method.code)}
                           className="accent-brand m-0"
                         />
-                        <span className={`w-[42px] h-7 flex items-center justify-center font-bold text-xs tracking-[0.06em] ${PAY_LOGO_STYLE[method.code] ?? "bg-white text-black"}`}>
+                        <span className={`w-[42px] h-7 flex items-center justify-center font-bold text-xs tracking-[0.06em] ${PAY_LOGO_STYLE[method.code.toUpperCase()] ?? "bg-white text-black"}`}>
                           {method.code.toUpperCase()}
                         </span>
                         <div className="flex-1">
                           <b className="block text-sm text-foreground tracking-[0.02em] mb-[2px] font-bold uppercase">{method.title}</b>
-                          {PAYMENT_DESC[method.code] && (
-                            <span className="text-[11px] text-muted-foreground tracking-[0.02em]">{PAYMENT_DESC[method.code]}</span>
+                          {PAYMENT_DESC[method.code.toUpperCase()] && (
+                            <span className="text-[11px] text-muted-foreground tracking-[0.02em]">{PAYMENT_DESC[method.code.toUpperCase()]}</span>
                           )}
                         </div>
                       </label>
@@ -441,12 +457,12 @@ export default function CheckoutPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={submitting || cartLoading || !cart?.items.length}
+                  disabled={submitting || cartLoading || !cart?.items.length || belowMinOrder}
                 >
                   {submitting
                     ? "ĐANG ĐẶT HÀNG..."
                     : cart
-                      ? `ĐẶT HÀNG · ${formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}`
+                      ? `ĐẶT HÀNG · ${formatVnd(grandTotal)}`
                       : "ĐẶT HÀNG"}
                 </Button>
               </div>
@@ -501,11 +517,21 @@ export default function CheckoutPage() {
                       <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
                         <p className="m-0">Phí vận chuyển:</p>
                         <p className="m-0">
-                          {selectedShipping && selectedShipping.cost > 0
-                            ? <b className="text-foreground font-bold">{formatVnd(selectedShipping.cost)}</b>
+                          {effectiveShippingCost > 0
+                            ? <b className="text-foreground font-bold">{formatVnd(effectiveShippingCost)}</b>
                             : <span className="text-xs text-muted-foreground italic">Miễn phí</span>}
                         </p>
                       </div>
+                      {qualifiesForFreeShipping && freeShippingThreshold && (selectedShipping?.cost ?? 0) > 0 && (
+                        <p className="text-[11px] text-muted-foreground m-0 mt-1 italic">
+                          Đơn từ {formatVnd(freeShippingThreshold)} được miễn phí giao hàng.
+                        </p>
+                      )}
+                      {belowMinOrder && minOrderAmount && (
+                        <p className="text-[11px] text-brand m-0 mt-1">
+                          Phương thức vận chuyển này yêu cầu đơn tối thiểu {formatVnd(minOrderAmount)}. Vui lòng mua thêm hoặc chọn phương thức khác.
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-[var(--bb-color-gray-50)] border-t border-border py-[14px] px-5">
@@ -513,7 +539,7 @@ export default function CheckoutPage() {
                         <p className="m-0 font-display uppercase font-semibold text-foreground tracking-[0.04em] text-[14px]">Tổng:</p>
                         <p className="m-0">
                           <b className="font-display text-[22px] text-brand font-bold tracking-[0.01em]">
-                            {formatVnd(cart.totals.totalAmount + (selectedShipping?.cost ?? 0))}
+                            {formatVnd(grandTotal)}
                           </b>
                         </p>
                       </div>

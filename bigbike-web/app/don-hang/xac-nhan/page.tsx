@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatDate, formatVnd, orderStatusLabel, safeText } from "@/lib/utils/format";
+import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 
@@ -40,6 +40,25 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
   const bankHolder = pickSetting(settings, ["bank_account_holder", "bank_holder"]);
   const bankBranch = pickSetting(settings, ["bank_branch"]);
 
+  const rawPaymentMethod = order?.payments?.[0]?.paymentMethod ?? "";
+  const paymentMethodCode = rawPaymentMethod.trim().toUpperCase();
+  const isBacs = paymentMethodCode === "BACS";
+  const isCod = paymentMethodCode === "COD";
+  const paymentStatus = (order?.paymentStatus ?? "").trim().toUpperCase();
+  const isAlreadyPaid = paymentStatus === "PAID" || paymentStatus === "PARTIALLY_PAID";
+  const eyebrow = isAlreadyPaid
+    ? "Thanh toán thành công"
+    : isBacs
+      ? "Chờ chuyển khoản"
+      : "Đặt hàng thành công";
+  const subline = isAlreadyPaid
+    ? "Đơn hàng đã được xác nhận. Chúng tôi sẽ liên hệ trong 1 giờ làm việc."
+    : isBacs
+      ? "Đơn hàng đã được ghi nhận. Vui lòng chuyển khoản theo thông tin bên dưới — chúng tôi sẽ xác nhận trong 1 giờ làm việc."
+      : isCod
+        ? "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc."
+        : "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc.";
+
   return (
     <>
       {order && (
@@ -63,11 +82,9 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </div>
-        <div className="text-[11px] tracking-[0.2em] uppercase text-brand font-bold mb-[10px]">Thanh toán thành công</div>
+        <div className="text-[11px] tracking-[0.2em] uppercase text-brand font-bold mb-[10px]">{eyebrow}</div>
         <h1 className="font-display text-[40px] tracking-[0.01em] uppercase m-0 mb-[10px]">Cảm ơn anh em đã tin BigBike!</h1>
-        <p className="text-muted-foreground m-0 mb-7">
-          Đơn hàng đã được xác nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc.
-        </p>
+        <p className="text-muted-foreground m-0 mb-7">{subline}</p>
 
         {orderNumber && (
           <ul className="list-none mx-auto mb-7 p-0 max-w-[760px] bg-card border border-border flex flex-wrap gap-0">
@@ -91,15 +108,11 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
               <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Tổng giá trị:</span>
               <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order ? formatVnd(order.totalAmount) : "—"}</strong>
             </li>
-            {order?.payments?.[0]?.paymentMethod && (
+            {rawPaymentMethod && (
               <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
                 <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Phương thức thanh toán:</span>
                 <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">
-                  {order.payments[0].paymentMethod === "cod"
-                    ? "Thanh toán khi nhận hàng (COD)"
-                    : order.payments[0].paymentMethod === "bacs"
-                      ? "Chuyển khoản ngân hàng"
-                      : order.payments[0].paymentMethod.toUpperCase()}
+                  {paymentMethodLabel(rawPaymentMethod)}
                 </strong>
               </li>
             )}
@@ -128,7 +141,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
           </div>
         )}
 
-        {order?.payments?.[0]?.paymentMethod === "bacs" && (bankNumber || bankName) && (
+        {isBacs && order && (bankNumber || bankName) && (
           <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
             <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
             {bankName && (
@@ -161,6 +174,18 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
                 <b className="text-foreground whitespace-nowrap font-bold">BIGBIKE {order.orderNumber}</b>
               </div>
             )}
+            <p className="text-xs text-muted-foreground mt-[10px] m-0 leading-[1.5]">
+              Sau khi chuyển khoản, đơn sẽ được xác nhận trong 1 giờ làm việc. Nếu cần hỗ trợ, vui lòng liên hệ hotline 0906.902.404.
+            </p>
+          </div>
+        )}
+
+        {isBacs && order && !bankNumber && !bankName && (
+          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
+            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
+            <p className="text-sm text-foreground m-0 leading-[1.6]">
+              Vui lòng liên hệ hotline <b className="text-brand">0906.902.404</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <b>BIGBIKE {order.orderNumber}</b>.
+            </p>
           </div>
         )}
 

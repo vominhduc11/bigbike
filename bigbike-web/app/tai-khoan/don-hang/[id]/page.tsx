@@ -5,7 +5,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import { cancelMyOrder, createReturn, fetchMyOrder } from "@/lib/api/client-api";
 import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
-import { formatDate, formatVnd, orderStatusLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
+import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -402,7 +402,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[14px]">
               <div>
                 <p className="text-[11px] text-muted-foreground mb-1 m-0">Phương thức</p>
-                <p className="text-sm text-foreground m-0">{safeText(order.payments[0]?.paymentMethod ?? order.paymentStatus, "—")}</p>
+                <p className="text-sm text-foreground m-0">{order.payments[0]?.paymentMethod ? paymentMethodLabel(order.payments[0].paymentMethod) : paymentStatusLabel(order.paymentStatus)}</p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground mb-1 m-0">Đã thanh toán</p>

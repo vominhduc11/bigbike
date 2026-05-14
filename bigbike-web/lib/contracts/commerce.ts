@@ -72,6 +72,8 @@ export type ShippingMethodOption = {
   code: string
   title: string
   cost: number
+  freeShippingThreshold?: number | null
+  minOrderAmount?: number | null
 }
 
 export type CheckoutOptions = {

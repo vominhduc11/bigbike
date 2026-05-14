@@ -190,6 +190,20 @@ export function paymentStatusLabel(status: string | null | undefined): string {
   }
 }
 
+export function paymentMethodLabel(method: string | null | undefined): string {
+  const code = (method ?? "").trim().toUpperCase();
+  switch (code) {
+    case "COD":
+      return "Thanh toán khi nhận hàng (COD)";
+    case "BACS":
+      return "Chuyển khoản ngân hàng";
+    case "":
+      return "—";
+    default:
+      return code;
+  }
+}
+
 export function customerStatusLabel(status: string | null | undefined): string {
   switch (status) {
     case "ACTIVE":

@@ -7,5 +7,7 @@ public record ShippingMethodOptionResponse(
         UUID id,
         String code,
         String title,
-        BigDecimal cost
+        BigDecimal cost,
+        BigDecimal freeShippingThreshold,
+        BigDecimal minOrderAmount
 ) {}
