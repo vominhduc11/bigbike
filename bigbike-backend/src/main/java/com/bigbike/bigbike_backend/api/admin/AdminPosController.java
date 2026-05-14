@@ -3,8 +3,12 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.payment.RefundService;
 import com.bigbike.bigbike_backend.service.pos.PosOrderService;
 import com.bigbike.bigbike_backend.service.pos.PosOrderService.PosCreateOrderRequest;
@@ -14,6 +18,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
@@ -35,22 +40,27 @@ public class AdminPosController {
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
     private final RefundService refundService;
+    private final SerialLifecycleService serialLifecycleService;
 
     public AdminPosController(
             PosOrderService posOrderService,
             AdminCatalogReadService catalogReadService,
             DevAdminAuthService devAdminAuthService,
             ApiResponseFactory apiResponseFactory,
-            RefundService refundService
+            RefundService refundService,
+            SerialLifecycleService serialLifecycleService
     ) {
         this.posOrderService = posOrderService;
         this.catalogReadService = catalogReadService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
         this.refundService = refundService;
+        this.serialLifecycleService = serialLifecycleService;
     }
 
-    /** Tìm kiếm sản phẩm nhanh theo tên / SKU — dùng cho POS search bar. */
+    /** Tìm kiếm sản phẩm nhanh theo tên / SKU — dùng cho POS search bar.
+     *  Re-fetches each result with variants so the POS grid can render per-variant cards.
+     *  N+1 is intentional: POS search returns ≤20 results and is user-triggered. */
     @GetMapping("/products/search")
     public ApiListResponse<?> searchProducts(
             @RequestParam String q,
@@ -59,8 +69,38 @@ public class AdminPosController {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "pos.read");
-        var results = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null);
-        return apiResponseFactory.list(results, request);
+        var summary = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null);
+        // listProducts returns Products without variants (list-view optimisation).
+        // POS needs variants → re-fetch detail for each result.
+        // For products with no variants but with product-level serials (trackSerials at product scope),
+        // synthesize a single virtual variant so the POS grid can render them.
+        var withVariants = summary.items().stream()
+                .map(p -> {
+                    Product detail = catalogReadService.getProductById(p.id());
+                    if (detail.variants() != null && !detail.variants().isEmpty()) return detail;
+                    long serialCount = serialLifecycleService.countAvailable(detail.id(), null);
+                    if (serialCount == 0) return detail;
+                    ProductVariant synthetic = new ProductVariant(
+                            null, detail.sku(), null, List.of(),
+                            detail.price(), ProductStockState.IN_STOCK, (int) Math.min(serialCount, Integer.MAX_VALUE),
+                            detail.image(), List.of(), true, true);
+                    return new Product(
+                            detail.id(), detail.sku(), detail.slug(), detail.name(),
+                            detail.shortDescription(), detail.description(),
+                            detail.brand(), detail.category(), detail.categories(),
+                            detail.image(), detail.gallery(), detail.videos(),
+                            detail.price(), List.of(synthetic),
+                            detail.specifications(), detail.stockState(), detail.stockQuantity(),
+                            detail.forceOutOfStock(), detail.publishStatus(),
+                            detail.homepageBlock(), detail.homepageOrder(),
+                            detail.rating(), detail.ratingCount(), detail.contentBottom(),
+                            detail.seo(), detail.createdAt(), detail.updatedAt());
+                })
+                .toList();
+        var posPage = new com.bigbike.bigbike_backend.service.common.PageResult<>(
+                withVariants, summary.page(), summary.pageSize(),
+                summary.totalItems(), summary.totalPages());
+        return apiResponseFactory.list(posPage, request);
     }
 
     /** Tạo đơn tại quầy. Trừ kho ngay, không cần địa chỉ giao hàng. */
@@ -90,7 +130,7 @@ public class AdminPosController {
             @Valid @RequestBody PosRefundRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "pos.write");
+        devAdminAuthService.requirePermission(request, "pos.refund");
         UUID adminId = resolveAdminId();
         String clientIp = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");

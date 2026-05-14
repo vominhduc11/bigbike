@@ -211,6 +211,7 @@ function normalizeVariant(input) {
       ? input.gallery.map(normalizeImageAsset).filter(Boolean)
       : [],
     isAvailable: input.isAvailable !== false,
+    trackSerials: Boolean(input.trackSerials),
   }
 }
 

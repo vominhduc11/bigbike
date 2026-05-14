@@ -271,6 +271,7 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'redirects.re
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'redirects.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='redirects.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.read'                    WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.write'                   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.write');
+INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.refund'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.refund');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.price_override'          WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.price_override');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.read'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.create'          WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.create');

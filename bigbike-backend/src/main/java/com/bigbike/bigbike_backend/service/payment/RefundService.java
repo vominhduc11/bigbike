@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.Refun
 import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ public class RefundService {
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final OrderStockRestoreService orderStockRestoreService;
+    private final SerialLifecycleService serialLifecycleService;
     private final ReceivableJpaRepository receivableRepo;
     private final RefundTransactionJpaRepository refundTransactionRepo;
 
@@ -50,6 +52,7 @@ public class RefundService {
             OrderNotificationService orderNotificationService,
             AdminOrderWsService adminOrderWsService,
             OrderStockRestoreService orderStockRestoreService,
+            SerialLifecycleService serialLifecycleService,
             ReceivableJpaRepository receivableRepo,
             RefundTransactionJpaRepository refundTransactionRepo) {
         this.orderRepo = orderRepo;
@@ -59,6 +62,7 @@ public class RefundService {
         this.orderNotificationService = orderNotificationService;
         this.adminOrderWsService = adminOrderWsService;
         this.orderStockRestoreService = orderStockRestoreService;
+        this.serialLifecycleService = serialLifecycleService;
         this.receivableRepo = receivableRepo;
         this.refundTransactionRepo = refundTransactionRepo;
     }
@@ -132,6 +136,7 @@ public class RefundService {
 
         if (fullRefund && wasCompleted) {
             orderStockRestoreService.restoreForRefund(orderId);
+            serialLifecycleService.restoreSoldSerialsForRefund(orderId, adminId);
         }
 
         // Cancel outstanding receivable when the entire order is refunded.

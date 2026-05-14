@@ -2477,7 +2477,7 @@ function buildMockRoles() {
     'admin-users.read','admin-users.write',
     'roles.read','roles.write',
     'audit-logs.read',
-    'pos.read','pos.write','pos.price_override',
+    'pos.read','pos.write','pos.refund','pos.price_override',
     'receivables.read','receivables.create','receivables.record_payment',
     'receivables.write_off','receivables.override_limit','receivables.export',
     'reports.read','reports.export',

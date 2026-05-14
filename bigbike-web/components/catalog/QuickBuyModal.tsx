@@ -121,7 +121,7 @@ export function QuickBuyModal({
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 overflow-hidden">
         <SheetHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
           <SheetTitle>Mua ngay</SheetTitle>
           <SheetDescription className="text-sm text-muted-foreground line-clamp-1">

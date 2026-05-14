@@ -4370,6 +4370,7 @@ select.bb-input { cursor: pointer; }
    maxWidth capping on the mega-panel) but the global guard is kept as belt-and-braces
    because removing it is likely to re-introduce a scrollbar on some devices. */
 html, body { overflow-x: hidden; }
+html { overflow-y: scroll; }
 
 /* -- Hard guard: no element should bleed past viewport ------ */
 img, picture, video, svg, canvas { max-width: 100%; }

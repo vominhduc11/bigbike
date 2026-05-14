@@ -50,6 +50,21 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `POST /api/v1/orders/quick-buy` | Creates order directly from one product/variant request. | `CONFIRMED_FROM_CODE` | `CheckoutService.quickBuy` |
 | `POST /api/v1/admin/pos/orders` | Creates completed/paid in-store order immediately. | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
 
+## Checkout Options Contract
+
+`GET /api/v1/checkout/options` — no auth required; accessible to guests and authenticated customers.
+
+Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
+- `paymentMethods`: `[{ code, title }]` — currently `COD` ("Thanh toán khi nhận hàng") and `BACS` ("Chuyển khoản ngân hàng"). **Codes are uppercase strings.**
+- `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount }]`
+  - `cost` — base shipping fee (VND, never null; zero-cost methods have `cost: 0`)
+  - `freeShippingThreshold` — if `orderSubtotal >= freeShippingThreshold`, effective shipping is 0; `null` means no threshold
+  - `minOrderAmount` — minimum subtotal required to use this method; `null` means no minimum
+
+Frontend must compute `effectiveShippingCost` using `freeShippingThreshold` before displaying totals — the cart total returned by `GET /api/v1/cart` does not include shipping (always 0 in cart phase).
+
+Status: `CONFIRMED_FROM_CODE` | Evidence: `CheckoutService.getOptions`, `ShippingMethodOptionResponse.java`, `CheckoutController.java`
+
 ## Dashboard Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |

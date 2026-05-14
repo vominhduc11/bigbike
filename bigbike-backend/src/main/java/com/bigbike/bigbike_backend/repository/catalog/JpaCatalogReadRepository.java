@@ -535,7 +535,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                             variant.stockQuantity(),
                             image,
                             gallery,
-                            variant.isAvailable()
+                            variant.isAvailable(),
+                            variant.trackSerials()
                     );
                 })
                 .toList();
@@ -624,7 +625,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getImageMimeType()
                 ),
                 gallery,
-                entity.isAvailable()
+                entity.isAvailable(),
+                entity.isTrackSerials()
         );
     }
 

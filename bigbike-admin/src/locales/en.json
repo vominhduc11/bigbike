@@ -1760,6 +1760,7 @@
     "permAuditLogsRead": "View audit log",
     "permPosRead": "View point-of-sale screen",
     "permPosWrite": "Create walk-in orders",
+    "permPosRefund": "Refund walk-in orders",
     "permPosPriceOverride": "Override price at point of sale",
     "permReceivablesRead": "View customer receivables",
     "permReceivablesCreate": "Create receivable entries",

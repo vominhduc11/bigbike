@@ -7,22 +7,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
@@ -61,6 +65,8 @@ class Phase1MPosApiTest {
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired ReceivableJpaRepository receivableRepo;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired ProductSerialJpaRepository serialRepo;
+    @Autowired WarrantyRecordJpaRepository warrantyRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -801,7 +807,7 @@ class Phase1MPosApiTest {
                 .andExpect(status().isConflict());
 
         var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
-        assertThat(order.getRefundAmount()).isNull();
+        assertThat(order.getRefundAmount()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
@@ -825,7 +831,7 @@ class Phase1MPosApiTest {
                 .andExpect(status().isBadRequest());
 
         var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
-        assertThat(order.getRefundAmount()).isNull();
+        assertThat(order.getRefundAmount()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
@@ -979,5 +985,159 @@ class Phase1MPosApiTest {
 
     private String extractJsonUuid(String json, String key) {
         return extractJsonString(json, key);
+    }
+
+    // ── Phase 4 — pos.refund permission gate ────────────────────────────────────
+
+    @Test
+    void posRefund_withoutPosRefundPermission_returns403() throws Exception {
+        // SHOP_MANAGER does not have pos.refund — refund endpoint must return 403
+        TestVariant tv = createProductWithVariant(10, 100000);
+        String shopMgrToken = loginShopManager();
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBodyWithQty("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + shopMgrToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":100000,\"reason\":\"test\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void posRefund_withPosRefundPermission_returns200() throws Exception {
+        // ADMIN has pos.refund — refund endpoint must succeed
+        TestVariant tv = createProductWithVariant(10, 100000);
+
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBodyWithQty("CASH", tv.productId, tv.variantId, 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":100000,\"reason\":\"test\"}"))
+                .andExpect(status().isOk());
+    }
+
+    // ── Phase 1 — P0: serial-tracked refund restores serial + voids warranty ──
+
+    @Test
+    void posRefund_fullRefundSerialTrackedOrder_restoresSerialAndVoidsWarranty() throws Exception {
+        TestSerial ts = createSerialTrackedProductWithSerial();
+
+        // Before sale: serial must be IN_STOCK
+        assertThat(serialRepo.findById(ts.serialId()).orElseThrow().getStatus())
+                .isEqualTo(ProductSerialStatus.IN_STOCK);
+
+        // Create POS order — reserve + mark sold happen inside
+        MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(posOrderBodyWithQty("CASH", ts.productId(), ts.variantId(), 1,
+                                UUID.randomUUID().toString())))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
+
+        // After sale: serial must be SOLD and warranty must be ACTIVE
+        assertThat(serialRepo.findById(ts.serialId()).orElseThrow().getStatus())
+                .isEqualTo(ProductSerialStatus.SOLD);
+        assertThat(warrantyRepo.findBySerialId(ts.serialId())).isPresent();
+        assertThat(warrantyRepo.findBySerialId(ts.serialId()).orElseThrow().getStatus())
+                .isEqualTo("ACTIVE");
+
+        // Full refund: 300000 × 1 = 300000
+        mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":300000,\"reason\":\"Khách trả hàng tại quầy\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUND_APPLIED"));
+
+        // Serial must be restored to IN_STOCK
+        assertThat(serialRepo.findById(ts.serialId()).orElseThrow().getStatus())
+                .isEqualTo(ProductSerialStatus.IN_STOCK);
+
+        // Warranty must be VOIDED
+        assertThat(warrantyRepo.findBySerialId(ts.serialId()).orElseThrow().getStatus())
+                .isEqualTo("VOIDED");
+
+        // Stock movement for serial refund must be written
+        assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId(
+                "ORDER_REFUND_SERIAL", UUID.fromString(orderId))).isTrue();
+
+        // Order must be fully REFUNDED
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getStatus()).isEqualTo("REFUNDED");
+        assertThat(order.getPaymentStatus()).isEqualTo("REFUNDED");
+    }
+
+    private record TestSerial(String productId, String variantId, UUID serialId) {}
+
+    private TestSerial createSerialTrackedProductWithSerial() {
+        Instant now = Instant.now();
+        String catId = "cat-ser-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = new CategoryEntity();
+        cat.setId(catId);
+        cat.setSlug("ser-cat-" + catId);
+        cat.setName("Serial Test Cat");
+        cat.setVisible(true);
+        cat.setCreatedAt(now);
+        cat.setUpdatedAt(now);
+        categoryRepo.save(cat);
+
+        String productId = UUID.randomUUID().toString();
+        ProductEntity product = new ProductEntity();
+        product.setId(productId);
+        product.setSlug("ser-" + productId.replace("-", "").substring(0, 12));
+        product.setName("Serial Product " + productId.substring(0, 8));
+        product.setRetailPrice(BigDecimal.valueOf(300000));
+        product.setCurrency("VND");
+        product.setPublishStatus(PublishStatus.PUBLISHED);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
+        product.setCategory(cat);
+        ProductEntity savedProduct = productRepo.save(product);
+
+        String variantId = UUID.randomUUID().toString();
+        ProductVariantEntity variant = new ProductVariantEntity();
+        variant.setId(variantId);
+        variant.setProduct(savedProduct);
+        variant.setName("Default");
+        variant.setSku("SER-" + variantId.replace("-", "").substring(0, 8));
+        variant.setRetailPrice(BigDecimal.valueOf(300000));
+        variant.setCurrency("VND");
+        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setQuantityOnHand(0); // serial-tracked: qty managed by DB trigger, not directly
+        variant.setTrackSerials(true);
+        variant.setAvailable(true);
+        variant.setSortOrder(0);
+        ProductVariantEntity savedVariant = variantRepo.save(variant);
+
+        ProductSerialEntity serial = new ProductSerialEntity();
+        serial.setProduct(savedProduct);
+        serial.setVariant(savedVariant);
+        serial.setSerialNumber("SN-" + UUID.randomUUID().toString().substring(0, 12));
+        serial.setStatus(ProductSerialStatus.IN_STOCK);
+        serial.setReceivedAt(now);
+        serial.setCreatedAt(now);
+        serial.setUpdatedAt(now);
+        ProductSerialEntity savedSerial = serialRepo.save(serial);
+
+        return new TestSerial(productId, variantId, savedSerial.getId());
     }
 }

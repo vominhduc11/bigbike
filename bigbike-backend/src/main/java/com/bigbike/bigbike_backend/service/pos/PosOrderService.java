@@ -65,6 +65,15 @@ public class PosOrderService {
             String downPaymentMethod     // Payment method used for the downpayment (CASH or CARD_TERMINAL); defaults to CASH
     ) {}
 
+    public record PosOrderItemResponse(
+            String productName,
+            String variantName,
+            String sku,
+            int quantity,
+            BigDecimal unitPrice,
+            BigDecimal lineTotal
+    ) {}
+
     public record PosOrderResponse(
             UUID orderId,
             String orderNumber,
@@ -73,7 +82,10 @@ public class PosOrderService {
             String paymentMethod,
             BigDecimal totalAmount,
             Long tenderedAmount,
-            Long changeAmount
+            Long changeAmount,
+            BigDecimal paidAmount,
+            BigDecimal refundAmount,
+            List<PosOrderItemResponse> items
     ) {}
 
     private static final String CHANNEL_IN_STORE = "IN_STORE";
@@ -142,6 +154,7 @@ public class PosOrderService {
 
         // Credit validation must happen before idempotency check (need customer entity below)
         CustomerEntity creditCustomer = null;
+        CustomerEntity walkInCustomer = null;
         if ("CREDIT".equals(req.paymentMethod())) {
             if (req.customerId() == null || req.customerId().isBlank()) {
                 throw new ConflictException("customerId là bắt buộc khi thanh toán bằng CREDIT.");
@@ -150,6 +163,11 @@ public class PosOrderService {
             // Amount unknown yet — we validate after totaling; store customer for later
             creditCustomer = customerRepo.findById(custId)
                     .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
+        } else if (req.customerId() != null && !req.customerId().isBlank()) {
+            // CASH/CARD: optional link to existing customer profile for order history
+            try {
+                walkInCustomer = customerRepo.findById(UUID.fromString(req.customerId())).orElse(null);
+            } catch (IllegalArgumentException ignored) {}
         }
 
         // Idempotency: return existing order if client retries with same key
@@ -163,7 +181,9 @@ public class PosOrderService {
                 }
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
-                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt);
+                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
+                        found.getPaidAmount(), found.getRefundAmount(),
+                        loadItemsForOrder(found.getId()));
             }
         }
 
@@ -174,10 +194,6 @@ public class PosOrderService {
         for (PosLineItemRequest item : req.items()) {
             if (item.productId() == null || item.productId().isBlank()) {
                 throw new ConflictException("productId là bắt buộc cho mỗi dòng hàng.");
-            }
-            // P0 #4: productVariantId is required
-            if (item.productVariantId() == null || item.productVariantId().isBlank()) {
-                throw new ConflictException("productVariantId là bắt buộc cho mỗi dòng hàng POS.");
             }
             if (item.quantity() <= 0) {
                 throw new ConflictException("Số lượng phải là số nguyên dương (>= 1).");
@@ -200,27 +216,42 @@ public class PosOrderService {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' không còn được bán.");
             }
 
-            ProductVariantEntity variant = variantRepo.findByIdForUpdate(item.productVariantId())
-                    .orElseThrow(() -> new NotFoundException("Variant not found: " + item.productVariantId()));
+            boolean isProductLevelSerial = item.productVariantId() == null || item.productVariantId().isBlank();
 
-            // P0 #4: variant must belong to product
-            if (variant.getProduct() != null && !variant.getProduct().getId().equals(product.getId())) {
-                throw new ConflictException("Variant '" + item.productVariantId()
-                        + "' không thuộc sản phẩm '" + product.getName() + "'.");
-            }
-            // P0 #4: variant must be available
-            if (!variant.isAvailable()) {
-                throw new ConflictException("Phiên bản '" + variant.getName() + "' không còn khả dụng.");
-            }
-            if (variant.isTrackSerials()) {
-                long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
+            ProductVariantEntity variant = null;
+            if (!isProductLevelSerial) {
+                variant = variantRepo.findByIdForUpdate(item.productVariantId())
+                        .orElseThrow(() -> new NotFoundException("Variant not found: " + item.productVariantId()));
+                // P0 #4: variant must belong to product
+                if (variant.getProduct() != null && !variant.getProduct().getId().equals(product.getId())) {
+                    throw new ConflictException("Variant '" + item.productVariantId()
+                            + "' không thuộc sản phẩm '" + product.getName() + "'.");
+                }
+                // P0 #4: variant must be available
+                if (!variant.isAvailable()) {
+                    throw new ConflictException("Phiên bản '" + variant.getName() + "' không còn khả dụng.");
+                }
+                if (variant.isTrackSerials()) {
+                    long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
+                    if (available < item.quantity()) {
+                        throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                                + available + " serial khả dụng trong kho.");
+                    }
+                } else if (variant.getQuantityOnHand() < item.quantity()) {
+                    throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                            + variant.getQuantityOnHand() + " trong kho.");
+                }
+            } else {
+                // Product-level serial (no variant): validate serial stock directly
+                long available = serialLifecycleService.countAvailable(product.getId(), null);
+                if (available == 0) {
+                    throw new ConflictException("Sản phẩm '" + product.getName()
+                            + "' không có serial nào trong kho (không có biến thể).");
+                }
                 if (available < item.quantity()) {
                     throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                             + available + " serial khả dụng trong kho.");
                 }
-            } else if (variant.getQuantityOnHand() < item.quantity()) {
-                throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
-                        + variant.getQuantityOnHand() + " trong kho.");
             }
 
             BigDecimal basePrice = resolvePrice(product, variant);
@@ -240,10 +271,10 @@ public class PosOrderService {
             OrderLineItemEntity li = new OrderLineItemEntity();
             li.setProductId(tryParseUUID(product.getId()));
             li.setProductPk(product.getId());
-            li.setProductVariantId(tryParseUUID(variant.getId()));
-            li.setSku(variant.getSku() != null ? variant.getSku() : product.getSku());
+            li.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
+            li.setSku(variant != null && variant.getSku() != null ? variant.getSku() : product.getSku());
             li.setProductName(product.getName());
-            li.setVariantName(variant.getName());
+            li.setVariantName(variant != null ? variant.getName() : null);
             li.setQuantity(item.quantity());
             li.setUnitPrice(unitPrice);
             li.setRegularPrice(product.getRetailPrice());
@@ -277,6 +308,11 @@ public class PosOrderService {
                 ? BigDecimal.valueOf(req.downPayment()).setScale(2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
+        if (isCreditOrder && downPayment.compareTo(subtotal) > 0) {
+            throw new ConflictException("Thanh toán trước (" + downPayment
+                    + ") không được vượt quá tổng đơn hàng (" + subtotal + ").");
+        }
+
         // POS: không có phí ship; CREDIT = bán chịu, CASH/CARD = trả tiền ngay
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
@@ -292,6 +328,8 @@ public class PosOrderService {
                 : "PAID");
         if (creditCustomer != null) {
             order.setCustomerId(creditCustomer.getId());
+        } else if (walkInCustomer != null) {
+            order.setCustomerId(walkInCustomer.getId());
         }
         order.setCustomerPhone(req.customerPhone());
         order.setCustomerNote(req.customerNote());
@@ -332,7 +370,9 @@ public class PosOrderService {
                 }
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
-                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt);
+                        found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
+                        found.getPaidAmount(), found.getRefundAmount(),
+                        loadItemsForOrder(found.getId()));
             }
             throw ex;
         }
@@ -359,6 +399,10 @@ public class PosOrderService {
             payment.setAmount(collected);
             payment.setCurrency("VND");
             payment.setPaidAt(now);
+            if ("CARD_TERMINAL".equals(req.paymentMethod())
+                    && req.cardReferenceNumber() != null && !req.cardReferenceNumber().isBlank()) {
+                payment.setTransactionId(req.cardReferenceNumber());
+            }
             payment.setCreatedAt(now);
             payment.setUpdatedAt(now);
             paymentRepo.save(payment);
@@ -389,13 +433,29 @@ public class PosOrderService {
         orderNote.setCreatedAt(now);
         noteRepo.save(orderNote);
 
-        // P0 #3: audit log
+        // P0 #3: audit log — enrich with override flags and item summary
+        boolean priceOverridden = req.items().stream()
+                .anyMatch(it -> it.unitPriceOverride() != null);
+        boolean creditLimitOverridden = isCreditOrder && canOverrideCreditLimit && creditCustomer != null;
+        StringBuilder itemsSummary = new StringBuilder("[");
+        for (int i = 0; i < lineItems.size(); i++) {
+            OrderLineItemEntity li = lineItems.get(i);
+            if (i > 0) itemsSummary.append(",");
+            itemsSummary.append("{\"sku\":\"").append(li.getSku() != null ? li.getSku() : "").append("\"")
+                    .append(",\"qty\":").append(li.getQuantity())
+                    .append(",\"unitPrice\":").append(li.getUnitPrice().setScale(0, RoundingMode.HALF_UP).longValue())
+                    .append("}");
+        }
+        itemsSummary.append("]");
         String auditPayload = "{\"orderId\":\"" + savedOrder.getId() + "\""
                 + ",\"orderNumber\":\"" + savedOrder.getOrderNumber() + "\""
                 + ",\"staffId\":\"" + (staffId != null ? staffId : "") + "\""
                 + ",\"totalAmount\":" + subtotal.setScale(0, RoundingMode.HALF_UP).longValue()
                 + ",\"paymentMethod\":\"" + req.paymentMethod() + "\""
                 + ",\"itemCount\":" + req.items().size()
+                + ",\"priceOverridden\":" + priceOverridden
+                + ",\"creditLimitOverridden\":" + creditLimitOverridden
+                + ",\"items\":" + itemsSummary
                 + ",\"source\":\"POS\"}";
         AuditLogEntity auditLog = new AuditLogEntity();
         auditLog.setActorType("ADMIN");
@@ -422,11 +482,19 @@ public class PosOrderService {
             changeAmount = req.tenderedAmount() - subtotal.setScale(0, RoundingMode.HALF_UP).longValue();
         }
 
+        BigDecimal resolvedPaidAmount = isCreditOrder ? downPayment : subtotal;
+        List<PosOrderItemResponse> responseItems = lineItems.stream()
+                .map(li -> new PosOrderItemResponse(
+                        li.getProductName(), li.getVariantName(), li.getSku(),
+                        li.getQuantity(), li.getUnitPrice(), li.getLineTotal()))
+                .collect(java.util.stream.Collectors.toList());
         return new PosOrderResponse(
                 savedOrder.getId(), savedOrder.getOrderNumber(),
                 savedOrder.getStatus(), savedOrder.getPaymentStatus(),
                 req.paymentMethod(), subtotal,
-                req.tenderedAmount(), changeAmount
+                req.tenderedAmount(), changeAmount,
+                resolvedPaidAmount, BigDecimal.ZERO,
+                responseItems
         );
     }
 
@@ -457,6 +525,17 @@ public class PosOrderService {
         for (int i = 0; i < items.size(); i++) {
             PosLineItemRequest item = items.get(i);
             OrderLineItemEntity lineItem = savedLineItems.get(i);
+
+            boolean isProductLevelSerial = item.productVariantId() == null || item.productVariantId().isBlank();
+
+            if (isProductLevelSerial) {
+                // Product-level serial (no variant): reserve then immediately mark sold
+                Instant reservedUntil = now.plusSeconds(60);
+                serialLifecycleService.reserveForOrderLine(
+                        lineItem, item.productId(), null, item.quantity(), reservedUntil);
+                serialLifecycleService.markSoldForOrder(orderId);
+                continue;
+            }
 
             ProductVariantEntity v = variantRepo.findByIdForUpdate(item.productVariantId())
                     .orElseThrow(() -> new NotFoundException(
@@ -502,6 +581,18 @@ public class PosOrderService {
         if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method) && !"CREDIT".equals(method)) {
             throw new ConflictException("POS payment method must be CASH, CARD_TERMINAL, or CREDIT.");
         }
+    }
+
+    private List<PosOrderItemResponse> loadItemsForOrder(UUID orderId) {
+        return lineItemRepo.findByOrderId(orderId).stream()
+                .map(li -> new PosOrderItemResponse(
+                        li.getProductName(),
+                        li.getVariantName(),
+                        li.getSku(),
+                        li.getQuantity(),
+                        li.getUnitPrice(),
+                        li.getLineTotal()))
+                .toList();
     }
 
     private UUID tryParseUUID(String s) {

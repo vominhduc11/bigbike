@@ -42,6 +42,11 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
     typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
   )
 
+  // Walk-in customer link (CASH / CARD_TERMINAL)
+  const [walkInQuery, setWalkInQuery] = useState('')
+  const [walkInResults, setWalkInResults] = useState([])
+  const [walkInCustomer, setWalkInCustomer] = useState(null)
+
   // CREDIT state
   const [customerQuery, setCustomerQuery] = useState('')
   const [customerResults, setCustomerResults] = useState([])
@@ -75,6 +80,10 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
       setDownPayment('')
       setCustomerResults([])
       setCustomerQuery('')
+    } else {
+      setWalkInCustomer(null)
+      setWalkInQuery('')
+      setWalkInResults([])
     }
   }
 
@@ -84,6 +93,22 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
       const res = await fetchCustomers({ search: q, page: 1, pageSize: 10 })
       setCustomerResults(res.items || [])
     } catch { setCustomerResults([]) }
+  }
+
+  async function searchWalkIn(q) {
+    if (!q || q.length < 2) { setWalkInResults([]); return }
+    try {
+      const res = await fetchCustomers({ search: q, page: 1, pageSize: 5 })
+      setWalkInResults(res.items || [])
+    } catch { setWalkInResults([]) }
+  }
+
+  function handleSelectWalkIn(c) {
+    setWalkInCustomer(c)
+    setWalkInQuery('')
+    setWalkInResults([])
+    if (!customerName) setCustomerName(c.displayName || '')
+    if (!customerPhone && c.phone) setCustomerPhone(c.phone)
   }
 
   async function loadCustomerCredit(customerId) {
@@ -114,6 +139,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
         customerPhone: customerPhone.trim() || undefined,
         staffNote: staffNote.trim() || undefined,
         posIdempotencyKey: idempotencyKey,
+        ...(walkInCustomer ? { customerId: walkInCustomer.id } : {}),
         items: cart.map((item) => ({
           productId: item.productId,
           productVariantId: item.variantId,
@@ -173,6 +199,54 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                />
             </div>
           </div>
+
+          {method !== 'CREDIT' && (
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Liên kết khách hàng cũ (tuỳ chọn)</label>
+              {!walkInCustomer ? (
+                <div style={{ position: 'relative' }}>
+                  <Input
+                    style={{ width: '100%' }}
+                    placeholder="Tìm theo tên hoặc email..."
+                    value={walkInQuery}
+                    onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
+                    autoComplete="off"
+                  />
+                  {walkInResults.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                      background: 'var(--admin-color-surface-raised)',
+                      border: '1px solid var(--admin-color-border-subtle)',
+                      borderRadius: 'var(--admin-radius-md)',
+                      boxShadow: 'var(--admin-shadow-md)',
+                      maxHeight: 180, overflowY: 'auto',
+                    }}>
+                      {walkInResults.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--admin-color-surface-hover)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                          onClick={() => handleSelectWalkIn(c)}
+                        >
+                          <strong>{c.displayName || c.email}</strong>
+                          {c.email && c.displayName && <span style={{ color: 'var(--admin-color-text-muted)', marginLeft: 8, fontSize: '0.75rem' }}>{c.email}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--admin-color-surface-base)', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-md)' }}>
+                  <span style={{ flex: 1, fontSize: '0.85rem' }}>Đã liên kết: <strong>{walkInCustomer.displayName || walkInCustomer.email}</strong></span>
+                  <button type="button" onClick={() => { setWalkInCustomer(null); setWalkInQuery('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="pos-method-grid">
             {PAYMENT_METHODS.map((m) => (
@@ -392,9 +466,7 @@ function printReceipt(order, cart) {
   const changeRow = order?.changeAmount > 0
     ? `<tr><td colspan="3">Tiền thừa trả lại</td><td class="r">${fmt(order.changeAmount)}</td></tr>`
     : ''
-  const w = window.open('', '_blank', 'width=420,height=640')
-  if (!w) return
-  w.document.write(`<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Hóa đơn ${order?.orderNumber || ''}</title>
 <style>
   body{font-family:monospace;font-size:12px;max-width:320px;margin:0 auto;padding:12px}
@@ -426,10 +498,31 @@ function printReceipt(order, cart) {
 </table>
 <hr class="sep">
 <p class="center" style="margin-top:12px">Cảm ơn quý khách!</p>
-</body></html>`)
-  w.document.close()
-  w.focus()
-  setTimeout(() => { w.print(); w.close() }, 300)
+</body></html>`
+
+  const w = window.open('', '_blank', 'width=420,height=640')
+  if (w) {
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print(); w.close() }, 300)
+    return
+  }
+  // Fallback: hidden iframe khi browser chặn popup
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:420px;height:640px;border:none'
+  document.body.appendChild(iframe)
+  try {
+    iframe.contentDocument.open()
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    setTimeout(() => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch {}
+      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 1000)
+    }, 300)
+  } catch {
+    try { document.body.removeChild(iframe) } catch {}
+  }
 }
 
 function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess }) {
@@ -560,17 +653,32 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
   )
 }
 
-function ReceiptModal({ order, paymentMethod, cart, onClose }) {
+function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
   const { t } = useTranslation()
   const isCreditOrder = paymentMethod === 'CREDIT' || order?.paymentMethod === 'CREDIT'
-  const items = cart || []
+  // Prefer items from BE response (survives page reload); fall back to cart snapshot
+  const items = (order?.items?.length
+    ? order.items.map((it, i) => ({
+        cartKey: `be-${i}`,
+        productName: it.productName,
+        variantName: it.variantName,
+        sku: it.sku,
+        qty: it.quantity,
+        price: Number(it.unitPrice),
+        overriddenPrice: null,
+        hasSerial: false,
+      }))
+    : null) || cart || []
   const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
-  const hasSerialItems = items.some((it) => it.hasSerial === true)
-  const isPaid = order?.paymentStatus === 'PAID'
+  const hasSerialItems = (cart || []).some((it) => it.hasSerial === true)
+  const canHaveRefund = ['PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED'].includes(order?.paymentStatus)
   const [refundedAmount, setRefundedAmount] = useState(0)
   const [showRefund, setShowRefund] = useState(false)
-  const refundableRemaining = isPaid ? Math.max(0, total - refundedAmount) : 0
-  const canRefund = isPaid && refundableRemaining > 0
+  // Use paidAmount from BE when available; fall back to cart total for legacy PAID orders
+  const effectivePaid = order?.paidAmount != null ? Number(order.paidAmount) : (order?.paymentStatus === 'PAID' ? total : 0)
+  const alreadyRefunded = (order?.refundAmount != null ? Number(order.refundAmount) : 0) + refundedAmount
+  const refundableRemaining = canHaveRefund ? Math.max(0, effectivePaid - alreadyRefunded) : 0
+  const canRefundAction = canHaveRefund && refundableRemaining > 0
   return (
     <div className="pos-modal-overlay" onClick={onClose}>
       <div className="pos-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
@@ -599,7 +707,7 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.variantId}>
+                <tr key={item.cartKey}>
                   <td style={{ padding: '4px 6px' }}>
                     <div>{item.productName}</div>
                     {item.variantName && <div style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.variantName}</div>}
@@ -646,23 +754,23 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
           <Button variant="secondary"
             type="button"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={() => printReceipt(order, cart)}
+            onClick={() => printReceipt(order, items)}
           >
             <Printer size={14} /> In hóa đơn
           </Button>
-          {isPaid && (
+          {canHaveRefund && canRefund && (
             <Button
               variant="destructive"
               type="button"
-              disabled={!canRefund}
-              title={!canRefund ? t('pos.refundedBadge') : undefined}
+              disabled={!canRefundAction}
+              title={!canRefundAction ? t('pos.refundedBadge') : undefined}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}
               onClick={() => setShowRefund(true)}
             >
               <RotateCcw size={14} /> {t('pos.refundButton')}
             </Button>
           )}
-          {!isPaid && isCreditOrder && (
+          {!canHaveRefund && isCreditOrder && (
             <span style={{
               flex: '0 0 auto',
               padding: '0.5rem 0.75rem',
@@ -698,7 +806,7 @@ function ReceiptModal({ order, paymentMethod, cart, onClose }) {
 const POS_CART_KEY = 'pos_cart'
 const POS_CART_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours
 
-export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverridePrice }) {
+export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverridePrice, canRefund }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
   const dq = useDebounce(q, 200)
@@ -754,14 +862,17 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
   function addToCart(variant, product) {
     const unitPrice = priceOf(variant.price ?? product.price)
+    // Variants synthesized for product-level serials have id = null; key by product id instead.
+    const cartKey = variant.id ?? ('p:' + product.id)
     setCart((prev) => {
-      const existing = prev.find((c) => c.variantId === variant.id)
+      const existing = prev.find((c) => c.cartKey === cartKey)
       if (existing) {
-        return prev.map((c) => c.variantId === variant.id ? { ...c, qty: c.qty + 1 } : c)
+        return prev.map((c) => c.cartKey === cartKey ? { ...c, qty: Math.min(c.stock, c.qty + 1) } : c)
       }
       return [...prev, {
+        cartKey,
         productId: product.id,
-        variantId: variant.id,
+        variantId: variant.id ?? null,
         productName: product.name,
         variantName: summarizeOptions(variant.options),
         sku: variant.sku,
@@ -770,6 +881,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
         thumbnail: product.image?.url ?? null,
         qty: 1,
         stock: variant.stockQuantity ?? 999,
+        hasSerial: variant.trackSerials === true,
       }]
     })
   }
@@ -781,25 +893,25 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
   function updateQty(cartKey, delta) {
     setCart((prev) => prev
-      .map((c) => c.variantId === cartKey ? { ...c, qty: Math.max(1, Math.min(c.stock, c.qty + delta)) } : c)
+      .map((c) => c.cartKey === cartKey ? { ...c, qty: Math.max(1, Math.min(c.stock, c.qty + delta)) } : c)
       .filter((c) => c.qty > 0)
     )
   }
 
   function removeFromCart(cartKey) {
-    setCart((prev) => prev.filter((c) => c.variantId !== cartKey))
+    setCart((prev) => prev.filter((c) => c.cartKey !== cartKey))
   }
 
   function startEditPrice(item) {
-    setEditingPriceId(item.variantId)
+    setEditingPriceId(item.cartKey)
     setPriceInput(String(item.overriddenPrice != null ? item.overriddenPrice : item.price))
   }
 
-  function commitEditPrice(variantId) {
+  function commitEditPrice(cartKey) {
     const parsed = Number(priceInput)
     if (!isNaN(parsed) && parsed >= 0) {
       setCart((prev) => prev.map((c) =>
-        c.variantId === variantId ? { ...c, overriddenPrice: parsed === c.price ? null : parsed } : c
+        c.cartKey === cartKey ? { ...c, overriddenPrice: parsed === c.price ? null : parsed } : c
       ))
     }
     setEditingPriceId(null)
@@ -849,13 +961,13 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
           <div className="pos-product-grid">
             {results.map((product) =>
-              (product.variants || []).map((variant) => {
+              (product.variants || []).filter((v) => v.stockQuantity === null || v.stockQuantity > 0).map((variant) => {
                 const displayPrice = priceOf(variant.price ?? product.price)
                 const variantLabel = summarizeOptions(variant.options)
                 const outOfStock = variant.stockQuantity !== null && variant.stockQuantity <= 0
                 return (
                   <button
-                    key={variant.id}
+                    key={variant.id ?? ('p:' + product.id)}
                     type="button"
                     className="pos-product-card"
                     onClick={() => handleVariantClick(variant, product)}
@@ -893,13 +1005,13 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           ) : (
             <div className="pos-cart-items">
               {cart.map((item) => (
-                <div key={item.variantId} className="pos-cart-item">
+                <div key={item.cartKey} className="pos-cart-item">
                   <div className="pos-cart-item-info">
                     <span className="pos-cart-item-name">{item.productName}</span>
                     {(item.variantName || item.sku) && (
                       <span className="pos-cart-item-sku">{item.variantName || item.sku}</span>
                     )}
-                    {editingPriceId === item.variantId ? (
+                    {editingPriceId === item.cartKey ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                         <Input
                           ref={priceInputRef}
@@ -909,10 +1021,10 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                           value={priceInput}
                           onChange={(e) => setPriceInput(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitEditPrice(item.variantId)
+                            if (e.key === 'Enter') commitEditPrice(item.cartKey)
                             if (e.key === 'Escape') cancelEditPrice()
                           }}
-                          onBlur={() => commitEditPrice(item.variantId)}
+                          onBlur={() => commitEditPrice(item.cartKey)}
                          />
                       </div>
                     ) : (
@@ -939,10 +1051,10 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                     )}
                   </div>
                   <div className="pos-cart-item-qty">
-                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.variantId, -1)}><Minus size={12} /></Button>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.cartKey, -1)}><Minus size={12} /></Button>
                     <span>{item.qty}</span>
-                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.variantId, 1)}><Plus size={12} /></Button>
-                    <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg" type="button" onClick={() => removeFromCart(item.variantId)}><Trash2 size={12} /></Button>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.cartKey, 1)}><Plus size={12} /></Button>
+                    <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg" type="button" onClick={() => removeFromCart(item.cartKey)}><Trash2 size={12} /></Button>
                   </div>
                   <span className="pos-cart-item-subtotal">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</span>
                 </div>
@@ -1003,6 +1115,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           order={lastOrder}
           paymentMethod={lastOrder?.usedMethod}
           cart={lastOrder?.cartSnapshot}
+          canRefund={canRefund}
           onClose={() => setModal(null)}
         />
       )}

@@ -1758,6 +1758,7 @@
     "permAuditLogsRead": "Xem nhật ký kiểm tra",
     "permPosRead": "Xem màn hình bán tại quầy",
     "permPosWrite": "Tạo đơn hàng tại quầy",
+    "permPosRefund": "Hoàn tiền đơn hàng tại quầy",
     "permPosPriceOverride": "Ghi đè giá khi bán tại quầy",
     "permReceivablesRead": "Xem công nợ khách hàng",
     "permReceivablesCreate": "Tạo phiếu công nợ",

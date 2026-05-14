@@ -321,7 +321,50 @@ public class SerialLifecycleService {
         writeStockMovement(serial, from, targetStatus, "INSPECTION_RESULT", null, now);
     }
 
-    // ── 7. Release expired reservations (called by scheduler) ────────────────
+    // ── 7. Restore SOLD serials on full POS refund ────────────────────────────
+
+    /**
+     * Transitions all SOLD serials linked to the order back to IN_STOCK and voids their warranty records.
+     * Called only on full refund of a COMPLETED order — goods are physically returned to the shelf.
+     * Idempotent: if ORDER_REFUND_SERIAL stock movements already exist, the call is a no-op.
+     */
+    @Transactional
+    public void restoreSoldSerialsForRefund(UUID orderId, UUID actorId) {
+        if (stockMovementRepo.existsByReferenceTypeAndReferenceId("ORDER_REFUND_SERIAL", orderId)) {
+            return;
+        }
+
+        List<OrderLineItemSerialEntity> bridges = olisRepo.findByOrderId(orderId);
+        if (bridges.isEmpty()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        for (OrderLineItemSerialEntity bridge : bridges) {
+            serialRepo.findById(bridge.getSerialId()).ifPresent(serial -> {
+                if (serial.getStatus() != ProductSerialStatus.SOLD) return;
+
+                serial.setStatus(ProductSerialStatus.IN_STOCK);
+                serial.setSoldAt(null);
+                serial.setOrderLineItemId(null);
+                serial.setUpdatedAt(now);
+                serialRepo.save(serial);
+
+                writeStockMovement(serial, ProductSerialStatus.SOLD, ProductSerialStatus.IN_STOCK,
+                        "ORDER_REFUND_SERIAL", orderId, now);
+
+                warrantyRepo.findBySerialId(serial.getId()).ifPresent(warranty -> {
+                    if ("ACTIVE".equals(warranty.getStatus())) {
+                        warranty.setStatus("VOIDED");
+                        warranty.setUpdatedAt(now);
+                        warrantyRepo.save(warranty);
+                    }
+                });
+            });
+        }
+    }
+
+    // ── 8. Release expired reservations (called by scheduler) ────────────────
 
     /**
      * Releases all RESERVED serials whose TTL has expired,
