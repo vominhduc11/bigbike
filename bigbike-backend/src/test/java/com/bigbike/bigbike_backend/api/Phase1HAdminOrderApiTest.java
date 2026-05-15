@@ -465,34 +465,18 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.paidAt").isNotEmpty());
     }
 
-    // ── 22. Update payment status — PARTIALLY_PAID requires valid paidAmount ──
+    // ── 22. Update payment status — PARTIALLY_PAID is no longer a valid status ──
 
     @Test
-    void updatePaymentStatus_partiallyPaid_invalidAmount_returns400() throws Exception {
+    void updatePaymentStatus_partiallyPaid_returns400() throws Exception {
         OrderInfo order = placeGuestOrder(3000000);
 
-        // paidAmount = 0 → invalid
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PARTIALLY_PAID\",\"paidAmount\":0}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-
-        // paidAmount >= totalAmount → invalid (totalAmount for a 3000000 VND product + shipping)
-        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PARTIALLY_PAID\",\"paidAmount\":9999999}")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
-
-        // Valid partial amount
+        // PARTIALLY_PAID is not a valid payment status anymore
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentStatus\":\"PARTIALLY_PAID\",\"paidAmount\":500000}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_PAID"))
-                .andExpect(jsonPath("$.data.paidAmount").value(500000.00));
+                .andExpect(status().isBadRequest());
     }
 
     // ── 23. Update payment status — UNPAID clears paidAt ─────────────────────
@@ -594,7 +578,7 @@ class Phase1HAdminOrderApiTest {
     }
 
     @Test
-    void createRefund_partial_setsPartiallyRefunded() throws Exception {
+    void createRefund_partial_isRejected_partialRefundNotSupported() throws Exception {
         OrderInfo order = placeGuestOrder(7200000);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
@@ -603,6 +587,7 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        // Partial refund (less than paidAmount) is no longer supported — must refund full amount
         mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -610,12 +595,7 @@ class Phase1HAdminOrderApiTest {
                                  "note":"Refund 500k","customerVisible":true}
                                 """)
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_REFUNDED"))
-                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
-                .andExpect(jsonPath("$.data.refundAmount").value(500000.00))
-                .andExpect(jsonPath("$.data.refundReason").value("CUSTOMER_REQUEST"))
-                .andExpect(jsonPath("$.data.refundedAt").isNotEmpty());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -901,10 +881,10 @@ class Phase1HAdminOrderApiTest {
         assertThat(m.getVariant()).isNull();
     }
 
-    // ── Partial refund does NOT restore stock ─────────────────────────────────
+    // ── Partial refund is rejected — only full refund is supported ──────────────
 
     @Test
-    void partialRefund_doesNotRestoreStock() throws Exception {
+    void partialRefund_isRejected_returns400() throws Exception {
         VariantFixture fixture = createProductWithVariantStock(6, 3000000);
         OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
 
@@ -922,19 +902,16 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        // Partial refund (3M of 6M paid) must be rejected — only full refund allowed
         mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refundAmount\":3000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_REFUNDED"));
+                .andExpect(status().isBadRequest());
 
-        // Stock must NOT be restored for a partial refund
-        ProductVariantEntity notRestored = variantRepo.findById(fixture.variantId()).orElseThrow();
-        assertThat(notRestored.getQuantityOnHand()).isEqualTo(4);
-
-        assertThat(stockMovementRepo
-                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).isEmpty();
+        // Stock must NOT be touched
+        ProductVariantEntity notTouched = variantRepo.findById(fixture.variantId()).orElseThrow();
+        assertThat(notTouched.getQuantityOnHand()).isEqualTo(4);
     }
 
     // ── ORD-005 idempotency: double call does not double-restore stock ─────────

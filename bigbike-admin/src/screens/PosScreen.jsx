@@ -671,7 +671,7 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
     : null) || cart || []
   const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
   const hasSerialItems = (cart || []).some((it) => it.hasSerial === true)
-  const canHaveRefund = ['PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED'].includes(order?.paymentStatus)
+  const canHaveRefund = order?.paymentStatus === 'PAID'
   const [refundedAmount, setRefundedAmount] = useState(0)
   const [showRefund, setShowRefund] = useState(false)
   // Use paidAmount from BE when available; fall back to cart total for legacy PAID orders

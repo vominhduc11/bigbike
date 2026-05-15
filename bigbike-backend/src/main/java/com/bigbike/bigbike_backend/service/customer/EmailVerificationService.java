@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.customer;
 
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEmailVerificationTokenEntity;
@@ -37,16 +38,19 @@ public class EmailVerificationService {
     private final CustomerEmailVerificationTokenJpaRepository tokenRepo;
     private final CustomerJpaRepository customerRepo;
     private final EmailDispatchService emailDispatch;
+    private final GuestOrderLinkingService guestOrderLinkingService;
     private final String verifyBaseUrl;
 
     public EmailVerificationService(
             CustomerEmailVerificationTokenJpaRepository tokenRepo,
             CustomerJpaRepository customerRepo,
             EmailDispatchService emailDispatch,
+            GuestOrderLinkingService guestOrderLinkingService,
             @Value("${bigbike.mail.verify-base-url:https://bigbike.vn/xac-nhan-email}") String verifyBaseUrl) {
         this.tokenRepo = tokenRepo;
         this.customerRepo = customerRepo;
         this.emailDispatch = emailDispatch;
+        this.guestOrderLinkingService = guestOrderLinkingService;
         this.verifyBaseUrl = verifyBaseUrl;
     }
 
@@ -88,6 +92,27 @@ public class EmailVerificationService {
     }
 
     /**
+     * Resends a fresh verification email for the given customer.
+     * No-ops silently when email is already verified or mail is not configured.
+     * Raises ConflictException when the email is already verified so the caller
+     * can surface a clear message to the user.
+     */
+    @Transactional
+    public void resendVerification(UUID customerId) {
+        CustomerEntity customer = customerRepo.findById(customerId)
+                .orElseThrow(() -> new com.bigbike.bigbike_backend.api.error.NotFoundException("Customer not found."));
+
+        if (customer.getEmailVerifiedAt() != null) {
+            throw new ConflictException("Email đã được xác minh rồi.");
+        }
+        if (customer.getEmail() == null || customer.getEmail().isBlank()) {
+            throw ValidationException.fromField("email", "MISSING", "Tài khoản này không có email để xác minh.");
+        }
+
+        issueAndSend(customer);
+    }
+
+    /**
      * Validate a raw token, mark the customer's email as verified, and
      * consume the token. Raises a ValidationException for expired / unknown
      * / already-used tokens so the caller can return a 400 with a clear code.
@@ -116,6 +141,10 @@ public class EmailVerificationService {
 
         token.setUsedAt(now);
         tokenRepo.save(token);
+
+        // Link any guest orders placed with this email — safe only after email ownership is proven.
+        guestOrderLinkingService.linkVerifiedEmailOrders(customer.getId());
+
         return customer.getId();
     }
 

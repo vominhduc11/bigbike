@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 
-const PAYMENT_STATUSES = ['UNPAID', 'PENDING', 'PAID', 'PARTIALLY_PAID', 'FAILED', 'REFUNDED', 'CANCELLED', 'PARTIALLY_REFUNDED']
+const PAYMENT_STATUSES = ['UNPAID', 'PAID', 'REFUNDED', 'CANCELLED']
 
 const RETURN_REASONS = [
   { value: 'DEFECTIVE', label: 'Hàng bị lỗi' },
@@ -133,8 +133,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [saving, setSaving] = useState(false)
   const [allowedTransitions, setAllowedTransitions] = useState([])
   const [showRefundModal, setShowRefundModal] = useState(false)
-  const [pendingPaymentStatus, setPendingPaymentStatus] = useState(null)
-  const [partialPaidAmount, setPartialPaidAmount] = useState('')
   const [noteContent, setNoteContent] = useState('')
   const [noteCustomerVisible, setNoteCustomerVisible] = useState(false)
   const [submittingNote, setSubmittingNote] = useState(false)
@@ -205,36 +203,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   async function handlePaymentStatusChange(e) {
     const newStatus = e.target.value
-    if (newStatus === 'PARTIALLY_PAID') {
-      setPendingPaymentStatus(newStatus)
-      setPartialPaidAmount('')
-      return
-    }
-    setPendingPaymentStatus(null)
     setSaving(true)
     try {
       const response = await updateOrderPaymentStatus(orderId, newStatus)
       setState((prev) => ({ ...prev, order: response.item }))
-      toast.success(t('orders.detail.paymentUpdated'))
-    } catch (err) {
-      toast.error(err.message || t('orders.detail.updatePaymentError'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handlePartialPaidConfirm() {
-    const amount = parseFloat(partialPaidAmount)
-    if (!partialPaidAmount || isNaN(amount) || amount <= 0) {
-      toast.error(t('orders.detail.partialAmountRequired'))
-      return
-    }
-    setSaving(true)
-    try {
-      const response = await updateOrderPaymentStatus(orderId, 'PARTIALLY_PAID', amount)
-      setState((prev) => ({ ...prev, order: response.item }))
-      setPendingPaymentStatus(null)
-      setPartialPaidAmount('')
       toast.success(t('orders.detail.paymentUpdated'))
     } catch (err) {
       toast.error(err.message || t('orders.detail.updatePaymentError'))
@@ -364,7 +336,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           <label style={{ display: 'block' }}>
             {t('orders.detail.paymentStatus')}
             <Select
-              value={pendingPaymentStatus ?? order.paymentStatus}
+              value={order.paymentStatus}
               onValueChange={handlePaymentStatusChange}
               disabled={!canUpdate || saving}
             ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -373,31 +345,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               ))}
             </SelectContent></Select>
           </label>
-          {pendingPaymentStatus === 'PARTIALLY_PAID' && (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
-              <Input
-                type="number"
-                min="0"
-                style={{ flex: 1 }}
-                placeholder={t('orders.detail.partialAmountPlaceholder')}
-                value={partialPaidAmount}
-                onChange={(e) => setPartialPaidAmount(e.target.value)}
-                disabled={saving}
-               />
-              <button type="button" className="btn btn-primary" onClick={handlePartialPaidConfirm} disabled={saving}>
-                {t('common.confirm')}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => { setPendingPaymentStatus(null); setPartialPaidAmount('') }} disabled={saving}>
-                {t('common.cancel')}
-              </button>
-            </div>
-          )}
           <p style={{ marginTop: '0.5rem' }}><strong>{t('orders.detail.paymentMethod')}</strong> {formatText(order.paymentMethod)}</p>
         </DetailSection>
       </div>
 
-      {/* Refund section: visible when payment status is PAID or PARTIALLY_PAID */}
-      {canUpdate && (order.paymentStatus === 'PAID' || order.paymentStatus === 'PARTIALLY_PAID') && (
+      {/* Refund section: visible when payment status is PAID */}
+      {canUpdate && order.paymentStatus === 'PAID' && (
         <DetailSection title={t('refund.sectionTitle')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
             <div>

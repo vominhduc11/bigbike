@@ -199,10 +199,10 @@ class AdminReceivableApiTest {
                 .andExpect(jsonPath("$.data.status").value("PARTIALLY_PAID"))
                 .andExpect(jsonPath("$.data.outstandingAmount").value(700000));
 
-        // Order paidAmount must be updated
+        // Order paidAmount must be updated; paymentStatus stays UNPAID until fully settled
         OrderEntity refreshedOrder = orderRepo.findById(order.getId()).orElseThrow();
         assertThat(refreshedOrder.getPaidAmount()).isEqualByComparingTo(new BigDecimal("300000"));
-        assertThat(refreshedOrder.getPaymentStatus()).isEqualTo("PARTIALLY_PAID");
+        assertThat(refreshedOrder.getPaymentStatus()).isEqualTo("UNPAID");
     }
 
     @Test
@@ -304,7 +304,7 @@ class AdminReceivableApiTest {
     @Test
     void customerCredit_withPartiallyPaidReceivable_currentOutstandingIsCorrect() throws Exception {
         CustomerEntity customer = createCreditCustomer(); // credit_limit = 10_000_000
-        OrderEntity order = createOrder("PARTIALLY_PAID", new BigDecimal("3000000"), new BigDecimal("1000000"), customer.getId());
+        OrderEntity order = createOrder("UNPAID", new BigDecimal("3000000"), new BigDecimal("1000000"), customer.getId());
 
         ReceivableEntity ar = new ReceivableEntity();
         ar.setOrderId(order.getId());

@@ -78,8 +78,7 @@ public class AdminOrderService {
     );
 
     private static final Set<String> ALLOWED_PAYMENT_STATUSES = Set.of(
-            "UNPAID", "PENDING", "PAID", "PARTIALLY_PAID", "FAILED", "REFUNDED", "CANCELLED", "PARTIALLY_REFUNDED",
-            "WRITTEN_OFF"
+            "UNPAID", "PAID", "REFUNDED", "CANCELLED"
     );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
@@ -102,15 +101,10 @@ public class AdminOrderService {
     private static final Map<String, Set<String>> ALLOWED_PAYMENT_TRANSITIONS;
     static {
         ALLOWED_PAYMENT_TRANSITIONS = new HashMap<>();
-        ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",             Set.of("PENDING", "PAID", "PARTIALLY_PAID", "CANCELLED", "FAILED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PENDING",            Set.of("PAID", "PARTIALLY_PAID", "CANCELLED", "FAILED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",               Set.of("PARTIALLY_REFUNDED", "REFUNDED", "UNPAID"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PARTIALLY_PAID",     Set.of("PAID", "PARTIALLY_REFUNDED", "REFUNDED", "CANCELLED", "FAILED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PARTIALLY_REFUNDED", Set.of("REFUNDED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",           Set.of());
-        ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED",          Set.of());
-        ALLOWED_PAYMENT_TRANSITIONS.put("FAILED",             Set.of("PAID", "PARTIALLY_PAID", "CANCELLED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("WRITTEN_OFF",        Set.of());
+        ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",    Set.of("PAID", "CANCELLED"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",      Set.of("REFUNDED", "UNPAID"));
+        ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",  Set.of());
+        ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED", Set.of());
     }
 
     private static final Set<String> ALLOWED_FULFILLMENT_STATUSES = Set.of(
@@ -361,15 +355,6 @@ public class AdminOrderService {
                     paymentRepo.save(p);
                 });
             }
-            case "PARTIALLY_PAID" -> {
-                if (req.paidAmount() == null || req.paidAmount().compareTo(BigDecimal.ZERO) <= 0
-                        || req.paidAmount().compareTo(order.getTotalAmount()) >= 0) {
-                    throw ValidationException.fromField("paidAmount", "INVALID",
-                            "paidAmount must be > 0 and < totalAmount for PARTIALLY_PAID.");
-                }
-                order.setPaymentStatus("PARTIALLY_PAID");
-                order.setPaidAmount(req.paidAmount().setScale(2, RoundingMode.HALF_UP));
-            }
             case "UNPAID" -> {
                 if (req.paidAmount() != null && req.paidAmount().compareTo(BigDecimal.ZERO) != 0) {
                     throw ValidationException.fromField("paidAmount", "INVALID",
@@ -548,9 +533,9 @@ public class AdminOrderService {
      * Rule 2 — COD orders must have collected the cash before completion;
      * "complete" means goods + money, not just goods.
      *
-     * Rule 1 — COMPLETED + UNPAID / PARTIALLY_PAID is only legitimate for
-     * credit/receivable orders (POS CREDIT, walk-in công nợ). Anything else
-     * leaves money on the table with no receivable to chase it.
+     * Rule 1 — COMPLETED + UNPAID is only legitimate for credit/receivable orders
+     * (POS CREDIT, walk-in công nợ). Anything else leaves money on the table
+     * with no receivable to chase it.
      *
      * POS in-store orders (fulfillmentType = IN_STORE) intentionally skip the
      * DELIVERY guard — the goods change hands at the counter when the order
@@ -573,7 +558,7 @@ public class AdminOrderService {
                     "Đơn COD phải được thu tiền trước khi hoàn thành.");
         }
 
-        if ("UNPAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus)) {
+        if ("UNPAID".equals(paymentStatus)) {
             boolean isCreditOrder = "CREDIT".equalsIgnoreCase(paymentMethod);
             boolean hasCustomer = order.getCustomerId() != null;
             if (!isCreditOrder || !hasCustomer) {
@@ -586,17 +571,17 @@ public class AdminOrderService {
     /**
      * Reject direct cancel when the order already has money attached.
      *
-     * Rule 4 — PAID and PARTIALLY_PAID orders must go through the refund/void
-     * flow ({@link com.bigbike.bigbike_backend.service.payment.RefundService})
+     * Rule 4 — PAID orders must go through the refund flow
+     * ({@link com.bigbike.bigbike_backend.service.payment.RefundService})
      * so the payment record, receivable, audit log, and stock/serial lifecycle
      * stay consistent. A direct CANCELLED patch would skip every one of those
      * steps and leave the books out of sync. UNPAID orders cancel cleanly.
      */
     private void validateBeforeCancel(OrderEntity order) {
         String paymentStatus = order.getPaymentStatus();
-        if ("PAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus)) {
+        if ("PAID".equals(paymentStatus)) {
             throw new ConflictException(
-                    "Đơn đã có thanh toán, cần xử lý hoàn tiền/void trước khi hủy.");
+                    "Đơn đã có thanh toán, cần xử lý hoàn tiền trước khi hủy.");
         }
     }
 

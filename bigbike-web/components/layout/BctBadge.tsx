@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
 interface BctBadgeProps {
   alt: string;
   height: number;
 }
 
-const EXTERNAL_SRC = "https://online.gov.vn/Content/EndUser/Images/LogoCCDVTMDT.png";
-
 export function BctBadge({ alt, height }: BctBadgeProps) {
+  const [hidden, setHidden] = useState(false);
+
+  if (hidden) return null;
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -15,10 +19,7 @@ export function BctBadge({ alt, height }: BctBadgeProps) {
       alt={alt}
       height={height}
       loading="lazy"
-      onError={(e) => {
-        e.currentTarget.onerror = null;
-        e.currentTarget.src = EXTERNAL_SRC;
-      }}
+      onError={() => setHidden(true)}
     />
   );
 }

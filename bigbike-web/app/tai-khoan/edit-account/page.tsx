@@ -38,11 +38,11 @@ function EditAccountContent() {
     const gender = (fd.get("gender") as string).trim();
     const dob = (fd.get("dob") as string).trim();
 
+    const newEmailValue = email && email !== (profile?.email ?? "") ? email : undefined;
+    const newPhoneValue = phone && phone !== (profile?.phone ?? "") ? phone : undefined;
+    const isSensitiveChange = !!newPassword || !!newEmailValue || !!newPhoneValue;
+
     if (newPassword) {
-      if (!currentPassword) {
-        setPasswordError("Vui l\u00f2ng nh\u1eadp m\u1eadt kh\u1ea9u hi\u1ec7n t\u1ea1i \u0111\u1ec3 \u0111\u1ed5i m\u1eadt kh\u1ea9u.");
-        return;
-      }
       if (newPassword.length < 8) {
         setPasswordError("M\u1eadt kh\u1ea9u m\u1edbi ph\u1ea3i c\u00f3 \u00edt nh\u1ea5t 8 k\u00fd t\u1ef1.");
         return;
@@ -53,13 +53,18 @@ function EditAccountContent() {
       }
     }
 
+    if (isSensitiveChange && !currentPassword) {
+      setPasswordError("Vui l\u00f2ng nh\u1eadp m\u1eadt kh\u1ea9u hi\u1ec7n t\u1ea1i \u0111\u1ec3 thay \u0111\u1ed5i th\u00f4ng tin nh\u1ea1y c\u1ea3m (email, s\u1ed1 \u0111i\u1ec7n tho\u1ea1i ho\u1eb7c m\u1eadt kh\u1ea9u).");
+      return;
+    }
+
     setSaving(true);
     try {
       await updateCustomerProfile({
         displayName: displayName || undefined,
-        phone: phone || undefined,
-        email: email || undefined,
-        currentPassword: newPassword && currentPassword ? currentPassword : undefined,
+        phone: newPhoneValue,
+        email: newEmailValue,
+        currentPassword: isSensitiveChange ? currentPassword : undefined,
         newPassword: newPassword || undefined,
         gender: gender || undefined,
         dob: dob || undefined,

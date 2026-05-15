@@ -145,15 +145,14 @@ public class ReceivableService {
             ar.setStatus("PARTIALLY_PAID");
         }
 
-        // Update order paid amount and payment status
+        // Update order paid amount and payment status — only flip to PAID when fully settled
         BigDecimal newOrderPaid = order.getPaidAmount().add(amount);
         order.setPaidAmount(newOrderPaid);
-        BigDecimal net = order.getTotalAmount().subtract(order.getRefundAmount());
+        BigDecimal net = order.getTotalAmount().subtract(
+                order.getRefundAmount() != null ? order.getRefundAmount() : BigDecimal.ZERO);
         if (newOrderPaid.compareTo(net) >= 0) {
             order.setPaymentStatus("PAID");
             order.setPaidAt(now);
-        } else if (newOrderPaid.compareTo(BigDecimal.ZERO) > 0) {
-            order.setPaymentStatus("PARTIALLY_PAID");
         }
         order.setUpdatedAt(now);
         orderRepo.save(order);

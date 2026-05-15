@@ -44,9 +44,9 @@ String orderStatusLabel(String status) => switch (status.toUpperCase()) {
     };
 
 String paymentStatusLabel(String status) => switch (status.toUpperCase()) {
-      'PENDING' => 'Chờ thanh toán',
+      'UNPAID' => 'Chưa thanh toán',
       'PAID' => 'Đã thanh toán',
-      'FAILED' => 'Thất bại',
-      'REFUNDED' => 'Đã hoàn',
+      'REFUNDED' => 'Đã hoàn tiền',
+      'CANCELLED' => 'Đã huỷ',
       _ => status,
     };

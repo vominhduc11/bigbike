@@ -445,7 +445,8 @@ class Phase1MPosApiTest {
     }
 
     @Test
-    void createPosCreditOrder_withDownPayment_createsPartiallyPaidOrderPaymentAndReceivable() throws Exception {
+    void createPosCreditOrder_withDownPaymentField_isIgnored_orderStartsUnpaid() throws Exception {
+        // downPayment feature removed — field is ignored, order always starts UNPAID with full receivable
         TestVariant tv = createProductWithVariant(5, 1000000);
         CustomerEntity customer = createCreditCustomer(new BigDecimal("10000000"));
         String idempotencyKey = UUID.randomUUID().toString();
@@ -463,19 +464,18 @@ class Phase1MPosApiTest {
                                 }
                                 """.formatted(idempotencyKey, customer.getId(), tv.productId, tv.variantId)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.paymentStatus").value("PARTIALLY_PAID"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"))
                 .andReturn();
 
         String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
-        // Receivable outstanding = 1000000 - 300000 = 700000
+        // Receivable outstanding = full 1000000 (downPayment ignored)
         var arOpt = receivableRepo.findByOrderId(UUID.fromString(orderId));
         assertThat(arOpt).isPresent();
-        assertThat(arOpt.get().getOutstandingAmount()).isEqualByComparingTo(new BigDecimal("700000"));
-        assertThat(arOpt.get().getPaidAmount()).isEqualByComparingTo(new BigDecimal("300000"));
-        // Payment record created for down payment
+        assertThat(arOpt.get().getOutstandingAmount()).isEqualByComparingTo(new BigDecimal("1000000"));
+        assertThat(arOpt.get().getPaidAmount()).isEqualByComparingTo(new BigDecimal("0"));
+        // No payment record for CREDIT order (no upfront payment)
         var payments = paymentRepo.findByOrderId(UUID.fromString(orderId));
-        assertThat(payments).isNotEmpty();
-        assertThat(payments.get(0).getAmount()).isEqualByComparingTo(new BigDecimal("300000"));
+        assertThat(payments).isEmpty();
     }
 
     @Test
@@ -734,7 +734,8 @@ class Phase1MPosApiTest {
     }
 
     @Test
-    void posRefund_cashPartialRefund_setsPartiallyRefundedAndDoesNotRestoreStock() throws Exception {
+    void posRefund_cashPartialRefund_isRejected_returns400() throws Exception {
+        // Partial refunds are not supported — must pass full refundable amount
         TestVariant tv = createProductWithVariant(10, 200000);
 
         MvcResult createRes = mockMvc.perform(post("/api/v1/admin/pos/orders")
@@ -746,29 +747,29 @@ class Phase1MPosApiTest {
                 .andReturn();
         String orderId = extractJsonString(createRes.getResponse().getContentAsString(), "orderId");
 
-        // Partial refund: 150000 of 400000
+        // Partial refund: 150000 of 400000 → rejected
         mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refundAmount\":150000,\"reason\":\"Lập sai giá\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
+        // Order state must be unchanged
         var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
-        assertThat(order.getStatus()).isEqualTo("COMPLETED"); // not flipped on partial
-        assertThat(order.getPaymentStatus()).isEqualTo("PARTIALLY_REFUNDED");
-        assertThat(order.getRefundAmount()).isEqualByComparingTo(new BigDecimal("150000"));
+        assertThat(order.getPaymentStatus()).isEqualTo("PAID");
+        assertThat(order.getRefundAmount()).isNull();
 
-        // Stock NOT restored on partial refund
-        int qtyAfterPartial = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
-        assertThat(qtyAfterPartial).isEqualTo(8);
+        // Stock must not be touched
+        int qtyAfterRejected = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();
+        assertThat(qtyAfterRejected).isEqualTo(8);
         assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("ORDER_REFUND",
                 UUID.fromString(orderId))).isFalse();
 
-        // Second refund completes the remaining 250000 → flips to REFUNDED + restores stock
+        // Full refund succeeds
         mockMvc.perform(post("/api/v1/admin/pos/orders/" + orderId + "/refund")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":250000,\"reason\":\"Khách yêu cầu huỷ\"}"))
+                        .content("{\"refundAmount\":400000,\"reason\":\"Khách yêu cầu huỷ\"}"))
                 .andExpect(status().isOk());
 
         var orderAfter = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();

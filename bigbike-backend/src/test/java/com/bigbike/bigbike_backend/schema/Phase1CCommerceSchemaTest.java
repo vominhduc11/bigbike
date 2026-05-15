@@ -98,7 +98,7 @@ class Phase1CCommerceSchemaTest {
         CartEntity cart = savedCart(sid);
 
         assertThat(cart.getId()).isNotNull();
-        Optional<CartEntity> found = cartRepo.findBySessionId(sid);
+        Optional<CartEntity> found = cartRepo.findBySessionId(sid).stream().findFirst();
         assertThat(found).isPresent();
         assertThat(found.get().getStatus()).isEqualTo("ACTIVE");
     }

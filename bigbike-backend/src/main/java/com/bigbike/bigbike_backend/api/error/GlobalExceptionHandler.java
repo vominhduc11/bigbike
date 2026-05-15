@@ -39,6 +39,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class, BindException.class})
     public ResponseEntity<ApiErrorResponse> handleConstraintViolations(Exception ex, HttpServletRequest request) {
         List<ApiErrorDetail> details = ValidationErrorMapper.from(ex);
+        LOG.warn("Validation failed [{}]: {}", request.getRequestURI(), details);
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", details, request);
     }
 
@@ -60,6 +61,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex,
             HttpServletRequest request
     ) {
+        LOG.warn("Unreadable request body [{}]: {}", request.getRequestURI(), ex.getMessage());
         ApiErrorDetail detail = new ApiErrorDetail(
                 null,
                 "INVALID_VALUE",

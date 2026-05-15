@@ -236,13 +236,9 @@
     },
     "payment": {
       "UNPAID": "Chưa thanh toán",
-      "PENDING": "Chờ thanh toán",
       "PAID": "Đã thanh toán",
-      "PARTIALLY_PAID": "Thanh toán một phần",
-      "FAILED": "Thất bại",
       "REFUNDED": "Đã hoàn tiền",
-      "CANCELLED": "Đã huỷ",
-      "PARTIALLY_REFUNDED": "Hoàn tiền một phần"
+      "CANCELLED": "Đã huỷ"
     },
     "customer": {
       "ACTIVE": "Hoạt động",
@@ -1392,7 +1388,6 @@
       "REFUNDED": "Đã hoàn",
       "UNPAID": "Chưa thanh toán",
       "PAID": "Đã thanh toán",
-      "PARTIALLY_PAID": "Thanh toán một phần",
       "OVERPAID": "Thanh toán dư",
       "ACTIVE": "Đang hoạt động",
       "SUSPENDED": "Tạm khoá",

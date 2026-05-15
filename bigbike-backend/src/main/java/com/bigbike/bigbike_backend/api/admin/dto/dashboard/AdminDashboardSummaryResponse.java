@@ -15,7 +15,7 @@ public record AdminDashboardSummaryResponse(
 
     public record KpiResponse(
             BigDecimal todayRevenue,       // valid GMV: SUM(totalAmount) for orders placed today, excludes CANCELLED/FAILED/REFUNDED
-            BigDecimal todayPaidRevenue,   // actual cash collected: SUM(paidAmount) for PAID/PARTIALLY_PAID
+            BigDecimal todayPaidRevenue,   // actual cash collected: SUM(paidAmount) for PAID/REFUNDED
             Double todayRevenuePct,        // null when no prev-day data
             int todayOrders,
             int todayOrdersDelta,

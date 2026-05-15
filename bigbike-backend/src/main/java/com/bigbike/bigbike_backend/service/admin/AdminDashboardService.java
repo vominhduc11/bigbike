@@ -64,9 +64,8 @@ public class AdminDashboardService {
 
         // ── KPI aggregates (valid orders only — excludes CANCELLED/FAILED/REFUNDED) ─
         BigDecimal todayRevenue     = orderRepo.sumRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
-        // REPORT_RULE_002: paidRevenue includes PARTIALLY_REFUNDED and REFUNDED payment statuses —
-        // paidAmount is never reduced by RefundService.applyRefund(); it is the total cash collected.
-        // Uses same canonical status set as AdminReportService.sumPaidRevenueBetweenExcluding()
+        // paidRevenue = SUM(paidAmount) for PAID/REFUNDED orders — paidAmount is never reduced by RefundService.
+        // Uses same status set as AdminReportService.sumPaidRevenueBetweenExcluding()
         // so Dashboard.todayPaidRevenue matches Reports.paidRevenue for the same date range.
         BigDecimal todayPaidRevenue = orderRepo.sumPaidRevenueSinceExcluding(todayStart, REVENUE_EXCLUDED_STATUSES);
         BigDecimal prevRevenue      = orderRepo.sumRevenueBetweenExcluding(prevDayStart, todayStart, REVENUE_EXCLUDED_STATUSES);

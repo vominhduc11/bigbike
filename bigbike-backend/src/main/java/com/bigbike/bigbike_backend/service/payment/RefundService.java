@@ -92,11 +92,9 @@ public class RefundService {
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
         String paymentStatus = order.getPaymentStatus();
-        if (!"PAID".equals(paymentStatus) && !"PARTIALLY_PAID".equals(paymentStatus)
-                && !"PARTIALLY_REFUNDED".equals(paymentStatus)) {
+        if (!"PAID".equals(paymentStatus)) {
             throw new ConflictException(
-                    "Refund requires payment status PAID, PARTIALLY_PAID, or PARTIALLY_REFUNDED. Current: "
-                            + paymentStatus);
+                    "Refund requires payment status PAID. Current: " + paymentStatus);
         }
 
         BigDecimal scaled = refundAmount.setScale(2, RoundingMode.HALF_UP);
@@ -121,44 +119,43 @@ public class RefundService {
         }
         order.setRefundedAt(now);
 
-        boolean fullRefund = newTotalRefunded.compareTo(order.getPaidAmount()) == 0;
+        // Refund must be for the full paid amount — partial refunds are not supported.
+        if (scaled.compareTo(maxRefundable) != 0) {
+            throw ValidationException.fromField("refundAmount", "INVALID",
+                    "refundAmount must equal the full refundable amount (" + maxRefundable + "). Partial refunds are not supported.");
+        }
+
         boolean wasCompleted = "COMPLETED".equals(order.getStatus());
-        if (fullRefund) {
-            order.setPaymentStatus("REFUNDED");
-            if (wasCompleted) {
-                order.setStatus("REFUNDED");
-            }
-        } else {
-            order.setPaymentStatus("PARTIALLY_REFUNDED");
+        order.setPaymentStatus("REFUNDED");
+        if (wasCompleted) {
+            order.setStatus("REFUNDED");
         }
         order.setUpdatedAt(now);
         orderRepo.save(order);
 
-        if (fullRefund && wasCompleted) {
+        if (wasCompleted) {
             orderStockRestoreService.restoreForRefund(orderId);
             serialLifecycleService.restoreSoldSerialsForRefund(orderId, adminId);
         }
 
-        // Cancel outstanding receivable when the entire order is refunded.
+        // Cancel outstanding receivable when the order is refunded.
         // Avoids leaving a ghost debt on a returned credit-sale order.
-        if (fullRefund) {
-            receivableRepo.findByOrderId(orderId).ifPresent(ar -> {
-                if (!"CLOSED".equals(ar.getStatus()) && !"WRITTEN_OFF".equals(ar.getStatus())) {
-                    ar.setWrittenOffAmount(ar.getOutstandingAmount());
-                    ar.setOutstandingAmount(BigDecimal.ZERO);
-                    ar.setStatus("WRITTEN_OFF");
-                    ar.setWriteOffReason("ORDER_REFUNDED");
-                    ar.setWrittenOffAt(now);
-                    ar.setUpdatedAt(now);
-                    receivableRepo.save(ar);
-                }
-            });
-        }
+        receivableRepo.findByOrderId(orderId).ifPresent(ar -> {
+            if (!"CLOSED".equals(ar.getStatus()) && !"WRITTEN_OFF".equals(ar.getStatus())) {
+                ar.setWrittenOffAmount(ar.getOutstandingAmount());
+                ar.setOutstandingAmount(BigDecimal.ZERO);
+                ar.setStatus("WRITTEN_OFF");
+                ar.setWriteOffReason("ORDER_REFUNDED");
+                ar.setWrittenOffAt(now);
+                ar.setUpdatedAt(now);
+                receivableRepo.save(ar);
+            }
+        });
 
         UUID resolvedPaymentId = paymentRepo.findByOrderId(orderId).stream().findFirst().map(p -> {
             p.setRefundAmount(newTotalRefunded);
             p.setRefundedAt(now);
-            if (fullRefund) p.setStatus("REFUNDED");
+            p.setStatus("REFUNDED");
             p.setUpdatedAt(now);
             paymentRepo.save(p);
             return p.getId();
@@ -204,14 +201,12 @@ public class RefundService {
         auditLog.setCreatedAt(now);
         auditLogRepo.save(auditLog);
 
-        if (fullRefund) {
-            try {
-                orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", null);
-            } catch (Exception e) {
-                LoggerFactory.getLogger(RefundService.class)
-                        .warn("Refund notification failed for order {}: {}",
-                                order.getOrderNumber(), e.getMessage());
-            }
+        try {
+            orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", null);
+        } catch (Exception e) {
+            LoggerFactory.getLogger(RefundService.class)
+                    .warn("Refund notification failed for order {}: {}",
+                            order.getOrderNumber(), e.getMessage());
         }
 
         String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()

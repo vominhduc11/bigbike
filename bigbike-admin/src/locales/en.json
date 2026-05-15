@@ -236,13 +236,9 @@
     },
     "payment": {
       "UNPAID": "Unpaid",
-      "PENDING": "Pending",
       "PAID": "Paid",
-      "PARTIALLY_PAID": "Partially Paid",
-      "FAILED": "Failed",
       "REFUNDED": "Refunded",
-      "CANCELLED": "Cancelled",
-      "PARTIALLY_REFUNDED": "Partially Refunded"
+      "CANCELLED": "Cancelled"
     },
     "customer": {
       "ACTIVE": "Active",
@@ -1392,7 +1388,6 @@
       "REFUNDED": "Refunded",
       "UNPAID": "Unpaid",
       "PAID": "Paid",
-      "PARTIALLY_PAID": "Partially paid",
       "OVERPAID": "Overpaid",
       "ACTIVE": "Active",
       "SUSPENDED": "Suspended",

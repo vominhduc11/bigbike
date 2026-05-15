@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -71,22 +72,36 @@ public class CartService {
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {
-        return cartRepo.findByCustomerIdAndStatus(customerId, STATUS_ACTIVE)
-                .orElseGet(() -> {
-                    Instant now = Instant.now();
-                    CartEntity cart = new CartEntity();
-                    cart.setCustomerId(customerId);
-                    cart.setStatus(STATUS_ACTIVE);
-                    cart.setCurrency(CURRENCY_VND);
-                    cart.setCreatedAt(now);
-                    cart.setUpdatedAt(now);
-                    return cartRepo.save(cart);
-                });
+        // findByCustomerIdAndStatus throws NonUniqueResultException if a race condition
+        // produced duplicate ACTIVE carts before the unique index existed.
+        // Use findByCustomerId + filter so we always survive stale data.
+        List<CartEntity> active = cartRepo.findByCustomerId(customerId).stream()
+                .filter(c -> STATUS_ACTIVE.equals(c.getStatus()))
+                .toList();
+        if (!active.isEmpty()) {
+            return active.get(0);
+        }
+        Instant now = Instant.now();
+        CartEntity cart = new CartEntity();
+        cart.setCustomerId(customerId);
+        cart.setStatus(STATUS_ACTIVE);
+        cart.setCurrency(CURRENCY_VND);
+        cart.setCreatedAt(now);
+        cart.setUpdatedAt(now);
+        try {
+            return cartRepo.save(cart);
+        } catch (DataIntegrityViolationException ex) {
+            // Another request inserted the cart concurrently; re-read it.
+            return cartRepo.findByCustomerId(customerId).stream()
+                    .filter(c -> STATUS_ACTIVE.equals(c.getStatus()))
+                    .findFirst()
+                    .orElseThrow(() -> ex);
+        }
     }
 
     @Transactional
     public CartEntity getOrCreateGuestCart(String guestId) {
-        return cartRepo.findBySessionIdAndStatus(guestId, STATUS_ACTIVE)
+        return cartRepo.findBySessionIdAndStatus(guestId, STATUS_ACTIVE).stream().findFirst()
                 .orElseGet(() -> {
                     Instant now = Instant.now();
                     CartEntity cart = new CartEntity();
@@ -206,7 +221,7 @@ public class CartService {
 
     @Transactional
     public CartEntity mergeGuestCart(String guestId, CartEntity customerCart) {
-        return cartRepo.findBySessionId(guestId).map(guestCart -> {
+        return cartRepo.findBySessionId(guestId).stream().findFirst().map(guestCart -> {
             if (guestCart.getId().equals(customerCart.getId())) return customerCart;
 
             List<CartItemEntity> customerItems = cartItemRepo.findByCartId(customerCart.getId());

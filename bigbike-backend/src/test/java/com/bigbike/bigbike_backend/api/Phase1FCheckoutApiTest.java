@@ -329,7 +329,7 @@ class Phase1FCheckoutApiTest {
         GuestSession session = newGuestSessionWithItem(5000000);
         // Find the cart before checkout
         String guestId = getCookieValue(session, "bb_guest_id");
-        Optional<CartEntity> cartBefore = cartRepo.findBySessionId(guestId);
+        Optional<CartEntity> cartBefore = cartRepo.findBySessionId(guestId).stream().findFirst();
         assertThat(cartBefore).isPresent();
         assertThat(cartBefore.get().getStatus()).isEqualTo("ACTIVE");
 

@@ -55,7 +55,7 @@ File này liên quan trực tiếp đến:
 | Category | `visible` | `true`, `false` | Soft-delete/hide sets visible false; public only visible; cannot hide parent with visible children. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility rules; no enum state machine | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `ON_HOLD`, `COMPLETED`, `CANCELLED`, `FAILED`, `REFUNDED` | Explicit allowed transition map in service. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
-| Payment | `paymentStatus` on Order, `status` on Payment | Order payment: `UNPAID`, `PENDING`, `PAID`, `PARTIALLY_PAID`, `FAILED`, `REFUNDED`, `CANCELLED`, `PARTIALLY_REFUNDED`; Payment record includes `PENDING`, `SUCCEEDED`, `REFUNDED` in observed service code. | Explicit order payment transition map; payment record status is updated as side effect. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for order payment status; payment entity full lifecycle `STATUS_ONLY` | `AdminOrderService.java`, `CheckoutService.java` |
+| Payment | `paymentStatus` on Order, `status` on Payment | Order payment: `UNPAID`, `PAID`, `REFUNDED`, `CANCELLED`. Payment record includes `PENDING`, `SUCCEEDED`, `REFUNDED` in observed service code. | Explicit order payment transition map; payment record status is updated as side effect. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for order payment status; payment entity full lifecycle `STATUS_ONLY` | `AdminOrderService.java`, `CheckoutService.java` |
 | Shipping / Fulfillment | `fulfillmentStatus`, shipping method enabled flag | `fulfillmentStatus` field observed in order detail; shipping method enabled/disabled inferred from checkout resolver. | Shipping method selection enforced; fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java`, `AdminShippingController.java` |
 | Inventory / Stock | `stockState`, quantity fields | `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK` | `stockState` là **derived field** — luôn tính tự động từ `quantityOnHand`. Admin không được set thủ công qua catalog API. Sản phẩm mới tạo luôn bắt đầu `OUT_OF_STOCK` (qty=0). Mọi thay đổi qty (nhập hàng, bán, huỷ, đổi trả) → recompute ngay. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–007 |
 | Return | `status` | `PENDING`, `APPROVED`, `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` | Explicit transition map. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `CustomerOrderController.java` |
@@ -319,16 +319,12 @@ Payment state machine quản lý trạng thái thanh toán trên order và side 
 
 ### States
 
-From `AdminOrderService.ALLOWED_PAYMENT_STATUSES`:
+From `AdminOrderService.ALLOWED_PAYMENT_STATUSES` (simplified V114):
 
 - `UNPAID`
-- `PENDING`
 - `PAID`
-- `PARTIALLY_PAID`
-- `FAILED`
 - `REFUNDED`
 - `CANCELLED`
-- `PARTIALLY_REFUNDED`
 
 Payment record statuses observed:
 
@@ -352,33 +348,14 @@ For order payment status map:
 - `REFUNDED`
 - `CANCELLED`
 
-`FAILED` is not terminal because code allows `FAILED -> PAID`, `FAILED -> PARTIALLY_PAID`, `FAILED -> CANCELLED`.
-
-### Allowed Transitions
+### Allowed Transitions (simplified V114)
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| `UNPAID` | `PENDING` | Admin / `orders.write` | Order exists. | paymentStatus updated; audit; websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `UNPAID` | `PAID` | Admin / `orders.write` | Order exists; paidAmount default total or provided. | Set paidAmount, paidAt; payment record `SUCCEEDED`; possible POS auto-complete. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `UNPAID` | `PARTIALLY_PAID` | Admin / `orders.write` | paidAmount > 0 and < totalAmount. | Set paidAmount. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `UNPAID` | `PAID` | Admin / `orders.write` | Order exists; paidAmount default total or provided. | Set paidAmount, paidAt; payment record `SUCCEEDED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `UNPAID` | `CANCELLED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `UNPAID` | `FAILED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `PAID` | Admin / `orders.write` | Order exists. | paidAmount/paidAt/payment record success. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `PARTIALLY_PAID` | Admin / `orders.write` | paidAmount valid partial. | Set paid amount. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `FAILED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PAID` | `PARTIALLY_REFUNDED` | Admin / `orders.write` or refund flow | Refund amount less than paid amount. | refundAmount updated; audit/websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PAID` | `REFUNDED` | Admin / `orders.write` or full refund | Full refund. | refundAmount/refundedAt; payment record `REFUNDED`; optional order status `REFUNDED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PAID` | `REFUNDED` | Admin via `POST /admin/orders/{id}/refund` | Full refund only — refundAmount must equal paidAmount. | refundAmount/refundedAt; payment record `REFUNDED`; order status → `REFUNDED` if was `COMPLETED`. | `CONFIRMED_BACKEND_ENFORCED` | `RefundService.java` |
 | `PAID` | `UNPAID` | Admin / `orders.write` | paidAmount must be 0 if provided. | Reset paidAmount and paidAt. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `PAID` | Admin / `orders.write` | Order exists. | set paid full/default. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `PARTIALLY_REFUNDED` | Admin / `orders.write` / refund flow | Refund amount valid. | refund status. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `REFUNDED` | Admin / `orders.write` / full refund | Refund valid. | refund status. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `CANCELLED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `FAILED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PARTIALLY_REFUNDED` | `REFUNDED` | Admin / `orders.write` / refund flow | Remaining refundable amount refunded. | full refund. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `FAILED` | `PAID` | Admin / `orders.write` | Payment later confirmed. | payment success side effects. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `FAILED` | `PARTIALLY_PAID` | Admin / `orders.write` | paidAmount valid. | partial paid side effects. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `FAILED` | `CANCELLED` | Admin / `orders.write` | Order exists. | payment cancelled. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
@@ -386,10 +363,8 @@ For order payment status map:
 |---|---|---|---|---|
 | `REFUNDED` | any other payment status | Terminal, no outgoing transitions. | Backend rejects. | `AdminOrderService.java` |
 | `CANCELLED` | any other payment status | Terminal, no outgoing transitions. | Backend rejects. | `AdminOrderService.java` |
-| `PENDING` | `UNPAID` | Not in allowed map. | Backend rejects. | `AdminOrderService.java` |
-| `PARTIALLY_REFUNDED` | anything except `REFUNDED` | Not in allowed map. | Backend rejects. | `AdminOrderService.java` |
 | any status | unknown payment status | Not in allowed payment statuses. | Backend validation error. | `AdminOrderService.java` |
-| `PARTIALLY_PAID` | `PARTIALLY_PAID` with invalid paidAmount | Same status is no-op; invalid partial amount only checked when transitioning into `PARTIALLY_PAID`. | Needs review for same-status updates. | `AdminOrderService.java` |
+| `PAID` | `REFUNDED` via direct status patch | Must go through RefundService to keep audit/stock/serial lifecycle consistent. | Backend rejects direct patch. | `AdminOrderService.java` |
 
 ### Webhook / Callback
 

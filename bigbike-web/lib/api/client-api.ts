@@ -121,6 +121,10 @@ export function logoutCustomer(): Promise<void> {
   return clientRequest("POST", "/api/v1/customer/auth/logout");
 }
 
+export function resendEmailVerification(): Promise<{ sent: boolean }> {
+  return clientRequest("POST", "/api/v1/customer/auth/resend-verification");
+}
+
 export function requestPasswordReset(login: string): Promise<void> {
   return clientRequest("POST", "/api/v1/customer/auth/password/forgot", { login }).then(() => undefined);
 }

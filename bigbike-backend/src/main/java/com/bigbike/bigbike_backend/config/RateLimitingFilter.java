@@ -28,7 +28,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Limits (per IP, refill per minute):
  *   login endpoints         → 5 req/min
  *   register endpoint       → 3 req/min
- *   token refresh           → 10 req/min
+ *   token refresh           → 30 req/min
  *   contact form            → 3 req/min
  *   cart mutations          → 30 req/min
  *   checkout / quick-buy    → 5 req/min
@@ -41,7 +41,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -57,10 +57,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 .collect(Collectors.toSet());
     }
 
-    private final Map<String, Bucket> loginBuckets         = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerBuckets      = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> passwordResetBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> refreshBuckets       = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> loginBuckets               = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> registerBuckets            = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> passwordResetBuckets       = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> resendVerificationBuckets  = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> refreshBuckets             = new ConcurrentHashMap<>();
     private final Map<String, Bucket> contactBuckets       = new ConcurrentHashMap<>();
     private final Map<String, Bucket> cartBuckets          = new ConcurrentHashMap<>();
     private final Map<String, Bucket> checkoutBuckets      = new ConcurrentHashMap<>();
@@ -105,6 +106,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)) {
                 return LimitTier.PASSWORD_RESET;
             }
+            if ("/api/v1/customer/auth/resend-verification".equals(path)) {
+                return LimitTier.RESEND_VERIFICATION;
+            }
             if ("/api/v1/auth/refresh".equals(path) || "/api/v1/customer/auth/refresh".equals(path)) {
                 return LimitTier.REFRESH;
             }
@@ -141,8 +145,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     ip -> newBucket(3, Duration.ofMinutes(1)));
             case PASSWORD_RESET -> passwordResetBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(5, Duration.ofMinutes(1)));
+            case RESEND_VERIFICATION -> resendVerificationBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(3, Duration.ofHours(1)));
             case REFRESH       -> refreshBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(10, Duration.ofMinutes(1)));
+                    ip -> newBucket(30, Duration.ofMinutes(1)));
             case CONTACT       -> contactBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(3, Duration.ofMinutes(1)));
             case CART          -> cartBuckets.computeIfAbsent(clientIp,

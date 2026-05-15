@@ -660,22 +660,22 @@ class Phase1LReturnsApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        // Use a partial refund (500 VND less than total) so we can verify PARTIALLY_REFUNDED
-        java.math.BigDecimal partialAmount = orderTotal[0] != null
-                ? orderTotal[0].subtract(java.math.BigDecimal.valueOf(500)).max(java.math.BigDecimal.ONE)
+        // Full refund (partial refunds are not supported)
+        java.math.BigDecimal fullAmount = orderTotal[0] != null
+                ? orderTotal[0]
                 : java.math.BigDecimal.valueOf(500_000);
 
         // RECEIVED → REFUNDED
         mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + partialAmount.toPlainString() + "}")
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + fullAmount.toPlainString() + "}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REFUNDED"));
 
         // Verify order.paymentStatus updated by RefundService
         OrderEntity updatedOrder = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
-        assertThat(updatedOrder.getPaymentStatus()).isIn("PARTIALLY_REFUNDED", "REFUNDED");
+        assertThat(updatedOrder.getPaymentStatus()).isEqualTo("REFUNDED");
         assertThat(updatedOrder.getRefundAmount()).isNotNull();
         assertThat(updatedOrder.getRefundAmount().compareTo(java.math.BigDecimal.ZERO)).isGreaterThan(0);
         assertThat(updatedOrder.getRefundedAt()).isNotNull();

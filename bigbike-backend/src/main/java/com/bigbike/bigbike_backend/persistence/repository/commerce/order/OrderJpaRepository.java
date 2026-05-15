@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -48,6 +49,29 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     List<OrderEntity> findByCustomerEmail(String customerEmail);
 
+    /**
+     * Atomically claims all unowned guest orders matching a verified customer email.
+     * Only updates rows where customer_id IS NULL, preventing overwrite of another
+     * customer's orders. Email comparison is case-insensitive via lower(). Idempotent.
+     *
+     * TODO: Add a functional index on lower(customer_email) when table grows large,
+     *       e.g.: CREATE INDEX idx_orders_lower_customer_email ON orders (lower(customer_email))
+     *       to make this update efficient at scale.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE orders
+            SET customer_id = :customerId,
+                updated_at  = :now
+            WHERE customer_id IS NULL
+              AND customer_email IS NOT NULL
+              AND lower(trim(customer_email)) = :normalizedEmail
+            """, nativeQuery = true)
+    int linkGuestOrdersByEmail(
+            @Param("customerId") UUID customerId,
+            @Param("normalizedEmail") String normalizedEmail,
+            @Param("now") Instant now);
+
     // ── Customer admin aggregate ──────────────────────────────────────────────
 
     @Query("SELECT o.customerId, COUNT(o), COALESCE(SUM(o.totalAmount), 0) " +
@@ -66,24 +90,21 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     BigDecimal sumRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     // Paid revenue: actual cash collected — SUM(paidAmount) for orders where payment was received
-    // Legacy — kept for backward compat; use sumPaidRevenueSinceExcluding for canonical revenue.
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")
+           "WHERE o.placedAt >= :from AND o.paymentStatus IN ('PAID', 'REFUNDED')")
     BigDecimal sumPaidRevenueSince(@Param("from") Instant from);
 
-    // Canonical paid revenue per REPORT_RULE_002: includes PARTIALLY_REFUNDED and REFUNDED payment statuses
-    // because paidAmount is never reduced by RefundService — it is the total cash collected.
-    // Must match sumPaidRevenueBetweenExcluding() to ensure Dashboard and Reports agree.
+    // Canonical paid revenue: PAID and REFUNDED orders (paidAmount is never reduced by RefundService).
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from " +
-           "  AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED', 'REFUNDED') " +
+           "  AND o.paymentStatus IN ('PAID', 'REFUNDED') " +
            "  AND o.status NOT IN :excludedStatuses")
     BigDecimal sumPaidRevenueSinceExcluding(
             @Param("from") Instant from,
             @Param("excludedStatuses") List<String> excludedStatuses);
 
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID')")
+           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus IN ('PAID', 'REFUNDED')")
     BigDecimal sumPaidRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("SELECT COUNT(o) FROM OrderEntity o WHERE o.placedAt >= :from")
@@ -171,12 +192,10 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
            "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.refundAmount > 0")
     BigDecimal sumRefundAmountInRange(@Param("from") Instant from, @Param("to") Instant to);
 
-    // Paid revenue including post-refund payment statuses.
-    // paidAmount is never reduced by RefundService.applyRefund() — it is the total cash collected.
-    // PARTIALLY_REFUNDED and REFUNDED statuses must be included to count orders that received refunds.
+    // Paid revenue: PAID and REFUNDED statuses (paidAmount is never reduced by RefundService.applyRefund()).
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.placedAt < :to " +
-           "  AND o.paymentStatus IN ('PAID', 'PARTIALLY_PAID', 'PARTIALLY_REFUNDED', 'REFUNDED') " +
+           "  AND o.paymentStatus IN ('PAID', 'REFUNDED') " +
            "  AND o.status NOT IN :excludedStatuses")
     BigDecimal sumPaidRevenueBetweenExcluding(
             @Param("from") Instant from, @Param("to") Instant to,

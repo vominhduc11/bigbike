@@ -121,6 +121,7 @@ export function useAddresses() {
   return useQuery({
     queryKey: queryKeys.addresses(),
     queryFn: fetchMyAddresses,
+    retry: false,
   });
 }
 

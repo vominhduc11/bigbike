@@ -19,6 +19,8 @@ bigbike/
 ├── AGENTS.md                       # This file — AI agent operating instructions
 ├── CLAUDE.md                       # Claude Code auto-loaded summary; mirrors key rules from this file
 ├── docker-compose.yaml             # Full stack infrastructure
+├── .env                            # ⚡ Biến môi trường toàn stack — KHÔNG commit, KHÔNG sửa không cần thiết
+├── .env.example                    # Template công khai; copy sang .env để dùng local
 ├── docs/                           # ⚡ Source of truth (see Docs-First Contract)
 │   ├── business/                   # Canonical business docs
 │   ├── engineering/                # Canonical engineering docs
@@ -218,7 +220,36 @@ Never commit raw legacy source, `sqldump.sql`, `wp-config.php` values, user/orde
 
 Không build new feature **ahead of** legacy discovery cho affected domain.
 
-### 5.5 Docker server access khi fix bug / vận hành hệ thống
+### 5.5 File `.env` — biến môi trường toàn stack
+
+**`.env` ở root repo là file cấu hình chính của toàn bộ BigBike stack** khi chạy local với Docker Compose. File này được Docker Compose load tự động và truyền vào tất cả service (backend, web, admin, db, redis, minio).
+
+**Các nhóm biến quan trọng trong `.env`:**
+
+| Nhóm | Biến tiêu biểu | Ảnh hưởng |
+|---|---|---|
+| Database | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Kết nối PostgreSQL |
+| Spring Boot profile | `SPRING_PROFILES_ACTIVE` | `dev` cho local, `prod` cho staging/prod |
+| JWT | `BIGBIKE_JWT_SECRET` | Ký session token — phải ≥ 32 chars trên prod |
+| SMTP / Email | `BIGBIKE_MAIL_HOST`, `BIGBIKE_MAIL_USERNAME`, `BIGBIKE_MAIL_PASSWORD` | Gửi email xác minh, đặt lại mật khẩu, thông báo đơn hàng |
+| URL email | `BIGBIKE_MAIL_VERIFY_BASE_URL`, `BIGBIKE_MAIL_RESET_BASE_URL` | Domain trong link gửi về hộp thư — phải là `http://localhost:3000/...` trên local |
+| URL site | `BIGBIKE_SITE_BASE_URL`, `BIGBIKE_ADMIN_BASE_URL` | URL xuất hiện trong email template và sitemap |
+| CORS | `BIGBIKE_CORS_ALLOWED_ORIGINS` | Danh sách origin frontend được phép gọi API |
+| MinIO | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET` | Object storage cho media |
+| Frontend | `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SITE_URL` | URL API và site dùng trong Next.js |
+
+**Quy tắc bắt buộc:**
+- **KHÔNG commit `.env`** — file đã có trong `.gitignore`. Chỉ commit `.env.example`.
+- Khi gặp URL sai môi trường (ví dụ link email trỏ về production khi đang ở localhost) → **kiểm tra `.env` trước**, không sửa code.
+- Khi thêm biến môi trường mới vào code → **cập nhật `.env.example`** đồng thời.
+- `SPRING_PROFILES_ACTIVE=dev` là bắt buộc cho local để backend load `application-dev.properties` đúng cách.
+
+**Cấm:**
+- ❌ Hardcode giá trị từ `.env` (URL, secret, password) vào source code.
+- ❌ Commit `.env` với credentials thật lên git.
+- ❌ Sửa URL hoặc endpoint trong code khi vấn đề thực ra nằm ở `.env`.
+
+### 5.6 Docker server access khi fix bug / vận hành hệ thống
 
 Khi cần fix lỗi runtime, debug, kiểm tra log, query DB thật, verify migration, hoặc làm task vận hành cần dữ liệu/trạng thái runtime:
 

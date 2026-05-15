@@ -1,14 +1,76 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { MailWarning, MailCheck } from "lucide-react";
 import { AccountShell, useAccount } from "@/components/layout/AccountShell";
 import { customerStatusLabel } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import { resendEmailVerification } from "@/lib/api/client-api";
+
+type ResendStatus = "idle" | "sending" | "sent" | "error";
+
+function UnverifiedEmailBanner() {
+  const [resendStatus, setResendStatus] = useState<ResendStatus>("idle");
+  const [resendMsg, setResendMsg] = useState("");
+
+  async function handleResend() {
+    setResendStatus("sending");
+    setResendMsg("");
+    try {
+      await resendEmailVerification();
+      setResendStatus("sent");
+      setResendMsg("Email xác minh đã được gửi. Vui lòng kiểm tra hộp thư (kể cả thư mục Spam).");
+    } catch (e) {
+      setResendStatus("error");
+      setResendMsg(e instanceof Error ? e.message : "Không thể gửi lại email. Vui lòng thử lại sau.");
+    }
+  }
+
+  if (resendStatus === "sent") {
+    return (
+      <div className="mb-5 flex items-start gap-3 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-4">
+        <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-[var(--bb-state-success-text)]" aria-hidden />
+        <p className="m-0 text-sm text-[var(--bb-state-success-text)]">{resendMsg}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] p-4">
+      <div className="flex items-start gap-3">
+        <MailWarning className="mt-0.5 h-5 w-5 shrink-0 text-[var(--bb-state-warning-text)]" aria-hidden />
+        <div>
+          <p className="m-0 text-sm font-medium text-[var(--bb-state-warning-text)]">Email chưa được xác minh</p>
+          {resendStatus === "error" ? (
+            <p className="m-0 mt-0.5 text-xs text-destructive">{resendMsg}</p>
+          ) : (
+            <p className="m-0 mt-0.5 text-xs text-muted-foreground">
+              Xác minh email để bảo vệ tài khoản và nhận đơn hàng đầy đủ.
+            </p>
+          )}
+        </div>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={handleResend}
+        disabled={resendStatus === "sending"}
+        className="shrink-0"
+      >
+        {resendStatus === "sending" ? "Đang gửi..." : "Gửi lại email xác minh"}
+      </Button>
+    </div>
+  );
+}
 
 function AccountOverview() {
   const profile = useAccount()!;
 
   return (
     <>
+      {!profile.emailVerified && <UnverifiedEmailBanner />}
+
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
           <h1 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">{"T\u00e0i kho\u1ea3n c\u1ee7a t\u00f4i"}</h1>

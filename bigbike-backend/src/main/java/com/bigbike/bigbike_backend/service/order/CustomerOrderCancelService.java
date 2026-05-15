@@ -74,13 +74,12 @@ public class CustomerOrderCancelService {
      *   • ON_HOLD                          — BACS placed, transfer not received
      *   • PROCESSING + not yet SHIPPED/DELIVERED — COD or BACS confirmed but still
      *                                            packable / cancellable in-house
-     * In every case paymentStatus must be UNPAID or PENDING. Once payment is
-     * captured (PAID / PARTIALLY_PAID), customers must request a refund via admin
-     * so the financial flow goes through RefundService.
+     * In every case paymentStatus must be UNPAID. Once payment is captured (PAID),
+     * customers must request a refund via admin so the financial flow goes through RefundService.
      */
     private static boolean isCustomerCancellable(OrderEntity order) {
         String paymentStatus = order.getPaymentStatus();
-        if (!"UNPAID".equals(paymentStatus) && !"PENDING".equals(paymentStatus)) {
+        if (!"UNPAID".equals(paymentStatus)) {
             return false;
         }
 

@@ -6464,7 +6464,7 @@
           },
           "paidRevenue": {
             "type": "number",
-            "description": "Cash collected: SUM(paidAmount) where paymentStatus IN (PAID, PARTIALLY_PAID, PARTIALLY_REFUNDED, REFUNDED), excluding CANCELLED/FAILED orders."
+            "description": "Cash collected: SUM(paidAmount) where paymentStatus IN (PAID, REFUNDED), excluding CANCELLED orders."
           },
           "refundAmount": {
             "type": "number",
@@ -7122,7 +7122,8 @@
         ],
         "properties": {
           "paymentStatus": {
-            "type": "string"
+            "type": "string",
+            "enum": ["UNPAID", "PAID", "REFUNDED", "CANCELLED"]
           }
         }
       },

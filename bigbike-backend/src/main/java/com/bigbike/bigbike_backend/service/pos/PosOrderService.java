@@ -304,14 +304,6 @@ public class PosOrderService {
         }
 
         boolean isCreditOrder = "CREDIT".equals(req.paymentMethod());
-        BigDecimal downPayment = isCreditOrder && req.downPayment() != null
-                ? BigDecimal.valueOf(req.downPayment()).setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
-
-        if (isCreditOrder && downPayment.compareTo(subtotal) > 0) {
-            throw new ConflictException("Thanh toán trước (" + downPayment
-                    + ") không được vượt quá tổng đơn hàng (" + subtotal + ").");
-        }
 
         // POS: không có phí ship; CREDIT = bán chịu, CASH/CARD = trả tiền ngay
         OrderEntity order = new OrderEntity();
@@ -323,9 +315,7 @@ public class PosOrderService {
         order.setFulfillmentType(FULFILLMENT_IN_STORE);
         order.setPaymentMethod(req.paymentMethod());
         order.setStatus("COMPLETED");  // Hàng giao ngay tại POS dù CREDIT hay không
-        order.setPaymentStatus(isCreditOrder
-                ? (downPayment.compareTo(BigDecimal.ZERO) > 0 ? "PARTIALLY_PAID" : "UNPAID")
-                : "PAID");
+        order.setPaymentStatus(isCreditOrder ? "UNPAID" : "PAID");
         if (creditCustomer != null) {
             order.setCustomerId(creditCustomer.getId());
         } else if (walkInCustomer != null) {
@@ -342,7 +332,7 @@ public class PosOrderService {
         order.setFeeAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTaxAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTotalAmount(subtotal);
-        order.setPaidAmount(isCreditOrder ? downPayment : subtotal);
+        order.setPaidAmount(isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : subtotal);
         order.setSource("pos");
         if (!isCreditOrder) order.setPaidAt(now);
         order.setCompletedAt(now);
@@ -386,17 +376,14 @@ public class PosOrderService {
         // applyPosStock must run after line items are persisted (serial bridge needs their IDs).
         applyPosStock(req.items(), lineItems, savedOrder.getId(), now);
 
-        // Payment record (only create if money was actually collected)
-        if (!isCreditOrder || downPayment.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal collected = isCreditOrder ? downPayment : subtotal;
+        // Payment record (only create if money was actually collected; CREDIT orders start UNPAID)
+        if (!isCreditOrder) {
             PaymentEntity payment = new PaymentEntity();
             payment.setOrder(savedOrder);
-            String resolvedDownPaymentMethod = (req.downPaymentMethod() != null && !req.downPaymentMethod().isBlank())
-                    ? req.downPaymentMethod() : "CASH";
-            payment.setPaymentMethod(isCreditOrder ? resolvedDownPaymentMethod : req.paymentMethod());
+            payment.setPaymentMethod(req.paymentMethod());
             payment.setProvider("POS");
             payment.setStatus("PAID");
-            payment.setAmount(collected);
+            payment.setAmount(subtotal);
             payment.setCurrency("VND");
             payment.setPaidAt(now);
             if ("CARD_TERMINAL".equals(req.paymentMethod())
@@ -412,7 +399,7 @@ public class PosOrderService {
         if (isCreditOrder && creditCustomer != null) {
             try {
                 receivableService.createReceivableForOrder(
-                        savedOrder, creditCustomer, downPayment, "POS",
+                        savedOrder, creditCustomer, BigDecimal.ZERO, "POS",
                         staffId != null ? tryParseUUID(staffId) : null);
             } catch (Exception e) {
                 // Receivable creation failure must not silently succeed — rethrow so TX rolls back
@@ -482,7 +469,7 @@ public class PosOrderService {
             changeAmount = req.tenderedAmount() - subtotal.setScale(0, RoundingMode.HALF_UP).longValue();
         }
 
-        BigDecimal resolvedPaidAmount = isCreditOrder ? downPayment : subtotal;
+        BigDecimal resolvedPaidAmount = isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : subtotal;
         List<PosOrderItemResponse> responseItems = lineItems.stream()
                 .map(li -> new PosOrderItemResponse(
                         li.getProductName(), li.getVariantName(), li.getSku(),

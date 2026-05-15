@@ -29,16 +29,19 @@ public class CustomerAuthService {
     private final CustomerSessionService sessionService;
     private final PasswordService passwordService;
     private final EmailVerificationService emailVerificationService;
+    private final GuestOrderLinkingService guestOrderLinkingService;
 
     public CustomerAuthService(
             CustomerJpaRepository customerRepo,
             CustomerSessionService sessionService,
             PasswordService passwordService,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            GuestOrderLinkingService guestOrderLinkingService) {
         this.customerRepo = customerRepo;
         this.sessionService = sessionService;
         this.passwordService = passwordService;
         this.emailVerificationService = emailVerificationService;
+        this.guestOrderLinkingService = guestOrderLinkingService;
     }
 
     @Transactional
@@ -115,6 +118,12 @@ public class CustomerAuthService {
         customer.setLastLoginAt(now);
         customer.setUpdatedAt(now);
         customerRepo.save(customer);
+
+        // Link guest orders placed with this email before account existed — only if already verified.
+        // Idempotent: already-linked orders are skipped in the repository query.
+        if (customer.getEmailVerifiedAt() != null) {
+            guestOrderLinkingService.linkVerifiedEmailOrders(customer.getId());
+        }
 
         CustomerSessionResult tokens = sessionService.createSession(customer.getId(), ipAddress, userAgent);
         return new CustomerAuthResult(

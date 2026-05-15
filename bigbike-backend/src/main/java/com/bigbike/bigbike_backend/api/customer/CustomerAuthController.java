@@ -75,6 +75,17 @@ public class CustomerAuthController {
         return apiResponseFactory.data(Map.of("verified", Boolean.TRUE), request);
     }
 
+    /** Resend verification email for the currently authenticated customer. */
+    @PostMapping("/resend-verification")
+    public ApiDataResponse<Map<String, Object>> resendVerification(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth != null && auth.getPrincipal() instanceof CustomerPrincipal principal)) {
+            throw new UnauthorizedException("Vui lòng đăng nhập để thực hiện thao tác này.");
+        }
+        emailVerificationService.resendVerification(principal.customerId());
+        return apiResponseFactory.data(Map.of("sent", Boolean.TRUE), request);
+    }
+
     @PostMapping("/register")
     public ApiDataResponse<CustomerAuthResponse> register(
             @Valid @RequestBody CustomerRegisterRequest req,

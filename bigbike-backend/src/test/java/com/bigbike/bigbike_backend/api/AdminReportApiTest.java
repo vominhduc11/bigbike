@@ -158,7 +158,7 @@ class AdminReportApiTest {
         assertThat(delta).isEqualTo(300_000.0);
     }
 
-    // ── 5. paidRevenue includes PARTIALLY_REFUNDED and REFUNDED ───────────────
+    // ── 5. paidRevenue includes REFUNDED ──────────────────────────────────────
     // Per REPORT_RULE_002: paidAmount is never reduced by RefundService.applyRefund().
     // An order with paymentStatus=REFUNDED still contributed paidAmount cash.
 
@@ -178,12 +178,13 @@ class AdminReportApiTest {
     }
 
     @Test
-    void analytics_paidRevenue_includesPartiallyRefundedPaymentStatus() throws Exception {
+    void analytics_paidRevenue_refundedStatus_isIncluded() throws Exception {
+        // PARTIALLY_REFUNDED removed — REFUNDED is the only post-refund status
         double baseline = fetchPaidRevenue();
 
         Instant now = Instant.now();
-        // Order paid 600k, then partially refunded 100k → paymentStatus=PARTIALLY_REFUNDED
-        orderRepo.save(buildOrder("COMPLETED", "PARTIALLY_REFUNDED", "600000", "100000", now));
+        // Order paid 600k, then refunded 100k → paymentStatus=REFUNDED
+        orderRepo.save(buildOrder("COMPLETED", "REFUNDED", "600000", "100000", now));
 
         double after = fetchPaidRevenue();
         double delta = after - baseline;
@@ -202,7 +203,7 @@ class AdminReportApiTest {
 
         Instant now = Instant.now();
         // Order placed today; paid 1M; refunded 200k
-        OrderEntity o = buildOrder("COMPLETED", "PARTIALLY_REFUNDED", "1000000", "200000", now);
+        OrderEntity o = buildOrder("COMPLETED", "REFUNDED", "1000000", "200000", now);
         o.setPaidAmount(new BigDecimal("1000000"));
         orderRepo.save(o);
 

@@ -108,7 +108,7 @@ class Phase1ECartApiTest {
         assertThat(guestId).matches("[0-9a-fA-F\\-]{36}");
 
         // Cart in DB must have session_id = guestId (not a raw bb_session hash)
-        Optional<CartEntity> cart = cartRepo.findBySessionId(guestId);
+        Optional<CartEntity> cart = cartRepo.findBySessionId(guestId).stream().findFirst();
         assertThat(cart).isPresent();
         assertThat(cart.get().getCustomerId()).isNull();
         assertThat(cart.get().getSessionId()).isEqualTo(guestId);

@@ -7,8 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
-import { useCartQuery, useCheckoutOptions } from "@/lib/query/hooks";
-import type { CartItem, PriceChange } from "@/lib/contracts/commerce";
+import { useCartQuery, useCheckoutOptions, useProfile, useAddresses } from "@/lib/query/hooks";
+import type { CartItem, CustomerAddress, PriceChange } from "@/lib/contracts/commerce";
 import { checkoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
@@ -84,6 +84,11 @@ function MiniCartThumb({ item }: { item: CartItem }) {
   );
 }
 
+function pickDefaultAddress(addresses: CustomerAddress[]): CustomerAddress | null {
+  if (!addresses.length) return null;
+  return addresses.find((a) => a.isDefault) ?? addresses[0];
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { refreshCount } = useCart();
@@ -95,10 +100,14 @@ export default function CheckoutPage() {
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
   const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [gtmFired, setGtmFired] = useState(false);
+  const [prefilledFromAccount, setPrefilledFromAccount] = useState(false);
   const idempotencyKey = useRef<string>(crypto.randomUUID());
+  const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
   const { data: checkoutOptions, isLoading: optionsLoading } = useCheckoutOptions();
+  const { data: profile } = useProfile();
+  const { data: addresses } = useAddresses();
 
   // Prefill payment/shipping defaults when options load
   useEffect(() => {
@@ -130,6 +139,39 @@ export default function CheckoutPage() {
   });
 
   const address = watch();
+
+  // Prefill form from profile/address when logged in — runs once, never overwrites user edits
+  useEffect(() => {
+    if (hasPrefilledRef.current) return;
+    if (!profile) return;
+
+    hasPrefilledRef.current = true;
+
+    const fillIfEmpty = (field: keyof CheckoutAddressFormValues, value: string | null | undefined) => {
+      if (!value) return;
+      const current = address[field];
+      if (!current) setValue(field, value, { shouldValidate: false, shouldDirty: false });
+    };
+
+    const addr = addresses ? pickDefaultAddress(addresses) : null;
+
+    if (addr) {
+      fillIfEmpty("fullName", addr.fullName);
+      fillIfEmpty("phone", addr.phone);
+      fillIfEmpty("email", profile.email);
+      fillIfEmpty("province", addr.province);
+      fillIfEmpty("district", addr.district);
+      fillIfEmpty("ward", addr.ward);
+      fillIfEmpty("addressLine1", addr.addressLine1);
+    } else {
+      fillIfEmpty("fullName", profile.displayName);
+      fillIfEmpty("phone", profile.phone);
+      fillIfEmpty("email", profile.email);
+    }
+
+    setPrefilledFromAccount(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, addresses]);
 
   async function placeOrder() {
     if (!cart?.items.length) {
@@ -240,6 +282,12 @@ export default function CheckoutPage() {
                     Thông tin giao hàng
                   </h3>
                 </div>
+
+                {prefilledFromAccount && (
+                  <p className="text-xs text-muted-foreground bg-[var(--bb-color-gray-50)] border border-border px-3 py-2 mb-4 leading-[1.5]">
+                    Đã điền thông tin từ tài khoản của bạn. Bạn vẫn có thể chỉnh sửa trước khi đặt hàng.
+                  </p>
+                )}
 
                 <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">

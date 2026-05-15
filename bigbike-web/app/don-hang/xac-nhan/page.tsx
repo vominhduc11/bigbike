@@ -45,7 +45,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
   const isBacs = paymentMethodCode === "BACS";
   const isCod = paymentMethodCode === "COD";
   const paymentStatus = (order?.paymentStatus ?? "").trim().toUpperCase();
-  const isAlreadyPaid = paymentStatus === "PAID" || paymentStatus === "PARTIALLY_PAID";
+  const isAlreadyPaid = paymentStatus === "PAID";
   const eyebrow = isAlreadyPaid
     ? "Thanh toán thành công"
     : isBacs

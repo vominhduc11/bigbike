@@ -8,6 +8,8 @@ import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { formatVnd } from "@/lib/utils/format";
 import { getRegionForProvince } from "@/lib/vn-region-map";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
+import { useAuth } from "@/lib/auth/auth-store";
+import { useAddresses } from "@/lib/query/hooks";
 import {
   Sheet,
   SheetContent,
@@ -54,8 +56,11 @@ export function QuickBuyModal({
   onClose,
 }: QuickBuyModalProps) {
   const router = useRouter();
+  const auth = useAuth();
+  const { data: savedAddresses } = useAddresses();
   const idempotencyKey = useRef<string>(crypto.randomUUID());
   const [address, setAddress] = useState<CheckoutAddress>(EMPTY_ADDRESS);
+  const [prefilled, setPrefilled] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [shippingMethodId, setShippingMethodId] = useState("");
   const [customerNote, setCustomerNote] = useState("");
@@ -64,6 +69,28 @@ export function QuickBuyModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Pre-fill form once when authenticated data becomes available
+  useEffect(() => {
+    if (prefilled) return;
+    if (auth.status !== "authenticated") return;
+
+    const profile = auth.profile;
+    const defaultAddr = savedAddresses?.find((a) => a.isDefault) ?? savedAddresses?.[0];
+
+    setAddress({
+      fullName: defaultAddr?.fullName ?? profile.displayName ?? "",
+      email: profile.email ?? "",
+      phone: defaultAddr?.phone ?? profile.phone ?? "",
+      country: "VN",
+      province: defaultAddr?.province ?? "",
+      district: defaultAddr?.district ?? "",
+      ward: defaultAddr?.ward ?? "",
+      addressLine1: defaultAddr?.addressLine1 ?? "",
+      addressLine2: defaultAddr?.addressLine2 ?? "",
+    });
+    setPrefilled(true);
+  }, [auth, savedAddresses, prefilled]);
 
   useEffect(() => {
     fetchCheckoutOptions()

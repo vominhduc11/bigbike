@@ -107,7 +107,7 @@ public class OrderImporter implements DomainImporter {
                 entity.setOrderNumber(mo.orderNumber());
                 entity.setOrderKey(mo.orderKey());
                 entity.setStatus(mo.status() != null ? mo.status() : "PENDING_PAYMENT");
-                entity.setPaymentStatus(mo.paymentStatus() != null ? mo.paymentStatus() : "PENDING");
+                entity.setPaymentStatus(mo.paymentStatus() != null ? mo.paymentStatus() : "UNPAID");
                 entity.setCurrency(mo.currency() != null ? mo.currency() : "VND");
                 entity.setCustomerEmail(mo.billingEmail());
                 entity.setCustomerPhone(mo.billingPhone());

@@ -172,6 +172,26 @@ Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.2 (Design System U
 
 ---
 
+## ⚠️ File `.env` — biến môi trường toàn stack
+
+**`.env` ở root repo là file cấu hình chính của toàn bộ BigBike stack** khi chạy local với Docker Compose. File này được Docker Compose load tự động và truyền vào tất cả service.
+
+**Các nhóm biến quan trọng:**
+- **SMTP / Email**: `BIGBIKE_MAIL_HOST`, `BIGBIKE_MAIL_USERNAME`, `BIGBIKE_MAIL_PASSWORD`
+- **URL trong email**: `BIGBIKE_MAIL_VERIFY_BASE_URL`, `BIGBIKE_MAIL_RESET_BASE_URL` — phải là `http://localhost:3000/...` khi chạy local
+- **URL site/admin**: `BIGBIKE_SITE_BASE_URL`, `BIGBIKE_ADMIN_BASE_URL`
+- **Spring profile**: `SPRING_PROFILES_ACTIVE=dev` — bắt buộc để backend load đúng `application-dev.properties`
+- **CORS**, **JWT**, **DB**, **MinIO**, **Next.js public URL**
+
+**Quy tắc:**
+- Khi gặp URL sai môi trường (link email trỏ về production khi đang ở localhost) → **kiểm tra `.env` trước**, không sửa code.
+- Khi thêm biến mới vào code → cập nhật `.env.example` đồng thời.
+- **KHÔNG commit `.env`** — chỉ commit `.env.example`.
+
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.5.
+
+---
+
 ## ⚠️ Docker server access khi fix bug / vận hành hệ thống
 
 Khi cần fix lỗi runtime, debug, xem log, query DB thật, verify migration hoặc bất kỳ task vận hành nào:
