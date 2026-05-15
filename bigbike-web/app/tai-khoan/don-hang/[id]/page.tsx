@@ -48,7 +48,19 @@ const TERMINAL_STEPS: Record<string, TimelineStep> = {
 };
 
 const RETURNABLE_ORDER_STATUSES = new Set(["COMPLETED"]);
-const CANCELLABLE_ORDER_STATUSES = new Set(["PENDING"]);
+
+// Mirrors backend CustomerOrderCancelService.isCustomerCancellable: a customer may
+// self-cancel only while no money is collected (UNPAID) and the goods have not shipped.
+// Web/quick-buy orders are created as PROCESSING (COD) or ON_HOLD (BACS) — never PENDING —
+// so gating purely on PENDING would hide the button from every real customer order.
+function isCustomerCancellable(order: OrderDetail): boolean {
+  if (order.paymentStatus !== "UNPAID") return false;
+  if (order.status === "PENDING" || order.status === "ON_HOLD") return true;
+  if (order.status === "PROCESSING") {
+    return order.fulfillmentStatus !== "SHIPPED" && order.fulfillmentStatus !== "DELIVERED";
+  }
+  return false;
+}
 
 const RETURN_REASON_LABELS: Record<string, string> = {
   DEFECTIVE: "Hàng bị lỗi",
@@ -472,7 +484,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           )}
 
           {/* Cancel order */}
-          {CANCELLABLE_ORDER_STATUSES.has(order.status) && (
+          {isCustomerCancellable(order) && (
             cancelError ? (
               <p className="text-brand text-sm mb-4 m-0">{cancelError}</p>
             ) : cancelConfirm ? (
