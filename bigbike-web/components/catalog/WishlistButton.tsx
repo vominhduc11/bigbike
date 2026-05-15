@@ -21,7 +21,7 @@ export function WishlistButton({ productId }: WishlistButtonProps) {
     if (auth.status === "loading") return;
     if (auth.status !== "authenticated") {
       const returnTo = window.location.pathname + window.location.search;
-      router.push(`${toLoginPath()}?tiep=${encodeURIComponent(returnTo)}`);
+      router.push(toLoginPath(returnTo));
       return;
     }
     void toggle(productId);

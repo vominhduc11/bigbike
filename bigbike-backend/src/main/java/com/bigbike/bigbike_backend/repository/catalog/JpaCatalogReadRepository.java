@@ -289,11 +289,27 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return toDomain(entity, false);
     }
 
+    /**
+     * Mask on-hand stock count for public-facing responses. Guests/customers see exact
+     * count only when state is LOW_STOCK and quantity is small enough to drive urgency
+     * ("Chỉ còn N sản phẩm") — otherwise null, so scrapers cannot read precise inventory
+     * for every SKU. Admin reads (publicView=false) get the raw value untouched.
+     */
+    private static Integer maskStockQuantityForPublic(Integer raw, ProductStockState state) {
+        if (raw == null || state != ProductStockState.LOW_STOCK) return null;
+        if (raw <= 0 || raw > 10) return null;
+        return raw;
+    }
+
     private Product toDomain(ProductEntity entity, boolean publicView) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
         List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
                 : List.of(primaryCategory);
+
+        Integer productStockQty = publicView
+                ? maskStockQuantityForPublic(entity.getStockQuantity(), entity.getStockState())
+                : entity.getStockQuantity();
 
         return new Product(
                 entity.getId(),
@@ -321,10 +337,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSalePrice(),
                         entity.getCurrency()
                 ),
-                toVariants(entity),
+                toVariants(entity, publicView),
                 toSpecifications(entity),
                 entity.getStockState(),
-                entity.getStockQuantity(),
+                productStockQty,
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getHomepageBlock(),
@@ -476,13 +492,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
-    private List<ProductVariant> toVariants(ProductEntity entity) {
+    private List<ProductVariant> toVariants(ProductEntity entity, boolean publicView) {
         if (entity.getVariants() == null) {
             return List.of();
         }
         List<ProductVariant> variants = entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(this::toVariant)
+                .map(v -> toVariant(v, publicView))
                 .toList();
         return withColorScopedVariantMedia(variants);
     }
@@ -569,7 +585,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .trim();
     }
 
-    private ProductVariant toVariant(ProductVariantEntity entity) {
+    private ProductVariant toVariant(ProductVariantEntity entity, boolean publicView) {
         ProductPrice price = entity.getRetailPrice() == null
                 ? null
                 : new ProductPrice(
@@ -608,6 +624,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .filter(image -> image != null)
                         .toList();
 
+        Integer variantStockQty = publicView
+                ? maskStockQuantityForPublic(entity.getQuantityOnHand(), entity.getStockState())
+                : entity.getQuantityOnHand();
+
         return new ProductVariant(
                 entity.getId(),
                 entity.getSku(),
@@ -615,7 +635,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 options,
                 price,
                 entity.getStockState(),
-                entity.getQuantityOnHand(),
+                variantStockQty,
                 toImageAsset(
                         entity.getImageId(),
                         entity.getImageUrl(),
