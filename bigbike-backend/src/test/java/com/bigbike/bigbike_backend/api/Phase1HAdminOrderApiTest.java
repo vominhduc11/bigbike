@@ -698,11 +698,14 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.length()").value(0));
     }
 
+    // Partial refund is not supported — this test verifies that only a full refund contributes
+    // to the refund report, and that a partial refund attempt is rejected before it can write anything.
     @Test
-    void refundReport_partial_includesPartialRefundAmount() throws Exception {
+    void refundReport_onlyFullRefund_contributesToReport() throws Exception {
         Instant from = Instant.now().minusSeconds(1);
         BigDecimal refundBefore = fetchRefundAmountSummary(from, Instant.now().plusSeconds(1));
 
+        // Partial refund attempt must be rejected (400) — does not write any refund record.
         OrderInfo partialRefundOrder = placeGuestOrder(7500000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -713,8 +716,9 @@ class Phase1HAdminOrderApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refundAmount\":300000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
+        // Full refund on a completed order — contributes 1200000 to the report.
         OrderInfo fullRefundOrder = placeGuestOrder(7600000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -735,7 +739,7 @@ class Phase1HAdminOrderApiTest {
 
         Instant to = Instant.now().plusSeconds(1);
         BigDecimal refundAfter = fetchRefundAmountSummary(from, to);
-        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(1500000));
+        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(1200000));
     }
 
     @Test
@@ -1018,9 +1022,10 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        // Must refund full paidAmount — partial refund is not supported
         mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":1000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .content("{\"refundAmount\":8300000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
                         .header("Authorization", "Bearer " + adminToken)
                         .header("User-Agent", "TestBrowser/3.0"))
                 .andExpect(status().isOk());
@@ -1209,16 +1214,15 @@ class Phase1HAdminOrderApiTest {
                 .isEqualTo(2);
     }
 
-    // Rule 4: PARTIALLY_PAID orders cannot be CANCELLED directly either.
+    // Rule 4: PAID orders cannot be CANCELLED directly (PARTIALLY_PAID was removed as a valid status;
+    // this test uses full PAID to verify the same guard).
     @Test
-    void cancelOrder_processingPartiallyPaid_isRejected() throws Exception {
+    void cancelOrder_processingPaidFull_isRejected() throws Exception {
         OrderInfo order = placeGuestOrder(2200000);
 
-        // Pay only part of the total — total = product + shipping, exact amount irrelevant
-        // as long as it is strictly between 0 and total.
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PARTIALLY_PAID\",\"paidAmount\":500000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2200000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
@@ -1245,16 +1249,152 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
     }
 
+    // ── Direct PAID→REFUNDED via payment-status must be rejected ──────────────
+    // Refund must go through POST /refund so RefundService handles transaction,
+    // payment record, receivable write-off, serial restore, and audit log atomically.
+    @Test
+    void updatePaymentStatus_paidToRefunded_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(9100000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":9100000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Direct REFUNDED transition via payment-status must be rejected
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"REFUNDED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        // Order must still be PAID
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"));
+    }
+
+    // ── SHIPPED without trackingNumber must be rejected ───────────────────────
+    @Test
+    void updateFulfillment_shippedWithoutTrackingNumber_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(9200000);
+
+        // Move fulfillment to PROCESSING first (UNFULFILLED→PROCESSING)
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"PROCESSING\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // SHIPPED without trackingNumber must fail
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"SHIPPED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ── UNFULFILLED→DELIVERED direct must be rejected ─────────────────────────
+    @Test
+    void updateFulfillment_unfulfilledToDelivered_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(9300000);
+
+        // Direct jump UNFULFILLED→DELIVERED is no longer allowed
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"DELIVERED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+    }
+
+    // ── Refund PROCESSING+PAID order flips order status to REFUNDED ───────────
+    @Test
+    void createRefund_processingPaidOrder_flipsOrderStatusToRefunded() throws Exception {
+        OrderInfo order = placeGuestOrder(9400000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":9400000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Refund while still in PROCESSING (not yet COMPLETED)
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":9400000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"))
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+    }
+
+    // ── PAID→UNPAID is rejected after refund has been applied ─────────────────
+    @Test
+    void updatePaymentStatus_paidToUnpaid_rejectedAfterRefund() throws Exception {
+        OrderInfo order = placeGuestOrder(9500000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":9500000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Apply full refund
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":9500000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"));
+
+        // After refund, payment status is REFUNDED — cannot go back to UNPAID
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"UNPAID\",\"paidAmount\":0}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+    }
+
+    // ── BACS ON_HOLD→PROCESSING auto-marks payment PAID ──────────────────────
+    @Test
+    void bacsOrder_onHoldToProcessing_autoMarksPaid() throws Exception {
+        OrderInfo bacs = placeGuestOrderBacs(9600000);
+
+        // BACS order starts ON_HOLD + UNPAID
+        mockMvc.perform(get("/api/v1/admin/orders/" + bacs.orderId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ON_HOLD"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("UNPAID"));
+
+        // Transition ON_HOLD → PROCESSING auto-marks PAID
+        mockMvc.perform(patch("/api/v1/admin/orders/" + bacs.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PROCESSING\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"))
+                .andExpect(jsonPath("$.data.paidAt").isNotEmpty());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
      * Drive the DELIVERY fulfillment state machine to DELIVERED so an admin can
-     * legally flip a COD/BACS order to COMPLETED. Backend now enforces the
-     * "goods delivered + cash collected" precondition (see
-     * AdminOrderService#validateBeforeComplete), so any test that completes a
-     * delivery order must walk through this first.
+     * legally flip a COD/BACS order to COMPLETED. Backend enforces:
+     * UNFULFILLED → PROCESSING → SHIPPED (requires trackingNumber) → DELIVERED.
      */
     private void markDelivered(UUID orderId) throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"PROCESSING\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"SHIPPED\",\"trackingNumber\":\"TEST-TRK-001\",\"shippingCarrier\":\"GHN\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
         mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/fulfillment")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fulfillmentStatus\":\"DELIVERED\"}")

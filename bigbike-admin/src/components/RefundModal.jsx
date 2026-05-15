@@ -45,6 +45,9 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
       errs.refundAmount = t('refund.errorAmountRequired')
     } else if (amount > maxRefundable) {
       errs.refundAmount = t('refund.errorAmountExceeds', { max: formatCurrencyVnd(maxRefundable) })
+    } else if (amount !== maxRefundable) {
+      // Backend chỉ hỗ trợ hoàn tiền toàn bộ số tiền còn lại
+      errs.refundAmount = t('refund.errorMustBeFullAmount', { amount: formatCurrencyVnd(maxRefundable) })
     }
     if (!form.refundReason) errs.refundReason = t('refund.errorReasonRequired')
     return errs
@@ -99,8 +102,13 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
               max={maxRefundable}
               step="1"
               value={form.refundAmount}
-              onChange={(e) => setForm((p) => ({ ...p, refundAmount: e.target.value }))}
+              readOnly
+              className="bg-muted cursor-not-allowed"
+              aria-describedby="refund-amount-hint"
             />
+            <p id="refund-amount-hint" className="text-xs text-muted-foreground">
+              {t('refund.hintFullRefundOnly')}
+            </p>
             {errors.refundAmount && <p className="text-xs text-danger">{errors.refundAmount}</p>}
           </div>
 

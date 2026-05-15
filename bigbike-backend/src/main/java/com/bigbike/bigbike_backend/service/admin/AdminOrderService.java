@@ -102,7 +102,11 @@ public class AdminOrderService {
     static {
         ALLOWED_PAYMENT_TRANSITIONS = new HashMap<>();
         ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",    Set.of("PAID", "CANCELLED"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",      Set.of("REFUNDED", "UNPAID"));
+        // REFUNDED is intentionally excluded from PAID transitions.
+        // Setting paymentStatus=REFUNDED directly bypasses RefundService, which is
+        // the single authoritative refund flow (refund_transaction, payment.refundAmount,
+        // receivable write-off, SOLD serial restore, audit log). Use POST /refund instead.
+        ALLOWED_PAYMENT_TRANSITIONS.put("PAID",      Set.of("UNPAID"));
         ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",  Set.of());
         ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED", Set.of());
     }
@@ -114,7 +118,10 @@ public class AdminOrderService {
     private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
     static {
         ALLOWED_FULFILLMENT_TRANSITIONS = new HashMap<>();
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "DELIVERED", "CANCELLED"));
+        // UNFULFILLED → DELIVERED direct is removed. Walk-in/POS orders use fulfillmentType=IN_STORE
+        // and never enter the fulfillment state machine. Delivery orders must go through SHIPPED first
+        // so tracking data is captured before the order can be completed.
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED", "RETURNED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of("RETURNED"));
@@ -391,6 +398,14 @@ public class AdminOrderService {
                     throw ValidationException.fromField("paidAmount", "INVALID",
                             "paidAmount must be 0 for UNPAID.");
                 }
+                // Reject revert-to-UNPAID if a refund has already been applied.
+                // Allowing this would leave refundAmount > 0 with paymentStatus=UNPAID,
+                // which is an incoherent state that breaks refund idempotency checks.
+                BigDecimal existingRefund = order.getRefundAmount();
+                if (existingRefund != null && existingRefund.compareTo(BigDecimal.ZERO) > 0) {
+                    throw new ConflictException(
+                            "Không thể đặt lại thanh toán về UNPAID vì đơn hàng đã có hoàn tiền " + existingRefund + " VND.");
+                }
                 order.setPaymentStatus("UNPAID");
                 order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
                 order.setPaidAt(null);
@@ -473,8 +488,14 @@ public class AdminOrderService {
         order.setFulfillmentStatus(newStatus);
         order.setUpdatedAt(now);
 
-        if ("SHIPPED".equals(newStatus) && order.getShippedAt() == null) {
-            order.setShippedAt(now);
+        if ("SHIPPED".equals(newStatus)) {
+            if (req.trackingNumber() == null || req.trackingNumber().isBlank()) {
+                throw ValidationException.fromField("trackingNumber", "REQUIRED",
+                        "Mã vận đơn (trackingNumber) là bắt buộc khi đánh dấu đã giao vận chuyển.");
+            }
+            if (order.getShippedAt() == null) {
+                order.setShippedAt(now);
+            }
         }
         if (req.trackingNumber() != null && !req.trackingNumber().isBlank()) {
             order.setTrackingNumber(req.trackingNumber().trim());

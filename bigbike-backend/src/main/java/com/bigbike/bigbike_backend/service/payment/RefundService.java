@@ -21,6 +21,7 @@ import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -127,7 +128,12 @@ public class RefundService {
 
         boolean wasCompleted = "COMPLETED".equals(order.getStatus());
         order.setPaymentStatus("REFUNDED");
-        if (wasCompleted) {
+        // Flip order status to REFUNDED for any non-terminal or completed order.
+        // Active orders (PROCESSING, ON_HOLD, PENDING) left with paymentStatus=REFUNDED
+        // but order.status still active would be stuck — no further transition is valid.
+        Set<String> nonRefundableTerminals = Set.of("CANCELLED", "FAILED", "REFUNDED");
+        if (!nonRefundableTerminals.contains(order.getStatus())) {
+            // Covers PENDING, ON_HOLD, PROCESSING (active) and COMPLETED
             order.setStatus("REFUNDED");
         }
         order.setUpdatedAt(now);

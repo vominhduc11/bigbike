@@ -21,13 +21,22 @@ const PAYMENT_TRANSITIONS = {
   CANCELLED: [],
 }
 
-// Visual config for order status action buttons
+// Visual config for order status action buttons.
+// BACS ON_HOLD → PROCESSING tự động mark PAID — label phải rõ ý nghĩa này.
 const ORDER_STATUS_ACTION = {
-  PROCESSING: { label: 'Xác nhận xử lý',   variant: 'primary',     confirm: false },
-  ON_HOLD:    { label: 'Tạm giữ đơn',       variant: 'secondary',   confirm: false },
-  COMPLETED:  { label: 'Hoàn thành đơn',    variant: 'success',     confirm: true  },
-  CANCELLED:  { label: 'Huỷ đơn',           variant: 'destructive', confirm: true  },
-  FAILED:     { label: 'Đánh dấu thất bại', variant: 'destructive', confirm: true  },
+  PROCESSING: { label: 'Xác nhận xử lý',             variant: 'primary',     confirm: false },
+  ON_HOLD:    { label: 'Tạm giữ đơn',                variant: 'secondary',   confirm: false },
+  COMPLETED:  { label: 'Hoàn thành đơn',             variant: 'success',     confirm: true  },
+  CANCELLED:  { label: 'Huỷ đơn',                    variant: 'destructive', confirm: true  },
+  FAILED:     { label: 'Đánh dấu thất bại',          variant: 'destructive', confirm: true  },
+}
+
+// Cho đơn BACS đang ON_HOLD, label nút PROCESSING cần rõ hơn.
+function getOrderStatusLabel(targetStatus, order) {
+  if (targetStatus === 'PROCESSING' && order?.orderStatus === 'ON_HOLD' && order?.paymentMethod === 'BACS') {
+    return 'Xác nhận đã nhận chuyển khoản'
+  }
+  return ORDER_STATUS_ACTION[targetStatus]?.label ?? targetStatus
 }
 
 const PAYMENT_ACTION_LABEL = {
@@ -368,7 +377,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
                   >
-                    {cfg.label}
+                    {getOrderStatusLabel(s, order)}
                   </button>
                 )
               })}
@@ -479,7 +488,15 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           {canUpdate && (
             <>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED' || order.fulfillmentStatus === 'PROCESSING') && (
+                {/* UNFULFILLED: chỉ cho chuyển sang PROCESSING trước, không được nhảy thẳng SHIPPED */}
+                {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
+                  <button type="button" className="btn btn-secondary" disabled={fulfillmentSaving}
+                    onClick={() => handleFulfillmentUpdate('PROCESSING')}>
+                    {fulfillmentSaving ? 'Đang lưu…' : 'Bắt đầu chuẩn bị hàng'}
+                  </button>
+                )}
+                {/* PROCESSING: cho điền mã vận đơn rồi chuyển SHIPPED */}
+                {order.fulfillmentStatus === 'PROCESSING' && (
                   <button type="button" className="btn btn-secondary" disabled={fulfillmentSaving}
                     onClick={() => setShowShipForm((p) => !p)}>
                     Đánh dấu đã giao vận chuyển
@@ -496,10 +513,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               {showShipForm && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 400, marginTop: 4 }}>
                   <Input type="text"
-                    placeholder="Mã vận đơn (tuỳ chọn)"
+                    placeholder="Mã vận đơn *"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
-                    disabled={fulfillmentSaving}  />
+                    disabled={fulfillmentSaving}
+                    required  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--c-text-muted)', margin: 0 }}>
+                    Mã vận đơn là bắt buộc để chuyển sang trạng thái Đang giao.
+                  </p>
                   <Input type="text"
                     placeholder="Đơn vị vận chuyển — GHN, GHTK, ViettelPost…"
                     value={shippingCarrier}

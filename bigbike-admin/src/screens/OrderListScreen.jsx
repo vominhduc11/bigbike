@@ -27,6 +27,7 @@ const STATUS_TONES = {
 }
 
 const ORDER_STATUS_KEYS = ['PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED']
+const PAYMENT_STATUS_KEYS = ['UNPAID', 'PAID', 'REFUNDED', 'CANCELLED']
 
 function OrderStatusBadge({ value }) {
   const { t } = useTranslation()
@@ -37,6 +38,7 @@ function OrderStatusBadge({ value }) {
 const INITIAL_QUERY = {
   search: '',
   orderStatus: 'ALL',
+  paymentStatus: 'ALL',
   dateRange: undefined,
   sort: 'createdAt:desc',
   page: 1,
@@ -143,6 +145,16 @@ export function OrderListScreen({ navigate }) {
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {ORDER_STATUS_KEYS.map((k) => (
               <SelectItem key={k} value={k}>{t(`status.order.${k}`)}</SelectItem>
+            ))}
+          </SelectContent></Select>
+        </label>
+        <label>
+          {t('orders.filterPaymentStatus', { defaultValue: 'Thanh toán' })}
+          <Select value={query.paymentStatus}
+            onValueChange={(val) => updateQuery({ paymentStatus: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
+            {PAYMENT_STATUS_KEYS.map((k) => (
+              <SelectItem key={k} value={k}>{t(`status.payment.${k}`, { defaultValue: k })}</SelectItem>
             ))}
           </SelectContent></Select>
         </label>
