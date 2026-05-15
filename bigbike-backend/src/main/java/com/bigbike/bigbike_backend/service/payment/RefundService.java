@@ -106,9 +106,11 @@ public class RefundService {
         if (scaled.compareTo(BigDecimal.ZERO) <= 0) {
             throw ValidationException.fromField("refundAmount", "INVALID", "refundAmount must be > 0.");
         }
-        if (scaled.compareTo(maxRefundable) > 0) {
+        // Partial refunds are not supported — must refund the full remaining paid amount.
+        if (scaled.compareTo(maxRefundable) != 0) {
             throw ValidationException.fromField("refundAmount", "INVALID",
-                    "refundAmount (" + scaled + ") exceeds refundable amount (" + maxRefundable + ").");
+                    "refundAmount must equal the full refundable amount (" + maxRefundable
+                            + "). Partial refunds are not supported.");
         }
 
         Instant now = Instant.now();
@@ -119,12 +121,6 @@ public class RefundService {
             order.setRefundReason(refundReason);
         }
         order.setRefundedAt(now);
-
-        // Refund must be for the full paid amount — partial refunds are not supported.
-        if (scaled.compareTo(maxRefundable) != 0) {
-            throw ValidationException.fromField("refundAmount", "INVALID",
-                    "refundAmount must equal the full refundable amount (" + maxRefundable + "). Partial refunds are not supported.");
-        }
 
         boolean wasCompleted = "COMPLETED".equals(order.getStatus());
         order.setPaymentStatus("REFUNDED");
