@@ -650,17 +650,36 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // PROCESSING COD order, UNPAID, not yet delivered:
+    //   COMPLETED must be absent (COD requires PAID + DELIVERED before completion).
+    //   CANCELLED must be present (UNPAID order may cancel freely).
+    //   FAILED must be present.
     @Test
-    void listAllowedTransitions_returnsSortedCurrentOptions() throws Exception {
+    void listAllowedTransitions_processingUnpaidUndelivered_noCompleted() throws Exception {
         OrderInfo order = placeGuestOrder(7450000);
 
         mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0]").value("CANCELLED"))
-                .andExpect(jsonPath("$.data[1]").value("COMPLETED"))
-                .andExpect(jsonPath("$.data[2]").value("FAILED"));
+                .andExpect(jsonPath("$.data[1]").value("FAILED"));
+    }
+
+    // After markPaid + markDelivered, COMPLETED must appear and CANCELLED must be gone
+    // (PAID order cannot cancel directly — must refund first).
+    @Test
+    void listAllowedTransitions_processingPaidDelivered_onlyCompleted() throws Exception {
+        OrderInfo order = placeGuestOrder(7451000);
+        markPaid(order.orderId, 7451000);
+        markDelivered(order.orderId);
+
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0]").value("COMPLETED"))
+                .andExpect(jsonPath("$.data[1]").value("FAILED"));
     }
 
     // ── Direct PATCH status COMPLETED → REFUNDED must be rejected.

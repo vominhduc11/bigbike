@@ -214,20 +214,57 @@ public class AdminOrderService {
 
     /**
      * Returns the list of order statuses that the given order can legally
-     * transition into, in a stable order. Used by the admin UI to hide
-     * transition buttons that would fail the ConflictException check in
-     * {@link #updateOrderStatus}.
+     * transition into right now, in a stable order. Filters out any target
+     * status whose business preconditions would cause {@link #updateOrderStatus}
+     * to throw — so the UI only shows buttons that will actually succeed.
      */
     public List<String> listAllowedTransitions(UUID orderId) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
-        String paymentStatus = order.getPaymentStatus();
-        boolean hasMoney = "PAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus);
         return allowed.stream()
-                .filter(s -> !(hasMoney && "CANCELLED".equals(s)))
+                .filter(s -> canTransitionTo(order, s))
                 .sorted()
                 .toList();
+    }
+
+    /**
+     * Returns true if the given order can transition to {@code targetStatus}
+     * without hitting a business precondition error in {@link #updateOrderStatus}.
+     * Mirrors {@link #validateBeforeComplete} and {@link #validateBeforeCancel}
+     * exactly so the two code paths stay in sync.
+     */
+    private boolean canTransitionTo(OrderEntity order, String targetStatus) {
+        return switch (targetStatus) {
+            case "COMPLETED" -> canComplete(order);
+            case "CANCELLED" -> canCancel(order);
+            default -> true;
+        };
+    }
+
+    private boolean canComplete(OrderEntity order) {
+        String fulfillmentType  = order.getFulfillmentType();
+        String fulfillmentStatus = order.getFulfillmentStatus();
+        String paymentMethod    = order.getPaymentMethod();
+        String paymentStatus    = order.getPaymentStatus();
+
+        if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
+                && !"DELIVERED".equals(fulfillmentStatus)) {
+            return false;
+        }
+        if ("COD".equalsIgnoreCase(paymentMethod) && !"PAID".equals(paymentStatus)) {
+            return false;
+        }
+        if ("UNPAID".equals(paymentStatus)) {
+            boolean isCreditOrder = "CREDIT".equalsIgnoreCase(paymentMethod);
+            boolean hasCustomer   = order.getCustomerId() != null;
+            if (!isCreditOrder || !hasCustomer) return false;
+        }
+        return true;
+    }
+
+    private boolean canCancel(OrderEntity order) {
+        return !"PAID".equals(order.getPaymentStatus());
     }
 
     // ── Update order status ───────────────────────────────────────────────────
