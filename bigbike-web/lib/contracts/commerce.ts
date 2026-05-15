@@ -74,6 +74,7 @@ export type ShippingMethodOption = {
   cost: number
   freeShippingThreshold?: number | null
   minOrderAmount?: number | null
+  zoneRegionCode?: string | null
 }
 
 export type CheckoutOptions = {

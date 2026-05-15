@@ -340,7 +340,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
         <DetailSection title={t('orders.detail.orderStatus')}>
           <label style={{ display: 'block', marginBottom: '0.75rem' }}>
-            {t('orders.detail.deliveryStatus')}
+            {t('orders.detail.orderStatus')}
             <Select
               value={order.orderStatus}
               onValueChange={handleStatusChange}
@@ -446,7 +446,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               <strong>Trạng thái:</strong>{' '}
               {order.fulfillmentStatus
                 ? ({ UNFULFILLED: 'Chưa xử lý', PROCESSING: 'Đang chuẩn bị', SHIPPED: 'Đang giao', DELIVERED: 'Đã giao', CANCELLED: 'Đã huỷ', RETURNED: 'Đã trả hàng' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
-                : '—'}
+                : 'Chưa giao vận chuyển'}
             </span>
             {order.trackingNumber && (
               <span style={{ fontSize: '0.875rem', color: 'var(--c-text-muted)' }}>

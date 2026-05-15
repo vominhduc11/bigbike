@@ -168,9 +168,9 @@
   --bb-ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   --bb-z-header: 200;
-  --bb-z-dropdown: 300;
   --bb-z-overlay: 400;
   --bb-z-modal: 500;
+  --bb-z-dropdown: 600;
 }
 
 .bb-theme {

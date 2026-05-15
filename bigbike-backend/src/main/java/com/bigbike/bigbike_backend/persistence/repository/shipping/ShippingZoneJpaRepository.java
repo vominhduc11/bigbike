@@ -10,5 +10,7 @@ public interface ShippingZoneJpaRepository extends JpaRepository<ShippingZoneEnt
 
     Optional<ShippingZoneEntity> findByLegacyId(Long legacyId);
 
+    Optional<ShippingZoneEntity> findFirstByRegionCode(String regionCode);
+
     List<ShippingZoneEntity> findByEnabledOrderBySortOrderAsc(boolean enabled);
 }

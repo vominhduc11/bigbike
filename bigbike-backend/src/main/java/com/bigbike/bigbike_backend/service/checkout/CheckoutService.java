@@ -211,7 +211,8 @@ public class CheckoutService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
+        String shippingProvince = resolveShippingAddress(req.billingAddress(), req.shippingAddress()).province();
+        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId(), shippingProvince);
         BigDecimal shippingCost = resolveShippingCost(shippingMethod, subtotal);
         BigDecimal total = subtotal.subtract(discount).add(shippingCost).max(BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
@@ -232,7 +233,7 @@ public class CheckoutService {
                 userAgent,
                 now
         );
-        OrderEntity savedOrder = orderRepo.save(order);
+        OrderEntity savedOrder = orderRepo.saveAndFlush(order);
 
         // Save line items first — serial reservation needs the line item ID.
         List<OrderLineItemEntity> savedLineItems = new ArrayList<>();
@@ -363,7 +364,7 @@ public class CheckoutService {
         BigDecimal lineDiscount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         BigDecimal lineTotal = lineSubtotal.subtract(lineDiscount).setScale(2, RoundingMode.HALF_UP);
 
-        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId());
+        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId(), req.billingAddress().province());
         BigDecimal shippingCost = resolveShippingCost(shippingMethod, lineTotal);
         BigDecimal total = lineTotal.add(shippingCost).setScale(2, RoundingMode.HALF_UP);
 
@@ -383,7 +384,7 @@ public class CheckoutService {
                 userAgent,
                 now
         );
-        OrderEntity savedOrder = orderRepo.save(order);
+        OrderEntity savedOrder = orderRepo.saveAndFlush(order);
 
         // Save line item first so serial reservation has a valid ID.
         OrderLineItemEntity savedLineItem = lineItemRepo.save(buildLineItemFromProduct(
@@ -433,6 +434,7 @@ public class CheckoutService {
 
     // ── Checkout options ──────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public CheckoutOptionsResponse getOptions() {
         List<PaymentMethodOptionResponse> paymentMethods = List.of(
                 new PaymentMethodOptionResponse("COD", "Thanh toán khi nhận hàng"),
@@ -447,7 +449,8 @@ public class CheckoutService {
                         m.getTitle(),
                         m.getCost() != null ? m.getCost() : BigDecimal.ZERO,
                         m.getFreeShippingThreshold(),
-                        m.getMinOrderAmount()
+                        m.getMinOrderAmount(),
+                        m.getZone().getRegionCode()
                 ))
                 .toList();
         return new CheckoutOptionsResponse(paymentMethods, shippingMethods);
@@ -531,8 +534,8 @@ public class CheckoutService {
                     guestSessionId,
                     idempotencyKey,
                     requestHash,
-                    now,
-                    now
+                    java.sql.Timestamp.from(now),
+                    java.sql.Timestamp.from(now)
             );
             return new IdempotencyReservation(reservationId, null);
         } catch (DataIntegrityViolationException ex) {
@@ -615,7 +618,8 @@ public class CheckoutService {
         }
     }
 
-    private ShippingMethodEntity resolveShippingMethod(String shippingMethodId) {
+    private ShippingMethodEntity resolveShippingMethod(String shippingMethodId, String province) {
+        ShippingMethodEntity method;
         if (shippingMethodId != null && !shippingMethodId.isBlank()) {
             UUID id;
             try {
@@ -624,23 +628,34 @@ public class CheckoutService {
                 throw ValidationException.fromField("shippingMethodId", "INVALID",
                         "Shipping method ID is invalid.");
             }
-            ShippingMethodEntity method = shippingMethodRepo.findById(id)
+            method = shippingMethodRepo.findById(id)
                     .orElseThrow(() -> ValidationException.fromField("shippingMethodId", "NOT_FOUND",
                             "Shipping method not found."));
             if (!method.isEnabled()) {
                 throw ValidationException.fromField("shippingMethodId", "DISABLED",
                         "Shipping method is disabled.");
             }
-            return method;
+        } else {
+            // Auto-select if exactly one enabled method
+            List<ShippingMethodEntity> enabled = shippingMethodRepo.findByEnabledOrderBySortOrderAsc(true);
+            if (enabled.size() == 1) {
+                method = enabled.get(0);
+            } else {
+                throw ValidationException.fromField("shippingMethodId", "REQUIRED",
+                        "Shipping method is required when multiple methods are available.");
+            }
         }
 
-        // Auto-select if exactly one enabled method
-        List<ShippingMethodEntity> enabled = shippingMethodRepo.findByEnabledOrderBySortOrderAsc(true);
-        if (enabled.size() == 1) {
-            return enabled.get(0);
+        // Lenient zone check: only enforce if zone has a known region code (MB/MT/MN)
+        String zoneRegionCode = method.getZone().getRegionCode();
+        if (zoneRegionCode != null && VietnamRegionMapper.KNOWN_REGION_CODES.contains(zoneRegionCode)) {
+            String customerRegion = VietnamRegionMapper.getRegion(province);
+            if (customerRegion != null && !customerRegion.equals(zoneRegionCode)) {
+                throw ValidationException.fromField("shippingMethodId", "SHIPPING_ZONE_MISMATCH",
+                        "Selected shipping method is not available for the delivery province.");
+            }
         }
-        throw ValidationException.fromField("shippingMethodId", "REQUIRED",
-                "Shipping method is required when multiple methods are available.");
+        return method;
     }
 
     private CheckoutAddressRequest resolveShippingAddress(

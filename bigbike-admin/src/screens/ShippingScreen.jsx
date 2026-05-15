@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  createShippingMethod, createShippingZone,
-  deleteShippingMethod, deleteShippingZone,
+  createShippingMethod,
+  deleteShippingMethod,
   fetchShippingMethods, fetchShippingZones,
-  updateShippingMethod, updateShippingZone,
+  updateShippingMethod,
 } from '../lib/adminApi'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -14,8 +14,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 
-const EMPTY_ZONE_FORM = { name: '', regionCode: '', sortOrder: '0', enabled: true }
-const EMPTY_METHOD_FORM = { methodCode: '', title: '', description: '', cost: '0', minOrderAmount: '0', freeShippingThreshold: '', sortOrder: '0', enabled: true }
+const ZONE_ORDER = ['MB', 'MT', 'MN']
+
+const EMPTY_METHOD_FORM = { title: '', description: '', cost: '0', freeShippingThreshold: '', enabled: true }
+
+function slugify(title) {
+  return title
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .substring(0, 30) + '-' + Date.now().toString(36)
+}
 
 export function ShippingScreen({ canUpdate }) {
   const { t } = useTranslation()
@@ -28,26 +39,23 @@ export function ShippingScreen({ canUpdate }) {
   const [methodsStatus, setMethodsStatus] = useState('idle')
   const [actionError, setActionError] = useState('')
 
-  const [showZoneForm, setShowZoneForm] = useState(false)
-  const [zoneForm, setZoneForm] = useState(EMPTY_ZONE_FORM)
-  const [editZoneId, setEditZoneId] = useState(null)
-  const [zoneFormError, setZoneFormError] = useState('')
-  const [zoneFormSaving, setZoneFormSaving] = useState(false)
-
   const [showMethodForm, setShowMethodForm] = useState(false)
   const [methodForm, setMethodForm] = useState(EMPTY_METHOD_FORM)
   const [editMethodId, setEditMethodId] = useState(null)
   const [methodFormError, setMethodFormError] = useState('')
   const [methodFormSaving, setMethodFormSaving] = useState(false)
 
-  function loadZones(autoSelectId = null) {
+  function loadZones() {
     setZonesStatus('loading')
     fetchShippingZones({ page: 1, pageSize: 50 })
       .then((r) => {
-        setZones(r.items)
+        const fixed = r.items
+          .filter((z) => ZONE_ORDER.includes(z.regionCode))
+          .sort((a, b) => ZONE_ORDER.indexOf(a.regionCode) - ZONE_ORDER.indexOf(b.regionCode))
+        setZones(fixed)
         setZonesStatus('success')
         setZonesWarning(r.mode === 'mock' ? r.warning : '')
-        if (autoSelectId) setSelectedZoneId(autoSelectId)
+        setSelectedZoneId((prev) => prev ?? (fixed[0]?.id ?? null))
       })
       .catch((e) => { setZonesStatus('error'); setZonesError(e.message) })
   }
@@ -65,69 +73,24 @@ export function ShippingScreen({ canUpdate }) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (selectedZoneId) loadMethods(selectedZoneId) }, [selectedZoneId])
 
-  async function handleZoneSubmit(e) {
-    e.preventDefault()
-    if (!zoneForm.name.trim()) { setZoneFormError(t('common.required')); return }
-    setZoneFormSaving(true)
-    setZoneFormError('')
-    try {
-      // regionCode: null (not undefined) so PATCH can clear it on the server
-      const payload = { name: zoneForm.name.trim(), regionCode: zoneForm.regionCode.trim() || null, sortOrder: Number(zoneForm.sortOrder), enabled: zoneForm.enabled }
-      if (editZoneId) {
-        await updateShippingZone(editZoneId, payload)
-        setShowZoneForm(false)
-        setEditZoneId(null)
-        setZoneForm(EMPTY_ZONE_FORM)
-        loadZones()
-      } else {
-        const r = await createShippingZone(payload)
-        setShowZoneForm(false)
-        setZoneForm(EMPTY_ZONE_FORM)
-        loadZones(r.item?.id ?? null)
-      }
-    } catch (e) {
-      setZoneFormError(e.message || t('shipping.saveError'))
-    } finally {
-      setZoneFormSaving(false)
-    }
-  }
-
-  async function handleDeleteZone(zoneId) {
-    const confirmed = await showConfirm(t('shipping.deleteConfirm'), t('shipping.deleteTitle'))
-    if (!confirmed) return
-    setActionError('')
-    try {
-      await deleteShippingZone(zoneId)
-      if (selectedZoneId === zoneId) { setSelectedZoneId(null); setMethods([]) }
-      loadZones()
-    } catch (e) {
-      setActionError(e.message || t('common.error'))
-    }
-  }
-
   async function handleMethodSubmit(e) {
     e.preventDefault()
-    const codePattern = /^[a-z0-9_-]+$/
-    if (!methodForm.methodCode.trim() || !methodForm.title.trim()) { setMethodFormError(t('common.required')); return }
-    if (!codePattern.test(methodForm.methodCode.trim())) { setMethodFormError(t('shipping.invalidMethodCode', 'Method code must contain only lowercase letters, digits, underscores, or hyphens.')); return }
+    if (!methodForm.title.trim()) { setMethodFormError(t('common.required')); return }
     const costVal = Number(methodForm.cost)
-    const minOrderVal = Number(methodForm.minOrderAmount)
     const thresholdRaw = methodForm.freeShippingThreshold
-    if (isNaN(costVal) || costVal < 0) { setMethodFormError(t('shipping.costNonNegative', 'Cost must be >= 0.')); return }
-    if (isNaN(minOrderVal) || minOrderVal < 0) { setMethodFormError(t('shipping.minOrderNonNegative', 'Min order amount must be >= 0.')); return }
-    if (thresholdRaw !== '' && (isNaN(Number(thresholdRaw)) || Number(thresholdRaw) < 0)) { setMethodFormError(t('shipping.thresholdNonNegative', 'Free shipping threshold must be >= 0.')); return }
+    if (isNaN(costVal) || costVal < 0) { setMethodFormError(t('shipping.costNonNegative')); return }
+    if (thresholdRaw !== '' && (isNaN(Number(thresholdRaw)) || Number(thresholdRaw) < 0)) { setMethodFormError(t('shipping.thresholdNonNegative')); return }
     setMethodFormSaving(true)
     setMethodFormError('')
     try {
       const payload = {
-        methodCode: methodForm.methodCode.trim(),
+        methodCode: editMethodId ? undefined : slugify(methodForm.title),
         title: methodForm.title.trim(),
-        // null (not undefined) so PATCH can clear description/freeShippingThreshold on the server
         description: methodForm.description.trim() || null,
         cost: costVal,
-        minOrderAmount: minOrderVal,
+        minOrderAmount: 0,
         freeShippingThreshold: thresholdRaw !== '' ? Number(thresholdRaw) : null,
-        sortOrder: Number(methodForm.sortOrder),
+        sortOrder: 0,
         enabled: methodForm.enabled,
       }
       if (editMethodId) {
@@ -158,6 +121,8 @@ export function ShippingScreen({ canUpdate }) {
     }
   }
 
+  const selectedZone = zones.find((z) => z.id === selectedZoneId)
+
   return (
     <section className="screen">
       <header className="screen-header">
@@ -166,11 +131,6 @@ export function ShippingScreen({ canUpdate }) {
           <h1>{t('shipping.title')}</h1>
           <p>{t('shipping.description')}</p>
         </div>
-        {canUpdate && (
-          <Button type="button" onClick={() => { setEditZoneId(null); setZoneForm(EMPTY_ZONE_FORM); setShowZoneForm(!showZoneForm) }}>
-            {showZoneForm ? t('common.cancel') : t('shipping.addZone')}
-          </Button>
-        )}
       </header>
 
       {zonesWarning ? <ReadOnlyBanner warning={zonesWarning} /> : null}
@@ -182,50 +142,31 @@ export function ShippingScreen({ canUpdate }) {
         </p>
       )}
 
-      {showZoneForm && (
-        <form onSubmit={handleZoneSubmit} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>{editZoneId ? t('common.edit') : t('common.create')}</h3>
-          {zoneFormError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{zoneFormError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-            <label>{t('shipping.zonesTitle')} * <Input required value={zoneForm.name} onChange={(e) => setZoneForm((p) => ({ ...p, name: e.target.value }))}  /></label>
-            <label>{t('shipping.formRegionCode')} <Input value={zoneForm.regionCode} onChange={(e) => setZoneForm((p) => ({ ...p, regionCode: e.target.value }))}  /></label>
-            <label>{t('shipping.formSortOrder')} <Input type="number" value={zoneForm.sortOrder} onChange={(e) => setZoneForm((p) => ({ ...p, sortOrder: e.target.value }))}  /></label>
-          </div>
-          <label className="form-checkbox" style={{ marginTop: '0.75rem' }}>
-            <Checkbox checked={zoneForm.enabled} onCheckedChange={(checked) => setZoneForm((p) => ({ ...p, enabled: checked }))}  />
-            <span>{t('shipping.formEnabled')}</span>
-          </label>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <Button type="submit" disabled={zoneFormSaving}>{zoneFormSaving ? t('common.saving') : (editZoneId ? t('common.save') : t('common.create'))}</Button>
-            <Button variant="secondary" type="button" onClick={() => { setShowZoneForm(false); setEditZoneId(null) }}>{t('common.cancel')}</Button>
-          </div>
-        </form>
-      )}
-
       {zonesStatus === 'loading' && <StatePanel tone="info" title={t('shipping.loading')} description={t('common.pleaseWait')} />}
       {zonesStatus === 'error' && <StatePanel tone="danger" title={t('shipping.error')} description={zonesError} actionLabel={t('common.retry')} onAction={loadZones} />}
       {zonesStatus === 'success' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem' }}>
           <aside>
             <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--c-text-muted)' }}>{t('shipping.zonesTitle').toUpperCase()}</p>
-            {zones.length === 0 && <p style={{ color: 'var(--c-text-muted)', fontSize: '0.85rem' }}>{t('shipping.noZone')}</p>}
             {zones.map((zone) => (
-              <div key={zone.id} style={{ marginBottom: '0.5rem' }}>
-                <button type="button"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: selectedZoneId === zone.id ? 'var(--c-primary-subtle)' : 'transparent', fontWeight: selectedZoneId === zone.id ? 600 : 400 }}
-                  onClick={() => setSelectedZoneId(zone.id)}>
-                  {zone.name}
-                  {zone.regionCode && <span style={{ fontSize: '0.7rem', color: 'var(--c-text-muted)', display: 'block' }}>{zone.regionCode}</span>}
-                  <span style={{ fontSize: '0.7rem', color: zone.enabled ? 'var(--c-success)' : 'var(--c-text-muted)' }}>{zone.enabled ? t('common.on') : t('common.off')}</span>
-                </button>
-                {canUpdate && (
-                  <div style={{ display: 'flex', gap: '0.25rem', paddingLeft: '0.75rem' }}>
-                    <Button variant="secondary" type="button" style={{ fontSize: '0.7rem', padding: '2px 8px' }}
-                      onClick={() => { setEditZoneId(zone.id); setZoneForm({ name: zone.name, regionCode: zone.regionCode || '', sortOrder: String(zone.sortOrder), enabled: zone.enabled }); setShowZoneForm(true) }}>{t('common.edit')}</Button>
-                    <Button variant="danger" type="button" style={{ fontSize: '0.7rem', padding: '2px 8px' }} onClick={() => handleDeleteZone(zone.id)}>{t('common.delete')}</Button>
-                  </div>
-                )}
-              </div>
+              <button
+                key={zone.id}
+                type="button"
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '0.6rem 0.75rem', marginBottom: '0.25rem',
+                  border: 'none', cursor: 'pointer',
+                  background: selectedZoneId === zone.id ? 'var(--c-primary-subtle)' : 'transparent',
+                  fontWeight: selectedZoneId === zone.id ? 600 : 400,
+                  borderLeft: selectedZoneId === zone.id ? '3px solid var(--c-primary)' : '3px solid transparent',
+                }}
+                onClick={() => setSelectedZoneId(zone.id)}
+              >
+                {zone.name}
+                <span style={{ fontSize: '0.7rem', color: zone.enabled ? 'var(--c-success)' : 'var(--c-text-muted)', display: 'block' }}>
+                  {zone.enabled ? t('common.on') : t('common.off')}
+                </span>
+              </button>
             ))}
           </aside>
 
@@ -234,7 +175,10 @@ export function ShippingScreen({ canUpdate }) {
             {selectedZoneId && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h2 style={{ margin: 0 }}>{t('shipping.methodsTitle')}</h2>
+                  <div>
+                    <h2 style={{ margin: 0 }}>{selectedZone?.name}</h2>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--c-text-muted)' }}>{t('shipping.methodsTitle')}</p>
+                  </div>
                   {canUpdate && (
                     <Button type="button" onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setShowMethodForm(!showMethodForm) }}>
                       {showMethodForm ? t('common.cancel') : t('shipping.addMethod')}
@@ -247,16 +191,13 @@ export function ShippingScreen({ canUpdate }) {
                     <h4 style={{ marginBottom: '0.75rem' }}>{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h4>
                     {methodFormError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.5rem' }}>{methodFormError}</p>}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <label>{t('shipping.formCode')} * <Input required value={methodForm.methodCode} onChange={(e) => setMethodForm((p) => ({ ...p, methodCode: e.target.value }))}  /></label>
-                      <label>{t('shipping.formTitle')} * <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))}  /></label>
-                      <label style={{ gridColumn: '1 / -1' }}>{t('shipping.formDescription')} <Input value={methodForm.description} onChange={(e) => setMethodForm((p) => ({ ...p, description: e.target.value }))}  /></label>
-                      <label>{t('shipping.formCost')} <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))}  /></label>
-                      <label>{t('shipping.formMinOrder')} <Input type="number" min="0" value={methodForm.minOrderAmount} onChange={(e) => setMethodForm((p) => ({ ...p, minOrderAmount: e.target.value }))}  /></label>
-                      <label>{t('shipping.formFreeThreshold')} <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))}  /></label>
-                      <label>{t('shipping.formSortOrder')} <Input type="number" value={methodForm.sortOrder} onChange={(e) => setMethodForm((p) => ({ ...p, sortOrder: e.target.value }))}  /></label>
+                      <label style={{ gridColumn: '1 / -1' }}>{t('shipping.formTitle')} * <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} /></label>
+                      <label style={{ gridColumn: '1 / -1' }}>{t('shipping.formDescription')} <Input value={methodForm.description} onChange={(e) => setMethodForm((p) => ({ ...p, description: e.target.value }))} /></label>
+                      <label>{t('shipping.formCost')} <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))} /></label>
+                      <label>{t('shipping.formFreeThreshold')} <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))} /></label>
                     </div>
                     <label className="form-checkbox" style={{ marginTop: '0.5rem' }}>
-                      <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))}  />
+                      <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))} />
                       <span>{t('shipping.formEnabled')}</span>
                     </label>
                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
@@ -273,10 +214,8 @@ export function ShippingScreen({ canUpdate }) {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--c-border)', textAlign: 'left' }}>
-                        <th style={{ padding: '0.5rem 0' }}>{t('shipping.colCode')}</th>
                         <th style={{ padding: '0.5rem 0' }}>{t('shipping.colTitle')}</th>
                         <th style={{ padding: '0.5rem 0' }}>{t('shipping.colCost')}</th>
-                        <th style={{ padding: '0.5rem 0' }}>{t('shipping.colMinOrder')}</th>
                         <th style={{ padding: '0.5rem 0' }}>{t('shipping.colStatus')}</th>
                         {canUpdate && <th></th>}
                       </tr>
@@ -284,10 +223,8 @@ export function ShippingScreen({ canUpdate }) {
                     <tbody>
                       {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
                         <tr key={m.id} style={{ borderBottom: '1px solid var(--c-border)' }}>
-                          <td style={{ padding: '0.5rem 0' }}><code style={{ fontSize: '0.8rem' }}>{m.methodCode}</code></td>
                           <td style={{ padding: '0.5rem 0' }}>{m.title}</td>
                           <td style={{ padding: '0.5rem 0' }}>{formatCurrencyVnd(m.cost)}</td>
-                          <td style={{ padding: '0.5rem 0' }}>{m.minOrderAmount > 0 ? formatCurrencyVnd(m.minOrderAmount) : '—'}</td>
                           <td style={{ padding: '0.5rem 0' }}>
                             <span style={{ fontSize: '0.8rem', color: m.enabled ? 'var(--c-success)' : 'var(--c-text-muted)' }}>{m.enabled ? t('common.on') : t('common.off')}</span>
                           </td>
@@ -295,7 +232,7 @@ export function ShippingScreen({ canUpdate }) {
                             <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'flex-end' }}>
                                 <Button variant="secondary" type="button" style={{ fontSize: '0.75rem' }}
-                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ methodCode: m.methodCode, title: m.title, description: m.description || '', cost: String(m.cost), minOrderAmount: String(m.minOrderAmount), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', sortOrder: String(m.sortOrder), enabled: m.enabled }); setShowMethodForm(true) }}>{t('common.edit')}</Button>
+                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, description: m.description || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}>{t('common.edit')}</Button>
                                 <Button variant="danger" type="button" style={{ fontSize: '0.75rem' }} onClick={() => handleDeleteMethod(m.id)}>{t('common.delete')}</Button>
                               </div>
                             </td>

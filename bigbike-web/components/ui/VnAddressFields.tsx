@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { VN_PROVINCES } from "@/lib/vn-address-data";
+import { VN_WARDS } from "@/lib/vn-wards-static";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,24 +22,10 @@ type VnAddressFieldsProps = {
   value: AddressState;
   onChange: (field: keyof AddressState, value: string) => void;
   required?: boolean;
+  labelClassName?: string;
 };
 
-type Ward = { code: string; name: string };
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
-async function fetchWards(districtCode: string): Promise<Ward[]> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/address/districts/${districtCode}/wards`);
-    if (!res.ok) return [];
-    const payload = await res.json();
-    return (payload.data as Ward[]) ?? [];
-  } catch {
-    return [];
-  }
-}
-
-export function VnAddressFields({ value, onChange, required }: VnAddressFieldsProps) {
+export function VnAddressFields({ value, onChange, required, labelClassName = "text-xs font-semibold tracking-[0.06em] uppercase text-muted-foreground" }: VnAddressFieldsProps) {
   const selectedProvince = useMemo(
     () => VN_PROVINCES.find((p) => p.name === value.province) ?? null,
     [value.province],
@@ -49,30 +36,15 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
     [selectedProvince, value.district],
   );
 
-  const [wards, setWards] = useState<Ward[]>([]);
-  const [wardsLoading, setWardsLoading] = useState(false);
-
-  // Extract primitive so dep array is stable and effect closure doesn't capture the object
-  const districtCode = selectedDistrict?.code ?? null;
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!districtCode) {
-        if (!cancelled) { setWards([]); setWardsLoading(false); }
-        return;
-      }
-      if (!cancelled) setWardsLoading(true);
-      const w = await fetchWards(districtCode);
-      if (!cancelled) { setWards(w); setWardsLoading(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [districtCode]);
+  const wards = useMemo(
+    () => (selectedDistrict ? (VN_WARDS[selectedDistrict.code] ?? []) : []),
+    [selectedDistrict],
+  );
 
   return (
     <>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">
+        <label className={labelClassName}>
           {"T\u1ec9nh / Th\u00e0nh ph\u1ed1"}{required && <span className="text-brand ml-[3px]">*</span>}
         </label>
         <Select
@@ -87,7 +59,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
           <SelectTrigger>
             <SelectValue placeholder={"\u2014 Ch\u1ecdn t\u1ec9nh / th\u00e0nh ph\u1ed1 \u2014"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             {VN_PROVINCES.map((p) => (
               <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
             ))}
@@ -96,7 +68,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Qu\u1eadn / Huy\u1ec7n"}</label>
+        <label className={labelClassName}>{"Qu\u1eadn / Huy\u1ec7n"}</label>
         {selectedProvince ? (
           <Select
             value={value.district}
@@ -108,7 +80,7 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
             <SelectTrigger>
               <SelectValue placeholder={"\u2014 Ch\u1ecdn qu\u1eadn / huy\u1ec7n \u2014"} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-72">
               {selectedProvince.districts.map((d) => (
                 <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
               ))}
@@ -120,24 +92,29 @@ export function VnAddressFields({ value, onChange, required }: VnAddressFieldsPr
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"Ph\u01b0\u1eddng / X\u00e3"}</label>
-        {selectedDistrict ? (
+        <label className={labelClassName}>{"Ph\u01b0\u1eddng / X\u00e3"}</label>
+        {selectedDistrict && wards.length > 0 ? (
           <Select
             value={value.ward}
-            disabled={wardsLoading}
             onValueChange={(v) => onChange("ward", v)}
           >
             <SelectTrigger>
-              <SelectValue placeholder={wardsLoading ? "\u0110ang t\u1ea3i..." : "\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
+              <SelectValue placeholder={"\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-72">
               {wards.map((w) => (
                 <SelectItem key={w.code} value={w.name}>{w.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         ) : (
-          <Input placeholder={"Ch\u1ecdn qu\u1eadn/huy\u1ec7n tr\u01b0\u1edbc"} disabled />
+          <Input
+            value={value.ward}
+            onChange={(e) => onChange("ward", e.target.value)}
+            placeholder={selectedDistrict ? "T\u00ean ph\u01b0\u1eddng / x\u00e3..." : "Ch\u1ecdn qu\u1eadn/huy\u1ec7n tr\u01b0\u1edbc"}
+            disabled={!selectedDistrict}
+            autoComplete="address-level3"
+          />
         )}
       </div>
     </>

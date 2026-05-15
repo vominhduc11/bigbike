@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCheckoutOptions, submitQuickBuy } from "@/lib/api/client-api";
 import type { CheckoutAddress, CheckoutOptions } from "@/lib/contracts/commerce";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { formatVnd } from "@/lib/utils/format";
+import { getRegionForProvince } from "@/lib/vn-region-map";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
 import {
   Sheet,
@@ -69,10 +70,24 @@ export function QuickBuyModal({
       .then((opts) => {
         setCheckoutOptions(opts);
         setPaymentMethod((prev) => prev || opts.paymentMethods[0]?.code || "");
-        setShippingMethodId((prev) => prev || opts.shippingMethods[0]?.id || "");
       })
       .catch((err: Error) => setCheckoutOptionsError(err.message));
   }, []);
+
+  const filteredShippingMethods = useMemo(() => {
+    const all = checkoutOptions?.shippingMethods ?? [];
+    const region = getRegionForProvince(address.province);
+    if (!region) return all;
+    const inZone = all.filter((m) => m.zoneRegionCode === region);
+    return inZone;
+  }, [checkoutOptions, address.province]);
+
+  useEffect(() => {
+    setShippingMethodId((prev) => {
+      const stillValid = filteredShippingMethods.some((m) => m.id === prev);
+      return stillValid ? prev : (filteredShippingMethods[0]?.id ?? "");
+    });
+  }, [filteredShippingMethods]);
 
   function updateAddressField<K extends keyof CheckoutAddress>(
     key: K,
@@ -181,8 +196,7 @@ export function QuickBuyModal({
                 />
               </div>
 
-              {/* Province / District / Ward — keeps existing VnAddressFields component */}
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 flex flex-col gap-4">
                 <VnAddressFields
                   value={{
                     province: address.province,
@@ -191,6 +205,7 @@ export function QuickBuyModal({
                   }}
                   onChange={(field, val) => updateAddressField(field, val)}
                   required
+                  labelClassName="text-sm font-medium font-body text-foreground"
                 />
               </div>
 
@@ -239,18 +254,22 @@ export function QuickBuyModal({
               <label className="text-sm font-medium font-body text-foreground">
                 Phương thức giao hàng <span className="text-destructive">*</span>
               </label>
-              <Select value={shippingMethodId} onValueChange={setShippingMethodId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn phương thức" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(checkoutOptions?.shippingMethods ?? []).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.title} — {formatVnd(m.cost)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {filteredShippingMethods.length === 0 && address.province ? (
+                <p className="text-sm text-destructive">Chưa có phương thức vận chuyển cho khu vực này.</p>
+              ) : (
+                <Select value={shippingMethodId} onValueChange={setShippingMethodId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn phương thức" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredShippingMethods.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.title} — {formatVnd(m.cost)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}

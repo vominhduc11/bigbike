@@ -9,5 +9,6 @@ public record ShippingMethodOptionResponse(
         String title,
         BigDecimal cost,
         BigDecimal freeShippingThreshold,
-        BigDecimal minOrderAmount
+        BigDecimal minOrderAmount,
+        String zoneRegionCode
 ) {}
