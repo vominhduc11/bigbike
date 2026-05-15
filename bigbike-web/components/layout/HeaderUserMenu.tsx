@@ -15,8 +15,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import {
+  getSafeLoginHref,
   toAccountPath,
-  toLoginPath,
   toOrderHistoryPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
@@ -65,26 +65,32 @@ export function HeaderUserMenu() {
     router.refresh();
   }
 
+  // During hydration render a non-navigating placeholder to avoid spurious navigation.
   if (auth.status === "loading") {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link
-              href={toAccountPath()}
-              className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white cursor-pointer transition-colors hover:text-brand hover:bg-white/5 [@media(max-width:420px)]:hidden"
-              aria-label="Tài khoản"
-            >
-              <UserIcon />
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent>Tài khoản</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <button
+        type="button"
+        disabled
+        aria-label="Tài khoản"
+        className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white/40 cursor-default [@media(max-width:420px)]:hidden"
+      >
+        <UserIcon />
+      </button>
     );
   }
 
   if (auth.status === "anonymous") {
+    const p = pathname?.replace(/\/$/, "") ?? "";
+    const isOnLoginPage = p === "/dang-nhap";
+    const isOnRegisterPage = p === "/dang-ky";
+    const loginHref = getSafeLoginHref(pathname);
+
+    const guestSubText = isOnRegisterPage
+      ? "Đã có tài khoản? Đăng nhập ngay."
+      : isOnLoginPage
+        ? "Chưa có tài khoản? Đăng ký miễn phí."
+        : "Đăng nhập để theo dõi đơn hàng.";
+
     return (
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <TooltipProvider>
@@ -100,23 +106,24 @@ export function HeaderUserMenu() {
             <TooltipContent>Tài khoản</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
-            <p className="text-sm font-semibold">Chào bạn!</p>
-            <p className="text-xs text-muted-foreground">Đăng nhập để theo dõi đơn hàng</p>
+            <p className="text-sm font-semibold normal-case">Chào bạn!</p>
+            <p className="text-xs text-muted-foreground normal-case">{guestSubText}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link
-              href={toLoginPath(pathname ?? undefined)}
-              className="font-semibold text-primary uppercase font-cta"
-            >
-              Đăng nhập
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={toRegisterPath()}>Đăng ký</Link>
-          </DropdownMenuItem>
+          {!isOnLoginPage && (
+            <DropdownMenuItem asChild>
+              <Link href={loginHref} className="font-semibold">
+                Đăng nhập
+              </Link>
+            </DropdownMenuItem>
+          )}
+          {!isOnRegisterPage && (
+            <DropdownMenuItem asChild>
+              <Link href={toRegisterPath()}>Đăng ký</Link>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -140,10 +147,10 @@ export function HeaderUserMenu() {
           <TooltipContent>{displayName ?? "Tài khoản"}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-xs text-muted-foreground">Xin chào,</p>
-          <p className="text-sm font-semibold truncate" title={profile.email}>
+          <p className="text-xs text-muted-foreground normal-case">Xin chào,</p>
+          <p className="text-sm font-semibold truncate normal-case" title={profile.email}>
             {displayName}
           </p>
         </DropdownMenuLabel>

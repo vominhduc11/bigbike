@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
@@ -21,6 +22,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -76,6 +78,7 @@ class Phase1FCheckoutApiTest {
     @Autowired ProductSerialJpaRepository serialRepo;
     @Autowired OrderLineItemSerialJpaRepository olisRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
+    @Autowired ProductVariantJpaRepository variantRepo;
 
     private MockMvc mockMvc;
     private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
@@ -514,6 +517,56 @@ class Phase1FCheckoutApiTest {
 
         UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
         assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
+    }
+
+    // ── Cart serial-aware quantity validation — Issue 4 regression guard ─────
+    // Before fix: cart used variant.quantityOnHand / product.stockQuantity only;
+    // for serial-tracked items without manage_stock=true, cart accepted any
+    // quantity and checkout failed later. Now cart counts IN_STOCK serials.
+
+    @Test
+    void cartAdd_productLevelSerial_quantityExceedsAvailable_isRejected() throws Exception {
+        ProductEntity product = createProductLevelSerialProduct("Cart Serial Reject", 5000000);
+        createInStockSerial(product, "CART-REJ-A-" + UUID.randomUUID());
+        createInStockSerial(product, "CART-REJ-B-" + UUID.randomUUID());
+        // 2 IN_STOCK serials, but request 3 → must reject at cart, not at checkout.
+
+        GuestSession session = newGuestSession();
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":3}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cartAdd_productLevelSerial_quantityWithinAvailable_isAccepted() throws Exception {
+        ProductEntity product = createProductLevelSerialProduct("Cart Serial Accept", 5100000);
+        createInStockSerial(product, "CART-ACC-A-" + UUID.randomUUID());
+        createInStockSerial(product, "CART-ACC-B-" + UUID.randomUUID());
+
+        GuestSession session = newGuestSession();
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cartAdd_variantSerial_quantityExceedsAvailable_isRejected() throws Exception {
+        VariantSerialFixture f = createVariantSerialFixture("Cart Variant Serial", 5200000);
+        createInStockSerialForVariant(f, "CART-VAR-A-" + UUID.randomUUID());
+        // Only 1 IN_STOCK serial on the variant; request 2 → reject.
+
+        GuestSession session = newGuestSession();
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + f.productId
+                                + "\",\"productVariantId\":\"" + f.variantId
+                                + "\",\"quantity\":2}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -1054,6 +1107,42 @@ class Phase1FCheckoutApiTest {
         Instant now = Instant.now();
         ProductSerialEntity serial = new ProductSerialEntity();
         serial.setProduct(product);
+        serial.setSerialNumber(serialNumber);
+        serial.setStatus(ProductSerialStatus.IN_STOCK);
+        serial.setReceivedAt(now);
+        serial.setCreatedAt(now);
+        serial.setUpdatedAt(now);
+        return serialRepo.save(serial);
+    }
+
+    private record VariantSerialFixture(String productId, String variantId,
+                                        ProductEntity product, ProductVariantEntity variant) {}
+
+    private VariantSerialFixture createVariantSerialFixture(String name, int retailPrice) {
+        ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
+
+        ProductVariantEntity variant = new ProductVariantEntity();
+        variant.setId(UUID.randomUUID().toString());
+        variant.setProduct(product);
+        variant.setName("Default");
+        variant.setSku("CART-VAR-" + variant.getId().replace("-", "").substring(0, 8));
+        variant.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
+        variant.setCurrency("VND");
+        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setQuantityOnHand(0);
+        variant.setAvailable(true);
+        variant.setSortOrder(0);
+        variant.setTrackSerials(true);
+        variantRepo.save(variant);
+
+        return new VariantSerialFixture(product.getId(), variant.getId(), product, variant);
+    }
+
+    private ProductSerialEntity createInStockSerialForVariant(VariantSerialFixture f, String serialNumber) {
+        Instant now = Instant.now();
+        ProductSerialEntity serial = new ProductSerialEntity();
+        serial.setProduct(f.product());
+        serial.setVariant(f.variant());
         serial.setSerialNumber(serialNumber);
         serial.setStatus(ProductSerialStatus.IN_STOCK);
         serial.setReceivedAt(now);

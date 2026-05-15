@@ -18,6 +18,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItem
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
+import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -44,6 +45,7 @@ public class CartService {
     private final CouponJpaRepository couponRepo;
     private final CartCalculator calculator;
     private final CouponPolicyService couponPolicy;
+    private final SerialLifecycleService serialLifecycleService;
 
     public CartService(
             CartJpaRepository cartRepo,
@@ -53,7 +55,8 @@ public class CartService {
             ProductVariantJpaRepository variantRepo,
             CouponJpaRepository couponRepo,
             CartCalculator calculator,
-            CouponPolicyService couponPolicy
+            CouponPolicyService couponPolicy,
+            SerialLifecycleService serialLifecycleService
     ) {
         this.cartRepo = cartRepo;
         this.cartItemRepo = cartItemRepo;
@@ -63,6 +66,7 @@ public class CartService {
         this.couponRepo = couponRepo;
         this.calculator = calculator;
         this.couponPolicy = couponPolicy;
+        this.serialLifecycleService = serialLifecycleService;
     }
 
     @Transactional
@@ -295,21 +299,40 @@ public class CartService {
     // ── private helpers ───────────────────────────────────────────────────────
 
     private void validateQuantityAgainstStock(ProductEntity product, ProductVariantEntity variant, int quantity) {
+        // Serial-tracked items: count available IN_STOCK serials directly. quantity_on_hand
+        // and stock_quantity are kept in sync by the DB trigger (V89) but checking the
+        // serial table avoids any sync lag and matches what checkout will re-validate.
+        if (variant != null && variant.isTrackSerials()) {
+            long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
+            if (available < quantity) {
+                throwStockShortage(product, (int) Math.min(Integer.MAX_VALUE, available));
+            }
+            return;
+        }
+        if (variant == null && product.isTrackSerials()) {
+            long available = serialLifecycleService.countAvailable(product.getId(), null);
+            if (available < quantity) {
+                throwStockShortage(product, (int) Math.min(Integer.MAX_VALUE, available));
+            }
+            return;
+        }
+
+        // Legacy non-serial path — behaviour preserved exactly.
         if (variant != null) {
             if (variant.getQuantityOnHand() < quantity) {
-                int onHand = variant.getQuantityOnHand();
-                throw new ConflictException(onHand <= 0
-                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+                throwStockShortage(product, variant.getQuantityOnHand());
             }
         } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
             if (product.getStockQuantity() < quantity) {
-                int onHand = product.getStockQuantity();
-                throw new ConflictException(onHand <= 0
-                        ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                        : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
+                throwStockShortage(product, product.getStockQuantity());
             }
         }
+    }
+
+    private static void throwStockShortage(ProductEntity product, int onHand) {
+        throw new ConflictException(onHand <= 0
+                ? "Sản phẩm '" + product.getName() + "' hết hàng."
+                : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
     }
 
     private CartItemEntity findOwnedItem(CartEntity cart, UUID itemId) {

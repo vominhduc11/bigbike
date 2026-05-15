@@ -106,3 +106,28 @@ export function toCanonicalUrl(path: string): string {
 export function getSiteOrigin(): string {
   return SITE_ORIGIN;
 }
+
+// Auth pages that should never be used as returnTo destinations.
+// Handles both /path and /path/ variants.
+const AUTH_ROUTE_PATHS = [
+  "/dang-nhap",
+  "/dang-ky",
+  "/quen-mat-khau",
+  "/xac-nhan-email",
+] as const;
+
+/** Returns true when pathname is an auth-specific page (login, register, etc.). */
+export function isAuthRoute(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  const p = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  return (AUTH_ROUTE_PATHS as readonly string[]).includes(p);
+}
+
+/**
+ * Returns the login URL, safely filtering out auth pages from returnTo.
+ * Prevents redirect loops like /dang-nhap/?tiep=%2Fdang-nhap%2F.
+ */
+export function getSafeLoginHref(currentPathname: string | null | undefined): string {
+  if (isAuthRoute(currentPathname)) return toLoginPath();
+  return toLoginPath(currentPathname ?? undefined);
+}
