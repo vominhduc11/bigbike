@@ -7,18 +7,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
@@ -68,6 +73,9 @@ class Phase1FCheckoutApiTest {
     @Autowired ShippingMethodJpaRepository shippingMethodRepo;
     @Autowired ShippingZoneJpaRepository shippingZoneRepo;
     @Autowired CouponJpaRepository couponRepo;
+    @Autowired ProductSerialJpaRepository serialRepo;
+    @Autowired OrderLineItemSerialJpaRepository olisRepo;
+    @Autowired OrderLineItemJpaRepository lineItemRepo;
 
     private MockMvc mockMvc;
     private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
@@ -441,6 +449,71 @@ class Phase1FCheckoutApiTest {
                                  "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isConflict());
+    }
+
+    // ── Product-level serial (no variant) — Issue 1 regression guard ─────────
+    // Before fix: validate pass counted IN_STOCK serials but apply-stock pass
+    // skipped serial reservation entirely (only handled manageStock/stockQuantity).
+    // Order could be created without any serial reserved → oversell.
+
+    @Test
+    void quickBuy_productLevelSerial_reservesSerialAndCreatesBridge() throws Exception {
+        ProductEntity product = createProductLevelSerialProduct("QB Serial Product", 4000000);
+        ProductSerialEntity s1 = createInStockSerial(product, "QB-SER-A-" + UUID.randomUUID());
+        ProductSerialEntity s2 = createInStockSerial(product, "QB-SER-B-" + UUID.randomUUID());
+        GuestSession session = newGuestSession();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/orders/quick-buy")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1," +
+                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        UUID orderId = UUID.fromString(extractJsonValue(body, "id"));
+
+        // Exactly one serial moved IN_STOCK → RESERVED, the other untouched.
+        long reserved = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
+                product.getId(), ProductSerialStatus.RESERVED);
+        long inStock = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
+                product.getId(), ProductSerialStatus.IN_STOCK);
+        assertThat(reserved).isEqualTo(1);
+        assertThat(inStock).isEqualTo(1);
+
+        // Bridge row links the order line item to the reserved serial.
+        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
+        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
+    }
+
+    @Test
+    void checkoutFromCart_productLevelSerial_reservesSerialAndCreatesBridge() throws Exception {
+        ProductEntity product = createProductLevelSerialProduct("Checkout Serial Product", 4500000);
+        createInStockSerial(product, "CHK-SER-A-" + UUID.randomUUID());
+        createInStockSerial(product, "CHK-SER-B-" + UUID.randomUUID());
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 1);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        UUID orderId = UUID.fromString(extractJsonValue(body, "id"));
+
+        long reserved = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
+                product.getId(), ProductSerialStatus.RESERVED);
+        long inStock = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
+                product.getId(), ProductSerialStatus.IN_STOCK);
+        assertThat(reserved).isEqualTo(1);
+        assertThat(inStock).isEqualTo(1);
+
+        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
+        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
     }
 
     @Test
@@ -966,6 +1039,27 @@ class Phase1FCheckoutApiTest {
         product.setStockState(ProductStockState.IN_STOCK);
         product.setUpdatedAt(Instant.now());
         return productRepo.save(product);
+    }
+
+    private ProductEntity createProductLevelSerialProduct(String name, int retailPrice) {
+        ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
+        product.setTrackSerials(true);
+        product.setForceOutOfStock(false);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setUpdatedAt(Instant.now());
+        return productRepo.save(product);
+    }
+
+    private ProductSerialEntity createInStockSerial(ProductEntity product, String serialNumber) {
+        Instant now = Instant.now();
+        ProductSerialEntity serial = new ProductSerialEntity();
+        serial.setProduct(product);
+        serial.setSerialNumber(serialNumber);
+        serial.setStatus(ProductSerialStatus.IN_STOCK);
+        serial.setReceivedAt(now);
+        serial.setCreatedAt(now);
+        serial.setUpdatedAt(now);
+        return serialRepo.save(serial);
     }
 
     private void addProductToGuestCart(GuestSession session, String productId, int qty) throws Exception {

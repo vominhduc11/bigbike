@@ -668,6 +668,39 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data[2]").value("FAILED"));
     }
 
+    // ── Direct PATCH status COMPLETED → REFUNDED must be rejected.
+    //    Refund integrity (refund_transaction, payment.refundAmount, warranty void,
+    //    SOLD serial restore, receivable write-off) belongs to RefundService;
+    //    the dedicated POST /refund endpoint is the only legitimate path.
+    @Test
+    void updateOrderStatus_completedToRefunded_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(7460000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7460000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REFUNDED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/allowed-transitions")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
     @Test
     void refundReport_partial_includesPartialRefundAmount() throws Exception {
         Instant from = Instant.now().minusSeconds(1);

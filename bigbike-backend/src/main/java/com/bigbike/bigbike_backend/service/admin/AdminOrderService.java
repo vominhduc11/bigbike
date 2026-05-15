@@ -79,7 +79,12 @@ public class AdminOrderService {
         ALLOWED_TRANSITIONS.put("PENDING",    Set.of("PROCESSING", "ON_HOLD", "CANCELLED", "FAILED"));
         ALLOWED_TRANSITIONS.put("ON_HOLD",    Set.of("PROCESSING", "CANCELLED", "FAILED"));
         ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("COMPLETED", "CANCELLED", "FAILED"));
-        ALLOWED_TRANSITIONS.put("COMPLETED",  Set.of("REFUNDED"));
+        // COMPLETED → REFUNDED is intentionally NOT allowed via direct status patch.
+        // Refunds must go through POST /admin/orders/{id}/refund → RefundService.applyRefund,
+        // which writes the refund_transaction, payment.refundAmount, voids warranty,
+        // restores SOLD serials, writes off open receivable, and flips status to REFUNDED
+        // atomically. Patching status directly would skip every one of those steps.
+        ALLOWED_TRANSITIONS.put("COMPLETED",  Set.of());
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
         ALLOWED_TRANSITIONS.put("FAILED",     Set.of());
         ALLOWED_TRANSITIONS.put("REFUNDED",   Set.of());
@@ -283,16 +288,14 @@ public class AdminOrderService {
 
         orderRepo.save(order);
 
-        // Serial lifecycle transitions (idempotent; no-op if no serials linked)
+        // Serial lifecycle transitions (idempotent; no-op if no serials linked).
+        // REFUNDED is unreachable here — ALLOWED_TRANSITIONS blocks it, refunds go through RefundService.
         if ("COMPLETED".equals(newStatus)) {
             serialLifecycleService.markSoldForOrder(orderId);
         } else if ("CANCELLED".equals(newStatus)) {
             // Release serial reservations, then restore non-serial stock
             serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_CANCELLED");
             orderStockRestoreService.restoreForCancel(orderId);
-        } else if ("REFUNDED".equals(newStatus)) {
-            // Refund does not return physical goods — serial stays SOLD until a return is processed
-            orderStockRestoreService.restoreForRefund(orderId);
         }
 
         // Add note if provided

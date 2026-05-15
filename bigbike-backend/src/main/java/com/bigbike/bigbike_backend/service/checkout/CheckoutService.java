@@ -397,6 +397,10 @@ public class CheckoutService {
                     savedLineItem, product.getId(), variant.getId(), qty, reservedUntil);
         } else if (variant != null) {
             decrementVariantStock(variant, qty, savedOrder.getId(), now);
+        } else if (product.isTrackSerials()) {
+            Instant reservedUntil = serialLifecycleService.computeReservedUntil();
+            serialLifecycleService.reserveForOrderLine(
+                    savedLineItem, product.getId(), null, qty, reservedUntil);
         } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
             int newQty = product.getStockQuantity() - qty;
             product.setStockQuantity(newQty);
@@ -960,6 +964,16 @@ public class CheckoutService {
                         });
             } else {
                 productRepo.findByIdForUpdate(cartItem.getProductId().toString()).ifPresent(product -> {
+                    if (product.isTrackSerials()) {
+                        Instant reservedUntil = serialLifecycleService.computeReservedUntil();
+                        serialLifecycleService.reserveForOrderLine(
+                                lineItem,
+                                product.getId(),
+                                null,
+                                cartItem.getQuantity(),
+                                reservedUntil);
+                        return;
+                    }
                     if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
                     int newQty = product.getStockQuantity() - cartItem.getQuantity();
                     product.setStockQuantity(newQty);
