@@ -636,6 +636,8 @@ export function normalizeCoupon(input) {
     maxUsage: (s.usageLimit ?? s.maxUsage) != null ? toIntegerLocal(s.usageLimit ?? s.maxUsage) : undefined,
     usageCount: toIntegerLocal(s.usageCount, 0),
     status: COUPON_STATUS_VALUES.includes(s.status) ? s.status : 'INACTIVE',
+    channel: ['ALL', 'ONLINE', 'POS'].includes(s.channel) ? s.channel : 'ALL',
+    customerId: toTrimmedStringLocal(s.customerId) || undefined,
     expiresAt: toTrimmedStringLocal(s.expiresAt) || undefined,
     createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,

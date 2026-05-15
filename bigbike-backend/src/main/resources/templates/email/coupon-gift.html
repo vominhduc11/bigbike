@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Mã giảm giá dành riêng cho bạn — BigBike</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6f8">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+        <tr th:replace="~{email/layout :: header-row}"></tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="background-color:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+
+            <h1 style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#151515;">
+              Bạn có một ưu đãi đặc biệt!
+            </h1>
+            <p style="margin:0 0 24px 0;font-size:15px;color:#4b5563;line-height:1.6;">
+              Xin chào <strong th:text="${customerName}">Khách hàng</strong>,<br/>
+              BigBike gửi tặng bạn mã giảm giá dành riêng. Dùng mã dưới đây cho đơn hàng tiếp theo của bạn.
+            </p>
+
+            <!-- Coupon code highlight -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background-color:#fff8e1;border:2px dashed #f99d1c;border-radius:8px;margin-bottom:24px;">
+              <tr>
+                <td style="padding:24px;text-align:center;">
+                  <p style="margin:0 0 6px 0;font-size:13px;color:#92400e;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
+                    Mã giảm giá của bạn
+                  </p>
+                  <p style="margin:0 0 10px 0;font-size:28px;font-weight:700;color:#151515;letter-spacing:0.08em;font-family:monospace;"
+                     th:text="${couponCode}">GIFTABCD1234</p>
+                  <p style="margin:0;font-size:18px;font-weight:700;color:#F90606;"
+                     th:text="'Giảm ' + ${discountLabel}">Giảm 10%</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Conditions -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background-color:#f7f7f8;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:24px;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#374151;">Điều kiện áp dụng:</p>
+                  <ul style="margin:0;padding-left:18px;font-size:13px;color:#4b5563;line-height:1.8;">
+                    <li th:if="${hasMinAmount}">
+                      Đơn hàng tối thiểu <strong th:text="${minAmountFormatted}">0 VND</strong>
+                    </li>
+                    <li th:if="${hasExpiry}">
+                      Có hiệu lực đến: <strong>
+                        <span th:text="${#temporals.format(expiresAt, 'dd/MM/yyyy', #locale)}">31/12/2026</span>
+                      </strong>
+                    </li>
+                    <li th:unless="${hasExpiry}">Không giới hạn thời gian</li>
+                    <li>Mỗi mã chỉ dùng được <strong>1 lần</strong></li>
+                    <li>Chỉ áp dụng cho tài khoản của bạn</li>
+                  </ul>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 24px 0;font-size:14px;color:#4b5563;line-height:1.6;">
+              Nhập mã vào ô <strong>"Mã giảm giá"</strong> trong giỏ hàng trước khi thanh toán.
+            </p>
+
+            <!-- CTA -->
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-radius:6px;background-color:#F90606;">
+                  <a th:href="${shopUrl}" href="#"
+                     style="display:inline-block;padding:12px 28px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
+                    Mua sắm ngay →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <tr th:replace="~{email/layout :: footer-row}"></tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

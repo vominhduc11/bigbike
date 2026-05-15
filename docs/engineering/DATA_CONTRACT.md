@@ -96,9 +96,31 @@ Evidence:
 - `PosOrderService.java`
 - `V71__add_pos_staff_and_customer_name_to_orders.sql`
 
+### Coupon channel
+
+`CouponEntity` has a `channel` column (`coupons.channel varchar(20) NOT NULL DEFAULT 'ALL'`) controlling which sales channel may redeem the coupon.
+
+| Value | Allowed in |
+|---|---|
+| `ALL` | Both online (web/mobile cart) and POS |
+| `ONLINE` | Web/mobile cart only — rejected at POS |
+| `POS` | POS only — rejected in web/mobile cart |
+
+`CouponPolicyService.validateChannel(coupon, channel)` enforces the check. `CartService` passes `"ONLINE"` and `PosOrderService` passes `"POS"`.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `CouponEntity.java`
+- `CouponPolicyService.java`
+- `CartService.java`
+- `PosOrderService.java`
+- `V118__add_coupon_channel.sql`
+
 ### Coupon snapshot
 
-Checkout copies coupon usage to `OrderAppliedCouponEntity` with:
+Checkout and POS both copy coupon usage to `OrderAppliedCouponEntity` with:
 
 - `couponId`
 - `code`
@@ -110,6 +132,7 @@ Status: `CONFIRMED_FROM_CODE`
 Evidence:
 
 - `CheckoutService.java`
+- `PosOrderService.java`
 
 ### Return data
 

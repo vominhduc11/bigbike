@@ -16,6 +16,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.Re
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class RefundService {
     private final SerialLifecycleService serialLifecycleService;
     private final ReceivableJpaRepository receivableRepo;
     private final RefundTransactionJpaRepository refundTransactionRepo;
+    private final WebRevalidationService webRevalidationService;
 
     public RefundService(
             OrderJpaRepository orderRepo,
@@ -55,7 +57,8 @@ public class RefundService {
             OrderStockRestoreService orderStockRestoreService,
             SerialLifecycleService serialLifecycleService,
             ReceivableJpaRepository receivableRepo,
-            RefundTransactionJpaRepository refundTransactionRepo) {
+            RefundTransactionJpaRepository refundTransactionRepo,
+            WebRevalidationService webRevalidationService) {
         this.orderRepo = orderRepo;
         this.paymentRepo = paymentRepo;
         this.noteRepo = noteRepo;
@@ -66,6 +69,7 @@ public class RefundService {
         this.serialLifecycleService = serialLifecycleService;
         this.receivableRepo = receivableRepo;
         this.refundTransactionRepo = refundTransactionRepo;
+        this.webRevalidationService = webRevalidationService;
     }
 
     /**
@@ -144,11 +148,13 @@ public class RefundService {
             // COMPLETED: serials are SOLD, non-serial stock was decremented.
             orderStockRestoreService.restoreForRefund(orderId);
             serialLifecycleService.restoreSoldSerialsForRefund(orderId, adminId);
+            webRevalidationService.revalidateProductsForOrder(orderId);
         } else if (wasActive) {
             // ACTIVE (PENDING/ON_HOLD/PROCESSING): non-serial stock was decremented at checkout.
             // Serial-tracked items are RESERVED (not SOLD) — release the reservation back to IN_STOCK.
             orderStockRestoreService.restoreForRefund(orderId);
             serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_REFUNDED");
+            webRevalidationService.revalidateProductsForOrder(orderId);
         }
 
         // Cancel outstanding receivable when the order is refunded.

@@ -35,6 +35,7 @@ import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -366,9 +367,9 @@ class Phase2FSerialInventoryTest {
         serial.setReservedUntil(Instant.now().minusSeconds(120));
         serialRepo.save(serial);
 
-        int released = lifecycleService.releaseExpiredReservations();
+        List<String> released = lifecycleService.releaseExpiredReservations();
 
-        assertThat(released).isGreaterThanOrEqualTo(1);
+        assertThat(released).hasSizeGreaterThanOrEqualTo(1);
         ProductSerialEntity updated = serialRepo.findById(serial.getId()).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(ProductSerialStatus.IN_STOCK);
         assertThat(updated.getReservedUntil()).isNull();
@@ -408,7 +409,7 @@ class Phase2FSerialInventoryTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "rows": [{"productId":"%s","serialNumber":"T14-%s","enableTracking":false}],
+                                  "rows": [{"productId":"%s","serialNumber":"T14-%s"}],
                                   "partialMode": true
                                 }
                                 """.formatted(f.productId(), uid())))
@@ -430,7 +431,7 @@ class Phase2FSerialInventoryTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s","enableTracking":false}],"partialMode":false}
+                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s"}],"partialMode":false}
                                 """.formatted(f.productId(), f.variantId(), chassis)))
                 .andExpect(status().isOk());
 
@@ -439,7 +440,7 @@ class Phase2FSerialInventoryTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s","enableTracking":false}],"partialMode":true}
+                                {"rows":[{"productId":"%s","variantId":"%s","serialNumber":"%s"}],"partialMode":true}
                                 """.formatted(f.productId(), f.variantId(), chassis)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();

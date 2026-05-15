@@ -208,7 +208,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         setAllowedTransitions([])
       })
     return () => { active = false }
-  }, [orderId, state.status, state.order?.orderStatus])
+  }, [orderId, state.status, state.order?.orderStatus, state.order?.paymentStatus, state.order?.fulfillmentStatus])
 
   async function handleStatusChange(newStatus) {
     const DANGEROUS = new Set(['CANCELLED', 'COMPLETED', 'REFUNDED'])

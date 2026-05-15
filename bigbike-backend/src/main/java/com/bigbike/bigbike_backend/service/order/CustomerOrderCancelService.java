@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,17 +21,20 @@ public class CustomerOrderCancelService {
     private final OrderReadService orderReadService;
     private final SerialLifecycleService serialLifecycleService;
     private final OrderStockRestoreService orderStockRestoreService;
+    private final WebRevalidationService webRevalidationService;
 
     public CustomerOrderCancelService(
             OrderJpaRepository orderRepo,
             OrderReadService orderReadService,
             SerialLifecycleService serialLifecycleService,
-            OrderStockRestoreService orderStockRestoreService
+            OrderStockRestoreService orderStockRestoreService,
+            WebRevalidationService webRevalidationService
     ) {
         this.orderRepo = orderRepo;
         this.orderReadService = orderReadService;
         this.serialLifecycleService = serialLifecycleService;
         this.orderStockRestoreService = orderStockRestoreService;
+        this.webRevalidationService = webRevalidationService;
     }
 
     @Transactional
@@ -63,6 +67,7 @@ public class CustomerOrderCancelService {
 
         serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_CANCELLED_BY_CUSTOMER");
         orderStockRestoreService.restoreForCancel(orderId);
+        webRevalidationService.revalidateProductsForOrder(orderId);
 
         return orderReadService.getCustomerOrderDetail(customerId, orderId);
     }

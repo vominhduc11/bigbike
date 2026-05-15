@@ -143,15 +143,13 @@ public class AdminSerialImportService {
             serial.setUpdatedAt(now);
             serialRepo.save(serial);
 
-            // Enable serial tracking if requested
-            if (row.enableTracking()) {
-                if (variant != null && !variant.isTrackSerials()) {
-                    variant.setTrackSerials(true);
-                    variantRepo.save(variant);
-                } else if (variant == null && !product.isTrackSerials()) {
-                    product.setTrackSerials(true);
-                    productRepo.save(product);
-                }
+            // Auto-enable serial tracking on first serial insert
+            if (variant != null && !variant.isTrackSerials()) {
+                variant.setTrackSerials(true);
+                variantRepo.save(variant);
+            } else if (variant == null && !product.isTrackSerials()) {
+                product.setTrackSerials(true);
+                productRepo.save(product);
             }
 
             // Add to existing set so subsequent rows in same batch see this as "existing"

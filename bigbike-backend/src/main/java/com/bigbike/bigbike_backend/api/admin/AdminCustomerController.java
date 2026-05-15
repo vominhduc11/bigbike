@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerRequest;
@@ -8,6 +9,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
+import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,15 +17,18 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -34,15 +39,18 @@ public class AdminCustomerController {
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminCustomerService adminCustomerService;
+    private final AdminCouponGiftService couponGiftService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
     public AdminCustomerController(
             AdminCustomerService adminCustomerService,
+            AdminCouponGiftService couponGiftService,
             DevAdminAuthService devAdminAuthService,
             ApiResponseFactory apiResponseFactory
     ) {
         this.adminCustomerService = adminCustomerService;
+        this.couponGiftService = couponGiftService;
         this.devAdminAuthService = devAdminAuthService;
         this.apiResponseFactory = apiResponseFactory;
     }
@@ -90,6 +98,18 @@ public class AdminCustomerController {
         devAdminAuthService.requirePermission(request, "customers.write");
         return apiResponseFactory.data(
                 adminCustomerService.updateCustomerStatus(customerId, resolveAdminId(), body), request);
+    }
+
+    @PostMapping("/{customerId}/coupon-gift")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiDataResponse<AdminCouponDetailResponse> sendCouponGift(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody AdminCouponGiftService.SendCouponGiftRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "coupons.write");
+        return apiResponseFactory.data(
+                couponGiftService.sendCouponGift(customerId, resolveAdminId(), body), request);
     }
 
     private UUID resolveAdminId() {

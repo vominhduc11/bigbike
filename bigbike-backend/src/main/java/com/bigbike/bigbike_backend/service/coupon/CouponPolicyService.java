@@ -19,6 +19,40 @@ public class CouponPolicyService {
     }
 
     /**
+     * Validates that the coupon is allowed for the given customer (UUID string or null for guest).
+     * If coupon has a customerId restriction, the caller must be that customer.
+     */
+    public void validateCustomer(CouponEntity coupon, String callerCustomerId) {
+        if (coupon.getCustomerId() == null) return;
+        if (callerCustomerId == null || callerCustomerId.isBlank()) {
+            throw new ConflictException("Mã giảm giá này chỉ dành cho khách hàng đã đăng ký.");
+        }
+        try {
+            if (!coupon.getCustomerId().equals(java.util.UUID.fromString(callerCustomerId))) {
+                throw new ConflictException("Mã giảm giá này không áp dụng cho tài khoản của bạn.");
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ConflictException("Mã giảm giá này không áp dụng cho tài khoản của bạn.");
+        }
+    }
+
+    /**
+     * Validates that the coupon is allowed on the given sales channel.
+     * channel: "ONLINE" for web/mobile cart, "POS" for point-of-sale.
+     */
+    public void validateChannel(CouponEntity coupon, String channel) {
+        String c = coupon.getChannel() != null ? coupon.getChannel() : "ALL";
+        if ("ALL".equals(c)) return;
+        if (!c.equals(channel)) {
+            if ("POS".equals(c)) {
+                throw new ConflictException("Mã giảm giá này chỉ dùng được tại quầy (POS).");
+            } else {
+                throw new ConflictException("Mã giảm giá này chỉ dùng được khi mua online.");
+            }
+        }
+    }
+
+    /**
      * Validates that a coupon is applicable for the given cart subtotal.
      * Throws ConflictException with a user-facing message if any rule is violated.
      */

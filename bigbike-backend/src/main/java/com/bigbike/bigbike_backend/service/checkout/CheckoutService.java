@@ -46,6 +46,7 @@ import com.bigbike.bigbike_backend.service.cart.CartCalculator;
 import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
@@ -104,6 +105,7 @@ public class CheckoutService {
     private final SerialLifecycleService serialLifecycleService;
     private final CouponPolicyService couponPolicy;
     private final JdbcTemplate jdbcTemplate;
+    private final WebRevalidationService webRevalidationService;
 
     public CheckoutService(
             CartJpaRepository cartRepo,
@@ -129,7 +131,8 @@ public class CheckoutService {
             InventoryPolicyService inventoryPolicyService,
             SerialLifecycleService serialLifecycleService,
             CouponPolicyService couponPolicy,
-            JdbcTemplate jdbcTemplate
+            JdbcTemplate jdbcTemplate,
+            WebRevalidationService webRevalidationService
     ) {
         this.cartRepo = cartRepo;
         this.cartCouponRepo = cartCouponRepo;
@@ -155,6 +158,7 @@ public class CheckoutService {
         this.serialLifecycleService = serialLifecycleService;
         this.couponPolicy = couponPolicy;
         this.jdbcTemplate = jdbcTemplate;
+        this.webRevalidationService = webRevalidationService;
     }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
@@ -212,12 +216,15 @@ public class CheckoutService {
         ) {}
         List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> cartCoupons =
                 cartCouponRepo.findByCartId(cart.getId());
+        String callerCustomerId = customerId != null ? customerId.toString() : null;
         List<CouponRedemption> couponRedemptions = new ArrayList<>();
         for (var cc : cartCoupons) {
             com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity freshCoupon =
                     couponRepo.findByCode(cc.getCouponCode())
                             .orElseThrow(() -> new ConflictException(
                                     "Mã giảm giá '" + cc.getCouponCode() + "' không còn tồn tại."));
+            couponPolicy.validateChannel(freshCoupon, "ONLINE");
+            couponPolicy.validateCustomer(freshCoupon, callerCustomerId);
             couponPolicy.validate(freshCoupon, subtotal);
             couponRedemptions.add(new CouponRedemption(
                     cc.getCouponCode(), freshCoupon, couponPolicy.computeDiscount(freshCoupon, subtotal)));
@@ -306,6 +313,7 @@ public class CheckoutService {
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
+        webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
         return toSummary(savedOrder, req.paymentMethod(), priceChanges);
     }
 
@@ -450,6 +458,7 @@ public class CheckoutService {
         adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
+        webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
         return toSummary(savedOrder, req.paymentMethod(), List.of());
     }
 

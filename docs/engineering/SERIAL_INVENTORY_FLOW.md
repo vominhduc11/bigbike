@@ -202,7 +202,7 @@ SerialLifecycleService.releaseExpiredReservations()
 
 | Gate | Location | Effect |
 |---|---|---|
-| `track_serials` (per variant/product) | `product_variants.track_serials` | Routes to serial or legacy path |
-| `serial_inventory_only` (global) | `site_settings` | Blocks `adjustStock()` / `adjustProductStock()` |
+| `track_serials` (per variant/product) | `product_variants.track_serials` | Routes to serial or legacy path. **Set automatically** when first serial is added — no manual toggle. |
+| `serial_inventory_only` (global) | `site_settings` | Blocks `adjustStock()` / `adjustProductStock()` for serial-tracked products |
 | `reservation_ttl_minutes` | `site_settings` | Controls `reserved_until` TTL |
 | `inventory.reservation.cleanup-interval-ms` | `application.properties` | Cleanup job interval |

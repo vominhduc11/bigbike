@@ -19,6 +19,8 @@ public record AdminCouponDetailResponse(
         Instant startsAt,
         Instant expiresAt,
         String status,
+        String channel,
+        java.util.UUID customerId,
         String metadata,
         Instant createdAt,
         Instant updatedAt

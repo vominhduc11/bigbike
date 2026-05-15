@@ -42,6 +42,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.Payme
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -142,6 +143,7 @@ public class AdminOrderService {
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
     private final OrderStockRestoreService orderStockRestoreService;
     private final SerialLifecycleService serialLifecycleService;
+    private final WebRevalidationService webRevalidationService;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderAddressMapper orderAddressMapper;
@@ -350,6 +352,7 @@ public class AdminOrderService {
         // REFUNDED is unreachable here — ALLOWED_TRANSITIONS blocks it, refunds go through RefundService.
         if ("COMPLETED".equals(newStatus)) {
             serialLifecycleService.markSoldForOrder(orderId);
+            webRevalidationService.revalidateProductsForOrder(orderId);
         } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
             // Release serial reservations, then restore non-serial stock.
             // FAILED is treated identically to CANCELLED for inventory purposes — stock must be
@@ -357,6 +360,7 @@ public class AdminOrderService {
             // idempotent so duplicate calls (e.g. retry) are safe.
             serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_" + newStatus);
             orderStockRestoreService.restoreForCancel(orderId);
+            webRevalidationService.revalidateProductsForOrder(orderId);
         }
 
         // Add note if provided

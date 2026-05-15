@@ -297,6 +297,9 @@ public class AdminInventoryService {
         }
 
         // ── Persist stock change + movement (same transaction) ────────────────
+        if (!serials.isEmpty() && !variant.isTrackSerials()) {
+            variant.setTrackSerials(true);
+        }
         variant.setQuantityOnHand(after);
         inventoryPolicyService.recomputeStockState(variant);
         variantRepo.save(variant);
@@ -401,6 +404,9 @@ public class AdminInventoryService {
                     "Resulting quantity would be negative. Current: " + before + ", delta: " + delta);
         }
 
+        if (!serials.isEmpty() && !product.isTrackSerials()) {
+            product.setTrackSerials(true);
+        }
         product.setStockQuantity(after);
         product.setStockState(inventoryPolicyService.computeStockState(after, inventoryPolicyService.lowStockThreshold()));
         productRepo.save(product);

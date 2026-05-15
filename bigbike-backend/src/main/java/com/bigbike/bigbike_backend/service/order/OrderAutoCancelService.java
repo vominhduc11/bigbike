@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNo
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +39,7 @@ public class OrderAutoCancelService {
     private final SiteSettingJpaRepository settingRepo;
     private final SerialLifecycleService serialLifecycleService;
     private final OrderStockRestoreService orderStockRestoreService;
+    private final WebRevalidationService webRevalidationService;
     private final TransactionTemplate txTemplate;
 
     public OrderAutoCancelService(
@@ -46,6 +48,7 @@ public class OrderAutoCancelService {
             SiteSettingJpaRepository settingRepo,
             SerialLifecycleService serialLifecycleService,
             OrderStockRestoreService orderStockRestoreService,
+            WebRevalidationService webRevalidationService,
             PlatformTransactionManager txManager
     ) {
         this.orderRepo = orderRepo;
@@ -53,6 +56,7 @@ public class OrderAutoCancelService {
         this.settingRepo = settingRepo;
         this.serialLifecycleService = serialLifecycleService;
         this.orderStockRestoreService = orderStockRestoreService;
+        this.webRevalidationService = webRevalidationService;
         this.txTemplate = new TransactionTemplate(txManager);
     }
 
@@ -74,6 +78,7 @@ public class OrderAutoCancelService {
                 Boolean done = txTemplate.execute(status -> cancelOne(candidate.getId(), hours));
                 if (Boolean.TRUE.equals(done)) {
                     cancelled++;
+                    webRevalidationService.revalidateProductsForOrder(candidate.getId());
                 }
             } catch (Exception e) {
                 log.warn("[OrderAutoCancel] Failed to cancel order {}: {}",

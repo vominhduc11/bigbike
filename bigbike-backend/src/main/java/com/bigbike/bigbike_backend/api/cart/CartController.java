@@ -118,7 +118,8 @@ public class CartController {
             HttpServletResponse response
     ) {
         CartEntity cart = resolveCart(request, response);
-        CartEntity updated = cartService.applyCoupon(cart, req.code());
+        String callerCustomerId = resolveCustomerId();
+        CartEntity updated = cartService.applyCoupon(cart, req.code(), callerCustomerId);
         List<CartItemEntity> items = cartService.getItems(updated);
         List<CartCouponEntity> coupons = cartService.getCoupons(updated);
         return apiResponseFactory.data(toResponse(updated, items, coupons), request);
@@ -185,6 +186,14 @@ public class CartController {
                 .sameSite("Strict")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private String resolveCustomerId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomerPrincipal cp) {
+            return cp.customerId() != null ? cp.customerId().toString() : null;
+        }
+        return null;
     }
 
     // ── mapping helpers ───────────────────────────────────────────────────────

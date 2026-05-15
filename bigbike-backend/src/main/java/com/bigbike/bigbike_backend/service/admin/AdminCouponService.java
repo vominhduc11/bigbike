@@ -39,6 +39,7 @@ public class AdminCouponService {
     // Canonical stored value is FIXED; accept FIXED_AMOUNT from clients for backward compat
     private static final Set<String> ALLOWED_DISCOUNT_TYPES = Set.of("FIXED", "PERCENT", "FIXED_AMOUNT");
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "EXPIRED", "ARCHIVED");
+    private static final Set<String> ALLOWED_CHANNELS = Set.of("ALL", "ONLINE", "POS");
 
     private final CouponJpaRepository couponRepo;
     private final AuditLogJpaRepository auditLogRepo;
@@ -121,6 +122,12 @@ public class AdminCouponService {
                     "status must be ACTIVE, INACTIVE, EXPIRED, or ARCHIVED.");
         }
         entity.setStatus(statusStr);
+        String channelStr = req.channel() != null ? req.channel().trim().toUpperCase(Locale.ROOT) : "ALL";
+        if (!ALLOWED_CHANNELS.contains(channelStr)) {
+            throw ValidationException.fromField("channel", "INVALID",
+                    "channel must be ALL, ONLINE, or POS.");
+        }
+        entity.setChannel(channelStr);
         entity.setMetadata(req.metadata());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
@@ -206,6 +213,14 @@ public class AdminCouponService {
                         "status must be ACTIVE, INACTIVE, EXPIRED, or ARCHIVED.");
             }
             entity.setStatus(updStatus);
+        }
+        if (req.channel() != null && !req.channel().isBlank()) {
+            String updChannel = req.channel().trim().toUpperCase(Locale.ROOT);
+            if (!ALLOWED_CHANNELS.contains(updChannel)) {
+                throw ValidationException.fromField("channel", "INVALID",
+                        "channel must be ALL, ONLINE, or POS.");
+            }
+            entity.setChannel(updChannel);
         }
         if (req.metadata() != null) {
             entity.setMetadata(req.metadata());

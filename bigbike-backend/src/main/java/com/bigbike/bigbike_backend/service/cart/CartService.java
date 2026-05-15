@@ -261,7 +261,7 @@ public class CartService {
     }
 
     @Transactional
-    public CartEntity applyCoupon(CartEntity cart, String code) {
+    public CartEntity applyCoupon(CartEntity cart, String code, String callerCustomerId) {
         String normalized = couponPolicy.normalizeCode(code);
 
         // Enforce one coupon per cart
@@ -280,6 +280,8 @@ public class CartService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        couponPolicy.validateChannel(coupon, "ONLINE");
+        couponPolicy.validateCustomer(coupon, callerCustomerId);
         couponPolicy.validate(coupon, subtotal);
 
         BigDecimal discountAmount = couponPolicy.computeDiscount(coupon, subtotal);

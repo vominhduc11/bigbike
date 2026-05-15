@@ -15,5 +15,6 @@ public record UpdateCouponRequest(
         Instant startsAt,
         Instant expiresAt,
         String status,
+        String channel,
         String metadata
 ) {}

@@ -179,6 +179,20 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 
 **Public `Page` response** adds `heroImageUrl`, `heroImageAlt`, `heroTitle`, `heroDescription`, `heroKicker` (all nullable strings) to the existing shape.
 
+## Coupon Gift Contract
+
+| Method | Path | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|---|
+| `POST` | `/api/v1/admin/customers/{customerId}/coupon-gift` | `coupons.write` | Creates a unique `GIFT`-prefixed coupon locked to the customer, saves audit log, sends email async. Returns `AdminCouponDetailResponse`. Customer must have email. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCouponGiftService.java` |
+| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Creates one unique coupon per active customer with email (no `customer_id` lock — shared gift campaign). Emails sent async. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
+
+**Bulk gift request body** (same fields as single gift):
+```json
+{ "discountType": "FIXED|PERCENT", "amount": 50000, "minimumAmount": null, "validDays": 30, "channel": "ALL" }
+```
+
+**Bulk gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 120, "skipped": 5 }` where `skipped` = customers without email or with inactive status.
+
 ## Audit Log Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |

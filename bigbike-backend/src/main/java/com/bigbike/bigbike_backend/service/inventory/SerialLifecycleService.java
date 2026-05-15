@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -369,12 +370,13 @@ public class SerialLifecycleService {
     /**
      * Releases all RESERVED serials whose TTL has expired,
      * but only if the linked order is not yet PROCESSING/COMPLETED/PAID.
+     * Returns the distinct product PKs whose stock changed so callers can revalidate ISR cache.
      */
     @Transactional
-    public int releaseExpiredReservations() {
+    public List<String> releaseExpiredReservations() {
         Instant now = Instant.now();
         List<ProductSerialEntity> expired = serialRepo.findExpiredReservations(now);
-        int released = 0;
+        List<String> affectedProductPks = new ArrayList<>();
 
         for (ProductSerialEntity serial : expired) {
             // Guard: if order is paid/completed, do not release
@@ -399,13 +401,19 @@ public class SerialLifecycleService {
 
             writeStockMovement(serial, ProductSerialStatus.RESERVED, ProductSerialStatus.IN_STOCK,
                     "RESERVATION_EXPIRED", null, now);
-            released++;
+
+            String productPk = serial.getVariant() != null
+                    ? (serial.getVariant().getProduct() != null ? serial.getVariant().getProduct().getId() : null)
+                    : (serial.getProduct() != null ? serial.getProduct().getId() : null);
+            if (productPk != null) {
+                affectedProductPks.add(productPk);
+            }
         }
 
-        if (released > 0) {
-            log.info("Released {} expired serial reservations.", released);
+        if (!affectedProductPks.isEmpty()) {
+            log.info("Released {} expired serial reservations.", affectedProductPks.size());
         }
-        return released;
+        return affectedProductPks.stream().distinct().toList();
     }
 
     // ── 8. Validate serial availability for checkout (read-only check) ────────

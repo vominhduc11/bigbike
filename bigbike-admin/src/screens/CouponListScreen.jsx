@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { createCoupon, fetchCoupons, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { createCoupon, fetchCoupons, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -23,7 +24,13 @@ function CouponStatusBadge({ value }) {
 }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
-const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '' }
+const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '', channel: 'ALL' }
+
+const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
+function ChannelBadge({ value }) {
+  const tones = { ALL: 'neutral', ONLINE: 'info', POS: 'warning' }
+  return <span className={`status-badge status-${tones[value] || 'neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
+}
 
 // Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant
 function toEndOfDayInstant(dateStr) {
@@ -47,6 +54,12 @@ export function CouponListScreen({ canUpdate }) {
   const [editError, setEditError] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [actionError, setActionError] = useState('')
+
+  const EMPTY_BULK_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkForm, setBulkForm] = useState(EMPTY_BULK_FORM)
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkConfirm, setBulkConfirm] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -85,6 +98,7 @@ export function CouponListScreen({ canUpdate }) {
         discountType: form.discountType,
         amount: Number(form.discountValue),
         minimumAmount: Number(form.minimumOrderAmount) || 0,
+        channel: form.channel || 'ALL',
       }
       if (form.maxUsage) payload.usageLimit = Number(form.maxUsage)
       if (form.expiresAt) payload.expiresAt = toEndOfDayInstant(form.expiresAt)
@@ -107,6 +121,7 @@ export function CouponListScreen({ canUpdate }) {
       minimumOrderAmount: String(coupon.minimumOrderAmount ?? ''),
       maxUsage: String(coupon.maxUsage ?? ''),
       expiresAt: coupon.expiresAt ? coupon.expiresAt.split('T')[0] : '',
+      channel: coupon.channel || 'ALL',
     })
     setEditError('')
   }
@@ -120,6 +135,7 @@ export function CouponListScreen({ canUpdate }) {
         discountType: editForm.discountType,
         amount: Number(editForm.discountValue),
         minimumAmount: Number(editForm.minimumOrderAmount) || 0,
+        channel: editForm.channel || 'ALL',
       }
       if (editForm.maxUsage) payload.usageLimit = Number(editForm.maxUsage)
       if (editForm.expiresAt) payload.expiresAt = toEndOfDayInstant(editForm.expiresAt)
@@ -142,6 +158,7 @@ export function CouponListScreen({ canUpdate }) {
     { key: 'name', label: t('coupons.colName'), render: (c) => c.name || '—' },
     { key: 'minimumOrderAmount', label: t('coupons.colMinOrder'), render: (c) => c.minimumOrderAmount ? formatCurrencyVnd(c.minimumOrderAmount) : '—' },
     { key: 'usage', label: t('coupons.colUsed'), render: (c) => `${c.usageCount}${c.maxUsage ? ` / ${c.maxUsage}` : ''}` },
+    { key: 'channel', label: 'Kênh', render: (c) => <ChannelBadge value={c.channel || 'ALL'} /> },
     { key: 'status', label: t('coupons.colStatus'), render: (c) => <CouponStatusBadge value={c.status} /> },
     { key: 'expiresAt', label: t('coupons.colExpires'), render: (c) => formatDateTime(c.expiresAt) },
     canUpdate ? {
@@ -156,6 +173,37 @@ export function CouponListScreen({ canUpdate }) {
       ),
     } : null,
   ].filter(Boolean), [canUpdate, handleToggleStatus, t])
+
+  async function handleBulkSend(e) {
+    e.preventDefault()
+    if (!bulkConfirm) { setBulkConfirm(true); return }
+    if (!bulkForm.amount || Number(bulkForm.amount) <= 0) {
+      toast.error('Vui lòng nhập giá trị giảm giá hợp lệ.')
+      return
+    }
+    setBulkSaving(true)
+    try {
+      const payload = {
+        discountType: bulkForm.discountType,
+        amount: Number(bulkForm.amount),
+        minimumAmount: bulkForm.minimumAmount !== '' ? Number(bulkForm.minimumAmount) : null,
+        validDays: bulkForm.validDays !== '' ? Number(bulkForm.validDays) : null,
+        usageLimit: 1,
+        channel: bulkForm.channel,
+      }
+      const result = await sendBulkCouponGift(payload)
+      toast.success(`Đã gửi mã cho ${result?.sent ?? '?'} khách hàng. Bỏ qua: ${result?.skipped ?? 0}.`)
+      setBulkOpen(false)
+      setBulkForm(EMPTY_BULK_FORM)
+      setBulkConfirm(false)
+      setQuery((p) => ({ ...p }))
+    } catch (err) {
+      toast.error(err.message || 'Gửi mã thất bại.')
+      setBulkConfirm(false)
+    } finally {
+      setBulkSaving(false)
+    }
+  }
 
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((p) => {
@@ -174,9 +222,14 @@ export function CouponListScreen({ canUpdate }) {
           <p>{t('coupons.description')}</p>
         </div>
         {canUpdate && (
-          <button type="button" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? t('common.cancel') : t('coupons.createBtn')}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}>
+              {bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}>
+              {showForm ? t('common.cancel') : t('coupons.createBtn')}
+            </button>
+          </div>
         )}
       </header>
 
@@ -185,6 +238,73 @@ export function CouponListScreen({ canUpdate }) {
           {actionError}
           <button type="button" onClick={() => setActionError('')}>✕</button>
         </p>
+      )}
+
+      {bulkOpen && (
+        <form onSubmit={handleBulkSend} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.25rem' }}>Gửi mã giảm giá đến toàn bộ khách hàng</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: '1rem' }}>
+            Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <label>Loại giảm giá
+              <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FIXED">Giảm tiền cố định (VND)</SelectItem>
+                  <SelectItem value="PERCENT">Giảm theo % đơn hàng</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+            <label>
+              {bulkForm.discountType === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (VND)'}
+              <Input
+                type="number" min="1" required
+                max={bulkForm.discountType === 'PERCENT' ? '100' : undefined}
+                step={bulkForm.discountType === 'PERCENT' ? '1' : '1000'}
+                value={bulkForm.amount}
+                onChange={(e) => setBulkForm((p) => ({ ...p, amount: e.target.value }))}
+                placeholder={bulkForm.discountType === 'PERCENT' ? 'VD: 10' : 'VD: 50000'}
+                disabled={bulkSaving}
+              />
+            </label>
+            <label>Đơn hàng tối thiểu (VND) — để trống nếu không yêu cầu
+              <Input type="number" min="0" step="1000" value={bulkForm.minimumAmount}
+                onChange={(e) => setBulkForm((p) => ({ ...p, minimumAmount: e.target.value }))}
+                placeholder="Không giới hạn" disabled={bulkSaving} />
+            </label>
+            <label>Hiệu lực (số ngày) — để trống nếu không hết hạn
+              <Input type="number" min="1" max="365" value={bulkForm.validDays}
+                onChange={(e) => setBulkForm((p) => ({ ...p, validDays: e.target.value }))}
+                placeholder="VD: 30" disabled={bulkSaving} />
+            </label>
+            <label>Kênh áp dụng
+              <Select value={bulkForm.channel} onValueChange={(val) => setBulkForm((p) => ({ ...p, channel: val }))} disabled={bulkSaving}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                  <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                  <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
+          {bulkConfirm && (
+            <p style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', fontSize: '0.9rem', color: '#92400e' }}>
+              Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
+            </p>
+          )}
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button type="submit" className="btn btn-primary" disabled={bulkSaving}>
+              {bulkSaving ? 'Đang gửi...' : bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
+            </button>
+            <button type="button" className="btn btn-secondary"
+              onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
+              disabled={bulkSaving}>
+              Hủy
+            </button>
+          </div>
+        </form>
       )}
 
       {showForm && (
@@ -204,6 +324,13 @@ export function CouponListScreen({ canUpdate }) {
             <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
             <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
             <label>{t('coupons.formExpires')} <Input type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
+            <label>Kênh áp dụng
+              <Select value={form.channel} onValueChange={(val) => setForm((p) => ({ ...p, channel: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+              </SelectContent></Select>
+            </label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? t('coupons.creating') : t('coupons.createBtn')}</button>
@@ -227,6 +354,13 @@ export function CouponListScreen({ canUpdate }) {
             <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
             <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
             <label>{t('coupons.formExpires')} <Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
+            <label>Kênh áp dụng
+              <Select value={editForm.channel || 'ALL'} onValueChange={(val) => setEditForm((p) => ({ ...p, channel: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+              </SelectContent></Select>
+            </label>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>

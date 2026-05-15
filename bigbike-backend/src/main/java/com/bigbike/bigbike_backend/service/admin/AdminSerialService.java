@@ -118,8 +118,8 @@ public class AdminSerialService {
                 .orElseThrow(() -> new NotFoundException("Variant not found: " + variantId));
 
         if (!variant.isTrackSerials()) {
-            throw ValidationException.fromField("variantId", "TRACKING_NOT_ENABLED",
-                    "Serial tracking is not enabled for this variant. Enable it first.");
+            variant.setTrackSerials(true);
+            variantRepo.save(variant);
         }
 
         return persistSerials(req, variant.getProduct(), variant, adminId);
@@ -134,14 +134,14 @@ public class AdminSerialService {
         ProductEntity product = productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
 
-        if (!product.isTrackSerials()) {
-            throw ValidationException.fromField("productId", "TRACKING_NOT_ENABLED",
-                    "Serial tracking is not enabled for this product. Enable it first.");
-        }
-
         if (!product.getVariants().isEmpty()) {
             throw ValidationException.fromField("productId", "HAS_VARIANTS",
                     "Use variant-level serial management for products with variants.");
+        }
+
+        if (!product.isTrackSerials()) {
+            product.setTrackSerials(true);
+            productRepo.save(product);
         }
 
         return persistSerials(req, product, null, adminId);
@@ -185,32 +185,6 @@ public class AdminSerialService {
                 ",\"productId\":\"" + productId + "\"}"));
 
         return AdminSerialResponse.from(serial);
-    }
-
-    // ── Enable serial tracking on a variant ───────────────────────────────────
-
-    @Transactional
-    public void enableVariantTracking(String variantId, boolean enabled, UUID adminId) {
-        ProductVariantEntity variant = variantRepo.findById(variantId)
-                .orElseThrow(() -> new NotFoundException("Variant not found: " + variantId));
-        variant.setTrackSerials(enabled);
-        variantRepo.save(variant);
-
-        auditLogRepo.save(buildAudit(adminId, "SERIAL_TRACKING_CHANGED", "VARIANT",
-                "{\"variantId\":\"" + variantId + "\",\"trackSerials\":" + enabled + "}"));
-    }
-
-    // ── Enable serial tracking on a no-variant product ────────────────────────
-
-    @Transactional
-    public void enableProductTracking(String productId, boolean enabled, UUID adminId) {
-        ProductEntity product = productRepo.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
-        product.setTrackSerials(enabled);
-        productRepo.save(product);
-
-        auditLogRepo.save(buildAudit(adminId, "SERIAL_TRACKING_CHANGED", "PRODUCT",
-                "{\"productId\":\"" + productId + "\",\"trackSerials\":" + enabled + "}"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

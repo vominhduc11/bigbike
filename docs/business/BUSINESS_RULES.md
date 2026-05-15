@@ -40,13 +40,27 @@ Evidence:
 - Cart refresh removes coupons that become invalid after apply. `CONFIRMED_FROM_CODE`
 - Checkout revalidates coupons from fresh DB state and atomically increments usage. `CONFIRMED_FROM_CODE`
 - Scheduler flips overdue active coupons to `EXPIRED` hourly. `CONFIRMED_FROM_CODE`
+- Each coupon has a `channel` field: `ALL` (default) | `ONLINE` | `POS`. `CONFIRMED_FROM_CODE`
+  - `ONLINE` coupons can only be applied via web/mobile cart — rejected at POS. `CONFIRMED_FROM_CODE`
+  - `POS` coupons can only be applied at point of sale — rejected in web/mobile cart. `CONFIRMED_FROM_CODE`
+  - `ALL` coupons work on both channels. `CONFIRMED_FROM_CODE`
+- A coupon may be restricted to a specific customer via `customer_id` (nullable FK). `NULL` = shared for all customers. `CONFIRMED_FROM_CODE`
+- Admin can send a personalized coupon gift to a single customer (`POST /api/v1/admin/customers/{id}/coupon-gift`): creates a unique `GIFT`-prefixed code, sets `customer_id`, and emails it. Requires `coupons.write` permission and the customer must have an email address. `CONFIRMED_FROM_CODE`
+- Admin can bulk-gift a unique coupon to every active customer who has an email (`POST /api/v1/admin/coupon-gifts/bulk`): each customer gets an individual code. Email is sent async per recipient. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
 - `CartService.java`
 - `CheckoutService.java`
+- `CouponPolicyService.java`
+- `PosOrderService.java`
 - `CouponExpiryScheduler.java`
+- `AdminCouponGiftService.java`
+- `AdminCustomerController.java`
+- `AdminCouponGiftController.java`
 - `V73__enforce_one_coupon_per_cart.sql`
+- `V118__add_coupon_channel.sql`
+- `V119__add_coupon_customer_restriction.sql`
 - `Phase1ECartApiTest.java`
 - `Phase1FCheckoutApiTest.java`
 - `Phase1JAdminSettingsMenuCouponApiTest.java`

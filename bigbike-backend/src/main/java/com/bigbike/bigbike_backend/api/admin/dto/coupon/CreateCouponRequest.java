@@ -16,5 +16,6 @@ public record CreateCouponRequest(
         Instant startsAt,
         Instant expiresAt,
         String status,
+        String channel,
         String metadata
 ) {}

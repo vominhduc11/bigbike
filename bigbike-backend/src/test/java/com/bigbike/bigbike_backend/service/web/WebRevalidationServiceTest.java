@@ -53,7 +53,7 @@ class WebRevalidationServiceTest {
 
     @Test
     void revalidate_postsDeduplicatedTagsToConfiguredWebhook() throws Exception {
-        WebRevalidationService service = new WebRevalidationService(revalidateUrl(), "secret-value");
+        WebRevalidationService service = new WebRevalidationService(revalidateUrl(), "secret-value", null, null);
 
         service.revalidate("products", "products", "product:old", "", null);
 
@@ -64,7 +64,7 @@ class WebRevalidationServiceTest {
 
     @Test
     void revalidate_defersWebhookUntilTransactionCommit() throws Exception {
-        WebRevalidationService service = new WebRevalidationService(revalidateUrl(), "secret-value");
+        WebRevalidationService service = new WebRevalidationService(revalidateUrl(), "secret-value", null, null);
 
         TransactionSynchronizationManager.initSynchronization();
         service.revalidate("products");

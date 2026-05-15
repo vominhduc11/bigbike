@@ -25,8 +25,6 @@ import {
   fetchProductSerials,
   importBulkSerials,
   updateSerialStatus,
-  enableVariantSerialTracking,
-  enableProductSerialTracking,
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
@@ -973,7 +971,6 @@ function AddSerialsPanel({ item, onSuccess }) {
         variantId: isVariant ? item.variantId : undefined,
         serialNumber: r.serial.trim(),
         note: supplierNote.trim() || undefined,
-        enableTracking: true,
       }))
       const result = await importBulkSerials(importRows, true)
       setImportResult(result)
@@ -1369,54 +1366,9 @@ function SerialListPanel({ item, refreshKey }) {
 function SerialManageModal({ item, onClose }) {
   const [activeTab, setActiveTab] = useState('list')
   const [listRefreshKey, setListRefreshKey] = useState(0)
-  const [trackingLoading, setTrackingLoading] = useState(false)
   const isVariant = Boolean(item?.variantId)
 
   const title = [item.productName, item.variantName].filter(Boolean).join(' · ')
-
-  async function handleEnableTracking() {
-    setTrackingLoading(true)
-    try {
-      if (isVariant) {
-        await enableVariantSerialTracking(item.variantId, true)
-      } else {
-        await enableProductSerialTracking(item.productId, true)
-      }
-      toast.success('Đã bật quản lý serial cho sản phẩm này.')
-      onClose()
-    } catch (err) {
-      toast.error(err.message || 'Lỗi bật quản lý serial.')
-    } finally {
-      setTrackingLoading(false)
-    }
-  }
-
-  if (!item.trackSerials) {
-    return (
-      <div className="modal-overlay" role="dialog" aria-modal="true">
-        <div className="modal-box">
-          <header className="modal-header">
-            <h2 className="modal-title">Bật quản lý serial</h2>
-            <button type="button" className="btn-icon btn-secondary-ghost"
-              onClick={onClose} aria-label="Đóng">✕</button>
-          </header>
-          <div className="modal-body">
-            <p style={{ marginBottom: 12 }}>
-              <strong>{title}</strong> hiện dùng quản lý tồn kho thủ công (số lượng).
-            </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: 16 }}>
-              Bật quản lý serial sẽ chuyển sang theo dõi từng sản phẩm theo mã serial.
-              Tồn kho sẽ tự động tính từ số serial đang trạng thái "Có sẵn".
-            </p>
-            <button type="button" className="btn btn-primary"
-              onClick={handleEnableTracking} disabled={trackingLoading}>
-              {trackingLoading ? 'Đang bật…' : 'Bật quản lý serial'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">

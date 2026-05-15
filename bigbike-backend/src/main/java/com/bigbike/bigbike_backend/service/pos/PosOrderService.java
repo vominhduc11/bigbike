@@ -7,23 +7,28 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderKeyGenerator;
 import com.bigbike.bigbike_backend.service.checkout.OrderNumberGenerator;
+import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService;
@@ -62,7 +67,8 @@ public class PosOrderService {
             String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
             String customerId,           // Required for CREDIT payment method
             Long downPayment,            // Optional: partial upfront payment for CREDIT orders
-            String downPaymentMethod     // Payment method used for the downpayment (CASH or CARD_TERMINAL); defaults to CASH
+            String downPaymentMethod,    // Payment method used for the downpayment (CASH or CARD_TERMINAL); defaults to CASH
+            String couponCode            // Optional: mã giảm giá (ALL hoặc POS channel)
     ) {}
 
     public record PosOrderItemResponse(
@@ -107,6 +113,9 @@ public class PosOrderService {
     private final CreditPolicyService creditPolicyService;
     private final ReceivableService receivableService;
     private final CustomerJpaRepository customerRepo;
+    private final CouponJpaRepository couponRepo;
+    private final OrderAppliedCouponJpaRepository appliedCouponRepo;
+    private final CouponPolicyService couponPolicy;
 
     public PosOrderService(
             ProductJpaRepository productRepo,
@@ -124,7 +133,10 @@ public class PosOrderService {
             SerialLifecycleService serialLifecycleService,
             CreditPolicyService creditPolicyService,
             ReceivableService receivableService,
-            CustomerJpaRepository customerRepo
+            CustomerJpaRepository customerRepo,
+            CouponJpaRepository couponRepo,
+            OrderAppliedCouponJpaRepository appliedCouponRepo,
+            CouponPolicyService couponPolicy
     ) {
         this.productRepo = productRepo;
         this.variantRepo = variantRepo;
@@ -142,6 +154,9 @@ public class PosOrderService {
         this.creditPolicyService = creditPolicyService;
         this.receivableService = receivableService;
         this.customerRepo = customerRepo;
+        this.couponRepo = couponRepo;
+        this.appliedCouponRepo = appliedCouponRepo;
+        this.couponPolicy = couponPolicy;
     }
 
     @Transactional
@@ -294,9 +309,29 @@ public class PosOrderService {
                     creditCustomer.getId(), subtotal, canOverrideCreditLimit);
         }
 
+        // Validate và tính coupon discount (nếu có)
+        CouponEntity appliedCoupon = null;
+        BigDecimal discountAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        if (req.couponCode() != null && !req.couponCode().isBlank()) {
+            String normalizedCode = couponPolicy.normalizeCode(req.couponCode());
+            appliedCoupon = couponRepo.findByCodeForUpdate(normalizedCode)
+                    .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
+            couponPolicy.validateChannel(appliedCoupon, "POS");
+            String posCustomerId = creditCustomer != null ? creditCustomer.getId().toString()
+                    : walkInCustomer != null ? walkInCustomer.getId().toString() : null;
+            couponPolicy.validateCustomer(appliedCoupon, posCustomerId);
+            couponPolicy.validate(appliedCoupon, subtotal);
+            discountAmount = couponPolicy.computeDiscount(appliedCoupon, subtotal);
+        }
+
+        BigDecimal totalAfterDiscount = subtotal.subtract(discountAmount).setScale(2, RoundingMode.HALF_UP);
+        if (totalAfterDiscount.compareTo(BigDecimal.ZERO) < 0) {
+            totalAfterDiscount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+
         // Validate tiền mặt đủ nếu được gửi lên
         if ("CASH".equals(req.paymentMethod()) && req.tenderedAmount() != null) {
-            long totalLong = subtotal.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+            long totalLong = totalAfterDiscount.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
             if (req.tenderedAmount() < totalLong) {
                 throw new ConflictException("Tiền khách đưa (" + req.tenderedAmount()
                         + ") nhỏ hơn tổng đơn hàng (" + totalLong + ").");
@@ -327,12 +362,12 @@ public class PosOrderService {
         order.setCustomerName(req.customerName());
         order.setCurrency("VND");
         order.setSubtotalAmount(subtotal);
-        order.setDiscountAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+        order.setDiscountAmount(discountAmount);
         order.setShippingAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setFeeAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setTaxAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        order.setTotalAmount(subtotal);
-        order.setPaidAmount(isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : subtotal);
+        order.setTotalAmount(totalAfterDiscount);
+        order.setPaidAmount(isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : totalAfterDiscount);
         order.setSource("pos");
         if (!isCreditOrder) order.setPaidAt(now);
         order.setCompletedAt(now);
@@ -376,6 +411,21 @@ public class PosOrderService {
         // applyPosStock must run after line items are persisted (serial bridge needs their IDs).
         applyPosStock(req.items(), lineItems, savedOrder.getId(), now);
 
+        // Snapshot coupon and increment usage atomically
+        if (appliedCoupon != null) {
+            int updated = couponRepo.attemptRedeem(appliedCoupon.getId(), now);
+            if (updated == 0) {
+                throw new ConflictException("Mã giảm giá không còn hợp lệ tại thời điểm xử lý đơn.");
+            }
+            OrderAppliedCouponEntity snap = new OrderAppliedCouponEntity();
+            snap.setOrder(savedOrder);
+            snap.setCouponId(appliedCoupon.getId());
+            snap.setCode(appliedCoupon.getCode());
+            snap.setDiscountAmount(discountAmount);
+            snap.setCreatedAt(now);
+            appliedCouponRepo.save(snap);
+        }
+
         // Payment record (only create if money was actually collected; CREDIT orders start UNPAID)
         if (!isCreditOrder) {
             PaymentEntity payment = new PaymentEntity();
@@ -383,7 +433,7 @@ public class PosOrderService {
             payment.setPaymentMethod(req.paymentMethod());
             payment.setProvider("POS");
             payment.setStatus("PAID");
-            payment.setAmount(subtotal);
+            payment.setAmount(totalAfterDiscount);
             payment.setCurrency("VND");
             payment.setPaidAt(now);
             if ("CARD_TERMINAL".equals(req.paymentMethod())
@@ -437,7 +487,10 @@ public class PosOrderService {
         String auditPayload = "{\"orderId\":\"" + savedOrder.getId() + "\""
                 + ",\"orderNumber\":\"" + savedOrder.getOrderNumber() + "\""
                 + ",\"staffId\":\"" + (staffId != null ? staffId : "") + "\""
-                + ",\"totalAmount\":" + subtotal.setScale(0, RoundingMode.HALF_UP).longValue()
+                + ",\"subtotal\":" + subtotal.setScale(0, RoundingMode.HALF_UP).longValue()
+                + ",\"discountAmount\":" + discountAmount.setScale(0, RoundingMode.HALF_UP).longValue()
+                + ",\"totalAmount\":" + totalAfterDiscount.setScale(0, RoundingMode.HALF_UP).longValue()
+                + ",\"couponCode\":\"" + (appliedCoupon != null ? appliedCoupon.getCode() : "") + "\""
                 + ",\"paymentMethod\":\"" + req.paymentMethod() + "\""
                 + ",\"itemCount\":" + req.items().size()
                 + ",\"priceOverridden\":" + priceOverridden
@@ -461,15 +514,15 @@ public class PosOrderService {
         wsService.pushEvent(new OrderWsEvent(
                 "NEW_ORDER", savedOrder.getId(), savedOrder.getOrderNumber(),
                 req.customerName() != null ? req.customerName() : req.customerPhone(),
-                subtotal, savedOrder.getStatus(), req.paymentMethod(), now));
+                totalAfterDiscount, savedOrder.getStatus(), req.paymentMethod(), now));
 
         // Build response
         Long changeAmount = null;
         if ("CASH".equals(req.paymentMethod()) && req.tenderedAmount() != null) {
-            changeAmount = req.tenderedAmount() - subtotal.setScale(0, RoundingMode.HALF_UP).longValue();
+            changeAmount = req.tenderedAmount() - totalAfterDiscount.setScale(0, RoundingMode.HALF_UP).longValue();
         }
 
-        BigDecimal resolvedPaidAmount = isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : subtotal;
+        BigDecimal resolvedPaidAmount = isCreditOrder ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : totalAfterDiscount;
         List<PosOrderItemResponse> responseItems = lineItems.stream()
                 .map(li -> new PosOrderItemResponse(
                         li.getProductName(), li.getVariantName(), li.getSku(),
@@ -478,7 +531,7 @@ public class PosOrderService {
         return new PosOrderResponse(
                 savedOrder.getId(), savedOrder.getOrderNumber(),
                 savedOrder.getStatus(), savedOrder.getPaymentStatus(),
-                req.paymentMethod(), subtotal,
+                req.paymentMethod(), totalAfterDiscount,
                 req.tenderedAmount(), changeAmount,
                 resolvedPaidAmount, BigDecimal.ZERO,
                 responseItems

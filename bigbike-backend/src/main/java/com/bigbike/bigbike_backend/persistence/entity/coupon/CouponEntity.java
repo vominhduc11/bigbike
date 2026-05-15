@@ -57,6 +57,12 @@ public class CouponEntity {
     @Column(nullable = false, length = 50)
     private String status;
 
+    @Column(nullable = false, length = 20)
+    private String channel = "ALL";
+
+    @Column(name = "customer_id")
+    private UUID customerId;
+
     @Column(columnDefinition = "text")
     private String metadata;
 
@@ -107,6 +113,12 @@ public class CouponEntity {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getChannel() { return channel; }
+    public void setChannel(String channel) { this.channel = channel; }
+
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
     public String getMetadata() { return metadata; }
     public void setMetadata(String metadata) { this.metadata = metadata; }

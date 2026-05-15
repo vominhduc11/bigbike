@@ -1303,6 +1303,24 @@ export async function updateCoupon(couponId, input) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
+export async function sendCouponGift(customerId, input) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/customers/${customerId}/coupon-gift`, {
+    method: 'POST',
+    body: input,
+  })
+  return parseDetailPayload(payload, normalizeCoupon)
+}
+
+export async function sendBulkCouponGift(input) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/coupon-gifts/bulk', {
+    method: 'POST',
+    body: input,
+  })
+  return payload?.data ?? payload
+}
+
 // â”€â”€ Menus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function fetchMenus() {
@@ -2000,7 +2018,7 @@ export async function addProductSerials(productId, serials, note) {
 
 /**
  * Bulk-import serials via POST /admin/inventory/serials/import.
- * rows: [{ productId, variantId?, serialNumber, note?, enableTracking? }]
+ * rows: [{ productId, variantId?, serialNumber, note? }]
  * partialMode=true → skip bad rows, insert valid ones (returns inserted/skipped/errors[]).
  */
 export async function importBulkSerials(rows, partialMode = true) {
@@ -2026,19 +2044,6 @@ export async function updateSerialStatus(serialId, status, note) {
   return { item: normalizeSerial(payload?.data || payload || {}) }
 }
 
-export async function enableVariantSerialTracking(variantId, enabled = true) {
-  assertMutationEnabled()
-  await requestJson(`/admin/inventory/variants/${variantId}/enable-tracking?enabled=${enabled}`, {
-    method: 'POST',
-  })
-}
-
-export async function enableProductSerialTracking(productId, enabled = true) {
-  assertMutationEnabled()
-  await requestJson(`/admin/inventory/products/${productId}/enable-tracking?enabled=${enabled}`, {
-    method: 'POST',
-  })
-}
 
 export async function fetchAllSerials({ q, status, productId, page = 1, pageSize = 20 } = {}) {
   const payload = await requestJson('/admin/inventory/serials', {

@@ -126,4 +126,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
         ORDER BY p.name ASC
         """)
     List<ProductEntity> findByIdsWithVariants(@Param("ids") List<String> ids);
+
+    @Query("SELECT p.slug FROM ProductEntity p WHERE p.id IN :ids AND p.slug IS NOT NULL")
+    List<String> findSlugsByIds(@Param("ids") List<String> ids);
 }

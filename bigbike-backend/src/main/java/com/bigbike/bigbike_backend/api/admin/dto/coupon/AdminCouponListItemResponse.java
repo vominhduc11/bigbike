@@ -13,6 +13,7 @@ public record AdminCouponListItemResponse(
         BigDecimal minimumAmount,
         BigDecimal maximumAmount,
         String status,
+        String channel,
         int usageCount,
         Integer usageLimit,
         Instant expiresAt,

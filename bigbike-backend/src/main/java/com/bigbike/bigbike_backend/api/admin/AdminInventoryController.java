@@ -226,26 +226,6 @@ public class AdminInventoryController {
         return serialService.updateStatus(serialId, resolveAdminId(), req);
     }
 
-    @PostMapping("/variants/{variantId}/enable-tracking")
-    public void enableVariantTracking(
-            @PathVariable String variantId,
-            @RequestParam(defaultValue = "true") boolean enabled,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "products.update");
-        serialService.enableVariantTracking(variantId, enabled, resolveAdminId());
-    }
-
-    @PostMapping("/products/{productId}/enable-tracking")
-    public void enableProductTracking(
-            @PathVariable String productId,
-            @RequestParam(defaultValue = "true") boolean enabled,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "products.update");
-        serialService.enableProductTracking(productId, enabled, resolveAdminId());
-    }
-
     /**
      * POST /api/v1/admin/inventory/serials/import
      * Bulk-insert product serials from a JSON payload.

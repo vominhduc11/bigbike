@@ -3778,6 +3778,11 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   letter-spacing: 0.04em;
 }
 .bb-cart-applied-code p { margin: 0; }
+.bb-cart-applied-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .bb-cart-applied-remove {
   background: transparent;
   border: none;

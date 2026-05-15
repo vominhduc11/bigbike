@@ -1,6 +1,6 @@
 # Serial Inventory Business Rules
 
-**Scope:** Products / variants with `track_serials = true`.
+**Scope:** Products / variants that have at least one serial record — `track_serials` is set automatically.
 
 ---
 
@@ -59,8 +59,11 @@ A `warranty_record` is created for each serial when it is marked SOLD. Warranty 
 ### RULE-SER-010 — Manual adjustment blocked when gate enabled
 If `serial_inventory_only = true` in `site_settings`, calls to `POST /admin/inventory/adjust` or `POST /admin/inventory/products/{id}/adjust` return `400 SERIAL_INVENTORY_ONLY` for serial-tracked variants.
 
-### RULE-SER-011 — Non-serial variants unaffected
-Variants with `track_serials = false` continue to use the legacy quantity-based path. The `serial_inventory_only` gate does not block adjustments for these variants.
+### RULE-SER-011 — Non-serial products unaffected
+Products / variants that have no serial records (`track_serials = false`) continue to use the legacy quantity-based path. The `serial_inventory_only` gate does not block adjustments for these products.
+
+### RULE-SER-013 — Serial tracking is auto-activated; there is no manual toggle
+`track_serials` is set to `true` automatically when the first serial is added to a product or variant (via add, bulk import, or stock-in). There is no API to manually enable or disable serial tracking — the flag is derived from the presence of serials. Once serial tracking is active, `quantity_on_hand` is exclusively maintained by the DB trigger (`fn_sync_qty_from_serial_lifecycle`); the legacy manual-adjustment path should not be used for these products.
 
 ### RULE-SER-012 — POS immediate markSold
 POS orders skip the RESERVED state from the customer's perspective; the system internally reserves then marks sold in the same transaction because POS orders are COMPLETED on creation.

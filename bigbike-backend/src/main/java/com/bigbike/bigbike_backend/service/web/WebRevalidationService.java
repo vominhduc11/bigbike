@@ -1,8 +1,12 @@
 package com.bigbike.bigbike_backend.service.web;
 
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -24,10 +28,14 @@ public class WebRevalidationService {
     private final String revalidateUrl;
     private final String secret;
     private final RestClient restClient;
+    private final OrderLineItemJpaRepository lineItemRepo;
+    private final ProductJpaRepository productRepo;
 
     public WebRevalidationService(
             @Value("${bigbike.web.revalidate-url:}") String revalidateUrl,
-            @Value("${bigbike.web.revalidate-secret:}") String secret) {
+            @Value("${bigbike.web.revalidate-secret:}") String secret,
+            OrderLineItemJpaRepository lineItemRepo,
+            ProductJpaRepository productRepo) {
         this.revalidateUrl = revalidateUrl.trim();
         this.secret = secret.trim();
         this.enabled = !this.revalidateUrl.isBlank() && !this.secret.isBlank();
@@ -36,6 +44,8 @@ public class WebRevalidationService {
         factory.setConnectTimeout(3_000);
         factory.setReadTimeout(5_000);
         this.restClient = RestClient.builder().requestFactory(factory).build();
+        this.lineItemRepo = lineItemRepo;
+        this.productRepo = productRepo;
     }
 
     public void revalidate(String... tags) {
@@ -59,6 +69,42 @@ public class WebRevalidationService {
         }
 
         dispatch(tagList);
+    }
+
+    /**
+     * Resolves all product slugs touched by the given order and revalidates their ISR cache.
+     * Always fires after transaction commit so it sees the committed stock state.
+     * Safe to call inside or outside a transaction.
+     */
+    public void revalidateProductsForOrder(UUID orderId) {
+        if (!enabled) return;
+
+        List<String> productPks = lineItemRepo.findByOrderId(orderId).stream()
+                .map(li -> li.getProductPk())
+                .filter(pk -> pk != null && !pk.isBlank())
+                .distinct()
+                .toList();
+
+        revalidateProductsByIds(productPks);
+    }
+
+    /**
+     * Revalidates ISR cache for the given product PKs.
+     * Used by scheduled jobs that restore stock outside the order context.
+     */
+    public void revalidateProductsByIds(List<String> productPks) {
+        if (!enabled || productPks == null || productPks.isEmpty()) return;
+
+        List<String> slugs = productRepo.findSlugsByIds(productPks);
+        if (slugs.isEmpty()) return;
+
+        List<String> tags = new ArrayList<>();
+        tags.add("products");
+        for (String slug : slugs) {
+            tags.add("product:" + slug);
+        }
+
+        revalidate(tags.toArray(String[]::new));
     }
 
     private void dispatch(List<String> tagList) {

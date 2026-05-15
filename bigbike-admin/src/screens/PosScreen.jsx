@@ -38,6 +38,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const [cardRef, setCardRef] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [couponCode, setCouponCode] = useState('')
   const [idempotencyKey] = useState(() =>
     typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
   )
@@ -139,6 +140,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
         customerPhone: customerPhone.trim() || undefined,
         staffNote: staffNote.trim() || undefined,
         posIdempotencyKey: idempotencyKey,
+        ...(couponCode.trim() ? { couponCode: couponCode.trim().toUpperCase() } : {}),
         ...(walkInCustomer ? { customerId: walkInCustomer.id } : {}),
         items: cart.map((item) => ({
           productId: item.productId,
@@ -420,6 +422,17 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
               )}
             </div>
           )}
+
+          <div style={{ marginTop: 12 }}>
+            <label className="field-label">Mã giảm giá (tuỳ chọn)</label>
+            <Input
+              style={{ width: '100%' }}
+              placeholder="Nhập mã giảm giá POS..."
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              autoComplete="off"
+             />
+          </div>
 
           <div style={{ marginTop: 12 }}>
             <label className="field-label">{t('pos.note')}</label>

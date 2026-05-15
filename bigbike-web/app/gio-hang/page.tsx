@@ -286,7 +286,10 @@ export default function CartPage() {
                 <div className="bb-cart-applied-codes">
                   {cart.couponCodes.map((code) => (
                     <div key={code} className="bb-cart-applied-code">
-                      <p>#{code}</p>
+                      <span className="bb-cart-applied-label">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        {code}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -324,7 +327,7 @@ export default function CartPage() {
 
             <div className="bb-cart-total-summary">
               <div className="bb-cart-summary-row">
-                <p>Total</p>
+                <p>Tổng cộng</p>
                 <p className="bb-cart-total-price">
                   <b>{cart ? formatVnd(cart.totals.totalAmount) : "0"}</b>
                 </p>
