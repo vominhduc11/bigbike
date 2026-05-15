@@ -27,7 +27,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
   const token = readSingleSearchParam(params.token);
 
   return (
-    <section className="bb-page">
+    <section className="bb-page bb-page--auth">
       <div className="bb-container">
         <ForgotPasswordFlow token={token} />
       </div>

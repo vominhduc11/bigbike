@@ -46,10 +46,10 @@ export default function RegisterPage() {
 
   if (registered) {
     return (
-      <section className="bb-page">
+      <section className="bb-page bb-page--auth">
         <div className="bb-container">
           <div className="bb-auth-wrap">
-            <Card className="p-6 text-center">
+            <Card className="p-6 text-center border-t-[3px] border-t-primary">
               <div className="mb-4 flex justify-center">
                 <svg
                   width="52"
@@ -91,10 +91,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="bb-page">
+    <section className="bb-page bb-page--auth">
       <div className="bb-container">
         <div className="bb-auth-wrap">
-          <Card className="p-6">
+          <Card className="p-6 border-t-[3px] border-t-primary">
             <header className="bb-auth-header">
               <p className="bb-kicker">Tài khoản</p>
               <h1 className="bb-auth-title">Đăng ký</h1>

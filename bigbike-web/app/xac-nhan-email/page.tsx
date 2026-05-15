@@ -42,7 +42,7 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <section className="bb-page">
+    <section className="bb-page bb-page--auth">
       <div className="bb-container max-w-[480px] py-[var(--bb-space-15)] text-center">
         {status === "loading" && (
           <div className="grid justify-items-center gap-3 border border-border bg-card p-6">

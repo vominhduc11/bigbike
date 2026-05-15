@@ -12,9 +12,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  getSafeLoginHref,
   toAccountPath,
   toCartPath,
-  toLoginPath,
   toOrderHistoryPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
@@ -148,6 +148,11 @@ export function MobileHeaderMenu({
 
   const close = () => setOpen(false);
 
+  const p = pathname?.replace(/\/$/, "") ?? "";
+  const isOnLoginPage = p === "/dang-nhap";
+  const isOnRegisterPage = p === "/dang-ky";
+  const safeLoginHref = getSafeLoginHref(pathname);
+
   async function handleLogout() {
     setLoggingOut(true);
     await performLogout();
@@ -206,7 +211,7 @@ export function MobileHeaderMenu({
               <Link href={toCartPath()} onClick={close}>
                 Giỏ hàng
               </Link>
-              {auth.status === "authenticated" ? (
+              {auth.status === "loading" ? null : auth.status === "authenticated" ? (
                 <>
                   <Link href={toAccountPath()} onClick={close}>
                     Tài khoản
@@ -225,12 +230,16 @@ export function MobileHeaderMenu({
                 </>
               ) : (
                 <>
-                  <Link href={toLoginPath(pathname ?? undefined)} onClick={close}>
-                    Đăng nhập
-                  </Link>
-                  <Link href={toRegisterPath()} onClick={close}>
-                    Đăng ký
-                  </Link>
+                  {!isOnLoginPage && (
+                    <Link href={safeLoginHref} onClick={close}>
+                      Đăng nhập
+                    </Link>
+                  )}
+                  {!isOnRegisterPage && (
+                    <Link href={toRegisterPath()} onClick={close}>
+                      Đăng ký
+                    </Link>
+                  )}
                 </>
               )}
             </div>

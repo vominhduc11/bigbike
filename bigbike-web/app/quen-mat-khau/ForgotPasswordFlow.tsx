@@ -162,7 +162,7 @@ export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
 
   return (
     <div className="bb-auth-wrap">
-      <Card className="p-6">
+      <Card className="p-6 border-t-[3px] border-t-primary">
         <header className="bb-auth-header">
           <p className="bb-kicker">Tài khoản</p>
           <h1 className="bb-auth-title">
