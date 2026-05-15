@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { loginCustomer } from "@/lib/api/client-api";
-import { refreshAuth } from "@/lib/auth/auth-store";
+import { refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import { loginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toAccountPath, toForgotPasswordPath, toRegisterPath } from "@/lib/utils/routes";
 import { isSafeReturnTo } from "@/lib/utils/auth";
@@ -20,6 +21,15 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const raw = searchParams.get("tiep") ?? "";
   const returnTo = isSafeReturnTo(raw) ? raw : toAccountPath();
+
+  const auth = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (auth.status === "authenticated") {
+      router.replace(returnTo);
+    }
+  }, [auth.status, router, returnTo]);
 
   const {
     register,
@@ -41,16 +51,21 @@ function LoginForm() {
     }
   }
 
+  if (auth.status === "authenticated") return null;
+
   return (
     <div className="bb-auth-wrap">
-      <Card className="p-6">
+      <Card className="p-6 border-t-[3px] border-t-primary">
         <header className="bb-auth-header">
-          <p className="bb-kicker">Tài khoản</p>
           <h1 className="bb-auth-title">Đăng nhập</h1>
         </header>
 
         {errors.root && (
-          <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive"
+          >
             {errors.root.message}
           </div>
         )}
@@ -61,43 +76,76 @@ function LoginForm() {
             <Input
               id="login-username"
               autoComplete="username"
-              placeholder="email@example.com"
+              placeholder="email@example.com hoặc 0901234567"
+              aria-invalid={!!errors.login}
+              aria-describedby={errors.login ? "login-username-error" : undefined}
               {...register("login")}
             />
             {errors.login && (
-              <p className="text-sm text-destructive">{errors.login.message}</p>
+              <p id="login-username-error" role="alert" className="text-sm text-destructive">
+                {errors.login.message}
+              </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="login-password">Mật khẩu</Label>
-            <Input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              {...register("password")}
-            />
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="login-password">Mật khẩu</Label>
+              <Link
+                href={toForgotPasswordPath()}
+                className="text-sm bb-link font-normal"
+                tabIndex={0}
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
+            <div className="relative">
+              <Input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="pr-12"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "login-password-error" : undefined}
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
+              </button>
+            </div>
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p id="login-password-error" role="alert" className="text-sm text-destructive">
+                {errors.password.message}
+              </p>
             )}
           </div>
 
           <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
+            {isSubmitting && (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            )}
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
 
-        <p className="bb-auth-footer">
-          <Link href={toForgotPasswordPath()} className="bb-link bb-auth-footer-link">
-            Quên mật khẩu?
-          </Link>
-          <br />
-          Chưa có tài khoản?{" "}
-          <Link href={toRegisterPath()} className="bb-link">
-            Đăng ký ngay
-          </Link>
-        </p>
+        <div className="flex flex-col items-center gap-2 mt-4 text-sm text-muted-foreground text-center">
+          <p>
+            Chưa có tài khoản?{" "}
+            <Link href={toRegisterPath()} className="bb-link">
+              Đăng ký ngay
+            </Link>
+          </p>
+        </div>
       </Card>
     </div>
   );
@@ -106,9 +154,8 @@ function LoginForm() {
 function LoginFormSkeleton() {
   return (
     <div className="bb-auth-wrap" aria-busy="true">
-      <Card className="p-6">
+      <Card className="p-6 border-t-[3px] border-t-primary">
         <div className="bb-skel-stack">
-          <span className="bb-skel bb-skel--text bb-skel-w-25" />
           <span className="bb-skel bb-skel--title bb-skel-w-50" style={{ height: "1.8em" }} />
           <div className="h-2" />
           <span className="bb-skel bb-skel--text bb-skel-w-40" />
@@ -125,7 +172,7 @@ function LoginFormSkeleton() {
 
 export default function LoginPage() {
   return (
-    <section className="bb-page">
+    <section className="bb-page bb-page--auth">
       <div className="bb-container">
         <Suspense fallback={<LoginFormSkeleton />}>
           <LoginForm />

@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,8 +11,10 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.UUID;
@@ -40,6 +43,7 @@ class Phase1GOrderReadApiTest {
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
+    @Autowired OrderJpaRepository orderRepo;
 
     private MockMvc mockMvc;
     private static String testCategoryId;
@@ -386,6 +390,82 @@ class Phase1GOrderReadApiTest {
                 .andExpect(jsonPath("$.data.paymentMethods").isArray());
     }
 
+    // ── Customer cancel — Issue 2 scope expansion ────────────────────────────
+    //
+    // Before fix: only PENDING was cancellable, but checkout never created
+    // PENDING orders, so customer cancel was effectively dead. Allowed scope
+    // is now: (ON_HOLD | PENDING) OR (PROCESSING + not yet shipped), gated by
+    // paymentStatus ∈ {UNPAID, PENDING}.
+
+    @Test
+    void customerCancel_codProcessingUnpaid_succeedsAndReleasesStock() throws Exception {
+        String email = "cancel-cod-" + UUID.randomUUID() + "@bigbike.vn";
+        AuthSession session = loginAndCheckout(email, 1500000); // COD → PROCESSING + UNPAID
+
+        mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        OrderEntity reloaded = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
+        assertThat(reloaded.getCancelledAt()).isNotNull();
+    }
+
+    @Test
+    void customerCancel_bacsOnHoldUnpaid_succeeds() throws Exception {
+        String email = "cancel-bacs-" + UUID.randomUUID() + "@bigbike.vn";
+        Cookie[] cookies = registerAndLogin(email);
+        String csrf = findCsrf(cookies);
+        AuthSession session = placeOrderWithCookiesAndPayment(cookies, csrf, 2200000, "BACS");
+
+        // Sanity: BACS creates ON_HOLD + UNPAID.
+        OrderEntity placed = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        assertThat(placed.getStatus()).isEqualTo("ON_HOLD");
+        assertThat(placed.getPaymentStatus()).isEqualTo("UNPAID");
+
+        mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+    }
+
+    @Test
+    void customerCancel_paid_isRejected() throws Exception {
+        String email = "cancel-paid-" + UUID.randomUUID() + "@bigbike.vn";
+        AuthSession session = loginAndCheckout(email, 1800000);
+
+        // Force the order to PAID outside of normal flow — refund must go via admin, not cancel.
+        OrderEntity order = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        order.setPaymentStatus("PAID");
+        order.setPaidAmount(order.getTotalAmount());
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+
+        mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+
+        OrderEntity reloaded = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+    }
+
+    @Test
+    void customerCancel_shipped_isRejected() throws Exception {
+        String email = "cancel-shipped-" + UUID.randomUUID() + "@bigbike.vn";
+        AuthSession session = loginAndCheckout(email, 1900000);
+
+        OrderEntity order = orderRepo.findById(UUID.fromString(session.orderId)).orElseThrow();
+        order.setFulfillmentStatus("SHIPPED");
+        order.setShippedAt(Instant.now());
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+
+        mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Register, login, add item to cart, checkout. Returns session with order info. */
@@ -393,6 +473,33 @@ class Phase1GOrderReadApiTest {
         Cookie[] cookies = registerAndLogin(email);
         String csrf = findCsrf(cookies);
         return placeOrderWithCookies(cookies, csrf, price);
+    }
+
+    private AuthSession placeOrderWithCookiesAndPayment(
+            Cookie[] cookies, String csrf, int price, String paymentMethod
+    ) throws Exception {
+        ProductEntity product = createTestProduct(
+                "Auth Order Product " + price + " " + paymentMethod, price, null, PublishStatus.PUBLISHED);
+
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"" + paymentMethod + "\",\"billingAddress\":"
+                                + VALID_BILLING + "}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        return new AuthSession(
+                cookies, csrf,
+                extractJsonValue(body, "id"),
+                extractJsonValue(body, "orderNumber"));
     }
 
     private AuthSession placeOrderWithCookies(Cookie[] cookies, String csrf, int price) throws Exception {

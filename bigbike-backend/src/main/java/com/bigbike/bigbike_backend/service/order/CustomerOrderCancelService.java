@@ -8,7 +8,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -16,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomerOrderCancelService {
-
-    private static final Set<String> CANCELLABLE_STATUSES = Set.of("PENDING");
 
     private final OrderJpaRepository orderRepo;
     private final OrderReadService orderReadService;
@@ -45,10 +42,11 @@ public class CustomerOrderCancelService {
             throw new AccessDeniedException("Không có quyền thao tác đơn hàng này.");
         }
 
-        if (!CANCELLABLE_STATUSES.contains(order.getStatus())) {
+        if (!isCustomerCancellable(order)) {
             throw new ConflictException(
-                    "Đơn hàng ở trạng thái " + order.getStatus() + " không thể huỷ. " +
-                    "Chỉ có thể huỷ đơn đang chờ xử lý (PENDING)."
+                    "Đơn hàng ở trạng thái " + order.getStatus()
+                    + (order.getPaymentStatus() != null ? "/" + order.getPaymentStatus() : "")
+                    + " không thể huỷ. Vui lòng liên hệ shop để được hỗ trợ."
             );
         }
 
@@ -67,5 +65,33 @@ public class CustomerOrderCancelService {
         orderStockRestoreService.restoreForCancel(orderId);
 
         return orderReadService.getCustomerOrderDetail(customerId, orderId);
+    }
+
+    /**
+     * Customer may cancel their own order only when no money has been collected
+     * and the goods have not left the warehouse:
+     *   • PENDING                          — legacy / not yet confirmed
+     *   • ON_HOLD                          — BACS placed, transfer not received
+     *   • PROCESSING + not yet SHIPPED/DELIVERED — COD or BACS confirmed but still
+     *                                            packable / cancellable in-house
+     * In every case paymentStatus must be UNPAID or PENDING. Once payment is
+     * captured (PAID / PARTIALLY_PAID), customers must request a refund via admin
+     * so the financial flow goes through RefundService.
+     */
+    private static boolean isCustomerCancellable(OrderEntity order) {
+        String paymentStatus = order.getPaymentStatus();
+        if (!"UNPAID".equals(paymentStatus) && !"PENDING".equals(paymentStatus)) {
+            return false;
+        }
+
+        String status = order.getStatus();
+        if ("PENDING".equals(status) || "ON_HOLD".equals(status)) {
+            return true;
+        }
+        if ("PROCESSING".equals(status)) {
+            String fulfillment = order.getFulfillmentStatus();
+            return !"SHIPPED".equals(fulfillment) && !"DELIVERED".equals(fulfillment);
+        }
+        return false;
     }
 }

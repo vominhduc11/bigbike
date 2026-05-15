@@ -707,6 +707,7 @@ public class CheckoutService {
         order.setCustomerId(customerId);
         order.setStatus(orderStatus);
         order.setPaymentStatus(PAYMENT_STATUS_UNPAID);
+        order.setPaymentMethod(paymentMethod);
         order.setCustomerEmail(email);
         order.setCustomerPhone(phone);
         order.setCustomerNote(customerNote);

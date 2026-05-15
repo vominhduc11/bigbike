@@ -15,13 +15,18 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import com.bigbike.bigbike_backend.service.order.OrderAutoCancelService;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -61,6 +66,9 @@ class Phase1HAdminOrderApiTest {
     @Autowired AuditLogJpaRepository auditLogRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired PasswordService passwordService;
+    @Autowired OrderJpaRepository orderRepo;
+    @Autowired OrderNoteJpaRepository orderNoteRepo;
+    @Autowired OrderAutoCancelService orderAutoCancelService;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -1044,6 +1052,82 @@ class Phase1HAdminOrderApiTest {
                 .findFirst().orElseThrow();
         assertThat(log.getIpAddress()).isNotBlank();
         assertThat(log.getUserAgent()).isEqualTo("TestBrowser/4.0");
+    }
+
+    // ── BACS unpaid auto-cancel — Issue 5 ─────────────────────────────────────
+    //
+    // OrderAutoCancelService releases stale BACS reservations. Service-level
+    // assertion is used because the scheduler runs hourly via cron and would
+    // not fire reliably during a test.
+
+    @Test
+    void autoCancelExpiredBacs_olderThanCutoff_cancelsAndAddsSystemNote() throws Exception {
+        OrderInfo bacs = placeGuestOrderBacs(2400000);
+
+        OrderEntity order = orderRepo.findById(bacs.orderId).orElseThrow();
+        // Default cutoff is 72h; backdate placedAt by 100h so it is comfortably past.
+        order.setPlacedAt(Instant.now().minus(java.time.Duration.ofHours(100)));
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+
+        int cancelled = orderAutoCancelService.autoCancelExpiredBacsUnpaidOrders();
+        assertThat(cancelled).isGreaterThanOrEqualTo(1);
+
+        OrderEntity reloaded = orderRepo.findById(bacs.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
+        assertThat(reloaded.getCancelledAt()).isNotNull();
+
+        // System note is logged for audit trail.
+        assertThat(orderNoteRepo.findByOrderId(bacs.orderId))
+                .anySatisfy(n -> {
+                    assertThat(n.getAuthorType()).isEqualTo("SYSTEM");
+                    assertThat(n.getContent()).contains("tự động huỷ");
+                });
+    }
+
+    @Test
+    void autoCancelExpiredBacs_recentOrder_isNotCancelled() throws Exception {
+        OrderInfo bacs = placeGuestOrderBacs(2500000);
+        // Fresh order — placedAt = now, well within the cutoff.
+
+        orderAutoCancelService.autoCancelExpiredBacsUnpaidOrders();
+
+        OrderEntity reloaded = orderRepo.findById(bacs.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("ON_HOLD");
+    }
+
+    @Test
+    void autoCancelExpiredBacs_codOrder_isNotCancelled() throws Exception {
+        OrderInfo cod = placeGuestOrder(2600000);
+
+        OrderEntity order = orderRepo.findById(cod.orderId).orElseThrow();
+        order.setPlacedAt(Instant.now().minus(java.time.Duration.ofHours(200)));
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+
+        orderAutoCancelService.autoCancelExpiredBacsUnpaidOrders();
+
+        OrderEntity reloaded = orderRepo.findById(cod.orderId).orElseThrow();
+        // COD orders are not in scope — paid-on-delivery has its own follow-up workflow.
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+    }
+
+    @Test
+    void autoCancelExpiredBacs_paidOrder_isNotCancelled() throws Exception {
+        OrderInfo bacs = placeGuestOrderBacs(2700000);
+
+        OrderEntity order = orderRepo.findById(bacs.orderId).orElseThrow();
+        order.setPlacedAt(Instant.now().minus(java.time.Duration.ofHours(200)));
+        order.setPaymentStatus("PAID");
+        order.setPaidAmount(order.getTotalAmount());
+        order.setUpdatedAt(Instant.now());
+        orderRepo.save(order);
+
+        orderAutoCancelService.autoCancelExpiredBacsUnpaidOrders();
+
+        OrderEntity reloaded = orderRepo.findById(bacs.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("ON_HOLD");
+        assertThat(reloaded.getPaymentStatus()).isEqualTo("PAID");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

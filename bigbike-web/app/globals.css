@@ -570,12 +570,7 @@ a {
   margin: var(--bb-space-8) auto;
 }
 
-.bb-auth-wrap .bb-card {
-  background: #fff;
-  border: 1px solid var(--bb-border-subtle, #e4e4e4);
-  border-top: 3px solid var(--bb-brand-primary);
-  border-radius: var(--bb-radius-none);
-}
+/* border-top 3px brand cue is now applied via Tailwind class on the Card element in JSX */
 
 @media (max-width: 768px) {
   .bb-page {
@@ -594,6 +589,20 @@ a {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* Auth page modifier — compact layout, elevated bg so white card stands out */
+.bb-page--auth {
+  background: var(--bb-bg-surface-raised);
+  min-height: 0;
+  padding-block: var(--bb-space-6) var(--bb-space-10);
+}
+
+/* Override .bb-page h1 specificity for auth card — responsive, title-case */
+.bb-page--auth h1,
+.bb-page--auth .bb-auth-title {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  text-transform: none;
 }
 
 /* ...............................................................

@@ -815,12 +815,11 @@ export function FormSkeleton({
 export function AuthSkeleton() {
   return (
     <SkeletonRoot label="Đang tải biểu mẫu xác thực">
-      <section className="bb-page">
+      <section className="bb-page bb-page--auth">
         <div className="bb-container">
           <div className="bb-auth-wrap">
-            <Card className="p-6">
+            <Card className="p-6 border-t-[3px] border-t-primary">
               <div className="bb-skel-stack">
-                <SkelText w="30%" />
                 <SkelTitle w="60%" h="1.8em" />
                 <div style={{ height: 8 }} />
                 <SkelText w="40%" />
