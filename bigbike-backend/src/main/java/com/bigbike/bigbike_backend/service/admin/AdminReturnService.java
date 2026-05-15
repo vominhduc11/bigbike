@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.returns.UpdateReturnStatusReque
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.ReturnRequestMapper;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,6 +56,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminReturnService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -91,38 +94,7 @@ public class AdminReturnService {
     private final OrderNotificationService notificationService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
     private final EntityManager em;
-
-    public AdminReturnService(
-            ReturnJpaRepository returnRepo,
-            ReturnItemJpaRepository itemRepo,
-            ReturnHistoryJpaRepository historyRepo,
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            InventoryPolicyService inventoryPolicyService,
-            SerialLifecycleService serialLifecycleService,
-            ReturnItemSerialJpaRepository risRepo,
-            OrderNotificationService notificationService,
-            com.bigbike.bigbike_backend.service.payment.RefundService refundService,
-            EntityManager em
-    ) {
-        this.returnRepo = returnRepo;
-        this.itemRepo = itemRepo;
-        this.historyRepo = historyRepo;
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.inventoryPolicyService = inventoryPolicyService;
-        this.serialLifecycleService = serialLifecycleService;
-        this.risRepo = risRepo;
-        this.notificationService = notificationService;
-        this.refundService = refundService;
-        this.em = em;
-    }
+    private final ReturnRequestMapper returnRequestMapper;
 
     // ── List (server-side pagination) ─────────────────────────────────────────
 
@@ -537,33 +509,26 @@ public class AdminReturnService {
     // ── Mapping ───────────────────────────────────────────────────────────────
 
     private AdminReturnListItemResponse toListItem(ReturnEntity r, OrderEntity order) {
-        return new AdminReturnListItemResponse(
-                r.getId(), r.getReturnNumber(), r.getOrderId(),
+        return returnRequestMapper.toAdminListItem(
+                r,
                 order != null ? order.getOrderNumber() : null,
-                order != null ? order.getCustomerEmail() : null,
-                r.getStatus(), r.getReason(), r.getRefundAmount(), r.getCreatedAt()
+                order != null ? order.getCustomerEmail() : null
         );
     }
 
     private AdminReturnDetailResponse toDetail(ReturnEntity r, OrderEntity order) {
         List<ReturnItemResponse> items = itemRepo.findByReturnId(r.getId())
-                .stream().map(i -> new ReturnItemResponse(
-                        i.getId(), i.getProductName(), i.getVariantName(),
-                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getReason(),
-                        i.getInspectionResult(), i.getInspectionNote(), i.getInspectedAt()
-                )).toList();
+                .stream().map(returnRequestMapper::toAdminItem).toList();
 
         List<ReturnHistoryResponse> history = historyRepo.findByReturnIdOrderByCreatedAtAsc(r.getId())
-                .stream().map(h -> new ReturnHistoryResponse(
-                        h.getFromStatus(), h.getToStatus(), h.getNote(), h.getCreatedAt()
-                )).toList();
+                .stream().map(returnRequestMapper::toAdminHistory).toList();
 
-        return new AdminReturnDetailResponse(
-                r.getId(), r.getReturnNumber(), r.getOrderId(), r.getCustomerId(),
+        return returnRequestMapper.toAdminDetail(
+                r,
                 order != null ? order.getOrderNumber() : null,
                 order != null ? order.getCustomerEmail() : null,
-                r.getStatus(), r.getReason(), r.getCustomerNote(), r.getAdminNote(),
-                r.getRefundAmount(), items, history, r.getCreatedAt(), r.getUpdatedAt()
+                items,
+                history
         );
     }
 }

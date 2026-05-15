@@ -7,7 +7,17 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReorderHomeVideosRequest {
 
     @NotNull
@@ -15,9 +25,11 @@ public class ReorderHomeVideosRequest {
     @Valid
     private List<Item> items;
 
-    public List<Item> getItems() { return items; }
-    public void setItems(List<Item> items) { this.items = items; }
-
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Item {
 
         @NotBlank(message = "id is required.")
@@ -27,11 +39,5 @@ public class ReorderHomeVideosRequest {
         @NotNull(message = "sortOrder is required.")
         @Min(value = 0, message = "sortOrder must be >= 0.")
         private Integer sortOrder;
-
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-
-        public Integer getSortOrder() { return sortOrder; }
-        public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
     }
 }

@@ -1,11 +1,16 @@
 package com.bigbike.bigbike_backend.persistence.repository.media;
 
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +24,21 @@ public class MediaTagJdbc {
 
     private final JdbcTemplate jdbc;
 
-    public MediaTagJdbc(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public MediaTagJdbc(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+        ensureTable();
+    }
+
+    private void ensureTable() {
+        jdbc.execute("""
+                CREATE TABLE IF NOT EXISTS media_tags (
+                    media_id UUID NOT NULL,
+                    tag VARCHAR(120) NOT NULL,
+                    PRIMARY KEY (media_id, tag)
+                )
+                """);
+        jdbc.execute("CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag)");
+    }
 
     /** Returns the tags currently attached to a single media. */
     public List<String> tagsFor(UUID mediaId) {
@@ -89,17 +108,25 @@ public class MediaTagJdbc {
     }
 
     /** Bulk fetch tags for multiple media at once (avoids N+1 in list view). */
-    public java.util.Map<UUID, List<String>> tagsForMany(Collection<UUID> mediaIds) {
+    public Map<UUID, List<String>> tagsForMany(Collection<UUID> mediaIds) {
         if (mediaIds == null || mediaIds.isEmpty()) return java.util.Map.of();
-        UUID[] arr = mediaIds.toArray(new UUID[0]);
-        java.util.Map<UUID, List<String>> result = new java.util.HashMap<>();
-        jdbc.query(
-                "SELECT media_id, tag FROM media_tags WHERE media_id = ANY(?::uuid[]) ORDER BY tag",
-                ps -> ps.setArray(1, ps.getConnection().createArrayOf("uuid", arr)),
-                rs -> {
-                    UUID id = (UUID) rs.getObject(1);
-                    result.computeIfAbsent(id, k -> new java.util.ArrayList<>()).add(rs.getString(2));
-                });
+
+        List<UUID> ids = mediaIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return java.util.Map.of();
+
+        String placeholders = ids.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(","));
+        String sql = "SELECT media_id, tag FROM media_tags WHERE media_id IN (" + placeholders + ") ORDER BY tag";
+
+        Map<UUID, List<String>> result = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            UUID id = (UUID) rs.getObject(1);
+            result.computeIfAbsent(id, k -> new ArrayList<>()).add(rs.getString(2));
+        }, ids.toArray());
         return result;
     }
 }

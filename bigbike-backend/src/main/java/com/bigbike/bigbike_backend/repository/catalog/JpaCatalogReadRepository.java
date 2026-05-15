@@ -624,9 +624,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .filter(image -> image != null)
                         .toList();
 
-        Integer variantStockQty = publicView
-                ? maskStockQuantityForPublic(entity.getQuantityOnHand(), entity.getStockState())
-                : entity.getQuantityOnHand();
+        Integer variantStockQty;
+        if (publicView) {
+            variantStockQty = maskStockQuantityForPublic(entity.getQuantityOnHand(), entity.getStockState());
+        } else {
+            variantStockQty = entity.getQuantityOnHand();
+        }
 
         return new ProductVariant(
                 entity.getId(),

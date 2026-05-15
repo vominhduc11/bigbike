@@ -1,7 +1,17 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class VariantOptionRequest {
 
     @Size(max = 100, message = "Option name is too long.")
@@ -9,10 +19,4 @@ public class VariantOptionRequest {
 
     @Size(max = 255, message = "Option value is too long.")
     private String optionValue;
-
-    public String getOptionName() { return optionName; }
-    public void setOptionName(String optionName) { this.optionName = optionName; }
-
-    public String getOptionValue() { return optionValue; }
-    public void setOptionValue(String optionValue) { this.optionValue = optionValue; }
 }

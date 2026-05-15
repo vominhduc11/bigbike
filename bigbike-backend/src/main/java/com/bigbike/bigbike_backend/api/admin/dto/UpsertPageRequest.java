@@ -5,7 +5,17 @@ import com.bigbike.bigbike_backend.domain.content.PageType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertPageRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -36,92 +46,4 @@ public class UpsertPageRequest {
 
     @Size(max = 128, message = "Hero kicker is too long.")
     private String heroKicker;
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    public String getParentId() {
-        return parentId;
-    }
-
-    public void setParentId(String parentId) {
-        this.parentId = parentId;
-    }
-
-    public PageType getPageType() {
-        return pageType;
-    }
-
-    public void setPageType(PageType pageType) {
-        this.pageType = pageType;
-    }
-
-    public PublishStatus getPublishStatus() {
-        return publishStatus;
-    }
-
-    public void setPublishStatus(PublishStatus publishStatus) {
-        this.publishStatus = publishStatus;
-    }
-
-    public SeoMetaRequest getSeo() {
-        return seo;
-    }
-
-    public void setSeo(SeoMetaRequest seo) {
-        this.seo = seo;
-    }
-
-    public ImageAssetRequest getHeroImage() {
-        return heroImage;
-    }
-
-    public void setHeroImage(ImageAssetRequest heroImage) {
-        this.heroImage = heroImage;
-    }
-
-    public String getHeroTitle() {
-        return heroTitle;
-    }
-
-    public void setHeroTitle(String heroTitle) {
-        this.heroTitle = heroTitle;
-    }
-
-    public String getHeroDescription() {
-        return heroDescription;
-    }
-
-    public void setHeroDescription(String heroDescription) {
-        this.heroDescription = heroDescription;
-    }
-
-    public String getHeroKicker() {
-        return heroKicker;
-    }
-
-    public void setHeroKicker(String heroKicker) {
-        this.heroKicker = heroKicker;
-    }
 }

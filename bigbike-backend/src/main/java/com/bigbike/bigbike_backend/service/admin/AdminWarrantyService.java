@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.warranty.WarrantyRecordResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.mapper.WarrantyMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.warranty.WarrantyRecordEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,25 +19,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminWarrantyService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
     private final WarrantyRecordJpaRepository warrantyRepo;
-
-    public AdminWarrantyService(WarrantyRecordJpaRepository warrantyRepo) {
-        this.warrantyRepo = warrantyRepo;
-    }
+    private final WarrantyMapper warrantyMapper;
 
     public WarrantyRecordResponse getBySerial(UUID serialId) {
         return warrantyRepo.findBySerialId(serialId)
-                .map(this::toResponse)
+                .map(warrantyMapper::toResponse)
                 .orElseThrow(() -> new NotFoundException("No warranty found for serial: " + serialId));
     }
 
     public Optional<WarrantyRecordResponse> findBySerial(UUID serialId) {
-        return warrantyRepo.findBySerialId(serialId).map(this::toResponse);
+        return warrantyRepo.findBySerialId(serialId).map(warrantyMapper::toResponse);
     }
 
     public PageResult<WarrantyRecordResponse> search(
@@ -47,7 +47,7 @@ public class AdminWarrantyService {
         Page<WarrantyRecordEntity> result = warrantyRepo.search(status, customerId, pageable);
 
         List<WarrantyRecordResponse> items = result.getContent().stream()
-                .map(this::toResponse)
+                .map(warrantyMapper::toResponse)
                 .toList();
 
         return new PageResult<>(items, result.getNumber() + 1, result.getSize(),
@@ -65,21 +65,6 @@ public class AdminWarrantyService {
 
         warranty.setStatus("VOIDED");
         warranty.setUpdatedAt(Instant.now());
-        return toResponse(warrantyRepo.save(warranty));
-    }
-
-    private WarrantyRecordResponse toResponse(WarrantyRecordEntity w) {
-        return new WarrantyRecordResponse(
-                w.getId(),
-                w.getSerialId(),
-                w.getOrderLineItemId(),
-                w.getCustomerId(),
-                w.getCustomerEmail(),
-                w.getCustomerPhone(),
-                w.getStartDate(),
-                w.getEndDate(),
-                w.getStatus(),
-                w.getCreatedAt()
-        );
+        return warrantyMapper.toResponse(warrantyRepo.save(warranty));
     }
 }

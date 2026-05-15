@@ -509,13 +509,6 @@ public class AdminCatalogMutationService {
                             "Variant gallery is controlled by Color. Add a Color/Mau option or use product gallery."
                     ));
                 }
-                if (AdminMutationValidators.trimToNull(v.getImageUrl()) != null && variantColorKey(v) == null) {
-                    errors.add(new ApiErrorDetail(
-                            "variants[" + i + "].imageUrl",
-                            "COLOR_REQUIRED",
-                            "Variant image is controlled by Color. Add a Color/Mau option or use product image."
-                    ));
-                }
             }
         }
 
@@ -1424,47 +1417,36 @@ public class AdminCatalogMutationService {
     }
 
     /**
-     * Hard-delete with cascade: removes the category and all its descendants
-     * (any depth, any visibility) from the database in leaf-first order.
-     * Rejects with 409 if any category in the subtree has products assigned
-     * to it as their primary category — those products must be reassigned first.
+     * Hard-delete a single category.
+     * Rejected when the category still has children or products assigned.
      */
     @Transactional
     public void hardDeleteCategory(String categoryId, UUID adminId) {
         requireJpaPersistenceEnabled();
 
-        CategoryEntity root = categoryJpaRepository.findById(categoryId)
+        CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
-        // Collect entire subtree (leaves first so FK constraints are satisfied)
-        List<CategoryEntity> toDelete = new ArrayList<>();
-        collectDescendantsLeafFirst(categoryId, toDelete);
-        toDelete.add(root);
-
-        // Reject if any node in the subtree has products using it as primary category
-        for (CategoryEntity cat : toDelete) {
-            long productCount = productJpaRepository.countByCategory_Id(cat.getId());
-            if (productCount > 0) {
-                throw new ConflictException(
-                        "Cannot delete: " + productCount +
-                        " product" + (productCount == 1 ? " uses" : "s use") +
-                        " category \"" + cat.getName() + "\" as primary category. Reassign them first."
-                );
-            }
+        long childCount = categoryJpaRepository.countByParent_Id(categoryId);
+        if (childCount > 0) {
+            throw new ConflictException(
+                    "Cannot delete category: it has " + childCount +
+                    " child categor" + (childCount == 1 ? "y" : "ies") +
+                    ". Re-parent or delete child categories first."
+            );
         }
 
-        for (CategoryEntity cat : toDelete) {
-            auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(cat), null);
-            categoryJpaRepository.delete(cat);
+        long productCount = productJpaRepository.countByCategory_Id(entity.getId());
+        if (productCount > 0) {
+            throw new ConflictException(
+                    "Cannot delete: " + productCount +
+                    " product" + (productCount == 1 ? " uses" : "s use") +
+                    " category \"" + entity.getName() + "\" as primary category. Reassign them first."
+            );
         }
-    }
 
-    private void collectDescendantsLeafFirst(String parentId, List<CategoryEntity> result) {
-        List<CategoryEntity> children = categoryJpaRepository.findByParent_Id(parentId);
-        for (CategoryEntity child : children) {
-            collectDescendantsLeafFirst(child.getId(), result);
-            result.add(child);
-        }
+        auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(entity), null);
+        categoryJpaRepository.delete(entity);
     }
 
     private void assertNoVisibleChildren(String categoryId) {
@@ -1478,3 +1460,5 @@ public class AdminCatalogMutationService {
         }
     }
 }
+
+

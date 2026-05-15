@@ -2,7 +2,17 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SeoMetaRequest {
 
     @Size(max = 255, message = "SEO title is too long.")
@@ -18,45 +28,4 @@ public class SeoMetaRequest {
     private ImageAssetRequest ogImage;
 
     private Boolean noIndex;
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getCanonicalUrl() {
-        return canonicalUrl;
-    }
-
-    public void setCanonicalUrl(String canonicalUrl) {
-        this.canonicalUrl = canonicalUrl;
-    }
-
-    public ImageAssetRequest getOgImage() {
-        return ogImage;
-    }
-
-    public void setOgImage(ImageAssetRequest ogImage) {
-        this.ogImage = ogImage;
-    }
-
-    public Boolean getNoIndex() {
-        return noIndex;
-    }
-
-    public void setNoIndex(Boolean noIndex) {
-        this.noIndex = noIndex;
-    }
 }
-

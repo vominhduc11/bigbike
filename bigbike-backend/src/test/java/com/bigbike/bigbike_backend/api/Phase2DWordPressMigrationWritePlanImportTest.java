@@ -400,7 +400,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
         CatalogContentDryRunResult catalog = catalogDryRunService.run(REAL_DUMP);
         MigrationWritePlan plan = writePlanService.buildPlan(catalog, null);
 
-        // Categories: 50, Brands: 45, Media: 12054 — from Phase 2B.1
+        // Categories: 51, Brands: 46, Media: 12054 — current real dump baseline.
         var catOp = plan.operations().stream()
                 .filter(o -> o.domain() == MigrationDomain.CATEGORIES).findFirst().orElseThrow();
         var brandOp = plan.operations().stream()
@@ -408,8 +408,8 @@ class Phase2DWordPressMigrationWritePlanImportTest {
         var mediaOp = plan.operations().stream()
                 .filter(o -> o.domain() == MigrationDomain.MEDIA).findFirst().orElseThrow();
 
-        assertThat(catOp.estimatedRows()).isEqualTo(50);
-        assertThat(brandOp.estimatedRows()).isEqualTo(45);
+        assertThat(catOp.estimatedRows()).isEqualTo(51);
+        assertThat(brandOp.estimatedRows()).isEqualTo(46);
         assertThat(mediaOp.estimatedRows()).isGreaterThan(10000);
     }
 

@@ -6,7 +6,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertSliderRequest {
 
     @NotBlank(message = "location is required.")
@@ -30,60 +40,4 @@ public class UpsertSliderRequest {
     private String externalLink;
 
     private Boolean isActive;
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public Integer getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public ImageAssetRequest getDesktopImage() {
-        return desktopImage;
-    }
-
-    public void setDesktopImage(ImageAssetRequest desktopImage) {
-        this.desktopImage = desktopImage;
-    }
-
-    public ImageAssetRequest getMobileImage() {
-        return mobileImage;
-    }
-
-    public void setMobileImage(ImageAssetRequest mobileImage) {
-        this.mobileImage = mobileImage;
-    }
-
-    public String getProductId() {
-        return productId;
-    }
-
-    public void setProductId(String productId) {
-        this.productId = productId;
-    }
-
-    public String getExternalLink() {
-        return externalLink;
-    }
-
-    public void setExternalLink(String externalLink) {
-        this.externalLink = externalLink;
-    }
-
-    public Boolean getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
 }

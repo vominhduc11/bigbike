@@ -17,6 +17,13 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
+import com.bigbike.bigbike_backend.mapper.OrderAppliedCouponMapper;
+import com.bigbike.bigbike_backend.mapper.OrderItemMapper;
+import com.bigbike.bigbike_backend.mapper.OrderMapper;
+import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
+import com.bigbike.bigbike_backend.mapper.PaymentMapper;
+import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
@@ -51,6 +58,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -59,6 +67,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminOrderService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -111,7 +120,7 @@ public class AdminOrderService {
     private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
     static {
         ALLOWED_FULFILLMENT_TRANSITIONS = new HashMap<>();
-        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
+        ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "DELIVERED", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("SHIPPED",     Set.of("DELIVERED", "RETURNED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("DELIVERED",   Set.of("RETURNED"));
@@ -132,36 +141,13 @@ public class AdminOrderService {
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
     private final OrderStockRestoreService orderStockRestoreService;
     private final SerialLifecycleService serialLifecycleService;
-
-    public AdminOrderService(
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            OrderAddressJpaRepository addressRepo,
-            OrderShippingItemJpaRepository shippingItemRepo,
-            OrderNoteJpaRepository noteRepo,
-            PaymentJpaRepository paymentRepo,
-            OrderAppliedCouponJpaRepository appliedCouponRepo,
-            AuditLogJpaRepository auditLogRepo,
-            OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService,
-            com.bigbike.bigbike_backend.service.payment.RefundService refundService,
-            OrderStockRestoreService orderStockRestoreService,
-            SerialLifecycleService serialLifecycleService
-    ) {
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.addressRepo = addressRepo;
-        this.shippingItemRepo = shippingItemRepo;
-        this.noteRepo = noteRepo;
-        this.paymentRepo = paymentRepo;
-        this.appliedCouponRepo = appliedCouponRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.orderNotificationService = orderNotificationService;
-        this.adminOrderWsService = adminOrderWsService;
-        this.refundService = refundService;
-        this.orderStockRestoreService = orderStockRestoreService;
-        this.serialLifecycleService = serialLifecycleService;
-    }
+    private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final OrderAddressMapper orderAddressMapper;
+    private final ShippingMapper shippingMapper;
+    private final PaymentMapper paymentMapper;
+    private final OrderNoteMapper orderNoteMapper;
+    private final OrderAppliedCouponMapper orderAppliedCouponMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -258,11 +244,21 @@ public class AdminOrderService {
             return toDetail(order);
         }
 
-        // Transition validation
+        // Transition validation (structural — map only). Business preconditions
+        // (payment/fulfillment guards) are evaluated below per target status.
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of());
         if (!allowed.contains(newStatus)) {
             throw new ConflictException(
                     "Cannot transition order from " + currentStatus + " to " + newStatus + ".");
+        }
+
+        // Business preconditions: payment / fulfillment must be in the right shape.
+        // Keep these as small, target-status–scoped guards so the side-effect path below
+        // can stay focused on the actual transition.
+        if ("COMPLETED".equals(newStatus)) {
+            validateBeforeComplete(order);
+        } else if ("CANCELLED".equals(newStatus)) {
+            validateBeforeCancel(order);
         }
 
         String beforeStatus = order.getStatus();
@@ -539,6 +535,71 @@ public class AdminOrderService {
                 .stream().map(this::toAdminNote).toList();
     }
 
+    // ── Business preconditions for status transitions ─────────────────────────
+
+    /**
+     * Enforce business rules before flipping an order to COMPLETED.
+     *
+     * Rule 3 — DELIVERY orders cannot be COMPLETED until the goods have been
+     * marked DELIVERED. fulfillmentStatus is initialised to UNFULFILLED on
+     * order creation and progresses UNFULFILLED → PROCESSING → SHIPPED →
+     * DELIVERED via {@link #updateFulfillmentStatus}.
+     *
+     * Rule 2 — COD orders must have collected the cash before completion;
+     * "complete" means goods + money, not just goods.
+     *
+     * Rule 1 — COMPLETED + UNPAID / PARTIALLY_PAID is only legitimate for
+     * credit/receivable orders (POS CREDIT, walk-in công nợ). Anything else
+     * leaves money on the table with no receivable to chase it.
+     *
+     * POS in-store orders (fulfillmentType = IN_STORE) intentionally skip the
+     * DELIVERY guard — the goods change hands at the counter when the order
+     * is created.
+     */
+    private void validateBeforeComplete(OrderEntity order) {
+        String fulfillmentType = order.getFulfillmentType();
+        String fulfillmentStatus = order.getFulfillmentStatus();
+        String paymentMethod = order.getPaymentMethod();
+        String paymentStatus = order.getPaymentStatus();
+
+        if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
+                && !"DELIVERED".equals(fulfillmentStatus)) {
+            throw new ConflictException(
+                    "Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.");
+        }
+
+        if ("COD".equalsIgnoreCase(paymentMethod) && !"PAID".equals(paymentStatus)) {
+            throw new ConflictException(
+                    "Đơn COD phải được thu tiền trước khi hoàn thành.");
+        }
+
+        if ("UNPAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus)) {
+            boolean isCreditOrder = "CREDIT".equalsIgnoreCase(paymentMethod);
+            boolean hasCustomer = order.getCustomerId() != null;
+            if (!isCreditOrder || !hasCustomer) {
+                throw new ConflictException(
+                        "Đơn chưa thanh toán chỉ được hoàn thành khi là đơn công nợ có khách hàng hợp lệ.");
+            }
+        }
+    }
+
+    /**
+     * Reject direct cancel when the order already has money attached.
+     *
+     * Rule 4 — PAID and PARTIALLY_PAID orders must go through the refund/void
+     * flow ({@link com.bigbike.bigbike_backend.service.payment.RefundService})
+     * so the payment record, receivable, audit log, and stock/serial lifecycle
+     * stay consistent. A direct CANCELLED patch would skip every one of those
+     * steps and leave the books out of sync. UNPAID orders cancel cleanly.
+     */
+    private void validateBeforeCancel(OrderEntity order) {
+        String paymentStatus = order.getPaymentStatus();
+        if ("PAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus)) {
+            throw new ConflictException(
+                    "Đơn đã có thanh toán, cần xử lý hoàn tiền/void trước khi hủy.");
+        }
+    }
+
     // ── Mapping ───────────────────────────────────────────────────────────────
 
     private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
@@ -550,18 +611,7 @@ public class AdminOrderService {
     }
 
     private AdminOrderListItemResponse toListItem(OrderEntity order, long itemCount) {
-        return new AdminOrderListItemResponse(
-                order.getId(),
-                order.getOrderNumber(),
-                order.getStatus(),
-                order.getPaymentStatus(),
-                order.getCustomerEmail(),
-                order.getCustomerPhone(),
-                order.getTotalAmount(),
-                order.getCurrency(),
-                order.getPlacedAt(),
-                (int) itemCount
-        );
+        return orderMapper.toAdminListItem(order, (int) itemCount);
     }
 
     private AdminOrderDetailResponse toDetail(OrderEntity order) {
@@ -624,33 +674,27 @@ public class AdminOrderService {
     }
 
     private OrderLineItemResponse toLineItem(OrderLineItemEntity e) {
-        return new OrderLineItemResponse(e.getId(), e.getProductId(), e.getProductVariantId(),
-                e.getSku(), e.getProductName(), e.getVariantName(), e.getQuantity(),
-                e.getUnitPrice(), e.getLineSubtotal(), e.getLineDiscount(), e.getLineTotal());
+        return orderItemMapper.toResponse(e);
     }
 
     private OrderAddressResponse toAddress(OrderAddressEntity e) {
-        return new OrderAddressResponse(e.getType(), e.getFullName(), e.getEmail(), e.getPhone(),
-                e.getCountry(), e.getProvince(), e.getDistrict(), e.getWard(),
-                e.getAddressLine1(), e.getAddressLine2());
+        return orderAddressMapper.toResponse(e);
     }
 
     private OrderShippingItemResponse toShippingItem(OrderShippingItemEntity e) {
-        return new OrderShippingItemResponse(e.getId(), e.getMethodCode(), e.getMethodTitle(), e.getAmount());
+        return shippingMapper.toResponse(e);
     }
 
     private OrderPaymentResponse toPayment(PaymentEntity e) {
-        return new OrderPaymentResponse(e.getId(), e.getPaymentMethod(), e.getStatus(),
-                e.getAmount(), e.getCurrency(), e.getTransactionId(), e.getPaidAt());
+        return paymentMapper.toResponse(e);
     }
 
     private AdminOrderNoteResponse toAdminNote(OrderNoteEntity e) {
-        return new AdminOrderNoteResponse(e.getId(), e.getAuthorType(), e.getAuthorId(),
-                e.getNoteType(), e.getContent(), e.isCustomerVisible(), e.getCreatedAt());
+        return orderNoteMapper.toAdminResponse(e);
     }
 
     private OrderAppliedCouponResponse toAppliedCoupon(OrderAppliedCouponEntity e) {
-        return new OrderAppliedCouponResponse(e.getId(), e.getCouponId(), e.getCode(), e.getDiscountAmount());
+        return orderAppliedCouponMapper.toResponse(e);
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────

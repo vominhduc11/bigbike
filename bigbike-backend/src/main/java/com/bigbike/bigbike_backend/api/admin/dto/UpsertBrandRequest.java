@@ -3,7 +3,17 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertBrandRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -27,61 +37,4 @@ public class UpsertBrandRequest {
     private SeoMetaRequest seo;
 
     private Boolean visible;
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public ImageAssetRequest getLogo() {
-        return logo;
-    }
-
-    public void setLogo(ImageAssetRequest logo) {
-        this.logo = logo;
-    }
-
-    public ImageAssetRequest getBanner() {
-        return banner;
-    }
-
-    public void setBanner(ImageAssetRequest banner) {
-        this.banner = banner;
-    }
-
-    public SeoMetaRequest getSeo() {
-        return seo;
-    }
-
-    public void setSeo(SeoMetaRequest seo) {
-        this.seo = seo;
-    }
-
-    public Boolean getVisible() {
-        return visible;
-    }
-
-    public void setVisible(Boolean visible) {
-        this.visible = visible;
-    }
 }
-

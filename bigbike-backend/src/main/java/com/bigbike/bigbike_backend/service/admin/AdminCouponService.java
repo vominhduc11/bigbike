@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.coupon.UpdateCouponStatusReques
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.CouponMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminCouponService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -39,14 +42,7 @@ public class AdminCouponService {
 
     private final CouponJpaRepository couponRepo;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminCouponService(
-            CouponJpaRepository couponRepo,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.couponRepo = couponRepo;
-        this.auditLogRepo = auditLogRepo;
-    }
+    private final CouponMapper couponMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -247,22 +243,11 @@ public class AdminCouponService {
     // ── Mapping ───────────────────────────────────────────────────────────────
 
     private AdminCouponListItemResponse toListItem(CouponEntity c) {
-        return new AdminCouponListItemResponse(
-                c.getId(), c.getCode(), c.getName(), c.getDiscountType(),
-                c.getAmount(), c.getMinAmount(), c.getMaxAmount(),
-                c.getStatus(), c.getUsageCount(),
-                c.getUsageLimit(), c.getExpiresAt(), c.getCreatedAt()
-        );
+        return couponMapper.toListItem(c);
     }
 
     private AdminCouponDetailResponse toDetail(CouponEntity c) {
-        return new AdminCouponDetailResponse(
-                c.getId(), c.getLegacyId(), c.getCode(), c.getName(),
-                c.getDescription(), c.getDiscountType(), c.getAmount(),
-                c.getMinAmount(), c.getMaxAmount(), c.getUsageLimit(), c.getUsageCount(),
-                c.getStartsAt(), c.getExpiresAt(), c.getStatus(),
-                c.getMetadata(), c.getCreatedAt(), c.getUpdatedAt()
-        );
+        return couponMapper.toDetail(c);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

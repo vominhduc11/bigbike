@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.audit.AdminAuditLogListItemResponse;
+import com.bigbike.bigbike_backend.mapper.AuditLogMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -31,6 +33,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AdminAuditLogService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -44,16 +47,7 @@ public class AdminAuditLogService {
     private final AuditLogJpaRepository auditLogRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final OrderJpaRepository orderRepo;
-
-    public AdminAuditLogService(
-            AuditLogJpaRepository auditLogRepo,
-            AdminUserJpaRepository adminUserRepo,
-            OrderJpaRepository orderRepo
-    ) {
-        this.auditLogRepo = auditLogRepo;
-        this.adminUserRepo = adminUserRepo;
-        this.orderRepo = orderRepo;
-    }
+    private final AuditLogMapper auditLogMapper;
 
     public PageResult<AdminAuditLogListItemResponse> listAuditLogs(
             int page, int size,
@@ -173,21 +167,12 @@ public class AdminAuditLogService {
             }
         }
 
-        return new AdminAuditLogListItemResponse(
-                e.getId(),
-                e.getActorType(),
-                e.getActorId(),
+        return auditLogMapper.toListItemResponse(
+                e,
                 actorDisplayName,
                 actorEmail,
-                e.getAction(),
-                e.getResourceType(),
-                e.getResourceId(),
                 resourceDisplayName,
-                resourceCode,
-                e.getBeforeData(),
-                e.getAfterData(),
-                e.getIpAddress(),
-                e.getCreatedAt()
+                resourceCode
         );
     }
 

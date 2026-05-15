@@ -17,23 +17,33 @@ Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/
 
 ### Trước khi sửa BẤT KỲ file source nào trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/), [bigbike_mobile/](bigbike_mobile/):
 
-1. **Đọc docs liên quan** trong [docs/](docs/) (xem mapping bên dưới).
+1. **Đọc đúng docs liên quan** — tra mapping bên dưới, chỉ mở file nào trực tiếp liên quan đến phần bạn đang sửa. Trong mỗi file, chỉ đọc section liên quan — không đọc toàn bộ file vì một câu hỏi hoặc một thay đổi nhỏ.
 2. **Cite evidence path** khi mô tả thay đổi trong response/PR (ví dụ "theo `docs/business/BUSINESS_RULES.md` rule `ORDER_RULE_003`").
 3. Nếu thay đổi ảnh hưởng business rule, API contract, data shape, permission, state machine, workflow hoặc deployment env → **update docs trước**, rồi mới sửa code, trong cùng một PR.
 4. **Không bịa rule.** Nếu docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE` mà bạn cần biết để code → **dừng và hỏi user** thay vì tự suy diễn.
 5. **Trước khi "fix bug"**, nếu repo có report verification/audit trong `docs/` hoặc `docs/audits/`, đọc phần liên quan để biết những vấn đề đã được flag là code bug có task riêng — không tự ý fix chung trong task khác.
 
-### Mapping nhanh
+**Không cần đọc docs khi:** câu hỏi giải thích đơn thuần, thay đổi thuần style/token, refactor nội tại không ảnh hưởng API/contract/data/permission/state/deployment.
 
-| Bạn đang sửa | Đọc docs |
+### Mapping nhanh — tra cứu theo phần đang sửa, chỉ đọc những gì bạn thật sự đụng đến
+
+| Bạn đang sửa | Đọc docs (chỉ section liên quan) |
 |---|---|
-| Backend controller / service / entity / migration | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md), [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) |
-| Frontend route / component / API call | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md); nếu `bigbike-web` → **thêm** [bigbike-web/STYLEGUIDE.md](bigbike-web/STYLEGUIDE.md) + [bigbike-web/styles/brand-tokens.css](bigbike-web/styles/brand-tokens.css); nếu `bigbike-admin` → **thêm** [bigbike-admin/src/styles/admin-tokens.css](bigbike-admin/src/styles/admin-tokens.css) |
-| Permission / role / auth | [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md), [USER_ROLES.md](docs/business/USER_ROLES.md) |
-| Order / payment / refund / inventory / return logic | [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md), [STATE_MACHINES.md](docs/business/STATE_MACHINES.md), [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md), [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md) |
-| Deployment / Dockerfile / env / CI | [DEPLOYMENT_GUIDE.md](docs/engineering/DEPLOYMENT_GUIDE.md), [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) |
-| Test / quality gate | [TESTING_GUIDE.md](docs/engineering/TESTING_GUIDE.md), [ACCEPTANCE_CRITERIA.md](docs/business/ACCEPTANCE_CRITERIA.md) |
-| Architecture / module ownership | [ARCHITECTURE.md](docs/engineering/ARCHITECTURE.md), [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md), [PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) |
+| Backend controller / service — endpoint hoặc business logic | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md) section endpoint đó; [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) section rule liên quan; [AGENTS.md](AGENTS.md) Section 7 (Lombok / MapStruct / Bean Validation) |
+| Backend entity / DTO / enum / migration | [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) section entity đó; [AGENTS.md](AGENTS.md) Section 7.1 (Lombok trên Entity), 7.2 (MapStruct mapper) |
+| Backend state transition | [STATE_MACHINES.md](docs/business/STATE_MACHINES.md) section entity đó |
+| Backend integration (DB, MinIO, Mail, WS) | [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) section service liên quan |
+| Frontend API call / response shape | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md) section endpoint đó; [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) section field liên quan |
+| Frontend flow màn hình → API | [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md) section flow đó |
+| Frontend workflow / UX | [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md) section liên quan |
+| Frontend module / feature ownership | [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md) |
+| `bigbike-web` UI / style | [bigbike-web/STYLEGUIDE.md](bigbike-web/STYLEGUIDE.md); [bigbike-web/styles/brand-tokens.css](bigbike-web/styles/brand-tokens.css) |
+| `bigbike-admin` UI / style | [bigbike-admin/src/styles/admin-tokens.css](bigbike-admin/src/styles/admin-tokens.css) |
+| Permission / role / auth | [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md) section role liên quan; [USER_ROLES.md](docs/business/USER_ROLES.md) |
+| Order / payment / refund / inventory / return logic | [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) + [STATE_MACHINES.md](docs/business/STATE_MACHINES.md) — chỉ section liên quan |
+| Deployment / Dockerfile / env / CI | [DEPLOYMENT_GUIDE.md](docs/engineering/DEPLOYMENT_GUIDE.md); [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) |
+| Test / quality gate | [TESTING_GUIDE.md](docs/engineering/TESTING_GUIDE.md); [ACCEPTANCE_CRITERIA.md](docs/business/ACCEPTANCE_CRITERIA.md) |
+| Architecture / module ownership (cần toàn cảnh) | [ARCHITECTURE.md](docs/engineering/ARCHITECTURE.md); [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md); [PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) |
 | Trace requirement → API → test | [TRACEABILITY_MATRIX.md](docs/engineering/TRACEABILITY_MATRIX.md) |
 
 ### Khi docs mâu thuẫn nhau
@@ -69,7 +79,7 @@ Khi code bất kỳ giao diện nào trong `bigbike-web` hoặc `bigbike-admin`,
 - Không để text bị vỡ mã (mojibake): `ThÃ nh toÃ¡n`, `Gi&#7843;m gi&#225;` là sai.
 - Áp dụng cho: JSX content, string literal, placeholder, aria-label, alt text, comment, toast, log.
 
-Chi tiết: [AGENTS.md](AGENTS.md) — Section 5.14.
+Chi tiết: [AGENTS.md](AGENTS.md) — Section 6.5.
 
 ---
 
@@ -106,7 +116,7 @@ Chi tiết: [AGENTS.md](AGENTS.md) — Section 5.14.
 - ❌ Hardcode hex màu / spacing px thay vì dùng Tailwind token.
 - ❌ Tạo component mới khi component tương đương đã tồn tại trong các thư mục `components/` trên.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.9, Section 5.13 (inline Tailwind), Section 5.14 (encoding/tiếng Việt), Section 5.15 (component reuse admin).
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.1 (stack), Section 6.3 (inline Tailwind), Section 6.4 (component reuse), Section 6.5 (encoding/tiếng Việt).
 
 ---
 
@@ -158,7 +168,7 @@ Mọi trang, route, component trong `bigbike-web` — và mọi màn hình, form
 - ❌ Mỗi trang / screen / agent tự quyết định visual style riêng — mọi quyết định màu/font/spacing phải traceable về design system của app đó.
 - ❌ Dùng font/token của `bigbike-web` trong `bigbike-admin` hoặc ngược lại.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.11 (bigbike-web) và Section 5.12 (bigbike-admin).
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.2 (Design System Unity cho cả web và admin).
 
 ---
 
@@ -179,7 +189,27 @@ Cấm:
 - ❌ Chạy lệnh destructive trong container đang chạy khi user chưa duyệt.
 - ❌ Mock dữ liệu khi container thật đang chạy và có thể query được — luôn ưu tiên data thật để tìm đúng root cause.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.10.
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.5.
+
+---
+
+## ⚠️ Backend Java — bắt buộc dùng Lombok, MapStruct và Bean Validation
+
+Khi viết code Java trong `bigbike-backend`, **bắt buộc dùng triệt để** 3 thư viện sau — không viết boilerplate thủ công khi thư viện đã xử lý được.
+
+| Thư viện | Dùng cho | Cấm làm thay |
+|---|---|---|
+| **Lombok** | `@Getter/@Setter`, `@Builder`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Slf4j`, `@Data` (không dùng `@Data` trên JPA Entity có lazy relationship) | Viết getter/setter/constructor/logger thủ công |
+| **MapStruct** | `@Mapper(componentModel = "spring")` interface trong package `mapper/`; `@Mapping` cho field khác tên / nested / ignore | Viết mapping thủ công từng field, dùng `BeanUtils.copyProperties()` |
+| **Bean Validation** | `@NotNull`, `@NotBlank`, `@Size`, `@Positive`, `@Email`, `@Pattern`, `@Valid` (cascade nested), `@Constraint` cho custom validator | `if (x == null)` thủ công trong controller/service, bỏ quên `@Valid` trên `@RequestBody` |
+
+**Quy tắc chính:**
+- JPA Entity: dùng `@Getter` + `@Setter` + `@NoArgsConstructor` riêng — **không dùng `@Data`** (gây vòng lặp lazy-load).
+- Mapper: luôn là `interface`, `componentModel = "spring"`, đặt trong package `mapper/`.
+- Controller: luôn có `@Valid` trên `@RequestBody` / `@ModelAttribute` để kích hoạt constraint.
+- Service: không validate lại những gì Bean Validation đã check ở boundary.
+
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 7 (7.1 Lombok, 7.2 MapStruct, 7.3 Bean Validation, 7.4 coding standards).
 
 ---
 
@@ -194,4 +224,4 @@ Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.10.
 
 ## Đọc thêm
 
-Full agent operating rules: [AGENTS.md](AGENTS.md) — đặc biệt Section 3 (Required Reading Order) và Section 4 (Source of Truth Map).
+Full agent operating rules: [AGENTS.md](AGENTS.md) — đặc biệt Section 2 (Docs-First Contract), Section 3 (Required Reading Order — lazy), Section 4 (Source of Truth Map), Section 6 (Frontend Stack), Section 7 (Backend Stack).

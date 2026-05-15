@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.receivable.ReceivableDetailResp
 import com.bigbike.bigbike_backend.api.admin.dto.receivable.ReceivableListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.receivable.ReceivableSummaryResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.mapper.ReceivableMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,15 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class ReceivableQueryService {
 
     private final ReceivableJpaRepository receivableRepo;
     private final OrderJpaRepository orderRepo;
-
-    public ReceivableQueryService(ReceivableJpaRepository receivableRepo, OrderJpaRepository orderRepo) {
-        this.receivableRepo = receivableRepo;
-        this.orderRepo = orderRepo;
-    }
+    private final ReceivableMapper receivableMapper;
 
     public PageResult<ReceivableListItemResponse> listReceivables(
             int page, int size, String status, UUID customerId, String keyword) {
@@ -72,7 +71,7 @@ public class ReceivableQueryService {
         long countOverdue = receivableRepo.countOverdue();
         BigDecimal writtenOff = orZero(receivableRepo.sumWrittenOff());
 
-        return new ReceivableSummaryResponse(
+        return receivableMapper.toSummaryResponse(
                 totalOutstanding, overdueOutstanding, writtenOff, countOpen, countOverdue);
     }
 
@@ -99,35 +98,21 @@ public class ReceivableQueryService {
             }
         }
 
-        return new ReceivableAgingResponse(notDue, days0_30, days31_60, days61_90, over90);
+        return receivableMapper.toAgingResponse(notDue, days0_30, days31_60, days61_90, over90);
     }
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
     public ReceivableDetailResponse toDetail(ReceivableEntity ar, String orderNumber) {
-        return new ReceivableDetailResponse(
-                ar.getId(), ar.getOrderId(), orderNumber,
-                ar.getCustomerId(), ar.getCustomerName(), ar.getCustomerPhone(),
-                ar.getOriginalAmount(), ar.getPaidAmount(), ar.getOutstandingAmount(),
-                ar.getWrittenOffAmount(), ar.getStatus(),
-                ar.getDueDate(), ar.getPaymentTermsDays(),
-                computeOverdueDays(ar.getDueDate(), ar.getStatus()),
-                ar.getCreditLimitSnapshot(),
-                ar.getCreatedFrom(), ar.getNote(),
-                ar.getWriteOffReason(), ar.getWrittenOffAt(),
-                ar.getCreatedByAdminId(), ar.getCreatedAt(), ar.getUpdatedAt());
+        Integer overdueDays = computeOverdueDays(ar.getDueDate(), ar.getStatus());
+        return receivableMapper.toDetailResponse(ar, orderNumber, overdueDays);
     }
 
     private ReceivableListItemResponse toListItem(ReceivableEntity ar) {
         String orderNumber = orderRepo.findById(ar.getOrderId())
                 .map(o -> o.getOrderNumber()).orElse(null);
-        return new ReceivableListItemResponse(
-                ar.getId(), ar.getOrderId(), orderNumber,
-                ar.getCustomerId(), ar.getCustomerName(), ar.getCustomerPhone(),
-                ar.getOriginalAmount(), ar.getPaidAmount(), ar.getOutstandingAmount(),
-                ar.getStatus(), ar.getDueDate(),
-                computeOverdueDays(ar.getDueDate(), ar.getStatus()),
-                ar.getCreatedFrom(), ar.getCreatedAt());
+        Integer overdueDays = computeOverdueDays(ar.getDueDate(), ar.getStatus());
+        return receivableMapper.toListItemResponse(ar, orderNumber, overdueDays);
     }
 
     private static Integer computeOverdueDays(LocalDate dueDate, String status) {

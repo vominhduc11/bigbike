@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.customer.dto.CustomerAddressResponse;
 import com.bigbike.bigbike_backend.api.customer.dto.SaveCustomerAddressRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.CustomerAddressMapper;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
@@ -12,25 +13,23 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerAddressService {
 
     private static final Set<String> VALID_TYPES = Set.of("BILLING", "SHIPPING");
 
     private final CustomerAddressJpaRepository addressRepo;
     private final CustomerJpaRepository customerRepo;
-
-    public CustomerAddressService(CustomerAddressJpaRepository addressRepo, CustomerJpaRepository customerRepo) {
-        this.addressRepo = addressRepo;
-        this.customerRepo = customerRepo;
-    }
+    private final CustomerAddressMapper customerAddressMapper;
 
     public List<CustomerAddressResponse> listAddresses(UUID customerId) {
         return addressRepo.findByCustomerId(customerId).stream()
-                .map(this::toResponse)
+                .map(customerAddressMapper::toCustomerResponse)
                 .toList();
     }
 
@@ -57,7 +56,7 @@ public class CustomerAddressService {
             address.setDefault(true);
         }
 
-        return toResponse(addressRepo.save(address));
+        return customerAddressMapper.toCustomerResponse(addressRepo.save(address));
     }
 
     @Transactional
@@ -73,7 +72,7 @@ public class CustomerAddressService {
             address.setDefault(true);
         }
 
-        return toResponse(addressRepo.save(address));
+        return customerAddressMapper.toCustomerResponse(addressRepo.save(address));
     }
 
     @Transactional
@@ -99,10 +98,4 @@ public class CustomerAddressService {
         addressRepo.clearDefaultByCustomerIdAndType(customerId, type);
     }
 
-    private CustomerAddressResponse toResponse(CustomerAddressEntity a) {
-        return new CustomerAddressResponse(
-                a.getId(), a.getType(), a.getFullName(), a.getPhone(),
-                a.getCountry(), a.getProvince(), a.getDistrict(), a.getWard(),
-                a.getAddressLine1(), a.getAddressLine2(), a.isDefault());
-    }
 }

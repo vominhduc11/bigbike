@@ -3,7 +3,17 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertCategoryRequest {
 
     @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$", message = "slug must be lowercase alphanumeric with hyphens.")
@@ -32,34 +42,4 @@ public class UpsertCategoryRequest {
 
     @Valid
     private SeoMetaRequest seo;
-
-    public String getSlug() { return slug; }
-    public void setSlug(String slug) { this.slug = slug; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getParentId() { return parentId; }
-    public void setParentId(String parentId) { this.parentId = parentId; }
-
-    public Boolean getVisible() { return visible; }
-    public void setVisible(Boolean visible) { this.visible = visible; }
-
-    public Boolean getShowOnHomepage() { return showOnHomepage; }
-    public void setShowOnHomepage(Boolean showOnHomepage) { this.showOnHomepage = showOnHomepage; }
-
-    public Integer getSortOrder() { return sortOrder; }
-    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
-
-    public ImageAssetRequest getImage() { return image; }
-    public void setImage(ImageAssetRequest image) { this.image = image; }
-
-    public ImageAssetRequest getIcon() { return icon; }
-    public void setIcon(ImageAssetRequest icon) { this.icon = icon; }
-
-    public SeoMetaRequest getSeo() { return seo; }
-    public void setSeo(SeoMetaRequest seo) { this.seo = seo; }
 }

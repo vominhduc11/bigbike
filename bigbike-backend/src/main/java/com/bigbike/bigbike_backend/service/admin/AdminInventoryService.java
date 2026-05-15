@@ -273,6 +273,11 @@ public class AdminInventoryService {
         // ── Serial validation ─────────────────────────────────────────────────
         List<String> serials = parseSerials(req.serialNumbers());
 
+        if ("IN".equals(type) && req.quantityDelta() > 0 && serials.isEmpty()) {
+            throw ValidationException.fromField("serialNumbers", "REQUIRED_FOR_STOCK_IN",
+                    "Serial numbers are required for stock-in movements.");
+        }
+
         // Serials are optional for non-tracked variants; if provided, count must not exceed quantity.
         if (!serials.isEmpty()) {
             int qty = Math.abs(req.quantityDelta());

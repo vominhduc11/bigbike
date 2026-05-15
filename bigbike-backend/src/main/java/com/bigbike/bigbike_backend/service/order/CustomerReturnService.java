@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse.ReturnIt
 import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse;
 import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse.EligibleItem;
 import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse.Reason;
+import com.bigbike.bigbike_backend.mapper.ReturnRequestMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
@@ -31,10 +32,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerReturnService {
 
     private static final Set<String> RETURNABLE_STATUSES = Set.of("COMPLETED");
@@ -49,24 +52,7 @@ public class CustomerReturnService {
     private final ReturnHistoryJpaRepository historyRepo;
     private final OrderNotificationService notificationService;
     private final EntityManager em;
-
-    public CustomerReturnService(
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            ReturnJpaRepository returnRepo,
-            ReturnItemJpaRepository itemRepo,
-            ReturnHistoryJpaRepository historyRepo,
-            OrderNotificationService notificationService,
-            EntityManager em
-    ) {
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.returnRepo = returnRepo;
-        this.itemRepo = itemRepo;
-        this.historyRepo = historyRepo;
-        this.notificationService = notificationService;
-        this.em = em;
-    }
+    private final ReturnRequestMapper returnRequestMapper;
 
     @Transactional
     public CustomerReturnResponse createReturn(UUID customerId, UUID orderId, CreateReturnRequest req) {
@@ -82,8 +68,9 @@ public class CustomerReturnService {
                     "Only COMPLETED orders can be returned. Current status: " + order.getStatus());
         }
 
+        Instant completedAt = effectiveCompletedAt(order);
         Instant returnWindowStart = Instant.now().minus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
-        if (order.getCompletedAt() == null || order.getCompletedAt().isBefore(returnWindowStart)) {
+        if (completedAt == null || completedAt.isBefore(returnWindowStart)) {
             throw ValidationException.fromField("orderId", "RETURN_WINDOW_EXPIRED",
                     "Đơn hàng đã quá " + RETURN_WINDOW_DAYS + " ngày kể từ khi hoàn thành, không thể yêu cầu hoàn trả.");
         }
@@ -219,15 +206,16 @@ public class CustomerReturnService {
                     Reason.ORDER_NOT_COMPLETED, null, List.of());
         }
 
+        Instant completedAt = effectiveCompletedAt(order);
         Long daysRemaining = null;
-        if (order.getCompletedAt() != null) {
-            Instant deadline = order.getCompletedAt().plus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
+        if (completedAt != null) {
+            Instant deadline = completedAt.plus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
             long secs = deadline.getEpochSecond() - Instant.now().getEpochSecond();
             daysRemaining = Math.max(0L, secs / 86400L);
         }
 
         Instant returnWindowStart = Instant.now().minus(RETURN_WINDOW_DAYS, ChronoUnit.DAYS);
-        if (order.getCompletedAt() == null || order.getCompletedAt().isBefore(returnWindowStart)) {
+        if (completedAt == null || completedAt.isBefore(returnWindowStart)) {
             return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
                     Reason.WINDOW_EXPIRED, daysRemaining, List.of());
         }
@@ -277,25 +265,27 @@ public class CustomerReturnService {
 
     private CustomerReturnResponse toDetail(ReturnEntity r, String orderNumber) {
         List<ReturnItemResponse> items = itemRepo.findByReturnId(r.getId())
-                .stream().map(i -> new ReturnItemResponse(
-                        i.getId(), i.getProductName(), i.getVariantName(),
-                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getReason()
-                )).toList();
+                .stream().map(returnRequestMapper::toCustomerItem).toList();
 
         List<ReturnHistoryResponse> history = historyRepo.findByReturnIdOrderByCreatedAtAsc(r.getId())
-                .stream().map(h -> new ReturnHistoryResponse(
-                        h.getFromStatus(), h.getToStatus(), h.getNote(), h.getCreatedAt()
-                )).toList();
+                .stream().map(returnRequestMapper::toCustomerHistory).toList();
 
-        return new CustomerReturnResponse(
-                r.getId(), r.getReturnNumber(), r.getOrderId(), orderNumber,
-                r.getStatus(), r.getReason(), r.getCustomerNote(), r.getAdminNote(),
-                r.getRefundAmount(), items, history, r.getCreatedAt(), r.getUpdatedAt()
-        );
+        return returnRequestMapper.toCustomerDetail(r, orderNumber, items, history);
     }
 
     private String generateReturnNumber() {
         Long seq = (Long) em.createNativeQuery("SELECT nextval('return_number_seq')").getSingleResult();
         return String.format("RMA-%06d", seq);
+    }
+
+    /**
+     * Backward-compatible completion timestamp for legacy orders that may not
+     * have completedAt populated yet.
+     */
+    private static Instant effectiveCompletedAt(OrderEntity order) {
+        if (order.getCompletedAt() != null) return order.getCompletedAt();
+        if (order.getUpdatedAt() != null) return order.getUpdatedAt();
+        if (order.getPlacedAt() != null) return order.getPlacedAt();
+        return order.getCreatedAt();
     }
 }

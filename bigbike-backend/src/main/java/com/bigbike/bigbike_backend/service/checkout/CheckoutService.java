@@ -73,6 +73,7 @@ public class CheckoutService {
     private static final String ORDER_STATUS_ON_HOLD = "ON_HOLD";
     private static final String PAYMENT_STATUS_UNPAID = "UNPAID";
     private static final String PAYMENT_RECORD_STATUS_PENDING = "PENDING";
+    private static final String FULFILLMENT_STATUS_UNFULFILLED = "UNFULFILLED";
     private static final String CURRENCY_VND = "VND";
     private static final String FLOW_CHECKOUT = "CHECKOUT";
     private static final String FLOW_QUICK_BUY = "QUICK_BUY";
@@ -707,6 +708,10 @@ public class CheckoutService {
         order.setCustomerId(customerId);
         order.setStatus(orderStatus);
         order.setPaymentStatus(PAYMENT_STATUS_UNPAID);
+        // Web/quick-buy orders always ship — initialise the delivery lifecycle
+        // so admin transitions and the COMPLETED-after-DELIVERED guard
+        // (AdminOrderService#validateBeforeComplete) operate on a known state.
+        order.setFulfillmentStatus(FULFILLMENT_STATUS_UNFULFILLED);
         order.setPaymentMethod(paymentMethod);
         order.setCustomerEmail(email);
         order.setCustomerPhone(phone);

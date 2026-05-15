@@ -249,21 +249,25 @@ From checkout behavior:
 |---|---|---|---|---|---|---|
 | `PENDING` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit log, status email, websocket event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PENDING` | `ON_HOLD` | Admin / `orders.write` | Order exists. | Audit log, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists. | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists; `paymentStatus` is NOT `PAID` or `PARTIALLY_PAID` (see ORDER_RULE_004 in `BUSINESS_RULES.md`). | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
 | `PENDING` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `ON_HOLD` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `ON_HOLD` | `CANCELLED` | Admin / `orders.write` | Order exists. | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `ON_HOLD` | `CANCELLED` | Admin / `orders.write` | Order exists; `paymentStatus` is NOT `PAID` or `PARTIALLY_PAID`. | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
 | `ON_HOLD` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Order exists. | Set `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists. | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | For `DELIVERY`: `fulfillmentStatus = DELIVERED`. For `COD`: `paymentStatus = PAID`. `UNPAID`/`PARTIALLY_PAID` only allowed for `CREDIT` orders with a customer (see ORDER_RULE_002/003 and AR_RULE_001 in `BUSINESS_RULES.md`). | Set `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | `paymentStatus` is NOT `PAID` or `PARTIALLY_PAID`. PAID/PARTIALLY_PAID must go through `POST /admin/orders/{id}/refund`. | Set `cancelledAt`, release serials, restore non-serial stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
 | `PROCESSING` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `COMPLETED` | `REFUNDED` | Admin / `orders.write` | Order exists; transition requested or full refund can set if allowed. | Restore stock when status becomes `REFUNDED`, notification, audit, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `COMPLETED` | `REFUNDED` | n/a — direct status patch is rejected | Must go through `POST /admin/orders/{id}/refund` → `RefundService.applyRefund`. Direct patch is blocked by the empty allowed-transition set. | RefundService writes refund_transaction, payment.refundAmount, voids warranty, restores SOLD serials, writes off open receivable, and flips status to `REFUNDED` atomically. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` (terminal map), `RefundService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `COMPLETED` | `PENDING` / `PROCESSING` / `ON_HOLD` / `CANCELLED` / `FAILED` | Not in allowed transition map. | Backend throws conflict. | `AdminOrderService.java` |
+| `COMPLETED` | `PENDING` / `PROCESSING` / `ON_HOLD` / `CANCELLED` / `FAILED` / `REFUNDED` | `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. REFUNDED specifically must go through `RefundService` so refund_transaction, payment.refundAmount, warranty void, SOLD serial restore, and receivable write-off stay atomic. | Backend throws conflict. | `AdminOrderService.java`, `RefundService.java` |
+| `PROCESSING` / `PENDING` / `ON_HOLD` | `COMPLETED` (when `DELIVERY` + `fulfillmentStatus != DELIVERED`) | Rule 3: cannot complete a delivery order before goods are delivered. | Backend throws conflict with message `Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.` | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` | `COMPLETED` (when `paymentMethod = COD` + `paymentStatus != PAID`) | Rule 2: COD must collect cash before completion. | Backend throws conflict with message `Đơn COD phải được thu tiền trước khi hoàn thành.` | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` | `COMPLETED` (when `UNPAID`/`PARTIALLY_PAID` and NOT a CREDIT order with customer) | Rule 1: only credit/receivable orders may be COMPLETED unpaid. | Backend throws conflict with message `Đơn chưa thanh toán chỉ được hoàn thành khi là đơn công nợ có khách hàng hợp lệ.` | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` / `PENDING` / `ON_HOLD` | `CANCELLED` (when `paymentStatus = PAID` or `PARTIALLY_PAID`) | Rule 4: money has already changed hands; must go through refund/void flow so payment record, receivable, audit log, and stock/serial lifecycle stay consistent. | Backend throws conflict with message `Đơn đã có thanh toán, cần xử lý hoàn tiền/void trước khi hủy.` Stock is NOT restored. | `AdminOrderService.java#validateBeforeCancel` |
 | `CANCELLED` | any other status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | `FAILED` | any other order status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | `REFUNDED` | any other order status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |

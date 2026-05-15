@@ -338,6 +338,9 @@ class Phase1HAdminOrderApiTest {
     @Test
     void updateOrderStatus_toCompleted_setsCompletedAt() throws Exception {
         OrderInfo order = placeGuestOrder(1300000);
+        // Backend now requires DELIVERED + PAID before a COD delivery order can be COMPLETED.
+        markPaid(order.orderId, 1300000);
+        markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -419,6 +422,8 @@ class Phase1HAdminOrderApiTest {
     @Test
     void updateOrderStatus_withNote_noteIsPersisted() throws Exception {
         OrderInfo order = placeGuestOrder(1500000);
+        markPaid(order.orderId, 1500000);
+        markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -623,6 +628,8 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        markDelivered(order.orderId);
+
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
@@ -690,6 +697,8 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        markDelivered(order.orderId);
+
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
@@ -732,6 +741,7 @@ class Phase1HAdminOrderApiTest {
                         .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":1200000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
+        markDelivered(fullRefundOrder.orderId);
         mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
@@ -786,6 +796,8 @@ class Phase1HAdminOrderApiTest {
                         .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":4000000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
+
+        markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -861,6 +873,8 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        markDelivered(order.orderId);
+
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
@@ -900,6 +914,8 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
+        markDelivered(order.orderId);
+
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
@@ -933,6 +949,8 @@ class Phase1HAdminOrderApiTest {
                         .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2000000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
+
+        markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -971,8 +989,11 @@ class Phase1HAdminOrderApiTest {
 
     @Test
     void updateOrderStatus_writesAuditLogWithIpAndUserAgent() throws Exception {
-        // COD orders start in PROCESSING, so transition to COMPLETED to guarantee audit log is written
+        // COD orders start in PROCESSING; backend now requires PAID + DELIVERED
+        // before allowing the PROCESSING → COMPLETED transition.
         OrderInfo order = placeGuestOrder(8100000);
+        markPaid(order.orderId, 8100000);
+        markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1130,7 +1151,147 @@ class Phase1HAdminOrderApiTest {
         assertThat(reloaded.getPaymentStatus()).isEqualTo("PAID");
     }
 
+    // ── Business rule guards: COMPLETED / CANCELLED preconditions ─────────────
+
+    // Rule 2: COD orders cannot be COMPLETED until cash has been collected.
+    @Test
+    void completeOrder_codDeliveryUnpaid_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(1700000);
+        // Goods on the doorstep, but the courier hasn't handed cash back yet.
+        markDelivered(order.orderId);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+        assertThat(reloaded.getCompletedAt()).isNull();
+    }
+
+    // Rule 3: DELIVERY orders cannot be COMPLETED until they are marked DELIVERED.
+    @Test
+    void completeOrder_codPaidButNotDelivered_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(1750000);
+        markPaid(order.orderId, 1750000);
+        // Skip the DELIVERED step intentionally.
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+        assertThat(reloaded.getCompletedAt()).isNull();
+    }
+
+    // Rule 2 + 3 happy path: COD + DELIVERED + PAID → COMPLETED succeeds.
+    @Test
+    void completeOrder_codPaidAndDelivered_succeeds() throws Exception {
+        OrderInfo order = placeGuestOrder(1800000);
+        markPaid(order.orderId, 1800000);
+        markDelivered(order.orderId);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.completedAt").isNotEmpty());
+    }
+
+    // Rule 4: PAID orders cannot be CANCELLED directly — must go through refund/void.
+    @Test
+    void cancelOrder_processingPaid_isRejected_andStockNotRestored() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(4, 1900000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        // Stock dropped from 4 to 2 at checkout.
+        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
+                .isEqualTo(2);
+
+        markPaid(order.orderId, 3800000);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+        assertThat(reloaded.getCancelledAt()).isNull();
+
+        // Stock must NOT be restored — the guard fires before the side-effect path.
+        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
+                .isEqualTo(2);
+    }
+
+    // Rule 4: PARTIALLY_PAID orders cannot be CANCELLED directly either.
+    @Test
+    void cancelOrder_processingPartiallyPaid_isRejected() throws Exception {
+        OrderInfo order = placeGuestOrder(2200000);
+
+        // Pay only part of the total — total = product + shipping, exact amount irrelevant
+        // as long as it is strictly between 0 and total.
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PARTIALLY_PAID\",\"paidAmount\":500000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+
+        OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
+    }
+
+    // Rule 4 happy path: UNPAID orders cancel cleanly (regression check that the
+    // guard only fires for PAID / PARTIALLY_PAID).
+    @Test
+    void cancelOrder_processingUnpaid_succeeds() throws Exception {
+        OrderInfo order = placeGuestOrder(2300000);
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Drive the DELIVERY fulfillment state machine to DELIVERED so an admin can
+     * legally flip a COD/BACS order to COMPLETED. Backend now enforces the
+     * "goods delivered + cash collected" precondition (see
+     * AdminOrderService#validateBeforeComplete), so any test that completes a
+     * delivery order must walk through this first.
+     */
+    private void markDelivered(UUID orderId) throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/fulfillment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fulfillmentStatus\":\"DELIVERED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
+    private void markPaid(UUID orderId, long amount) throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":" + amount + "}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
 
     private OrderInfo placeGuestOrder(int price) throws Exception {
         return placeGuestOrderWith(price, "COD");

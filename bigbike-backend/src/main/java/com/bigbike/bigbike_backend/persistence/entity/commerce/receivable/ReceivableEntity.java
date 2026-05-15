@@ -11,7 +11,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "accounts_receivable")
 public class ReceivableEntity {
@@ -82,67 +88,4 @@ public class ReceivableEntity {
     @Version
     @Column(nullable = false)
     private Long version;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getOrderId() { return orderId; }
-    public void setOrderId(UUID orderId) { this.orderId = orderId; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) { this.customerName = customerName; }
-
-    public String getCustomerPhone() { return customerPhone; }
-    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
-
-    public BigDecimal getOriginalAmount() { return originalAmount; }
-    public void setOriginalAmount(BigDecimal originalAmount) { this.originalAmount = originalAmount; }
-
-    public BigDecimal getPaidAmount() { return paidAmount; }
-    public void setPaidAmount(BigDecimal paidAmount) { this.paidAmount = paidAmount; }
-
-    public BigDecimal getOutstandingAmount() { return outstandingAmount; }
-    public void setOutstandingAmount(BigDecimal outstandingAmount) { this.outstandingAmount = outstandingAmount; }
-
-    public BigDecimal getWrittenOffAmount() { return writtenOffAmount; }
-    public void setWrittenOffAmount(BigDecimal writtenOffAmount) { this.writtenOffAmount = writtenOffAmount; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public LocalDate getDueDate() { return dueDate; }
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
-
-    public Integer getPaymentTermsDays() { return paymentTermsDays; }
-    public void setPaymentTermsDays(Integer paymentTermsDays) { this.paymentTermsDays = paymentTermsDays; }
-
-    public BigDecimal getCreditLimitSnapshot() { return creditLimitSnapshot; }
-    public void setCreditLimitSnapshot(BigDecimal creditLimitSnapshot) { this.creditLimitSnapshot = creditLimitSnapshot; }
-
-    public String getCreatedFrom() { return createdFrom; }
-    public void setCreatedFrom(String createdFrom) { this.createdFrom = createdFrom; }
-
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-
-    public String getWriteOffReason() { return writeOffReason; }
-    public void setWriteOffReason(String writeOffReason) { this.writeOffReason = writeOffReason; }
-
-    public Instant getWrittenOffAt() { return writtenOffAt; }
-    public void setWrittenOffAt(Instant writtenOffAt) { this.writtenOffAt = writtenOffAt; }
-
-    public UUID getCreatedByAdminId() { return createdByAdminId; }
-    public void setCreatedByAdminId(UUID createdByAdminId) { this.createdByAdminId = createdByAdminId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
 }

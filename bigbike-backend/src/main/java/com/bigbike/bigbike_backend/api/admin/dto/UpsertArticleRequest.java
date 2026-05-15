@@ -5,7 +5,17 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertArticleRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -39,93 +49,5 @@ public class UpsertArticleRequest {
 
     @Valid
     private SeoMetaRequest seo;
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getExcerpt() {
-        return excerpt;
-    }
-
-    public void setExcerpt(String excerpt) {
-        this.excerpt = excerpt;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    public ImageAssetRequest getCoverImage() {
-        return coverImage;
-    }
-
-    public void setCoverImage(ImageAssetRequest coverImage) {
-        this.coverImage = coverImage;
-    }
-
-    public ImageAssetRequest getProductImage() {
-        return productImage;
-    }
-
-    public void setProductImage(ImageAssetRequest productImage) {
-        this.productImage = productImage;
-    }
-
-    public String getAuthorId() {
-        return authorId;
-    }
-
-    public void setAuthorId(String authorId) {
-        this.authorId = authorId;
-    }
-
-    public String getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(String categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<String> tags) {
-        this.tags = tags;
-    }
-
-    public PublishStatus getPublishStatus() {
-        return publishStatus;
-    }
-
-    public void setPublishStatus(PublishStatus publishStatus) {
-        this.publishStatus = publishStatus;
-    }
-
-    public SeoMetaRequest getSeo() {
-        return seo;
-    }
-
-    public void setSeo(SeoMetaRequest seo) {
-        this.seo = seo;
-    }
 }
 

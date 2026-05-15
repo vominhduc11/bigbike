@@ -9,12 +9,13 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
+import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
+import com.bigbike.bigbike_backend.mapper.OrderItemMapper;
+import com.bigbike.bigbike_backend.mapper.OrderMapper;
+import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
+import com.bigbike.bigbike_backend.mapper.PaymentMapper;
+import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -35,6 +37,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class OrderReadService {
 
     private static final int MAX_SIZE = 100;
@@ -46,22 +49,12 @@ public class OrderReadService {
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
-
-    public OrderReadService(
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            OrderAddressJpaRepository addressRepo,
-            OrderShippingItemJpaRepository shippingItemRepo,
-            OrderNoteJpaRepository noteRepo,
-            PaymentJpaRepository paymentRepo
-    ) {
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.addressRepo = addressRepo;
-        this.shippingItemRepo = shippingItemRepo;
-        this.noteRepo = noteRepo;
-        this.paymentRepo = paymentRepo;
-    }
+    private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final OrderAddressMapper orderAddressMapper;
+    private final ShippingMapper shippingMapper;
+    private final PaymentMapper paymentMapper;
+    private final OrderNoteMapper orderNoteMapper;
 
     // ── Customer orders list ──────────────────────────────────────────────────
 
@@ -134,16 +127,7 @@ public class OrderReadService {
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
     private OrderListItemResponse toListItem(OrderEntity order, long itemCount) {
-        return new OrderListItemResponse(
-                order.getId(),
-                order.getOrderNumber(),
-                order.getStatus(),
-                order.getPaymentStatus(),
-                order.getTotalAmount(),
-                order.getCurrency(),
-                order.getPlacedAt(),
-                (int) itemCount
-        );
+        return orderMapper.toCustomerListItem(order, (int) itemCount);
     }
 
     private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
@@ -161,48 +145,30 @@ public class OrderReadService {
             boolean includeOrderKey
     ) {
         List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
-                .stream().map(this::toLineItem).toList();
+                .stream().map(orderItemMapper::toResponse).toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())
-                .stream().map(this::toAddress).toList();
+                .stream().map(orderAddressMapper::toResponse).toList();
 
         List<OrderShippingItemResponse> shippingItems = shippingItemRepo.findByOrderId(order.getId())
-                .stream().map(this::toShippingItem).toList();
+                .stream().map(shippingMapper::toResponse).toList();
 
         List<OrderPaymentResponse> payments = paymentRepo.findByOrderId(order.getId())
-                .stream().map(this::toPayment).toList();
+                .stream().map(paymentMapper::toResponse).toList();
 
         List<OrderNoteResponse> notes;
         if (customerVisibleNotesOnly) {
             notes = noteRepo.findByOrderIdAndCustomerVisibleOrderByCreatedAtAsc(order.getId(), true)
-                    .stream().map(this::toNote).toList();
+                    .stream().map(orderNoteMapper::toCustomerResponse).toList();
         } else {
             notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId())
-                    .stream().map(this::toNote).toList();
+                    .stream().map(orderNoteMapper::toCustomerResponse).toList();
         }
 
-        return new OrderDetailResponse(
-                order.getId(),
-                order.getOrderNumber(),
-                includeOrderKey ? order.getOrderKey() : null,
-                order.getStatus(),
-                order.getPaymentStatus(),
-                order.getFulfillmentStatus(),
-                order.getCustomerEmail(),
-                order.getCustomerPhone(),
-                order.getCustomerNote(),
-                order.getCurrency(),
-                order.getSubtotalAmount(),
-                order.getDiscountAmount(),
-                order.getShippingAmount(),
-                order.getFeeAmount(),
-                order.getTaxAmount(),
-                order.getTotalAmount(),
-                order.getPaidAmount(),
-                order.getRefundAmount(),
-                order.getRefundReason(),
-                order.getRefundedAt(),
-                order.getPlacedAt(),
+        String visibleOrderKey = includeOrderKey ? order.getOrderKey() : null;
+        return orderMapper.toDetailResponse(
+                order,
+                visibleOrderKey,
                 lineItems,
                 addresses,
                 shippingItems,
@@ -211,64 +177,4 @@ public class OrderReadService {
         );
     }
 
-    private OrderLineItemResponse toLineItem(OrderLineItemEntity e) {
-        return new OrderLineItemResponse(
-                e.getId(),
-                e.getProductId(),
-                e.getProductVariantId(),
-                e.getSku(),
-                e.getProductName(),
-                e.getVariantName(),
-                e.getQuantity(),
-                e.getUnitPrice(),
-                e.getLineSubtotal(),
-                e.getLineDiscount(),
-                e.getLineTotal()
-        );
-    }
-
-    private OrderAddressResponse toAddress(OrderAddressEntity e) {
-        return new OrderAddressResponse(
-                e.getType(),
-                e.getFullName(),
-                e.getEmail(),
-                e.getPhone(),
-                e.getCountry(),
-                e.getProvince(),
-                e.getDistrict(),
-                e.getWard(),
-                e.getAddressLine1(),
-                e.getAddressLine2()
-        );
-    }
-
-    private OrderShippingItemResponse toShippingItem(OrderShippingItemEntity e) {
-        return new OrderShippingItemResponse(
-                e.getId(),
-                e.getMethodCode(),
-                e.getMethodTitle(),
-                e.getAmount()
-        );
-    }
-
-    private OrderPaymentResponse toPayment(PaymentEntity e) {
-        return new OrderPaymentResponse(
-                e.getId(),
-                e.getPaymentMethod(),
-                e.getStatus(),
-                e.getAmount(),
-                e.getCurrency(),
-                e.getTransactionId(),
-                e.getPaidAt()
-        );
-    }
-
-    private OrderNoteResponse toNote(OrderNoteEntity e) {
-        return new OrderNoteResponse(
-                e.getId(),
-                e.getNoteType(),
-                e.getContent(),
-                e.getCreatedAt()
-        );
-    }
 }

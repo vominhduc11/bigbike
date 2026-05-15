@@ -11,6 +11,8 @@ import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
+import com.bigbike.bigbike_backend.mapper.CustomerAddressMapper;
+import com.bigbike.bigbike_backend.mapper.CustomerMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEntity;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -42,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminCustomerService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -55,20 +59,8 @@ public class AdminCustomerService {
     private final OrderJpaRepository orderRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final CustomerSessionService customerSessionService;
-
-    public AdminCustomerService(
-            CustomerJpaRepository customerRepo,
-            CustomerAddressJpaRepository addressRepo,
-            OrderJpaRepository orderRepo,
-            AuditLogJpaRepository auditLogRepo,
-            CustomerSessionService customerSessionService
-    ) {
-        this.customerRepo = customerRepo;
-        this.addressRepo = addressRepo;
-        this.orderRepo = orderRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.customerSessionService = customerSessionService;
-    }
+    private final CustomerMapper customerMapper;
+    private final CustomerAddressMapper customerAddressMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -89,7 +81,10 @@ public class AdminCustomerService {
         Map<UUID, long[]> orderAggs = fetchOrderAggregates(ids);
 
         List<AdminCustomerListItemResponse> items = customerPage.getContent().stream()
-                .map(c -> toListItemFromAgg(c, orderAggs))
+                .map(c -> {
+                    long[] agg = orderAggs.getOrDefault(c.getId(), new long[]{0L, 0L});
+                    return customerMapper.toListItem(c, (int) agg[0], BigDecimal.valueOf(agg[1]));
+                })
                 .collect(Collectors.toList());
 
         return new PageResult<>(items, normalizedPage, normalizedSize,
@@ -137,11 +132,11 @@ public class AdminCustomerService {
                 .orElseThrow(() -> new NotFoundException("Customer not found."));
 
         List<AdminCustomerAddressResponse> addresses = addressRepo.findByCustomerId(customerId)
-                .stream().map(this::toAddress).toList();
+                .stream().map(customerAddressMapper::toAdminResponse).toList();
 
         AdminCustomerOrderSummaryResponse orderSummary = buildOrderSummary(customerId);
 
-        return toDetail(customer, addresses, orderSummary);
+        return customerMapper.toDetail(customer, addresses, orderSummary);
     }
 
     // ── Update customer ───────────────────────────────────────────────────────
@@ -223,38 +218,6 @@ public class AdminCustomerService {
 
     // ── Mapping ───────────────────────────────────────────────────────────────
 
-    private AdminCustomerListItemResponse toListItemFromAgg(CustomerEntity c,
-            Map<UUID, long[]> orderAggs) {
-        long[] agg = orderAggs.getOrDefault(c.getId(), new long[]{0L, 0L});
-        return new AdminCustomerListItemResponse(
-                c.getId(), c.getLegacyId(), c.getEmail(), c.getPhone(),
-                c.getDisplayName(), c.getStatus(), c.isSynthetic(),
-                c.getLastLoginAt(), c.getCreatedAt(),
-                (int) agg[0], BigDecimal.valueOf(agg[1])
-        );
-    }
-
-    private AdminCustomerDetailResponse toDetail(CustomerEntity c,
-            List<AdminCustomerAddressResponse> addresses,
-            AdminCustomerOrderSummaryResponse orderSummary) {
-        return new AdminCustomerDetailResponse(
-                c.getId(), c.getLegacyId(), c.getEmail(), c.getPhone(),
-                c.getDisplayName(), c.getFirstName(), c.getLastName(),
-                c.getStatus(), c.isSynthetic(),
-                c.getEmailVerifiedAt(), c.getPhoneVerifiedAt(), c.getLastLoginAt(),
-                c.getCreatedAt(), c.getUpdatedAt(),
-                addresses, orderSummary
-        );
-    }
-
-    private AdminCustomerAddressResponse toAddress(CustomerAddressEntity a) {
-        return new AdminCustomerAddressResponse(
-                a.getId(), a.getType(), a.getFullName(), a.getPhone(),
-                a.getCountry(), a.getProvince(), a.getDistrict(), a.getWard(),
-                a.getAddressLine1(), a.getAddressLine2(), a.isDefault()
-        );
-    }
-
     private AdminCustomerOrderSummaryResponse buildOrderSummary(UUID customerId) {
         List<OrderEntity> orders = orderRepo.findByCustomerId(customerId);
 
@@ -286,13 +249,18 @@ public class AdminCustomerService {
                 .sorted(Comparator.comparing(
                         OrderEntity::getPlacedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(5)
-                .map(o -> new LatestOrder(o.getId(), o.getOrderNumber(), o.getStatus(),
-                        o.getTotalAmount(), o.getPlacedAt()))
+                .map(customerMapper::toLatestOrder)
                 .toList();
 
-        return new AdminCustomerOrderSummaryResponse(
-                count, totalSpent, avgOrderValue, segment,
-                firstOrderAt, lastOrderAt, latest);
+        return customerMapper.toOrderSummary(
+                count,
+                totalSpent,
+                avgOrderValue,
+                segment,
+                firstOrderAt,
+                lastOrderAt,
+                latest
+        );
     }
 
     private static String deriveSegment(int orderCount, BigDecimal totalSpent) {
