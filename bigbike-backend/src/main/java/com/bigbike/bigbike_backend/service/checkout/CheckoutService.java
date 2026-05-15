@@ -59,6 +59,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -182,6 +183,21 @@ public class CheckoutService {
         // Validate stock and re-sync prices. Stock is NOT decremented yet so we have an orderId.
         List<OrderSummaryResponse.PriceChange> priceChanges = new ArrayList<>();
         syncPricesAndValidateStock(items, priceChanges);
+
+        // Reject if any product prices increased since the customer loaded the checkout page.
+        // Prevents silent overcharges. Price decreases are applied silently (customer benefits).
+        // The transaction rolls back so cart prices revert; CartService will re-sync on the next fetch.
+        List<OrderSummaryResponse.PriceChange> priceIncreases = priceChanges.stream()
+                .filter(pc -> pc.newPrice().compareTo(pc.oldPrice()) > 0)
+                .toList();
+        if (!priceIncreases.isEmpty()) {
+            String detail = priceIncreases.stream()
+                    .map(pc -> pc.productName())
+                    .collect(Collectors.joining(", "));
+            throw new ConflictException(
+                    "Giá của một số sản phẩm vừa thay đổi: " + detail +
+                    ". Vui lòng quay lại giỏ hàng để xem giá mới trước khi đặt hàng.");
+        }
 
         BigDecimal subtotal = items.stream()
                 .map(CartItemEntity::getLineSubtotal)

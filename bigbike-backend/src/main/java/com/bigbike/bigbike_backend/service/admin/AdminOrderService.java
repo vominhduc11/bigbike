@@ -320,7 +320,7 @@ public class AdminOrderService {
         if ("DELIVERY".equalsIgnoreCase(order.getFulfillmentType())) {
             if ("PROCESSING".equals(newStatus) && order.getFulfillmentStatus() == null) {
                 order.setFulfillmentStatus("UNFULFILLED");
-            } else if ("CANCELLED".equals(newStatus)) {
+            } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
                 order.setFulfillmentStatus("CANCELLED");
             }
         }
@@ -350,9 +350,12 @@ public class AdminOrderService {
         // REFUNDED is unreachable here — ALLOWED_TRANSITIONS blocks it, refunds go through RefundService.
         if ("COMPLETED".equals(newStatus)) {
             serialLifecycleService.markSoldForOrder(orderId);
-        } else if ("CANCELLED".equals(newStatus)) {
-            // Release serial reservations, then restore non-serial stock
-            serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_CANCELLED");
+        } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
+            // Release serial reservations, then restore non-serial stock.
+            // FAILED is treated identically to CANCELLED for inventory purposes — stock must be
+            // returned to available so other customers can purchase. Both restore methods are
+            // idempotent so duplicate calls (e.g. retry) are safe.
+            serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_" + newStatus);
             orderStockRestoreService.restoreForCancel(orderId);
         }
 
@@ -417,6 +420,10 @@ public class AdminOrderService {
                 BigDecimal paid = req.paidAmount() != null
                         ? req.paidAmount().setScale(2, RoundingMode.HALF_UP)
                         : order.getTotalAmount();
+                if (paid.compareTo(order.getTotalAmount()) != 0) {
+                    throw ValidationException.fromField("paidAmount", "INVALID",
+                            "paidAmount phải bằng tổng đơn hàng (" + order.getTotalAmount() + " VND) khi đặt trạng thái PAID.");
+                }
                 order.setPaymentStatus("PAID");
                 order.setPaidAmount(paid);
                 if (order.getPaidAt() == null) order.setPaidAt(now);

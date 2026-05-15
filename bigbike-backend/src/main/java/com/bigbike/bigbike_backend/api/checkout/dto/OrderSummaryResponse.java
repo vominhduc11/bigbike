@@ -16,7 +16,7 @@ public record OrderSummaryResponse(
         BigDecimal discountAmount,
         BigDecimal totalAmount,
         String currency,
-        /** Non-empty when one or more item prices were silently updated during checkout. */
+        /** Non-empty when one or more item prices decreased during checkout (price increases cause a 409 rejection). */
         List<PriceChange> priceChanges
 ) {
     public record PriceChange(String productName, BigDecimal oldPrice, BigDecimal newPrice) {}

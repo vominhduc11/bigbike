@@ -475,7 +475,7 @@ export default function CheckoutPage() {
               {priceChanges.length > 0 && pendingOrderNav && (
                 <div className="bg-[var(--bb-color-gray-50)] border border-border p-[14px_18px] mb-3 text-sm text-foreground">
                   <p className="font-semibold mb-1.5 m-0">
-                    ⚠️ Giá một số sản phẩm đã thay đổi khi đặt hàng:
+                    Giá một số sản phẩm đã giảm khi đặt hàng — bạn được áp dụng giá mới:
                   </p>
                   <ul className="m-0 mb-2 ml-4 text-[0.9em]">
                     {priceChanges.map((pc, i) => (

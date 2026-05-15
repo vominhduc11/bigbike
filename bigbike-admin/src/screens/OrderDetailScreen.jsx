@@ -212,7 +212,18 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   async function handleStatusChange(newStatus) {
     const DANGEROUS = new Set(['CANCELLED', 'COMPLETED', 'REFUNDED'])
-    if (DANGEROUS.has(newStatus)) {
+    // BACS ON_HOLD → PROCESSING auto-marks payment as PAID. Require explicit confirmation
+    // so admin doesn't accidentally record a receipt they haven't actually verified.
+    const isBACSAutoPayConfirm =
+      newStatus === 'PROCESSING' &&
+      order?.orderStatus === 'ON_HOLD' &&
+      order?.paymentMethod === 'BACS'
+    if (isBACSAutoPayConfirm) {
+      const confirmed = window.confirm(
+        'Xác nhận đã nhận tiền chuyển khoản?\n\nHành động này sẽ đánh dấu đơn hàng là ĐÃ THU TIỀN (PAID) tự động. Chỉ xác nhận khi bạn đã kiểm tra sao kê ngân hàng.'
+      )
+      if (!confirmed) return
+    } else if (DANGEROUS.has(newStatus)) {
       const labels = { CANCELLED: 'hủy', COMPLETED: 'hoàn thành', REFUNDED: 'hoàn tiền' }
       const confirmed = window.confirm(
         `Bạn có chắc muốn chuyển đơn hàng sang trạng thái "${labels[newStatus] ?? newStatus}"?\n\nHành động này không thể hoàn tác.`

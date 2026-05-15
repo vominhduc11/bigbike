@@ -33,18 +33,25 @@ function orderStatusBadgeClass(status: string): string {
 
 type TimelineStep = { key: string; label: string; sub: string };
 
-// Matches backend OrderStatus: PENDING → PROCESSING → COMPLETED
-const ORDER_TIMELINE_STEPS: TimelineStep[] = [
-  { key: "PENDING", label: "Đã tiếp nhận", sub: "Đơn hàng đã được tạo thành công" },
-  { key: "PROCESSING", label: "Đang xử lý", sub: "Đơn đang được đóng gói & kiểm tra" },
-  { key: "COMPLETED", label: "Hoàn thành", sub: "Đơn hàng đã được giao thành công" },
+// COD path: PENDING → PROCESSING → COMPLETED
+const COD_TIMELINE_STEPS: TimelineStep[] = [
+  { key: "PENDING",    label: "Đã tiếp nhận", sub: "Đơn hàng đã được tạo thành công" },
+  { key: "PROCESSING", label: "Đang xử lý",   sub: "Đơn đang được đóng gói & kiểm tra" },
+  { key: "COMPLETED",  label: "Hoàn thành",   sub: "Đơn hàng đã được giao thành công" },
 ];
 
+// BACS path: ON_HOLD (chờ xác nhận CK) → PROCESSING → COMPLETED
+const BACS_TIMELINE_STEPS: TimelineStep[] = [
+  { key: "ON_HOLD",    label: "Chờ xác nhận",  sub: "Đang chờ xác nhận chuyển khoản từ shop" },
+  { key: "PROCESSING", label: "Đang xử lý",    sub: "Đơn đang được đóng gói & kiểm tra" },
+  { key: "COMPLETED",  label: "Hoàn thành",    sub: "Đơn hàng đã được giao thành công" },
+];
+
+// CANCELLED / FAILED / REFUNDED are terminal states appended after the base path
 const TERMINAL_STEPS: Record<string, TimelineStep> = {
-  CANCELLED: { key: "CANCELLED", label: "Đã huỷ", sub: "Đơn hàng đã bị huỷ" },
+  CANCELLED: { key: "CANCELLED", label: "Đã huỷ",       sub: "Đơn hàng đã bị huỷ" },
   REFUNDED:  { key: "REFUNDED",  label: "Đã hoàn tiền", sub: "Tiền đã được hoàn trả" },
-  FAILED:    { key: "FAILED",    label: "Thất bại", sub: "Đơn hàng không thể xử lý" },
-  ON_HOLD:   { key: "ON_HOLD",   label: "Tạm giữ", sub: "Đơn đang được xem xét" },
+  FAILED:    { key: "FAILED",    label: "Thất bại",      sub: "Đơn hàng không thể xử lý" },
 };
 
 const RETURNABLE_ORDER_STATUSES = new Set(["COMPLETED"]);
@@ -180,17 +187,13 @@ function CreateReturnForm({
   );
 }
 
-function statusOrder(status: string): number {
-  const idx = ORDER_TIMELINE_STEPS.findIndex((s) => s.key === status);
-  return idx >= 0 ? idx : 0;
-}
-
-function OrderTimeline({ status }: { status: string }) {
+function OrderTimeline({ status, isBacs }: { status: string; isBacs?: boolean }) {
+  const baseSteps = isBacs || status === "ON_HOLD" ? BACS_TIMELINE_STEPS : COD_TIMELINE_STEPS;
   const terminalStep = TERMINAL_STEPS[status];
-  const steps = terminalStep ? [...ORDER_TIMELINE_STEPS, terminalStep] : ORDER_TIMELINE_STEPS;
+  const steps = terminalStep ? [...baseSteps, terminalStep] : baseSteps;
   const currentIdx = terminalStep
     ? steps.length - 1
-    : statusOrder(status);
+    : Math.max(0, baseSteps.findIndex((s) => s.key === status));
 
   return (
     <div className="flex flex-col gap-0 pt-1">
@@ -382,7 +385,10 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           {/* Order status timeline */}
           <div className="bg-card border border-border p-[20px_22px]">
             <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Trạng thái đơn hàng</p>
-            <OrderTimeline status={order.status} />
+            <OrderTimeline
+              status={order.status}
+              isBacs={order.payments[0]?.paymentMethod?.toUpperCase() === "BACS"}
+            />
           </div>
 
           {/* Addresses */}

@@ -122,8 +122,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Root cause:** Nhánh side-effect chỉ xử lý `COMPLETED` và `CANCELLED`, bỏ sót `FAILED`.
 - **Impact:** Tồn kho hiển thị thấp hơn thực tế; tích lũy nhiều đơn `FAILED` có thể đẩy sản phẩm về `OUT_OF_STOCK` ảo → mất doanh số. Chỉ ảnh hưởng hàng **không serial** (hàng serial tự lành nhờ reservation hết hạn). Không mất tiền trực tiếp.
 - **Recommended fix:** Trong `updateOrderStatus`, thêm nhánh `FAILED` chạy `serialLifecycleService.releaseReservationForOrder(...)` + `orderStockRestoreService.restoreForCancel(orderId)` (đã idempotent). Vì đây là quyết định business (`FAILED` có hoàn kho không), cần xác nhận trước khi sửa code.
-- **Fix status:** **Not fixed — Needs confirmation.**
-- **Câu hỏi business:** Khi admin đánh dấu đơn `FAILED`, có hoàn kho tự động không? Đề xuất: **Có** (đề xuất hợp lý — `FAILED` nghĩa là không phát sinh giao dịch bán).
+- **Fix status:** **Fixed.** Thêm nhánh `FAILED` vào side-effect block bên cạnh `CANCELLED`; gọi `releaseReservationForOrder(orderId, "ORDER_FAILED")` + `restoreForCancel(orderId)`. Cả hai đều idempotent. `STATE_MACHINES.md` và `BUSINESS_RULES.md` cũng được cập nhật.
 - **Evidence:** `CheckoutService.java:246,994-1011`; `AdminOrderService.java:351-357`; `OrderStockRestoreService.java:46-49`.
 
 ### [ORDER-E2E-03] Checkout tạo đơn theo giá mới khi giá thay đổi, không hỏi lại khách
@@ -133,7 +132,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Expected behavior:** Nếu giá tăng, nên dừng lại cho khách xác nhận giá mới trước khi tạo đơn (hoặc frontend pre-check `/products/{id}/pricing`).
 - **Impact:** Khách bị tính giá khác giá đã thấy mà không đồng ý rõ ràng. Với COD rủi ro thấp (khách có thể từ chối nhận); với BACS khách sẽ chuyển theo số trên trang xác nhận. Vẫn là vấn đề về sự đồng thuận giá.
 - **Recommended fix:** Hoặc (a) backend trả lỗi `PRICE_CHANGED` khi giá tăng, yêu cầu client gửi lại với cờ xác nhận; hoặc (b) frontend kiểm tra giá trước khi submit. Cần quyết định business.
-- **Fix status:** **Not fixed — Needs confirmation.**
+- **Fix status:** **Fixed.** Backend `CheckoutService.submitCheckout` giờ throw `ConflictException` ngay sau `syncPricesAndValidateStock` nếu bất kỳ giá nào tăng — order không được tạo. Transaction rollback nên cart giữ giá cũ; lần sau cart fetch, `CartService` sẽ re-sync. Frontend: notification "giá thay đổi" đổi thành chỉ hiển thị cho giá giảm (benefiting customer), không còn hiển thị sau khi order đã tạo với giá tăng.
 - **Evidence:** `CheckoutService.java:182-184`, `app/thanh-toan/page.tsx:194-215`.
 
 ### [ORDER-E2E-04] BACS `ON_HOLD → PROCESSING` tự đánh dấu `PAID`
@@ -142,7 +141,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Current behavior:** Admin chuyển đơn BACS từ `ON_HOLD` sang `PROCESSING` thì hệ thống tự set `paymentStatus=PAID`, `paidAmount=totalAmount`. Hai sự kiện độc lập (bắt đầu xử lý vs đã nhận tiền) bị gộp làm một.
 - **Impact:** Nếu admin lỡ tay chuyển `PROCESSING` khi chưa nhận chuyển khoản, đơn thành `PAID` và muốn huỷ phải đi đường refund. Ngược lại không thể bắt đầu đóng gói trước khi tiền về.
 - **Recommended fix:** Theo mô hình đối soát thủ công, hành vi này chấp nhận được nhưng nên hiển thị cảnh báo rõ trên admin UI ("Chuyển sang Đang xử lý sẽ đánh dấu đã nhận thanh toán"). Cần xác nhận có muốn tách bước không.
-- **Fix status:** Not fixed — by design, đề xuất bổ sung cảnh báo UI.
+- **Fix status:** **Fixed (UX only).** `AdminOrderService` giữ logic tự PAID (by design, manual reconciliation). Thêm `window.confirm` trong admin `handleStatusChange` cho nhánh BACS `ON_HOLD → PROCESSING` riêng biệt với logic DANGEROUS chung, message nêu rõ "sẽ đánh dấu ĐÃ THU TIỀN (PAID) tự động. Chỉ xác nhận khi đã kiểm tra sao kê ngân hàng."
 
 ### [ORDER-E2E-05] `updatePaymentStatus` chấp nhận `paidAmount` bất kỳ khi set `PAID`
 - **Severity:** Medium (P2) — **Type:** Data Contract / Validation
@@ -151,7 +150,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Expected behavior:** Sau V114 bỏ `PARTIALLY_PAID`, `PAID` nghĩa là đã trả đủ. `paidAmount` nên bằng `totalAmount`.
 - **Impact:** Trạng thái không nhất quán (`PAID` nhưng `paidAmount < totalAmount`); báo cáo `paidRevenue` lệch; guard hoàn thành đơn COD chỉ xét `paymentStatus` nên vẫn cho hoàn thành đơn "PAID" chưa thu đủ tiền.
 - **Recommended fix:** Khi set `PAID`, mặc định `paidAmount = totalAmount`; nếu client gửi `paidAmount` thì validate `== totalAmount` (hoặc reject nếu khác).
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status:** **Fixed.** Thêm validation trong nhánh `PAID`: nếu `paidAmount` được gửi và khác `totalAmount` → throw `ValidationException("paidAmount phải bằng tổng đơn hàng (...) khi đặt trạng thái PAID")`.
 
 ### [ORDER-E2E-06] Timeline đơn của khách hiển thị `ON_HOLD` như bước cuối sau `COMPLETED`
 - **Severity:** Low (P2) — **Type:** UX
@@ -159,7 +158,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Current behavior:** `ON_HOLD` nằm trong `TERMINAL_STEPS` → timeline render `[PENDING ✓][PROCESSING ✓][COMPLETED ✓][ON_HOLD ●]`, ngụ ý đơn đã qua "Hoàn thành" rồi mới "Tạm giữ" — sai. `ON_HOLD` là trạng thái sớm (BACS chờ chuyển khoản).
 - **Impact:** Khách BACS thấy timeline khó hiểu / sai logic.
 - **Recommended fix:** Render `ON_HOLD` ở vị trí đầu (tương đương "Đã tiếp nhận, chờ thanh toán"), không phải bước terminal sau `COMPLETED`. Là quyết định thiết kế UI nên chưa tự sửa.
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status:** **Fixed.** Xóa `ON_HOLD` khỏi `TERMINAL_STEPS`. Tạo `BACS_TIMELINE_STEPS` (`ON_HOLD → PROCESSING → COMPLETED`) song song với `COD_TIMELINE_STEPS` (`PENDING → PROCESSING → COMPLETED`). `OrderTimeline` nhận prop `isBacs` để chọn đúng path; call site truyền `isBacs={order.payments[0]?.paymentMethod?.toUpperCase() === "BACS"}`.
 
 ### [ORDER-E2E-07] Trang giỏ hàng không hiển thị tình trạng tồn kho
 - **Severity:** Low (P3) — **Type:** UX
@@ -175,7 +174,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Current behavior:** Giá trị enum chỉ được enforce ở tầng Java (`ALLOWED_ORDER_STATUSES`...). DB chấp nhận chuỗi bất kỳ.
 - **Impact:** Thấp — mọi đường ghi đều qua service. Rủi ro chỉ khi sửa DB trực tiếp / script migration sai.
 - **Recommended fix:** Cân nhắc thêm CHECK constraint hoặc enum type ở migration tương lai.
-- **Fix status:** Not fixed — đề xuất (ưu tiên thấp).
+- **Fix status:** **Fixed.** Tạo `V116__order_status_check_constraints.sql`: thêm `CHECK (status IN (...))`, `CHECK (payment_status IN (...))`, `CHECK (fulfillment_status IS NULL OR ...)` cho bảng `orders`.
 
 ### [ORDER-E2E-09] Docs còn nhắc `PARTIALLY_PAID` đã bị bỏ ở V114
 - **Severity:** Low (P3) — **Type:** Docs
@@ -183,7 +182,7 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 - **Current behavior:** Docs mô tả guard huỷ đơn xét `PAID` hoặc `PARTIALLY_PAID`, và liệt kê `PARTIALLY_PAID` trong allowed transitions. Code sau V114 chỉ còn `UNPAID/PAID/REFUNDED/CANCELLED`; `validateBeforeCancel` chỉ xét `PAID`.
 - **Impact:** Sai lệch tài liệu, không phải lỗi code.
 - **Recommended fix:** Cập nhật 2 file docs cho khớp enum V114.
-- **Fix status:** Not fixed — đề xuất cập nhật docs.
+- **Fix status:** **Fixed.** Cập nhật `BUSINESS_RULES.md` ORDER_RULE_004 và `STATE_MACHINES.md` (Allowed/Forbidden Transitions table + Related Impact): xóa `PARTIALLY_PAID`, thêm ghi chú "(removed in V114)".
 
 ### [ORDER-E2E-10] Quick-buy idempotency là tùy chọn
 - **Severity:** Low (P3) — **Type:** Defense-in-depth
@@ -207,13 +206,24 @@ Khách tự hủy (`CustomerOrderCancelService`): chỉ khi `paymentStatus=UNPAI
 
 ## 6. Fixes Applied
 
-### `bigbike-web/app/tai-khoan/don-hang/[id]/page.tsx`
-- **Sửa:** thay hằng `CANCELLABLE_ORDER_STATUSES = new Set(["PENDING"])` bằng hàm `isCustomerCancellable(order)` mirror đúng `CustomerOrderCancelService.isCustomerCancellable` của backend (xét `paymentStatus=UNPAID` + `status` ∈ {PENDING, ON_HOLD, PROCESSING-chưa-SHIPPED/DELIVERED}); cập nhật điều kiện render nút huỷ.
-- **Lý do:** Khắc phục ORDER-E2E-01 — nút huỷ trước đây không bao giờ hiện vì đơn web không bao giờ ở `PENDING`.
-- **Rủi ro còn lại:** Thấp. Backend vẫn là chốt chặn cuối (`PATCH /cancel` reject nếu không đủ điều kiện). Trường hợp xấu nhất: nút hiện nhưng backend từ chối → khách thấy message lỗi rõ ràng (không phá dữ liệu).
-- **Test:** `tsc --noEmit` sạch; `eslint` file sạch; không đổi API contract / data shape nên không cần cập nhật docs.
+> Cập nhật 2026-05-15: sau khi audit hoàn tất, user yêu cầu fix toàn bộ vấn đề tìm thấy. Tất cả 9 vấn đề còn lại (ORDER-E2E-02 đến -09, trừ -07 và -10 ở dưới) đã được fix trong cùng session.
 
-Không sửa code backend trong audit này (các vấn đề backend đều cần xác nhận business rule trước — xem mục 9).
+| Finding | File(s) thay đổi | Tóm tắt |
+|---|---|---|
+| ORDER-E2E-01 | `bigbike-web/app/tai-khoan/don-hang/[id]/page.tsx` | Thay `CANCELLABLE_ORDER_STATUSES` bằng hàm `isCustomerCancellable(order)` mirror logic backend |
+| ORDER-E2E-02 | `bigbike-backend/.../AdminOrderService.java`, `STATE_MACHINES.md` | Thêm nhánh `FAILED` vào side-effect block cùng `CANCELLED`; release serial + restore stock |
+| ORDER-E2E-03 | `bigbike-backend/.../CheckoutService.java`, `bigbike-web/app/thanh-toan/page.tsx` | Reject 409 nếu giá tăng; UI chỉ còn hiện notification cho giá giảm |
+| ORDER-E2E-04 | `bigbike-admin/src/screens/OrderDetailScreen.jsx` | `window.confirm` riêng cho BACS `ON_HOLD → PROCESSING` — nêu rõ "sẽ đánh dấu PAID tự động" |
+| ORDER-E2E-05 | `bigbike-backend/.../AdminOrderService.java` | Validate `paidAmount == totalAmount` khi set PAID |
+| ORDER-E2E-06 | `bigbike-web/app/tai-khoan/don-hang/[id]/page.tsx` | Tách `BACS_TIMELINE_STEPS` / `COD_TIMELINE_STEPS`; xóa `ON_HOLD` khỏi `TERMINAL_STEPS` |
+| ORDER-E2E-07 | — | **Defer** — cần N+1-safe stock lookup khi serialize cart; task riêng |
+| ORDER-E2E-08 | `bigbike-backend/.../V116__order_status_check_constraints.sql` (mới) | CHECK constraints cho `orders.status`, `payment_status`, `fulfillment_status` |
+| ORDER-E2E-09 | `docs/business/BUSINESS_RULES.md`, `docs/business/STATE_MACHINES.md` | Xóa `PARTIALLY_PAID` (removed V114), thêm ghi chú trong tất cả vị trí liên quan |
+| ORDER-E2E-10 | — | No code — ghi nhận; bắt buộc khi implement quick-buy UI |
+
+**Test sau khi sửa:**
+- `bigbike-backend` · `mvn compile` → BUILD SUCCESS
+- `bigbike-web` · `tsc --noEmit` → không lỗi
 
 ## 7. Test Results
 
@@ -238,27 +248,31 @@ Test backend chạy trên H2 (PostgreSQL-mode) — cấu hình test mặc địn
 - **Không chạy Testcontainers suite** (cần Docker daemon riêng cho test DB).
 - **`bigbike-admin` UI** kiểm tra qua API contract backend, chưa trace từng màn hình admin (nút/badge theo `allowed-transitions` đã có endpoint hỗ trợ).
 - **Serial inventory** không trace sâu trong audit này — đã có audit riêng `BIGBIKE_SERIAL_MODULE_PRODUCTION_READY_AUDIT.md`.
-- **ORDER-E2E-02/03/04/05** chưa fix vì phụ thuộc quyết định business — xem câu hỏi bên dưới.
+- **ORDER-E2E-07 (stock badges trên giỏ hàng)** chưa fix — cần refactor CartController để batch-load stock state tránh N+1 queries; task riêng.
+- **V116 migration** cần chạy trên DB thực trước khi production deploy để verify không có row vi phạm constraint.
 
 ## 9. Final Verdict
 
-**Kết luận: Ready with conditions.** Luồng đặt hàng end-to-end về cơ bản đúng đắn và an toàn — không phát hiện lỗi gây mất tiền, bán âm kho, tạo đơn trùng, hay lỗ hổng phân quyền. Mức tin cậy: **cao** với phần backend (164 API test pass + code review), **trung bình–cao** với phần UI web (typecheck/lint/unit test pass, chưa E2E trình duyệt).
+**Kết luận: Ready.** Sau khi fix, luồng đặt hàng end-to-end không còn vấn đề P1/P2 chưa giải quyết. Tất cả 9/10 vấn đề đã được xử lý (ORDER-E2E-07 defer, ORDER-E2E-10 không cần code). Backend compile clean, frontend typecheck clean.
 
-### Bắt buộc xử lý trước hoặc ngay sau launch
-- **ORDER-E2E-01** — đã fix (nút huỷ đơn của khách).
-- **ORDER-E2E-02** — cần quyết định: đơn `FAILED` có hoàn kho không. Nếu "có" (khuyến nghị), sửa `AdminOrderService.updateOrderStatus` thêm nhánh `FAILED` → release serial + `restoreForCancel`. Nếu không xử lý, tồn kho sẽ lệch dần.
+### Tóm tắt trạng thái sau fix
+| Finding | Severity | Status |
+|---|---|---|
+| ORDER-E2E-01 | High P1 | Fixed |
+| ORDER-E2E-02 | High P1 | Fixed |
+| ORDER-E2E-03 | Medium P2 | Fixed |
+| ORDER-E2E-04 | Low P3 | Fixed (UX) |
+| ORDER-E2E-05 | Medium P2 | Fixed |
+| ORDER-E2E-06 | Low P2 | Fixed |
+| ORDER-E2E-07 | Low P3 | Defer (task riêng) |
+| ORDER-E2E-08 | Low P3 | Fixed |
+| ORDER-E2E-09 | Low P3 | Fixed |
+| ORDER-E2E-10 | Low P3 | No code needed |
 
-### Nên xử lý sớm sau launch
-- **ORDER-E2E-03** — hành vi giá thay đổi khi checkout (cần quyết định business: chặn & hỏi lại, hay giữ nguyên tạo đơn).
-- **ORDER-E2E-05** — validate `paidAmount` khi set `PAID`.
-
-### Có thể để sau
-- ORDER-E2E-04 (cảnh báo UI BACS), ORDER-E2E-06 (timeline ON_HOLD), ORDER-E2E-07 (badge tồn kho ở giỏ), ORDER-E2E-08 (DB CHECK constraint), ORDER-E2E-09 (cập nhật docs), ORDER-E2E-10 (idempotency quick-buy).
-
-### Câu hỏi cần shop/PO trả lời
-1. **(ORDER-E2E-02)** Khi admin đánh dấu đơn `FAILED`, có tự động hoàn tồn kho không? — *Đề xuất: Có.*
-2. **(ORDER-E2E-03)** Khi giá sản phẩm thay đổi lúc khách checkout: tạo đơn theo giá mới luôn (hiện tại), hay dừng lại cho khách xác nhận giá mới? — *Đề xuất: dừng lại xác nhận nếu giá tăng.*
-3. **(ORDER-E2E-04)** Có muốn tách thao tác "Bắt đầu xử lý" và "Xác nhận đã nhận chuyển khoản" cho đơn BACS, hay giữ gộp như hiện tại?
+### Cần làm tiếp theo
+- Deploy `V116` migration lên staging, verify không có row vi phạm constraint trước production.
+- ORDER-E2E-07: viết task riêng cho stock badge trên cart (batch-load stock state trong CartController).
+- Khi implement quick-buy UI, bắt buộc sinh `Idempotency-Key` client-side.
 
 ---
 
