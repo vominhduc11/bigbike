@@ -215,7 +215,12 @@ public class AdminOrderService {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
-        return allowed.stream().sorted().toList();
+        String paymentStatus = order.getPaymentStatus();
+        boolean hasMoney = "PAID".equals(paymentStatus) || "PARTIALLY_PAID".equals(paymentStatus);
+        return allowed.stream()
+                .filter(s -> !(hasMoney && "CANCELLED".equals(s)))
+                .sorted()
+                .toList();
     }
 
     // ── Update order status ───────────────────────────────────────────────────
@@ -276,6 +281,25 @@ public class AdminOrderService {
             }
         }
 
+        // BACS orders move ON_HOLD → PROCESSING only after admin confirms payment received.
+        // Auto-mark payment PAID so admin does not need a separate step.
+        if ("PROCESSING".equals(newStatus)
+                && "ON_HOLD".equals(currentStatus)
+                && "BACS".equalsIgnoreCase(order.getPaymentMethod())
+                && "UNPAID".equals(order.getPaymentStatus())) {
+            order.setPaymentStatus("PAID");
+            if (order.getPaidAmount() == null
+                    || order.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
+                order.setPaidAmount(order.getTotalAmount());
+            }
+            if (order.getPaidAt() == null) order.setPaidAt(now);
+            paymentRepo.findByOrderId(orderId).stream().findFirst().ifPresent(p -> {
+                p.setStatus("SUCCEEDED");
+                p.setPaidAt(now);
+                paymentRepo.save(p);
+            });
+        }
+
         orderRepo.save(order);
 
         // Serial lifecycle transitions (idempotent; no-op if no serials linked).
@@ -321,6 +345,13 @@ public class AdminOrderService {
 
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        String orderStatus = order.getStatus();
+        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus) || "REFUNDED".equals(orderStatus)) {
+            throw new ConflictException(
+                    "Không thể cập nhật thanh toán cho đơn hàng đã " +
+                    ("CANCELLED".equals(orderStatus) ? "hủy" : "FAILED".equals(orderStatus) ? "thất bại" : "hoàn tiền") + ".");
+        }
 
         String currentPaymentStatus = order.getPaymentStatus();
         String beforePaymentStatus = currentPaymentStatus;

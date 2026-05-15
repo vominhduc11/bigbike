@@ -130,10 +130,10 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 // Security response headers applied to every request
                 .addFilterBefore(securityHeadersFilter, RateLimitingFilter.class)
-                // Register JWT filter first so it can serve as anchor for customer filters
+                // JWT filter runs first: sets AdminPrincipal from Bearer token when present
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                // Customer session resolves cookie auth before JWT Bearer auth
-                .addFilterBefore(customerSessionFilter, JwtAuthFilter.class)
+                // Customer session runs after JWT — skipped when JWT already set the principal
+                .addFilterAfter(customerSessionFilter, JwtAuthFilter.class)
                 // CSRF validation runs after session is resolved
                 .addFilterAfter(customerCsrfFilter, CustomerSessionFilter.class);
 

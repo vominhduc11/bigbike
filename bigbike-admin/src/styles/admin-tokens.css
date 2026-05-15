@@ -105,6 +105,13 @@
   --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
   --admin-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
 
+  /* ─── Z-index layers ───────────────────────────────────────────────────── */
+  --admin-z-sticky:  1;
+  --admin-z-header:  10;
+  --admin-z-overlay: 200;
+  --admin-z-modal:   201;
+  --admin-z-popup:   300;  /* dropdowns / popovers inside modals */
+
   /* ─── Transitions ───────────────────────────────────────────────────────── */
   --admin-transition-fast: 100ms ease;
   --admin-transition-base: 160ms ease;

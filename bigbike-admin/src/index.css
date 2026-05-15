@@ -69,6 +69,11 @@
   --color-surface-hover:           var(--admin-color-surface-hover);
   --color-surface-selected:        var(--admin-color-surface-selected);
 
+  /* Z-index tokens */
+  --z-overlay: var(--admin-z-overlay);
+  --z-modal:   var(--admin-z-modal);
+  --z-popup:   var(--admin-z-popup);
+
   /* Radius tokens */
   --radius-xs:   var(--admin-radius-xs);
   --radius-sm:   var(--admin-radius-sm);

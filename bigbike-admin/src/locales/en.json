@@ -1917,5 +1917,27 @@
     "previewLoading": "Loading...",
     "previewError": "Invalid image URL",
     "previewAlt": "Image preview"
+  },
+  "refund": {
+    "sectionTitle": "Refund",
+    "modalTitle": "Create Refund",
+    "paidAmount": "Amount collected",
+    "alreadyRefunded": "Already refunded",
+    "maxRefundable": "Max refundable",
+    "buttonCreate": "Create refund",
+    "reason": "Reason",
+    "refundedAt": "Refunded at",
+    "labelAmount": "Refund amount",
+    "labelReason": "Reason",
+    "labelNote": "Note (internal)",
+    "labelCustomerVisible": "Visible to customer",
+    "notePlaceholder": "Internal note, not shown to customer...",
+    "errorAmountRequired": "Please enter a valid amount",
+    "errorAmountExceeds": "Cannot exceed {{max}}",
+    "errorReasonRequired": "Please select a reason",
+    "confirm": "Confirm refund",
+    "processing": "Processing...",
+    "success": "Refund created successfully",
+    "error": "Failed to create refund"
   }
 }

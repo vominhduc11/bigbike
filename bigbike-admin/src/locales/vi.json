@@ -1917,5 +1917,27 @@
     "previewLoading": "Đang tải...",
     "previewError": "URL ảnh không hợp lệ",
     "previewAlt": "Xem trước ảnh"
+  },
+  "refund": {
+    "sectionTitle": "Hoàn tiền",
+    "modalTitle": "Tạo hoàn tiền",
+    "paidAmount": "Đã thu",
+    "alreadyRefunded": "Đã hoàn",
+    "maxRefundable": "Tối đa có thể hoàn",
+    "buttonCreate": "Tạo hoàn tiền",
+    "reason": "Lý do",
+    "refundedAt": "Thời gian hoàn tiền",
+    "labelAmount": "Số tiền hoàn",
+    "labelReason": "Lý do",
+    "labelNote": "Ghi chú (nội bộ)",
+    "labelCustomerVisible": "Hiển thị cho khách hàng",
+    "notePlaceholder": "Ghi chú nội bộ, khách không thấy...",
+    "errorAmountRequired": "Vui lòng nhập số tiền hợp lệ",
+    "errorAmountExceeds": "Không thể vượt quá {{max}}",
+    "errorReasonRequired": "Vui lòng chọn lý do",
+    "confirm": "Xác nhận hoàn tiền",
+    "processing": "Đang xử lý...",
+    "success": "Tạo hoàn tiền thành công",
+    "error": "Tạo hoàn tiền thất bại"
   }
 }

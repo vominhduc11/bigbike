@@ -8,6 +8,7 @@ import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commer
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { VnAddressFields } from "@/components/ui/VnAddressFields";
 
 type Props = { params: Promise<{ type: string }> };
 
@@ -45,6 +46,7 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [vnAddress, setVnAddress] = useState({ province: "", district: "", ward: "" });
 
   useEffect(() => {
     let ignore = false;
@@ -57,6 +59,7 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
 
   function startAdd() {
     setEditing(null);
+    setVnAddress({ province: "", district: "", ward: "" });
     setShowForm(true);
     setError("");
     setSuccess("");
@@ -64,6 +67,7 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
 
   function startEdit(addr: CustomerAddress) {
     setEditing(addr);
+    setVnAddress({ province: addr.province ?? "", district: addr.district ?? "", ward: addr.ward ?? "" });
     setShowForm(true);
     setError("");
     setSuccess("");
@@ -71,6 +75,7 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
 
   function cancelForm() {
     setEditing(null);
+    setVnAddress({ province: "", district: "", ward: "" });
     setShowForm(false);
     setError("");
   }
@@ -85,9 +90,9 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
       type: addressType,
       fullName: (fd.get("fullName") as string).trim(),
       phone: (fd.get("phone") as string).trim(),
-      province: (fd.get("province") as string).trim(),
-      district: (fd.get("district") as string).trim(),
-      ward: (fd.get("ward") as string).trim(),
+      province: vnAddress.province,
+      district: vnAddress.district,
+      ward: vnAddress.ward,
       addressLine1: (fd.get("addressLine1") as string).trim(),
       isDefault: fd.get("isDefault") === "on",
     };
@@ -220,18 +225,11 @@ function EditAddressContent({ type }: { type: ValidAddressType }) {
                 <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Số điện thoại *</label>
                 <Input type="tel" name="phone" required defaultValue={editing?.phone ?? ""} placeholder="0901234567" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Tỉnh / Thành phố</label>
-                <Input type="text" name="province" defaultValue={editing?.province ?? ""} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Quận / Huyện</label>
-                <Input type="text" name="district" defaultValue={editing?.district ?? ""} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Phường / Xã</label>
-                <Input type="text" name="ward" defaultValue={editing?.ward ?? ""} />
-              </div>
+              <VnAddressFields
+                value={vnAddress}
+                onChange={(field, val) => setVnAddress((prev) => ({ ...prev, [field]: val }))}
+                labelClassName="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground"
+              />
               <div className="flex flex-col gap-1.5 col-span-full">
                 <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Địa chỉ *</label>
                 <Input type="text" name="addressLine1" required defaultValue={editing?.addressLine1 ?? ""} placeholder="Số nhà, tên đường..." />

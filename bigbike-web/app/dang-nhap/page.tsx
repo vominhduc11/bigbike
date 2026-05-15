@@ -45,7 +45,6 @@ function LoginForm() {
       await loginCustomer(values.login, values.password);
       await refreshAuth();
       router.push(returnTo);
-      router.refresh();
     } catch (err: unknown) {
       setError("root", { message: (err as Error).message });
     }

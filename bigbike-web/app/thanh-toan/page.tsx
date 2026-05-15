@@ -144,6 +144,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (hasPrefilledRef.current) return;
     if (!profile) return;
+    // Wait for addresses to finish loading before locking prefill
+    if (addresses === undefined) return;
 
     hasPrefilledRef.current = true;
 
@@ -153,7 +155,7 @@ export default function CheckoutPage() {
       if (!current) setValue(field, value, { shouldValidate: false, shouldDirty: false });
     };
 
-    const addr = addresses ? pickDefaultAddress(addresses) : null;
+    const addr = pickDefaultAddress(addresses);
 
     if (addr) {
       fillIfEmpty("fullName", addr.fullName);

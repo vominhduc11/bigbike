@@ -3,10 +3,19 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { createRefund } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 const REFUND_REASONS = [
   'Khách yêu cầu huỷ',
@@ -63,85 +72,92 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
   }
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="refund-modal-title">
-      <div className="modal-box" style={{ maxWidth: 480 }}>
-        <header className="modal-header">
-          <h2 id="refund-modal-title" style={{ margin: 0, fontSize: '1.1rem' }}>{t('refund.modalTitle')}</h2>
-          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ padding: '0.25rem 0.5rem' }} aria-label={t('common.close')}>✕</button>
-        </header>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>{t('refund.modalTitle')}</DialogTitle>
+        </DialogHeader>
 
-        <div className="modal-body" style={{ padding: '1.25rem' }}>
-          <p style={{ marginBottom: '1rem', color: 'var(--admin-color-text-muted)', fontSize: '0.875rem' }}>
-            {t('refund.paidAmount')}: <strong>{formatCurrencyVnd(paidAmount)}</strong>
-            {alreadyRefunded > 0 && (
-              <> · {t('refund.alreadyRefunded')}: <strong style={{ color: 'var(--admin-color-danger)' }}>{formatCurrencyVnd(alreadyRefunded)}</strong></>
-            )}
-            <br />
-            {t('refund.maxRefundable')}: <strong>{formatCurrencyVnd(maxRefundable)}</strong>
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label" htmlFor="refund-amount">
-                {t('refund.labelAmount')} <span aria-hidden="true">*</span>
-              </label>
-              <Input
-                id="refund-amount"
-                type="number"
-                min="1"
-                max={maxRefundable}
-                step="1"
-                value={form.refundAmount}
-                onChange={(e) => setForm((p) => ({ ...p, refundAmount: e.target.value }))}
-               />
-              {errors.refundAmount && <p className="field-error">{errors.refundAmount}</p>}
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label" htmlFor="refund-reason">{t('refund.labelReason')}</label>
-              <Select
-                id="refund-reason"
-                value={form.refundReason}
-                onValueChange={(val) => setForm((p) => ({ ...p, refundReason: val }))}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {REFUND_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-              </SelectContent></Select>
-              {errors.refundReason && <p className="field-error">{errors.refundReason}</p>}
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label" htmlFor="refund-note">{t('refund.labelNote')}</label>
-              <Textarea
-                id="refund-note"
-                rows={3}
-                value={form.note}
-                onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
-                placeholder={t('refund.notePlaceholder')}
-                style={{ resize: 'vertical', minHeight: 72 }}
-               />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <Checkbox
-                  checked={form.customerVisible}
-                  onChange={(e) => setForm((p) => ({ ...p, customerVisible: e.target.checked }))}
-                 />
-                {t('refund.labelCustomerVisible')}
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
-                {t('common.cancel')}
-              </button>
-              <button type="submit" className="btn btn-danger" disabled={saving || maxRefundable <= 0}>
-                {saving ? t('refund.processing') : t('refund.confirm')}
-              </button>
-            </div>
-          </form>
+        <div className="px-6 pb-2 text-sm text-muted-foreground">
+          <span>{t('refund.paidAmount')}: <strong className="text-foreground">{formatCurrencyVnd(paidAmount)}</strong></span>
+          {alreadyRefunded > 0 && (
+            <span> · {t('refund.alreadyRefunded')}: <strong className="text-danger">{formatCurrencyVnd(alreadyRefunded)}</strong></span>
+          )}
+          <br />
+          <span>{t('refund.maxRefundable')}: <strong className="text-foreground">{formatCurrencyVnd(maxRefundable)}</strong></span>
         </div>
-      </div>
-    </div>
+
+        <form id="refund-form" onSubmit={handleSubmit} className="px-6 pb-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="refund-amount">
+              {t('refund.labelAmount')} <span aria-hidden="true">*</span>
+            </Label>
+            <Input
+              id="refund-amount"
+              type="number"
+              min="1"
+              max={maxRefundable}
+              step="1"
+              value={form.refundAmount}
+              onChange={(e) => setForm((p) => ({ ...p, refundAmount: e.target.value }))}
+            />
+            {errors.refundAmount && <p className="text-xs text-danger">{errors.refundAmount}</p>}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>{t('refund.labelReason')}</Label>
+            <Select
+              value={form.refundReason}
+              onValueChange={(val) => setForm((p) => ({ ...p, refundReason: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-popup">
+                {REFUND_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {errors.refundReason && <p className="text-xs text-danger">{errors.refundReason}</p>}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="refund-note">{t('refund.labelNote')}</Label>
+            <Textarea
+              id="refund-note"
+              rows={3}
+              value={form.note}
+              onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
+              placeholder={t('refund.notePlaceholder')}
+              className="resize-y min-h-[72px]"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="refund-customer-visible"
+              checked={form.customerVisible}
+              onCheckedChange={(checked) => setForm((p) => ({ ...p, customerVisible: checked }))}
+            />
+            <Label htmlFor="refund-customer-visible" className="cursor-pointer font-normal">
+              {t('refund.labelCustomerVisible')}
+            </Label>
+          </div>
+        </form>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="refund-form"
+            variant="destructive"
+            disabled={saving || maxRefundable <= 0}
+          >
+            {saving ? t('refund.processing') : t('refund.confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

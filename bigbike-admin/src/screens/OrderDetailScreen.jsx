@@ -12,7 +12,29 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 
-const PAYMENT_STATUSES = ['UNPAID', 'PAID', 'REFUNDED', 'CANCELLED']
+// Payment transitions mirror backend ALLOWED_PAYMENT_TRANSITIONS map.
+// REFUNDED is excluded — only reachable via the Refund modal (RefundService).
+const PAYMENT_TRANSITIONS = {
+  UNPAID:    ['PAID', 'CANCELLED'],
+  PAID:      ['UNPAID'],
+  REFUNDED:  [],
+  CANCELLED: [],
+}
+
+// Visual config for order status action buttons
+const ORDER_STATUS_ACTION = {
+  PROCESSING: { label: 'Xác nhận xử lý',   variant: 'primary',     confirm: false },
+  ON_HOLD:    { label: 'Tạm giữ đơn',       variant: 'secondary',   confirm: false },
+  COMPLETED:  { label: 'Hoàn thành đơn',    variant: 'success',     confirm: true  },
+  CANCELLED:  { label: 'Huỷ đơn',           variant: 'destructive', confirm: true  },
+  FAILED:     { label: 'Đánh dấu thất bại', variant: 'destructive', confirm: true  },
+}
+
+const PAYMENT_ACTION_LABEL = {
+  PAID:      'Xác nhận đã thu tiền',
+  UNPAID:    'Đặt lại chưa thanh toán',
+  CANCELLED: 'Huỷ thanh toán',
+}
 
 const RETURN_REASONS = [
   { value: 'DEFECTIVE', label: 'Hàng bị lỗi' },
@@ -179,8 +201,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     return () => { active = false }
   }, [orderId, state.status, state.order?.orderStatus])
 
-  async function handleStatusChange(e) {
-    const newStatus = e.target.value
+  async function handleStatusChange(newStatus) {
     const DANGEROUS = new Set(['CANCELLED', 'COMPLETED', 'REFUNDED'])
     if (DANGEROUS.has(newStatus)) {
       const labels = { CANCELLED: 'hủy', COMPLETED: 'hoàn thành', REFUNDED: 'hoàn tiền' }
@@ -192,8 +213,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     setSaving(true)
     try {
       const response = await updateOrderStatus(orderId, newStatus)
-      setState((prev) => ({ ...prev, order: response.item }))
-      toast.success(t('orders.detail.statusUpdated'))
+      const updatedOrder = response.item
+      setState((prev) => ({ ...prev, order: updatedOrder }))
+      const wasOnHold = order.orderStatus === 'ON_HOLD'
+      const isBACS = order.paymentMethod === 'BACS'
+      const autoMarkedPaid = wasOnHold && isBACS && newStatus === 'PROCESSING' && updatedOrder.paymentStatus === 'PAID'
+      if (autoMarkedPaid) {
+        toast.success('Đã xác nhận đơn hàng. Thanh toán tự động được đánh dấu đã thu tiền.')
+      } else {
+        toast.success(t('orders.detail.statusUpdated'))
+      }
     } catch (err) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
     } finally {
@@ -201,8 +230,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     }
   }
 
-  async function handlePaymentStatusChange(e) {
-    const newStatus = e.target.value
+  async function handlePaymentStatusChange(newStatus) {
     setSaving(true)
     try {
       const response = await updateOrderPaymentStatus(orderId, newStatus)
@@ -311,41 +339,75 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('orders.detail.orderStatus')}>
-          <label style={{ display: 'block', marginBottom: '0.75rem' }}>
-            {t('orders.detail.orderStatus')}
-            <Select
-              value={order.orderStatus}
-              onValueChange={handleStatusChange}
-              disabled={!canUpdate || saving || allowedTransitions.length === 0}
-            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              <SelectItem value={order.orderStatus}>
-                {t(`status.order.${order.orderStatus}`, { defaultValue: order.orderStatus })}
-              </SelectItem>
-              {allowedTransitions
-                .filter((s) => s !== order.orderStatus)
-                .map((s) => (
-                  <SelectItem key={s} value={s}>{t(`status.order.${s}`, { defaultValue: s })}</SelectItem>
+          {/* Current order status badge */}
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: 'var(--c-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('orders.detail.orderStatus')}
+            </p>
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>
+              {t(`status.order.${order.orderStatus}`, { defaultValue: order.orderStatus })}
+            </span>
+          </div>
+
+          {/* Order status action buttons — chỉ hiện nút hợp lệ */}
+          {canUpdate && allowedTransitions.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              {allowedTransitions.map((s) => {
+                const cfg = ORDER_STATUS_ACTION[s] ?? { label: s, variant: 'secondary', confirm: false }
+                const variantClass = {
+                  primary:     'btn btn-primary',
+                  secondary:   'btn btn-secondary',
+                  success:     'btn btn-success',
+                  destructive: 'btn btn-danger',
+                }[cfg.variant] ?? 'btn btn-secondary'
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    className={variantClass}
+                    disabled={saving}
+                    onClick={() => handleStatusChange(s)}
+                  >
+                    {cfg.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {canUpdate && allowedTransitions.length === 0 && (
+            <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)', marginBottom: '0.75rem' }}>
+              {t('orders.detail.noTransition')}
+            </p>
+          )}
+
+          {/* Current payment status + action buttons */}
+          <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: '0.75rem' }}>
+            <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: 'var(--c-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('orders.detail.paymentStatus')}
+            </p>
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>
+              {t(`status.payment.${order.paymentStatus}`, { defaultValue: order.paymentStatus })}
+            </span>
+            {canUpdate && !['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={s === 'CANCELLED' ? 'btn btn-danger' : 'btn btn-secondary'}
+                    disabled={saving}
+                    onClick={() => handlePaymentStatusChange(s)}
+                  >
+                    {PAYMENT_ACTION_LABEL[s] ?? s}
+                  </button>
                 ))}
-            </SelectContent></Select>
-            {allowedTransitions.length === 0 && (
-              <small style={{ color: 'var(--c-text-muted)' }}>
-                {t('orders.detail.noTransition')}
-              </small>
+              </div>
             )}
-          </label>
-          <label style={{ display: 'block' }}>
-            {t('orders.detail.paymentStatus')}
-            <Select
-              value={order.paymentStatus}
-              onValueChange={handlePaymentStatusChange}
-              disabled={!canUpdate || saving}
-            ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-              {PAYMENT_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>{t(`status.payment.${s}`, { defaultValue: s })}</SelectItem>
-              ))}
-            </SelectContent></Select>
-          </label>
-          <p style={{ marginTop: '0.5rem' }}><strong>{t('orders.detail.paymentMethod')}</strong> {formatText(order.paymentMethod)}</p>
+          </div>
+
+          <p style={{ marginTop: '0.75rem', fontSize: '0.875rem' }}>
+            <strong>{t('orders.detail.paymentMethod')}</strong> {formatText(order.paymentMethod)}
+          </p>
         </DetailSection>
       </div>
 

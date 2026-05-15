@@ -892,6 +892,8 @@ export async function fetchOrderDetail(orderId) {
     return withLiveData(parseDetailPayload(payload, normalizeOrder))
   } catch (error) {
     const e = normalizeError(error)
+    // 4xx = invalid/not-found ID — throw so the UI shows a real error instead of silently loading mock data
+    if (e instanceof ApiClientError && e.status >= 400 && e.status < 500) throw e
     if (!shouldFallbackToMockOnLiveError()) throw e
     return withMockFallback(e.message, { item: null })
   }
