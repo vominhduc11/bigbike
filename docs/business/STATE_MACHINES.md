@@ -241,7 +241,7 @@ From checkout behavior:
 - `FAILED`
 - `REFUNDED`
 
-`COMPLETED` is not strictly terminal because code allows `COMPLETED -> REFUNDED`.
+`COMPLETED` is terminal in `ALLOWED_TRANSITIONS` — direct status patch to `REFUNDED` is blocked. Refund must go through `POST /admin/orders/{id}/refund` → `RefundService.applyRefund`.
 
 ### Allowed Transitions
 
@@ -281,8 +281,9 @@ From checkout behavior:
 | `CANCELLED` or `REFUNDED` triggers `restoreStockForOrder`. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `COMPLETED` sets `completedAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `CANCELLED` sets `cancelledAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| Full refund can set order status `REFUNDED` if current order status allows `REFUNDED`. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| Fulfillment/shipping status impact on order completion not confirmed. | `AdminOrderService.java` exposes `fulfillmentStatus`; no transition map found. | `NEEDS_VERIFICATION` |
+| Full refund via `RefundService` flips order status to `REFUNDED` for any non-terminal order (PENDING, ON_HOLD, PROCESSING, COMPLETED). CANCELLED/FAILED/REFUNDED orders are not touched. | `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
+| `DELIVERY` orders cannot be COMPLETED until `fulfillmentStatus = DELIVERED`. | `AdminOrderService.java#validateBeforeComplete` | `CONFIRMED_BACKEND_ENFORCED` |
+| `listAllowedTransitions` filters `COMPLETED` and `CANCELLED` based on business preconditions (payment/fulfillment state) so the UI only shows actionable buttons. | `AdminOrderService.java#canComplete`, `#canCancel` | `CONFIRMED_BACKEND_ENFORCED` |
 
 ### Frontend Behavior
 
@@ -354,8 +355,8 @@ For order payment status map:
 |---|---|---|---|---|---|---|
 | `UNPAID` | `PAID` | Admin / `orders.write` | Order exists; paidAmount default total or provided. | Set paidAmount, paidAt; payment record `SUCCEEDED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `UNPAID` | `CANCELLED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PAID` | `REFUNDED` | Admin via `POST /admin/orders/{id}/refund` | Full refund only — refundAmount must equal paidAmount. | refundAmount/refundedAt; payment record `REFUNDED`; order status → `REFUNDED` if was `COMPLETED`. | `CONFIRMED_BACKEND_ENFORCED` | `RefundService.java` |
-| `PAID` | `UNPAID` | Admin / `orders.write` | paidAmount must be 0 if provided. | Reset paidAmount and paidAt. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PAID` | `REFUNDED` | Admin via `POST /admin/orders/{id}/refund` | Full refund only — refundAmount must equal paidAmount. `PAID→REFUNDED` via direct `PATCH /payment-status` is blocked (returns 409). | refundAmount/refundedAt; payment record `REFUNDED`; order status → `REFUNDED` for any non-terminal order (PENDING/ON_HOLD/PROCESSING/COMPLETED). | `CONFIRMED_BACKEND_ENFORCED` | `RefundService.java` |
+| `PAID` | `UNPAID` | Admin / `orders.write` | paidAmount must be 0 if provided; `refundAmount` must be 0 (cannot revert after refund applied). | Reset paidAmount and paidAt. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
@@ -398,53 +399,63 @@ For order payment status map:
 
 ### Purpose
 
-Shipping hiện tại được xác nhận ở mức shipping method selection/config. Fulfillment status exists in order detail response, but no explicit fulfillment transition map was found in audited evidence.
+Tracks the physical delivery lifecycle of `DELIVERY` orders. `IN_STORE` (POS) orders do not enter this state machine — goods change hands at the counter when the order is created.
 
 ### State Field
 
-- `OrderEntity.fulfillmentStatus` observed in admin order detail mapping.
-- Shipping method enabled/disabled state inferred from checkout selection.
+- `OrderEntity.fulfillmentStatus` — set to `UNFULFILLED` by `CheckoutService` at order creation for all DELIVERY orders.
+- Transitions driven by admin via `PATCH /admin/orders/{id}/fulfillment`.
 
 ### States
 
-- Fulfillment states: `STATUS_ONLY`; exact enum/value set not confirmed.
-- Shipping method state: enabled/disabled in checkout resolver, exact field name not fully documented here.
+`UNFULFILLED` → `PROCESSING` → `SHIPPED` → `DELIVERED` → `RETURNED`  
+`UNFULFILLED` / `PROCESSING` → `CANCELLED`  
+`SHIPPED` → `RETURNED`
 
 ### Allowed Transitions
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| shipping method `enabled` | selected in checkout | Customer/System | Method exists and enabled. | Shipping cost/item stored on order. | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
-| no selected method | auto-selected method | System | Exactly one enabled method exists. | Shipping method/cost resolved. | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
+| `UNFULFILLED` | `PROCESSING` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `UNFULFILLED` | `CANCELLED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `SHIPPED` | Admin / `orders.write` | `trackingNumber` required (non-blank). Sets `shippedAt`. | Stores `trackingNumber`, `shippingCarrier`; sends shipped notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#updateFulfillmentStatus` |
+| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `SHIPPED` | `DELIVERED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `SHIPPED` | `RETURNED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `DELIVERED` | `RETURNED` | Admin / `orders.write` | Order is DELIVERY type. | Audit, WS event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
-### Forbidden Transitions / States
+### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| disabled/non-existent method | selected in checkout | Cannot create order with invalid shipping method. | Backend rejects. | `CheckoutService.java` |
-| multiple enabled methods and no selection | arbitrary method | Avoid silently picking wrong shipping option. | Backend rejects. | `CheckoutService.java` |
-| fulfillment unknown | delivered/completed | No explicit transition map found. | `NEEDS_VERIFICATION` | `AdminOrderService.java` exposes field only |
+| `UNFULFILLED` | `DELIVERED` | Must go through PROCESSING → SHIPPED first so tracking data is captured. Walk-in/POS use `IN_STORE` fulfillment type and bypass this machine entirely. | Backend rejects (409). | `AdminOrderService.java` |
+| `SHIPPED` | any without `trackingNumber` | `trackingNumber` is required when transitioning to SHIPPED. | Backend rejects (400). | `AdminOrderService.java#updateFulfillmentStatus` |
+| `DELIVERED` | `CANCELLED` / `PROCESSING` / `SHIPPED` | No back-transition from DELIVERED except RETURNED. | Backend rejects (409). | `AdminOrderService.java` |
+| `CANCELLED` | any | Terminal state. | Backend rejects (409). | `AdminOrderService.java` |
+| `RETURNED` | any | Terminal state. | Backend rejects (409). | `AdminOrderService.java` |
+| any | `DELIVERED` or `SHIPPED` (for non-DELIVERY orders) | `fulfillmentStatus` only applies to DELIVERY orders. | Backend rejects (409). | `AdminOrderService.java#updateFulfillmentStatus` |
+
+### Impact on Order Completion
+
+- `PROCESSING → COMPLETED` is blocked until `fulfillmentStatus = DELIVERED` for DELIVERY orders.
+- `listAllowedTransitions` reflects this: COMPLETED only appears once DELIVERED.
 
 ### Frontend Behavior
 
-- Checkout UI selection behavior needs dedicated audit.
-- Admin fulfillment tracking UI not confirmed.
+- Admin `OrderDetailScreen` drives fulfillment via step-by-step buttons: UNFULFILLED→PROCESSING → form for trackingNumber → SHIPPED → DELIVERED.
+- Direct UNFULFILLED→DELIVERED shortcut removed from UI.
 
 ### Backend Enforcement
 
-- Shipping method validation is backend-enforced in checkout.
-- Fulfillment status lifecycle is not confirmed.
+- `CONFIRMED_BACKEND_ENFORCED` — explicit `ALLOWED_FULFILLMENT_TRANSITIONS` map in `AdminOrderService.java`.
+- `trackingNumber` validated required at SHIPPED transition.
 
 ### Test Coverage
 
-- Direct tests not found in targeted search.
-- Status: `MISSING_TEST_COVERAGE`.
-
-### Needs Verification
-
-- Exact fulfillment states.
-- Tracking number/carrier lifecycle.
-- Carrier provider integration.
+- `CONFIRMED_TEST_COVERAGE` — `Phase1HAdminOrderApiTest.java`:
+  - `updateFulfillment_unfulfilledToDelivered_isRejected`
+  - `updateFulfillment_shippedWithoutTrackingNumber_isRejected`
+  - `markDelivered` helper walks full UNFULFILLED→PROCESSING→SHIPPED→DELIVERED path.
 
 ## 9. Inventory / Stock / Serial State Machine
 

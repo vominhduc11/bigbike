@@ -122,7 +122,12 @@ public class RefundService {
         }
         order.setRefundedAt(now);
 
-        boolean wasCompleted = "COMPLETED".equals(order.getStatus());
+        String orderStatusBeforeRefund = order.getStatus();
+        boolean wasCompleted = "COMPLETED".equals(orderStatusBeforeRefund);
+        // Active order: PENDING/ON_HOLD/PROCESSING — stock/serials were already
+        // touched at checkout (non-serial qty decremented, serial RESERVED) but
+        // markSoldForOrder was never called, so serials are RESERVED not SOLD.
+        boolean wasActive = Set.of("PENDING", "ON_HOLD", "PROCESSING").contains(orderStatusBeforeRefund);
         order.setPaymentStatus("REFUNDED");
         // Flip order status to REFUNDED for any non-terminal or completed order.
         // Active orders (PROCESSING, ON_HOLD, PENDING) left with paymentStatus=REFUNDED
@@ -136,8 +141,14 @@ public class RefundService {
         orderRepo.save(order);
 
         if (wasCompleted) {
+            // COMPLETED: serials are SOLD, non-serial stock was decremented.
             orderStockRestoreService.restoreForRefund(orderId);
             serialLifecycleService.restoreSoldSerialsForRefund(orderId, adminId);
+        } else if (wasActive) {
+            // ACTIVE (PENDING/ON_HOLD/PROCESSING): non-serial stock was decremented at checkout.
+            // Serial-tracked items are RESERVED (not SOLD) — release the reservation back to IN_STOCK.
+            orderStockRestoreService.restoreForRefund(orderId);
+            serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_REFUNDED");
         }
 
         // Cancel outstanding receivable when the order is refunded.

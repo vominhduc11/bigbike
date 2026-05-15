@@ -1615,6 +1615,77 @@ class Phase1HAdminOrderApiTest {
         return new BigDecimal(json.substring(start, end));
     }
 
+    // ── Regression: refund PROCESSING+PAID restores non-serial stock ─────────
+    // Bug: wasCompleted guard in RefundService skipped restoreForRefund for active orders.
+    // Non-serial stock was decremented at checkout but never restored when refunding
+    // a PROCESSING (not yet COMPLETED) order. Fix: also restore for wasActive orders.
+    @Test
+    void createRefund_processingPaidVariantOrder_restoresStock() throws Exception {
+        VariantFixture fixture = createProductWithVariantStock(6, 5000000);
+        OrderInfo order = placeGuestOrderForItem(fixture.productId(), fixture.variantId(), 2, "COD");
+
+        // Stock dropped from 6 to 4 at checkout
+        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
+                .isEqualTo(4);
+
+        // Mark paid but do NOT complete (stays in PROCESSING)
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":10000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Refund while PROCESSING (not COMPLETED)
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":10000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        // Stock must be restored to original 6
+        assertThat(variantRepo.findById(fixture.variantId()).orElseThrow().getQuantityOnHand())
+                .isEqualTo(6);
+
+        // Stock movement written with ORDER_REFUND reference
+        assertThat(stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId)).hasSize(1);
+    }
+
+    @Test
+    void createRefund_processingPaidProductLevelOrder_restoresStock() throws Exception {
+        ProductEntity product = createManagedStockProduct("1H PROC Refund", 3000000, 5);
+        OrderInfo order = placeGuestOrderForItem(product.getId(), null, 2, "COD");
+
+        // Stock dropped from 5 to 3 at checkout
+        assertThat(productRepo.findById(product.getId()).orElseThrow().getStockQuantity())
+                .isEqualTo(3);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":6000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Refund while PROCESSING
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refundAmount\":6000000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        // Stock restored
+        assertThat(productRepo.findById(product.getId()).orElseThrow().getStockQuantity())
+                .isEqualTo(5);
+
+        List<StockMovementEntity> movements = stockMovementRepo
+                .findByReferenceTypeAndReferenceId("ORDER_REFUND", order.orderId);
+        assertThat(movements).hasSize(1);
+        assertThat(movements.get(0).getMovementType()).isEqualTo("IN");
+        assertThat(movements.get(0).getQuantityDelta()).isEqualTo(2);
+    }
+
     // ── Value types ───────────────────────────────────────────────────────────
 
     private record GuestSession(Cookie[] cookies, String csrf) {}
