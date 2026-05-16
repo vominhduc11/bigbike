@@ -76,7 +76,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 24 | Media library + folders | Admin/Editor | admin, BE | media screen | `AdminMediaController`,`AdminMediaFolderController` | V85 | Media ACTIVE/INACTIVE/DELETED | MinIO, audit | `AdminMediaP0Test` | CONFIRMED_E2E | FULL-11 |
 | 25 | Content management (article/page) | Admin/Editor/Author | admin, BE | content screens | `AdminContentController`→`AdminContentMutationService` | V1,V21 | publishStatus | revalidate web, audit | `AdminContentApiTest`,`ContentP1ApiTest` | CONFIRMED_E2E | — |
 | 26 | Settings / menus / sliders / home videos | Admin/Editor | admin, BE | CMS screens | `AdminSettings/Menu/Slider/HomeVideoController` | V84,V92,etc | — | revalidate, audit | `Phase1JAdmin...`,`SliderApiTest`,`HomeVideoApiTest` | CONFIRMED_E2E | — |
-| 27 | Coupon lifecycle + expiry | Admin/Manager | admin, BE | `CouponListScreen` | `AdminCouponController`,`CouponExpiryScheduler` | V73,V118,V119 | coupon status | audit | `Phase1JAdmin...` | CONFIRMED_E2E | FULL-06, FULL-14 |
+| 27 | Coupon lifecycle + expiry | Admin/Manager | admin, BE | `CouponListScreen` | `AdminCouponController`,`CouponExpiryScheduler` | V73,V118,V119 | coupon status | audit | `Phase1JAdmin...` | CONFIRMED_E2E | FULL-06 (stale), FULL-14 |
 | 28 | Coupon gift (single/bulk) | Admin | admin, BE | customer/coupon screens | `AdminCouponGiftController`,`AdminCustomerController` | coupons (customer_id) | — | email (async) | ❌ thiếu | CONFIRMED_E2E | FULL-12 |
 | 29 | Admin customer management + credit profile | Admin/Manager | admin, BE | customer screens | `AdminCustomerController` | customers, V75 | credit status | audit | `Phase1IAdmin...` | CONFIRMED_E2E | — |
 | 30 | Accounts receivable (payment/write-off/aging) | Admin/Manager | admin, BE | receivables screens | `AdminReceivableController`→`ReceivableService` | V75,V83 | AR status | audit, payment record | `AdminReceivableApiTest` | CONFIRMED_E2E | (audit POS R-01 — fixed) |
@@ -135,13 +135,16 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Recommended fix:** Xác nhận mobile có cần wishlist không. Nếu có → thêm UI Flutter + wrapper API.
 - **Fix status:** Not fixed — cần xác nhận.
 
-### FULL-06 (P2) — `updateCoupon` có thể không re-validate khoảng ngày — NEEDS_VERIFICATION
+### FULL-06 (P2) — `updateCoupon` re-validate khoảng ngày — **STALE FINDING (đã verify 2026-05-16)**
 
-- **Type:** validation gap
-- **Evidence:** `AdminCouponService` — `validateDates()` (kiểm `startsAt ≤ expiresAt`) được gọi ở `createCoupon`; agent trace báo `updateCoupon` không gọi lại `validateDates()` sau khi merge thay đổi.
-- **Impact:** Admin có thể PATCH coupon thành khoảng ngày ngược (expiresAt < startsAt) khi chỉ sửa một field. Hệ quả: coupon không bao giờ hợp lệ hoặc luôn hết hạn — gây nhầm vận hành, không mất tiền.
-- **Recommended fix:** Gọi `validateDates()` trong nhánh `updateCoupon` sau khi merge. Cần verify lại code trước khi sửa (audit này chưa đọc trực tiếp method `updateCoupon`).
-- **Fix status:** Not fixed — cần verify.
+- **Type:** validation gap (đã bác bỏ sau khi verify code)
+- **Kết luận:** ✅ **Stale finding / code đã đúng sẵn.** Trace trực tiếp `AdminCouponService.java`:
+  - `createCoupon` (line 104) gọi `validateDates(req.startsAt(), req.expiresAt())`.
+  - `updateCoupon` (lines 200-207) merge patch vào entity **trước** (`if (req.startsAt()!=null) entity.setStartsAt(...)`, tương tự `expiresAt`), **rồi** gọi `validateDates(entity.getStartsAt(), entity.getExpiresAt())` trên giá trị đã merge. Vì validate trên state đã merge của entity (không phải chỉ trên request), trường hợp chỉ patch một field (chỉ `startsAt` hoặc chỉ `expiresAt`) vẫn được bắt đúng.
+  - `validateDates` (line 308): `if (startsAt != null && expiresAt != null && !expiresAt.isAfter(startsAt)) throw`. Dùng `Instant` (mốc UTC tuyệt đối) → không có false positive/negative do timezone. `!isAfter` → cũng chặn `expiresAt == startsAt`.
+- **Impact:** Không có — không thể PATCH coupon thành `expiresAt < startsAt`.
+- **Fix status:** ✅ **Closed — không cần sửa code.** Phát hiện FULL-06 ban đầu (từ agent trace) là **sai**: `updateCoupon` đã re-validate. Đã bổ sung 4 test regression vào `Phase1JAdminSettingsMenuCouponApiTest` (create bad range → 400; update chỉ `expiresAt` về trước `startsAt` → 400; update chỉ `startsAt` về sau `expiresAt` → 400; update range hợp lệ → 200) — tất cả PASS, xác nhận hành vi đúng.
+- **Follow-up (không bắt buộc):** Coupon dùng `Instant` (UTC) nên không có vấn đề timezone ở tầng so sánh ngày. Không phát hiện bug timezone — không có follow-up cần thiết.
 
 ### FULL-07 (P3) — Trang wishlist web tải toàn bộ sản phẩm rồi lọc client-side
 
@@ -257,7 +260,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | Trạng thái hiển thị sai vs state machine | ORDER-E2E-06 (timeline ON_HOLD) — đã fix. Không thấy mới. |
 | Workflow đứt giữa chừng | Serial inspection wiring (P0-1) — **đã fix**. Stock receiving (FULL-13) — schema-only. |
 | Permission thiếu/sai | FULL-01 (catalog thiếu 3 key). Endpoint admin khác đều gác `requirePermission` đúng. |
-| BE thiếu validation / chỉ validate FE | FULL-06 (coupon date — cần verify). Checkout/cart/order validate đủ ở BE. |
+| BE thiếu validation / chỉ validate FE | FULL-06 (coupon date) đã verify = **stale, code đúng sẵn**. Checkout/cart/order validate đủ ở BE. |
 | Thiếu side effect (stock/serial/payment/refund/audit/notify/WS/receivable) | FULL-03 (contact không audit), FULL-04 (review không notify). Các side effect tiền/kho/serial đều đủ. |
 | DB schema/migration không enforce rule | ORDER-E2E-08 (thiếu CHECK) — đã fix bằng V116. SKU không unique (BUSINESS_RULES ghi nhận có chủ đích). |
 | Thiếu test cho workflow quan trọng | FULL-12 — wishlist, address, contact, coupon-gift, warranty, public review. |

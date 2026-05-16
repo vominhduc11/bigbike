@@ -484,6 +484,68 @@ class Phase1JAdminSettingsMenuCouponApiTest {
                 .andExpect(jsonPath("$.data.discountType").value("FIXED"));
     }
 
+    // ── Coupon date-range validation (startsAt <= expiresAt) ───────────────────
+
+    // Create with startsAt after expiresAt → 400
+    @Test
+    void createCoupon_startsAfterExpires_returns400() throws Exception {
+        String code = "DTBAD-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        mockMvc.perform(post("/api/v1/admin/coupons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"%s","name":"Bad Date","discountType":"FIXED","amount":10000,
+                                 "startsAt":"2027-12-31T00:00:00Z","expiresAt":"2027-01-01T00:00:00Z"}
+                                """.formatted(code))
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Update only expiresAt to a value before the existing startsAt → 400
+    @Test
+    void updateCoupon_expiresBeforeStarts_returns400() throws Exception {
+        CouponEntity coupon = createTestCoupon(
+                "DTU1-" + UUID.randomUUID().toString().substring(0, 6),
+                Instant.parse("2027-01-01T00:00:00Z"),
+                Instant.parse("2027-12-31T00:00:00Z"));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expiresAt\":\"2026-06-01T00:00:00Z\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Update only startsAt to a value after the existing expiresAt → 400
+    @Test
+    void updateCoupon_startsAfterExpires_returns400() throws Exception {
+        CouponEntity coupon = createTestCoupon(
+                "DTU2-" + UUID.randomUUID().toString().substring(0, 6),
+                Instant.parse("2027-01-01T00:00:00Z"),
+                Instant.parse("2027-12-31T00:00:00Z"));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"startsAt\":\"2028-06-01T00:00:00Z\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Update with a valid (still ordered) date range → 200
+    @Test
+    void updateCoupon_validDateRange_succeeds() throws Exception {
+        CouponEntity coupon = createTestCoupon(
+                "DTU3-" + UUID.randomUUID().toString().substring(0, 6),
+                Instant.parse("2027-01-01T00:00:00Z"),
+                Instant.parse("2027-12-31T00:00:00Z"));
+
+        mockMvc.perform(patch("/api/v1/admin/coupons/" + coupon.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expiresAt\":\"2028-12-31T00:00:00Z\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // HARDENING TESTS — Coupon status (29–32)
     // ══════════════════════════════════════════════════════════════════════════
@@ -1489,6 +1551,23 @@ class Phase1JAdminSettingsMenuCouponApiTest {
             c.setUpdatedAt(now);
             return couponRepo.save(c);
         });
+    }
+
+    private CouponEntity createTestCoupon(String code, Instant startsAt, Instant expiresAt) {
+        String upperCode = code.toUpperCase();
+        CouponEntity c = new CouponEntity();
+        c.setCode(upperCode);
+        c.setName("Test Coupon " + upperCode);
+        c.setDiscountType("FIXED");
+        c.setAmount(new BigDecimal("10000"));
+        c.setUsageCount(0);
+        c.setStatus("ACTIVE");
+        c.setStartsAt(startsAt);
+        c.setExpiresAt(expiresAt);
+        Instant now = Instant.now();
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
     }
 
     private CouponEntity createCouponWithAmount(String code, String discountType, BigDecimal amount) {
