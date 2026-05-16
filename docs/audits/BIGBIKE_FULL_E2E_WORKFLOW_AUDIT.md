@@ -99,8 +99,8 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Type:** bug
 - **Evidence:** `service/auth/PermissionCatalog.java` (GROUPS — `roles.groupSales` không có `pos.refund`; không có group nào chứa `inventory.read`/`inventory.write`). Trong khi `V112__add_pos_refund_permission.sql` seed `pos.refund` và `V109__add_inventory_serial_permissions.sql` seed `inventory.read/write` vào `role_permissions`. `AdminWarrantyController.java:36,48,57` yêu cầu `inventory.read/write`; `AdminPosController` yêu cầu `pos.refund`.
 - **Impact:** `PermissionCatalog.ALL_KEYS` là tập key hợp lệ dùng để **validate khi admin gán quyền cho custom role**. Vì 3 quyền này không có trong catalog: (1) màn Roles UI (`GET /api/v1/admin/permissions`) không hiển thị chúng; (2) admin **không thể gán** `pos.refund`/`inventory.read`/`inventory.write` cho bất kỳ custom role nào — gán sẽ bị reject là key không hợp lệ. Hệ quả: 3 quyền này chỉ tồn tại nhờ migration hard-seed cho ADMIN/SHOP_MANAGER; không role mới nào nhận được, kể cả khi shop muốn tạo role "thủ kho" chỉ có `inventory.*`.
-- **Recommended fix:** Thêm `Entry("pos.refund", true)` vào group `roles.groupSales`; thêm group `roles.groupInventory` với `inventory.read`/`inventory.write` (hoặc thêm vào group Products). Đây là bug nhỏ chắc chắn, không đổi business rule → **có thể fix trực tiếp**, nhưng để gộp chung với việc cập nhật docs nên đánh dấu cần làm cùng PR.
-- **Fix status:** **Not fixed** (báo cáo).
+- **Recommended fix:** Thêm `Entry("pos.refund", true)` vào group `roles.groupSales`; thêm `inventory.read`/`inventory.write` vào group `roles.groupProducts` (group này đã có nhãn i18n "Sản phẩm & Kho" / "Products & Inventory" — không cần group/i18n key mới).
+- **Fix status:** **Fixed (2026-05-16).** `PermissionCatalog.java` — thêm `pos.refund` (sensitive=true) vào `roles.groupSales`, thêm `inventory.read`/`inventory.write` (sensitive=false) vào `roles.groupProducts`. Vì `ALL_KEYS` được derive từ `GROUPS`, cả validate (`AdminRoleService.validatePermissionKeys`) lẫn endpoint `GET /api/v1/admin/permissions` tự động nhận 3 key này → custom role gán được, Roles UI hiển thị được. Reference class `AdminRolePermissions.java` cũng được cập nhật cho khớp (ADMIN +`pos.refund`/`inventory.*`; SHOP_MANAGER +`inventory.*`). Test mới trong `AdminRolesApiTest`: `listPermissions_includesPosRefundAndInventoryKeys`, `createRole_withPosRefundAndInventoryPermissions_returns201`. Không tự thêm permission mới ngoài 3 key; không đổi business rule/contract.
 
 ### FULL-02 (P1) — App mobile thiếu màn xác nhận email
 
@@ -226,8 +226,9 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 
 ## 5. Docs Mismatch
 
-### DOC-01 — `PERMISSION_MATRIX.md` chỉ sai source of truth của permission
-`PERMISSION_MATRIX.md` ghi "Admin role-to-permission mapping is defined in `AdminRolePermissions.java`". Nhưng class này **tự ghi rõ** "This class is NOT the runtime source of truth … retained as a human-readable reference. Do not call it". Runtime thật là bảng DB `role_permissions` + `AdminPermissionService`. `AdminRolePermissions.java` đã stale (thiếu `pos.refund`, `inventory.*`). → Sửa `PERMISSION_MATRIX.md` trỏ đúng `PermissionCatalog.java` (danh mục key) + migrations seed `role_permissions`.
+### DOC-01 — `PERMISSION_MATRIX.md` chỉ sai source of truth của permission — **Fixed (2026-05-16)**
+`PERMISSION_MATRIX.md` từng ghi "Admin role-to-permission mapping is defined in `AdminRolePermissions.java`". Nhưng class này **tự ghi rõ** "This class is NOT the runtime source of truth … retained as a human-readable reference. Do not call it". Runtime thật là bảng DB `role_permissions` + `AdminPermissionService`.
+**Đã sửa:** Section "Role And Permission Source" của `PERMISSION_MATRIX.md` được viết lại — nêu rõ runtime source of truth là `role_permissions` + `AdminPermissionService`; `PermissionCatalog.java` là catalog key hợp lệ; `AdminRolePermissions.java` chỉ là reference snapshot. Bổ sung bảng `inventory.read`/`inventory.write`/`pos.refund` (role được seed + endpoint + evidence migration). Reference class `AdminRolePermissions.java` cũng được cập nhật cho khỏi stale.
 
 ### DOC-02 — Tham chiếu audit không tồn tại
 `ACCEPTANCE_CRITERIA.md` trỏ `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` (Section 7, 15-blocker) — **file không có** trong `docs/audits/`. `BUSINESS_PROCESS.md` trỏ `ORDER_PAYMENT_REFUND_WS_AUDIT.md` (ORD-007) — cũng không có. → Hoặc bổ sung lại file, hoặc gỡ tham chiếu.
@@ -256,10 +257,10 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 
 ## 7. Danh sách P0/P1 cần xử lý trước launch
 
-| Mã | Severity | Vấn đề | Đề xuất |
+| Mã | Severity | Vấn đề | Trạng thái |
 |---|---|---|---|
-| FULL-01 | P1 | `PermissionCatalog` thiếu `pos.refund`/`inventory.read`/`inventory.write` → không gán được cho custom role | Thêm 3 entry vào `PermissionCatalog.GROUPS` |
-| FULL-02 | P1 | Mobile thiếu màn xác nhận email | Thêm màn verify-email Flutter |
+| FULL-01 | P1 | `PermissionCatalog` thiếu `pos.refund`/`inventory.read`/`inventory.write` → không gán được cho custom role | ✅ **Fixed (2026-05-16)** — xem chi tiết FULL-01 |
+| FULL-02 | P1 | Mobile thiếu màn xác nhận email | Not fixed — đề xuất thêm màn verify-email Flutter |
 
 > **Không có P0.** Các P0 của 3 audit trước đều đã fix và verify. FULL-01/FULL-02 là P1 — nên xử lý trước launch nhưng không phải blocker tuyệt đối (FULL-01: workaround = dùng role built-in; FULL-02: workaround = verify qua web).
 
@@ -327,7 +328,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 - **Khoảng trống còn lại** chủ yếu là **quyết định nghiệp vụ** (invoice, shipping carrier, stock receiving, data export) và **test coverage** — không phải lỗi code.
 
 **Khuyến nghị trước launch:**
-1. Fix **FULL-01** (thêm 3 permission vào `PermissionCatalog`) — bug nhỏ chắc chắn, ~30 phút.
+1. ✅ **FULL-01 đã fix (2026-05-16)** — đã thêm 3 permission vào `PermissionCatalog`, cập nhật docs + test.
 2. Quyết **FULL-02** — implement màn verify-email mobile, hoặc chấp nhận verify qua web ở bản mobile đầu.
 3. Verify **FULL-15** (Serial P0-4/P0-5) — đảm bảo không trả 500.
 4. Bổ sung test cho contact-permission, wishlist, address (Section 11).

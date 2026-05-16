@@ -127,6 +127,20 @@ class AdminRolesApiTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void listPermissions_includesPosRefundAndInventoryKeys() throws Exception {
+        MvcResult result = mockMvc.perform(get(PERMS_URL)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String json = result.getResponse().getContentAsString();
+        // FULL-01: these permissions are seeded into role_permissions by V109/V112
+        // and must be exposed by the catalog so they are grantable via the Roles UI.
+        assertThat(json).contains("pos.refund");
+        assertThat(json).contains("inventory.read");
+        assertThat(json).contains("inventory.write");
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // CREATE ROLE — POST /api/v1/admin/roles
     // ══════════════════════════════════════════════════════════════════════════
@@ -221,6 +235,25 @@ class AdminRolesApiTest {
                         .content(body)
                         .header("Authorization", "Bearer " + superToken))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRole_withPosRefundAndInventoryPermissions_returns201() throws Exception {
+        // FULL-01: a custom role must be assignable pos.refund / inventory.read /
+        // inventory.write — these are real permissions seeded by V109/V112.
+        String id = "INV_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String body = """
+                {"id":"%s","name":"Warehouse Role","description":"Inventory + refund",
+                 "permissions":["pos.refund","inventory.read","inventory.write"]}
+                """.formatted(id);
+
+        mockMvc.perform(post(ROLES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value(id))
+                .andExpect(jsonPath("$.data.permissions").isArray());
     }
 
     // ══════════════════════════════════════════════════════════════════════════

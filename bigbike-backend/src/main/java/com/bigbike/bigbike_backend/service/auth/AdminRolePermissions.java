@@ -23,6 +23,7 @@ public final class AdminRolePermissions {
             "SUPER_ADMIN", List.of("*"),
             "ADMIN", List.of(
                     "products.read", "products.update",
+                    "inventory.read", "inventory.write",
                     "catalog.read", "catalog.update",
                     "content.read", "content.update",
                     "orders.read", "orders.write",
@@ -40,13 +41,14 @@ public final class AdminRolePermissions {
                     "audit-logs.read",
                     "home_videos.read", "home_videos.write",
                     "redirects.read", "redirects.write",
-                    "pos.read", "pos.write", "pos.price_override",
+                    "pos.read", "pos.write", "pos.price_override", "pos.refund",
                     "receivables.read", "receivables.create", "receivables.record_payment",
                     "receivables.write_off", "receivables.override_limit", "receivables.export",
                     "reports.read", "reports.export"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
+                    "inventory.read", "inventory.write",
                     "catalog.read",
                     "orders.read", "orders.write",
                     "customers.read", "customers.write",

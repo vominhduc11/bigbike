@@ -2,7 +2,20 @@
 
 ## Role And Permission Source
 
-Admin role-to-permission mapping is defined in `AdminRolePermissions.java`.
+**Runtime source of truth** is the database table `role_permissions`, seeded and mutated by Flyway migrations and the Admin Roles API. Runtime permission resolution is performed by `AdminPermissionService`, which reads from that table.
+
+- `PermissionCatalog.java` is the canonical catalog of **valid permission keys + groupings + sensitive flags**. It is served by `GET /api/v1/admin/permissions` and used by `AdminRoleService` to validate which keys may be assigned to a custom role. New permissions must be added here first, then seeded into `role_permissions` by a migration.
+- `AdminRolePermissions.java` is a **human-readable reference snapshot only** — it is explicitly NOT called at runtime. Do not treat it as authoritative.
+
+### Inventory & POS-refund permissions
+
+| Permission | Granted roles (seed) | Endpoint | Evidence |
+|---|---|---|---|
+| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/warranties/**` | `V109__add_inventory_serial_permissions.sql`, `AdminWarrantyController.java` |
+| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/warranties/{id}/void` | `V109__add_inventory_serial_permissions.sql`, `AdminWarrantyController.java` |
+| `pos.refund` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders/{id}/refund` | `V112__add_pos_refund_permission.sql`, `AdminPosController.java` |
+
+All three are listed in `PermissionCatalog` (`inventory.*` in `roles.groupProducts`, `pos.refund` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
 
 ## Roles
 
