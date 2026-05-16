@@ -50,6 +50,8 @@ class ApiEndpoints {
   static const String forgotPassword = '/api/v1/customer/auth/password/forgot';
   static const String resetPassword = '/api/v1/customer/auth/password/reset';
   static const String verifyEmail = '/api/v1/customer/auth/verify-email';
+  static const String resendVerification =
+      '/api/v1/customer/auth/resend-verification';
 
   // Customer
   static const String me = '/api/v1/customer/me';

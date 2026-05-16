@@ -153,7 +153,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ? null
                 : _lastCtrl.text.trim(),
           );
-      if (mounted) context.go('/tai-khoan');
+      // After registration the customer is signed in but unverified — send
+      // them to the email-verification screen (mirrors the web flow).
+      if (mounted) context.go('/xac-nhan-email');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

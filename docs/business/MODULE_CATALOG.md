@@ -46,5 +46,5 @@
 | Topic | Current status | Evidence |
 |---|---|---|
 | Public catalog/search/contact/address/cart/checkout/account endpoints wrapped in mobile client | `CONFIRMED_FROM_CODE` | `bigbike_mobile/lib/core/api/api_endpoints.dart` |
-| Verify-email wrapper missing | `CODE_ONLY_NOT_DOCUMENTED` | `CustomerAuthController.java`, `api_endpoints.dart` |
+| Verify-email implemented in mobile (`VerifyEmailScreen` + route `/xac-nhan-email`; sau đăng ký điều hướng tới màn xác nhận; nút gửi lại gọi `resend-verification`) | `CONFIRMED_FROM_CODE` | `bigbike_mobile/lib/features/auth/verify_email_screen.dart`, `app_router.dart`, `api_endpoints.dart`, `CustomerAuthController.java` |
 | Home-videos wrapper missing | `CODE_ONLY_NOT_DOCUMENTED` | `SecurityConfig.java`, `bigbike-openapi.json`, `api_endpoints.dart` |

@@ -56,13 +56,19 @@ class ApiClient {
   Future<T> post<T>(
     String path, {
     dynamic data,
+    Map<String, dynamic>? queryParams,
     T Function(dynamic)? fromJson,
     Map<String, String>? extraHeaders,
   }) async {
     final options = extraHeaders != null
         ? Options(headers: extraHeaders)
         : null;
-    final resp = await _dio.post(path, data: data, options: options);
+    final resp = await _dio.post(
+      path,
+      data: data,
+      queryParameters: queryParams,
+      options: options,
+    );
     if (fromJson != null) return fromJson(resp.data);
     return resp.data as T;
   }

@@ -16,6 +16,7 @@ import '../../features/checkout/order_confirmation_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/verify_email_screen.dart';
 import '../../features/account/account_screen.dart';
 import '../../features/account/edit_profile_screen.dart';
 import '../../features/account/addresses_screen.dart';
@@ -157,6 +158,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/quen-mat-khau',
         builder: (c, s) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/xac-nhan-email',
+        builder: (c, s) =>
+            VerifyEmailScreen(token: s.uri.queryParameters['token']),
       ),
 
       // Account sub-routes

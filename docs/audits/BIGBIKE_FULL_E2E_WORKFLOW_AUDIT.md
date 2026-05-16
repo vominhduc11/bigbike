@@ -14,12 +14,12 @@ BigBike là nền tảng TMĐT + bán tại quầy cho đồ bảo hộ mô tô.
 
 **Tình trạng tổng thể:** Phần lõi thương mại (catalog → cart → checkout → order → admin xử lý → return/refund → POS → serial → công nợ) **đã vững và đã qua audit chuyên sâu riêng** — 3 audit trước (`BIGBIKE_ORDER_E2E_WORKFLOW_AUDIT.md`, `POS_IN_STORE_WORKFLOW_RECHECK_AUDIT.md`, `BIGBIKE_SERIAL_MODULE_PRODUCTION_READY_AUDIT.md`) đã tìm và **đã fix** toàn bộ blocker P0/P1 của các luồng đó. Audit này **verify lại = các fix đã áp dụng đúng**.
 
-Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa được audit trước đây) + **3 docs mismatch**. **Không có finding nào gây mất tiền, bán âm kho, hay lỗ hổng bảo mật nghiêm trọng.** Hai finding P1 đáng chú ý:
+Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa được audit trước đây) + **3 docs mismatch**. **Không có finding nào gây mất tiền, bán âm kho, hay lỗ hổng bảo mật nghiêm trọng.** Hai finding P1 — **cả hai đã được fix (2026-05-16):**
 
-- **FULL-01 (P1):** `PermissionCatalog.java` thiếu 3 permission đã được migration seed thật (`pos.refund`, `inventory.read`, `inventory.write`) → các quyền này **không gán được cho custom role** qua Roles UI và không hiển thị trong màn phân quyền.
-- **FULL-02 (P1):** App mobile **thiếu màn xác nhận email** — backend endpoint + hằng số API mobile đã có, nhưng không có UI Flutter → khách đăng ký trên mobile không xác nhận được email.
+- **FULL-01 (P1) — ✅ Fixed:** `PermissionCatalog.java` thiếu 3 permission đã được migration seed thật (`pos.refund`, `inventory.read`, `inventory.write`) → các quyền này **không gán được cho custom role** qua Roles UI. Đã thêm 3 key vào catalog.
+- **FULL-02 (P1) — ✅ Fixed:** App mobile **thiếu màn xác nhận email** — backend endpoint đã có nhưng không có UI Flutter. Đã thêm màn `VerifyEmailScreen` + route + điều hướng sau đăng ký.
 
-**Verdict:** Xem [Section 13](#13-kết-luận). Hệ thống **READY WITH CONDITIONS** — không có blocker chặn launch tuyệt đối, nhưng nên xử lý 2 finding P1 + bộ test còn thiếu trước/ngay sau launch.
+**Verdict:** Xem [Section 13](#13-kết-luận). Hệ thống **READY WITH CONDITIONS** — không có blocker chặn launch; 2 finding P1 đã xử lý xong, còn lại P2/P3 + bộ test còn thiếu nên hoàn thiện trước/ngay sau launch.
 
 ---
 
@@ -58,7 +58,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
 | 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | ❌ none | PARTIAL (mobile UI thiếu) | FULL-05, FULL-07, FULL-09 |
 | 8 | VN address lookup | Guest/Customer | web, mobile, BE | address form | `VnAddressController` | VN address tables | — | — | — | CONFIRMED_E2E | — |
-| 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | PARTIAL (mobile verify-email thiếu) | FULL-02 |
+| 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | CONFIRMED_E2E | FULL-02 (đã fix) |
 | 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | ❌ thiếu | CONFIRMED_E2E | FULL-12 |
 | 11 | Customer order list/detail + guest lookup | Customer/Guest | web, mobile, BE | `/tai-khoan/don-hang`, lookup | `CustomerOrderController`,`OrderLookupController` | V7 | Order | — | `Phase1GOrderReadApiTest`,`GuestOrderLinkingTest` | CONFIRMED_E2E | FULL-10 |
 | 12 | Customer tự huỷ đơn | Customer | web, BE | order detail | `CustomerOrderCancelService` | V7 | Order | restore stock | `Phase1H...` | CONFIRMED_E2E | (ORDER-E2E-01 fixed) |
@@ -108,7 +108,8 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Evidence:** Backend `CustomerAuthController.java` có `POST /api/v1/customer/auth/verify-email`; `bigbike_mobile/lib/core/api/api_endpoints.dart` đã khai báo hằng số `verifyEmail`; nhưng **không có màn Flutter nào gọi** — `register_screen.dart` không điều hướng tới màn verify. Web có đủ (`bigbike-web/app/xac-nhan-email/page.tsx`). `MODULE_CATALOG.md` đã ghi nhận "Verify-email wrapper missing — `CODE_ONLY_NOT_DOCUMENTED`".
 - **Impact:** Khách đăng ký bằng app mobile không xác nhận được email trong app. Liên kết đơn guest theo email (`EmailVerificationService` guest order linking) không chạy được trên mobile. Khách phải mở web để verify.
 - **Recommended fix:** Thêm màn verify-email trong Flutter gọi `ApiEndpoints.verifyEmail`, theo UX của web. Là gap UI mobile, không đổi contract.
-- **Fix status:** **Not fixed** (báo cáo).
+- **Fix status:** ✅ **Fixed (2026-05-16).** Thêm màn `VerifyEmailScreen` (`bigbike_mobile/lib/features/auth/verify_email_screen.dart`) + route `/xac-nhan-email`. Sau khi đăng ký, app điều hướng tới màn này (mirror web flow). Màn có 4 trạng thái: (1) **info** — báo "đã gửi email xác minh tới {email}", nút **Gửi lại** gọi `POST /api/v1/customer/auth/resend-verification`, nút "Để sau"; (2) **verifying** — khi mở route kèm `?token=` (parity với web, sẵn sàng cho deep-link), tự gọi `POST /verify-email?token=`; (3) **success**; (4) **error** — hiện lỗi backend + nút gửi lại. Không đổi backend API contract; chỉ thêm hằng số `resendVerification` và tham số `queryParams` cho `ApiClient.post`. Files: `verify_email_screen.dart` (mới), `app_router.dart`, `register_screen.dart`, `api_endpoints.dart`, `api_client.dart`.
+  - **Lưu ý còn lại (không phải gap workflow):** link xác minh trong email trỏ về web (`BIGBIKE_MAIL_VERIFY_BASE_URL`). Khách mobile bấm link sẽ mở web để verify, hoặc dùng nút "Gửi lại" + verify qua web. Để link mở thẳng app cần cấu hình **deep link** — là enhancement hạ tầng riêng, ngoài phạm vi FULL-02. Màn đã sẵn sàng nhận `token` nếu deep-link được thêm sau.
 
 ### FULL-03 (P2) — Cập nhật contact inbox không ghi audit log
 
@@ -268,9 +269,9 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | Mã | Severity | Vấn đề | Trạng thái |
 |---|---|---|---|
 | FULL-01 | P1 | `PermissionCatalog` thiếu `pos.refund`/`inventory.read`/`inventory.write` → không gán được cho custom role | ✅ **Fixed (2026-05-16)** — xem chi tiết FULL-01 |
-| FULL-02 | P1 | Mobile thiếu màn xác nhận email | Not fixed — đề xuất thêm màn verify-email Flutter |
+| FULL-02 | P1 | Mobile thiếu màn xác nhận email | ✅ **Fixed (2026-05-16)** — xem chi tiết FULL-02 |
 
-> **Không có P0.** Các P0 của 3 audit trước đều đã fix và verify. FULL-01/FULL-02 là P1 — nên xử lý trước launch nhưng không phải blocker tuyệt đối (FULL-01: workaround = dùng role built-in; FULL-02: workaround = verify qua web).
+> **Không có P0.** Các P0 của 3 audit trước đều đã fix và verify. Cả 2 finding P1 (FULL-01, FULL-02) đã được fix 2026-05-16 → **không còn P0/P1 nào treo trước launch.**
 
 ---
 
@@ -285,8 +286,9 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 | Workflow | Trạng thái | Lý do |
 |---|---|---|
 | Customer wishlist | PARTIAL | Backend + web đủ; **mobile thiếu UI** (FULL-05) |
-| Customer auth | PARTIAL | Web đủ; **mobile thiếu màn verify-email** (FULL-02) |
 | Stock receiving theo phiếu | SCHEMA_ONLY | Có bảng V52/V53/V55, không có service/controller/UI (FULL-13) |
+
+> Customer auth trước ở PARTIAL vì mobile thiếu màn verify-email — **đã fix (FULL-02, 2026-05-16)**, nay là `CONFIRMED_E2E`.
 
 > Không có workflow `BROKEN_FLOW` — luồng serial inspection từng đứt (Serial P0-1) đã được nối lại.
 
@@ -332,18 +334,18 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 
 - **Luồng thương mại lõi** (catalog → cart → checkout → order → return/refund → POS → serial → công nợ): **production-ready** — đã qua 3 audit chuyên sâu, blocker P0/P1 đã fix và verify.
 - **Các workflow phụ trợ** (CMS, coupon, customer admin, reports, dashboard, audit, redirect, contact, notification): **hoạt động đúng end-to-end**, chỉ còn finding P2/P3 không chặn launch.
-- **2 finding P1** (FULL-01 permission catalog, FULL-02 mobile verify-email) nên xử lý trước launch — đều có workaround tạm.
+- **2 finding P1** (FULL-01 permission catalog, FULL-02 mobile verify-email) — ✅ **cả hai đã được fix 2026-05-16**; không còn P1 treo.
 - **Khoảng trống còn lại** chủ yếu là **quyết định nghiệp vụ** (invoice, shipping carrier, stock receiving, data export) và **test coverage** — không phải lỗi code.
 
 **Khuyến nghị trước launch:**
 1. ✅ **FULL-01 đã fix (2026-05-16)** — đã thêm 3 permission vào `PermissionCatalog`, cập nhật docs + test.
-2. Quyết **FULL-02** — implement màn verify-email mobile, hoặc chấp nhận verify qua web ở bản mobile đầu.
+2. ✅ **FULL-02 đã fix (2026-05-16)** — thêm màn verify-email Flutter + route + điều hướng sau đăng ký. (Tuỳ chọn về sau: cấu hình deep link để email link mở thẳng app.)
 3. ✅ **FULL-15 đã verify (2026-05-16)** — Serial P0-4/P0-5/P1-1/P1-3 đều đã fixed; test inventory/serial PASS.
 4. Bổ sung test cho contact-permission, wishlist, address (Section 11).
 5. Dọn 3 **docs mismatch** (DOC-01/02/03).
 6. Chốt các mục **NEEDS_BUSINESS_CONFIRMATION** ở Section 10 với chủ shop.
 
-**Tổng finding:** 16 mới (`FULL-01`→`FULL-16`) — P0: 0 · P1: 2 · P2: 7 · P3: 7 — cộng 3 docs mismatch. Không có finding gây mất tiền / bán âm kho / lỗ hổng bảo mật.
+**Tổng finding:** 16 mới (`FULL-01`→`FULL-16`) — P0: 0 · P1: 2 (cả hai đã fixed) · P2: 7 · P3: 7 — cộng 3 docs mismatch. Không có finding gây mất tiền / bán âm kho / lỗ hổng bảo mật.
 
 ---
 
