@@ -38,9 +38,9 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Inventory receiving caveat
 
-Receipt schema exists in Flyway, but a receiving process built on top of `stock_receipts` was not confirmed in the current Java service/controller layer.
+The receipt-based receiving schema (`stock_receipts`, `stock_receipt_lines`, `stock_receipt_serials`) was **dropped in V120**. It was schema-only and never built. Receiving is handled entirely through stock movements (type `IN`).
 
-Status: `NOT_FOUND_IN_REPO`
+Status: `REMOVED`
 
 ## Operational Reality Gaps (for production)
 
@@ -52,7 +52,7 @@ These business processes are **expected to exist** for a Vietnamese e-commerce +
 | Bank-transfer manual reconcile (BACS) | Online checkout supports `COD` and `BACS` only (`CheckoutService.ALLOWED_PAYMENT_METHODS`); provider is `INTERNAL`. Admin patches `paymentStatus`/`paidAmount` thủ công sau khi nhận chuyển khoản. Đây là design intent — không có cổng tự động. | `MANUAL_BY_DESIGN` | Risk còn lại: data-entry errors. Có thể bổ sung "bank transfer record" / structured audit log để giảm rủi ro nhập sai, nhưng KHÔNG tích hợp auto-reconcile (SePay/VNPAY/MoMo). |
 | External payment provider / webhook | Không có và không trong kế hoạch. SePay artifacts đã bị V59 xoá; không có code `webhook|VNPAY|MoMo|SePay` trong backend Java. | `OUT_OF_SCOPE` | Business chốt: thanh toán chuyển khoản đối soát thủ công, không dùng cổng auto. |
 | External shipping carrier (GHN/GHTK/ViettelPost) | `fulfillmentStatus` field exists on `OrderEntity` but no transition map, no tracking number entity, no carrier integration code. Internal shipping limited to zones/methods (price config). | `NOT_FOUND_IN_REPO` | Without integration, fulfillment runs 100% offline (Excel/Zalo). |
-| Stock receiving workflow | Tables `stock_receipts`, `stock_receipt_lines`, `receipt_serials` exist (V52/V53/V55) without active Java service/controller/UI. | `SCHEMA_ONLY` | Decide: implement vs. defer. |
+| Stock receiving workflow | Receipt tables (V52/V53/V55) were dropped in V120 by business decision — never built. Receiving runs through `stock_movements` (type `IN`). | `REMOVED` | Resolved 2026-05-16: feature dropped. |
 | Warranty / product-serial lifecycle | Serials are stored on stock movements (`StockMovementSerialEntity`); there is no `product_serial` lifecycle table (RECEIVED → IN_STOCK → RESERVED → SOLD → RETURNED → WARRANTY_ACTIVE). No warranty activation/claim/repair flow. | `NOT_FOUND_IN_REPO` (full lifecycle) | NEEDS_BUSINESS_CONFIRMATION whether warranty is required for motorcycle gear. |
 | Customer-data export / delete (right to be forgotten) | No `GET /api/v1/customer/me/export` or `DELETE /api/v1/customer/me`; no anonymize-on-request endpoint. | `NOT_FOUND_IN_REPO` | Required by Nghị định 13/2023/NĐ-CP về dữ liệu cá nhân. |
 | Customer support / dispute / complaint handling | Public `ContactController POST /api/v1/contact` exists (rate-limited). No ticketing system, no SLA, no escalation, no complaint resolution workflow. | `NOT_FOUND_IN_REPO` | Required for B2C TMĐT per Nghị định 85/2021. NEEDS_BUSINESS_CONFIRMATION on tooling (Crisp/Zendesk/in-house). |

@@ -757,7 +757,7 @@ class Phase1MPosApiTest {
         // Order state must be unchanged
         var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
         assertThat(order.getPaymentStatus()).isEqualTo("PAID");
-        assertThat(order.getRefundAmount()).isNull();
+        assertThat(order.getRefundAmount()).isEqualByComparingTo(java.math.BigDecimal.ZERO);
 
         // Stock must not be touched
         int qtyAfterRejected = variantRepo.findById(tv.variantId).orElseThrow().getQuantityOnHand();

@@ -31,7 +31,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 |---|---|---|---|
 | External payment gateway | Out of scope by business decision. Checkout supports `COD` and `BACS` (bank transfer with manual admin reconciliation); POS records provider `POS`. SePay auto-reconciliation artifacts were removed in V59. | `OUT_OF_SCOPE` | `CheckoutService.java`, `PosOrderService.java`, `V59__remove_sepay_payment_artifacts.sql` |
 | External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. `OrderEntity.fulfillmentStatus` field exists without carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
-| Stock receipt workflow | Receipt tables exist in Flyway, but no confirmed Java controller/service was found for a receiving workflow. | `SCHEMA_ONLY` | `V52__add_stock_receipts.sql`, `V53__add_stock_receipt_lines.sql`, `V55__add_receipt_serials.sql`, source search |
+| Stock receipt workflow | Receipt tables were dropped in V120 (business decision, 2026-05-16) — schema-only, never built. Receiving runs through `stock_movements`. | `REMOVED` | `V120__drop_stock_receipt_tables.sql` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020 for legal entities; NEEDS_BUSINESS_CONFIRMATION on provider |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data-portability endpoint. | `NOT_FOUND_IN_REPO` | repo search |
 | Customer support / ticketing | Only public `ContactController POST /contact`; no ticketing / SLA / escalation. | `NOT_FOUND_IN_REPO` | repo search |

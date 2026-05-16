@@ -396,10 +396,12 @@ class AdminReceivableApiTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── POSREC-006: write-off updates order.paymentStatus ────────────────────
+    // ── POSREC-006: write-off sets AR status to WRITTEN_OFF; order.paymentStatus stays UNPAID ──
+    // AR_RULE_007: the linked order.paymentStatus is NOT updated on write-off.
+    // V116 CHECK constraint does not permit WRITTEN_OFF as an order payment status.
 
     @Test
-    void writeOff_updatesOrderPaymentStatusToWrittenOff() throws Exception {
+    void writeOff_setsArStatusToWrittenOff_orderPaymentStatusStaysUnpaid() throws Exception {
         CustomerEntity customer = createCreditCustomer();
         OrderEntity order = createOrder("UNPAID", new BigDecimal("400000"), BigDecimal.ZERO, customer.getId());
         ReceivableEntity ar = createReceivable(order, customer, new BigDecimal("400000"));
@@ -411,9 +413,8 @@ class AdminReceivableApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("WRITTEN_OFF"));
 
-        // Verify order paymentStatus updated
         OrderEntity refreshedOrder = orderRepo.findById(order.getId()).orElseThrow();
-        assertThat(refreshedOrder.getPaymentStatus()).isEqualTo("WRITTEN_OFF");
+        assertThat(refreshedOrder.getPaymentStatus()).isEqualTo("UNPAID");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

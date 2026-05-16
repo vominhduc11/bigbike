@@ -232,6 +232,11 @@ public class PosOrderService {
 
             boolean isProductLevelSerial = item.productVariantId() == null || item.productVariantId().isBlank();
 
+            if (isProductLevelSerial && variantRepo.existsByProduct_Id(product.getId())) {
+                throw new ConflictException("Sản phẩm '" + product.getName()
+                        + "' có nhiều phiên bản — vui lòng chọn phiên bản cụ thể.");
+            }
+
             ProductVariantEntity variant = null;
             if (!isProductLevelSerial) {
                 variant = variantRepo.findByIdForUpdate(item.productVariantId())

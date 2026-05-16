@@ -583,7 +583,7 @@ class Phase1HAdminOrderApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":2000000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7200000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
@@ -604,7 +604,7 @@ class Phase1HAdminOrderApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":1200000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7300000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
@@ -620,14 +620,14 @@ class Phase1HAdminOrderApiTest {
         mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"refundAmount":1200000,"refundReason":"CUSTOMER_REQUEST",
+                                {"refundAmount":7300000,"refundReason":"CUSTOMER_REQUEST",
                                  "note":"Full refund","customerVisible":true}
                                 """)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("REFUNDED"))
                 .andExpect(jsonPath("$.data.paymentStatus").value("REFUNDED"))
-                .andExpect(jsonPath("$.data.refundAmount").value(1200000.00))
+                .andExpect(jsonPath("$.data.refundAmount").value(7300000.00))
                 .andExpect(jsonPath("$.data.refundedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.payments[0].status").value("REFUNDED"))
                 .andExpect(jsonPath("$.data.payments[0].paymentMethod").value("COD"));
@@ -639,7 +639,7 @@ class Phase1HAdminOrderApiTest {
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":900000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7400000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
@@ -728,7 +728,7 @@ class Phase1HAdminOrderApiTest {
         OrderInfo partialRefundOrder = placeGuestOrder(7500000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":900000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7500000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/admin/orders/" + partialRefundOrder.orderId + "/refund")
@@ -737,11 +737,11 @@ class Phase1HAdminOrderApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest());
 
-        // Full refund on a completed order — contributes 1200000 to the report.
+        // Full refund on a completed order — contributes 7600000 to the report.
         OrderInfo fullRefundOrder = placeGuestOrder(7600000);
         mockMvc.perform(patch("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/payment-status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":1200000}")
+                        .content("{\"paymentStatus\":\"PAID\",\"paidAmount\":7600000}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
         markDelivered(fullRefundOrder.orderId);
@@ -752,13 +752,13 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/admin/orders/" + fullRefundOrder.orderId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refundAmount\":1200000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
+                        .content("{\"refundAmount\":7600000,\"refundReason\":\"CUSTOMER_REQUEST\"}")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
         Instant to = Instant.now().plusSeconds(1);
         BigDecimal refundAfter = fetchRefundAmountSummary(from, to);
-        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(1200000));
+        assertThat(refundAfter.subtract(refundBefore)).isEqualByComparingTo(BigDecimal.valueOf(7600000));
     }
 
     @Test

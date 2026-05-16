@@ -244,6 +244,16 @@ State machine guards (also see [STATE_MACHINES.md §10](../business/STATE_MACHIN
 | `GET` | `/api/v1/admin/contact-messages/{id}` | `contact.read` | Detail with admin note, assignee display name, IP, user-agent. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.getDetail` |
 | `PATCH` | `/api/v1/admin/contact-messages/{id}` | `contact.write` | Patch status / admin note / assigned admin. All fields optional. `resolved_at` stamped on first entry into terminal state. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.update` |
 
+## Admin Notification Center Contract (V102)
+
+Persistent counterpart of the WebSocket order feed — admins offline when an event fires still see it here. All three endpoints are gated by `orders.read` (no dedicated `notifications.*` permission).
+
+| Method | Path | Permission | Purpose | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/admin/notifications` | `orders.read` | List unread notifications with `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload`, `isRead`, `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.listUnread` |
+| `POST` | `/api/v1/admin/notifications/mark-read` | `orders.read` | Mark the given notification IDs as read. Body `{ "ids": [uuid] }`. Returns `{ updated }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markRead` |
+| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` | Mark every unread notification as read. Returns `{ updated }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllRead` |
+
 ## WebSocket Contract
 
 | Item | Current contract | Status | Evidence |

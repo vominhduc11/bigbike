@@ -129,7 +129,7 @@ Evidence:
 - For other movement types, serials are optional but cannot exceed movement quantity. `CONFIRMED_FROM_CODE`
 - Duplicate serials in request or existing DB state are rejected. `CONFIRMED_FROM_CODE`
 - Current serial handling is movement-log based, not a fully modeled product-serial lifecycle table. `CONFIRMED_FROM_CODE`
-- Receipt tables exist in migrations, but an active receiving service/controller is not documented. `NOT_FOUND_IN_REPO`
+- Receipt-based receiving tables were **dropped in V120** — schema-only, never implemented in Java. Stock-in is movement-log based only. `REMOVED`
 
 ### Stock State Derivation Rules `CONFIRMED_FROM_CODE`
 
@@ -149,11 +149,9 @@ Evidence:
 - `CheckoutService.java` (lines 323–357, 862–901)
 - `AdminCatalogMutationService.java`
 - `StockMovementSerialEntity.java`
-- `V52__add_stock_receipts.sql`
-- `V53__add_stock_receipt_lines.sql`
-- `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
 - `V108__backfill_stock_state_from_quantity.sql`
+- `V120__drop_stock_receipt_tables.sql`
 
 ## WebSocket Rules
 

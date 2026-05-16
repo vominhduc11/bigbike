@@ -156,21 +156,19 @@ Evidence:
 
 - Active serial model is `stock_movement_serials` linked to `StockMovementEntity`.
 - Manual stock-in requires exact serial count match.
-- `stock_receipts`, `stock_receipt_lines`, and `stock_receipt_serials` exist in Flyway schema, but no active Java receiving workflow was confirmed.
+- Receipt-based receiving (`stock_receipts`, `stock_receipt_lines`, `stock_receipt_serials`) was **dropped in V120**. The tables were schema-only — no Java entity/service/controller/UI ever referenced them. Stock-in runs entirely through `stock_movements` (type `IN`) + `stock_movement_serials`.
 
 Status:
 
 - movement serial model: `CONFIRMED_FROM_CODE`
-- receipt workflow: `NOT_FOUND_IN_REPO`
+- receipt workflow: `REMOVED` (V120 — dropped, never implemented)
 
 Evidence:
 
 - `AdminInventoryService.java`
 - `StockMovementSerialEntity.java`
-- `V52__add_stock_receipts.sql`
-- `V53__add_stock_receipt_lines.sql`
-- `V55__add_receipt_serials.sql`
 - `V57__add_stock_movement_serials.sql`
+- `V120__drop_stock_receipt_tables.sql`
 
 ### stockState — derived field `CONFIRMED_FROM_CODE`
 

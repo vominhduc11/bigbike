@@ -61,6 +61,6 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Inventory receiving caveat
 
-`stock_receipts` schema exists, but a confirmed `controller -> service -> DB` receiving flow was not found.
+The `stock_receipts` schema was **dropped in V120** — no receiving flow was ever built. Stock-in runs through `stock_movements`.
 
-Status: `NOT_FOUND_IN_REPO`
+Status: `REMOVED`

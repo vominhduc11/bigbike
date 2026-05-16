@@ -11,6 +11,7 @@
 | Cart | web, backend, mobile | Guest/customer cart with CSRF-protected mutations | `CONFIRMED_FROM_CODE` | `CartController.java`, `CartService.java`, tests |
 | Checkout | web, backend, mobile | Cart checkout and quick buy with shipping/payment validation and idempotency | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, tests, clients |
 | Customer account | web, backend, mobile | Profile, addresses, orders, returns | `CONFIRMED_FROM_CODE` | customer controllers, clients |
+| Wishlist | web, backend | Customer wishlist — add/remove products, list product IDs and paginated products. Stored in `wishlist_items` (V103). No mobile client wrapper yet. | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java`, `WishlistItemEntity.java`, `V103__create_wishlist_items_table.sql` |
 | Vietnam address lookup | web, backend, mobile | Province -> district -> ward lookup | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, web/mobile helpers |
 
 ## Admin Platform Modules
@@ -23,7 +24,7 @@
 | Media admin | admin, backend | Upload/list/detail/update/delete/restore media | `CONFIRMED_FROM_CODE` | `AdminMediaController.java`, `AdminMediaService.java` |
 | Settings admin | admin, backend | Site settings read/update | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, tests |
 | Menu admin | admin, backend | Menu-item CRUD and reorder inside the three system slots (`primary`, `footer`, `guide`). Menu containers themselves are system-defined — admins cannot create new locations or delete the system slots. See `MENUS_SYSTEM_SLOT_FIX_REPORT.md`. | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, `MenuLocations.java`, `V84__seed_system_menu_slots.sql`, tests |
-| Coupon admin | admin, backend | Coupon CRUD and lifecycle management | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, tests |
+| Coupon admin | admin, backend | Coupon CRUD and lifecycle management; coupon-gift bulk campaign (`POST /api/v1/admin/coupon-gifts/bulk` — creates one unique coupon per active customer with email, emails sent async). | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, `AdminCouponGiftController.java`, `AdminCouponGiftService.java`, tests |
 | Inventory admin | admin, backend | Inventory list, summary, movement list, manual adjustment, CSV export | `CONFIRMED_FROM_CODE` | `AdminInventoryController.java`, `AdminInventoryService.java` |
 | Returns admin | admin, backend | Return list/detail/status update | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |
 | Redirect admin | admin, backend | Redirect CRUD and internal redirect support | `CONFIRMED_FROM_CODE` | `AdminRedirectController.java`, `SecurityConfig.java` |
@@ -31,7 +32,9 @@
 | Admin order WebSocket | admin, backend | Subscribe to `/topic/admin/orders` for order events | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Accounts Receivable admin | admin, backend | Receivable list/detail, payment recording, write-off, aging report, customer credit profile management | `CONFIRMED_FROM_CODE` | `AdminReceivableController.java`, `ReceivableService.java`, `ReceivableQueryService.java`, `CreditPolicyService.java`, `V75__add_credit_and_receivables.sql` |
 | Audit logs admin | admin, backend | Read-only paginated activity log with filters (actorType, resourceType, action, date range). Enriches actor name and resource label. Permission: `audit-logs.read`. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
-| Contact inbox admin | admin, backend | List/detail/update of customer contact-form submissions. Status workflow `OPEN → IN_PROGRESS → RESOLVED/CLOSED`, with admin note and assignee. Permissions: `contact.read`, `contact.write`. (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.java`, `V105__create_contact_messages.sql` |
+| Contact inbox admin | admin, backend | List/detail/update of customer contact-form submissions. Status workflow `OPEN → IN_PROGRESS → RESOLVED/CLOSED`, with admin note and assignee. Admin screen `ContactInboxScreen` (route `/admin/contact-messages`). Permissions: `contact.read`, `contact.write`. (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.java`, `ContactInboxScreen.jsx`, `V105__create_contact_messages.sql` |
+| Shipping admin | admin, backend | Shipping zone + shipping method CRUD (`/api/v1/admin/shipping/zones`, `/zones/{zoneId}/methods`). Drives checkout shipping options. Permissions: `shipping.read`, `shipping.write`. | `CONFIRMED_FROM_CODE` | `AdminShippingController.java`, `AdminShippingService.java`, `ShippingZoneEntity.java`, `ShippingMethodEntity.java` |
+| Notification center admin | admin, backend | Persistent admin notifications (`admin_notifications`, V102) — list unread, mark-read, mark-all-read. Complements the `/topic/admin/orders` WebSocket feed so offline admins do not miss events. Gated by `orders.read`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.java`, `V102__create_admin_notifications_table.sql` |
 
 ## Inventory And Receiving Subdomains
 
@@ -39,7 +42,7 @@
 |---|---|---|---|
 | Stock movement timeline | Movement-based stock audit with `IN`, `OUT`, `ADJUSTMENT`, `RETURN` | `CONFIRMED_FROM_CODE` | `AdminInventoryService.java` |
 | Stock movement serials | Serials stored on `stock_movement_serials`; stock-in requires serial count to match quantity | `CONFIRMED_FROM_CODE` | `AdminInventoryService.java`, `V57__add_stock_movement_serials.sql` |
-| Stock receipt schema | Receipt tables exist in DB schema only | `NOT_FOUND_IN_REPO` in active service/controller layer | `V52`, `V53`, `V55` migrations, source search |
+| Stock receipt schema | Dropped in V120 (business decision 2026-05-16). Tables were schema-only and never built; receiving runs through `stock_movements`. | `REMOVED` | `V120__drop_stock_receipt_tables.sql` |
 
 ## Mobile Coverage Notes
 

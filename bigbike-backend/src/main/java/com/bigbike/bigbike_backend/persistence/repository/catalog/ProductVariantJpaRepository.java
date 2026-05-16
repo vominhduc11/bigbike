@@ -65,4 +65,6 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
 
     @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.stockState IN :states")
     long countByStockStateIn(@Param("states") List<ProductStockState> states);
+
+    boolean existsByProduct_Id(String productId);
 }

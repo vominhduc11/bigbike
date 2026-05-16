@@ -15,7 +15,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Vietnam address | Province/district/ward endpoints are public and available to web/mobile clients. | `VnAddressController.java`, client endpoint maps | `PASS` |
 | WebSocket admin feed | Admin clients can connect with JWT and subscribe to admin order topic. | `WebSocketConfig.java`, `adminWebSocket.js` | `PASS` |
 | Mobile docs coverage | Mobile client docs describe real architecture and endpoint map. | `bigbike_mobile/README.md`, `api_client.dart`, `api_endpoints.dart` | `PASS` |
-| Stock receipt workflow | Receiving workflow is implemented end to end in Java service/controller layer. | no confirmed service/controller | `NEEDS_VERIFICATION` |
+| Stock receipt workflow | Receipt-based receiving was dropped in V120 — feature never built. Receiving is movement-log based. | `V120__drop_stock_receipt_tables.sql` | `REMOVED` |
 
 ## Release Caveats
 
@@ -24,7 +24,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | External payment gateway | No confirmed live provider/webhook contract. Online checkout uses provider `INTERNAL` (COD/BACS only). | `NOT_FOUND_IN_REPO` |
 | External shipping carrier | No confirmed GHN/GHTK/ViettelPost integration. `fulfillmentStatus` field is exposed but has no carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` |
 | Mobile release ownership | Real client exists, but production support scope is still not formalized. | `NEEDS_VERIFICATION` |
-| Receipt-based receiving flow | Schema exists without confirmed active API/service workflow. | `SCHEMA_ONLY` |
+| Receipt-based receiving flow | Schema dropped in V120 — feature not built. | `REMOVED` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity, no e-invoice provider integration. | `NOT_FOUND_IN_REPO` |
 | Bank-transfer reconciliation (mismatch handling) | Manual via `paymentStatus`/`paidAmount` patches; no structured "bank transfer record" / "payment correction" entity. | `DOCUMENTED_NOT_ENFORCED` |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data export or delete endpoint. | `NOT_FOUND_IN_REPO` |
