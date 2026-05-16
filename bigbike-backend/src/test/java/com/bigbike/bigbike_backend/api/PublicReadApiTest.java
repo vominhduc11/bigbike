@@ -237,6 +237,45 @@ class PublicReadApiTest {
         });
     }
 
+    // ── FULL-08: snapshot accepts internal product-id (prod_xxx) not just slugs ──
+
+    @Test
+    void publicProductSnapshot_byProductId_returns200() throws Exception {
+        // Create a product whose ID uses the prod_prefix_uuid format (contains underscore).
+        // AdminCatalogMutationService.generateId("prod") produces exactly this format.
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String productId = "prod_test_" + suffix;   // underscore — rejected by old SLUG_REGEX
+        String slug      = "prod-test-id-" + suffix;
+
+        CategoryEntity cat = seedCategory("pub-snap-id-cat-" + suffix, "Pub Snap ID Cat " + suffix);
+        ProductEntity p = new ProductEntity();
+        p.setId(productId);
+        p.setSlug(slug);
+        p.setName("Pub Snap ID Product " + suffix);
+        p.setRetailPrice(BigDecimal.valueOf(3_000_000L));
+        p.setCurrency("VND");
+        p.setPublishStatus(PublishStatus.PUBLISHED);
+        p.setStockState(ProductStockState.IN_STOCK);
+        p.setCategory(cat);
+        Instant now = Instant.now();
+        p.setCreatedAt(now);
+        p.setUpdatedAt(now);
+        productRepo.save(p);
+
+        // Must return 200 — previously would return 400 (Pattern rejected underscore)
+        mockMvc.perform(get("/api/v1/products/" + productId + "/snapshot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pricing.retailPrice").value(3000000))
+                .andExpect(jsonPath("$.data.stock.stockState").isString());
+    }
+
+    @Test
+    void publicProductSnapshot_byProductId_unknownId_returns404() throws Exception {
+        // Unknown ID in prod_xxx format — should 404, not 400.
+        mockMvc.perform(get("/api/v1/products/prod_unknown_id_xyz/snapshot"))
+                .andExpect(status().isNotFound());
+    }
+
     @Test
     void shouldReturnArticleAndPageBySlug() throws Exception {
         mockMvc.perform(get("/api/v1/articles/chon-mu-fullface-phu-hop"))

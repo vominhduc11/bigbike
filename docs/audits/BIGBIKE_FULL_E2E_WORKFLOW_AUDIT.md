@@ -159,13 +159,15 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Recommended fix:** Thêm endpoint `GET /api/v1/customer/wishlist-products?page=&size=` trả product object phân trang.
 - **Fix status:** Not fixed — đề xuất.
 
-### FULL-08 (P3) — Endpoint product snapshot từ chối ID dạng UUID
+### FULL-08 (P3) — Endpoint product snapshot từ chối ID dạng UUID — **Fixed (2026-05-16)**
 
 - **Type:** bug (tiềm ẩn)
-- **Evidence:** `CatalogController` — endpoint snapshot dùng `@Pattern` chỉ chấp slug; service `getProductByIdOrSlug` xử lý được cả ID nhưng controller chặn trước.
-- **Impact:** Hiện không vỡ vì mobile chưa dùng snapshot endpoint cho cart. Nếu sau này mobile gọi snapshot bằng product ID (UUID) để refresh giỏ → bị 400.
-- **Recommended fix:** Nới regex chấp cả UUID, hoặc tách 2 endpoint (`/products/{slug}/snapshot` và `/products/id/{id}/snapshot`).
-- **Fix status:** Not fixed — đề xuất.
+- **Evidence:** `CatalogController` — endpoint snapshot dùng `@Pattern(regexp = SLUG_REGEX)` chỉ chấp `^[a-z0-9]+(?:-[a-z0-9]+)*$`; service `getProductByIdOrSlug` xử lý được cả ID nhưng controller chặn trước. `AdminCatalogMutationService.generateId("prod")` → `prod_` + UUID-without-hyphens (e.g. `prod_a1b2c3...`) — underscore bị slug regex từ chối. Mobile dùng `ApiEndpoints.productSnapshot(id)` với product ID → 400 cho mọi sản phẩm tạo qua admin.
+- **Impact:** Mọi sản phẩm được tạo qua admin UI có ID format `prod_xxx` đều không gọi được snapshot endpoint từ mobile (bị 400 trước khi vào service). Web dùng slug nên không ảnh hưởng.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - `CatalogController.java`: Thêm hằng số `ID_OR_SLUG_REGEX = "^[a-z0-9][a-z0-9_-]*$"` (cho phép underscore và hyphen làm separator). Đổi `@Pattern` trên snapshot path var từ `SLUG_REGEX` sang `ID_OR_SLUG_REGEX`. Endpoint `getProductBySlug` giữ nguyên `SLUG_REGEX` (chỉ chấp slug thuần, đúng cho SEO URL).
+  - Không đổi endpoint path, không đổi response shape, không đổi service logic.
+  - **Test mới** (thêm vào `PublicReadApiTest`): `publicProductSnapshot_byProductId_returns200` (tạo sản phẩm với ID `prod_test_xxx`, gọi snapshot → 200 + pricing/stock); `publicProductSnapshot_byProductId_unknownId_returns404` (ID `prod_unknown_id_xyz` → 404, không phải 400). Cả 2 PASS. Các test snapshot slug cũ vẫn PASS.
 
 ### FULL-09 (P3) — `CustomerWishlistController` DELETE thiếu tham số `HttpServletRequest`
 
@@ -175,13 +177,16 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Recommended fix:** Thêm tham số cho nhất quán. Không gấp.
 - **Fix status:** Not fixed — ghi nhận.
 
-### FULL-10 (P3) — `PublicWarrantyController` trả `Map` thô thay vì DTO
+### FULL-10 (P3) — `PublicWarrantyController` trả `Map` thô thay vì DTO — **Fixed (2026-05-16)**
 
 - **Type:** data contract
-- **Evidence:** `PublicWarrantyController.lookup()` trả `Map<String,Object>` thay vì response DTO có kiểu. Tương tự một số endpoint nhỏ khác.
+- **Evidence:** `PublicWarrantyController.lookup()` trả `Map<String,Object>` với 6 key: `serialNumber`, `productName`, `startDate`, `endDate`, `status`, `daysLeft`. Không có kiểu tường minh cho contract.
 - **Impact:** Hợp đồng API khó bảo trì, client phải tự parse key. Không lỗi runtime.
-- **Recommended fix:** Tạo `WarrantyLookupResponse` DTO.
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - Tạo `WarrantyLookupResponse` record trong `api/public_/dto/`: `(String serialNumber, String productName, String startDate, String endDate, String status, long daysLeft)`. Field names giữ nguyên — backward-compatible với mọi client đang dùng.
+  - `PublicWarrantyController`: đổi return type từ `ApiDataResponse<Map<String,Object>>` sang `ApiDataResponse<WarrantyLookupResponse>`, thay `Map.of(...)` bằng `new WarrantyLookupResponse(...)`. Xoá `import java.util.Map`.
+  - Không đổi business logic, không đổi status code, không đổi JSON field names.
+  - `WarrantyApiTest` (6/6 PASS) xác nhận JSON shape giữ nguyên sau refactor.
 
 ### FULL-11 (P3) — Hard-delete media yêu cầu quyền wildcard `*`, không có test
 
@@ -282,7 +287,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 |---|---|
 | UI có nút nhưng backend không hỗ trợ | Không tìm thấy mới (ORDER-E2E-01 đã fix; R-03 POS đã fix). |
 | Backend có API nhưng UI không dùng | Wishlist mobile (FULL-05), verify-email mobile (FULL-02). |
-| Lệch data contract web/admin/mobile/BE | FULL-08 (snapshot UUID), FULL-10 (warranty Map), FULL-13 nhẹ. Không có lệch gây vỡ runtime. |
+| Lệch data contract web/admin/mobile/BE | FULL-08 ✅ fixed (snapshot ID regex), FULL-10 ✅ fixed (warranty DTO), FULL-13 nhẹ. Không có lệch gây vỡ runtime. |
 | Trạng thái hiển thị sai vs state machine | ORDER-E2E-06 (timeline ON_HOLD) — đã fix. Không thấy mới. |
 | Workflow đứt giữa chừng | Serial inspection wiring (P0-1) — **đã fix**. Stock receiving (FULL-13) — schema-only. |
 | Permission thiếu/sai | FULL-01 (catalog thiếu 3 key). Endpoint admin khác đều gác `requirePermission` đúng. |

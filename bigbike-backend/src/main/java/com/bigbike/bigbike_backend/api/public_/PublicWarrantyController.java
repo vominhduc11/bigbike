@@ -3,13 +3,13 @@ package com.bigbike.bigbike_backend.api.public_;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.public_.dto.WarrantyLookupResponse;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.warranty.WarrantyRecordEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
-import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,7 +36,7 @@ public class PublicWarrantyController {
 
     @Transactional(readOnly = true)
     @GetMapping("/lookup")
-    public ApiDataResponse<Map<String, Object>> lookup(
+    public ApiDataResponse<WarrantyLookupResponse> lookup(
             @RequestParam String serial,
             HttpServletRequest request
     ) {
@@ -54,15 +54,13 @@ public class PublicWarrantyController {
                 ? "VOIDED"
                 : expired ? "EXPIRED" : warranty.getStatus();
 
-        Map<String, Object> result = Map.of(
-                "serialNumber", serialEntity.getSerialNumber(),
-                "productName", serialEntity.getProduct().getName(),
-                "startDate", warranty.getStartDate().toString(),
-                "endDate", warranty.getEndDate().toString(),
-                "status", displayStatus,
-                "daysLeft", Math.max(0, daysLeft)
-        );
-
-        return apiResponseFactory.data(result, request);
+        return apiResponseFactory.data(new WarrantyLookupResponse(
+                serialEntity.getSerialNumber(),
+                serialEntity.getProduct().getName(),
+                warranty.getStartDate().toString(),
+                warranty.getEndDate().toString(),
+                displayStatus,
+                Math.max(0, daysLeft)
+        ), request);
     }
 }

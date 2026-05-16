@@ -33,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class CatalogController {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+    // Snapshot accepts both slug format (a-z0-9 with hyphens) and internal product-id format
+    // (prefix_uuid, e.g. prod_a1b2c3d4...). Underscores and hyphens are both valid separators.
+    private static final String ID_OR_SLUG_REGEX = "^[a-z0-9][a-z0-9_-]*$";
     private static final String HOMEPAGE_BLOCK_REGEX =
             "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
 
@@ -97,7 +100,7 @@ public class CatalogController {
      */
     @GetMapping("/products/{idOrSlug}/snapshot")
     public ApiDataResponse<ProductSnapshotResponse> getProductSnapshot(
-            @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid product key.") String idOrSlug,
+            @PathVariable @Pattern(regexp = ID_OR_SLUG_REGEX, message = "Invalid product key.") String idOrSlug,
             HttpServletRequest request
     ) {
         Product product = catalogReadService.getProductByIdOrSlug(idOrSlug);
