@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.Warr
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +34,7 @@ public class PublicWarrantyController {
         this.apiResponseFactory = apiResponseFactory;
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/lookup")
     public ApiDataResponse<Map<String, Object>> lookup(
             @RequestParam String serial,

@@ -86,7 +86,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 34 | Admin users / roles / permissions | Admin/Super Admin | admin, BE | users/roles screens | `AdminAdminUsers/Roles/PermissionsController` | role_permissions, V49,V109,V112 | AdminUser status, role guards | audit | `AdminUsersApiTest`,`AdminRolesApiTest` | CONFIRMED_E2E | FULL-01 |
 | 35 | Redirects (admin + internal) | Admin/SEO | admin, BE | redirect screen | `AdminRedirectController`,`InternalRedirectController` | redirects | — | hit counter | `AdminRedirectApiTest` | CONFIRMED_E2E | — |
 | 36 | Admin notifications + WebSocket order feed | Admin | admin, BE | `NotificationBell` | `AdminNotificationController`,`AdminOrderWsService` | notifications table | read/unread | WS push | `RbacUrlGate...` | CONFIRMED_E2E | FULL-03(doc), FULL-16 |
-| 37 | Contact form + admin inbox | Guest/Admin | web, mobile, admin, BE | `/lien-he` / admin inbox | `ContactController`,`AdminContactController` | V105 contact_messages | OPEN→IN_PROGRESS→RESOLVED/CLOSED | email best-effort, audit log | `AdminContactApiTest` | CONFIRMED_E2E | FULL-03 (đã fix) |
+| 37 | Contact form + admin inbox | Guest/Admin | web, mobile, admin, BE | `/lien-he` / admin inbox | `ContactController`,`AdminContactController` | V105 contact_messages | OPEN→IN_PROGRESS→RESOLVED/CLOSED | email best-effort, audit log | `AdminContactApiTest` (3), `AdminContactInboxApiTest` (8), `ContactPublicFormTest` (6) | CONFIRMED_E2E | FULL-03 (đã fix), FULL-12 batch 2 |
 
 ---
 
@@ -201,7 +201,12 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
   - `CustomerWishlistApiTest` (mới) — **8/8 PASS**: GET 401 no-session, POST 401 guest-session, add 201 + added=true, list chứa item đã add, duplicate idempotent (added=false), remove 204 + item gone, isolation A không thấy B, remove scoped (B's item survives A's delete).
   - `CustomerAddressApiTest` (mới) — **10/10 PASS**: GET 401 no-session, create 201 + data, list own addresses, list không chứa address của customer khác, update own 200, update other→404, delete own 204 + gone, delete other→404, missing fullName→400, invalid phone→400.
   - Không phát hiện bug trong batch này.
-- **Còn lại (batch 2+):** contact form public submit, admin list/filter, coupon gift, public review, warranty lookup/void.
+- **Fix status — Batch 2 (2026-05-16):** Đã bổ sung test cho public contact form và admin contact inbox:
+  - `ContactPublicFormTest` (mới) — **6/6 PASS**: submit 201 + persisted OPEN, optional email persisted, no auth/cookie required, missing fullName→400, missing phone→400, missing content→400.
+  - `AdminContactInboxApiTest` (mới) — **8/8 PASS**: list 401/403/200, filter by status (RESOLVED vs OPEN isolation), detail 200 (full content) + 403 editor, update→RESOLVED stamps resolvedAt, reopen→IN_PROGRESS clears resolvedAt.
+  - `AdminContactApiTest` (FULL-03, 3/3 PASS, không hồi quy).
+  - Không phát hiện bug trong batch này. Email skip đúng khi không cấu hình mail.
+- **Còn lại (batch 3+):** coupon gift, public review, warranty lookup/void.
 
 ### FULL-13 (P2) — Stock receiving (nhập kho theo phiếu) chỉ có schema, không có flow
 
