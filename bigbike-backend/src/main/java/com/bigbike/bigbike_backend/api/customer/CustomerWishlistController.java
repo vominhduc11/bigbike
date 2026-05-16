@@ -1,11 +1,15 @@
 package com.bigbike.bigbike_backend.api.customer;
 
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
+import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
+import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.WishlistItemEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.WishlistItemJpaRepository;
+import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
+import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,14 +34,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerWishlistController {
 
     private final WishlistItemJpaRepository wishlistRepo;
+    private final CatalogReadService catalogReadService;
     private final ApiResponseFactory apiResponseFactory;
 
     public CustomerWishlistController(
             WishlistItemJpaRepository wishlistRepo,
+            CatalogReadService catalogReadService,
             ApiResponseFactory apiResponseFactory
     ) {
         this.wishlistRepo = wishlistRepo;
+        this.catalogReadService = catalogReadService;
         this.apiResponseFactory = apiResponseFactory;
+    }
+
+    @GetMapping("/products")
+    public ApiListResponse<Product> getWishlistProducts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        UUID customerId = requireCustomerId();
+        List<String> productIds = wishlistRepo
+                .findByCustomerIdOrderByAddedAtDesc(customerId)
+                .stream()
+                .map(WishlistItemEntity::getProductId)
+                .toList();
+        PageResult<Product> result = catalogReadService.getWishlistProducts(productIds, page, size);
+        return apiResponseFactory.list(result, request);
     }
 
     @GetMapping

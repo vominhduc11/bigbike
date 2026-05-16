@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { fetchWishlist } from "@/lib/api/client-api";
-import { listProducts } from "@/lib/api/public-api";
+import { fetchWishlistProducts } from "@/lib/api/client-api";
 import type { Product } from "@/lib/contracts/public";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -17,19 +16,8 @@ function WishlistContent() {
 
   useEffect(() => {
     let active = true;
-    fetchWishlist()
-      .then(async (ids) => {
-        if (!active) return;
-        if (ids.length === 0) { setProducts([]); return; }
-        // Fetch all products matching wishlist IDs — use id filter via search
-        // Products API doesn't support multi-ID lookup; fall back to listing and filtering client-side.
-        // For production scale consider a dedicated batch endpoint.
-        const result = await listProducts({ page: 1, size: 100 });
-        if (!active) return;
-        const idSet = new Set(ids);
-        const sorted = (result.data ?? []).filter((p) => idSet.has(p.id));
-        setProducts(sorted);
-      })
+    fetchWishlistProducts()
+      .then(({ data }) => { if (active) setProducts(data); })
       .catch((err: Error) => { if (active) setError(err.message ?? "Không tải được danh sách yêu thích."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

@@ -15,6 +15,7 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
+import type { Product } from "@/lib/contracts/public";
 
 // Re-export for consumers that import from client-api
 export type { CustomerReturn } from "@/lib/contracts/commerce";
@@ -201,6 +202,27 @@ export function createReturn(orderId: string, payload: CreateReturnPayload): Pro
 
 export function fetchWishlist(): Promise<string[]> {
   return clientRequest("GET", "/api/v1/customer/wishlist");
+}
+
+export async function fetchWishlistProducts(
+  page = 1,
+  size = 50,
+): Promise<{ data: Product[]; pagination: { page: number; pageSize: number; totalItems: number; totalPages: number } }> {
+  const qs = new URLSearchParams({ page: String(page), size: String(size) });
+  const res = await fetch(`${API_BASE_URL}/api/v1/customer/wishlist/products?${qs.toString()}`, {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null) as Record<string, unknown> | null;
+  if (!res.ok) {
+    const msg = (payload?.error as { message?: string } | undefined)?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return {
+    data: (payload?.data as Product[] | undefined) ?? [],
+    pagination: (payload?.pagination as { page: number; pageSize: number; totalItems: number; totalPages: number } | undefined)
+      ?? { page: 1, pageSize: size, totalItems: 0, totalPages: 1 },
+  };
 }
 
 export function addToWishlist(productId: string): Promise<{ productId: string; added: boolean }> {

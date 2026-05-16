@@ -90,6 +90,16 @@ public class CatalogReadService {
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
+    public PageResult<Product> getWishlistProducts(List<String> productIds, int page, int size) {
+        List<Product> products = productIds.stream()
+                .map(id -> catalogReadRepository.findProductByIdPublicView(id)
+                        .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+        return paginationService.paginate(products, page, size);
+    }
+
     public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage) {
         SortSpec sortSpec = sortParser.parse(sort, "sortOrder", SortDirection.ASC, CATEGORY_SORT_FIELDS);
 

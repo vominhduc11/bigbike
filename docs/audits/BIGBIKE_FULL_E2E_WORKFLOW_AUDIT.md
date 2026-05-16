@@ -56,7 +56,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest`, `PublicReviewApiTest` (9 cases) | CONFIRMED_E2E | FULL-04 |
 | 5 | Cart + coupon apply | Guest/Customer | web, mobile, BE | `/gio-hang` | `CartController`→`CartService` | carts/cart_items, V73 | coupon | CSRF guard | `Phase1ECartApiTest` | CONFIRMED_E2E | (ORDER-E2E-07 defer) |
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
-| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (8 cases) | PARTIAL (mobile UI thiếu) | FULL-05, FULL-07, FULL-09 |
+| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (11 cases) | PARTIAL (mobile UI thiếu) | FULL-05, ~~FULL-07~~ (fixed), FULL-09 |
 | 8 | VN address lookup | Guest/Customer | web, mobile, BE | address form | `VnAddressController` | VN address tables | — | — | — | CONFIRMED_E2E | — |
 | 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | CONFIRMED_E2E | FULL-02 (đã fix) |
 | 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | `CustomerAddressApiTest` (10 cases) | CONFIRMED_E2E | FULL-12 |
@@ -151,13 +151,16 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Fix status:** ✅ **Closed — không cần sửa code.** Phát hiện FULL-06 ban đầu (từ agent trace) là **sai**: `updateCoupon` đã re-validate. Đã bổ sung 4 test regression vào `Phase1JAdminSettingsMenuCouponApiTest` (create bad range → 400; update chỉ `expiresAt` về trước `startsAt` → 400; update chỉ `startsAt` về sau `expiresAt` → 400; update range hợp lệ → 200) — tất cả PASS, xác nhận hành vi đúng.
 - **Follow-up (không bắt buộc):** Coupon dùng `Instant` (UTC) nên không có vấn đề timezone ở tầng so sánh ngày. Không phát hiện bug timezone — không có follow-up cần thiết.
 
-### FULL-07 (P3) — Trang wishlist web tải toàn bộ sản phẩm rồi lọc client-side
+### FULL-07 (P3) — Trang wishlist web tải toàn bộ sản phẩm rồi lọc client-side — **Fixed (2026-05-16)**
 
 - **Type:** UX risk / scalability
 - **Evidence:** `bigbike-web/app/tai-khoan/yeu-thich/page.tsx` fetch `productList(page=1, size=100)` rồi lọc theo tập ID. Không có endpoint trả thẳng sản phẩm wishlist phân trang.
 - **Impact:** Khi catalog > ~1000 sản phẩm, wishlist hiển thị sai/thiếu (chỉ lọc trong 100 sản phẩm đầu) và tải nặng. Hiện catalog nhỏ nên rủi ro thấp.
-- **Recommended fix:** Thêm endpoint `GET /api/v1/customer/wishlist-products?page=&size=` trả product object phân trang.
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - **Backend:** Thêm `GET /api/v1/customer/wishlist/products?page=&size=` vào `CustomerWishlistController`. Endpoint lấy danh sách product ID từ wishlist của customer (theo `addedAt desc`), tra cứu từng sản phẩm qua `CatalogReadService.getWishlistProducts()`, lọc chỉ PUBLISHED, trả `ApiListResponse<Product>` phân trang. Thêm method `getWishlistProducts(List<String>, int, int)` vào `CatalogReadService` (không đổi các method hiện có).
+  - **Web:** `bigbike-web/app/tai-khoan/yeu-thich/page.tsx` — bỏ `fetchWishlist()` + `listProducts(size=100)` + client-side filter. Thay bằng `fetchWishlistProducts()` gọi trực tiếp endpoint mới (credentials included). Thêm `fetchWishlistProducts()` vào `bigbike-web/lib/api/client-api.ts`.
+  - Endpoint `GET /api/v1/customer/wishlist` (trả `List<String>` ID) giữ nguyên — mobile vẫn dùng.
+  - **Tests mới** (thêm vào `CustomerWishlistApiTest`): `getWishlistProducts_unauthenticated_returns401`; `getWishlistProducts_returnsWishlistedPublishedProducts` (seed product, add to wishlist → xuất hiện trong `/wishlist/products`); `getWishlistProducts_excludesDraftProducts` (draft product trong wishlist không xuất hiện). Cả 3 PASS.
 
 ### FULL-08 (P3) — Endpoint product snapshot từ chối ID dạng UUID — **Fixed (2026-05-16)**
 

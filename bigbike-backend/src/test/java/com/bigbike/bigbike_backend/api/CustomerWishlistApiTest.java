@@ -7,7 +7,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
+import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import jakarta.servlet.http.Cookie;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +36,8 @@ import org.springframework.web.context.WebApplicationContext;
 class CustomerWishlistApiTest {
 
     @Autowired WebApplicationContext webApplicationContext;
+    @Autowired ProductJpaRepository productRepo;
+    @Autowired CategoryJpaRepository categoryRepo;
 
     private MockMvc mockMvc;
 
@@ -164,6 +174,50 @@ class CustomerWishlistApiTest {
         assertThat(bodyB).contains(sharedProductId);
     }
 
+    // ── FULL-07: wishlist products endpoint ──────────────────────────────────
+
+    @Test
+    void getWishlistProducts_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/customer/wishlist/products"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getWishlistProducts_returnsWishlistedPublishedProducts() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("wl-cat-" + suffix, "WL Cat " + suffix);
+        String productId = "wl-prod-" + suffix;
+        seedProduct(productId, "wl-prod-slug-" + suffix, "WL Product " + suffix, cat, PublishStatus.PUBLISHED);
+
+        AuthSession session = loginCustomer("wl-prod-" + UUID.randomUUID() + "@bigbike.vn");
+        addToWishlist(session, productId);
+
+        mockMvc.perform(get("/api/v1/customer/wishlist/products").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[?(@.id == '" + productId + "')]").exists())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+    }
+
+    @Test
+    void getWishlistProducts_excludesDraftProducts() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("wl-dft-cat-" + suffix, "WL Dft Cat " + suffix);
+        String publishedId = "wl-pub-" + suffix;
+        String draftId     = "wl-dft-" + suffix;
+        seedProduct(publishedId, "wl-pub-slug-" + suffix, "WL Published " + suffix, cat, PublishStatus.PUBLISHED);
+        seedProduct(draftId,     "wl-dft-slug-" + suffix, "WL Draft " + suffix,     cat, PublishStatus.DRAFT);
+
+        AuthSession session = loginCustomer("wl-dft-" + UUID.randomUUID() + "@bigbike.vn");
+        addToWishlist(session, publishedId);
+        addToWishlist(session, draftId);
+
+        mockMvc.perform(get("/api/v1/customer/wishlist/products").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(publishedId));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private AuthSession loginCustomer(String email) throws Exception {
@@ -203,6 +257,37 @@ class CustomerWishlistApiTest {
             if (name.equals(c.getName())) return c.getValue();
         }
         return null;
+    }
+
+    private CategoryEntity seedCategory(String slug, String name) {
+        return categoryRepo.findBySlug(slug).orElseGet(() -> {
+            CategoryEntity cat = new CategoryEntity();
+            cat.setId("wl-cat-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+            cat.setSlug(slug);
+            cat.setName(name);
+            cat.setVisible(true);
+            Instant now = Instant.now();
+            cat.setCreatedAt(now);
+            cat.setUpdatedAt(now);
+            return categoryRepo.save(cat);
+        });
+    }
+
+    private void seedProduct(String id, String slug, String name, CategoryEntity cat, PublishStatus status) {
+        if (productRepo.findById(id).isPresent()) return;
+        ProductEntity p = new ProductEntity();
+        p.setId(id);
+        p.setSlug(slug);
+        p.setName(name);
+        p.setRetailPrice(BigDecimal.valueOf(1_000_000L));
+        p.setCurrency("VND");
+        p.setPublishStatus(status);
+        p.setStockState(ProductStockState.IN_STOCK);
+        p.setCategory(cat);
+        Instant now = Instant.now();
+        p.setCreatedAt(now);
+        p.setUpdatedAt(now);
+        productRepo.save(p);
     }
 
     private record AuthSession(Cookie[] cookies, String csrf) {}
