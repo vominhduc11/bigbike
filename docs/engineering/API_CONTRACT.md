@@ -37,9 +37,9 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `DELETE` | `/api/v1/customer/addresses/{id}` | Delete own address | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `GET` | `/api/v1/customer/orders` | List own orders | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `GET` | `/api/v1/customer/orders/returns` | List own returns | raw `List<CustomerReturnResponse>` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
-| `GET` | `/api/v1/customer/orders/returns/{returnId}` | Get own return detail | raw `CustomerReturnResponse` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
-| `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | raw `CustomerReturnResponse` with HTTP `201` | `CONFIRMED_FROM_CODE`; wrapper inconsistency | `CustomerOrderController.java` |
+| `GET` | `/api/v1/customer/orders/returns` | List own returns | `ApiDataResponse<List<CustomerReturnResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
+| `GET` | `/api/v1/customer/orders/returns/{returnId}` | Get own return detail | `ApiDataResponse<CustomerReturnResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
+| `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | `ApiDataResponse<CustomerReturnResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}/return-eligibility` | Pre-check whether the customer can open a return on this order and which line items still have returnable quantity. Read-only. Returns stable reason codes (`OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`). | `ApiDataResponse<ReturnEligibilityResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerReturnService.getReturnEligibility` |
 | `GET` | `/api/v1/customer/wishlist` | List own wishlist product IDs, newest first | `ApiDataResponse<List<String>>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only) | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
@@ -269,8 +269,7 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 
 The repo does not use one wrapper consistently across every controller:
 
-- Most public/customer CRUD endpoints use `ApiDataResponse` or `ApiListResponse`.
-- Customer returns use raw DTO/list responses.
+- Most public/customer CRUD endpoints use `ApiDataResponse` or `ApiListResponse`. Customer-returns endpoints (`/returns`, `/returns/{id}`, `/{orderId}/returns`) are now also wrapped — the prior raw-payload inconsistency was fixed in `CustomerOrderController`.
 - Some admin modules use raw `PageResult`, DTOs, CSV, or other non-envelope responses.
 
 Status: `CONFIRMED_FROM_CODE`

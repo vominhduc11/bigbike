@@ -270,25 +270,30 @@ not an assumption.
 - **Contract type:** API / ERROR-SHAPE
 - **Location:** `CustomerOrderController.java` (returns endpoints); already self-flagged in
   `API_CONTRACT.md` ("wrapper inconsistency") and §"Response Shape Caveats".
-- **Evidence:**
-  - `GET /customer/orders/returns` returns raw `List<CustomerReturnResponse>`,
-    `GET /customer/orders/returns/{id}` and `POST /customer/orders/{id}/returns` return raw
-    `CustomerReturnResponse` — **not** wrapped in `ApiDataResponse` / `ApiListResponse`, unlike
-    nearly every other public/customer endpoint.
-  - Web survives this only because `client-api.ts:57` does
-    `return (payload as { data: T }).data ?? (payload as T)` — a defensive fallback that
-    accepts both wrapped and raw payloads.
-- **Problem:** The same domain (customer orders) uses two different envelope conventions.
-  Any client that strictly assumes the `{data, meta}` envelope (a future SDK, a stricter
-  mobile parser) will break on these three routes.
-- **Impact:** Medium — currently masked by the web fallback; a latent break for stricter
-  consumers and a violation of contract uniformity.
-- **Recommended fix:** Wrap the three returns endpoints in `ApiDataResponse` /
-  `ApiListResponse` like the rest of the customer surface. This **changes the public response
-  shape**, so it requires a coordinated FE update (remove the `?? raw` fallback) and a doc
-  update — do not auto-fix.
-- **Auto-fix allowed:** No.
-- **NEEDS_CONFIRMATION:** Yes — public response-shape change; needs migration plan.
+- **Evidence (at audit time):**
+  - The audit was based on the stale `API_CONTRACT.md` which said "raw payload". Reading the
+    actual `CustomerOrderController.java` reveals the three endpoints already return
+    `ApiDataResponse`:
+    - `GET /returns` → `ApiDataResponse<List<CustomerReturnResponse>>`
+    - `GET /returns/{returnId}` → `ApiDataResponse<CustomerReturnResponse>`
+    - `POST /{orderId}/returns` → `ApiDataResponse<CustomerReturnResponse>`
+  - `Phase1LReturnsApiTest.java` already asserts `$.data.returnNumber`, `$.data.id`,
+    `$.data.items[*]` — confirms wrapped behavior is tested.
+  - Web `client-api.ts:57` `(payload as { data: T }).data ?? (payload as T)` — works correctly
+    with wrapped response; `payload.data` is always populated, fallback never fires.
+  - Mobile `returns_screen.dart` has dual-path unwrap:
+    - list: `data is List ? data : (data is Map ? data['data'] : [])` — handles both shapes
+    - detail: `(resp['data'] as Map?) ?? resp` — handles both shapes
+    - create: ignores response body; safe
+- **Root cause of finding:** `API_CONTRACT.md` and the audit report were written against the
+  stale documentation, not the current controller code. The backend fix predates this audit.
+- **Impact:** None at runtime — all clients work correctly with the wrapped format.
+- **Backward compatibility:** Web and mobile both have dual-path fallbacks that accept both
+  wrapped and raw. No coordinated migration needed. Fallbacks can be simplified in a future
+  cleanup pass, but removing them is not required for correctness.
+- **Status: FIXED** — Backend was already returning `ApiDataResponse` wrapper. Documentation
+  updated 2026-05-16: `docs/engineering/API_CONTRACT.md` endpoint rows and
+  §"Response Shape Caveats" corrected to reflect actual contract.
 
 ### F-06 — Web `ApiErrorDetail.field` typed non-nullable but backend can send `null`
 
@@ -354,7 +359,7 @@ not an assumption.
 | X-1 | Wishlist exists on web, absent on mobile | web vs mobile | F-07 |
 | X-2 | Order self-cancel exists on web, absent on mobile | web vs mobile | F-07 |
 | X-3 | Return-eligibility pre-check exists on web, absent on mobile | web vs mobile | F-07 |
-| X-4 | Returns endpoints use raw payloads; rest of customer surface uses `ApiDataResponse`/`ApiListResponse` | backend internal | F-05 |
+| ~~X-4~~ | ~~Returns endpoints use raw payloads~~ — **RESOLVED**: all three returns endpoints already return `ApiDataResponse`; documentation corrected (F-05 FIXED) | backend internal | F-05 |
 | X-5 | `homepageBlock` enum model in code/API_CONTRACT.md vs legacy boolean model still in DATA_CONTRACT.md | docs internal | F-01 |
 | X-6 | `home-videos` constant present in mobile but no widget consumes it yet | mobile internal | Tracked in-file comment (`CMS-004`); accurate, not a defect |
 
@@ -452,7 +457,7 @@ recommend a dedicated admin-UI permission-guard pass.
 | Item | Action | Why blocked |
 |---|---|---|
 | F-04 | Remove or wire up `filter_gender` param | Product decision: is gender filtering planned? |
-| F-05 | Wrap customer-returns endpoints in `ApiDataResponse`/`ApiListResponse` | Public response-shape change; needs coordinated FE + doc update |
+| F-05 | ~~Wrap customer-returns endpoints~~ — backend already wrapped; doc updated | **FIXED 2026-05-16** — backend predated audit; `API_CONTRACT.md` corrected |
 | F-07 | Add wishlist / cancel / return-eligibility to mobile | Product scope decision |
 | F-08 | Wire or remove `GET /admin/warranties/by-serial/{serialId}` | Confirm if a serial-detail screen needs it |
 
