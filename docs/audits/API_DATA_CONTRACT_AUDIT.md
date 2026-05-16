@@ -209,6 +209,7 @@ not an assumption.
   matching API_CONTRACT.md and `ProductEntity`. Keep `homepage_order` documentation as-is.
 - **Auto-fix allowed:** Yes (documentation only, no contract change).
 - **NEEDS_CONFIRMATION:** No.
+- **Status: FIXED** — `docs/engineering/DATA_CONTRACT.md` §"Product homepage placement (V111+)" rewritten 2026-05-16.
 
 ### F-02 — API_CONTRACT.md "Mobile Coverage Notes" is stale
 
@@ -225,6 +226,7 @@ not an assumption.
   widget integration is still pending per the in-file comment, which is accurate).
 - **Auto-fix allowed:** Yes (documentation only).
 - **NEEDS_CONFIRMATION:** No.
+- **Status: FIXED** — `docs/engineering/API_CONTRACT.md` §"Mobile Coverage Notes" updated 2026-05-16.
 
 ### F-03 — `zoneRegionCode` missing from API_CONTRACT.md checkout-options shape
 
@@ -241,6 +243,7 @@ not an assumption.
 - **Recommended fix:** Add `zoneRegionCode` (nullable string) to the documented shape.
 - **Auto-fix allowed:** Yes (documentation only).
 - **NEEDS_CONFIRMATION:** No.
+- **Status: FIXED** — `docs/engineering/API_CONTRACT.md` §"Checkout Options Contract" updated with `zoneRegionCode` field 2026-05-16.
 
 ### F-04 — `filter_gender` is a dead query param on `GET /api/v1/products`
 
@@ -302,6 +305,7 @@ not an assumption.
 - **Recommended fix:** Change web type to `field: string | null`.
 - **Auto-fix allowed:** Yes (frontend type only, no API change).
 - **NEEDS_CONFIRMATION:** No.
+- **Status: FIXED** — `bigbike-web/lib/contracts/public.ts` `ApiErrorDetail.field` changed to `string | null` 2026-05-16.
 
 ### F-07 — Mobile client lacks wishlist, order-cancel, and return-eligibility
 
@@ -436,12 +440,12 @@ recommend a dedicated admin-UI permission-guard pass.
 
 ### Quick fixes (low risk, documentation/type only — auto-fixable)
 
-| Item | Action | File |
-|---|---|---|
-| F-01 | Rewrite "Product homepage flags" section to the `homepageBlock` enum model | `docs/engineering/DATA_CONTRACT.md` |
-| F-02 | Correct the stale Mobile Coverage note (verify-email + home-videos are wrapped) | `docs/engineering/API_CONTRACT.md` |
-| F-03 | Add `zoneRegionCode` to the documented checkout-options shape | `docs/engineering/API_CONTRACT.md` |
-| F-06 | Change `ApiErrorDetail.field` to `string \| null` | `bigbike-web/lib/contracts/public.ts` |
+| Item | Action | File | Status |
+|---|---|---|---|
+| F-01 | Rewrite "Product homepage flags" section to the `homepageBlock` enum model | `docs/engineering/DATA_CONTRACT.md` | **FIXED 2026-05-16** |
+| F-02 | Correct the stale Mobile Coverage note (verify-email + home-videos are wrapped) | `docs/engineering/API_CONTRACT.md` | **FIXED 2026-05-16** |
+| F-03 | Add `zoneRegionCode` to the documented checkout-options shape | `docs/engineering/API_CONTRACT.md` | **FIXED 2026-05-16** |
+| F-06 | Change `ApiErrorDetail.field` to `string \| null` | `bigbike-web/lib/contracts/public.ts` | **FIXED 2026-05-16** |
 
 ### Contract fixes (need confirmation — do NOT auto-fix)
 

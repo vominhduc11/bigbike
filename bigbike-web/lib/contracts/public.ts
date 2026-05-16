@@ -13,7 +13,7 @@ export type PaginationMeta = {
 };
 
 export type ApiErrorDetail = {
-  field: string;
+  field: string | null;
   code: string;
   message: string;
 };

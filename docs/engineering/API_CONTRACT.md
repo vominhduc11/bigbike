@@ -61,10 +61,11 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 
 Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
 - `paymentMethods`: `[{ code, title }]` — currently `COD` ("Thanh toán khi nhận hàng") and `BACS` ("Chuyển khoản ngân hàng"). **Codes are uppercase strings.**
-- `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount }]`
+- `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount, zoneRegionCode }]`
   - `cost` — base shipping fee (VND, never null; zero-cost methods have `cost: 0`)
   - `freeShippingThreshold` — if `orderSubtotal >= freeShippingThreshold`, effective shipping is 0; `null` means no threshold
   - `minOrderAmount` — minimum subtotal required to use this method; `null` means no minimum
+  - `zoneRegionCode` — region/zone identifier (e.g. ISO-3166-2 code) this method applies to; `null` means applies to all regions
 
 Frontend must compute `effectiveShippingCost` using `freeShippingThreshold` before displaying totals — the cart total returned by `GET /api/v1/cart` does not include shipping (always 0 in cart phase).
 
@@ -279,7 +280,7 @@ Status: `CONFIRMED_FROM_CODE`
 | Topic | Current status | Evidence |
 |---|---|---|
 | Search, address, contact, customer address, customer returns are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
-| Verify-email and home-videos are not currently wrapped in `api_endpoints.dart`. | `CODE_ONLY_NOT_DOCUMENTED` | backend controllers/security + `api_endpoints.dart` |
+| Verify-email and home-videos are wrapped in `api_endpoints.dart` (constants `verifyEmail` line 52, `homeVideos` line 26). Home-videos widget integration is still pending in the mobile app (tracked as `CMS-004`). | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` lines 26, 52 |
 
 ## Proposed Accounts Receivable Endpoints
 

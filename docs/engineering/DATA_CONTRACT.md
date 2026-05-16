@@ -198,27 +198,37 @@ Evidence:
 - `BUSINESS_RULES.md` STOCK_RULE_001–007
 - `V108__backfill_stock_state_from_quantity.sql`
 
-### Product homepage flags and ordering
+### Product homepage placement (V111+)
 
-Three columns on the `products` table control homepage surface placement:
+Two columns on the `products` table control homepage surface placement. The legacy boolean pair (`is_featured`, `show_on_homepage`) was **dropped in migration `V111__refactor_product_homepage_block.sql` (2026-05-14)** and must not be referenced in any new code or query.
 
 | Column | DB column | Type | Purpose |
 |---|---|---|---|
-| `isFeatured` | `is_featured` | `BOOLEAN NOT NULL DEFAULT false` | Slot product into the "Sản phẩm nổi bật" grid (Block 1). Max 12 shown; sorted by `homepageOrder ASC NULLS LAST`, then `created_at DESC`. |
-| `showOnHomepage` | `show_on_homepage` | `BOOLEAN NOT NULL DEFAULT false` | Slot product into the "Gợi ý dành cho bạn" carousel (Block 2). Max 5 shown; sorted same as above. Products already shown in Block 1 are excluded (deduplication on web). |
-| `homepageOrder` | `homepage_order` | `INTEGER NULL` (added V95) | Manual ordering pin shared by both blocks. Lower value = appears earlier. `NULL` = unpinned (sorted to end by `createdAt DESC`). |
+| `homepageBlock` | `homepage_block` | `VARCHAR NOT NULL DEFAULT 'NONE'` (enum-constrained) | Which homepage slot this product occupies. Exactly one value per product. |
+| `homepageOrder` | `homepage_order` | `INTEGER NULL` (added V95) | Manual ordering pin within the slot. Lower value = appears earlier. `NULL` = unpinned (sorted to end by `createdAt DESC`). |
 
-Migration: `V95__add_product_homepage_order.sql` — `ALTER TABLE products ADD COLUMN IF NOT EXISTS homepage_order INTEGER; CREATE INDEX idx_products_homepage_order ON products (homepage_order) WHERE homepage_order IS NOT NULL;`
+**`homepageBlock` enum values:**
+
+| Value | Slot | Frontend display |
+|---|---|---|
+| `NONE` | Not pinned to homepage | Default for all products |
+| `FEATURED_GRID` | "Sản phẩm nổi bật" grid | Max 12 shown (frontend-enforced) |
+| `RECOMMENDED_CAROUSEL` | "Gợi ý dành cho bạn" carousel | Max 10 shown (frontend-enforced) |
+
+A product occupies exactly one slot — no deduplication pass needed. Admin UI shows a warning banner when the filtered count of a slot exceeds its display limit.
+
+**Backfill rule (V111):** `is_featured=true` → `FEATURED_GRID`; else `show_on_homepage=true` → `RECOMMENDED_CAROUSEL`; else `NONE`. Legacy columns then dropped via `ALTER TABLE products DROP COLUMN is_featured, DROP COLUMN show_on_homepage`.
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `ProductEntity.java` — `@Column(name = "homepage_order") private Integer homepageOrder`
-- `Product.java` — record field `Integer homepageOrder`
+- `ProductEntity.java` — `@Column(name = "homepage_block") @Enumerated(EnumType.STRING) private HomepageBlock homepageBlock` (no `isFeatured` / `showOnHomepage` fields)
+- `HomepageBlock.java` — enum `NONE | FEATURED_GRID | RECOMMENDED_CAROUSEL`
 - `UpsertProductRequest.java` — presence-flag pattern (`homepageOrderPresent`) prevents null from clearing an existing value on partial PATCH
-- `AdminCatalogMutationService.applyProductPatch()` — applies `homepageOrder` only when `create || homepageOrderPresent`
+- `AdminCatalogMutationService.applyProductPatch()` — applies `homepageBlock` and `homepageOrder` updates
 - `CatalogReadService.productComparator()` — compound sort: pinned ASC/DESC, null last, `createdAt:DESC` tiebreaker
-- `bigbike-openapi.json` — `homepageOrder` in Product schema (integer, nullable)
+- `V111__refactor_product_homepage_block.sql` — schema change + backfill + column drop
+- `API_CONTRACT.md` §"Admin Catalog Contract" — documents filter/sort params for `homepageBlock`
 
 ### Page hero fields (V98)
 
