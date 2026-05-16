@@ -56,10 +56,10 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest` | CONFIRMED_E2E | FULL-04 |
 | 5 | Cart + coupon apply | Guest/Customer | web, mobile, BE | `/gio-hang` | `CartController`→`CartService` | carts/cart_items, V73 | coupon | CSRF guard | `Phase1ECartApiTest` | CONFIRMED_E2E | (ORDER-E2E-07 defer) |
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
-| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | ❌ none | PARTIAL (mobile UI thiếu) | FULL-05, FULL-07, FULL-09 |
+| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (8 cases) | PARTIAL (mobile UI thiếu) | FULL-05, FULL-07, FULL-09 |
 | 8 | VN address lookup | Guest/Customer | web, mobile, BE | address form | `VnAddressController` | VN address tables | — | — | — | CONFIRMED_E2E | — |
 | 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | CONFIRMED_E2E | FULL-02 (đã fix) |
-| 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | ❌ thiếu | CONFIRMED_E2E | FULL-12 |
+| 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | `CustomerAddressApiTest` (10 cases) | CONFIRMED_E2E | FULL-12 |
 | 11 | Customer order list/detail + guest lookup | Customer/Guest | web, mobile, BE | `/tai-khoan/don-hang`, lookup | `CustomerOrderController`,`OrderLookupController` | V7 | Order | — | `Phase1GOrderReadApiTest`,`GuestOrderLinkingTest` | CONFIRMED_E2E | FULL-10 |
 | 12 | Customer tự huỷ đơn | Customer | web, BE | order detail | `CustomerOrderCancelService` | V7 | Order | restore stock | `Phase1H...` | CONFIRMED_E2E | (ORDER-E2E-01 fixed) |
 | 13 | Customer return + eligibility | Customer | web, mobile, BE | order detail | `CustomerOrderController`→`CustomerReturnService` | returns, V65, V104 | Return | — | `Phase1LReturnsApiTest` | CONFIRMED_E2E | — |
@@ -191,13 +191,17 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Recommended fix:** Cân nhắc permission tường minh (`media.hard_delete`) hoặc ít nhất thêm test. Không gấp.
 - **Fix status:** Not fixed — ghi nhận.
 
-### FULL-12 (P2) — Thiếu test cho nhiều workflow quan trọng
+### FULL-12 (P2) — Thiếu test cho nhiều workflow quan trọng — **Batch 1 Fixed (2026-05-16)**
 
 - **Type:** test coverage
 - **Evidence:** Không tìm thấy test file cho: wishlist (`CustomerWishlistController`), customer addresses CRUD, contact form + contact inbox (`ContactController`/`AdminContactController` — không có trong `Phase1J...`), coupon gift (`AdminCouponGiftController`), public review controller, warranty lookup/void.
 - **Impact:** Các workflow này hoạt động đúng theo trace code nhưng không có lưới an toàn hồi quy. Đặc biệt permission `contact.read`/`contact.write` chưa được test (401/403/200).
 - **Recommended fix:** Bổ sung test API — xem [Section 11](#11-danh-sách-test-còn-thiếu).
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status — Batch 1 (2026-05-16):** Đã bổ sung test cho wishlist và customer addresses:
+  - `CustomerWishlistApiTest` (mới) — **8/8 PASS**: GET 401 no-session, POST 401 guest-session, add 201 + added=true, list chứa item đã add, duplicate idempotent (added=false), remove 204 + item gone, isolation A không thấy B, remove scoped (B's item survives A's delete).
+  - `CustomerAddressApiTest` (mới) — **10/10 PASS**: GET 401 no-session, create 201 + data, list own addresses, list không chứa address của customer khác, update own 200, update other→404, delete own 204 + gone, delete other→404, missing fullName→400, invalid phone→400.
+  - Không phát hiện bug trong batch này.
+- **Còn lại (batch 2+):** contact form public submit, admin list/filter, coupon gift, public review, warranty lookup/void.
 
 ### FULL-13 (P2) — Stock receiving (nhập kho theo phiếu) chỉ có schema, không có flow
 
@@ -274,7 +278,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | BE thiếu validation / chỉ validate FE | FULL-06 (coupon date) đã verify = **stale, code đúng sẵn**. Checkout/cart/order validate đủ ở BE. |
 | Thiếu side effect (stock/serial/payment/refund/audit/notify/WS/receivable) | FULL-03 (contact không audit) — **đã fix**; FULL-04 (review không notify). Các side effect tiền/kho/serial đều đủ. |
 | DB schema/migration không enforce rule | ORDER-E2E-08 (thiếu CHECK) — đã fix bằng V116. SKU không unique (BUSINESS_RULES ghi nhận có chủ đích). |
-| Thiếu test cho workflow quan trọng | FULL-12 — wishlist, address, contact, coupon-gift, warranty, public review. |
+| Thiếu test cho workflow quan trọng | FULL-12 — wishlist ✅, address ✅ (batch 1 done); còn: contact-form public, coupon-gift, warranty, public review. |
 
 ---
 
@@ -321,8 +325,8 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 
 | Workflow | Test đề xuất |
 |---|---|
-| Customer wishlist | add/remove/list; ownership (khách A không xoá được wishlist khách B) |
-| Customer addresses | CRUD + ownership guard |
+| Customer wishlist | ✅ **Đã có** (`CustomerWishlistApiTest` 8/8 PASS, 2026-05-16) — add/remove/list, idempotent, isolation, scoped delete. |
+| Customer addresses | ✅ **Đã có** (`CustomerAddressApiTest` 10/10 PASS, 2026-05-16) — CRUD, ownership 404, validation. |
 | Contact form + inbox | ✅ admin update + permission 401/403/200 đã có (`AdminContactApiTest`, FULL-03). Còn thiếu: submit form public, admin list/filter, contact.read trên GET |
 | Coupon gift | single gift (validate email); bulk gift (`{sent, skipped}`) |
 | Public review | submit invalid rating / comment quá dài / honeypot; duplicate 24h |
@@ -355,7 +359,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 1. ✅ **FULL-01 đã fix (2026-05-16)** — đã thêm 3 permission vào `PermissionCatalog`, cập nhật docs + test.
 2. ✅ **FULL-02 đã fix (2026-05-16)** — thêm màn verify-email Flutter + route + điều hướng sau đăng ký. (Tuỳ chọn về sau: cấu hình deep link để email link mở thẳng app.)
 3. ✅ **FULL-15 đã verify (2026-05-16)** — Serial P0-4/P0-5/P1-1/P1-3 đều đã fixed; test inventory/serial PASS.
-4. Bổ sung test cho contact-permission, wishlist, address (Section 11).
+4. ✅ **Wishlist + Address test (FULL-12 batch 1, 2026-05-16)** — `CustomerWishlistApiTest` (8/8) + `CustomerAddressApiTest` (10/10). Còn lại: contact form public, coupon-gift, public review, warranty.
 5. Dọn 3 **docs mismatch** (DOC-01/02/03).
 6. Chốt các mục **NEEDS_BUSINESS_CONFIRMATION** ở Section 10 với chủ shop.
 
