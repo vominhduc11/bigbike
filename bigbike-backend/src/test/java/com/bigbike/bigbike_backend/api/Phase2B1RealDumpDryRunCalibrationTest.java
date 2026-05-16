@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.bigbike.bigbike_backend.migration.wordpress.config.WordPressMigrationProperties;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMapper;

@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper.MappedProduct;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;

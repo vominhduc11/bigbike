@@ -6,8 +6,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRe
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Phone-only matching and unverified-email matching are both prohibited.
  */
 @Service
+@Slf4j
 public class GuestOrderLinkingService {
-
-    private static final Logger log = LoggerFactory.getLogger(GuestOrderLinkingService.class);
 
     private final CustomerJpaRepository customerRepo;
     private final OrderJpaRepository orderRepo;

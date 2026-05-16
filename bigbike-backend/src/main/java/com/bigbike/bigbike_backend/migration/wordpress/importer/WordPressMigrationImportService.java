@@ -45,14 +45,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -65,9 +63,8 @@ import org.springframework.stereotype.Service;
  *   - All writes are idempotent: re-running produces the same result.
  */
 @Service
+@Slf4j
 public class WordPressMigrationImportService {
-
-    private static final Logger log = LoggerFactory.getLogger(WordPressMigrationImportService.class);
 
     private static final Set<String> CATALOG_TABLES = Set.of(
             "kd_posts", "kd_postmeta",
@@ -707,10 +704,6 @@ public class WordPressMigrationImportService {
             Map<Long, WpTerm> termsById,
             Map<Long, WpTermTaxonomy> taxonomyByTermId) {
         return collectTaxonomyRefs(post, relsByObject, ttIdToTermId, termsById, taxonomyByTermId);
-    }
-
-    private List<TaxonomyRef> toTaxonomyRefs(List<TaxonomyRef> refs) {
-        return refs == null ? List.of() : refs;
     }
 
     private List<TaxonomyRef> collectTaxonomyRefs(

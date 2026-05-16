@@ -9,7 +9,6 @@ import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
 import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentAuthorJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;

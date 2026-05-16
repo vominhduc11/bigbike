@@ -7,17 +7,16 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 
 @Service
+@Slf4j
 public class OrderNotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderNotificationService.class);
     private static final NumberFormat VND = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
 
     /** Statuses that customers care enough about to receive an email notification. */

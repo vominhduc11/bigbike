@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -57,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminReturnService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -312,8 +313,7 @@ public class AdminReturnService {
                 default -> {} // COMPLETED — internal closing, no customer email
             }
         } catch (Exception e) {
-            LoggerFactory.getLogger(AdminReturnService.class)
-                    .warn("Return notification failed for {} → {}: {}", ret.getReturnNumber(), newStatus, e.getMessage());
+            log.warn("Return notification failed for {} → {}: {}", ret.getReturnNumber(), newStatus, e.getMessage());
         }
     }
 

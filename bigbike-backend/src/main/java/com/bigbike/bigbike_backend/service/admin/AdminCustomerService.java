@@ -15,7 +15,6 @@ import com.bigbike.bigbike_backend.mapper.CustomerAddressMapper;
 import com.bigbike.bigbike_backend.mapper.CustomerMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;

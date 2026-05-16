@@ -8,8 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -33,9 +32,8 @@ import org.springframework.stereotype.Component;
  *       --bigbike.migration.wordpress.mode=catalog-dry-run"
  */
 @Component
+@Slf4j
 public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(WordPressCatalogContentDryRunRunner.class);
 
     private final WordPressMigrationProperties props;
     private final WordPressCatalogContentDryRunService service;

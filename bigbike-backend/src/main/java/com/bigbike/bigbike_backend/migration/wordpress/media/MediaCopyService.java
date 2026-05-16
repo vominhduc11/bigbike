@@ -12,8 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -29,9 +28,9 @@ import org.springframework.stereotype.Component;
  * Pass {@code null} for {@code storage} in dry-run mode; no MinIO connection is made.
  */
 @Component
+@Slf4j
 public class MediaCopyService {
 
-    private static final Logger log = LoggerFactory.getLogger(MediaCopyService.class);
     private static final int STREAM_BUFFER = 64 * 1024;
     private static final String LEGACY_PROVIDER = "LEGACY_WP";
     private static final String MINIO_PROVIDER = "MINIO";

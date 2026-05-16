@@ -15,20 +15,18 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.context.Context;
 
 @Service
+@Slf4j
 public class CustomerPasswordResetService {
 
-    private static final Logger log = LoggerFactory.getLogger(CustomerPasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
     private static final long TOKEN_TTL_MINUTES = 60;
-    private static final String STATUS_ACTIVE = "ACTIVE";
 
     private final CustomerJpaRepository customerRepo;
     private final CustomerPasswordResetTokenJpaRepository tokenRepo;

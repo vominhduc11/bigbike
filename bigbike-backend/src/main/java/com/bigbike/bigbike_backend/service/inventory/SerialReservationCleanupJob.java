@@ -2,8 +2,7 @@ package com.bigbike.bigbike_backend.service.inventory;
 
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +12,8 @@ import org.springframework.stereotype.Component;
  * uses FOR UPDATE SKIP LOCKED so concurrent runs skip rows locked by another node.
  */
 @Component
+@Slf4j
 public class SerialReservationCleanupJob {
-
-    private static final Logger log = LoggerFactory.getLogger(SerialReservationCleanupJob.class);
 
     private final SerialLifecycleService serialLifecycleService;
     private final WebRevalidationService webRevalidationService;

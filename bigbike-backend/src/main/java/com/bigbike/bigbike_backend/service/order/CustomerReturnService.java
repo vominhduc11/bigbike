@@ -33,11 +33,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerReturnService {
 
     private static final Set<String> RETURNABLE_STATUSES = Set.of("COMPLETED");
@@ -161,8 +163,7 @@ public class CustomerReturnService {
         try {
             notificationService.sendReturnReceived(ret, order.getCustomerEmail(), order.getOrderNumber());
         } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(CustomerReturnService.class)
-                    .warn("Return-received notification failed for {}: {}", ret.getReturnNumber(), e.getMessage());
+            log.warn("Return-received notification failed for {}: {}", ret.getReturnNumber(), e.getMessage());
         }
 
         return toDetail(ret, order.getOrderNumber());

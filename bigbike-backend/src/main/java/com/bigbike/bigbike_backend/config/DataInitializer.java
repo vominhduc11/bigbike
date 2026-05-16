@@ -4,8 +4,7 @@ import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
@@ -15,9 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Profile("!prod")
+@Slf4j
 public class DataInitializer {
-
-    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final AdminUserJpaRepository adminUserRepo;
     private final PasswordService passwordService;

@@ -3,8 +3,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.redirect;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper.MappedRedirect;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpFgRedirect;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,9 +19,8 @@ import org.springframework.stereotype.Component;
  *   - selfLoop      : resolved source pattern == /product/{slug}
  */
 @Component
+@Slf4j
 public class FgRedirectAnalyzer {
-
-    private static final Logger log = LoggerFactory.getLogger(FgRedirectAnalyzer.class);
 
     private final FgRedirectResolver resolver;
 

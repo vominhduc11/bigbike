@@ -8,8 +8,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectM
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpRedirectRow;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,9 +22,8 @@ import org.springframework.stereotype.Component;
  * Delegates the actual persistence to RedirectImporter (upsert by sourcePattern).
  */
 @Component
+@Slf4j
 public class RankMathRedirectImporter {
-
-    private static final Logger log = LoggerFactory.getLogger(RankMathRedirectImporter.class);
 
     private final WordPressRedirectMapper mapper;
     private final RedirectImporter importer;

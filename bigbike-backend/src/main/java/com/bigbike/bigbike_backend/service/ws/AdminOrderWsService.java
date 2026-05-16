@@ -1,17 +1,16 @@
 package com.bigbike.bigbike_backend.service.ws;
 
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
+@Slf4j
 public class AdminOrderWsService {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminOrderWsService.class);
     private static final String TOPIC_ORDERS = "/topic/admin/orders";
 
     private final SimpMessagingTemplate messaging;

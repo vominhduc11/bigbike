@@ -16,8 +16,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,9 +28,9 @@ import org.thymeleaf.context.Context;
  * The database stores only the SHA-256 hash (see the token_hash column).
  */
 @Service
+@Slf4j
 public class EmailVerificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);
     private static final int TOKEN_BYTES = 32;
     private static final long TOKEN_TTL_HOURS = 24;
 

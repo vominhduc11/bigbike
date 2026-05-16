@@ -5,8 +5,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.runner.WordPressMigration
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -49,9 +48,9 @@ import org.springframework.stereotype.Component;
  *   --bigbike.migration.wordpress.uploads-path=/data/wp-content/uploads
  */
 @Component
+@Slf4j
 public class MediaCopyRunner implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(MediaCopyRunner.class);
     private static final int DEFAULT_MAX_RETRIES = 3;
 
     private final WordPressMigrationProperties props;

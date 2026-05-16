@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.receivable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +12,8 @@ import org.springframework.stereotype.Component;
  * from the previous day are captured on the first run.
  */
 @Component
+@Slf4j
 public class ReceivableOverdueScheduler {
-
-    private static final Logger log = LoggerFactory.getLogger(ReceivableOverdueScheduler.class);
 
     private final ReceivableService receivableService;
     private final ReceivableNotificationService notificationService;

@@ -2,11 +2,13 @@ package com.bigbike.bigbike_backend.service.coupon;
 
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import java.time.Instant;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Slf4j
 public class CouponExpiryScheduler {
 
     private final CouponJpaRepository couponRepo;
@@ -21,8 +23,7 @@ public class CouponExpiryScheduler {
     public void expireOverdueCoupons() {
         int updated = couponRepo.expireOverdue(Instant.now());
         if (updated > 0) {
-            org.slf4j.LoggerFactory.getLogger(CouponExpiryScheduler.class)
-                    .info("Auto-expired {} coupon(s).", updated);
+            log.info("Auto-expired {} coupon(s).", updated);
         }
     }
 }

@@ -11,8 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -29,9 +28,8 @@ import org.springframework.stereotype.Component;
  * Self-loops (source == target) are always skipped.
  */
 @Component
+@Slf4j
 public class LegacyUrlMapper {
-
-    private static final Logger log = LoggerFactory.getLogger(LegacyUrlMapper.class);
 
     static final String PRODUCT_HTML_SUFFIX = ".html";
     static final String PRODUCT_TARGET_PREFIX = "/product/";

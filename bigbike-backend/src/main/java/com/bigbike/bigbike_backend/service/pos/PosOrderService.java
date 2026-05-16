@@ -22,7 +22,6 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;

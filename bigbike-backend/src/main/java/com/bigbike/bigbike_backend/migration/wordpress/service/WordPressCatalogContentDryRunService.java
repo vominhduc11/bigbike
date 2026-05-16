@@ -551,9 +551,4 @@ public class WordPressCatalogContentDryRunService {
     }
 
     private String nvl(String value) { return value != null ? value : ""; }
-
-    private String firstNonNull(String... candidates) {
-        for (String s : candidates) if (s != null) return s;
-        return null;
-    }
 }

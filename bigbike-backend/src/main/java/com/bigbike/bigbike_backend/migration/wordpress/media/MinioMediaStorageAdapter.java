@@ -9,16 +9,14 @@ import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * MinIO (S3-compatible) implementation of {@link MediaStoragePort}.
  * Created per-run by {@link MediaCopyRunner} — not a Spring bean.
  */
+@Slf4j
 public class MinioMediaStorageAdapter implements MediaStoragePort {
-
-    private static final Logger log = LoggerFactory.getLogger(MinioMediaStorageAdapter.class);
 
     private final MinioClient client;
 

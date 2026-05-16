@@ -5,8 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import java.util.Arrays;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -23,9 +22,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
+@Slf4j
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
-    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
 
     private final JwtService jwtService;
     private final List<String> allowedOrigins;

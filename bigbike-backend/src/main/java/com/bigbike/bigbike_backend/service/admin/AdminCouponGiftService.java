@@ -14,16 +14,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminCouponGiftService {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminCouponGiftService.class);
     private static final int BULK_WARN_THRESHOLD = 500;
 
     private final CustomerJpaRepository customerRepo;

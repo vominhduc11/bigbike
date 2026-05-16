@@ -2,8 +2,7 @@ package com.bigbike.bigbike_backend.service.email;
 
 import jakarta.mail.internet.MimeMessage;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -16,9 +15,8 @@ import org.thymeleaf.context.Context;
  * and sends via JavaMailSender. Degrades gracefully when SMTP is not configured.
  */
 @Service
+@Slf4j
 public class EmailDispatchService {
-
-    private static final Logger log = LoggerFactory.getLogger(EmailDispatchService.class);
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;

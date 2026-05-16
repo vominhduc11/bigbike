@@ -24,7 +24,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Both AdminOrderService and AdminReturnService delegate here to keep behaviour consistent.
  */
 @Service
+@Slf4j
 public class RefundService {
 
     private final OrderJpaRepository orderRepo;
@@ -223,9 +224,8 @@ public class RefundService {
         try {
             orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", null);
         } catch (Exception e) {
-            LoggerFactory.getLogger(RefundService.class)
-                    .warn("Refund notification failed for order {}: {}",
-                            order.getOrderNumber(), e.getMessage());
+            log.warn("Refund notification failed for order {}: {}",
+                    order.getOrderNumber(), e.getMessage());
         }
 
         String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()

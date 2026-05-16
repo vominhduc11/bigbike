@@ -26,8 +26,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,11 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   - Row-level pessimistic locks used via native SKIP LOCKED queries for concurrency safety.
  */
 @Service
+@Slf4j
 public class SerialLifecycleService {
 
-    private static final Logger log = LoggerFactory.getLogger(SerialLifecycleService.class);
-
-    private static final Duration DEFAULT_RESERVATION_TTL = Duration.ofMinutes(15);
     private static final int DEFAULT_WARRANTY_MONTHS = 12;
 
     private final ProductSerialJpaRepository serialRepo;

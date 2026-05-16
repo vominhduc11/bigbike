@@ -10,8 +10,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.UpdateSerialStatusRequest;
-import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
-import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminInventoryService;
 import com.bigbike.bigbike_backend.service.admin.AdminSerialImportService;

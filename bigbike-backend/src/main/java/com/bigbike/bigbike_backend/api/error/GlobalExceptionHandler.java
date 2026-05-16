@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.common.ApiMetaFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,13 +19,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private final ApiMetaFactory apiMetaFactory;
 
     public GlobalExceptionHandler(ApiMetaFactory apiMetaFactory) {
@@ -39,7 +38,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class, BindException.class})
     public ResponseEntity<ApiErrorResponse> handleConstraintViolations(Exception ex, HttpServletRequest request) {
         List<ApiErrorDetail> details = ValidationErrorMapper.from(ex);
-        LOG.warn("Validation failed [{}]: {}", request.getRequestURI(), details);
+        log.warn("Validation failed [{}]: {}", request.getRequestURI(), details);
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", details, request);
     }
 
@@ -61,7 +60,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex,
             HttpServletRequest request
     ) {
-        LOG.warn("Unreadable request body [{}]: {}", request.getRequestURI(), ex.getMessage());
+        log.warn("Unreadable request body [{}]: {}", request.getRequestURI(), ex.getMessage());
         ApiErrorDetail detail = new ApiErrorDetail(
                 null,
                 "INVALID_VALUE",
@@ -73,7 +72,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, HttpServletRequest request) {
-        LOG.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT, "DATA_CONFLICT",
                 "Operation violates a data integrity constraint (e.g. duplicate serial number).",
                 List.of(), request);
@@ -88,7 +87,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-        LOG.error("Unhandled exception", ex);
+        log.error("Unhandled exception", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "An unexpected error occurred.", List.of(), request);
     }
 

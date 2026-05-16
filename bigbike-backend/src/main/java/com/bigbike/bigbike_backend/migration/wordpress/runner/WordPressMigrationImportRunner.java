@@ -11,8 +11,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.env.Environment;
@@ -41,9 +40,8 @@ import org.springframework.stereotype.Component;
  * Each domain upserts by legacyId or natural key — no duplicate rows created.
  */
 @Component
+@Slf4j
 public class WordPressMigrationImportRunner implements ApplicationRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(WordPressMigrationImportRunner.class);
 
     /** DB URL substrings (case-insensitive) that indicate a production target. */
     public static final java.util.List<String> PRODUCTION_URL_PATTERNS = java.util.List.of(

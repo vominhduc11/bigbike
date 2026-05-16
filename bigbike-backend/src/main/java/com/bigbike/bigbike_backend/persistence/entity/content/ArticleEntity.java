@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.persistence.entity.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

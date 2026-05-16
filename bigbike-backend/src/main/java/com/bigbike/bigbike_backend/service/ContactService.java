@@ -8,17 +8,16 @@ import com.bigbike.bigbike_backend.persistence.repository.contact.ContactMessage
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.context.Context;
 
 @Service
+@Slf4j
 public class ContactService {
 
-    private static final Logger log = LoggerFactory.getLogger(ContactService.class);
     private static final int USER_AGENT_MAX_LENGTH = 1000;
 
     private final EmailDispatchService emailDispatch;

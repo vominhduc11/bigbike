@@ -33,9 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -45,9 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class AdminMediaService {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminMediaService.class);
     private static final Tika TIKA = new Tika();
     private static final int TIKA_HEADER_BYTES = 8192;
 
@@ -628,23 +627,6 @@ public class AdminMediaService {
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────
-
-    /**
-     * Per-item DTO mapper. Falls back to single-row queries when called outside
-     * a batch context (e.g. detail endpoint). Use {@link #toListItemWithUsageAndTags}
-     * inside {@link #listMedia} to avoid N+1.
-     */
-    private AdminMediaListItemResponse toListItem(MediaEntity m) {
-        int usageCount = mediaReferenceService.getReferences(m).size();
-        List<String> tags = tagRepo.tagsFor(m.getId());
-        return toListItemWithUsageAndTags(m, usageCount, tags);
-    }
-
-    /** @deprecated use {@link #toListItemWithUsageAndTags} for batch contexts */
-    @Deprecated
-    private AdminMediaListItemResponse toListItemWithUsage(MediaEntity m, int usageCount) {
-        return toListItemWithUsageAndTags(m, usageCount, tagRepo.tagsFor(m.getId()));
-    }
 
     private AdminMediaListItemResponse toListItemWithUsageAndTags(MediaEntity m, int usageCount, List<String> tags) {
         return new AdminMediaListItemResponse(

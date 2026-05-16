@@ -10,8 +10,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationWriteP
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.WordPressMigrationWritePlanService;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -28,9 +27,8 @@ import org.springframework.stereotype.Component;
  * It only reads the dump file and generates a plan report.
  */
 @Component
+@Slf4j
 public class WordPressMigrationWritePlanRunner implements ApplicationRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(WordPressMigrationWritePlanRunner.class);
 
     private final WordPressMigrationProperties props;
     private final WordPressCatalogContentDryRunService catalogDryRunService;

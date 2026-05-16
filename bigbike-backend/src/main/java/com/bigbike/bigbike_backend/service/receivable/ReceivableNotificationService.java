@@ -8,8 +8,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
@@ -19,9 +18,8 @@ import org.thymeleaf.context.Context;
  * Called by ReceivableOverdueScheduler after each daily run.
  */
 @Service
+@Slf4j
 public class ReceivableNotificationService {
-
-    private static final Logger log = LoggerFactory.getLogger(ReceivableNotificationService.class);
 
     private final ReceivableJpaRepository receivableRepo;
     private final EmailDispatchService emailDispatch;

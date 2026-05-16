@@ -12,8 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
 import net.coobird.thumbnailator.Thumbnails;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -28,9 +27,8 @@ import org.springframework.stereotype.Service;
  * {@code {"thumb":"/media/uploads/.../photo.thumb.jpg","medium":"/media/.../photo.medium.jpg"}}.
  */
 @Service
+@Slf4j
 public class ImageVariantService {
-
-    private static final Logger log = LoggerFactory.getLogger(ImageVariantService.class);
 
     /** Target widths in pixels. Variants smaller than the source are skipped. */
     private static final Map<String, Integer> VARIANTS = Map.of(

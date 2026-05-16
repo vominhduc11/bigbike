@@ -18,7 +18,6 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerEmailVerificationTokenJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
-import com.bigbike.bigbike_backend.service.auth.JwtService;
 import com.bigbike.bigbike_backend.service.customer.GuestOrderLinkingService;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -27,7 +26,6 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

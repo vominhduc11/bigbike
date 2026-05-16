@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto.inventory;
 
 import java.util.List;
-import java.util.UUID;
 
 public record SerialImportResponse(
         int inserted,

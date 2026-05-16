@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -20,9 +19,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.client.RestClient;
 
 @Service
+@Slf4j
 public class WebRevalidationService {
-
-    private static final Logger log = LoggerFactory.getLogger(WebRevalidationService.class);
 
     private final boolean enabled;
     private final String revalidateUrl;

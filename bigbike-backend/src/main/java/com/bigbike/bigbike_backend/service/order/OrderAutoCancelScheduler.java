@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.order;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +12,8 @@ import org.springframework.stereotype.Component;
  * back-to-back on the same row lock.
  */
 @Component
+@Slf4j
 public class OrderAutoCancelScheduler {
-
-    private static final Logger log = LoggerFactory.getLogger(OrderAutoCancelScheduler.class);
 
     private final OrderAutoCancelService service;
 

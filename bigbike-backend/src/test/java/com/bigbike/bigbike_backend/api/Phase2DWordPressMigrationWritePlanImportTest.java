@@ -23,9 +23,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationOperationType;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationWritePlan;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.WordPressMigrationWritePlanService;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

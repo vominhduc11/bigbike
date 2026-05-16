@@ -6,8 +6,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,9 +21,8 @@ import org.springframework.stereotype.Component;
  * dead-end redirect.
  */
 @Component
+@Slf4j
 public class FgRedirectResolver {
-
-    private static final Logger log = LoggerFactory.getLogger(FgRedirectResolver.class);
 
     static final String PRODUCT_URL_PREFIX = "/product/";
 

@@ -3,8 +3,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.normalizer;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import java.time.Instant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,9 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
  * never assign a random or incorrect category.
  */
 @Component
+@Slf4j
 public class ProductCategoryResolver {
-
-    private static final Logger log = LoggerFactory.getLogger(ProductCategoryResolver.class);
 
     static final String UNCATEGORIZED_SLUG = "uncategorized";
     static final String UNCATEGORIZED_NAME = "Uncategorized";

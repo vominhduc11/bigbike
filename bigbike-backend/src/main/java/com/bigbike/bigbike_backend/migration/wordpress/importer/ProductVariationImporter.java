@@ -19,7 +19,6 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariant
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

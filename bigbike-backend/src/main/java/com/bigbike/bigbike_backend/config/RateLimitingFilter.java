@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,8 +36,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
-
-    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
     private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
 

@@ -12,8 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -27,9 +26,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * (default 72h). Set to 0 to disable.
  */
 @Service
+@Slf4j
 public class OrderAutoCancelService {
-
-    private static final Logger log = LoggerFactory.getLogger(OrderAutoCancelService.class);
 
     private static final String SETTING_KEY = "bacs_unpaid_auto_cancel_hours";
     private static final long DEFAULT_HOURS = 72L;

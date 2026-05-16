@@ -16,7 +16,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
