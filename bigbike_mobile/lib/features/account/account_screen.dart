@@ -123,6 +123,11 @@ class _AccountView extends ConsumerWidget {
           onTap: () => context.push('/tai-khoan/don-hang'),
         ),
         _MenuItem(
+          icon: Icons.favorite_outline,
+          label: 'Sản phẩm yêu thích',
+          onTap: () => context.push('/tai-khoan/yeu-thich'),
+        ),
+        _MenuItem(
           icon: Icons.location_on_outlined,
           label: 'Địa chỉ giao hàng',
           onTap: () => context.push('/tai-khoan/dia-chi'),

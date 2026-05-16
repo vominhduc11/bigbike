@@ -250,19 +250,33 @@ not an assumption.
 - **Severity:** Low
 - **Contract type:** API
 - **Location:** `bigbike-backend/.../api/catalog/CatalogController.java:65,83`
-- **Evidence:** `listProducts` declares
+- **Evidence (at audit time):** `listProducts` declared
   `@RequestParam(name = "filter_gender", required = false) String filterGender`, but the call
-  into `catalogReadService.listProducts(...)` passes a literal `null` in that argument
-  position (`filterColor, null, minPrice, ...`). The param is parsed and discarded.
-  No traced client (`public-api.ts`, `api_endpoints.dart`) sends `filter_gender`.
-- **Problem:** Accepted-but-ignored query parameter. The admin product list
-  (`AdminCatalogController`) was not checked for the same param.
-- **Impact:** Minor — a caller using `filter_gender` would silently get unfiltered results
-  (false "it works" signal). It is also a maintenance trap.
-- **Recommended fix:** Either (a) remove the unused param, or (b) wire it into the service if
-  gender filtering is an intended product feature.
-- **Auto-fix allowed:** No — choosing (a) vs (b) is a product decision.
-- **NEEDS_CONFIRMATION:** Yes — confirm whether gender filtering is planned.
+  into `catalogReadService.listProducts(...)` passed a literal `null` in that argument
+  position. No traced client (`public-api.ts`, `api_endpoints.dart`) sends `filter_gender`.
+- **Full trace (2026-05-16):**
+  - `ProductEntity` — **no `gender` field**. The only `gender` field in the system is on
+    `CustomerEntity` (customer profile). There is no product-level data source for a gender filter.
+  - `AdminCatalogController` — confirmed no `filter_gender` param (uses `AdminCatalogReadService`,
+    a separate service class without `filterGender`).
+  - Web (`public-api.ts`), admin (`adminApi.js`), mobile (`api_endpoints.dart`) — **none send
+    `filter_gender`**.
+  - `CatalogReadService.listProducts` had `filterGender` param with comment
+    "reserved — always null; filter_gender is rejected at controller layer". The parameter
+    was bound but never used in any `.filter()` predicate.
+  - Existing test `Phase1KInventoryP0FixApiTest#publicProductList_filterGender_isIgnoredReturns200`
+    verified the param was silently accepted (status 200). This test continues to pass after removal
+    because Spring MVC ignores unknown query params by default.
+- **Decision:** **Remove** (option a). No product `gender` field exists to filter against;
+  no client uses the param; no product requirement for gender filtering was found.
+- **Backward compatibility:** Spring MVC does not reject unknown query params, so existing URLs
+  with `?filter_gender=...` continue to return 200 with unfiltered results — identical behavior
+  to before.
+- **Status: FIXED 2026-05-16** — Changes:
+  - `CatalogController.java` — removed `@RequestParam(name = "filter_gender", ...)` declaration
+  - `CatalogReadService.java` — removed `filterGender` param from `listProducts` signature
+  - `Phase1KInventoryP0FixApiTest.java` — updated comment on test #14
+  - All 15 tests in `Phase1KInventoryP0FixApiTest` and 68 catalog/product tests pass.
 
 ### F-05 — Response-wrapper inconsistency on customer-returns endpoints
 
@@ -456,7 +470,7 @@ recommend a dedicated admin-UI permission-guard pass.
 
 | Item | Action | Why blocked |
 |---|---|---|
-| F-04 | Remove or wire up `filter_gender` param | Product decision: is gender filtering planned? |
+| F-04 | Removed `filter_gender` param (no product gender field; no client usage) | **FIXED 2026-05-16** |
 | F-05 | ~~Wrap customer-returns endpoints~~ — backend already wrapped; doc updated | **FIXED 2026-05-16** — backend predated audit; `API_CONTRACT.md` corrected |
 | F-07 | Add wishlist / cancel / return-eligibility to mobile | Product scope decision |
 | F-08 | Wire or remove `GET /admin/warranties/by-serial/{serialId}` | Confirm if a serial-detail screen needs it |

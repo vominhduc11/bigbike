@@ -6,6 +6,7 @@ import '../../core/api/api_client.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../core/models/product.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/widgets/price_text.dart';
 import '../../core/widgets/rating_stars.dart';
@@ -40,6 +41,55 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   ProductVariant? _selectedVariant;
   bool _addingToCart = false;
   int _tabIndex = 0;
+  bool? _inWishlist;
+  bool _togglingWishlist = false;
+
+  Future<void> _loadWishlistState(String productId) async {
+    final isAuthenticated =
+        ref.read(authProvider).valueOrNull?.isAuthenticated ?? false;
+    if (!isAuthenticated) return;
+    try {
+      final data = await ApiClient().get<Map<String, dynamic>>(
+        ApiEndpoints.wishlist,
+      );
+      final ids = (data['data'] as List? ?? []).cast<String>();
+      if (mounted) setState(() => _inWishlist = ids.contains(productId));
+    } catch (_) {}
+  }
+
+  Future<void> _toggleWishlist(String productId) async {
+    if (_togglingWishlist) return;
+    final isAuthenticated =
+        ref.read(authProvider).valueOrNull?.isAuthenticated ?? false;
+    if (!isAuthenticated) {
+      context.push('/dang-nhap');
+      return;
+    }
+    setState(() => _togglingWishlist = true);
+    try {
+      if (_inWishlist == true) {
+        await ApiClient().delete(ApiEndpoints.wishlistItem(productId));
+        if (mounted) setState(() => _inWishlist = false);
+      } else {
+        await ApiClient().post(
+          ApiEndpoints.wishlist,
+          data: {'productId': productId},
+        );
+        if (mounted) setState(() => _inWishlist = true);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể cập nhật yêu thích. Vui lòng thử lại.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _togglingWishlist = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +103,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             onPressed: () => context.push('/tim-kiem'),
             icon: const Icon(Icons.search),
           ),
+          productAsync.whenOrNull(
+            data: (product) => IconButton(
+              onPressed:
+                  _togglingWishlist ? null : () => _toggleWishlist(product.id),
+              icon: Icon(
+                _inWishlist == true
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: _inWishlist == true
+                    ? AppColors.primary
+                    : AppColors.textMuted,
+              ),
+            ),
+          ) ?? const SizedBox.shrink(),
         ],
       ),
       body: productAsync.when(
@@ -63,7 +127,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           message: 'Không tải được sản phẩm',
           onRetry: () => ref.refresh(_productDetailProvider(widget.slug)),
         ),
-        data: (product) => _buildContent(context, product),
+        data: (product) {
+          if (_inWishlist == null) {
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _loadWishlistState(product.id));
+          }
+          return _buildContent(context, product);
+        },
       ),
     );
   }

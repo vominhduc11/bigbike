@@ -23,6 +23,7 @@ import '../../features/account/addresses_screen.dart';
 import '../../features/account/orders_screen.dart';
 import '../../features/account/order_detail_screen.dart';
 import '../../features/account/returns_screen.dart';
+import '../../features/account/wishlist_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/articles/article_list_screen.dart';
 import '../../features/articles/article_detail_screen.dart';
@@ -186,6 +187,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/tai-khoan/doi-tra',
         builder: (c, s) => const ReturnsScreen(),
+      ),
+      GoRoute(
+        path: '/tai-khoan/yeu-thich',
+        builder: (c, s) => const WishlistScreen(),
       ),
 
       // Contact

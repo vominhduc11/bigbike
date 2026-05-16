@@ -65,6 +65,11 @@ class ApiEndpoints {
   static String createReturn(String orderId) =>
       '/api/v1/customer/orders/$orderId/returns';
 
+  // Wishlist
+  static const String wishlist = '/api/v1/customer/wishlist';
+  static const String wishlistProducts = '/api/v1/customer/wishlist/products';
+  static String wishlistItem(String productId) => '/api/v1/customer/wishlist/$productId';
+
   // Contact
   static const String contact = '/api/v1/contact';
 

@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
+import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,11 +25,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
 
 @Service
 public class AdminReviewService {
@@ -46,17 +49,23 @@ public class AdminReviewService {
     private final ProductJpaRepository productRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final WebRevalidationService webRevalidationService;
+    private final EmailDispatchService emailDispatchService;
+    private final String siteBaseUrl;
 
     public AdminReviewService(
             ReviewJpaRepository reviewRepo,
             ProductJpaRepository productRepo,
             AuditLogJpaRepository auditLogRepo,
-            WebRevalidationService webRevalidationService
+            WebRevalidationService webRevalidationService,
+            EmailDispatchService emailDispatchService,
+            @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
     ) {
         this.reviewRepo = reviewRepo;
         this.productRepo = productRepo;
         this.auditLogRepo = auditLogRepo;
         this.webRevalidationService = webRevalidationService;
+        this.emailDispatchService = emailDispatchService;
+        this.siteBaseUrl = siteBaseUrl;
     }
 
     public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status) {
@@ -114,6 +123,7 @@ public class AdminReviewService {
         ProductReviewMetadata productMetadata = loadProductMetadata(List.of(entity)).get(entity.getProductId());
         Instant now = Instant.now();
         String before = snapshot(entity, productMetadata);
+        String previousStatus = entity.getStatus();
 
         entity.setStatus(normalized);
         entity.setUpdatedAt(now);
@@ -133,7 +143,29 @@ public class AdminReviewService {
 
         Map<String, Object> result = toMap(saved, productMetadata);
         revalidateProduct(entity.getProductId());
+
+        if (APPROVED_STATUS.equals(normalized) && !APPROVED_STATUS.equals(previousStatus)
+                && entity.getAuthorEmail() != null && !entity.getAuthorEmail().isBlank()) {
+            sendReviewApprovedEmail(entity, productMetadata);
+        }
+
         return result;
+    }
+
+    private void sendReviewApprovedEmail(ReviewEntity review, ProductReviewMetadata productMetadata) {
+        Context ctx = new Context();
+        ctx.setVariable("authorName", review.getAuthorName() != null ? review.getAuthorName() : "Khách hàng");
+        ctx.setVariable("productName", productMetadata != null ? productMetadata.name() : "sản phẩm");
+        String productUrl = (productMetadata != null && productMetadata.slug() != null)
+                ? siteBaseUrl + "/san-pham/" + productMetadata.slug()
+                : siteBaseUrl;
+        ctx.setVariable("productUrl", productUrl);
+        emailDispatchService.send(
+                review.getAuthorEmail(),
+                "Đánh giá của bạn đã được đăng — BigBike",
+                "review-approved",
+                ctx
+        );
     }
 
     @Transactional

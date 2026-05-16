@@ -50,7 +50,6 @@ public class CatalogReadService {
             String brand,
             String q,
             String filterColor,
-            String filterGender, // reserved — always null; filter_gender is rejected at controller layer
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock

@@ -358,12 +358,12 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(jsonPath("$.error.details[0].code").value("TRASH_PRODUCT"));
     }
 
-    // ── 14. filter_gender is silently ignored (param reserved, not implemented) ──
+    // ── 14. filter_gender removed from handler — Spring ignores unknown query params ──
 
     @Test
     void publicProductList_filterGender_isIgnoredReturns200() throws Exception {
-        // filter_gender is no longer rejected — it is accepted and silently ignored.
-        // The web UI no longer sends this param; old bookmarked URLs should not error.
+        // filter_gender was removed from CatalogController (no product gender field exists).
+        // Spring MVC does not reject unknown query params, so old bookmarked URLs return 200.
         mockMvc.perform(get("/api/v1/products")
                         .param("filter_gender", "male"))
                 .andExpect(status().isOk());

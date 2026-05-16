@@ -56,7 +56,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest`, `PublicReviewApiTest` (9 cases) | CONFIRMED_E2E | FULL-04 |
 | 5 | Cart + coupon apply | Guest/Customer | web, mobile, BE | `/gio-hang` | `CartController`→`CartService` | carts/cart_items, V73 | coupon | CSRF guard | `Phase1ECartApiTest` | CONFIRMED_E2E | (ORDER-E2E-07 defer) |
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
-| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (11 cases) | PARTIAL (mobile UI thiếu) | FULL-05, ~~FULL-07~~ (fixed), ~~FULL-09~~ (fixed) |
+| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (11 cases) | CONFIRMED_E2E | ~~FULL-05~~ (fixed), ~~FULL-07~~ (fixed), ~~FULL-09~~ (fixed) |
 | 8 | VN address lookup | Guest/Customer | web, mobile, BE | address form | `VnAddressController` | VN address tables | — | — | — | CONFIRMED_E2E | — |
 | 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | CONFIRMED_E2E | FULL-02 (đã fix) |
 | 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | `CustomerAddressApiTest` (10 cases) | CONFIRMED_E2E | FULL-12 |
@@ -124,21 +124,30 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
   - Files: `AdminContactService.java`, `AdminContactController.java`, `test-seed.sql`, `AdminContactApiTest.java` (mới).
 - **Test:** `AdminContactApiTest` (mới) 3/3 PASS — 401 không token, 403 EDITOR thiếu `contact.write`, 200 + ghi audit log đúng (`CONTACT_MESSAGE_UPDATED`, before `status=OPEN` / after `status=IN_PROGRESS` + `adminNoteChanged=true`, và xác nhận message body khách KHÔNG lọt vào audit). `AdminAuditLogApiTest` 11/11 PASS (không hồi quy).
 
-### FULL-04 (P2) — Review được duyệt không thông báo cho người viết — NEEDS_CONFIRMATION
+### FULL-04 (P2) — Review được duyệt không thông báo cho người viết — **Fixed (2026-05-16)**
 
 - **Type:** business decision
 - **Evidence:** `AdminReviewService.updateStatus()` — khi đổi review sang `APPROVED` có gọi revalidate web (trang sản phẩm cập nhật) nhưng **không gửi thông báo** cho customer đã viết review.
 - **Impact:** Khách không biết review của mình đã được đăng. Ảnh hưởng nhẹ tới UX/engagement, không ảnh hưởng dữ liệu/tiền.
-- **Recommended fix:** Quyết định nghiệp vụ — (a) gửi email "review của bạn đã được đăng", hoặc (b) chấp nhận im lặng (đa số shop nhỏ chọn b). `NEEDS_BUSINESS_CONFIRMATION`.
-- **Fix status:** Not fixed — cần xác nhận.
+- **Fix status:** ✅ **Fixed (2026-05-16).** Chủ shop xác nhận: gửi email khi duyệt review.
+  - `AdminReviewService` inject thêm `EmailDispatchService` và `bigbike.site.base-url`. Sau khi `updateStatus()` lưu entity và chỉ khi: (1) status mới là `APPROVED`, (2) status cũ khác `APPROVED` (tránh gửi lại khi đã duyệt), (3) `authorEmail` không rỗng → gọi `sendReviewApprovedEmail()` best-effort (SMTP skip gracefully nếu chưa cấu hình).
+  - Template `email/review-approved.html` mới: gồm tên người viết, tên sản phẩm, link CTA "Xem đánh giá" trỏ về `{siteBaseUrl}/san-pham/{slug}`. Dùng layout chung (header/footer BigBike).
+  - Không đổi API contract, không đổi response, không đổi audit log.
+  - Files: `AdminReviewService.java`, `review-approved.html`.
 
-### FULL-05 (P2) — Wishlist không có trên app mobile — NEEDS_CONFIRMATION
+### FULL-05 (P2) — Wishlist không có trên app mobile — **Fixed (2026-05-16)**
 
 - **Type:** business decision / gap
 - **Evidence:** Backend `CustomerWishlistController` đầy đủ (add/remove/list, đã auth). `bigbike_mobile` không có endpoint/UI wishlist (chỉ có search). Web có đủ.
 - **Impact:** App mobile thiếu tính năng "yêu thích". Không lỗi dữ liệu — chỉ là feature parity gap giữa web và mobile.
-- **Recommended fix:** Xác nhận mobile có cần wishlist không. Nếu có → thêm UI Flutter + wrapper API.
-- **Fix status:** Not fixed — cần xác nhận.
+- **Fix status:** ✅ **Fixed (2026-05-16).** Chủ shop xác nhận: mobile cần wishlist.
+  - **Endpoints** — thêm 3 hằng số vào `api_endpoints.dart`: `wishlist` (`GET/POST /api/v1/customer/wishlist`), `wishlistProducts` (`GET /api/v1/customer/wishlist/products`), `wishlistItem(id)` (`DELETE /api/v1/customer/wishlist/{id}`).
+  - **WishlistScreen** (`bigbike_mobile/lib/features/account/wishlist_screen.dart`) mới — dùng endpoint `wishlistProducts` phân trang, hiển thị grid 2 cột. Mỗi card có nút tim đỏ để xoá; bấm card mở trang sản phẩm. Empty state với CTA "Khám phá sản phẩm".
+  - **Route** `/tai-khoan/yeu-thich` — thêm vào `app_router.dart`.
+  - **Menu item** "Sản phẩm yêu thích" — thêm vào `account_screen.dart` (ngay sau "Đơn hàng của tôi"), icon `Icons.favorite_outline`.
+  - **Heart button** trên `product_detail_screen.dart` AppBar — load trạng thái wishlist ngay khi product data sẵn sàng (gọi `GET /wishlist` lấy danh sách ID, kiểm tra có `product.id` không). Toggle add/remove. Guest bấm → redirect `/dang-nhap`. Hiển thị tim đặc/rỗng theo trạng thái.
+  - Không đổi backend API contract; dùng 100% endpoint đã có.
+  - Files: `api_endpoints.dart`, `wishlist_screen.dart` (mới), `app_router.dart`, `account_screen.dart`, `product_detail_screen.dart`.
 
 ### FULL-06 (P2) — `updateCoupon` re-validate khoảng ngày — **STALE FINDING (đã verify 2026-05-16)**
 
@@ -324,13 +333,12 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 
 Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Checkout+quick-buy · VN address · Customer order list/detail+guest lookup · Customer tự huỷ đơn · Customer return+inspection · Public warranty lookup · Admin order management · Admin return processing · POS sale CASH/CARD/CREDIT · POS refund · Inventory management · Serial management · Warranty admin · Admin catalog management · Media library+folders · Content management · Settings/menus/sliders/home-videos · Coupon lifecycle · Coupon gift · Admin customer+credit · Accounts receivable · Reports+CSV · Dashboard · Audit logs · Admin users/roles/permissions · Redirects · Notifications+WebSocket · Contact form+inbox.
 
-→ **33/37 workflow** trace đủ UI→API→BE→DB và hoạt động đúng.
+→ **34/37 workflow** trace đủ UI→API→BE→DB và hoạt động đúng. (Wishlist mobile đã thêm UI — FULL-05 fixed 2026-05-16.)
 
 ## 9. Workflow PARTIAL / SCHEMA_ONLY
 
 | Workflow | Trạng thái | Lý do |
 |---|---|---|
-| Customer wishlist | PARTIAL | Backend + web đủ; **mobile thiếu UI** (FULL-05) |
 | Stock receiving theo phiếu | SCHEMA_ONLY | Có bảng V52/V53/V55, không có service/controller/UI (FULL-13) |
 
 > Customer auth trước ở PARTIAL vì mobile thiếu màn verify-email — **đã fix (FULL-02, 2026-05-16)**, nay là `CONFIRMED_E2E`.
@@ -341,8 +349,8 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 
 | Mục | Câu hỏi nghiệp vụ | Hướng xử lý đề xuất |
 |---|---|---|
-| FULL-04 | Khi duyệt review có gửi thông báo cho người viết không? | (a) gửi email; (b) im lặng — đa số shop nhỏ chọn (b) |
-| FULL-05 | Mobile có cần tính năng wishlist không? | (a) implement UI Flutter; (b) chấp nhận web-only |
+| ~~FULL-04~~ | ~~Khi duyệt review có gửi thông báo cho người viết không?~~ | ✅ **Đã xác nhận: gửi email — Fixed 2026-05-16** |
+| ~~FULL-05~~ | ~~Mobile có cần tính năng wishlist không?~~ | ✅ **Đã xác nhận: cần — Fixed 2026-05-16** |
 | FULL-13 | Có cần workflow nhập kho theo phiếu (PO) không? | (a) implement trên schema sẵn có; (b) bỏ schema, dùng manual adjustment |
 | Invoice / hoá đơn điện tử | Có tích hợp nhà cung cấp e-invoice không? | Theo `BUSINESS_PROCESS.md` — Nghị định 123/2020. NEEDS_BUSINESS_CONFIRMATION |
 | Customer data export/delete | Có làm endpoint xuất/xoá dữ liệu cá nhân không? | Nghị định 13/2023 — NEEDS_BUSINESS_CONFIRMATION |
