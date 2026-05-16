@@ -62,7 +62,7 @@ File này liên quan trực tiếp đến:
 | Admin User | `status`, `role` | Status: `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles include `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`, custom roles. | Status/role update validation; self-deactivation and Super Admin demotion guardrails. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for update guards; login-block behavior `NEEDS_VERIFICATION` | `AdminAdminUsersService.java`, `AdminRolePermissions.java`, `SecurityConfig.java` |
 | Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `ARCHIVED` (sẽ migrate sang `HIDDEN`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
-| Notification | Not confirmed as persisted status | Email/websocket events observed, no read/unread/archive state found. | No state machine found. | Unknown | `NOT_FOUND_IN_REPO` | `OrderNotificationService`, `AdminOrderWsService` usage only |
+| Notification | `isRead` (boolean) | Email/websocket events + persistent table. `isRead` toggled by mark-read endpoints. | `false` → `true` via mark-read / mark-all-read. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
 ## 4. Product State Machine
@@ -845,25 +845,30 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 
 ### State Field
 
-Not found.
+`isRead` (boolean) on `admin_notifications` table (V102).
 
 ### States
 
-Not found.
+| State | Description |
+|---|---|
+| `isRead = false` | Unread — default on creation |
+| `isRead = true` | Read — set by mark-read or mark-all-read |
 
 ### Status
 
-`NOT_FOUND_IN_REPO`
+`CONFIRMED_FROM_CODE`
 
 ### Evidence
 
-- `CheckoutService`, `AdminOrderService`, `AdminReturnService` call notification/websocket services.
-- No confirmed `UNREAD`, `READ`, `ARCHIVED` notification lifecycle found in audited evidence.
+- `V102__create_admin_notifications_table.sql` — persistent `admin_notifications` table with `is_read` column.
+- `AdminNotificationController.java` — `GET /api/v1/admin/notifications` (list unread + count), `POST /mark-read`, `POST /mark-all-read`.
+- `AdminNotificationService.java` — `listUnread()`, `countUnread()`, `markRead()`, `markAllRead()`.
+- WS push via `AdminOrderWsService` supplements persistent store; admin offline will not miss events.
 
-### Needs Verification
+### Notes
 
-- Whether notification inbox is planned.
-- Whether email delivery status is tracked.
+- Archive/delete state not implemented.
+- Email delivery status not tracked in repo.
 
 ## 15. Cross-Entity State Dependencies
 
@@ -925,7 +930,7 @@ Not found.
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
-| Notification | Read/unread/archive | N/A | N/A | `NOT_FOUND_IN_REPO` |
+| Notification | Read/unread (`isRead`) | `CONFIRMED_FROM_CODE` | `AdminNotificationController` covers mark-read; archive not implemented. |
 
 Notes:
 
@@ -941,7 +946,7 @@ Notes:
 | Shipping Provider/Tracking lifecycle | `NOT_FOUND_IN_REPO` | No carrier waybill/tracking/status state machine found. |
 | Fulfillment status lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `fulfillmentStatus` exposed in order detail, no transition map found. |
 | Serial lifecycle | `NEEDS_VERIFICATION` | Stock movement serial entity referenced in prior docs, but serial states/transitions not audited as confirmed. |
-| Notification read/unread/archive lifecycle | `NOT_FOUND_IN_REPO` | No persisted notification status found. |
+| Notification read/unread lifecycle | `CONFIRMED_FROM_CODE` | `admin_notifications` table (V102) + `AdminNotificationController` mark-read/mark-all-read. Archive not implemented. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
 | Coupon lifecycle | `NEEDS_VERIFICATION` | Coupon status APIs exist from prior docs, but detailed state transition not audited here. |
 | Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |

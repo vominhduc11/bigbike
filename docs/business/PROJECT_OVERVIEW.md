@@ -35,10 +35,10 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020 for legal entities; NEEDS_BUSINESS_CONFIRMATION on provider |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data-portability endpoint. | `NOT_FOUND_IN_REPO` | repo search |
 | Customer support / ticketing | Only public `ContactController POST /contact`; no ticketing / SLA / escalation. | `NOT_FOUND_IN_REPO` | repo search |
-| Notification center (admin read/unread) | WS event + email only; no persistent `notifications` table. | `NOT_FOUND_IN_REPO` | `NotificationBell` consumes WS only |
+| Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread + mark-read endpoints. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Bộ Công Thương TMĐT registration / legal-content footer badge | CMS-driven legal pages; registration status outside repo. | `NEEDS_LEGAL_CONFIRMATION` | `app/chinh-sach/[slug]`, `app/huong-dan/[...sub]` |
 
-> Production-readiness verdict and the 15-blocker production gate live in `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md`.
+> Production-readiness verdict: ❌ NOT_READY. See `docs/business/ACCEPTANCE_CRITERIA.md` for the 15-blocker production gate.
 
 ## Operational Notes
 

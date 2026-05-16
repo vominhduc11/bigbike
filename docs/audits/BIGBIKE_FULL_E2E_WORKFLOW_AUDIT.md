@@ -247,14 +247,17 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 `PERMISSION_MATRIX.md` từng ghi "Admin role-to-permission mapping is defined in `AdminRolePermissions.java`". Nhưng class này **tự ghi rõ** "This class is NOT the runtime source of truth … retained as a human-readable reference. Do not call it". Runtime thật là bảng DB `role_permissions` + `AdminPermissionService`.
 **Đã sửa:** Section "Role And Permission Source" của `PERMISSION_MATRIX.md` được viết lại — nêu rõ runtime source of truth là `role_permissions` + `AdminPermissionService`; `PermissionCatalog.java` là catalog key hợp lệ; `AdminRolePermissions.java` chỉ là reference snapshot. Bổ sung bảng `inventory.read`/`inventory.write`/`pos.refund` (role được seed + endpoint + evidence migration). Reference class `AdminRolePermissions.java` cũng được cập nhật cho khỏi stale.
 
-### DOC-02 — Tham chiếu audit không tồn tại
-`ACCEPTANCE_CRITERIA.md` trỏ `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` (Section 7, 15-blocker) — **file không có** trong `docs/audits/`. `BUSINESS_PROCESS.md` trỏ `ORDER_PAYMENT_REFUND_WS_AUDIT.md` (ORD-007) — cũng không có. → Hoặc bổ sung lại file, hoặc gỡ tham chiếu.
+### DOC-02 — Tham chiếu audit không tồn tại — **Fixed (2026-05-16)**
+`ACCEPTANCE_CRITERIA.md` trỏ `docs/audits/BUSINESS_PROCESS_RULE_PRODUCTION_READINESS_AUDIT.md` (Section 7, 15-blocker) — **file không có** trong `docs/audits/`. `BUSINESS_PROCESS.md` trỏ `ORDER_PAYMENT_REFUND_WS_AUDIT.md` (ORD-007) — cũng không có.
+**Đã sửa:** Gỡ tham chiếu đến cả hai file không tồn tại. `ACCEPTANCE_CRITERIA.md` giữ nguyên nội dung 15-blocker nhưng xoá dòng trỏ file; `BUSINESS_PROCESS.md` ORD-007 row xoá link file; `PROJECT_OVERVIEW.md` dòng trỏ file thay bằng link `ACCEPTANCE_CRITERIA.md`. Không tạo file audit giả.
 
-### DOC-03 — Notification center đã được implement nhưng docs vẫn ghi `NOT_FOUND_IN_REPO`
-`BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md`, `STATE_MACHINES.md` §14 đều ghi notification center (read/unread, bảng `notifications`) là `NOT_FOUND_IN_REPO`. Trace code cho thấy đã có `AdminNotificationController` + bảng `notifications` được persist + endpoint mark-read + `NotificationBell`. → Cập nhật 3 docs: notification center hiện là `CONFIRMED_FROM_CODE`, có state read/unread.
+### DOC-03 — Notification center đã được implement nhưng docs vẫn ghi `NOT_FOUND_IN_REPO` — **Fixed (2026-05-16)**
+`BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md`, `STATE_MACHINES.md` §14 đều ghi notification center (read/unread, bảng `notifications`) là `NOT_FOUND_IN_REPO`. Trace code cho thấy đã có `AdminNotificationController` + bảng `notifications` được persist + endpoint mark-read + `NotificationBell`.
+**Đã sửa:** Cập nhật 4 vị trí (`BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md`, `PROJECT_OVERVIEW.md`, `STATE_MACHINES.md` §14 + summary table + gaps table) từ `NOT_FOUND_IN_REPO` → `CONFIRMED_FROM_CODE`. §14 viết lại đầy đủ: state field `isRead`, evidence `V102__create_admin_notifications_table.sql` + `AdminNotificationController.java` + `AdminNotificationService.java`.
 
-### DOC-04 — Test seed thiếu vài permission so với migration
-`src/test/resources/db/test-seed.sql` (test DB tắt Flyway — `spring.flyway.enabled=false`, Hibernate `create-drop` + seed thủ công) seed `role_permissions` cho ADMIN/SHOP_MANAGER nhưng **thiếu** các quyền được thêm bởi migration mới hơn: `contact.read`/`contact.write` (V105) và `inventory.read`/`inventory.write` (V109). Hệ quả: test dùng role ADMIN/SHOP_MANAGER không gọi được các endpoint contact/warranty. → `contact.*` **đã được bổ sung vào seed** trong fix FULL-03. `inventory.*` **chưa sửa** (ngoài phạm vi) — nên thêm vào `test-seed.sql` để khớp V109 khi viết test warranty/inventory.
+### DOC-04 — Test seed thiếu vài permission so với migration — **Fixed (2026-05-16)**
+`src/test/resources/db/test-seed.sql` (test DB tắt Flyway — `spring.flyway.enabled=false`, Hibernate `create-drop` + seed thủ công) seed `role_permissions` cho ADMIN/SHOP_MANAGER nhưng **thiếu** các quyền được thêm bởi migration mới hơn: `contact.read`/`contact.write` (V105) và `inventory.read`/`inventory.write` (V109). Hệ quả: test dùng role ADMIN/SHOP_MANAGER không gọi được các endpoint contact/warranty. → `contact.*` đã được bổ sung vào seed trong fix FULL-03.
+**Đã sửa:** Bổ sung `inventory.read` + `inventory.write` cho ADMIN và SHOP_MANAGER vào `test-seed.sql`. Seed nay đầy đủ V105 + V109.
 
 ---
 
