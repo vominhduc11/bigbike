@@ -681,4 +681,25 @@ Tất cả nhận định trong báo cáo đều có cite-able evidence. Referen
 
 ---
 
+## 9. Fix Verification — 2026-05-16
+
+Re-verified during `BIGBIKE_FULL_E2E_WORKFLOW_AUDIT.md` (finding FULL-15). Status of the previously-open findings:
+
+| # | Finding | Trạng thái | Bằng chứng |
+|---|---|---|---|
+| **P0-1** | Inspection workflow đứt (return → INSPECTING không đẩy serial) | ✅ **Fixed** | `AdminReturnService.java:206` gọi `serialLifecycleService.moveReturnedToInspection(...)`; `:288` gọi `markInspectionResult(...)`. |
+| **P0-2** | Bulk import không giới hạn payload | ✅ **Fixed** | `SerialImportRequest.java` có `@Size(min=1, max=5000)` trên `rows`. |
+| **P0-3** | `inventory.read/write` không role nào có | ✅ **Fixed** | `V109__add_inventory_serial_permissions.sql` seed `inventory.read/write` cho ADMIN + SHOP_MANAGER. (Bổ sung: 2 key này nay cũng có trong `PermissionCatalog` — xem FULL-01.) |
+| **P0-4** | `adjustStock` check duplicate sai bảng → 500 | ✅ **Fixed** | `AdminInventoryService.java:292` (`adjustStock`) + `:393` (`adjustProductStock`) gọi `productSerialRepo.findExistingSerialNumbers(...)` → throw `ValidationException` code `ALREADY_EXISTS` (400). Test `Phase1KInventorySerialApiTest.stockIn_serialAlreadyInDb_returns400`. |
+| **P0-5** | Thiếu `DataIntegrityViolationException` handler → 500 | ✅ **Fixed** | `GlobalExceptionHandler.java:73-80` map về `409 CONFLICT` code `DATA_CONFLICT`, log mức `warn`. |
+| **P1-1** | State machine FE/BE drift | ✅ **Fixed** | `bigbike-admin/src/lib/serialStateMachine.js` là module shared, import bởi cả `InventoryScreen.jsx` và `SerialListScreen.jsx`. Khớp backend `AdminSerialService.validateTransition`. |
+| **P1-3** | `enableTracking`/`importSerials` không audit log | ✅ **Fixed / N/A** | `importSerials` ghi audit `SERIALS_BULK_IMPORTED` (`AdminSerialImportService.java:164`). Không còn endpoint enable-tracking độc lập — tracking bật ngầm trong các operation đã audit (`INVENTORY_STOCK_ADJUSTED`, `SERIALS_ADDED`). |
+| **P1-8** | `reservation_ttl_minutes` không seed | ✅ **Fixed** | V109 seed `reservation_ttl_minutes=15`. |
+
+P1-2 (mã lỗi test), P1-4 (permission split serial), P1-5/P1-6 (perf), P1-7 (FE note required), P2/P3 — **không nằm trong phạm vi verify FULL-15**, chưa re-check trong đợt này.
+
+Test verify (H2, 2026-05-16): `Phase1KInventoryP0FixApiTest` 15 PASS · `Phase1KInventorySerialApiTest` 8 PASS · `Phase2FSerialInventoryTest` 16 PASS.
+
+---
+
 **End of audit.**

@@ -40,7 +40,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **P0-2 (import payload limit):** ✅ Đã fix — `SerialImportRequest.java:10` có `@Size(min=1, max=5000)`.
 - **P0-3 (inventory permission):** ✅ Đã fix — `V109__add_inventory_serial_permissions.sql` seed `inventory.read/write` cho ADMIN + SHOP_MANAGER.
 - **P1-8 (seed reservation TTL):** ✅ Đã fix — V109 seed `reservation_ttl_minutes=15`.
-- **P0-4 / P0-5 / P1-1 / P1-3:** chưa verify trong audit này — xem [FULL-15](#full-15-p2--serial-audit-p0-4p0-5p1-1p1-3-chưa-xác-nhận-fix).
+- **P0-4 / P0-5 / P1-1 / P1-3:** ✅ đã verify (2026-05-16) — tất cả đã fixed. Xem [FULL-15](#full-15-p2--serial-audit-p0-4p0-5p1-1p1-3--đã-verify-tất-cả-fixed-2026-05-16).
 
 ---
 
@@ -206,13 +206,21 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Recommended fix:** Ghi chú thiết kế; đảm bảo DB chạy UTC. Không cần code.
 - **Fix status:** Not fixed — ghi nhận.
 
-### FULL-15 (P2) — Serial audit P0-4/P0-5/P1-1/P1-3 chưa xác nhận fix
+### FULL-15 (P2) — Serial audit P0-4/P0-5/P1-1/P1-3 — **đã verify, tất cả Fixed (2026-05-16)**
 
-- **Type:** gap (cần verify)
-- **Evidence:** `BIGBIKE_SERIAL_MODULE_PRODUCTION_READY_AUDIT.md` (2026-05-14) liệt kê P0-4 (`adjustStock` check duplicate sai bảng → 500), P0-5 (thiếu DataIntegrity handler → 500), P1-1 (state machine serial drift FE/BE), P1-3 (thiếu audit log enableTracking/import). Audit này verify được P0-1/P0-2/P0-3/P1-8 đã fix nhưng **chưa verify** 4 mục trên — Serial audit không có "Fix Summary" như POS recheck.
-- **Impact:** P0-4/P0-5 là lỗi UX (500 thay vì 4xx), không mất dữ liệu. P1-1 là rủi ro drift. Cần kiểm tra để chốt.
-- **Recommended fix:** Verify trực tiếp `AdminInventoryService.adjustStock` + global exception handler; nếu chưa fix → xử lý theo Serial audit.
-- **Fix status:** Cần verify.
+- **Type:** gap (đã verify)
+- **Kết quả verify từng mục (trace code thật):**
+
+  | Mục | Kết luận | Bằng chứng |
+  |---|---|---|
+  | **P0-4** — `adjustStock` check duplicate sai bảng → 500 | ✅ **Already fixed** | `AdminInventoryService.java:292` (`adjustStock`) và `:393` (`adjustProductStock`) đều gọi `productSerialRepo.findExistingSerialNumbers(serials)` và throw `ValidationException.fromField("serialNumbers", "ALREADY_EXISTS", …)` → trả 400, không phải 500. Test `Phase1KInventorySerialApiTest.stockIn_serialAlreadyInDb_returns400` cover path `ALREADY_EXISTS`. |
+  | **P0-5** — thiếu `DataIntegrityViolationException` handler → 500 | ✅ **Already fixed** | `GlobalExceptionHandler.java:73-80` có `@ExceptionHandler(DataIntegrityViolationException.class)` → trả `409 CONFLICT`, code `DATA_CONFLICT`, log mức `warn` (không lộ stacktrace). |
+  | **P1-1** — state machine serial drift FE/BE | ✅ **Already fixed** | `bigbike-admin/src/lib/serialStateMachine.js` là module dùng chung (`SERIAL_STATUS_LABELS`, `SERIAL_STATUS_CLASSES`, `SERIAL_ALLOWED_TRANSITIONS`, `NOTE_REQUIRED_STATUSES`), được import bởi **cả** `InventoryScreen.jsx` và `SerialListScreen.jsx`. Transition FE khớp backend `AdminSerialService.validateTransition` (FE chỉ bỏ `RESERVED`/`SOLD` vì là transition do hệ thống/checkout điều khiển — có comment ghi rõ). |
+  | **P1-3** — thiếu audit log enableTracking/import | ✅ **Fixed / Not applicable** | `importSerials`: `AdminSerialImportService.java:164` ghi audit `SERIALS_BULK_IMPORTED` (kèm requested count). `enableTracking`: **không còn endpoint toggle độc lập** — bật serial tracking là side effect ngầm trong `adjustStock`/`adjustProductStock`/`addToVariant`/`addToProduct` (`setTrackSerials(true)` khi serial lần đầu được thêm), và các operation này đều đã ghi audit (`INVENTORY_STOCK_ADJUSTED`, `INVENTORY_PRODUCT_STOCK_ADJUSTED`, `SERIALS_ADDED`). Không còn đường bật tracking không-audit. |
+
+- **Impact:** Không còn — 4 mục đều đã được xử lý trong code hiện tại.
+- **Fix status:** ✅ **Closed.** Không cần thay đổi code. Đã verify bằng trace code + chạy test (xem dưới). Lưu ý: Serial audit còn các mục khác **ngoài phạm vi FULL-15** (P0-2 import limit, P1-2 mã lỗi test, P1-4 permission split serial, P1-5/P1-6 perf, P1-7 FE note) — không verify trong mục này; P0-2 đã được verify fixed ở [Section 2](#2-phương-pháp--phạm-vi).
+- **Test verify (2026-05-16):** `Phase1KInventoryP0FixApiTest` 15/15 PASS · `Phase1KInventorySerialApiTest` 8/8 PASS · `Phase2FSerialInventoryTest` 16/16 PASS.
 
 ### FULL-16 (P3) — `AdminOrderWsService` lưu notification kiểu best-effort, nuốt lỗi
 
@@ -330,7 +338,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 **Khuyến nghị trước launch:**
 1. ✅ **FULL-01 đã fix (2026-05-16)** — đã thêm 3 permission vào `PermissionCatalog`, cập nhật docs + test.
 2. Quyết **FULL-02** — implement màn verify-email mobile, hoặc chấp nhận verify qua web ở bản mobile đầu.
-3. Verify **FULL-15** (Serial P0-4/P0-5) — đảm bảo không trả 500.
+3. ✅ **FULL-15 đã verify (2026-05-16)** — Serial P0-4/P0-5/P1-1/P1-3 đều đã fixed; test inventory/serial PASS.
 4. Bổ sung test cho contact-permission, wishlist, address (Section 11).
 5. Dọn 3 **docs mismatch** (DOC-01/02/03).
 6. Chốt các mục **NEEDS_BUSINESS_CONFIRMATION** ở Section 10 với chủ shop.
