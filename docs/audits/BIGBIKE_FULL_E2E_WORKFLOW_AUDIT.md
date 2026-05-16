@@ -73,7 +73,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 21 | Stock receiving (nhập kho theo phiếu) | Admin | — | — | — (không có service/controller) | V52,V53,V55 | — | — | — | **SCHEMA_ONLY** | FULL-13 |
 | 22 | Warranty admin (void) | Admin | admin, BE | warranty screen | `AdminWarrantyController` | V90 | warranty status | audit | (qua serial test) | CONFIRMED_E2E | FULL-01 |
 | 23 | Admin catalog management (product/category/brand) | Admin/Editor | admin, BE | catalog screens | `AdminCatalogController`→`AdminCatalogMutationService` | V1 | publishStatus, visible | revalidate web, audit | `AdminMutationApiTest` | CONFIRMED_E2E | — |
-| 24 | Media library + folders | Admin/Editor | admin, BE | media screen | `AdminMediaController`,`AdminMediaFolderController` | V85 | Media ACTIVE/INACTIVE/DELETED | MinIO, audit | `AdminMediaP0Test` | CONFIRMED_E2E | FULL-11 |
+| 24 | Media library + folders | Admin/Editor | admin, BE | media screen | `AdminMediaController`,`AdminMediaFolderController` | V85 | Media ACTIVE/INACTIVE/DELETED | MinIO, audit | `AdminMediaP0Test` (18 cases) | CONFIRMED_E2E | ~~FULL-11~~ (fixed) |
 | 25 | Content management (article/page) | Admin/Editor/Author | admin, BE | content screens | `AdminContentController`→`AdminContentMutationService` | V1,V21 | publishStatus | revalidate web, audit | `AdminContentApiTest`,`ContentP1ApiTest` | CONFIRMED_E2E | — |
 | 26 | Settings / menus / sliders / home videos | Admin/Editor | admin, BE | CMS screens | `AdminSettings/Menu/Slider/HomeVideoController` | V84,V92,etc | — | revalidate, audit | `Phase1JAdmin...`,`SliderApiTest`,`HomeVideoApiTest` | CONFIRMED_E2E | — |
 | 27 | Coupon lifecycle + expiry | Admin/Manager | admin, BE | `CouponListScreen` | `AdminCouponController`,`CouponExpiryScheduler` | V73,V118,V119 | coupon status | audit | `Phase1JAdmin...` | CONFIRMED_E2E | FULL-06 (stale), FULL-14 |
@@ -191,13 +191,19 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
   - Không đổi business logic, không đổi status code, không đổi JSON field names.
   - `WarrantyApiTest` (6/6 PASS) xác nhận JSON shape giữ nguyên sau refactor.
 
-### FULL-11 (P3) — Hard-delete media yêu cầu quyền wildcard `*`, không có test
+### FULL-11 (P3) — Hard-delete media thiếu permission gate nhất quán + không có test — **Fixed (2026-05-16)**
 
-- **Type:** test coverage / design note
-- **Evidence:** `AdminMediaController.java` — endpoint hard-delete gác `requirePermission(request, "*")` (chỉ SUPER_ADMIN). Các thao tác media khác gác `media.write`. Không có test verify.
-- **Impact:** Thao tác không thể đảo ngược được gác đúng (chặt), nhưng quyền `*` là cách gác thiếu tường minh và không có test bảo vệ.
-- **Recommended fix:** Cân nhắc permission tường minh (`media.hard_delete`) hoặc ít nhất thêm test. Không gấp.
-- **Fix status:** Not fixed — ghi nhận.
+- **Type:** bug (permission inconsistency) + test coverage
+- **Evidence:** Audit ban đầu chỉ ghi nhận `POST /bulk-hard-delete` dùng `requirePermission("*")`. Khi verify thực tế, phát hiện `DELETE /{id}?permanent=true` (single hard-delete) chỉ dùng `requirePermission("media.write")` — ADMIN và EDITOR có thể hard-delete đơn lẻ dù không được phép bulk-hard-delete. Cả hai đều irreversible → không nhất quán.
+- **Bug confirmed:** ADMIN (có `media.write`, không có `*`) có thể gọi `DELETE /{id}?permanent=true` thành công — phá vỡ design intent của `bulk-hard-delete` gác bởi `*`.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - **Production code:** `AdminMediaController.deleteMedia()` — đổi từ `requirePermission("media.write")` thành `requirePermission(permanent ? "*" : "media.write")`. Soft-delete giữ nguyên `media.write`; single hard-delete nay phải có `*` như bulk.
+  - **Không thêm permission type mới** — vẫn dùng `*` (wildcard) nhất quán với `bulk-hard-delete`.
+  - **Tests cập nhật trong `AdminMediaP0Test`** (tổng 18 test, tất cả PASS):
+    - 3 test hard-delete cũ (`noRefs→204`, `withRefs→409`, `storageFailure→500`) chuyển sang dùng `superAdminToken` — vẫn PASS.
+    - **Mới — permission gates:** `hardDelete_withoutToken_returns401`; `hardDelete_adminMediaWriteOnly_returns403` (ADMIN bị chặn); `softDelete_adminMediaWrite_stillAllowed` (soft-delete không bị ảnh hưởng); `bulkHardDelete_adminMediaWriteOnly_returns403`; `bulkHardDelete_superAdmin_returns200AndDeletesRow`.
+    - **Mới — visibility:** `hardDelete_superAdmin_thenDetailReturns404` (sau hard-delete, detail trả 404).
+  - **Risk còn lại:** `*` vẫn là wildcard ngầm hiểu là SUPER_ADMIN — không có permission tường minh `media.hard_delete`. Đây là follow-up nếu cần phân quyền chi tiết hơn, nhưng không bắt buộc cho v1.
 
 ### FULL-12 (P2) — Thiếu test cho nhiều workflow quan trọng — **Batch 1 Fixed (2026-05-16)**
 

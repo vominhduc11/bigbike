@@ -247,7 +247,9 @@ public class AdminMediaController {
             @RequestParam(defaultValue = "false") boolean permanent,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "media.write");
+        // Permanent (hard) delete is irreversible — gated by wildcard (*) like bulk-hard-delete.
+        // Soft delete only requires media.write.
+        devAdminAuthService.requirePermission(request, permanent ? "*" : "media.write");
         if (permanent) {
             adminMediaService.hardDeleteMedia(mediaId, resolveAdminId());
         } else {

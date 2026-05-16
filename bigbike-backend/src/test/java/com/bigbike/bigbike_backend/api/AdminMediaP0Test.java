@@ -50,8 +50,10 @@ class AdminMediaP0Test {
         0x08, 0x02, 0x00, 0x00, 0x00, (byte) 0x90, 0x77, 0x53, (byte) 0xDE
     };
 
-    private static final String ADMIN_EMAIL = "p0media-" + UUID.randomUUID() + "@bigbike.test";
-    private static final String ADMIN_PASS  = "Admin@P0Test1234";
+    private static final String ADMIN_EMAIL       = "p0media-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String ADMIN_PASS        = "Admin@P0Test1234";
+    private static final String SUPER_ADMIN_EMAIL = "p0media-sa-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String SUPER_ADMIN_PASS  = "SuperAdmin@P0Test1234";
 
     @MockitoBean
     MinioClient minioClient;
@@ -64,6 +66,7 @@ class AdminMediaP0Test {
 
     private MockMvc mockMvc;
     private String adminToken;
+    private String superAdminToken;
 
     @BeforeEach
     void setup() throws Exception {
@@ -71,7 +74,9 @@ class AdminMediaP0Test {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureAdminUser();
-        adminToken = loginAdmin();
+        ensureSuperAdminUser();
+        adminToken      = loginUser(ADMIN_EMAIL, ADMIN_PASS);
+        superAdminToken = loginUser(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASS);
     }
 
     // ── Upload ────────────────────────────────────────────────────────────────
@@ -172,7 +177,7 @@ class AdminMediaP0Test {
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
                         .param("permanent", "true")
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", "Bearer " + superAdminToken))
                 .andExpect(status().isNoContent());
 
         assertThat(mediaRepo.findById(mediaId)).isEmpty();
@@ -196,7 +201,7 @@ class AdminMediaP0Test {
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
                         .param("permanent", "true")
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", "Bearer " + superAdminToken))
                 .andExpect(status().isConflict());
 
         assertThat(mediaRepo.findById(mediaId)).isPresent();
@@ -210,10 +215,96 @@ class AdminMediaP0Test {
 
         mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
                         .param("permanent", "true")
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", "Bearer " + superAdminToken))
                 .andExpect(status().isInternalServerError());
 
         assertThat(mediaRepo.findById(mediaId)).isPresent();
+    }
+
+    // ── Hard-delete permission gates (FULL-11) ────────────────────────────────
+
+    @Test
+    void hardDelete_withoutToken_returns401() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/noauth-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .param("permanent", "true"))
+                .andExpect(status().isUnauthorized());
+
+        assertThat(mediaRepo.findById(mediaId)).isPresent();
+    }
+
+    @Test
+    void hardDelete_adminMediaWriteOnly_returns403() throws Exception {
+        // ADMIN has media.write but not *; permanent delete must be blocked
+        UUID mediaId = createTestMedia("/media/uploads/adminforbid-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .param("permanent", "true")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        assertThat(mediaRepo.findById(mediaId)).isPresent();
+    }
+
+    @Test
+    void softDelete_adminMediaWrite_stillAllowed() throws Exception {
+        // Soft-delete still requires only media.write — not affected by hard-delete gate change
+        UUID mediaId = createTestMedia("/media/uploads/softadmin-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        assertThat(mediaRepo.findById(mediaId))
+                .isPresent()
+                .get()
+                .extracting(MediaEntity::getStatus)
+                .isEqualTo("DELETED");
+    }
+
+    @Test
+    void bulkHardDelete_adminMediaWriteOnly_returns403() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/bulk-forbid-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(post("/api/v1/admin/media/bulk-hard-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\":[\"" + mediaId + "\"]}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        assertThat(mediaRepo.findById(mediaId)).isPresent();
+    }
+
+    @Test
+    void bulkHardDelete_superAdmin_returns200AndDeletesRow() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/bulk-sa-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(post("/api/v1/admin/media/bulk-hard-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\":[\"" + mediaId + "\"]}")
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.deleted").value(1))
+                .andExpect(jsonPath("$.data.missing").value(0))
+                .andExpect(jsonPath("$.data.blocked").value(0));
+
+        assertThat(mediaRepo.findById(mediaId)).isEmpty();
+    }
+
+    @Test
+    void hardDelete_superAdmin_thenDetailReturns404() throws Exception {
+        UUID mediaId = createTestMedia("/media/uploads/detail-" + UUID.randomUUID() + "/img.jpg");
+
+        mockMvc.perform(delete("/api/v1/admin/media/" + mediaId)
+                        .param("permanent", "true")
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/v1/admin/media/" + mediaId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -262,10 +353,25 @@ class AdminMediaP0Test {
         });
     }
 
-    private String loginAdmin() throws Exception {
+    private void ensureSuperAdminUser() {
+        adminUserRepo.findByEmail(SUPER_ADMIN_EMAIL).orElseGet(() -> {
+            AdminUserEntity sa = new AdminUserEntity();
+            sa.setEmail(SUPER_ADMIN_EMAIL);
+            sa.setPasswordHash(passwordService.hash(SUPER_ADMIN_PASS));
+            sa.setDisplayName("P0 Media Test SuperAdmin");
+            sa.setRole("SUPER_ADMIN");
+            sa.setStatus("ACTIVE");
+            Instant now = Instant.now();
+            sa.setCreatedAt(now);
+            sa.setUpdatedAt(now);
+            return adminUserRepo.save(sa);
+        });
+    }
+
+    private String loginUser(String email, String password) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + ADMIN_EMAIL + "\",\"password\":\"" + ADMIN_PASS + "\"}"))
+                        .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         String body = result.getResponse().getContentAsString();
