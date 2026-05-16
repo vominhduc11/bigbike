@@ -56,7 +56,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest`, `PublicReviewApiTest` (9 cases) | CONFIRMED_E2E | FULL-04 |
 | 5 | Cart + coupon apply | Guest/Customer | web, mobile, BE | `/gio-hang` | `CartController`→`CartService` | carts/cart_items, V73 | coupon | CSRF guard | `Phase1ECartApiTest` | CONFIRMED_E2E | (ORDER-E2E-07 defer) |
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
-| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (11 cases) | PARTIAL (mobile UI thiếu) | FULL-05, ~~FULL-07~~ (fixed), FULL-09 |
+| 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (11 cases) | PARTIAL (mobile UI thiếu) | FULL-05, ~~FULL-07~~ (fixed), ~~FULL-09~~ (fixed) |
 | 8 | VN address lookup | Guest/Customer | web, mobile, BE | address form | `VnAddressController` | VN address tables | — | — | — | CONFIRMED_E2E | — |
 | 9 | Customer auth (register/verify/login/reset/refresh) | Customer | web, mobile, BE | auth pages | `CustomerAuthController` | V9 | email verified | verify email, guest order link | `Phase1DCustomerAuthTest`,`Phase1I1...` | CONFIRMED_E2E | FULL-02 (đã fix) |
 | 10 | Customer profile + addresses CRUD | Customer | web, mobile, BE | `/tai-khoan` | `CustomerController`,`CustomerAddressController` | customers, addresses | — | — | `CustomerAddressApiTest` (10 cases) | CONFIRMED_E2E | FULL-12 |
@@ -172,13 +172,15 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
   - Không đổi endpoint path, không đổi response shape, không đổi service logic.
   - **Test mới** (thêm vào `PublicReadApiTest`): `publicProductSnapshot_byProductId_returns200` (tạo sản phẩm với ID `prod_test_xxx`, gọi snapshot → 200 + pricing/stock); `publicProductSnapshot_byProductId_unknownId_returns404` (ID `prod_unknown_id_xyz` → 404, không phải 400). Cả 2 PASS. Các test snapshot slug cũ vẫn PASS.
 
-### FULL-09 (P3) — `CustomerWishlistController` DELETE thiếu tham số `HttpServletRequest`
+### FULL-09 (P3) — `CustomerWishlistController` DELETE thiếu tham số `HttpServletRequest` — **Fixed (2026-05-16)**
 
 - **Type:** code consistency
-- **Evidence:** `CustomerWishlistController.java:81` — endpoint xoá không nhận `HttpServletRequest` như các endpoint khác.
-- **Impact:** An toàn về chức năng (auth lấy từ SecurityContext). Chỉ là không nhất quán pattern, ảnh hưởng nếu sau này thêm audit/log theo request.
-- **Recommended fix:** Thêm tham số cho nhất quán. Không gấp.
-- **Fix status:** Not fixed — ghi nhận.
+- **Evidence:** `CustomerWishlistController.java` — `removeFromWishlist()` không nhận `HttpServletRequest` như các endpoint GET/POST cùng controller.
+- **Impact:** An toàn về chức năng (auth lấy từ SecurityContext). Chỉ là không nhất quán pattern.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - Thêm `HttpServletRequest request` vào signature của `removeFromWishlist()`. Parameter không được dùng bên trong method (auth vẫn từ SecurityContext) — thêm để đồng nhất pattern.
+  - Không đổi API contract, endpoint path, business logic, response shape.
+  - `CustomerWishlistApiTest` 11/11 PASS sau fix.
 
 ### FULL-10 (P3) — `PublicWarrantyController` trả `Map` thô thay vì DTO — **Fixed (2026-05-16)**
 

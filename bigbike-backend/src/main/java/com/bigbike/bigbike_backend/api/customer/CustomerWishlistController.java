@@ -102,7 +102,7 @@ public class CustomerWishlistController {
     @DeleteMapping("/{productId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
-    public void removeFromWishlist(@PathVariable String productId) {
+    public void removeFromWishlist(@PathVariable String productId, HttpServletRequest request) {
         UUID customerId = requireCustomerId();
         wishlistRepo.deleteByCustomerIdAndProductId(customerId, productId);
     }
