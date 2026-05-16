@@ -387,10 +387,10 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 2. ✅ **FULL-02 đã fix (2026-05-16)** — thêm màn verify-email Flutter + route + điều hướng sau đăng ký. (Tuỳ chọn về sau: cấu hình deep link để email link mở thẳng app.)
 3. ✅ **FULL-15 đã verify (2026-05-16)** — Serial P0-4/P0-5/P1-1/P1-3 đều đã fixed; test inventory/serial PASS.
 4. ✅ **FULL-12 test coverage hoàn chỉnh (2026-05-16)** — Batch 1: `CustomerWishlistApiTest` (8/8) + `CustomerAddressApiTest` (10/10). Batch 2: `ContactPublicFormTest` (6/6) + `AdminContactInboxApiTest` (8/8). Batch 3: `AdminCouponGiftApiTest` (7/7) + `PublicReviewApiTest` (9/9) + `WarrantyApiTest` (6/6). Tổng 54 test mới, tất cả PASS. Bug fix kèm theo: `PublicWarrantyController.lookup()` thêm `@Transactional(readOnly = true)` — lazy load `product` gây 500 đã được fix.
-5. Dọn 3 **docs mismatch** (DOC-01/02/03).
+5. Dọn **docs mismatch** (DOC-01→DOC-05) — tất cả đã fixed.
 6. Chốt các mục **NEEDS_BUSINESS_CONFIRMATION** ở Section 10 với chủ shop.
 
-**Tổng finding:** 16 mới (`FULL-01`→`FULL-16`) — P0: 0 · P1: 2 (cả hai đã fixed) · P2: 7 · P3: 7 — cộng 3 docs mismatch. Không có finding gây mất tiền / bán âm kho / lỗ hổng bảo mật.
+**Tổng finding:** 16 mới (`FULL-01`→`FULL-16`) — P0: 0 · P1: 2 (cả hai đã fixed) · P2: 7 · P3: 7 — cộng 5 docs mismatch (`DOC-01`→`DOC-05`, tất cả đã fixed). Không có finding gây mất tiền / bán âm kho / lỗ hổng bảo mật. Xem [Section 14](#14-final-review-after-remediation-2026-05-16) cho final review độc lập.
 
 ---
 
@@ -404,3 +404,86 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 **Admin:** `PosScreen.jsx`, `InventoryScreen.jsx`, `SerialListScreen.jsx`, `CouponListScreen.jsx`, `OrderDetailScreen.jsx`, `App.jsx`.
 **Mobile:** `bigbike_mobile/lib/core/api/api_endpoints.dart`, `register_screen.dart`.
 **Test:** 60+ file test (`Phase1B`→`Phase2F`, `Admin*ApiTest`, …).
+
+---
+
+## 14. Final Review After Remediation (2026-05-16)
+
+> **Reviewer:** Claude (Opus 4.7) — independent final review, không kế thừa kết luận session trước.
+> **Phương pháp:** Trace lại source code thật của 9 khu vực đã sửa, đối chiếu với báo cáo. Chỉ sửa docs stale; không sửa code.
+
+### 14.1 Final status after remediation
+
+**READY FOR LAUNCH (web / admin / backend).** Không còn P0/P1 treo. Toàn bộ 16 finding `FULL-xx` đã được xử lý hoặc phân loại đúng; 4 docs mismatch (`DOC-01`→`DOC-04`) đã đóng; 1 docs mismatch mới (`DOC-05`) phát hiện và đã sửa trong review này.
+
+### 14.2 Fixed findings — đã verify lại bằng source code
+
+| Finding | Verify lại | Kết quả |
+|---|---|---|
+| FULL-01 | `PermissionCatalog.java` | ✅ `pos.refund` (sensitive=true) trong `roles.groupSales`; `inventory.read`/`inventory.write` trong `roles.groupProducts`. `ALL_KEYS` derive từ `GROUPS` → 3 key gán được cho custom role. `AdminRolePermissions.java` reference khớp (ADMIN + `pos.refund`/`inventory.*`; SHOP_MANAGER + `inventory.*`). `PERMISSION_MATRIX.md` §"Role And Permission Source" đã viết lại đúng (DOC-01). |
+| FULL-02 | `verify_email_screen.dart`, `app_router.dart`, `register_screen.dart`, `api_endpoints.dart` | ✅ `VerifyEmailScreen` đủ 4 phase (info/verifying/success/error); route `/xac-nhan-email` nhận `?token=`; `register_screen.dart:158` điều hướng sau đăng ký; hằng số `verifyEmail` + `resendVerification` có trong `api_endpoints.dart`. |
+| FULL-03 | `AdminContactService.java` | ✅ `update(id, adminId, req)` ghi `AuditLogEntity` action `CONTACT_MESSAGE_UPDATED` khi `changed`; snapshot chỉ `status`/`assignedAdminId`/`adminNoteChanged` — không ghi nội dung message/email/phone. |
+| FULL-06 | `AdminCouponService.java` | ✅ Stale finding xác nhận đúng — `updateCoupon` merge patch vào entity (lines 200-207) rồi `validateDates(entity.getStartsAt(), entity.getExpiresAt())`; `validateDates` (line 308-310) dùng `Instant`, `!isAfter` chặn cả `==`. Code đúng sẵn. |
+| FULL-07 | `CustomerWishlistController.java`, `yeu-thich/page.tsx` | ✅ `GET /wishlist/products` phân trang qua `CatalogReadService.getWishlistProducts`; web page dùng `fetchWishlistProducts()`, bỏ client-side filter. |
+| FULL-08 | `CatalogController.java` | ✅ `ID_OR_SLUG_REGEX = "^[a-z0-9][a-z0-9_-]*$"`; snapshot path var dùng regex này; `getProductBySlug` vẫn `SLUG_REGEX`. |
+| FULL-09 | `CustomerWishlistController.java` | ✅ `removeFromWishlist(@PathVariable String productId, HttpServletRequest request)` — đã có tham số `request`. |
+| FULL-10 | `PublicWarrantyController.java`, `WarrantyLookupResponse.java` | ✅ `lookup()` trả `ApiDataResponse<WarrantyLookupResponse>`, có `@Transactional(readOnly = true)`; DTO record tồn tại trong `api/public_/dto/`. |
+| FULL-11 | `AdminMediaController.java` | ✅ `deleteMedia()` gác `requirePermission(permanent ? "*" : "media.write")`; `bulkHardDelete` gác `*`. Hard-delete đơn lẻ và bulk nay nhất quán. |
+| DOC-04 | `test-seed.sql` | ✅ Seed có `contact.read`/`contact.write` + `inventory.read`/`inventory.write` cho ADMIN và SHOP_MANAGER; ADMIN cũng có `pos.refund`. |
+
+8 test file mới (`CustomerWishlistApiTest`, `CustomerAddressApiTest`, `ContactPublicFormTest`, `AdminContactInboxApiTest`, `AdminContactApiTest`, `AdminCouponGiftApiTest`, `PublicReviewApiTest`, `WarrantyApiTest`) — đã xác nhận tồn tại trong `src/test/`.
+
+### 14.3 New finding
+
+#### DOC-05 (P3) — `API_CONTRACT.md` thiếu endpoint wishlist + `resend-verification` — **Fixed (2026-05-16)**
+Bản sửa FULL-07 thêm endpoint mới `GET /api/v1/customer/wishlist/products` nhưng **không cập nhật `API_CONTRACT.md`** — vi phạm Docs-First Contract (thay đổi API contract phải cập nhật docs cùng PR). Ngoài ra `API_CONTRACT.md` chưa từng liệt kê 3 endpoint wishlist còn lại (`GET`/`POST`/`DELETE /api/v1/customer/wishlist`) lẫn `POST /api/v1/customer/auth/resend-verification` — đều đã `CONFIRMED_FROM_CODE`.
+**Đã sửa:** Thêm 4 dòng wishlist + 1 dòng `resend-verification` vào bảng "Public And Customer Endpoints" của `API_CONTRACT.md`. Không đổi code, không đổi hành vi endpoint. Endpoint snapshot (`GET /api/v1/products/{idOrSlug}/snapshot`) không thêm — bảng này không liệt kê endpoint catalog browse nên giữ nguyên phạm vi.
+
+### 14.4 Remaining open findings (non-blocking)
+
+| Mã | Severity | Vấn đề | Vì sao không chặn launch |
+|---|---|---|---|
+| FULL-14 | P3 | Dashboard gác `orders.read`; coupon scheduler phụ thuộc timezone DB | Ghi chú thiết kế — đảm bảo DB chạy UTC là đủ; không cần code. |
+| FULL-16 | P3 | `AdminOrderWsService` nuốt lỗi khi persist notification | Best-effort có chủ đích; mất notification chỉ khi DB lỗi (hiếm). Cân nhắc thêm log mức error sau. |
+
+### 14.5 Remaining NEEDS_BUSINESS_CONFIRMATION
+
+| Mục | Câu hỏi cần chủ shop chốt | Chặn launch? |
+|---|---|---|
+| FULL-04 | Duyệt review có gửi thông báo cho người viết không? | Không — chấp nhận im lặng là mặc định an toàn. |
+| FULL-05 | Mobile có cần wishlist không? | Không — mobile launch được mà không có wishlist (web đã đủ). |
+| FULL-13 | Có cần workflow nhập kho theo phiếu (PO) không? | Không — nhập kho hiện đi qua manual adjustment của Inventory. |
+| Invoice điện tử | Có tích hợp nhà cung cấp e-invoice (NĐ 123/2020)? | Cần xác nhận pháp lý — không chặn kỹ thuật. |
+| Data export/delete | Có endpoint xuất/xoá dữ liệu cá nhân (NĐ 13/2023)? | Cần xác nhận pháp lý — không chặn kỹ thuật. |
+| Shipping carrier | Có tích hợp GHN/GHTK không? | Không — `fulfillmentStatus` cập nhật thủ công được. |
+
+### 14.6 Remaining non-blocking technical debt
+
+- **FULL-11 follow-up:** chưa có permission tường minh `media.hard_delete`; hard-delete hiện gác bằng wildcard `*` (SUPER_ADMIN). Đủ cho v1; chỉ cần khi muốn phân quyền chi tiết hơn.
+- **FULL-02 follow-up:** link xác minh trong email trỏ về web. Khách mobile bấm link mở web để verify, hoặc dùng nút "Gửi lại" trong app. Deep link để mở thẳng app là enhancement hạ tầng riêng.
+- **State transition test coverage:** `STATE_MACHINES.md` §18 — test transition Order/Payment/Return/Product vẫn `MISSING_TEST_COVERAGE` (FULL-12 đã phủ API workflow, chưa phủ riêng transition matrix).
+
+### 14.7 Tests / builds đã chạy trong review này
+
+- **Không sửa code** trong review này — chỉ sửa 3 docs (`BIGBIKE_FULL_E2E_WORKFLOW_AUDIT.md`, `API_CONTRACT.md`, `bigbike_mobile/README.md`). Theo Docs-First Contract, thay đổi docs-only không cần compile/test.
+- Verify các fix bằng **trace source code thật** (9 khu vực) + xác nhận **8 test file mới tồn tại**. Không re-run full suite — các kết quả test (54 test mới PASS) là báo cáo của session sửa trước; review này không bác bỏ nhưng cũng không tự chạy lại.
+- **Khuyến nghị trước khi merge:** chạy `mvn -q test` một lần cuối trên backend để xác nhận 54 test mới + regression còn xanh trên môi trường CI.
+
+### 14.8 Suggested next phase
+
+1. Chốt 6 mục NEEDS_BUSINESS_CONFIRMATION (§14.5) với chủ shop — đặc biệt 2 mục pháp lý (e-invoice, data export).
+2. Bổ sung test transition matrix cho state machine (§14.6).
+3. Nếu mobile lên kế hoạch phát hành: cân nhắc deep link cho verify-email + quyết định wishlist mobile (FULL-05).
+4. Cân nhắc permission `media.hard_delete` tường minh nếu cần role thủ kho/biên tập chi tiết.
+
+### 14.9 Final verdict
+
+- **Còn P0/P1?** Không. 0 P0, 0 P1 treo. Cả FULL-01 và FULL-02 đã fix và verify.
+- **Còn bug workflow chặn launch?** Không. 33/37 workflow `CONFIRMED_E2E`; 2 PARTIAL/SCHEMA_ONLY (wishlist mobile, stock receiving) không chặn; không có `BROKEN_FLOW`.
+- **Còn việc bắt buộc cần business confirmation trước launch?** Không bắt buộc về kỹ thuật. 6 mục ở §14.5 nên chốt với chủ shop nhưng không mục nào chặn launch web/admin/backend. 2 mục pháp lý (e-invoice, data export) nên được xác nhận sớm.
+- **Launch web / admin / backend trước — có ổn không?** ✅ Ổn. Lõi thương mại + workflow phụ trợ đều `CONFIRMED_E2E`, RBAC/audit/refund/state machine enforce ở backend, không finding gây mất tiền/bán âm kho/lỗ hổng bảo mật.
+- **Launch mobile — cần lưu ý gì?** Verify-email nay hoạt động trong app (FULL-02). Lưu ý: (1) wishlist chưa có trên mobile — launch được nhưng thiếu feature parity (FULL-05); (2) link xác minh trong email mở web, chưa deep-link vào app; (3) `home-videos` chưa có wrapper API mobile (ghi nhận trong `bigbike_mobile/README.md`).
+
+**Files changed trong review này:** `docs/audits/BIGBIKE_FULL_E2E_WORKFLOW_AUDIT.md` (section 14 này), `docs/engineering/API_CONTRACT.md` (5 dòng endpoint — DOC-05), `bigbike_mobile/README.md` (gỡ gap verify-email đã đóng, thêm gap wishlist mobile).
+
+**Remaining launch risks:** chỉ còn P3 + business decision — không có risk kỹ thuật chặn launch web/admin/backend.

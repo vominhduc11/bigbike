@@ -36,8 +36,8 @@ Implemented endpoint constants include:
 
 | Gap | Status | Evidence |
 |---|---|---|
-| `POST /api/v1/customer/auth/verify-email` is live in backend but not represented in `api_endpoints.dart`. | `CODE_ONLY_NOT_DOCUMENTED` | `CustomerAuthController.java`, `lib/core/api/api_endpoints.dart` |
 | `GET /api/v1/home-videos` is public in backend but not represented in `api_endpoints.dart`. | `CODE_ONLY_NOT_DOCUMENTED` | `SecurityConfig.java`, `bigbike-openapi.json`, `lib/core/api/api_endpoints.dart` |
+| Customer wishlist is live in backend (`CustomerWishlistController`) but has no mobile UI/API wrapper. | `CODE_ONLY_NOT_DOCUMENTED` | `CustomerWishlistController.java`, `lib/core/api/api_endpoints.dart` |
 | Production release ownership and supported feature matrix are not formally documented. | `NEEDS_VERIFICATION` | repo docs review |
 
 ## Client Behavior Notes
