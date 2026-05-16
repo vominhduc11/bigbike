@@ -6,20 +6,18 @@ import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminNotificationService {
 
     private static final int MAX_UNREAD_FETCH = 50;
 
     private final AdminNotificationJpaRepository notificationRepo;
-
-    public AdminNotificationService(AdminNotificationJpaRepository notificationRepo) {
-        this.notificationRepo = notificationRepo;
-    }
 
     @Transactional
     public void persistFromWsEvent(OrderWsEvent event) {

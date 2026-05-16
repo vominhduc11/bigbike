@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/reports")
+@RequiredArgsConstructor
 public class AdminReportController {
 
     private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -48,18 +50,6 @@ public class AdminReportController {
     private final DevAdminAuthService devAdminAuthService;
     private final AuditLogJpaRepository auditLogRepo;
     private final ClientIpResolver clientIpResolver;
-
-    public AdminReportController(
-            AdminReportService adminReportService,
-            DevAdminAuthService devAdminAuthService,
-            AuditLogJpaRepository auditLogRepo,
-            ClientIpResolver clientIpResolver
-    ) {
-        this.adminReportService = adminReportService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.auditLogRepo = auditLogRepo;
-        this.clientIpResolver = clientIpResolver;
-    }
 
     @GetMapping("/analytics")
     public AdminAnalyticsResponse getAnalytics(

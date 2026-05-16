@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Pattern;
 import java.time.Duration;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class PublicSliderController {
 
     private static final String LOCATION_REGEX = "^[a-z0-9_-]+$";
@@ -28,11 +30,6 @@ public class PublicSliderController {
 
     private final SliderReadService sliderReadService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public PublicSliderController(SliderReadService sliderReadService, ApiResponseFactory apiResponseFactory) {
-        this.sliderReadService = sliderReadService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/sliders")
     public ResponseEntity<ApiDataResponse<List<PublicSliderResponse>>> listSliders(

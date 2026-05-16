@@ -2,16 +2,14 @@ package com.bigbike.bigbike_backend.service.security;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.service.video.YouTubeUrlParser;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class HomeVideoUrlPolicy {
 
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
-
-    public HomeVideoUrlPolicy(SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy) {
-        this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
-    }
 
     public String validateOrThrow(String url, String field) {
         String normalized = SafePublicLinkPolicy.trimToNull(url);

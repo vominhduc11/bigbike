@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.ws;
 
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -9,17 +10,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AdminOrderWsService {
 
     private static final String TOPIC_ORDERS = "/topic/admin/orders";
 
     private final SimpMessagingTemplate messaging;
     private final AdminNotificationService notificationService;
-
-    public AdminOrderWsService(SimpMessagingTemplate messaging, AdminNotificationService notificationService) {
-        this.messaging = messaging;
-        this.notificationService = notificationService;
-    }
 
     public void pushEvent(OrderWsEvent event) {
         // Delay push until after the current transaction commits so

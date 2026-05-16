@@ -22,10 +22,12 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ReceivableService {
 
     private final ReceivableJpaRepository receivableRepo;
@@ -33,20 +35,6 @@ public class ReceivableService {
     private final PaymentJpaRepository paymentRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final ReceivableQueryService queryService;
-
-    public ReceivableService(
-            ReceivableJpaRepository receivableRepo,
-            OrderJpaRepository orderRepo,
-            PaymentJpaRepository paymentRepo,
-            AuditLogJpaRepository auditLogRepo,
-            ReceivableQueryService queryService
-    ) {
-        this.receivableRepo = receivableRepo;
-        this.orderRepo = orderRepo;
-        this.paymentRepo = paymentRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.queryService = queryService;
-    }
 
     /**
      * Creates a receivable record for a credit order.

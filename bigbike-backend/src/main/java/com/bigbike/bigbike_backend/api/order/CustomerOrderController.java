@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,24 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/customer/orders")
+@RequiredArgsConstructor
 public class CustomerOrderController {
 
     private final OrderReadService orderReadService;
     private final CustomerReturnService customerReturnService;
     private final CustomerOrderCancelService customerOrderCancelService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CustomerOrderController(
-            OrderReadService orderReadService,
-            CustomerReturnService customerReturnService,
-            CustomerOrderCancelService customerOrderCancelService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.orderReadService = orderReadService;
-        this.customerReturnService = customerReturnService;
-        this.customerOrderCancelService = customerOrderCancelService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiListResponse<OrderListItemResponse> listOrders(

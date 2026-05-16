@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminContactService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -40,16 +42,6 @@ public class AdminContactService {
     private final ContactMessageJpaRepository contactRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminContactService(
-            ContactMessageJpaRepository contactRepo,
-            AdminUserJpaRepository adminUserRepo,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.contactRepo = contactRepo;
-        this.adminUserRepo = adminUserRepo;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     // ── List (paginated) ──────────────────────────────────────────────────────
 

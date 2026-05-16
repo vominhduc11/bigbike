@@ -6,10 +6,12 @@ import com.bigbike.bigbike_backend.service.auth.JwtService;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerSessionService {
 
     public static final long SESSION_TTL_SECONDS = 604800L;   // 7 days
@@ -19,11 +21,6 @@ public class CustomerSessionService {
 
     private final CustomerSessionJpaRepository sessionRepo;
     private final JwtService jwtService;
-
-    public CustomerSessionService(CustomerSessionJpaRepository sessionRepo, JwtService jwtService) {
-        this.sessionRepo = sessionRepo;
-        this.jwtService = jwtService;
-    }
 
     @Transactional
     public CustomerSessionResult createSession(UUID customerId, String ipAddress, String userAgent) {

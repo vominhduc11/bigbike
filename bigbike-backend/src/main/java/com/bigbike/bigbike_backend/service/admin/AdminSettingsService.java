@@ -23,10 +23,12 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminSettingsService {
 
     private static final int DEFAULT_SIZE = 50;
@@ -39,22 +41,6 @@ public class AdminSettingsService {
     private final WebRevalidationService webRevalidationService;
     private final SettingDefinitionRegistry definitionRegistry;
     private final SettingValueValidator valueValidator;
-
-    public AdminSettingsService(
-            SiteSettingJpaRepository settingRepo,
-            AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService,
-            WebRevalidationService webRevalidationService,
-            SettingDefinitionRegistry definitionRegistry,
-            SettingValueValidator valueValidator
-    ) {
-        this.settingRepo = settingRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
-        this.webRevalidationService = webRevalidationService;
-        this.definitionRegistry = definitionRegistry;
-        this.valueValidator = valueValidator;
-    }
 
     // ── List ──────────────────────────────────────────────────────────────────
 

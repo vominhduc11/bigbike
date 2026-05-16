@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/inventory")
+@RequiredArgsConstructor
 public class AdminInventoryController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -43,18 +45,6 @@ public class AdminInventoryController {
     private final AdminSerialService serialService;
     private final AdminSerialImportService serialImportService;
     private final DevAdminAuthService devAdminAuthService;
-
-    public AdminInventoryController(
-            AdminInventoryService inventoryService,
-            AdminSerialService serialService,
-            AdminSerialImportService serialImportService,
-            DevAdminAuthService devAdminAuthService
-    ) {
-        this.inventoryService = inventoryService;
-        this.serialService = serialService;
-        this.serialImportService = serialImportService;
-        this.devAdminAuthService = devAdminAuthService;
-    }
 
     @GetMapping
     public PageResult<AdminStockItemResponse> listStock(

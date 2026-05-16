@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/roles")
+@RequiredArgsConstructor
 public class AdminRolesController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -41,18 +43,6 @@ public class AdminRolesController {
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
     private final ClientIpResolver clientIpResolver;
-
-    public AdminRolesController(
-            AdminRoleService adminRoleService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory,
-            ClientIpResolver clientIpResolver
-    ) {
-        this.adminRoleService = adminRoleService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-        this.clientIpResolver = clientIpResolver;
-    }
 
     @GetMapping
     public ApiDataResponse<List<Map<String, Object>>> listRoles(HttpServletRequest request) {

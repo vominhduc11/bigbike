@@ -26,6 +26,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SerialLifecycleService {
 
     private static final int DEFAULT_WARRANTY_MONTHS = 12;
@@ -52,28 +54,6 @@ public class SerialLifecycleService {
     private final ReturnItemJpaRepository returnItemRepo;
     private final WarrantyRecordJpaRepository warrantyRepo;
     private final SiteSettingJpaRepository settingRepo;
-
-    public SerialLifecycleService(
-            ProductSerialJpaRepository serialRepo,
-            OrderLineItemSerialJpaRepository olisRepo,
-            ReturnItemSerialJpaRepository risRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            ReturnItemJpaRepository returnItemRepo,
-            WarrantyRecordJpaRepository warrantyRepo,
-            SiteSettingJpaRepository settingRepo
-    ) {
-        this.serialRepo = serialRepo;
-        this.olisRepo = olisRepo;
-        this.risRepo = risRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.returnItemRepo = returnItemRepo;
-        this.warrantyRepo = warrantyRepo;
-        this.settingRepo = settingRepo;
-    }
 
     // ── 1. Reserve serials for an order line item ────────────────────────────
 

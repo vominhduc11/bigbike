@@ -29,10 +29,12 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class OrderImporter implements DomainImporter {
 
     private final OrderJpaRepository orderRepo;
@@ -43,25 +45,6 @@ public class OrderImporter implements DomainImporter {
     private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final PaymentJpaRepository paymentRepo;
     private final CustomerJpaRepository customerRepo;
-
-    public OrderImporter(
-            OrderJpaRepository orderRepo,
-            OrderAddressJpaRepository addressRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            OrderShippingItemJpaRepository shippingItemRepo,
-            OrderFeeItemJpaRepository feeItemRepo,
-            OrderAppliedCouponJpaRepository appliedCouponRepo,
-            PaymentJpaRepository paymentRepo,
-            CustomerJpaRepository customerRepo) {
-        this.orderRepo = orderRepo;
-        this.addressRepo = addressRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.shippingItemRepo = shippingItemRepo;
-        this.feeItemRepo = feeItemRepo;
-        this.appliedCouponRepo = appliedCouponRepo;
-        this.paymentRepo = paymentRepo;
-        this.customerRepo = customerRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

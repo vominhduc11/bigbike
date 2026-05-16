@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.inventory;
 
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,17 +14,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SerialReservationCleanupJob {
 
     private final SerialLifecycleService serialLifecycleService;
     private final WebRevalidationService webRevalidationService;
-
-    public SerialReservationCleanupJob(
-            SerialLifecycleService serialLifecycleService,
-            WebRevalidationService webRevalidationService) {
-        this.serialLifecycleService = serialLifecycleService;
-        this.webRevalidationService = webRevalidationService;
-    }
 
     @Scheduled(fixedDelayString = "${inventory.reservation.cleanup-interval-ms:60000}")
     public void releaseExpiredReservations() {

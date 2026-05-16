@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     static final String REFRESH_COOKIE = "bb_admin_refresh";
@@ -34,16 +36,6 @@ public class AuthController {
     private final AdminAuthService adminAuthService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AuthController(
-            AdminAuthService adminAuthService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminAuthService = adminAuthService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @PostMapping("/login")
     public ApiDataResponse<TokenResponse> login(

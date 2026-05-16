@@ -21,12 +21,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class AdminDashboardService {
 
     // Vietnam is UTC+7 — use named zone so DST rules are respected
@@ -42,16 +44,6 @@ public class AdminDashboardService {
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final ProductJpaRepository productRepo;
-
-    public AdminDashboardService(
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            ProductJpaRepository productRepo
-    ) {
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.productRepo = productRepo;
-    }
 
     public AdminDashboardSummaryResponse getDashboardSummary(String period) {
         int days = parseDays(period);

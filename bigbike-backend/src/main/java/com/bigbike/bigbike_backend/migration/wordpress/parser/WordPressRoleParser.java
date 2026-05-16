@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
  * so the customer mapper can exclude them from the import.
  */
 @Component
+@RequiredArgsConstructor
 public class WordPressRoleParser {
 
     static final Set<String> PRIVILEGED_ROLES = Set.of(
@@ -26,10 +28,6 @@ public class WordPressRoleParser {
     );
 
     private final PhpSerializeParser phpParser;
-
-    public WordPressRoleParser(PhpSerializeParser phpParser) {
-        this.phpParser = phpParser;
-    }
 
     public record ParsedRole(String primaryRole, List<String> allRoles, List<String> warnings) {
         public boolean isPrivileged() {

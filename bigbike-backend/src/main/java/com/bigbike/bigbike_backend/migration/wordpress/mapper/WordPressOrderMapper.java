@@ -12,19 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class WordPressOrderMapper {
 
     private static final DateTimeFormatter WP_DATETIME =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final WordPressWooCommerceOrderItemMapper itemMapper;
-
-    public WordPressOrderMapper(WordPressWooCommerceOrderItemMapper itemMapper) {
-        this.itemMapper = itemMapper;
-    }
 
     // ── Backward-compat basic item record (Phase 2A/2B) ─────────────────────
     public record MappedOrderItem(

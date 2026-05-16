@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class CheckoutController {
 
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
@@ -42,16 +44,6 @@ public class CheckoutController {
     private final CheckoutService checkoutService;
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CheckoutController(
-            CheckoutService checkoutService,
-            CartService cartService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.checkoutService = checkoutService;
-        this.cartService = cartService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @PostMapping("/checkout")
     public ApiDataResponse<OrderSummaryResponse> checkout(

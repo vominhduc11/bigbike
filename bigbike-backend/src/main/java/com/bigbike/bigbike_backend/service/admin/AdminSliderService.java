@@ -27,12 +27,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminSliderService {
 
     private final SliderJpaRepository sliderJpaRepository;
@@ -41,22 +43,6 @@ public class AdminSliderService {
     private final WebRevalidationService webRevalidationService;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminSliderService(
-            SliderJpaRepository sliderJpaRepository,
-            ProductJpaRepository productJpaRepository,
-            SliderReadService sliderReadService,
-            WebRevalidationService webRevalidationService,
-            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.sliderJpaRepository = sliderJpaRepository;
-        this.productJpaRepository = productJpaRepository;
-        this.sliderReadService = sliderReadService;
-        this.webRevalidationService = webRevalidationService;
-        this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     @Transactional(readOnly = true)
     public List<Slider> list(String location) {

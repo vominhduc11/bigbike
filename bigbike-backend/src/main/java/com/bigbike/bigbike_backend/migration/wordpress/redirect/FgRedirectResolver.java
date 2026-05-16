@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -22,15 +23,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class FgRedirectResolver {
 
     static final String PRODUCT_URL_PREFIX = "/product/";
 
     private final ProductJpaRepository productRepo;
-
-    public FgRedirectResolver(ProductJpaRepository productRepo) {
-        this.productRepo = productRepo;
-    }
 
     public record ResolutionResult(
             List<MappedRedirect> resolved,

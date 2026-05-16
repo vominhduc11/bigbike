@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class ProductTagImporter implements DomainImporter {
 
     public record MappedProductTag(
@@ -24,11 +26,6 @@ public class ProductTagImporter implements DomainImporter {
 
     private final ProductJpaRepository productRepo;
     private final ProductTagJpaRepository tagRepo;
-
-    public ProductTagImporter(ProductJpaRepository productRepo, ProductTagJpaRepository tagRepo) {
-        this.productRepo = productRepo;
-        this.tagRepo = tagRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

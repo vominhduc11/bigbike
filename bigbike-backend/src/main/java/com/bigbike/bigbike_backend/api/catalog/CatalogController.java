@@ -20,6 +20,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class CatalogController {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -47,11 +49,6 @@ public class CatalogController {
 
     private final CatalogReadService catalogReadService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CatalogController(CatalogReadService catalogReadService, ApiResponseFactory apiResponseFactory) {
-        this.catalogReadService = catalogReadService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/products")
     public ApiListResponse<Product> listProducts(

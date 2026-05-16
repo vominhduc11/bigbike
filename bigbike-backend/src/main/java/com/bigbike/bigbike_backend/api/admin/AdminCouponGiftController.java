@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/coupon-gifts")
+@RequiredArgsConstructor
 public class AdminCouponGiftController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -28,16 +30,6 @@ public class AdminCouponGiftController {
     private final AdminCouponGiftService couponGiftService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminCouponGiftController(
-            AdminCouponGiftService couponGiftService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.couponGiftService = couponGiftService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.OK)

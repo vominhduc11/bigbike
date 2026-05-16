@@ -2,16 +2,14 @@ package com.bigbike.bigbike_backend.api.common;
 
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class ApiResponseFactory {
 
     private final ApiMetaFactory apiMetaFactory;
-
-    public ApiResponseFactory(ApiMetaFactory apiMetaFactory) {
-        this.apiMetaFactory = apiMetaFactory;
-    }
 
     public <T> ApiDataResponse<T> data(T data, HttpServletRequest request) {
         return new ApiDataResponse<>(data, apiMetaFactory.from(request));

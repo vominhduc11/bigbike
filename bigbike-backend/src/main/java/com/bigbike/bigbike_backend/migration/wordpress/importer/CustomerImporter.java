@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,17 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Login via legacy hash is deferred to Phase 2F (phpass verifier).
  */
 @Component
+@RequiredArgsConstructor
 public class CustomerImporter implements DomainImporter {
 
     private final CustomerJpaRepository customerRepo;
     private final CustomerAddressJpaRepository addressRepo;
-
-    public CustomerImporter(
-            CustomerJpaRepository customerRepo,
-            CustomerAddressJpaRepository addressRepo) {
-        this.customerRepo = customerRepo;
-        this.addressRepo = addressRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

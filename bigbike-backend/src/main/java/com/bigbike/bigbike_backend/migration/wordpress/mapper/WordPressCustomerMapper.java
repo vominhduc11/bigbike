@@ -9,16 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class WordPressCustomerMapper {
 
     private final WordPressRoleParser roleParser;
-
-    public WordPressCustomerMapper(WordPressRoleParser roleParser) {
-        this.roleParser = roleParser;
-    }
 
     public record MappedCustomer(
             // ── Core identity ─────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -31,23 +32,13 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RedirectResolverService {
 
     private final WordPressRedirectMapper rankMathMapper;
     private final FgRedirectAnalyzer fgAnalyzer;
     private final LegacyUrlMapper legacyMapper;
     private final RedirectImporter redirectImporter;
-
-    public RedirectResolverService(
-            WordPressRedirectMapper rankMathMapper,
-            FgRedirectAnalyzer fgAnalyzer,
-            LegacyUrlMapper legacyMapper,
-            RedirectImporter redirectImporter) {
-        this.rankMathMapper = rankMathMapper;
-        this.fgAnalyzer = fgAnalyzer;
-        this.legacyMapper = legacyMapper;
-        this.redirectImporter = redirectImporter;
-    }
 
     public record ResolutionSummary(
             int rankMathProcessed,

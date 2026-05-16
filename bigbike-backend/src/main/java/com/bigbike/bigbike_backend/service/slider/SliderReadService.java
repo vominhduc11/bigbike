@@ -6,22 +6,16 @@ import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class SliderReadService {
 
     private final SliderJpaRepository sliderJpaRepository;
     private final CatalogReadRepository catalogReadRepository;
-
-    public SliderReadService(
-            SliderJpaRepository sliderJpaRepository,
-            CatalogReadRepository catalogReadRepository
-    ) {
-        this.sliderJpaRepository = sliderJpaRepository;
-        this.catalogReadRepository = catalogReadRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<Slider> listByLocation(String location) {

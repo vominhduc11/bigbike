@@ -16,10 +16,12 @@ import java.util.Date;
 import java.util.HexFormat;
 import java.util.Set;
 import javax.crypto.SecretKey;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
     private static final int MIN_PROD_SECRET_LENGTH = 32;
@@ -29,11 +31,6 @@ public class JwtService {
     private final JwtProperties jwtProperties;
     private final Environment environment;
     private SecretKey signingKey;
-
-    public JwtService(JwtProperties jwtProperties, Environment environment) {
-        this.jwtProperties = jwtProperties;
-        this.environment = environment;
-    }
 
     @PostConstruct
     void init() {

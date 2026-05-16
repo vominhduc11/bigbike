@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,21 +31,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/shipping")
+@RequiredArgsConstructor
 public class AdminShippingController {
 
     private final AdminShippingService adminShippingService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminShippingController(
-            AdminShippingService adminShippingService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminShippingService = adminShippingService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     // ── Zones ─────────────────────────────────────────────────────────────────
 

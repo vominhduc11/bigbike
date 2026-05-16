@@ -11,22 +11,19 @@ import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ContentReadService {
 
     private static final Set<String> ARTICLE_SORT_FIELDS = Set.of("publishedAt", "createdAt", "title");
 
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
-
-    public ContentReadService(ContentReadRepository contentReadRepository, SortParser sortParser) {
-        this.contentReadRepository = contentReadRepository;
-        this.sortParser = sortParser;
-    }
 
     public PageResult<Article> listArticles(int page, int size, String sort, String category, String q) {
         SortSpec sortSpec = sortParser.parse(sort, "publishedAt", SortDirection.DESC, ARTICLE_SORT_FIELDS);

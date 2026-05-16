@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/cart")
+@RequiredArgsConstructor
 public class CartController {
 
     public static final String GUEST_COOKIE = "bb_guest_id";
@@ -47,11 +49,6 @@ public class CartController {
 
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CartController(CartService cartService, ApiResponseFactory apiResponseFactory) {
-        this.cartService = cartService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiDataResponse<CartResponse> getCart(HttpServletRequest request, HttpServletResponse response) {

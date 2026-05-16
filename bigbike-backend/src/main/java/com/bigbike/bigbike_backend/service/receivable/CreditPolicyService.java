@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.Re
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class CreditPolicyService {
 
     /** Returned by {@link #validateCreditEligibility}. */
@@ -22,11 +24,6 @@ public class CreditPolicyService {
 
     private final CustomerJpaRepository customerRepo;
     private final ReceivableJpaRepository receivableRepo;
-
-    public CreditPolicyService(CustomerJpaRepository customerRepo, ReceivableJpaRepository receivableRepo) {
-        this.customerRepo = customerRepo;
-        this.receivableRepo = receivableRepo;
-    }
 
     /**
      * Validates that the customer can receive a credit sale for the given amount.

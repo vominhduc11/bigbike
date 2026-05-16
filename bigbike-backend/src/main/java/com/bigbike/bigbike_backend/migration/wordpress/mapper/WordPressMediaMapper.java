@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.parser.PhpSerializeParser
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
  * Physical file copy is deferred to Phase 2E.
  */
 @Component
+@RequiredArgsConstructor
 public class WordPressMediaMapper {
 
     public record MappedMedia(
@@ -29,10 +31,6 @@ public class WordPressMediaMapper {
     ) {}
 
     private final PhpSerializeParser phpParser;
-
-    public WordPressMediaMapper(PhpSerializeParser phpParser) {
-        this.phpParser = phpParser;
-    }
 
     public MappedMedia map(WpAttachmentMeta attachment) {
         List<String> warnings = new ArrayList<>();

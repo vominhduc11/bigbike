@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,20 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/contact-messages")
+@RequiredArgsConstructor
 public class AdminContactController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminContactService service;
     private final DevAdminAuthService devAdminAuthService;
-
-    public AdminContactController(
-            AdminContactService service,
-            DevAdminAuthService devAdminAuthService
-    ) {
-        this.service = service;
-        this.devAdminAuthService = devAdminAuthService;
-    }
 
     @GetMapping
     public PageResult<AdminContactMessageListItem> list(

@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,21 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/audit-logs")
+@RequiredArgsConstructor
 public class AdminAuditLogController {
 
     private final AdminAuditLogService adminAuditLogService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminAuditLogController(
-            AdminAuditLogService adminAuditLogService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminAuditLogService = adminAuditLogService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiListResponse<AdminAuditLogListItemResponse> listAuditLogs(

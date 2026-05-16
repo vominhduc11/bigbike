@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,20 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/returns")
+@RequiredArgsConstructor
 public class AdminReturnController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AdminReturnService adminReturnService;
     private final DevAdminAuthService devAdminAuthService;
-
-    public AdminReturnController(
-            AdminReturnService adminReturnService,
-            DevAdminAuthService devAdminAuthService
-    ) {
-        this.adminReturnService = adminReturnService;
-        this.devAdminAuthService = devAdminAuthService;
-    }
 
     @GetMapping
     public PageResult<AdminReturnListItemResponse> listReturns(

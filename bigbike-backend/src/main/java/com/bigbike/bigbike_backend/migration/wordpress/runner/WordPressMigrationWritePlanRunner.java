@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationWriteP
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.WordPressMigrationWritePlanService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -28,23 +29,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class WordPressMigrationWritePlanRunner implements ApplicationRunner {
 
     private final WordPressMigrationProperties props;
     private final WordPressCatalogContentDryRunService catalogDryRunService;
     private final WordPressCustomerOrderCouponDryRunService commerceDryRunService;
     private final WordPressMigrationWritePlanService writePlanService;
-
-    public WordPressMigrationWritePlanRunner(
-            WordPressMigrationProperties props,
-            WordPressCatalogContentDryRunService catalogDryRunService,
-            WordPressCustomerOrderCouponDryRunService commerceDryRunService,
-            WordPressMigrationWritePlanService writePlanService) {
-        this.props = props;
-        this.catalogDryRunService = catalogDryRunService;
-        this.commerceDryRunService = commerceDryRunService;
-        this.writePlanService = writePlanService;
-    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

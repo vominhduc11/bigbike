@@ -41,11 +41,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PosOrderService {
 
     public record PosLineItemRequest(
@@ -114,48 +116,6 @@ public class PosOrderService {
     private final CouponJpaRepository couponRepo;
     private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final CouponPolicyService couponPolicy;
-
-    public PosOrderService(
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            OrderNoteJpaRepository noteRepo,
-            PaymentJpaRepository paymentRepo,
-            AuditLogJpaRepository auditLogRepo,
-            OrderNumberGenerator orderNumberGenerator,
-            OrderKeyGenerator orderKeyGenerator,
-            AdminOrderWsService wsService,
-            InventoryPolicyService inventoryPolicyService,
-            SerialLifecycleService serialLifecycleService,
-            CreditPolicyService creditPolicyService,
-            ReceivableService receivableService,
-            CustomerJpaRepository customerRepo,
-            CouponJpaRepository couponRepo,
-            OrderAppliedCouponJpaRepository appliedCouponRepo,
-            CouponPolicyService couponPolicy
-    ) {
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.noteRepo = noteRepo;
-        this.paymentRepo = paymentRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.orderNumberGenerator = orderNumberGenerator;
-        this.orderKeyGenerator = orderKeyGenerator;
-        this.wsService = wsService;
-        this.inventoryPolicyService = inventoryPolicyService;
-        this.serialLifecycleService = serialLifecycleService;
-        this.creditPolicyService = creditPolicyService;
-        this.receivableService = receivableService;
-        this.customerRepo = customerRepo;
-        this.couponRepo = couponRepo;
-        this.appliedCouponRepo = appliedCouponRepo;
-        this.couponPolicy = couponPolicy;
-    }
 
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,

@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/settings")
+@RequiredArgsConstructor
 public class AdminSettingsController {
 
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -35,16 +37,6 @@ public class AdminSettingsController {
     private final AdminSettingsService adminSettingsService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminSettingsController(
-            AdminSettingsService adminSettingsService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminSettingsService = adminSettingsService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiListResponse<AdminSiteSettingResponse> listSettings(

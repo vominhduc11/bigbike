@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -46,6 +47,7 @@ import org.springframework.stereotype.Service;
  *   - Not wired to any application startup event.
  */
 @Service
+@RequiredArgsConstructor
 public class WordPressCatalogContentDryRunService {
 
     private static final Set<String> TARGET_TABLES = Set.of(
@@ -68,31 +70,6 @@ public class WordPressCatalogContentDryRunService {
     private final WordPressMenuMapper menuMapper;
     private final WordPressRedirectMapper redirectMapper;
     private final WordPressPermalinkManagerMapper permalinkMapper;
-
-    public WordPressCatalogContentDryRunService(
-            WordPressSqlDumpRowReader rowReader,
-            WordPressProductMapper productMapper,
-            WordPressVariationMapper variationMapper,
-            WordPressCategoryMapper categoryMapper,
-            WordPressBrandMapper brandMapper,
-            WordPressMediaMapper mediaMapper,
-            WordPressPageMapper pageMapper,
-            WordPressArticleMapper articleMapper,
-            WordPressMenuMapper menuMapper,
-            WordPressRedirectMapper redirectMapper,
-            WordPressPermalinkManagerMapper permalinkMapper) {
-        this.rowReader = rowReader;
-        this.productMapper = productMapper;
-        this.variationMapper = variationMapper;
-        this.categoryMapper = categoryMapper;
-        this.brandMapper = brandMapper;
-        this.mediaMapper = mediaMapper;
-        this.pageMapper = pageMapper;
-        this.articleMapper = articleMapper;
-        this.menuMapper = menuMapper;
-        this.redirectMapper = redirectMapper;
-        this.permalinkMapper = permalinkMapper;
-    }
 
     /**
      * Run the dry-run import against the given dump path.

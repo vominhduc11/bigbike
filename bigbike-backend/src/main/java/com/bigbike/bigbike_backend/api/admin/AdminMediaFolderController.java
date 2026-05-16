@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,19 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/media-folders")
+@RequiredArgsConstructor
 public class AdminMediaFolderController {
 
     private final AdminMediaFolderService folderService;
     private final DevAdminAuthService authService;
     private final ApiResponseFactory responseFactory;
-
-    public AdminMediaFolderController(AdminMediaFolderService folderService,
-                                      DevAdminAuthService authService,
-                                      ApiResponseFactory responseFactory) {
-        this.folderService = folderService;
-        this.authService = authService;
-        this.responseFactory = responseFactory;
-    }
 
     @GetMapping
     public ApiListResponse<MediaFolderResponse> list(HttpServletRequest request) {

@@ -27,11 +27,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CartService {
 
     private static final String STATUS_ACTIVE = "ACTIVE";
@@ -46,28 +48,6 @@ public class CartService {
     private final CartCalculator calculator;
     private final CouponPolicyService couponPolicy;
     private final SerialLifecycleService serialLifecycleService;
-
-    public CartService(
-            CartJpaRepository cartRepo,
-            CartItemJpaRepository cartItemRepo,
-            CartCouponJpaRepository cartCouponRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            CouponJpaRepository couponRepo,
-            CartCalculator calculator,
-            CouponPolicyService couponPolicy,
-            SerialLifecycleService serialLifecycleService
-    ) {
-        this.cartRepo = cartRepo;
-        this.cartItemRepo = cartItemRepo;
-        this.cartCouponRepo = cartCouponRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.couponRepo = couponRepo;
-        this.calculator = calculator;
-        this.couponPolicy = couponPolicy;
-        this.serialLifecycleService = serialLifecycleService;
-    }
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {

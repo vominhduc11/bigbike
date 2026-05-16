@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
 import net.coobird.thumbnailator.Thumbnails;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ImageVariantService {
 
     /** Target widths in pixels. Variants smaller than the source are skipped. */
@@ -44,11 +46,6 @@ public class ImageVariantService {
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
-
-    public ImageVariantService(MinioClient minioClient, MinioProperties minioProperties) {
-        this.minioClient = minioClient;
-        this.minioProperties = minioProperties;
-    }
 
     /**
      * Generate and upload variants for a freshly-uploaded raster image.

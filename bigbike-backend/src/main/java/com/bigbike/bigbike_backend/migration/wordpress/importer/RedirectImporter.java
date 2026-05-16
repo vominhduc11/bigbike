@@ -8,17 +8,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class RedirectImporter implements DomainImporter {
 
     private final RedirectJpaRepository repo;
-
-    public RedirectImporter(RedirectJpaRepository repo) {
-        this.repo = repo;
-    }
 
     @Override
     public MigrationDomain domain() {

@@ -18,24 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class ProductImporter implements DomainImporter {
 
     private final ProductJpaRepository productRepo;
     private final CategoryJpaRepository categoryRepo;
     private final BrandJpaRepository brandRepo;
-
-    public ProductImporter(
-            ProductJpaRepository productRepo,
-            CategoryJpaRepository categoryRepo,
-            BrandJpaRepository brandRepo) {
-        this.productRepo = productRepo;
-        this.categoryRepo = categoryRepo;
-        this.brandRepo = brandRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

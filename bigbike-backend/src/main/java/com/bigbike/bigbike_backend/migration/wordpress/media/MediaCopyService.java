@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class MediaCopyService {
 
     private static final int STREAM_BUFFER = 64 * 1024;
@@ -38,15 +40,6 @@ public class MediaCopyService {
     private final MediaJpaRepository mediaRepo;
     private final MediaPathResolver pathResolver;
     private final MediaChecksumService checksumService;
-
-    public MediaCopyService(
-            MediaJpaRepository mediaRepo,
-            MediaPathResolver pathResolver,
-            MediaChecksumService checksumService) {
-        this.mediaRepo = mediaRepo;
-        this.pathResolver = pathResolver;
-        this.checksumService = checksumService;
-    }
 
     public MediaCopyReport run(MediaCopyOptions options, MediaStoragePort storage) {
         Instant start = Instant.now();

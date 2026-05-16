@@ -14,19 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class MenuImporter implements DomainImporter {
 
     private final MenuJpaRepository menuRepo;
     private final MenuItemJpaRepository menuItemRepo;
-
-    public MenuImporter(MenuJpaRepository menuRepo, MenuItemJpaRepository menuItemRepo) {
-        this.menuRepo = menuRepo;
-        this.menuItemRepo = menuItemRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

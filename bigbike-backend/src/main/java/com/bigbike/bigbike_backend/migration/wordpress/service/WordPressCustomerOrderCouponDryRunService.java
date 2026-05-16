@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
  *   - Not wired to any application startup event.
  */
 @Service
+@RequiredArgsConstructor
 public class WordPressCustomerOrderCouponDryRunService {
 
     private static final Set<String> TARGET_TABLES = Set.of(
@@ -52,17 +54,6 @@ public class WordPressCustomerOrderCouponDryRunService {
     private final WordPressCustomerMapper customerMapper;
     private final WordPressOrderMapper orderMapper;
     private final WordPressCouponMapper couponMapper;
-
-    public WordPressCustomerOrderCouponDryRunService(
-            WordPressSqlDumpRowReader rowReader,
-            WordPressCustomerMapper customerMapper,
-            WordPressOrderMapper orderMapper,
-            WordPressCouponMapper couponMapper) {
-        this.rowReader = rowReader;
-        this.customerMapper = customerMapper;
-        this.orderMapper = orderMapper;
-        this.couponMapper = couponMapper;
-    }
 
     /**
      * Streams the dump once and produces a dry-run count report.

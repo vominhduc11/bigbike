@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRe
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,15 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class GuestOrderLinkingService {
 
     private final CustomerJpaRepository customerRepo;
     private final OrderJpaRepository orderRepo;
-
-    public GuestOrderLinkingService(CustomerJpaRepository customerRepo, OrderJpaRepository orderRepo) {
-        this.customerRepo = customerRepo;
-        this.orderRepo = orderRepo;
-    }
 
     /**
      * Links all guest orders whose customer_email matches this customer's verified

@@ -132,7 +132,7 @@ in `bigbike-admin/src/lib/adminApi.js`, **with one exception**:
 
 | Method | Endpoint | Controller | Permission | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/admin/warranties/by-serial/{serialId}` | AdminWarrantyController | `warranty.read` | **UNUSED** — no `adminApi.js` wrapper found (F-08) |
+| GET | `/api/v1/admin/warranties/by-serial/{serialId}` | AdminWarrantyController | `warranty.read` | **UI_CANDIDATE** — no `adminApi.js` wrapper; valid serial-detail → warranty lookup use case; no HTTP test (F-08 ASSESSED) |
 
 Admin modules with full client coverage (backend ↔ `adminApi.js` 1:1, **OK**): products,
 categories, brands, content (articles/pages/authors/content-categories/reference), redirects,
@@ -351,18 +351,38 @@ not an assumption.
 ### F-08 — `GET /admin/warranties/by-serial/{serialId}` has no admin client wrapper
 
 - **Severity:** Low
-- **Contract type:** API (unused endpoint)
+- **Contract type:** API (unconnected endpoint)
 - **Location:** `AdminWarrantyController.java:31` vs `adminApi.js`
-- **Evidence:** `adminApi.js` only wraps `/admin/warranties` (list) and
-  `/admin/warranties/{id}/void`. No call to `by-serial/{serialId}` was found in
-  `bigbike-admin/src`.
-- **Problem:** Endpoint may be dead, or may be consumed via a path not detected by the audit
-  grep (e.g. built dynamically).
-- **Impact:** Low — unused surface area; minor maintenance/attack-surface concern.
-- **Recommended fix:** Confirm whether a serial-detail screen needs it. If genuinely unused,
-  either wire it into the serial-detail UI or remove the endpoint.
-- **Auto-fix allowed:** No.
-- **NEEDS_CONFIRMATION:** Yes.
+- **Decision: UI_CANDIDATE — keep, wire into SerialListScreen, add test, document in API_CONTRACT.md**
+
+**Full trace (2026-05-16):**
+
+| Layer | Finding |
+|---|---|
+| Controller | `AdminWarrantyController.java:31` — `@GetMapping("/by-serial/{serialId}")` takes `UUID serialId` (internal DB id, NOT the human-readable serial number string). Gated by `warranty.read`. Returns `WarrantyRecordResponse` directly (not wrapped in `ApiDataResponse` — consistent with the other 2 admin warranty endpoints). |
+| Service | `AdminWarrantyService.getBySerial(UUID)` — `warrantyRepo.findBySerialId(serialId).map(warrantyMapper::toResponse).orElseThrow(NotFoundException)`. Clean, correct. Also declares `findBySerial(UUID)` returning `Optional<>` — currently has no callers; candidate for internal use from `SerialListScreen` enrichment. |
+| Repository | `WarrantyRecordJpaRepository.findBySerialId(UUID)` — Spring Data derived query; tested indirectly via `Phase1MPosApiTest` (repo-level assertions, not HTTP). |
+| DTO | `WarrantyRecordResponse` — 10 fields: `id, serialId, orderLineItemId, customerId, customerEmail, customerPhone, startDate, endDate, status, createdAt`. |
+| Test coverage | **NONE for this HTTP endpoint.** `WarrantyApiTest` covers public lookup (`GET /api/v1/warranties/lookup?serial=...`) and admin void, but has no test for `GET /admin/warranties/by-serial/{serialId}`. |
+| Admin UI | `adminApi.js` wraps `/admin/warranties` (list) and `/admin/warranties/{id}/void`. No `getWarrantyBySerial` wrapper exists. `WarrantyListScreen.jsx` uses list + void only; shows `serialId` in detail modal but does not call this endpoint. `SerialListScreen.jsx` shows serial details with no warranty link. |
+| Web (`bigbike-web`) | `/bao-hanh` page uses the **public** `GET /api/v1/warranties/lookup?serial={serialNumber}` — separate endpoint, takes serial number string, customer-facing. Unrelated to this admin endpoint. |
+| Mobile | No warranty-related files found in `bigbike_mobile`. |
+| `API_CONTRACT.md` | **Entirely undocumented** — none of the 3 admin warranty endpoints appear in `API_CONTRACT.md`. |
+
+**Is this a duplicate?** No. The public `GET /api/v1/warranties/lookup` takes a human-readable serial number string and is customer-facing. This admin endpoint takes an internal UUID and is admin-only. They serve different consumers.
+
+**Is there a valid use case?** Yes — when an admin views a serial record in `SerialListScreen`, looking up the associated warranty is a natural next step (e.g. for support or void decisions). The endpoint is exactly the right tool for that workflow.
+
+**Why UI_CANDIDATE and not KEEP_INTERNAL?** The endpoint provides uniquely useful admin support functionality that has no current UI surface. The correct resolution is to wire it in, not to leave it permanently undiscovered. KEEP_INTERNAL would imply a valid current consumer (like an internal batch job); there is none.
+
+**Recommended next actions (separate task):**
+1. Add `getWarrantyBySerial(serialId)` wrapper to `adminApi.js`.
+2. Add warranty info panel to `SerialListScreen` detail modal (optional `findBySerial` variant already in service for safe null handling).
+3. Add HTTP-level test to `WarrantyApiTest` covering `GET /admin/warranties/by-serial/{serialId}` (valid UUID → 200 with fields; unknown UUID → 404; no-auth → 401; wrong permission → 403).
+4. Document in `API_CONTRACT.md` alongside the other admin warranty endpoints (see fix below).
+
+- **Auto-fix allowed:** No — UI wiring is a new feature; testing is a separate task.
+- **Status: ASSESSED — UI_CANDIDATE. Endpoint retained; documentation updated in `API_CONTRACT.md` 2026-05-16. UI wiring and test added to backlog.**
 
 ---
 
@@ -473,7 +493,7 @@ recommend a dedicated admin-UI permission-guard pass.
 | F-04 | Removed `filter_gender` param (no product gender field; no client usage) | **FIXED 2026-05-16** |
 | F-05 | ~~Wrap customer-returns endpoints~~ — backend already wrapped; doc updated | **FIXED 2026-05-16** — backend predated audit; `API_CONTRACT.md` corrected |
 | F-07 | Add wishlist / cancel / return-eligibility to mobile | Product scope decision |
-| F-08 | Wire or remove `GET /admin/warranties/by-serial/{serialId}` | Confirm if a serial-detail screen needs it |
+| F-08 | ~~Wire or remove `GET /admin/warranties/by-serial/{serialId}`~~ — **ASSESSED 2026-05-16**: UI_CANDIDATE. Endpoint retained. Backlog: wire into `SerialListScreen`, add HTTP test, document in `API_CONTRACT.md`. |
 
 ### DB / migration fixes
 

@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -20,16 +21,13 @@ import org.springframework.stereotype.Service;
  * Wards are not currently sourced; the wards endpoint returns an empty list to keep mobile happy.
  */
 @Service
+@RequiredArgsConstructor
 public class VnAddressService {
 
     private final ObjectMapper objectMapper;
 
     private List<VnAddressItem> provinces = List.of();
     private Map<String, List<VnAddressItem>> districtsByProvince = Map.of();
-
-    public VnAddressService(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
 
     @PostConstruct
     void load() throws IOException {

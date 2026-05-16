@@ -43,6 +43,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.domain.Specification;
@@ -53,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Profile("!mock")
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     private static final Set<String> COLOR_ATTRIBUTE_KEYS = Set.of(
@@ -71,22 +73,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final MediaJpaRepository mediaJpaRepository;
     private final AttributeJpaRepository attributeJpaRepository;
     private final AttributeValueJpaRepository attributeValueJpaRepository;
-
-    public JpaCatalogReadRepository(
-            ProductJpaRepository productJpaRepository,
-            CategoryJpaRepository categoryJpaRepository,
-            BrandJpaRepository brandJpaRepository,
-            MediaJpaRepository mediaJpaRepository,
-            AttributeJpaRepository attributeJpaRepository,
-            AttributeValueJpaRepository attributeValueJpaRepository
-    ) {
-        this.productJpaRepository = productJpaRepository;
-        this.categoryJpaRepository = categoryJpaRepository;
-        this.brandJpaRepository = brandJpaRepository;
-        this.mediaJpaRepository = mediaJpaRepository;
-        this.attributeJpaRepository = attributeJpaRepository;
-        this.attributeValueJpaRepository = attributeValueJpaRepository;
-    }
 
     @Override
     public List<Product> findAllProducts() {

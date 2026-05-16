@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/media")
+@RequiredArgsConstructor
 public class AdminMediaController {
 
     private final AdminMediaService adminMediaService;
@@ -49,20 +51,6 @@ public class AdminMediaController {
     private final ApiResponseFactory apiResponseFactory;
     private final MediaReferenceService mediaReferenceService;
     private final com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc tagJdbc;
-
-    public AdminMediaController(
-            AdminMediaService adminMediaService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory,
-            MediaReferenceService mediaReferenceService,
-            com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc tagJdbc
-    ) {
-        this.adminMediaService = adminMediaService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-        this.mediaReferenceService = mediaReferenceService;
-        this.tagJdbc = tagJdbc;
-    }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)

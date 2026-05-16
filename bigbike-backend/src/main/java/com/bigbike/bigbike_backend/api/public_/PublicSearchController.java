@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class PublicSearchController {
 
     private static final int DEFAULT_LIMIT = 20;
@@ -30,14 +32,6 @@ public class PublicSearchController {
 
     private final GlobalSearchService searchService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public PublicSearchController(
-            GlobalSearchService searchService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.searchService = searchService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     public record SearchPayload(
             String query,

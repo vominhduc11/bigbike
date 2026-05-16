@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -14,15 +15,11 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
+@RequiredArgsConstructor
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ApiMetaFactory apiMetaFactory;
     private final ObjectMapper objectMapper;
-
-    public RestAuthenticationEntryPoint(ApiMetaFactory apiMetaFactory, ObjectMapper objectMapper) {
-        this.apiMetaFactory = apiMetaFactory;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public void commence(

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/customer")
+@RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerAuthService authService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CustomerController(CustomerAuthService authService, ApiResponseFactory apiResponseFactory) {
-        this.authService = authService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/me")
     public ApiDataResponse<CustomerSummary> me(HttpServletRequest request) {

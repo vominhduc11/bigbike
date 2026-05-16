@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class LegacyUrlMapper {
 
     static final String PRODUCT_HTML_SUFFIX = ".html";
@@ -41,15 +43,6 @@ public class LegacyUrlMapper {
     private final ProductJpaRepository productRepo;
     private final BrandJpaRepository brandRepo;
     private final CategoryJpaRepository categoryRepo;
-
-    public LegacyUrlMapper(
-            ProductJpaRepository productRepo,
-            BrandJpaRepository brandRepo,
-            CategoryJpaRepository categoryRepo) {
-        this.productRepo = productRepo;
-        this.brandRepo = brandRepo;
-        this.categoryRepo = categoryRepo;
-    }
 
     public record MappingResult(
             List<MappedRedirect> redirects,

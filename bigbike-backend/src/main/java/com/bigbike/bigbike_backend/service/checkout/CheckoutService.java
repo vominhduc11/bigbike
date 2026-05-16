@@ -61,12 +61,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CheckoutService {
 
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("COD", "BACS");
@@ -106,60 +108,6 @@ public class CheckoutService {
     private final CouponPolicyService couponPolicy;
     private final JdbcTemplate jdbcTemplate;
     private final WebRevalidationService webRevalidationService;
-
-    public CheckoutService(
-            CartJpaRepository cartRepo,
-            CartCouponJpaRepository cartCouponRepo,
-            CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo,
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            OrderAddressJpaRepository addressRepo,
-            OrderAppliedCouponJpaRepository orderAppliedCouponRepo,
-            OrderShippingItemJpaRepository shippingItemRepo,
-            OrderNoteJpaRepository noteRepo,
-            PaymentJpaRepository paymentRepo,
-            ShippingMethodJpaRepository shippingMethodRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            CouponJpaRepository couponRepo,
-            OrderNumberGenerator orderNumberGenerator,
-            OrderKeyGenerator orderKeyGenerator,
-            CartCalculator cartCalculator,
-            OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService,
-            InventoryPolicyService inventoryPolicyService,
-            SerialLifecycleService serialLifecycleService,
-            CouponPolicyService couponPolicy,
-            JdbcTemplate jdbcTemplate,
-            WebRevalidationService webRevalidationService
-    ) {
-        this.cartRepo = cartRepo;
-        this.cartCouponRepo = cartCouponRepo;
-        this.checkoutIdempotencyKeyRepo = checkoutIdempotencyKeyRepo;
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.addressRepo = addressRepo;
-        this.orderAppliedCouponRepo = orderAppliedCouponRepo;
-        this.shippingItemRepo = shippingItemRepo;
-        this.noteRepo = noteRepo;
-        this.paymentRepo = paymentRepo;
-        this.shippingMethodRepo = shippingMethodRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.couponRepo = couponRepo;
-        this.orderNumberGenerator = orderNumberGenerator;
-        this.orderKeyGenerator = orderKeyGenerator;
-        this.cartCalculator = cartCalculator;
-        this.orderNotificationService = orderNotificationService;
-        this.adminOrderWsService = adminOrderWsService;
-        this.inventoryPolicyService = inventoryPolicyService;
-        this.serialLifecycleService = serialLifecycleService;
-        this.couponPolicy = couponPolicy;
-        this.jdbcTemplate = jdbcTemplate;
-        this.webRevalidationService = webRevalidationService;
-    }
 
     // ── Checkout from cart ────────────────────────────────────────────────────
 

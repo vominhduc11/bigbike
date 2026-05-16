@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,21 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/customer/wishlist")
+@RequiredArgsConstructor
 public class CustomerWishlistController {
 
     private final WishlistItemJpaRepository wishlistRepo;
     private final CatalogReadService catalogReadService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CustomerWishlistController(
-            WishlistItemJpaRepository wishlistRepo,
-            CatalogReadService catalogReadService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.wishlistRepo = wishlistRepo;
-        this.catalogReadService = catalogReadService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/products")
     public ApiListResponse<Product> getWishlistProducts(

@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -22,24 +24,6 @@ public class SecurityConfig {
     private final SecurityHeadersFilter securityHeadersFilter;
     private final RestAuthenticationEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
-
-    public SecurityConfig(
-            JwtAuthFilter jwtAuthFilter,
-            CustomerSessionFilter customerSessionFilter,
-            CustomerCsrfFilter customerCsrfFilter,
-            RateLimitingFilter rateLimitingFilter,
-            SecurityHeadersFilter securityHeadersFilter,
-            RestAuthenticationEntryPoint authEntryPoint,
-            RestAccessDeniedHandler accessDeniedHandler
-    ) {
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.customerSessionFilter = customerSessionFilter;
-        this.customerCsrfFilter = customerCsrfFilter;
-        this.rateLimitingFilter = rateLimitingFilter;
-        this.securityHeadersFilter = securityHeadersFilter;
-        this.authEntryPoint = authEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

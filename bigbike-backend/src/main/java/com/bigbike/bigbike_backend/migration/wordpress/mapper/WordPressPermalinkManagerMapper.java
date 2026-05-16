@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
  *   - Flag URIs missing ".html" extension where BigBike expects it
  */
 @Component
+@RequiredArgsConstructor
 public class WordPressPermalinkManagerMapper {
 
     public record PermalinkEntry(
@@ -40,10 +42,6 @@ public class WordPressPermalinkManagerMapper {
     ) {}
 
     private final PhpSerializeParser phpParser;
-
-    public WordPressPermalinkManagerMapper(PhpSerializeParser phpParser) {
-        this.phpParser = phpParser;
-    }
 
     public ParsedPermalinkMap parse(String serializedOptionValue) {
         List<String> warnings = new ArrayList<>();

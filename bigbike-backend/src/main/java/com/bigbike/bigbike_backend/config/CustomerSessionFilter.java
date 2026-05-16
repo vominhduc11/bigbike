@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
+@RequiredArgsConstructor
 public class CustomerSessionFilter extends OncePerRequestFilter {
 
     public static final String SESSION_COOKIE = "bb_session";
@@ -29,12 +31,6 @@ public class CustomerSessionFilter extends OncePerRequestFilter {
 
     private final CustomerSessionService sessionService;
     private final CustomerJpaRepository customerRepo;
-
-    public CustomerSessionFilter(CustomerSessionService sessionService,
-                                 CustomerJpaRepository customerRepo) {
-        this.sessionService = sessionService;
-        this.customerRepo = customerRepo;
-    }
 
     @Override
     protected void doFilterInternal(

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@RequiredArgsConstructor
 public class CorsConfig {
 
     private static final Set<String> DEV_PROFILES = Set.of("dev", "mock", "test", "local");
@@ -22,10 +24,6 @@ public class CorsConfig {
     private String allowedOriginsRaw;
 
     private final Environment environment;
-
-    public CorsConfig(Environment environment) {
-        this.environment = environment;
-    }
 
     @PostConstruct
     void validateOrigins() {

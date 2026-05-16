@@ -17,10 +17,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminAdminUsersService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -37,20 +39,6 @@ public class AdminAdminUsersService {
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final PasswordService passwordService;
-
-    public AdminAdminUsersService(
-            AdminUserJpaRepository adminUserRepo,
-            AdminRoleJpaRepository adminRoleRepo,
-            AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService,
-            PasswordService passwordService
-    ) {
-        this.adminUserRepo = adminUserRepo;
-        this.adminRoleRepo = adminRoleRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
-        this.passwordService = passwordService;
-    }
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);

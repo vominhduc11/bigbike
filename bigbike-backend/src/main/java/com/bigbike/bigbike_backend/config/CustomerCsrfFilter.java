@@ -11,12 +11,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
+@RequiredArgsConstructor
 public class CustomerCsrfFilter extends OncePerRequestFilter {
 
     static final String CSRF_COOKIE = "bb_csrf";
@@ -51,10 +53,6 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
     );
 
     private final ObjectMapper objectMapper;
-
-    public CustomerCsrfFilter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     protected void doFilterInternal(

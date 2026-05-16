@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,13 +18,10 @@ import org.springframework.stereotype.Component;
  * {@link WordPressCustomerMapper} instead.
  */
 @Component
+@RequiredArgsConstructor
 public class WordPressAdminUserMapper {
 
     private final CapabilityMapper capabilityMapper;
-
-    public WordPressAdminUserMapper(CapabilityMapper capabilityMapper) {
-        this.capabilityMapper = capabilityMapper;
-    }
 
     public record MappedAdminUser(
             long sourceId,

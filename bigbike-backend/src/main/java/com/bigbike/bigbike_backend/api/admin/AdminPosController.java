@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/pos")
+@RequiredArgsConstructor
 public class AdminPosController {
 
     private final PosOrderService posOrderService;
@@ -41,22 +43,6 @@ public class AdminPosController {
     private final ApiResponseFactory apiResponseFactory;
     private final RefundService refundService;
     private final SerialLifecycleService serialLifecycleService;
-
-    public AdminPosController(
-            PosOrderService posOrderService,
-            AdminCatalogReadService catalogReadService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory,
-            RefundService refundService,
-            SerialLifecycleService serialLifecycleService
-    ) {
-        this.posOrderService = posOrderService;
-        this.catalogReadService = catalogReadService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-        this.refundService = refundService;
-        this.serialLifecycleService = serialLifecycleService;
-    }
 
     /** Tìm kiếm sản phẩm nhanh theo tên / SKU — dùng cho POS search bar.
      *  Re-fetches each result with variants so the POS grid can render per-variant cards.

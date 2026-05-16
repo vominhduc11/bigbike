@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
  * WordPress — the phpass verifier (Phase 2F) handles login. NEVER log the hash.
  */
 @Component
+@RequiredArgsConstructor
 public class AdminUserImporter implements DomainImporter {
 
     private final AdminUserJpaRepository adminUserRepo;
-
-    public AdminUserImporter(AdminUserJpaRepository adminUserRepo) {
-        this.adminUserRepo = adminUserRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

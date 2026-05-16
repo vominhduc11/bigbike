@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemS
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Idempotent: a second call for the same (referenceType, orderId) pair is a no-op.
  */
 @Service
+@RequiredArgsConstructor
 public class OrderStockRestoreService {
 
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -27,22 +29,6 @@ public class OrderStockRestoreService {
     private final StockMovementJpaRepository stockMovementRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final OrderLineItemSerialJpaRepository olisRepo;
-
-    public OrderStockRestoreService(
-            OrderLineItemJpaRepository lineItemRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository stockMovementRepo,
-            InventoryPolicyService inventoryPolicyService,
-            OrderLineItemSerialJpaRepository olisRepo
-    ) {
-        this.lineItemRepo = lineItemRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.inventoryPolicyService = inventoryPolicyService;
-        this.olisRepo = olisRepo;
-    }
 
     @Transactional
     public void restoreForCancel(UUID orderId) {

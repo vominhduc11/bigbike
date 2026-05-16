@@ -23,12 +23,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminRedirectService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -48,18 +50,6 @@ public class AdminRedirectService {
 
     @Value("${bigbike.site.base-url:https://bigbike.vn}")
     private String siteBaseUrl;
-
-    public AdminRedirectService(
-            RedirectJpaRepository redirectRepo,
-            AuditLogJpaRepository auditLogRepo,
-            PaginationService paginationService,
-            WebRevalidationService webRevalidationService
-    ) {
-        this.redirectRepo = redirectRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.paginationService = paginationService;
-        this.webRevalidationService = webRevalidationService;
-    }
 
     public record AdminRedirectResponse(
             UUID id,

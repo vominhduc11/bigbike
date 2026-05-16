@@ -10,17 +10,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class PageImporter implements DomainImporter {
 
     private final PageJpaRepository repo;
-
-    public PageImporter(PageJpaRepository repo) {
-        this.repo = repo;
-    }
 
     @Override
     public MigrationDomain domain() {

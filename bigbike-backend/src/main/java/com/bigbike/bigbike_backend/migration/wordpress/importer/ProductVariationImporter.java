@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Options are fully replaced on each run via orphanRemoval=true.
  */
 @Component
+@RequiredArgsConstructor
 public class ProductVariationImporter implements DomainImporter {
 
     private final ProductVariantJpaRepository variantRepo;
@@ -40,19 +42,6 @@ public class ProductVariationImporter implements DomainImporter {
     private final CategoryJpaRepository categoryRepo;
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository attributeValueRepo;
-
-    public ProductVariationImporter(
-            ProductVariantJpaRepository variantRepo,
-            ProductJpaRepository productRepo,
-            CategoryJpaRepository categoryRepo,
-            AttributeJpaRepository attributeRepo,
-            AttributeValueJpaRepository attributeValueRepo) {
-        this.variantRepo = variantRepo;
-        this.productRepo = productRepo;
-        this.categoryRepo = categoryRepo;
-        this.attributeRepo = attributeRepo;
-        this.attributeValueRepo = attributeValueRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

@@ -19,10 +19,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminRoleService {
 
     /** Role IDs must be UPPER_CASE_WITH_UNDERSCORES, start with a letter, 2–50 chars. */
@@ -33,17 +35,6 @@ public class AdminRoleService {
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final AdminPermissionService adminPermissionService;
-
-    public AdminRoleService(
-            AdminRoleJpaRepository roleRepo,
-            AdminUserJpaRepository adminUserRepo,
-            AuditLogJpaRepository auditLogRepo,
-            AdminPermissionService adminPermissionService) {
-        this.roleRepo = roleRepo;
-        this.adminUserRepo = adminUserRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.adminPermissionService = adminPermissionService;
-    }
 
     public List<Map<String, Object>> getAllRoles() {
         return roleRepo.findAll().stream()

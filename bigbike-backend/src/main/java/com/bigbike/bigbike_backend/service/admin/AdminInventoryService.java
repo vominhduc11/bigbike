@@ -41,12 +41,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminInventoryService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -61,26 +63,6 @@ public class AdminInventoryService {
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminInventoryService(
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            StockMovementJpaRepository movementRepo,
-            StockMovementSerialJpaRepository serialRepo,
-            ProductSerialJpaRepository productSerialRepo,
-            InventoryPolicyService inventoryPolicyService,
-            WebRevalidationService webRevalidationService,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.movementRepo = movementRepo;
-        this.serialRepo = serialRepo;
-        this.productSerialRepo = productSerialRepo;
-        this.inventoryPolicyService = inventoryPolicyService;
-        this.webRevalidationService = webRevalidationService;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     // ── List stock (DB-side filter + sort + pagination) ───────────────────────
 

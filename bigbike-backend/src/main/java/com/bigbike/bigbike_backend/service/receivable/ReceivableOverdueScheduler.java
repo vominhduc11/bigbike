@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.receivable;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,17 +14,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ReceivableOverdueScheduler {
 
     private final ReceivableService receivableService;
     private final ReceivableNotificationService notificationService;
-
-    public ReceivableOverdueScheduler(
-            ReceivableService receivableService,
-            ReceivableNotificationService notificationService) {
-        this.receivableService = receivableService;
-        this.notificationService = notificationService;
-    }
 
     @Scheduled(cron = "0 5 0 * * ?")
     public void refreshOverdueReceivables() {

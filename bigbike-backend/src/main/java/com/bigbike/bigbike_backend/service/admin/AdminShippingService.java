@@ -19,10 +19,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminShippingService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -31,16 +33,6 @@ public class AdminShippingService {
     private final ShippingZoneJpaRepository zoneRepo;
     private final ShippingMethodJpaRepository methodRepo;
     private final PaginationService paginationService;
-
-    public AdminShippingService(
-            ShippingZoneJpaRepository zoneRepo,
-            ShippingMethodJpaRepository methodRepo,
-            PaginationService paginationService
-    ) {
-        this.zoneRepo = zoneRepo;
-        this.methodRepo = methodRepo;
-        this.paginationService = paginationService;
-    }
 
     // ── Zones ─────────────────────────────────────────────────────────────────
 

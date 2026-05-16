@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AdminMediaService {
 
     private static final Tika TIKA = new Tika();
@@ -71,26 +73,6 @@ public class AdminMediaService {
     private final MediaReferenceService mediaReferenceService;
     private final MediaTagJdbc tagRepo;
     private final ImageVariantService imageVariantService;
-
-    public AdminMediaService(
-            MediaJpaRepository mediaRepo,
-            AuditLogJpaRepository auditLogRepo,
-            MinioClient minioClient,
-            MinioProperties minioProperties,
-            ObjectMapper objectMapper,
-            MediaReferenceService mediaReferenceService,
-            MediaTagJdbc tagRepo,
-            ImageVariantService imageVariantService
-    ) {
-        this.mediaRepo = mediaRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.minioClient = minioClient;
-        this.minioProperties = minioProperties;
-        this.objectMapper = objectMapper;
-        this.mediaReferenceService = mediaReferenceService;
-        this.tagRepo = tagRepo;
-        this.imageVariantService = imageVariantService;
-    }
 
     // ── Upload ────────────────────────────────────────────────────────────────
 

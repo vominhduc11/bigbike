@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJ
 import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,21 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/warranties")
+@RequiredArgsConstructor
 public class PublicWarrantyController {
 
     private final ProductSerialJpaRepository serialRepo;
     private final WarrantyRecordJpaRepository warrantyRepo;
     private final ApiResponseFactory apiResponseFactory;
-
-    public PublicWarrantyController(
-            ProductSerialJpaRepository serialRepo,
-            WarrantyRecordJpaRepository warrantyRepo,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.serialRepo = serialRepo;
-        this.warrantyRepo = warrantyRepo;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @Transactional(readOnly = true)
     @GetMapping("/lookup")

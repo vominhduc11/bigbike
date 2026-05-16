@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,20 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ProductNormalizationService {
 
     private final ProductSlugGenerator slugGenerator;
     private final ProductCategoryResolver categoryResolver;
     private final ProductJpaRepository productRepo;
-
-    public ProductNormalizationService(
-            ProductSlugGenerator slugGenerator,
-            ProductCategoryResolver categoryResolver,
-            ProductJpaRepository productRepo) {
-        this.slugGenerator = slugGenerator;
-        this.categoryResolver = categoryResolver;
-        this.productRepo = productRepo;
-    }
 
     /**
      * Result carrier: normalized products + statistics.

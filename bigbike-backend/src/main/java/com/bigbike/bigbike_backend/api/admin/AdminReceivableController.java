@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin")
+@RequiredArgsConstructor
 public class AdminReceivableController {
 
     private static final Set<String> VALID_CREDIT_STATUSES = Set.of("ACTIVE", "SUSPENDED", "BLOCKED");
@@ -50,22 +52,6 @@ public class AdminReceivableController {
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
     private final CustomerJpaRepository customerRepo;
-
-    public AdminReceivableController(
-            ReceivableQueryService queryService,
-            ReceivableService receivableService,
-            CreditPolicyService creditPolicyService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory,
-            CustomerJpaRepository customerRepo
-    ) {
-        this.queryService = queryService;
-        this.receivableService = receivableService;
-        this.creditPolicyService = creditPolicyService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-        this.customerRepo = customerRepo;
-    }
 
     // ── Receivable list ───────────────────────────────────────────────────────
 

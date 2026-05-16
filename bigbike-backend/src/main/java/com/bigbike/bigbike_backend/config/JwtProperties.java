@@ -4,12 +4,14 @@ import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
 @ConfigurationProperties(prefix = "bigbike.jwt")
+@RequiredArgsConstructor
 public class JwtProperties {
 
     private static final String DEFAULT_SECRET = "dev-change-me-in-production-needs-32chars!!";
@@ -21,10 +23,6 @@ public class JwtProperties {
     private int refreshTokenTtlSeconds = 604800;
 
     private final Environment environment;
-
-    public JwtProperties(Environment environment) {
-        this.environment = environment;
-    }
 
     @PostConstruct
     void validateSecret() {

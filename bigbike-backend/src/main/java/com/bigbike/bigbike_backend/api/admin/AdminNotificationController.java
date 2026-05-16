@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,20 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/notifications")
+@RequiredArgsConstructor
 public class AdminNotificationController {
 
     private final AdminNotificationService notificationService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminNotificationController(
-            AdminNotificationService notificationService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory) {
-        this.notificationService = notificationService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiDataResponse<Map<String, Object>> listUnread(HttpServletRequest request) {

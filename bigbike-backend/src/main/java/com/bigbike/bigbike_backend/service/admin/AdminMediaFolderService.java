@@ -13,21 +13,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminMediaFolderService {
 
     private final MediaFolderJpaRepository folderRepo;
     private final JdbcTemplate jdbc;
-
-    public AdminMediaFolderService(MediaFolderJpaRepository folderRepo,
-                                   JdbcTemplate jdbc) {
-        this.folderRepo = folderRepo;
-        this.jdbc = jdbc;
-    }
 
     public List<MediaFolderResponse> listAll() {
         Map<UUID, Long> counts = mediaCountsByFolder();

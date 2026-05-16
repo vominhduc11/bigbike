@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminHomeVideoService {
 
     private final HomeVideoJpaRepository homeVideoJpaRepository;
@@ -40,22 +42,6 @@ public class AdminHomeVideoService {
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminHomeVideoService(
-            HomeVideoJpaRepository homeVideoJpaRepository,
-            HomeVideoReadService homeVideoReadService,
-            WebRevalidationService webRevalidationService,
-            HomeVideoUrlPolicy homeVideoUrlPolicy,
-            SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.homeVideoJpaRepository = homeVideoJpaRepository;
-        this.homeVideoReadService = homeVideoReadService;
-        this.webRevalidationService = webRevalidationService;
-        this.homeVideoUrlPolicy = homeVideoUrlPolicy;
-        this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     @Transactional(readOnly = true)
     public List<HomeVideo> list() {

@@ -10,17 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class BrandImporter implements DomainImporter {
 
     private final BrandJpaRepository repo;
-
-    public BrandImporter(BrandJpaRepository repo) {
-        this.repo = repo;
-    }
 
     @Override
     public MigrationDomain domain() {

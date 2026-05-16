@@ -16,11 +16,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerAuthService {
 
     private static final String STATUS_ACTIVE = "ACTIVE";
@@ -30,19 +32,6 @@ public class CustomerAuthService {
     private final PasswordService passwordService;
     private final EmailVerificationService emailVerificationService;
     private final GuestOrderLinkingService guestOrderLinkingService;
-
-    public CustomerAuthService(
-            CustomerJpaRepository customerRepo,
-            CustomerSessionService sessionService,
-            PasswordService passwordService,
-            EmailVerificationService emailVerificationService,
-            GuestOrderLinkingService guestOrderLinkingService) {
-        this.customerRepo = customerRepo;
-        this.sessionService = sessionService;
-        this.passwordService = passwordService;
-        this.emailVerificationService = emailVerificationService;
-        this.guestOrderLinkingService = guestOrderLinkingService;
-    }
 
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {

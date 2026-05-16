@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class DevAdminAuthService {
 
     private static final String HEADER_ROLE = "X-Admin-Role";
@@ -31,11 +33,6 @@ public class DevAdminAuthService {
 
     @Value("${bigbike.auth.dev-header-enabled:false}")
     private boolean devHeaderEnabled;
-
-    public DevAdminAuthService(Environment environment, AdminPermissionService adminPermissionService) {
-        this.environment = environment;
-        this.adminPermissionService = adminPermissionService;
-    }
 
     public AdminUserProfile currentAdminUser(HttpServletRequest request) {
         if (!devHeaderEnabled) {

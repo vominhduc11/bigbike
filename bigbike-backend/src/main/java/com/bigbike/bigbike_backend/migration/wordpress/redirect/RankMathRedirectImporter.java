@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectM
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpRedirectRow;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -23,15 +24,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class RankMathRedirectImporter {
 
     private final WordPressRedirectMapper mapper;
     private final RedirectImporter importer;
-
-    public RankMathRedirectImporter(WordPressRedirectMapper mapper, RedirectImporter importer) {
-        this.mapper = mapper;
-        this.importer = importer;
-    }
 
     public record ImportResult(
             int selfLoopSkipped,

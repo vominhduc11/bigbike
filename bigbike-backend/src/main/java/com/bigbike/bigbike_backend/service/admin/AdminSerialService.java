@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminSerialService {
 
     private static final int DEFAULT_SIZE = 20;
@@ -37,18 +39,6 @@ public class AdminSerialService {
     private final ProductVariantJpaRepository variantRepo;
     private final ProductJpaRepository productRepo;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminSerialService(
-            ProductSerialJpaRepository serialRepo,
-            ProductVariantJpaRepository variantRepo,
-            ProductJpaRepository productRepo,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.serialRepo = serialRepo;
-        this.variantRepo = variantRepo;
-        this.productRepo = productRepo;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     // ── List all serials (global search) ─────────────────────────────────────
 

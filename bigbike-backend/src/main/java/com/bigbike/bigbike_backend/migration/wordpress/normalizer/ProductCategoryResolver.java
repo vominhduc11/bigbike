@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.normalizer;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ProductCategoryResolver {
 
     static final String UNCATEGORIZED_SLUG = "uncategorized";
     static final String UNCATEGORIZED_NAME = "Uncategorized";
 
     private final CategoryJpaRepository categoryRepo;
-
-    public ProductCategoryResolver(CategoryJpaRepository categoryRepo) {
-        this.categoryRepo = categoryRepo;
-    }
 
     /**
      * Ensures the "uncategorized" category exists in the DB.

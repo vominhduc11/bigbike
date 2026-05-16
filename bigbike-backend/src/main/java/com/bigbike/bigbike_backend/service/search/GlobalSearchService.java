@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,18 +18,11 @@ import org.springframework.stereotype.Service;
  * search engine later if result counts grow.
  */
 @Service
+@RequiredArgsConstructor
 public class GlobalSearchService {
 
     private final CatalogReadRepository catalogReadRepository;
     private final ContentReadRepository contentReadRepository;
-
-    public GlobalSearchService(
-            CatalogReadRepository catalogReadRepository,
-            ContentReadRepository contentReadRepository
-    ) {
-        this.catalogReadRepository = catalogReadRepository;
-        this.contentReadRepository = contentReadRepository;
-    }
 
     public record SearchResults(List<Product> products, List<Article> articles) {}
 

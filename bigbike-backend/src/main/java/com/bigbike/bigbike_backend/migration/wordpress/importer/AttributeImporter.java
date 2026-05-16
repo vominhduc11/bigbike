@@ -8,10 +8,12 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValue
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class AttributeImporter implements DomainImporter {
 
     public record MappedAttribute(
@@ -38,13 +40,6 @@ public class AttributeImporter implements DomainImporter {
 
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository attributeValueRepo;
-
-    public AttributeImporter(
-            AttributeJpaRepository attributeRepo,
-            AttributeValueJpaRepository attributeValueRepo) {
-        this.attributeRepo = attributeRepo;
-        this.attributeValueRepo = attributeValueRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

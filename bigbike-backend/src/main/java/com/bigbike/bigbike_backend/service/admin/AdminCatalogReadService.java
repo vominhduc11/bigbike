@@ -14,9 +14,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AdminCatalogReadService {
 
     private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "updatedAt", "homepageOrder");
@@ -26,16 +28,6 @@ public class AdminCatalogReadService {
     private final CatalogReadRepository catalogReadRepository;
     private final SortParser sortParser;
     private final PaginationService paginationService;
-
-    public AdminCatalogReadService(
-            CatalogReadRepository catalogReadRepository,
-            SortParser sortParser,
-            PaginationService paginationService
-    ) {
-        this.catalogReadRepository = catalogReadRepository;
-        this.sortParser = sortParser;
-        this.paginationService = paginationService;
-    }
 
     public PageResult<Product> listProducts(
             int page,

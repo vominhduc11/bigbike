@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/internal")
+@RequiredArgsConstructor
 public class InternalRedirectController {
 
     private static final String TOKEN_HEADER = "X-Internal-Token";
@@ -51,10 +53,6 @@ public class InternalRedirectController {
      */
     @Value("${bigbike.internal.allow-open:false}")
     private boolean allowOpen;
-
-    public InternalRedirectController(RedirectJpaRepository redirectRepo) {
-        this.redirectRepo = redirectRepo;
-    }
 
     /** redirectId lets the caller fire the hit-counter without a second lookup. */
     public record RedirectLookupResponse(String redirectId, String target, int statusCode) {}

@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepos
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,14 +14,11 @@ import org.springframework.stereotype.Service;
  * Cache invalidation: call evict(roleId) after any role-permissions write.
  */
 @Service
+@RequiredArgsConstructor
 public class AdminPermissionService {
 
     private final AdminRoleJpaRepository roleRepo;
     private final ConcurrentHashMap<String, List<String>> cache = new ConcurrentHashMap<>();
-
-    public AdminPermissionService(AdminRoleJpaRepository roleRepo) {
-        this.roleRepo = roleRepo;
-    }
 
     /**
      * Returns the permission list for the given role, loading from DB on first access.

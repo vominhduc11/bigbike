@@ -16,11 +16,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AdminContentReadService {
 
     private static final Set<String> CONTENT_SORT_FIELDS = Set.of("title", "createdAt", "updatedAt", "publishedAt", "type");
@@ -28,16 +30,6 @@ public class AdminContentReadService {
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
     private final PaginationService paginationService;
-
-    public AdminContentReadService(
-            ContentReadRepository contentReadRepository,
-            SortParser sortParser,
-            PaginationService paginationService
-    ) {
-        this.contentReadRepository = contentReadRepository;
-        this.sortParser = sortParser;
-        this.paginationService = paginationService;
-    }
 
     public PageResult<AdminContentItem> listContent(
             int page, int size, String sort, String q, String search, String type, String publishStatus) {

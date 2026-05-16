@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,15 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/customer/addresses")
+@RequiredArgsConstructor
 public class CustomerAddressController {
 
     private final CustomerAddressService addressService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public CustomerAddressController(CustomerAddressService addressService, ApiResponseFactory apiResponseFactory) {
-        this.addressService = addressService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiDataResponse<List<CustomerAddressResponse>> list(HttpServletRequest request) {

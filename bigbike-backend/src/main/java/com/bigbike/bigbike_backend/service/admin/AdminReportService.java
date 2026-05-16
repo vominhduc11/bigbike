@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class AdminReportService {
 
     /** Maximum rows returned per CSV export. Exposed so controller can set X-Export-Truncated header. */
@@ -61,18 +63,6 @@ public class AdminReportService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final CustomerJpaRepository customerRepo;
     private final ProductJpaRepository productRepo;
-
-    public AdminReportService(
-            OrderJpaRepository orderRepo,
-            OrderLineItemJpaRepository lineItemRepo,
-            CustomerJpaRepository customerRepo,
-            ProductJpaRepository productRepo
-    ) {
-        this.orderRepo = orderRepo;
-        this.lineItemRepo = lineItemRepo;
-        this.customerRepo = customerRepo;
-        this.productRepo = productRepo;
-    }
 
     public AdminAnalyticsResponse getAnalytics(String from, String to) {
         Instant fromInstant = parseFromDate(from);

@@ -9,19 +9,17 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ReviewImporter implements DomainImporter {
 
     private final ReviewJpaRepository reviewRepo;
-
-    public ReviewImporter(ReviewJpaRepository reviewRepo) {
-        this.reviewRepo = reviewRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

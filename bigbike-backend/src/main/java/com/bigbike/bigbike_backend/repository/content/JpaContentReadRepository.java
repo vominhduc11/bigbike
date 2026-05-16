@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageImpl;
@@ -31,15 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Profile("!mock")
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class JpaContentReadRepository implements ContentReadRepository {
 
     private final ArticleJpaRepository articleJpaRepository;
     private final PageJpaRepository pageJpaRepository;
-
-    public JpaContentReadRepository(ArticleJpaRepository articleJpaRepository, PageJpaRepository pageJpaRepository) {
-        this.articleJpaRepository = articleJpaRepository;
-        this.pageJpaRepository = pageJpaRepository;
-    }
 
     // --- Single-entity lookups ---
 

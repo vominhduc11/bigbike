@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.service.address.VnAddressService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/address")
+@RequiredArgsConstructor
 public class VnAddressController {
 
     // Province/district/ward codes are short alphanumeric tokens (e.g. "01", "001", "00001").
@@ -23,11 +25,6 @@ public class VnAddressController {
 
     private final VnAddressService addressService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public VnAddressController(VnAddressService addressService, ApiResponseFactory apiResponseFactory) {
-        this.addressService = addressService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/provinces")
     public ApiDataResponse<List<VnAddressItem>> listProvinces(HttpServletRequest request) {

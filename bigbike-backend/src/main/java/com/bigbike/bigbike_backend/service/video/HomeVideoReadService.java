@@ -5,17 +5,15 @@ import com.bigbike.bigbike_backend.domain.video.HomeVideo;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class HomeVideoReadService {
 
     private final HomeVideoJpaRepository homeVideoJpaRepository;
-
-    public HomeVideoReadService(HomeVideoJpaRepository homeVideoJpaRepository) {
-        this.homeVideoJpaRepository = homeVideoJpaRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<HomeVideo> listActive() {

@@ -19,28 +19,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminSerialImportService {
 
     private final ProductSerialJpaRepository serialRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final AuditLogJpaRepository auditLogRepo;
-
-    public AdminSerialImportService(
-            ProductSerialJpaRepository serialRepo,
-            ProductJpaRepository productRepo,
-            ProductVariantJpaRepository variantRepo,
-            AuditLogJpaRepository auditLogRepo
-    ) {
-        this.serialRepo = serialRepo;
-        this.productRepo = productRepo;
-        this.variantRepo = variantRepo;
-        this.auditLogRepo = auditLogRepo;
-    }
 
     /**
      * Bulk import serials from an admin-provided JSON payload.

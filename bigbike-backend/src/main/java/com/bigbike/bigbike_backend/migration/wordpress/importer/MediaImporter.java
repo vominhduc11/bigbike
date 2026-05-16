@@ -8,19 +8,17 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class MediaImporter implements DomainImporter {
 
     private static final String STORAGE_PROVIDER = "LEGACY_WP";
 
     private final MediaJpaRepository repo;
-
-    public MediaImporter(MediaJpaRepository repo) {
-        this.repo = repo;
-    }
 
     @Override
     public MigrationDomain domain() {

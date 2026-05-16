@@ -13,10 +13,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AdminAuthService {
 
 
@@ -26,22 +28,6 @@ public class AdminAuthService {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final AdminPermissionService adminPermissionService;
-
-    public AdminAuthService(
-            AdminUserJpaRepository adminUserRepo,
-            AdminRefreshTokenJpaRepository refreshTokenRepo,
-            PasswordService passwordService,
-            JwtService jwtService,
-            JwtProperties jwtProperties,
-            AdminPermissionService adminPermissionService
-    ) {
-        this.adminUserRepo = adminUserRepo;
-        this.refreshTokenRepo = refreshTokenRepo;
-        this.passwordService = passwordService;
-        this.jwtService = jwtService;
-        this.jwtProperties = jwtProperties;
-        this.adminPermissionService = adminPermissionService;
-    }
 
     @Transactional
     public TokenResponse login(String email, String rawPassword, HttpServletRequest request) {

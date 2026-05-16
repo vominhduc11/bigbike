@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.redirect;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper.MappedRedirect;
 import com.bigbike.bigbike_backend.migration.wordpress.model.WpFgRedirect;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -20,13 +21,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class FgRedirectAnalyzer {
 
     private final FgRedirectResolver resolver;
-
-    public FgRedirectAnalyzer(FgRedirectResolver resolver) {
-        this.resolver = resolver;
-    }
 
     public record AnalysisResult(
             int total,

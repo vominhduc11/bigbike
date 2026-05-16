@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.media.MediaReferenceItem;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Service;
@@ -24,13 +25,10 @@ import java.util.Set;
  * so a containment check is performed on the textified JSON blob.
  */
 @Service
+@RequiredArgsConstructor
 public class MediaReferenceService {
 
     private final JdbcTemplate jdbc;
-
-    public MediaReferenceService(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
 
     public boolean hasReferences(MediaEntity media) {
         if (media == null) return false;

@@ -24,6 +24,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RefundService {
 
     private final OrderJpaRepository orderRepo;
@@ -47,31 +49,6 @@ public class RefundService {
     private final ReceivableJpaRepository receivableRepo;
     private final RefundTransactionJpaRepository refundTransactionRepo;
     private final WebRevalidationService webRevalidationService;
-
-    public RefundService(
-            OrderJpaRepository orderRepo,
-            PaymentJpaRepository paymentRepo,
-            OrderNoteJpaRepository noteRepo,
-            AuditLogJpaRepository auditLogRepo,
-            OrderNotificationService orderNotificationService,
-            AdminOrderWsService adminOrderWsService,
-            OrderStockRestoreService orderStockRestoreService,
-            SerialLifecycleService serialLifecycleService,
-            ReceivableJpaRepository receivableRepo,
-            RefundTransactionJpaRepository refundTransactionRepo,
-            WebRevalidationService webRevalidationService) {
-        this.orderRepo = orderRepo;
-        this.paymentRepo = paymentRepo;
-        this.noteRepo = noteRepo;
-        this.auditLogRepo = auditLogRepo;
-        this.orderNotificationService = orderNotificationService;
-        this.adminOrderWsService = adminOrderWsService;
-        this.orderStockRestoreService = orderStockRestoreService;
-        this.serialLifecycleService = serialLifecycleService;
-        this.receivableRepo = receivableRepo;
-        this.refundTransactionRepo = refundTransactionRepo;
-        this.webRevalidationService = webRevalidationService;
-    }
 
     /**
      * Apply a refund to an order. Participates in the caller's transaction.

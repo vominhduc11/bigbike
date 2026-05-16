@@ -10,11 +10,13 @@ import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerOrderCancelService {
 
     private final OrderJpaRepository orderRepo;
@@ -22,20 +24,6 @@ public class CustomerOrderCancelService {
     private final SerialLifecycleService serialLifecycleService;
     private final OrderStockRestoreService orderStockRestoreService;
     private final WebRevalidationService webRevalidationService;
-
-    public CustomerOrderCancelService(
-            OrderJpaRepository orderRepo,
-            OrderReadService orderReadService,
-            SerialLifecycleService serialLifecycleService,
-            OrderStockRestoreService orderStockRestoreService,
-            WebRevalidationService webRevalidationService
-    ) {
-        this.orderRepo = orderRepo;
-        this.orderReadService = orderReadService;
-        this.serialLifecycleService = serialLifecycleService;
-        this.orderStockRestoreService = orderStockRestoreService;
-        this.webRevalidationService = webRevalidationService;
-    }
 
     @Transactional
     public OrderDetailResponse cancel(UUID customerId, UUID orderId) {

@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,17 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class ContentController {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
 
     private final ContentReadService contentReadService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public ContentController(ContentReadService contentReadService, ApiResponseFactory apiResponseFactory) {
-        this.contentReadService = contentReadService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/articles")
     public ApiListResponse<Article> listArticles(

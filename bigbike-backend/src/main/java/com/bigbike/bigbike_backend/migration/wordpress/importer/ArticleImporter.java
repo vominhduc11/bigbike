@@ -17,27 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class ArticleImporter implements DomainImporter {
 
     private final ArticleJpaRepository repo;
     private final ContentAuthorJpaRepository authorRepo;
     private final ContentCategoryJpaRepository categoryRepo;
     private final BlogTagJpaRepository blogTagRepo;
-
-    public ArticleImporter(
-            ArticleJpaRepository repo,
-            ContentAuthorJpaRepository authorRepo,
-            ContentCategoryJpaRepository categoryRepo,
-            BlogTagJpaRepository blogTagRepo) {
-        this.repo = repo;
-        this.authorRepo = authorRepo;
-        this.categoryRepo = categoryRepo;
-        this.blogTagRepo = blogTagRepo;
-    }
 
     @Override
     public MigrationDomain domain() {

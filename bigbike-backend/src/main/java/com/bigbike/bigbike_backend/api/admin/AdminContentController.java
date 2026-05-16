@@ -17,6 +17,7 @@ import com.bigbike.bigbike_backend.service.admin.AdminContentReadService;
 import com.bigbike.bigbike_backend.service.admin.AdminContentReferenceService;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin/content")
+@RequiredArgsConstructor
 public class AdminContentController {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
@@ -68,20 +70,6 @@ public class AdminContentController {
 
     /** Sentinel UUID used for audit attribution when dev-header auth is active. */
     private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
-    public AdminContentController(
-            AdminContentReadService adminContentReadService,
-            AdminContentMutationService adminContentMutationService,
-            AdminContentReferenceService adminContentReferenceService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminContentReadService = adminContentReadService;
-        this.adminContentMutationService = adminContentMutationService;
-        this.adminContentReferenceService = adminContentReferenceService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping
     public ApiListResponse<AdminContentItem> listContent(

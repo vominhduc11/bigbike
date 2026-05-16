@@ -6,6 +6,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,13 +20,10 @@ import org.springframework.stereotype.Component;
  * when importing privileged users into {@code admin_users}.
  */
 @Component
+@RequiredArgsConstructor
 public class CapabilityMapper {
 
     private final PhpSerializeParser phpParser;
-
-    public CapabilityMapper(PhpSerializeParser phpParser) {
-        this.phpParser = phpParser;
-    }
 
     public record Mapped(Set<String> capabilities, Set<AdminRole> roles) {
         public boolean isEmpty() {

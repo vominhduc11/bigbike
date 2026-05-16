@@ -17,6 +17,7 @@ import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/v1/admin")
+@RequiredArgsConstructor
 public class AdminCatalogController {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
@@ -52,18 +54,6 @@ public class AdminCatalogController {
     private final AdminCatalogMutationService adminCatalogMutationService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
-
-    public AdminCatalogController(
-            AdminCatalogReadService adminCatalogReadService,
-            AdminCatalogMutationService adminCatalogMutationService,
-            DevAdminAuthService devAdminAuthService,
-            ApiResponseFactory apiResponseFactory
-    ) {
-        this.adminCatalogReadService = adminCatalogReadService;
-        this.adminCatalogMutationService = adminCatalogMutationService;
-        this.devAdminAuthService = devAdminAuthService;
-        this.apiResponseFactory = apiResponseFactory;
-    }
 
     @GetMapping("/products")
     public ApiListResponse<Product> listProducts(

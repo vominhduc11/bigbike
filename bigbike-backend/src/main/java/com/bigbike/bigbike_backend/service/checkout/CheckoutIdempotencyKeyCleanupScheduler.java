@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.checkout;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.CheckoutIdempotencyKeyJpaRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,13 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class CheckoutIdempotencyKeyCleanupScheduler {
 
     private final CheckoutIdempotencyKeyJpaRepository idempotencyKeyRepo;
-
-    public CheckoutIdempotencyKeyCleanupScheduler(CheckoutIdempotencyKeyJpaRepository idempotencyKeyRepo) {
-        this.idempotencyKeyRepo = idempotencyKeyRepo;
-    }
 
     // Runs daily at 02:30 — removes idempotency keys older than 90 days
     @Scheduled(cron = "0 30 2 * * *")

@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -32,19 +33,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class WordPressCustomerOrderCouponDryRunRunner implements ApplicationRunner {
 
     private static final String MODE = "customer-order-coupon-dry-run";
 
     private final WordPressMigrationProperties props;
     private final WordPressCustomerOrderCouponDryRunService service;
-
-    public WordPressCustomerOrderCouponDryRunRunner(
-            WordPressMigrationProperties props,
-            WordPressCustomerOrderCouponDryRunService service) {
-        this.props = props;
-        this.service = service;
-    }
 
     @Override
     public void run(ApplicationArguments args) {

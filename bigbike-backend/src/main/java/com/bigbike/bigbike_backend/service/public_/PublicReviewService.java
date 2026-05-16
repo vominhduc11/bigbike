@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PublicReviewService {
 
     private static final String APPROVED_STATUS = "APPROVED";
@@ -30,11 +32,6 @@ public class PublicReviewService {
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
-
-    public PublicReviewService(ReviewJpaRepository reviewRepo, ProductJpaRepository productRepo) {
-        this.reviewRepo = reviewRepo;
-        this.productRepo = productRepo;
-    }
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
         if (!productRepo.existsById(productId)) {
