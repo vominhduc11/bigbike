@@ -45,7 +45,6 @@ public final class PermissionCatalog {
             new Entry("receivables.record_payment",   false),
             new Entry("receivables.write_off",        true),
             new Entry("receivables.override_limit",   true),
-            new Entry("receivables.export",           false),
             new Entry("reports.read",                 false),
             new Entry("reports.export",               false)
         )),
@@ -56,7 +55,9 @@ public final class PermissionCatalog {
             new Entry("catalog.read",     false),
             new Entry("catalog.update",   false),
             new Entry("inventory.read",   false),
-            new Entry("inventory.write",  false)
+            new Entry("inventory.write",  false),
+            new Entry("warranty.read",    false),
+            new Entry("warranty.write",   false)
         )),
 
         new Group("roles.groupContent", List.of(

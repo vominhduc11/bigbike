@@ -280,11 +280,12 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.record_payment'  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.record_payment');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.write_off'       WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.write_off');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.override_limit'  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.override_limit');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.export'          WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.export'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.write');
+INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'warranty.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='warranty.read');
+INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'warranty.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='warranty.write');
 
 -- SHOP_MANAGER
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'products.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='products.read');
@@ -309,6 +310,8 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'repor
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reports.export'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.read'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.write'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.write');
+INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'warranty.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='warranty.read');
+INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'warranty.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='warranty.write');
 
 -- EDITOR
 INSERT INTO role_permissions (role_id, permission) SELECT 'EDITOR', 'products.read'   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='EDITOR' AND permission='products.read');

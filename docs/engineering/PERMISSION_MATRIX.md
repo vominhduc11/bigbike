@@ -7,15 +7,19 @@
 - `PermissionCatalog.java` is the canonical catalog of **valid permission keys + groupings + sensitive flags**. It is served by `GET /api/v1/admin/permissions` and used by `AdminRoleService` to validate which keys may be assigned to a custom role. New permissions must be added here first, then seeded into `role_permissions` by a migration.
 - `AdminRolePermissions.java` is a **human-readable reference snapshot only** — it is explicitly NOT called at runtime. Do not treat it as authoritative.
 
-### Inventory & POS-refund permissions
+### Inventory, Warranty & POS-refund permissions
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/warranties/**` | `V109__add_inventory_serial_permissions.sql`, `AdminWarrantyController.java` |
-| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/warranties/{id}/void` | `V109__add_inventory_serial_permissions.sql`, `AdminWarrantyController.java` |
+| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory/**` (stock + serial reads) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST`/`PATCH /api/v1/admin/inventory/**` (stock adjust, serial add/status/import) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `warranty.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/warranties/**` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
+| `warranty.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/warranties/{id}/void` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
 | `pos.refund` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders/{id}/refund` | `V112__add_pos_refund_permission.sql`, `AdminPosController.java` |
 
-All three are listed in `PermissionCatalog` (`inventory.*` in `roles.groupProducts`, `pos.refund` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
+All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.groupProducts`, `pos.refund` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
+
+> **AL-03 realignment (V121).** Before V121, `inventory.*` gated the **Warranty** module while the **Inventory/Serial** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced `warranty.*` and re-gated both controllers + the admin UI so each permission matches its module. The migration is a **non-breaking backfill**: every role holding `inventory.*` also received `warranty.*`, and every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.
 
 ## Roles
 
@@ -90,7 +94,8 @@ Status: `CONFIRMED_FROM_CODE` — implemented in `AdminRolePermissions.java`.
 | `receivables.record_payment` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Record a partial or full payment against a credit receivable |
 | `receivables.write_off` | `SUPER_ADMIN`, `ADMIN` | Write off an uncollectable receivable (mandatory reason required) |
 | `receivables.override_limit` | `SUPER_ADMIN`, `ADMIN` | Bypass credit limit check when creating a POS credit sale |
-| `receivables.export` | `SUPER_ADMIN`, `ADMIN` | Reserved for future CSV/PDF export of receivables |
+
+> `receivables.export` was removed in `V122__remove_unused_receivables_export_permission.sql` (audit AL-05). It was declared and seeded but no endpoint ever consumed it — there is no receivables export feature. Removing it keeps the catalog 1:1 with real endpoints.
 
 Evidence: `AdminRolePermissions.java`, `AdminReceivableController.java`
 

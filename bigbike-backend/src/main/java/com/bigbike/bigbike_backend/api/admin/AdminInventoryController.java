@@ -66,7 +66,7 @@ public class AdminInventoryController {
             @RequestParam(required = false) String stockState,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.listStock(page, size, q, stockState);
     }
 
@@ -78,13 +78,13 @@ public class AdminInventoryController {
             @RequestParam(required = false) String stockState,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.listStockGrouped(page, size, q, stockState);
     }
 
     @GetMapping("/summary")
     public InventorySummaryResponse getSummary(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.getSummary();
     }
 
@@ -96,13 +96,13 @@ public class AdminInventoryController {
             @RequestParam(required = false) String referenceType,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.listAllMovements(page, size, movementType, referenceType);
     }
 
     @GetMapping("/export.csv")
     public void exportCsv(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         inventoryService.exportCsv(response);
     }
 
@@ -113,7 +113,7 @@ public class AdminInventoryController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.listMovements(variantId, page, size);
     }
 
@@ -124,7 +124,7 @@ public class AdminInventoryController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return inventoryService.listProductMovements(productId, page, size);
     }
 
@@ -134,7 +134,7 @@ public class AdminInventoryController {
             @Valid @RequestBody AdjustStockRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return inventoryService.adjustStock(variantId, resolveAdminId(), req);
     }
 
@@ -144,7 +144,7 @@ public class AdminInventoryController {
             @Valid @RequestBody AdjustStockRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return inventoryService.adjustProductStock(productId, resolveAdminId(), req);
     }
 
@@ -159,7 +159,7 @@ public class AdminInventoryController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return serialService.listAll(q, status, productId, page, size);
     }
 
@@ -171,7 +171,7 @@ public class AdminInventoryController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return serialService.listForVariant(variantId, status, page, size);
     }
 
@@ -183,7 +183,7 @@ public class AdminInventoryController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return serialService.listForProduct(productId, status, page, size);
     }
 
@@ -192,7 +192,7 @@ public class AdminInventoryController {
             @PathVariable UUID serialId,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.read");
+        devAdminAuthService.requirePermission(request, "inventory.read");
         return serialService.getSerial(serialId);
     }
 
@@ -202,7 +202,7 @@ public class AdminInventoryController {
             @Valid @RequestBody AddSerialsRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return serialService.addToVariant(variantId, resolveAdminId(), req);
     }
 
@@ -212,7 +212,7 @@ public class AdminInventoryController {
             @Valid @RequestBody AddSerialsRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return serialService.addToProduct(productId, resolveAdminId(), req);
     }
 
@@ -222,7 +222,7 @@ public class AdminInventoryController {
             @Valid @RequestBody UpdateSerialStatusRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return serialService.updateStatus(serialId, resolveAdminId(), req);
     }
 
@@ -231,14 +231,14 @@ public class AdminInventoryController {
      * Bulk-insert product serials from a JSON payload.
      * partialMode=false (default): all-or-nothing transaction.
      * partialMode=true: skip bad rows, insert valid ones.
-     * Permission: products.update (TODO: migrate to inventory.serial.import when added).
+     * Permission: inventory.write.
      */
     @PostMapping("/serials/import")
     public SerialImportResponse importSerials(
             @RequestBody @Valid SerialImportRequest req,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "products.update");
+        devAdminAuthService.requirePermission(request, "inventory.write");
         return serialImportService.importSerials(req, resolveAdminId());
     }
 

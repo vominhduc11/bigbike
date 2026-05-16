@@ -46,7 +46,7 @@ class Phase1KInventoryP0FixApiTest {
 
     private static final String ADMIN_EMAIL = "p0fix-admin-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ADMIN_PASS  = "Admin@P0Fix12345";
-    // CONTRIBUTOR is in AdminRolePermissions.MAP with only content.read + media.read — no products.update
+    // CONTRIBUTOR is in AdminRolePermissions.MAP with only content.read + media.read — no inventory.write
     private static final String NOPERM_EMAIL = "p0fix-noperm-" + UUID.randomUUID() + "@bigbike.test";
     private static final String NOPERM_PASS  = "Noperm@P0Fix123";
 
@@ -185,7 +185,7 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(content().contentTypeCompatibleWith("text/csv"));
     }
 
-    // ── 6. Permission denied for inventory adjust without products.update ─────────
+    // ── 6. Permission denied for inventory adjust without inventory.write ─────────
 
     @Test
     void adjust_withViewerRole_returns403() throws Exception {
@@ -322,10 +322,10 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(jsonPath("$.error.details[0].code").value("BELOW_ZERO"));
     }
 
-    // ── 12. Product-level adjust requires products.update permission ──────────────
+    // ── 12. Product-level adjust requires inventory.write permission ──────────────
 
     @Test
-    void productLevelAdjust_requiresProductsUpdatePermission() throws Exception {
+    void productLevelAdjust_requiresInventoryWritePermission() throws Exception {
         String productId = ensureTestProduct("ProdLevel Perm " + UUID.randomUUID().toString().substring(0, 8));
 
         mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")

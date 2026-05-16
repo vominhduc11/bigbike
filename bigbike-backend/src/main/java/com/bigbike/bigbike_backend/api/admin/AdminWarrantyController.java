@@ -33,7 +33,7 @@ public class AdminWarrantyController {
             @PathVariable UUID serialId,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
+        devAdminAuthService.requirePermission(request, "warranty.read");
         return warrantyService.getBySerial(serialId);
     }
 
@@ -45,7 +45,7 @@ public class AdminWarrantyController {
             @RequestParam(required = false) UUID customerId,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
+        devAdminAuthService.requirePermission(request, "warranty.read");
         return warrantyService.search(page, size, status, customerId);
     }
 
@@ -54,7 +54,7 @@ public class AdminWarrantyController {
             @PathVariable UUID warrantyId,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "inventory.write");
+        devAdminAuthService.requirePermission(request, "warranty.write");
         return warrantyService.voidWarranty(warrantyId);
     }
 }

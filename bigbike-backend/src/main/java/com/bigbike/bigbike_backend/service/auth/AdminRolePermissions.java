@@ -24,6 +24,7 @@ public final class AdminRolePermissions {
             "ADMIN", List.of(
                     "products.read", "products.update",
                     "inventory.read", "inventory.write",
+                    "warranty.read", "warranty.write",
                     "catalog.read", "catalog.update",
                     "content.read", "content.update",
                     "orders.read", "orders.write",
@@ -43,12 +44,13 @@ public final class AdminRolePermissions {
                     "redirects.read", "redirects.write",
                     "pos.read", "pos.write", "pos.price_override", "pos.refund",
                     "receivables.read", "receivables.create", "receivables.record_payment",
-                    "receivables.write_off", "receivables.override_limit", "receivables.export",
+                    "receivables.write_off", "receivables.override_limit",
                     "reports.read", "reports.export"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
                     "inventory.read", "inventory.write",
+                    "warranty.read", "warranty.write",
                     "catalog.read",
                     "orders.read", "orders.write",
                     "customers.read", "customers.write",
@@ -62,6 +64,9 @@ public final class AdminRolePermissions {
             ),
             "EDITOR", List.of(
                     "products.read", "catalog.read",
+                    // inventory.read granted by V121 backfill-compat (EDITOR had products.read);
+                    // pending post-launch RBAC cleanup if EDITOR should be content-only.
+                    "inventory.read",
                     "content.read", "content.update",
                     "media.read", "media.write",
                     "menus.read", "menus.write",

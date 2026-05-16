@@ -32,7 +32,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Covers FULL-12 batch 3: warranty lookup (public, no auth) and admin warranty void
- * (requires inventory.write, idempotency 409 on double-void).
+ * (requires warranty.write, idempotency 409 on double-void).
  * Endpoints: GET /api/v1/warranties/lookup, PATCH /api/v1/admin/warranties/{id}/void.
  * Serial + warranty records are created directly via repositories in @BeforeEach
  * using product prod_ls2_ff800 from test seed.
@@ -122,7 +122,7 @@ class WarrantyApiTest {
     }
 
     @Test
-    void voidWarranty_editorLacksInventoryWrite_returns403() throws Exception {
+    void voidWarranty_editorLacksWarrantyWrite_returns403() throws Exception {
         mockMvc.perform(patch("/api/v1/admin/warranties/" + warrantyId + "/void")
                         .header("Authorization", "Bearer " + editorToken))
                 .andExpect(status().isForbidden());

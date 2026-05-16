@@ -76,9 +76,9 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.products',
     items: [
       { path: '/admin/products',   labelKey: 'nav.products',   permission: 'products.read',  icon: Package },
-      { path: '/admin/inventory',   labelKey: 'nav.inventory',   permission: 'products.read',     icon: Package },
-      { path: '/admin/serials',     labelKey: 'nav.serials',     permission: 'products.read',     icon: Hash },
-      { path: '/admin/warranties',  labelKey: 'nav.warranties',  permission: 'inventory.read',    icon: ShieldCheck },
+      { path: '/admin/inventory',   labelKey: 'nav.inventory',   permission: 'inventory.read',    icon: Package },
+      { path: '/admin/serials',     labelKey: 'nav.serials',     permission: 'inventory.read',    icon: Hash },
+      { path: '/admin/warranties',  labelKey: 'nav.warranties',  permission: 'warranty.read',     icon: ShieldCheck },
       { path: '/admin/categories', labelKey: 'nav.categories', permission: 'catalog.read',   icon: Tag },
       { path: '/admin/brands',     labelKey: 'nav.brands',     permission: 'catalog.read',   icon: Award },
     ],
@@ -217,10 +217,10 @@ function routePermission(routeName) {
     case 'settings':                     return 'settings.read'
     case 'audit-logs':                   return 'audit-logs.read'
     case 'reports':                      return 'reports.read'
-    case 'inventory':                    return 'products.read'
-    case 'serials':                      return 'products.read'
+    case 'inventory':                    return 'inventory.read'
+    case 'serials':                      return 'inventory.read'
     case 'returns':                      return 'orders.read'
-    case 'warranties':                   return 'inventory.read'
+    case 'warranties':                   return 'warranty.read'
     case 'receivables-list':
     case 'receivable-detail':            return 'receivables.read'
     case 'roles':                        return 'roles.read'
@@ -410,13 +410,13 @@ function AdminApp() {
     case 'reports':
       screen = <ReportsScreen />; break
     case 'inventory':
-      screen = <InventoryScreen canUpdate={hasPermission('products.update')} />; break
+      screen = <InventoryScreen canUpdate={hasPermission('inventory.write')} />; break
     case 'serials':
-      screen = <SerialListScreen canUpdate={hasPermission('products.update')} />; break
+      screen = <SerialListScreen canUpdate={hasPermission('inventory.write')} />; break
     case 'returns':
       screen = <ReturnListScreen canUpdate={hasPermission('orders.write')} />; break
     case 'warranties':
-      screen = <WarrantyListScreen canUpdate={hasPermission('inventory.write')} />; break
+      screen = <WarrantyListScreen canUpdate={hasPermission('warranty.write')} />; break
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} />; break
     case 'pos':

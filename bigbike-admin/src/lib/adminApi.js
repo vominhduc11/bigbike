@@ -2536,6 +2536,7 @@ function buildMockRoles() {
     'coupons.read','coupons.write','shipping.read','shipping.write',
     'reviews.read','reviews.write',
     'products.read','products.update','catalog.read','catalog.update',
+    'inventory.read','inventory.write','warranty.read','warranty.write',
     'content.read','content.update','media.read','media.write',
     'menus.read','menus.write','sliders.read','sliders.write',
     'home_videos.read','home_videos.write',
@@ -2546,7 +2547,7 @@ function buildMockRoles() {
     'audit-logs.read',
     'pos.read','pos.write','pos.refund','pos.price_override',
     'receivables.read','receivables.create','receivables.record_payment',
-    'receivables.write_off','receivables.override_limit','receivables.export',
+    'receivables.write_off','receivables.override_limit',
     'reports.read','reports.export',
   ]
   return [
