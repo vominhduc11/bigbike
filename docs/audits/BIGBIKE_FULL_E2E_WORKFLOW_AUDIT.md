@@ -86,7 +86,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 34 | Admin users / roles / permissions | Admin/Super Admin | admin, BE | users/roles screens | `AdminAdminUsers/Roles/PermissionsController` | role_permissions, V49,V109,V112 | AdminUser status, role guards | audit | `AdminUsersApiTest`,`AdminRolesApiTest` | CONFIRMED_E2E | FULL-01 |
 | 35 | Redirects (admin + internal) | Admin/SEO | admin, BE | redirect screen | `AdminRedirectController`,`InternalRedirectController` | redirects | — | hit counter | `AdminRedirectApiTest` | CONFIRMED_E2E | — |
 | 36 | Admin notifications + WebSocket order feed | Admin | admin, BE | `NotificationBell` | `AdminNotificationController`,`AdminOrderWsService` | notifications table | read/unread | WS push | `RbacUrlGate...` | CONFIRMED_E2E | FULL-03(doc), FULL-16 |
-| 37 | Contact form + admin inbox | Guest/Admin | web, mobile, admin, BE | `/lien-he` / admin inbox | `ContactController`,`AdminContactController` | V105 contact_messages | OPEN→IN_PROGRESS→RESOLVED/CLOSED | email best-effort | ❌ thiếu | CONFIRMED_E2E | FULL-03, FULL-12 |
+| 37 | Contact form + admin inbox | Guest/Admin | web, mobile, admin, BE | `/lien-he` / admin inbox | `ContactController`,`AdminContactController` | V105 contact_messages | OPEN→IN_PROGRESS→RESOLVED/CLOSED | email best-effort, audit log | `AdminContactApiTest` | CONFIRMED_E2E | FULL-03 (đã fix) |
 
 ---
 
@@ -111,13 +111,18 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 - **Fix status:** ✅ **Fixed (2026-05-16).** Thêm màn `VerifyEmailScreen` (`bigbike_mobile/lib/features/auth/verify_email_screen.dart`) + route `/xac-nhan-email`. Sau khi đăng ký, app điều hướng tới màn này (mirror web flow). Màn có 4 trạng thái: (1) **info** — báo "đã gửi email xác minh tới {email}", nút **Gửi lại** gọi `POST /api/v1/customer/auth/resend-verification`, nút "Để sau"; (2) **verifying** — khi mở route kèm `?token=` (parity với web, sẵn sàng cho deep-link), tự gọi `POST /verify-email?token=`; (3) **success**; (4) **error** — hiện lỗi backend + nút gửi lại. Không đổi backend API contract; chỉ thêm hằng số `resendVerification` và tham số `queryParams` cho `ApiClient.post`. Files: `verify_email_screen.dart` (mới), `app_router.dart`, `register_screen.dart`, `api_endpoints.dart`, `api_client.dart`.
   - **Lưu ý còn lại (không phải gap workflow):** link xác minh trong email trỏ về web (`BIGBIKE_MAIL_VERIFY_BASE_URL`). Khách mobile bấm link sẽ mở web để verify, hoặc dùng nút "Gửi lại" + verify qua web. Để link mở thẳng app cần cấu hình **deep link** — là enhancement hạ tầng riêng, ngoài phạm vi FULL-02. Màn đã sẵn sàng nhận `token` nếu deep-link được thêm sau.
 
-### FULL-03 (P2) — Cập nhật contact inbox không ghi audit log
+### FULL-03 (P2) — Cập nhật contact inbox không ghi audit log — **Fixed (2026-05-16)**
 
-- **Type:** gap
-- **Evidence:** `AdminContactService` không inject/gọi service audit nào (grep `audit` trong file = rỗng). Trong khi mọi mutation admin khác (settings, media, coupon, order, customer…) đều ghi `audit_logs`. `AdminContactController.java` PATCH `/contact-messages/{id}` gác `contact.write` đúng nhưng đổi status/assignee/note không để lại vết.
+- **Type:** gap (đã verify = đúng, đã fix)
+- **Evidence (ban đầu):** `AdminContactService.update()` không inject/gọi service audit nào. Mọi mutation admin khác (settings, media, coupon, order, customer…) đều ghi `audit_logs`. PATCH `/contact-messages/{id}` gác `contact.write` đúng nhưng đổi status/assignee/note không để lại vết.
 - **Impact:** Không truy được ai resolve/đóng/gán một liên hệ khách hàng và lúc nào — rủi ro compliance cho xử lý khiếu nại B2C.
-- **Recommended fix:** Ghi audit log trong `AdminContactService.update()` (action `contact.update`, before/after status & assignee). Nhỏ và an toàn nhưng nên xác nhận có muốn coi contact là dữ liệu cần audit không.
-- **Fix status:** Not fixed — đề xuất.
+- **Fix status:** ✅ **Fixed (2026-05-16).**
+  - `AdminContactService` inject `AuditLogJpaRepository`; `update()` nhận thêm tham số `adminId` và sau khi lưu thay đổi (`if (changed)`) ghi 1 `AuditLogEntity`: `actorType=ADMIN`, `actorId`, `action=CONTACT_MESSAGE_UPDATED`, `resourceType=CONTACT_MESSAGE`, `resourceId`, `beforeData`/`afterData`, `createdAt`. Theo đúng convention `buildAudit` của `AdminCouponService`/`AdminSerialService`.
+  - `AdminContactController.update()` thêm `resolveAdminId()` (mirror `AdminCouponController`) để lấy actor id; **không đổi API contract** (signature endpoint, request/response giữ nguyên).
+  - **Privacy:** `beforeData`/`afterData` chỉ ghi `status`, `assignedAdminId` và cờ `adminNoteChanged` (true/false). **Không** ghi nội dung message khách, email, phone, hay nội dung note — đúng ràng buộc privacy.
+  - **Test seed drift phát hiện kèm theo:** `src/test/resources/db/test-seed.sql` (test DB tắt Flyway) thiếu `contact.read`/`contact.write` cho ADMIN + SHOP_MANAGER — do seed cũ hơn migration `V105`. Đã bổ sung 4 dòng INSERT vào seed cho khớp V105 (production không đổi — V105 đã grant sẵn). Ghi chú: seed cũng thiếu `inventory.read`/`inventory.write` (V109) — **không sửa ở task này** (ngoài phạm vi FULL-03), xem [DOC-04](#doc-04--test-seed-thiếu-vài-permission-so-với-migration).
+  - Files: `AdminContactService.java`, `AdminContactController.java`, `test-seed.sql`, `AdminContactApiTest.java` (mới).
+- **Test:** `AdminContactApiTest` (mới) 3/3 PASS — 401 không token, 403 EDITOR thiếu `contact.write`, 200 + ghi audit log đúng (`CONTACT_MESSAGE_UPDATED`, before `status=OPEN` / after `status=IN_PROGRESS` + `adminNoteChanged=true`, và xác nhận message body khách KHÔNG lọt vào audit). `AdminAuditLogApiTest` 11/11 PASS (không hồi quy).
 
 ### FULL-04 (P2) — Review được duyệt không thông báo cho người viết — NEEDS_CONFIRMATION
 
@@ -248,6 +253,9 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 ### DOC-03 — Notification center đã được implement nhưng docs vẫn ghi `NOT_FOUND_IN_REPO`
 `BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md`, `STATE_MACHINES.md` §14 đều ghi notification center (read/unread, bảng `notifications`) là `NOT_FOUND_IN_REPO`. Trace code cho thấy đã có `AdminNotificationController` + bảng `notifications` được persist + endpoint mark-read + `NotificationBell`. → Cập nhật 3 docs: notification center hiện là `CONFIRMED_FROM_CODE`, có state read/unread.
 
+### DOC-04 — Test seed thiếu vài permission so với migration
+`src/test/resources/db/test-seed.sql` (test DB tắt Flyway — `spring.flyway.enabled=false`, Hibernate `create-drop` + seed thủ công) seed `role_permissions` cho ADMIN/SHOP_MANAGER nhưng **thiếu** các quyền được thêm bởi migration mới hơn: `contact.read`/`contact.write` (V105) và `inventory.read`/`inventory.write` (V109). Hệ quả: test dùng role ADMIN/SHOP_MANAGER không gọi được các endpoint contact/warranty. → `contact.*` **đã được bổ sung vào seed** trong fix FULL-03. `inventory.*` **chưa sửa** (ngoài phạm vi) — nên thêm vào `test-seed.sql` để khớp V109 khi viết test warranty/inventory.
+
 ---
 
 ## 6. Lỗi quan trọng — kết quả kiểm tra theo từng loại
@@ -261,7 +269,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | Workflow đứt giữa chừng | Serial inspection wiring (P0-1) — **đã fix**. Stock receiving (FULL-13) — schema-only. |
 | Permission thiếu/sai | FULL-01 (catalog thiếu 3 key). Endpoint admin khác đều gác `requirePermission` đúng. |
 | BE thiếu validation / chỉ validate FE | FULL-06 (coupon date) đã verify = **stale, code đúng sẵn**. Checkout/cart/order validate đủ ở BE. |
-| Thiếu side effect (stock/serial/payment/refund/audit/notify/WS/receivable) | FULL-03 (contact không audit), FULL-04 (review không notify). Các side effect tiền/kho/serial đều đủ. |
+| Thiếu side effect (stock/serial/payment/refund/audit/notify/WS/receivable) | FULL-03 (contact không audit) — **đã fix**; FULL-04 (review không notify). Các side effect tiền/kho/serial đều đủ. |
 | DB schema/migration không enforce rule | ORDER-E2E-08 (thiếu CHECK) — đã fix bằng V116. SKU không unique (BUSINESS_RULES ghi nhận có chủ đích). |
 | Thiếu test cho workflow quan trọng | FULL-12 — wishlist, address, contact, coupon-gift, warranty, public review. |
 
@@ -312,7 +320,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 |---|---|
 | Customer wishlist | add/remove/list; ownership (khách A không xoá được wishlist khách B) |
 | Customer addresses | CRUD + ownership guard |
-| Contact form + inbox | submit public; admin list/update; **permission 401/403/200 cho `contact.read`/`contact.write`** |
+| Contact form + inbox | ✅ admin update + permission 401/403/200 đã có (`AdminContactApiTest`, FULL-03). Còn thiếu: submit form public, admin list/filter, contact.read trên GET |
 | Coupon gift | single gift (validate email); bulk gift (`{sent, skipped}`) |
 | Public review | submit invalid rating / comment quá dài / honeypot; duplicate 24h |
 | Warranty | lookup public theo serial; void warranty (permission `inventory.write`) |
@@ -326,7 +334,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 - **Tiền & kho an toàn:** checkout pessimistic lock chống bán âm kho; backend tự tính toàn bộ tiền (không tin FE); idempotency chống đơn trùng; restore kho idempotent.
 - **State machine enforce ở backend:** Order/Payment/Fulfillment/Return/Product/Media đều có map transition tường minh + guard; FE chỉ hide/disable.
 - **RBAC DB-backed:** `AdminPermissionService` đọc `role_permissions` từ DB; migration là source of truth; mọi endpoint admin trace được đều gác `requirePermission`.
-- **Audit log rộng:** hầu hết mutation admin ghi before/after (ngoại lệ: contact — FULL-03).
+- **Audit log rộng:** mọi mutation admin trace được đều ghi before/after vào `audit_logs` (gồm cả contact inbox sau fix FULL-03).
 - **WebSocket transaction-aware:** push `/topic/admin/orders` sau commit DB.
 - **Refund hợp nhất:** mọi hoàn tiền (order/POS/return) đi qua `RefundService` — refund ledger + serial restore + warranty void + receivable write-off atomic.
 - **3 audit chuyên sâu trước** (Order/POS/Serial) đã fix sạch blocker P0/P1.

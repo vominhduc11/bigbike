@@ -5,7 +5,9 @@ import com.bigbike.bigbike_backend.api.admin.dto.contact.AdminContactMessageList
 import com.bigbike.bigbike_backend.api.admin.dto.contact.UpdateContactMessageRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.contact.ContactMessageEntity;
+import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.contact.ContactMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -37,13 +39,16 @@ public class AdminContactService {
 
     private final ContactMessageJpaRepository contactRepo;
     private final AdminUserJpaRepository adminUserRepo;
+    private final AuditLogJpaRepository auditLogRepo;
 
     public AdminContactService(
             ContactMessageJpaRepository contactRepo,
-            AdminUserJpaRepository adminUserRepo
+            AdminUserJpaRepository adminUserRepo,
+            AuditLogJpaRepository auditLogRepo
     ) {
         this.contactRepo = contactRepo;
         this.adminUserRepo = adminUserRepo;
+        this.auditLogRepo = auditLogRepo;
     }
 
     // ── List (paginated) ──────────────────────────────────────────────────────
@@ -82,9 +87,14 @@ public class AdminContactService {
     // ── Patch (status / note / assignee) ─────────────────────────────────────
 
     @Transactional
-    public AdminContactMessageDetail update(UUID id, UpdateContactMessageRequest req) {
+    public AdminContactMessageDetail update(UUID id, UUID adminId, UpdateContactMessageRequest req) {
         ContactMessageEntity m = contactRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Contact message not found."));
+
+        // Snapshot before-state for the audit log (only status/assignee — never
+        // the customer's message body, email or phone).
+        String oldStatus = m.getStatus();
+        UUID oldAssignee = m.getAssignedAdminId();
 
         Instant now = Instant.now();
         boolean changed = false;
@@ -95,7 +105,6 @@ public class AdminContactService {
                 throw ValidationException.fromField("status", "INVALID",
                         "status phải là một trong: " + VALID_STATUSES);
             }
-            String oldStatus = m.getStatus();
             m.setStatus(newStatus);
             // Stamp resolvedAt the first time the message enters a terminal state.
             if (TERMINAL_STATUSES.contains(newStatus) && m.getResolvedAt() == null) {
@@ -122,6 +131,10 @@ public class AdminContactService {
         if (changed) {
             m.setUpdatedAt(now);
             contactRepo.save(m);
+            auditLogRepo.save(buildAudit(
+                    adminId, m.getId(),
+                    auditSnapshot(oldStatus, oldAssignee, false),
+                    auditSnapshot(m.getStatus(), m.getAssignedAdminId(), req.adminNote() != null)));
         }
 
         return toDetail(m);
@@ -159,6 +172,34 @@ public class AdminContactService {
         String compact = content.replaceAll("\\s+", " ").trim();
         if (compact.length() <= PREVIEW_LENGTH) return compact;
         return compact.substring(0, PREVIEW_LENGTH) + "…";
+    }
+
+    // ── Audit log ─────────────────────────────────────────────────────────────
+
+    private AuditLogEntity buildAudit(UUID adminId, UUID resourceId,
+            String before, String after) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(adminId);
+        log.setAction("CONTACT_MESSAGE_UPDATED");
+        log.setResourceType("CONTACT_MESSAGE");
+        log.setResourceId(resourceId);
+        log.setBeforeData(before);
+        log.setAfterData(after);
+        log.setCreatedAt(Instant.now());
+        return log;
+    }
+
+    /**
+     * Audit snapshot — only workflow metadata (status, assignee) and a flag for
+     * whether the internal note changed. The customer's message body, email and
+     * phone are deliberately never written to the audit log.
+     */
+    private static String auditSnapshot(String status, UUID assignedAdminId, boolean adminNoteChanged) {
+        return "{\"status\":\"" + status
+                + "\",\"assignedAdminId\":"
+                + (assignedAdminId != null ? "\"" + assignedAdminId + "\"" : "null")
+                + ",\"adminNoteChanged\":" + adminNoteChanged + "}";
     }
 
     // ── Spec builder ──────────────────────────────────────────────────────────
