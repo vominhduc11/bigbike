@@ -53,7 +53,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 1 | Catalog browse (product/category/brand) | Guest/Customer | web, mobile, BE | catalog pages / `api_endpoints.dart` | `CatalogController`→`CatalogReadService` | V1 catalog | Product publishStatus, Category/Brand visible | — | `PublicReadApiTest` | CONFIRMED_E2E | FULL-08 |
 | 2 | Search + suggest | Guest/Customer | web, mobile, BE | search box | `PublicSearchController`→`GlobalSearchService` | V1 | — | — | — | CONFIRMED_E2E | — |
 | 3 | Content/blog (article/page) | Guest/Customer | web, BE | `/tin-tuc`, `/chinh-sach` | `ContentController`→`ContentReadService` | V1, V21, V93 | publishStatus | — | `ContentPublicApiTest` | CONFIRMED_E2E | — |
-| 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest` | CONFIRMED_E2E | FULL-04 |
+| 4 | Product reviews | Customer/Admin | web, admin, BE | `ReviewsSection` / admin reviews | `PublicReviewController`,`AdminReviewController` | V14, V60 | review status | revalidate web | `Phase1NReviewsApiTest`, `PublicReviewApiTest` (9 cases) | CONFIRMED_E2E | FULL-04 |
 | 5 | Cart + coupon apply | Guest/Customer | web, mobile, BE | `/gio-hang` | `CartController`→`CartService` | carts/cart_items, V73 | coupon | CSRF guard | `Phase1ECartApiTest` | CONFIRMED_E2E | (ORDER-E2E-07 defer) |
 | 6 | Checkout + quick-buy | Guest/Customer | web, mobile, BE | `/thanh-toan` | `CheckoutController`→`CheckoutService` | V7, V62 | Order/Payment/Fulfillment | stock−, email, WS, coupon redeem | `Phase1FCheckoutApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
 | 7 | Customer wishlist | Customer | web, mobile, BE | `/tai-khoan/yeu-thich` | `CustomerWishlistController` | V5 wishlist_items | — | — | `CustomerWishlistApiTest` (8 cases) | PARTIAL (mobile UI thiếu) | FULL-05, FULL-07, FULL-09 |
@@ -63,7 +63,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 11 | Customer order list/detail + guest lookup | Customer/Guest | web, mobile, BE | `/tai-khoan/don-hang`, lookup | `CustomerOrderController`,`OrderLookupController` | V7 | Order | — | `Phase1GOrderReadApiTest`,`GuestOrderLinkingTest` | CONFIRMED_E2E | FULL-10 |
 | 12 | Customer tự huỷ đơn | Customer | web, BE | order detail | `CustomerOrderCancelService` | V7 | Order | restore stock | `Phase1H...` | CONFIRMED_E2E | (ORDER-E2E-01 fixed) |
 | 13 | Customer return + eligibility | Customer | web, mobile, BE | order detail | `CustomerOrderController`→`CustomerReturnService` | returns, V65, V104 | Return | — | `Phase1LReturnsApiTest` | CONFIRMED_E2E | — |
-| 14 | Public warranty lookup | Guest | web, BE | warranty page | `PublicWarrantyController` | V90 warranties | warranty status | — | ❌ thiếu | CONFIRMED_E2E | FULL-10 |
+| 14 | Public warranty lookup | Guest | web, BE | warranty page | `PublicWarrantyController` | V90 warranties | warranty status | — | `WarrantyApiTest` (6 cases) | CONFIRMED_E2E | FULL-10, FULL-12 batch 3 |
 | 15 | Admin order management (status/payment/fulfillment/refund) | Admin | admin, BE | `OrderDetailScreen` | `AdminOrderController`→`AdminOrderService`,`RefundService` | V7, V8, V114, V116 | Order/Payment/Fulfillment | audit, email, WS, stock, serial, refund ledger | `Phase1HAdminOrderApiTest` | CONFIRMED_E2E | (audit Order — fixed) |
 | 16 | Admin return processing + inspection | Admin | admin, BE | returns screen | `AdminReturnController`→`AdminReturnService` | V65, V104 | Return | stock restore, serial inspect, refund, notify | `Phase1LReturnsApiTest` | CONFIRMED_E2E | — |
 | 17 | POS sale (CASH/CARD/CREDIT) | Admin/Manager | admin, BE | `PosScreen` | `AdminPosController`→`PosOrderService` | V71, V75, V114 | Order/Payment | stock−, payment, audit, WS, receivable | `Phase1MPosApiTest` | CONFIRMED_E2E | (audit POS — fixed) |
@@ -77,7 +77,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | 25 | Content management (article/page) | Admin/Editor/Author | admin, BE | content screens | `AdminContentController`→`AdminContentMutationService` | V1,V21 | publishStatus | revalidate web, audit | `AdminContentApiTest`,`ContentP1ApiTest` | CONFIRMED_E2E | — |
 | 26 | Settings / menus / sliders / home videos | Admin/Editor | admin, BE | CMS screens | `AdminSettings/Menu/Slider/HomeVideoController` | V84,V92,etc | — | revalidate, audit | `Phase1JAdmin...`,`SliderApiTest`,`HomeVideoApiTest` | CONFIRMED_E2E | — |
 | 27 | Coupon lifecycle + expiry | Admin/Manager | admin, BE | `CouponListScreen` | `AdminCouponController`,`CouponExpiryScheduler` | V73,V118,V119 | coupon status | audit | `Phase1JAdmin...` | CONFIRMED_E2E | FULL-06 (stale), FULL-14 |
-| 28 | Coupon gift (single/bulk) | Admin | admin, BE | customer/coupon screens | `AdminCouponGiftController`,`AdminCustomerController` | coupons (customer_id) | — | email (async) | ❌ thiếu | CONFIRMED_E2E | FULL-12 |
+| 28 | Coupon gift (single/bulk) | Admin | admin, BE | customer/coupon screens | `AdminCouponGiftController`,`AdminCustomerController` | coupons (customer_id) | — | email (async) | `AdminCouponGiftApiTest` (7 cases) | CONFIRMED_E2E | FULL-12 batch 3 |
 | 29 | Admin customer management + credit profile | Admin/Manager | admin, BE | customer screens | `AdminCustomerController` | customers, V75 | credit status | audit | `Phase1IAdmin...` | CONFIRMED_E2E | — |
 | 30 | Accounts receivable (payment/write-off/aging) | Admin/Manager | admin, BE | receivables screens | `AdminReceivableController`→`ReceivableService` | V75,V83 | AR status | audit, payment record | `AdminReceivableApiTest` | CONFIRMED_E2E | (audit POS R-01 — fixed) |
 | 31 | Reports & analytics + CSV export | Admin/Manager | admin, BE | reports screen | `AdminReportController`→`AdminReportService` | — (read-only) | — | audit on export | `AdminReportApiTest`,`...CsvHardeningTest` | CONFIRMED_E2E | — |
@@ -206,7 +206,13 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
   - `AdminContactInboxApiTest` (mới) — **8/8 PASS**: list 401/403/200, filter by status (RESOLVED vs OPEN isolation), detail 200 (full content) + 403 editor, update→RESOLVED stamps resolvedAt, reopen→IN_PROGRESS clears resolvedAt.
   - `AdminContactApiTest` (FULL-03, 3/3 PASS, không hồi quy).
   - Không phát hiện bug trong batch này. Email skip đúng khi không cấu hình mail.
-- **Còn lại (batch 3+):** coupon gift, public review, warranty lookup/void.
+- **Fix status — Batch 3 (2026-05-16):** Đã bổ sung test cho coupon gift, public review, warranty:
+  - `AdminCouponGiftApiTest` (mới) — **7/7 PASS**: single gift 201+detail, no-email→409, amount=0→400, PERCENT>100→400, editor→403, no-token→401, bulk 200+{sent,skipped}≥1.
+  - `PublicReviewApiTest` (mới) — **9/9 PASS**: valid 201+success:true, honeypot stealth drop, missingAuthorName/ratingNull/ratingZero/ratingTooHigh/commentTooLong→400, duplicate 24h→409.
+  - `WarrantyApiTest` (mới) — **6/6 PASS**: lookup 200+details, unknown serial→404, void 200+VOIDED, double-void→409, no-token→401, editor→403.
+  - **Bug fix phát hiện kèm test:** `PublicWarrantyController.lookup()` gọi `serialEntity.getProduct().getName()` (lazy `@ManyToOne`) ngoài transaction → `LazyInitializationException` → 500. Đã thêm `@Transactional(readOnly = true)` vào method `lookup()`. Không đổi API contract/response.
+  - Phase1NReviewsApiTest 57/57 PASS, tất cả regression PASS.
+- **FULL-12 hoàn toàn đóng.** Tất cả workflow trong finding đã có test coverage đầy đủ.
 
 ### FULL-13 (P2) — Stock receiving (nhập kho theo phiếu) chỉ có schema, không có flow
 
@@ -283,7 +289,7 @@ Audit này tìm thấy **14 finding mới** (chủ yếu ở các workflow chưa
 | BE thiếu validation / chỉ validate FE | FULL-06 (coupon date) đã verify = **stale, code đúng sẵn**. Checkout/cart/order validate đủ ở BE. |
 | Thiếu side effect (stock/serial/payment/refund/audit/notify/WS/receivable) | FULL-03 (contact không audit) — **đã fix**; FULL-04 (review không notify). Các side effect tiền/kho/serial đều đủ. |
 | DB schema/migration không enforce rule | ORDER-E2E-08 (thiếu CHECK) — đã fix bằng V116. SKU không unique (BUSINESS_RULES ghi nhận có chủ đích). |
-| Thiếu test cho workflow quan trọng | FULL-12 — wishlist ✅, address ✅ (batch 1 done); còn: contact-form public, coupon-gift, warranty, public review. |
+| Thiếu test cho workflow quan trọng | FULL-12 — wishlist ✅, address ✅ (batch 1); contact form + inbox ✅ (batch 2); coupon gift ✅, public review ✅, warranty ✅ (batch 3, 2026-05-16). Tất cả đã có test. |
 
 ---
 
@@ -332,10 +338,10 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 |---|---|
 | Customer wishlist | ✅ **Đã có** (`CustomerWishlistApiTest` 8/8 PASS, 2026-05-16) — add/remove/list, idempotent, isolation, scoped delete. |
 | Customer addresses | ✅ **Đã có** (`CustomerAddressApiTest` 10/10 PASS, 2026-05-16) — CRUD, ownership 404, validation. |
-| Contact form + inbox | ✅ admin update + permission 401/403/200 đã có (`AdminContactApiTest`, FULL-03). Còn thiếu: submit form public, admin list/filter, contact.read trên GET |
-| Coupon gift | single gift (validate email); bulk gift (`{sent, skipped}`) |
-| Public review | submit invalid rating / comment quá dài / honeypot; duplicate 24h |
-| Warranty | lookup public theo serial; void warranty (permission `inventory.write`) |
+| Contact form + inbox | ✅ **Đã có** (`AdminContactApiTest` 3/3, `ContactPublicFormTest` 6/6, `AdminContactInboxApiTest` 8/8, 2026-05-16) — public submit, no-auth, validation 400, admin list 200/401/403, filter by status, detail 200/403, update status + resolvedAt stamp/clear. |
+| Coupon gift | ✅ **Đã có** (`AdminCouponGiftApiTest` 7/7, 2026-05-16) — single gift 201 + detail, no-email → 409, amount=0 → 400, PERCENT>100 → 400, editor→403, no-token→401, bulk 200 + {sent, skipped}. |
+| Public review | ✅ **Đã có** (`PublicReviewApiTest` 9/9, 2026-05-16) — valid 201, honeypot silently drops, missingAuthorName/ratingNull/ratingZero/ratingTooHigh/commentTooLong → 400, duplicate 24h → 409. |
+| Warranty | ✅ **Đã có** (`WarrantyApiTest` 6/6, 2026-05-16) — lookup public 200 + details, unknown serial → 404, void 200 + VOIDED, double-void → 409, no-token → 401, editor → 403. |
 | Permission catalog | sau fix FULL-01: gán `pos.refund`/`inventory.*` cho custom role thành công |
 | Serial state machine | (Serial audit P1-9) wiring `moveReturnedToInspection` qua return RECEIVED→INSPECTING |
 | Order/Payment/Return/Product state transition | `STATE_MACHINES.md` §18 — toàn bộ đang `MISSING_TEST_COVERAGE` |
@@ -364,7 +370,7 @@ Catalog browse · Search+suggest · Content/blog · Reviews · Cart+coupon · Ch
 1. ✅ **FULL-01 đã fix (2026-05-16)** — đã thêm 3 permission vào `PermissionCatalog`, cập nhật docs + test.
 2. ✅ **FULL-02 đã fix (2026-05-16)** — thêm màn verify-email Flutter + route + điều hướng sau đăng ký. (Tuỳ chọn về sau: cấu hình deep link để email link mở thẳng app.)
 3. ✅ **FULL-15 đã verify (2026-05-16)** — Serial P0-4/P0-5/P1-1/P1-3 đều đã fixed; test inventory/serial PASS.
-4. ✅ **Wishlist + Address test (FULL-12 batch 1, 2026-05-16)** — `CustomerWishlistApiTest` (8/8) + `CustomerAddressApiTest` (10/10). Còn lại: contact form public, coupon-gift, public review, warranty.
+4. ✅ **FULL-12 test coverage hoàn chỉnh (2026-05-16)** — Batch 1: `CustomerWishlistApiTest` (8/8) + `CustomerAddressApiTest` (10/10). Batch 2: `ContactPublicFormTest` (6/6) + `AdminContactInboxApiTest` (8/8). Batch 3: `AdminCouponGiftApiTest` (7/7) + `PublicReviewApiTest` (9/9) + `WarrantyApiTest` (6/6). Tổng 54 test mới, tất cả PASS. Bug fix kèm theo: `PublicWarrantyController.lookup()` thêm `@Transactional(readOnly = true)` — lazy load `product` gây 500 đã được fix.
 5. Dọn 3 **docs mismatch** (DOC-01/02/03).
 6. Chốt các mục **NEEDS_BUSINESS_CONFIRMATION** ở Section 10 với chủ shop.
 
