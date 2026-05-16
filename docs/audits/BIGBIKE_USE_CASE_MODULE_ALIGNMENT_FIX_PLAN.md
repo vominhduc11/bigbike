@@ -219,12 +219,11 @@ Cả hai cần business confirm trước khi làm.
 
 ### Backend — `./mvnw test`
 
-`KẾT QUẢ ĐANG CẬP NHẬT` — test suite đang chạy tại thời điểm ghi báo cáo. Mục cần xác nhận:
-- Toàn bộ test PASS, 0 FAIL.
-- `RbacUrlGateIntegrationTest`, `AdminRolesApiTest` — RBAC gate.
-- `WarrantyApiTest` — warranty void gate `warranty.write`.
-- `Phase1KInventoryP0FixApiTest`, `Phase1KInventorySerialApiTest`, `Phase2FSerialInventoryTest` — inventory/serial gate `inventory.*`.
-- `AdminReceivableApiTest` — không hồi quy sau khi gỡ `receivables.export`.
+- **✅ PASS — exit code 0.** Maven fail build nếu có bất kỳ test nào FAIL, nên exit 0 = toàn bộ test PASS, 0 FAIL. Compile + Flyway migration (gồm `V121`, `V122` trên H2) + 354 test chạy sạch.
+- RBAC: `RbacUrlGateIntegrationTest`, `AdminRolesApiTest` — pass (catalog vẫn chứa `inventory.*`, custom role vẫn gán được).
+- `WarrantyApiTest` — pass (warranty void nay gate `warranty.write`; EDITOR vẫn 403 vì không có `warranty.write`; ADMIN 200 vì test-seed cấp `warranty.write`).
+- `Phase1KInventoryP0FixApiTest`, `Phase1KInventorySerialApiTest`, `Phase2FSerialInventoryTest` — pass (inventory/serial nay gate `inventory.*`; ADMIN có; CONTRIBUTOR vẫn 403).
+- `AdminReceivableApiTest` — pass (không hồi quy sau khi gỡ `receivables.export`).
 
 ### Admin — `eslint .` + `vite build`
 
