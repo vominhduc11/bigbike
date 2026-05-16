@@ -32,6 +32,7 @@ import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService;
+import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService.EligibilityResult;
 import com.bigbike.bigbike_backend.service.receivable.ReceivableService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -66,8 +67,6 @@ public class PosOrderService {
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
             String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
             String customerId,           // Required for CREDIT payment method
-            Long downPayment,            // Optional: partial upfront payment for CREDIT orders
-            String downPaymentMethod,    // Payment method used for the downpayment (CASH or CARD_TERMINAL); defaults to CASH
             String couponCode            // Optional: mã giảm giá (ALL hoặc POS channel)
     ) {}
 
@@ -256,16 +255,23 @@ public class PosOrderService {
                     throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                             + variant.getQuantityOnHand() + " trong kho.");
                 }
-            } else {
+            } else if (product.isTrackSerials()) {
                 // Product-level serial (no variant): validate serial stock directly
                 long available = serialLifecycleService.countAvailable(product.getId(), null);
                 if (available == 0) {
                     throw new ConflictException("Sản phẩm '" + product.getName()
-                            + "' không có serial nào trong kho (không có biến thể).");
+                            + "' không có serial nào trong kho.");
                 }
                 if (available < item.quantity()) {
                     throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
                             + available + " serial khả dụng trong kho.");
+                }
+            } else if (Boolean.TRUE.equals(product.getManageStock())) {
+                // Product-level non-serial managed stock (no variant, no serial tracking)
+                int stock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+                if (stock < item.quantity()) {
+                    throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
+                            + stock + " trong kho.");
                 }
             }
 
@@ -304,9 +310,11 @@ public class PosOrderService {
         }
 
         // Validate credit limit now that we know subtotal
+        boolean creditLimitOverridden = false;
         if ("CREDIT".equals(req.paymentMethod()) && creditCustomer != null) {
-            creditPolicyService.validateCreditEligibility(
+            EligibilityResult eligibility = creditPolicyService.validateCreditEligibility(
                     creditCustomer.getId(), subtotal, canOverrideCreditLimit);
+            creditLimitOverridden = eligibility.limitOverrideExercised();
         }
 
         // Validate và tính coupon discount (nếu có)
@@ -473,7 +481,6 @@ public class PosOrderService {
         // P0 #3: audit log — enrich with override flags and item summary
         boolean priceOverridden = req.items().stream()
                 .anyMatch(it -> it.unitPriceOverride() != null);
-        boolean creditLimitOverridden = isCreditOrder && canOverrideCreditLimit && creditCustomer != null;
         StringBuilder itemsSummary = new StringBuilder("[");
         for (int i = 0; i < lineItems.size(); i++) {
             OrderLineItemEntity li = lineItems.get(i);
@@ -569,11 +576,37 @@ public class PosOrderService {
             boolean isProductLevelSerial = item.productVariantId() == null || item.productVariantId().isBlank();
 
             if (isProductLevelSerial) {
-                // Product-level serial (no variant): reserve then immediately mark sold
-                Instant reservedUntil = now.plusSeconds(60);
-                serialLifecycleService.reserveForOrderLine(
-                        lineItem, item.productId(), null, item.quantity(), reservedUntil);
-                serialLifecycleService.markSoldForOrder(orderId);
+                ProductEntity product = productRepo.findByIdForUpdate(item.productId())
+                        .orElseThrow(() -> new NotFoundException(
+                                "Product không tìm thấy khi trừ kho: " + item.productId()));
+                if (product.isTrackSerials()) {
+                    // Product-level serial: reserve then immediately mark sold
+                    Instant reservedUntil = now.plusSeconds(60);
+                    serialLifecycleService.reserveForOrderLine(
+                            lineItem, item.productId(), null, item.quantity(), reservedUntil);
+                    serialLifecycleService.markSoldForOrder(orderId);
+                } else {
+                    // Product-level non-serial managed stock: decrement stockQuantity directly
+                    Integer rawQty = product.getStockQuantity();
+                    if (!Boolean.TRUE.equals(product.getManageStock()) || rawQty == null) continue;
+                    int before = rawQty;
+                    int after = before - item.quantity();
+                    product.setStockQuantity(after);
+                    product.setStockState(inventoryPolicyService.computeStockState(after, inventoryPolicyService.lowStockThreshold()));
+                    productRepo.save(product);
+
+                    StockMovementEntity mv = new StockMovementEntity();
+                    mv.setProductId(product.getId());
+                    mv.setMovementType("OUT");
+                    mv.setQuantityDelta(-item.quantity());
+                    mv.setReferenceType("ORDER");
+                    mv.setReferenceId(orderId);
+                    mv.setNote("POS_SALE");
+                    mv.setCreatedAt(now);
+                    mv.setQuantityBefore(before);
+                    mv.setQuantityAfter(after);
+                    stockMovementRepo.save(mv);
+                }
                 continue;
             }
 

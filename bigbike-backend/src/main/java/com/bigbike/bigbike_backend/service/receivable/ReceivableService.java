@@ -214,15 +214,10 @@ public class ReceivableService {
         ar.setUpdatedAt(now);
         receivableRepo.save(ar);
 
-        // Update order paymentStatus to WRITTEN_OFF (POSREC-006)
+        // Order payment_status stays UNPAID — the debt is written off at the AR level,
+        // not collected. V116 CHECK constraint only allows UNPAID/PAID/REFUNDED/CANCELLED.
         OrderEntity order = orderRepo.findById(ar.getOrderId()).orElse(null);
-        String orderNumber = null;
-        if (order != null) {
-            orderNumber = order.getOrderNumber();
-            order.setPaymentStatus("WRITTEN_OFF");
-            order.setUpdatedAt(now);
-            orderRepo.save(order);
-        }
+        String orderNumber = order != null ? order.getOrderNumber() : null;
 
         auditLog("RECEIVABLE_WRITTEN_OFF",
                 "RECEIVABLE", ar.getId(), adminId,

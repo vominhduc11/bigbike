@@ -35,7 +35,9 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### POS credit sale (CREDIT payment method)
 
-`admin POS UI -> AdminPosController -> PosOrderService -> CreditPolicyService (validate limit) -> OrderEntity (COMPLETED + UNPAID) + PaymentEntity (downPayment only) + ReceivableEntity (OPEN) + AuditLogEntity`
+`admin POS UI -> AdminPosController -> PosOrderService -> CreditPolicyService (validate limit) -> OrderEntity (COMPLETED + UNPAID) + ReceivableEntity (OPEN) + AuditLogEntity`
+
+Note: downPayment feature was removed in V114 (migration simplified payment model). CREDIT orders are always fully unpaid at creation; debt is collected later via ReceivableService.recordPayment.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -49,7 +51,9 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Receivable write-off
 
-`admin receivables UI -> AdminReceivableController -> ReceivableService.writeOff -> ReceivableEntity (WRITTEN_OFF) + OrderEntity (WRITTEN_OFF paymentStatus) + AuditLogEntity`
+`admin receivables UI -> AdminReceivableController -> ReceivableService.writeOff -> ReceivableEntity (WRITTEN_OFF) + AuditLogEntity`
+
+Note: OrderEntity.paymentStatus is NOT updated on write-off — it stays UNPAID. The debt is cancelled at the AR level only. V116 CHECK constraint prohibits WRITTEN_OFF as an order payment status value.
 
 Requires `receivables.write_off` permission (ADMIN only).
 

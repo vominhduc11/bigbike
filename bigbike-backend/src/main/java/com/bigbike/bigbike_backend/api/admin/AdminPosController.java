@@ -72,18 +72,24 @@ public class AdminPosController {
         var summary = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null);
         // listProducts returns Products without variants (list-view optimisation).
         // POS needs variants → re-fetch detail for each result.
-        // For products with no variants but with product-level serials (trackSerials at product scope),
-        // synthesize a single virtual variant so the POS grid can render them.
+        // Products with no variants need a synthetic variant so the POS grid can render them.
+        // Two cases: (1) product-level serials — trackSerials=true, qty from serial count;
+        //            (2) product-level non-serial stock — trackSerials=false, qty from stockQuantity.
+        // Products with neither (no variants, no serials, no stock) are excluded from POS.
         var withVariants = summary.items().stream()
                 .map(p -> {
                     Product detail = catalogReadService.getProductById(p.id());
                     if (detail.variants() != null && !detail.variants().isEmpty()) return detail;
                     long serialCount = serialLifecycleService.countAvailable(detail.id(), null);
-                    if (serialCount == 0) return detail;
+                    int stockQty = detail.stockQuantity() != null ? detail.stockQuantity() : 0;
+                    if (serialCount == 0 && stockQty <= 0) return null; // unsellable at POS — skip
+                    boolean isSerial = serialCount > 0;
+                    int qty = isSerial ? (int) Math.min(serialCount, Integer.MAX_VALUE) : stockQty;
+                    ProductStockState state = qty <= 0 ? ProductStockState.OUT_OF_STOCK : ProductStockState.IN_STOCK;
                     ProductVariant synthetic = new ProductVariant(
                             null, detail.sku(), null, List.of(),
-                            detail.price(), ProductStockState.IN_STOCK, (int) Math.min(serialCount, Integer.MAX_VALUE),
-                            detail.image(), List.of(), true, true);
+                            detail.price(), state, qty,
+                            detail.image(), List.of(), true, isSerial);
                     return new Product(
                             detail.id(), detail.sku(), detail.slug(), detail.name(),
                             detail.shortDescription(), detail.description(),
@@ -96,6 +102,7 @@ public class AdminPosController {
                             detail.rating(), detail.ratingCount(), detail.contentBottom(),
                             detail.seo(), detail.createdAt(), detail.updatedAt());
                 })
+                .filter(java.util.Objects::nonNull)
                 .toList();
         var posPage = new com.bigbike.bigbike_backend.service.common.PageResult<>(
                 withVariants, summary.page(), summary.pageSize(),

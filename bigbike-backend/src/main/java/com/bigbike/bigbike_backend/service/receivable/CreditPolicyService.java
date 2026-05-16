@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CreditPolicyService {
 
+    /** Returned by {@link #validateCreditEligibility}. */
+    public record EligibilityResult(CustomerEntity customer, boolean limitOverrideExercised) {}
+
     private final CustomerJpaRepository customerRepo;
     private final ReceivableJpaRepository receivableRepo;
 
@@ -28,12 +31,14 @@ public class CreditPolicyService {
     /**
      * Validates that the customer can receive a credit sale for the given amount.
      * Throws ConflictException if any rule is violated.
+     * Returns an {@link EligibilityResult} where {@code limitOverrideExercised} is true only when
+     * the order actually exceeded the credit limit AND the caller had override permission.
      *
-     * @param customerId   customer receiving credit
-     * @param orderAmount  total amount of the new credit order
+     * @param customerId    customer receiving credit
+     * @param orderAmount   total amount of the new credit order
      * @param overrideLimit whether the requesting user has receivables.override_limit permission
      */
-    public CustomerEntity validateCreditEligibility(UUID customerId, BigDecimal orderAmount, boolean overrideLimit) {
+    public EligibilityResult validateCreditEligibility(UUID customerId, BigDecimal orderAmount, boolean overrideLimit) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + customerId));
 
@@ -46,6 +51,7 @@ public class CreditPolicyService {
                     + " — không thể thực hiện bán chịu.");
         }
 
+        boolean limitExceededAndOverridden = false;
         if (customer.getCreditLimit() != null) {
             BigDecimal currentOutstanding = receivableRepo.sumOutstandingByCustomerId(customerId);
             BigDecimal afterOrder = currentOutstanding.add(orderAmount);
@@ -55,11 +61,11 @@ public class CreditPolicyService {
                             "Vượt hạn mức tín dụng. Hạn mức: %,.0f VND, Đang nợ: %,.0f VND, Đơn mới: %,.0f VND.",
                             customer.getCreditLimit(), currentOutstanding, orderAmount));
                 }
-                // Override is allowed — proceed
+                limitExceededAndOverridden = true;
             }
         }
 
-        return customer;
+        return new EligibilityResult(customer, limitExceededAndOverridden);
     }
 
     /** Returns current outstanding balance for a customer (sum of non-closed receivables). */

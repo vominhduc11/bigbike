@@ -1838,8 +1838,7 @@
     "refundConfirm": "Confirm refund",
     "refundSuccess": "Refund applied",
     "refundError": "Refund failed",
-    "refundErrorAmountRequired": "Refund amount must be greater than 0.",
-    "refundErrorAmountExceeds": "Refund amount exceeds the maximum of {{max}}.",
+    "refundFullOnly": "POS supports full refunds only.",
     "refundedBadge": "Refunded"
   },
   "homeVideos": {

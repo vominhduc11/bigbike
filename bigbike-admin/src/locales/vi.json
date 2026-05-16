@@ -1838,8 +1838,7 @@
     "refundConfirm": "Xác nhận hoàn tiền",
     "refundSuccess": "Đã hoàn tiền cho đơn",
     "refundError": "Hoàn tiền thất bại",
-    "refundErrorAmountRequired": "Vui lòng nhập số tiền hoàn lớn hơn 0.",
-    "refundErrorAmountExceeds": "Số tiền hoàn vượt quá tối đa {{max}}.",
+    "refundFullOnly": "POS chỉ hỗ trợ hoàn toàn bộ đơn hàng.",
     "refundedBadge": "Đã hoàn tiền"
   },
   "homeVideos": {

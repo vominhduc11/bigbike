@@ -317,7 +317,7 @@ All list fields plus: `writtenOffAmount`, `paymentTermsDays`, `creditLimitSnapsh
 | Field | Computation | Purpose |
 |---|---|---|
 | `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED/REFUNDED | Gross GMV placed today |
-| `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID','PARTIALLY_PAID')` | Actual cash collected today |
+| `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID')` | Actual cash collected today (PARTIALLY_PAID removed in V114) |
 
 Credit (CREDIT) orders contribute to `todayRevenue` but NOT to `todayPaidRevenue` (until payment is recorded), preserving accurate cash-vs-credit separation.
 
@@ -355,7 +355,7 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 | Field | Type | Description |
 |---|---|---|
 | `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED/FAILED (REFUNDED included) |
-| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus IN (PAID, PARTIALLY_PAID, PARTIALLY_REFUNDED, REFUNDED) excl CANCELLED/FAILED orders |
+| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus IN (PAID, REFUNDED) excl CANCELLED orders (PARTIALLY_PAID / PARTIALLY_REFUNDED removed in V114) |
 | `refundAmount` | `BigDecimal` | SUM(refundAmount) for orders placed in range (placedAt-anchored) |
 | `netRevenue` | `BigDecimal` | paidRevenue − refundAmount; may be negative |
 | `orderCount` | `int` | COUNT excl CANCELLED/FAILED |

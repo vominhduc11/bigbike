@@ -54,14 +54,9 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerCredit, setCustomerCredit] = useState(null)
   const [creditLoading, setCreditLoading] = useState(false)
-  const [downPayment, setDownPayment] = useState('')
-
   const tenderedNum = tendered === '' ? 0 : Number(String(tendered).replace(/\D/g, ''))
   const change = method === 'CASH' && tenderedNum > 0 ? tenderedNum - total : null
   const insufficientTendered = method === 'CASH' && tendered !== '' && tenderedNum < total
-
-  const downPaymentNum = downPayment === '' ? 0 : Number(downPayment)
-  const downPaymentInvalid = method === 'CREDIT' && downPayment !== '' && (downPaymentNum < 0 || downPaymentNum > total)
 
   // Credit eligibility checks
   const creditEnabled = customerCredit?.creditEnabled === true
@@ -70,7 +65,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const overLimit = method === 'CREDIT' && availableCredit !== null && total > availableCredit
   const creditBlocked = method === 'CREDIT' && selectedCustomer && customerCredit && (!creditEnabled || !creditActive)
   const creditOverLimitBlocked = overLimit && !canOverrideCreditLimit
-  const submitDisabled = submitting || insufficientTendered || downPaymentInvalid || creditBlocked || creditOverLimitBlocked
+  const submitDisabled = submitting || insufficientTendered || creditBlocked || creditOverLimitBlocked
       || (method === 'CREDIT' && !selectedCustomer)
 
   function handleMethodChange(m) {
@@ -78,7 +73,6 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
     if (m !== 'CREDIT') {
       setSelectedCustomer(null)
       setCustomerCredit(null)
-      setDownPayment('')
       setCustomerResults([])
       setCustomerQuery('')
     } else {
@@ -158,7 +152,6 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
         payload = {
           ...basePayload,
           customerId: selectedCustomer.id,
-          ...(downPaymentNum > 0 ? { downPayment: downPaymentNum } : {}),
         }
       } else {
         payload = basePayload
@@ -403,23 +396,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                 </p>
               )}
 
-              {selectedCustomer && !creditBlocked && (
-                <div style={{ marginTop: 10 }}>
-                  <label className="field-label">Thanh toán trước (tùy chọn)</label>
-                  <Input
-                    style={{ width: '100%' }}
-                    type="number"
-                    min={0}
-                    max={total}
-                    placeholder="0 = ghi nợ toàn bộ"
-                    value={downPayment}
-                    onChange={(e) => setDownPayment(e.target.value)}
-                   />
-                  {downPaymentInvalid && (
-                    <p className="field-error" style={{ marginTop: 4 }}>Thanh toán trước phải từ 0 đến {formatCurrencyVnd(total)}.</p>
-                  )}
-                </div>
-              )}
+
             </div>
           )}
 
@@ -547,36 +524,27 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
     { value: 'WRONG_ITEM', label: t('pos.refundReasonWrongItem') },
     { value: 'OTHER', label: t('pos.refundReasonOther') },
   ]
-  const [amount, setAmount] = useState(String(maxRefundable))
   const [reasonValue, setReasonValue] = useState(REASONS[0].value)
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const amountNum = Number(amount)
-  const amountInvalid = !amount || isNaN(amountNum) || amountNum <= 0
-  const amountExceeds = amountNum > maxRefundable
-  const submitDisabled = submitting || amountInvalid || amountExceeds
+  const submitDisabled = submitting || !maxRefundable || maxRefundable <= 0
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (submitDisabled) return
     setError('')
-    if (amountInvalid) { setError(t('pos.refundErrorAmountRequired')); return }
-    if (amountExceeds) {
-      setError(t('pos.refundErrorAmountExceeds', { max: formatCurrencyVnd(maxRefundable) }))
-      return
-    }
     setSubmitting(true)
     try {
       const selectedReason = REASONS.find((r) => r.value === reasonValue)?.label || ''
       await posCreateRefund(order.orderId, {
-        refundAmount: amountNum,
+        refundAmount: maxRefundable,
         reason: selectedReason,
         note: note.trim() || undefined,
       })
       toast.success(`${t('pos.refundSuccess')} ${order.orderNumber || ''}`.trim())
-      onSuccess(amountNum)
+      onSuccess(maxRefundable)
     } catch (err) {
       const msg = err?.message || t('pos.refundError')
       setError(msg)
@@ -611,17 +579,12 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 12 }}>
-            <label className="field-label" htmlFor="pos-refund-amount">{t('pos.refundLabelAmount')} *</label>
-            <Input
-              id="pos-refund-amount"
-              type="number"
-              min={1}
-              max={maxRefundable}
-              step={1}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={{ width: '100%' }}
-            />
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
+              {t('pos.refundLabelAmount')}: <strong style={{ fontSize: '1rem', color: 'var(--admin-color-text)' }}>{formatCurrencyVnd(maxRefundable)}</strong>
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--admin-color-text-muted)' }}>
+              {t('pos.refundFullOnly')}
+            </p>
           </div>
 
           <div style={{ marginBottom: 12 }}>
