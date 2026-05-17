@@ -81,7 +81,7 @@ public class AdminMenuController {
     @PatchMapping("/{menuId}")
     public ApiDataResponse<AdminMenuResponse> updateMenu(
             @PathVariable UUID menuId,
-            @RequestBody UpdateMenuRequest body,
+            @Valid @RequestBody UpdateMenuRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "menus.write");
@@ -115,7 +115,7 @@ public class AdminMenuController {
     public ApiDataResponse<AdminMenuItemResponse> updateMenuItem(
             @PathVariable UUID menuId,
             @PathVariable UUID itemId,
-            @RequestBody UpdateMenuItemRequest body,
+            @Valid @RequestBody UpdateMenuItemRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "menus.write");

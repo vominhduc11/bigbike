@@ -10,6 +10,7 @@ type PublicMetadataInput = {
   canonicalPath: string;
   noIndex?: boolean;
   ogImage?: string;
+  ogType?: "website" | "article";
 };
 
 export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
@@ -29,7 +30,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
       siteName: SITE_NAME,
       images: [{ url: ogImageUrl }],
       locale: "vi_VN",
-      type: "website",
+      type: input.ogType ?? "website",
     },
     twitter: {
       card: "summary_large_image",

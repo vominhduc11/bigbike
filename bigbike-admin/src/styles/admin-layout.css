@@ -104,7 +104,13 @@ button.summary-card:focus-visible {
 
 .summary-card-hint {
   font-size: var(--admin-text-xs);
-  color: var(--admin-color-text-muted);
+  /* secondary, not muted — keeps caption readable on dark surfaces */
+  color: var(--admin-color-text-secondary);
+  line-height: 1.4;
+}
+
+.summary-card-trend {
+  display: flex;
 }
 
 @media (max-width: 640px) {
@@ -414,12 +420,6 @@ button.summary-card:focus-visible {
    Receivables-specific status badge palette
    Reuses generic .status-badge layout from index.css; just adds the tones.
    ═══════════════════════════════════════════════════════════════════════════ */
-.status-badge--ar-OPEN           { background: var(--admin-color-status-info-bg);    color: var(--admin-color-status-info-text);    border: 1px solid var(--admin-color-status-info-border); }
-.status-badge--ar-PARTIALLY_PAID { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); border: 1px solid var(--admin-color-status-warning-border); }
-.status-badge--ar-OVERDUE        { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text);  border: 1px solid var(--admin-color-status-danger-border); }
-.status-badge--ar-CLOSED         { background: var(--admin-color-status-success-bg); color: var(--admin-color-status-success-text); border: 1px solid var(--admin-color-status-success-border); }
-.status-badge--ar-WRITTEN_OFF    { background: var(--admin-color-status-neutral-bg); color: var(--admin-color-status-neutral-text); border: 1px solid var(--admin-color-border-subtle); }
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Tooltip-on-button helper (uses native title= for now;
    this class only ensures the cursor signals "more info").
@@ -588,16 +588,244 @@ button.summary-card:focus-visible {
   font-weight: 700;
 }
 
-/* Compact tables inside dashboard section cards */
-.dash-compact-table th,
-.dash-compact-table td {
-  padding: 10px var(--admin-space-4);
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
 }
-.dash-compact-table th {
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard — KPI trend pill
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dash-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--admin-text-xs);
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-full);
+}
+
+.dash-trend-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dash-trend--up {
+  color: var(--admin-color-status-success-text);
+  background: var(--admin-color-status-success-bg);
+}
+
+.dash-trend--down {
+  color: var(--admin-color-status-danger-text);
+  background: var(--admin-color-status-danger-bg);
+}
+
+.dash-trend--neutral {
+  color: var(--admin-color-text-secondary);
+  background: var(--admin-color-surface-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard — Attention action items (compact, severity-coded)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dash-attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2);
+}
+
+.dash-attention-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-3);
+  padding: var(--admin-space-3) var(--admin-space-4);
+  border: 1px solid var(--admin-color-border-subtle);
+  border-left-width: 3px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-color-surface-base);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color var(--admin-transition-fast),
+              border-color var(--admin-transition-fast);
+}
+
+.dash-attention-item:hover {
+  background: var(--admin-color-surface-hover);
+}
+
+.dash-attention-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--admin-color-brand-red-muted);
+}
+
+.dash-attention-item--danger  { border-left-color: var(--admin-color-status-danger-text); }
+.dash-attention-item--warning { border-left-color: var(--admin-color-status-warning-text); }
+.dash-attention-item--info    { border-left-color: var(--admin-color-status-info-text); }
+
+.dash-attention-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--admin-radius-sm);
+  flex-shrink: 0;
+}
+
+.dash-attention-item--danger  .dash-attention-icon { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text); }
+.dash-attention-item--warning .dash-attention-icon { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); }
+.dash-attention-item--info    .dash-attention-icon { background: var(--admin-color-status-info-bg);    color: var(--admin-color-status-info-text); }
+
+.dash-attention-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-attention-row {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2);
+  flex-wrap: wrap;
+}
+
+.dash-attention-label {
+  font-weight: 700;
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-primary);
+}
+
+.dash-attention-sev {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: var(--admin-radius-xs);
+}
+
+.dash-attention-sev--danger  { background: var(--admin-color-status-danger-bg);  color: var(--admin-color-status-danger-text); }
+.dash-attention-sev--warning { background: var(--admin-color-status-warning-bg); color: var(--admin-color-status-warning-text); }
+.dash-attention-sev--info    { background: var(--admin-color-status-info-bg);    color: var(--admin-color-status-info-text); }
+
+.dash-attention-hint {
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-text-secondary);
+  line-height: 1.4;
+}
+
+.dash-attention-count {
+  font-size: var(--admin-text-xl);
+  font-weight: 800;
+  color: var(--admin-color-text-primary);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dash-attention-cta {
+  font-size: var(--admin-text-xs);
+  font-weight: 600;
+  color: var(--admin-color-brand-red);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .dash-attention-cta { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard — inline empty state (keeps card framing, not an error look)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dash-empty {
+  padding: var(--admin-space-6) var(--admin-space-5);
+  text-align: center;
+}
+
+.dash-empty-title {
+  margin: 0;
+  font-size: var(--admin-text-sm);
+  font-weight: 700;
+  color: var(--admin-color-text-secondary);
+}
+
+.dash-empty-desc {
+  margin: 4px 0 0;
+  font-size: var(--admin-text-xs);
+  color: var(--admin-color-text-muted);
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard — section tables (no min-width → no desktop horizontal scroll)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dash-table-wrap {
+  /* horizontal scroll only kicks in on narrow viewports, never on desktop */
+  overflow-x: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* fixed layout lets the truncating cell yield width predictably */
+  table-layout: fixed;
+}
+
+.dash-table th,
+.dash-table td {
+  padding: 10px var(--admin-space-4);
+  vertical-align: middle;
+  text-align: left;
+}
+
+.dash-table th {
   font-size: var(--admin-text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--admin-color-text-secondary);
+  background: var(--admin-color-surface-muted);
+  border-bottom: 1.5px solid var(--admin-color-border-subtle);
+  white-space: nowrap;
 }
+
+.dash-table td {
+  font-size: var(--admin-text-sm);
+  color: var(--admin-color-text-primary);
+  border-top: 1px solid var(--admin-color-border-subtle);
+}
+
+.dash-table .dash-col-num {
+  text-align: right;
+}
+
+.dash-table .dash-col-rank {
+  width: 48px;
+  text-align: center;
+}
+
+/* Column sizing — Recent orders: number / customer(flex) / total / status */
+.dash-table--orders th:nth-child(1),
+.dash-table--orders td:nth-child(1) { width: 22%; }
+.dash-table--orders th:nth-child(3),
+.dash-table--orders td:nth-child(3) { width: 26%; }
+.dash-table--orders th:nth-child(4),
+.dash-table--orders td:nth-child(4) { width: 22%; }
+
+/* Top products: rank / product(flex) / units / revenue */
+.dash-table--products th:nth-child(3),
+.dash-table--products td:nth-child(3) { width: 84px; }
+.dash-table--products th:nth-child(4),
+.dash-table--products td:nth-child(4) { width: 30%; }
 
 .dash-cell-strong {
   font-weight: 600;
@@ -606,7 +834,7 @@ button.summary-card:focus-visible {
 }
 
 .dash-cell-truncate {
-  max-width: 180px;
+  max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -614,13 +842,30 @@ button.summary-card:focus-visible {
 }
 
 .dash-cell-product {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   color: var(--admin-color-text-primary);
-  font-size: var(--admin-text-sm);
-  line-height: 1.3;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.5; }
+.dash-table tbody tr {
+  transition: background-color var(--admin-transition-fast);
+}
+
+.dash-table tbody tr:hover {
+  background: var(--admin-color-surface-hover);
+}
+
+/* On tablet/mobile a minimum width keeps columns legible; the wrap scrolls. */
+@media (max-width: 720px) {
+  .dash-table {
+    min-width: 480px;
+    table-layout: auto;
+  }
+  .dash-cell-truncate,
+  .dash-cell-product {
+    max-width: 160px;
+  }
 }

@@ -104,6 +104,19 @@
   --bb-text-xl: 20px;
   --bb-text-3xl: 30px;
 
+  /* WP-parity exact font sizes — token hóa các cỡ chữ lệch scale chuẩn.
+     Expose thành Tailwind utility text-9 … text-40 trong globals.css @theme. */
+  --bb-text-9: 9px;
+  --bb-text-10: 10px;
+  --bb-text-11: 11px;
+  --bb-text-13: 13px;
+  --bb-text-15: 15px;
+  --bb-text-17: 17px;
+  --bb-text-22: 22px;
+  --bb-text-26: 26px;
+  --bb-text-32: 32px;
+  --bb-text-40: 40px;
+
   --bb-text-hero: 30px;
   --bb-text-h1: 32px;
   --bb-text-h2: 24px;

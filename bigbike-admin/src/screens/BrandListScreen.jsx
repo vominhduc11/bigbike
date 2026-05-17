@@ -4,6 +4,7 @@ import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { StatusBadge } from '../components/StatusBadge'
 import { fetchBrands } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -11,13 +12,14 @@ import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
   visibility: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,
-  pageSize: 8,
+  pageSize: 20,
 }
 
 export function BrandListScreen({ navigate, canUpdate }) {
@@ -70,11 +72,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
       {
         key: 'isVisible',
         label: t('brands.colVisibility'),
-        render: (brand) => (
-          <span className={brand.isVisible ? 'status-badge status-success' : 'status-badge status-neutral'}>
-            {brand.isVisible ? t('common.visible') : t('common.hidden')}
-          </span>
-        ),
+        render: (brand) => <StatusBadge type="visibility" status={brand.isVisible} />,
       },
       {
         key: 'updatedAt',
@@ -86,13 +84,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
         label: t('brands.colActions'),
         align: 'right',
         render: (brand) => (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate(`/admin/brands/${brand.id}`)}
-          >
+          <Button variant="outline" onClick={() => navigate(`/admin/brands/${brand.id}`)}>
             {t('common.edit')}
-          </button>
+          </Button>
         ),
       },
     ],
@@ -120,14 +114,9 @@ export function BrandListScreen({ navigate, canUpdate }) {
           <h1>{t('brands.title')}</h1>
           <p>{t('brands.description')}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => navigate('/admin/brands/new')}
-          disabled={!canUpdate}
-        >
+        <Button onClick={() => navigate('/admin/brands/new')} disabled={!canUpdate}>
           {canUpdate ? t('brands.create') : t('common.noPermission')}
-        </button>
+        </Button>
       </header>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
@@ -146,8 +135,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
           {t('brands.filterVisibility')}
           <Select
             value={query.visibility}
-            onValueChange={(event) =>
-              updateQuery({ visibility: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ visibility: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             <SelectItem value="VISIBLE">{t('common.visible')}</SelectItem>
@@ -158,8 +147,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
           {t('brands.filterSort')}
           <Select
             value={query.sort}
-            onValueChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ sort: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
             <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>

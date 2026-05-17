@@ -18,7 +18,9 @@ export function ErrorState({
       role="alert"
       aria-live="assertive"
     >
-      <h2 className="text-base font-bold text-foreground m-0">{title}</h2>
+      <h2 className="font-heading text-base font-semibold uppercase text-foreground m-0">
+        {title}
+      </h2>
       <p className="m-0 text-muted-foreground">{message}</p>
       {retryHref ? (
         <Button asChild variant="primary">

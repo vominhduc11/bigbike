@@ -63,7 +63,7 @@ export default async function ContactPage() {
         ]}
       />
 
-      <div className="w-full h-[375px] bg-[#f2f2f2]">
+      <div className="w-full h-[375px] bg-secondary">
         <iframe
           title="Bản đồ cửa hàng BigBike"
           src={mapEmbedSrc}

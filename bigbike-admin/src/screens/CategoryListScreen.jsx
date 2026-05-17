@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, ExternalLink, FolderTree, ImageOff, X } from 'lucide-react'
+import { ChevronRight, ExternalLink, FolderTree, ImageOff } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -22,6 +22,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { StatusBadge } from '../components/StatusBadge'
+import { BulkActionBar } from '../components/BulkActionBar'
+import { FilterChips } from '../components/FilterChips'
 import { fetchCategories, fetchCategoryTree, updateCategory } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -30,6 +33,7 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 
@@ -596,9 +600,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
         {/* Visibility badge */}
         <td>
-          <span className={category.isVisible ? 'status-badge status-success' : 'status-badge status-neutral'}>
-            {category.isVisible ? t('categories.visibleLabel') : t('categories.hiddenLabel')}
-          </span>
+          <StatusBadge type="visibility" status={category.isVisible} className="cat-status-badge" />
         </td>
 
         {/* Sort order — flat mode only */}
@@ -613,21 +615,23 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         <td className="align-right">
           <div className="cat-actions">
             {category.slug && (
-              <a
-                className="btn btn-icon btn-ghost btn-sm"
-                href={`${STOREFRONT_BASE}/${category.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t('categories.viewOnSite')}
-                aria-label={t('categories.viewOnSite')}
-              >
-                <ExternalLink size={14} aria-hidden="true" />
-              </a>
+              <Button asChild variant="ghost" size="icon">
+                <a
+                  href={`${STOREFRONT_BASE}/${category.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t('categories.viewOnSite')}
+                  aria-label={t('categories.viewOnSite')}
+                >
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              </Button>
             )}
             {canUpdate && (
-              <button
-                type="button"
-                className={`btn btn-sm ${category.isVisible ? 'btn-ghost-danger' : 'btn-ghost-success'}`}
+              <Button
+                variant="outline"
+                size="sm"
+                className={category.isVisible ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}
                 disabled={toggleVisibilityMutation.isPending || Boolean(bulkProgress)}
                 onClick={() => handleToggleVisibility(category)}
                 title={category.isVisible ? t('categories.hideAction') : t('categories.restoreAction')}
@@ -637,7 +641,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   : category.isVisible
                     ? t('categories.unpublishAction')
                     : t('categories.republishAction')}
-              </button>
+              </Button>
             )}
           </div>
         </td>
@@ -662,6 +666,47 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     })
   }
 
+  const sortLabelKey = query.sort === 'updatedAt:desc'
+    ? 'newestUpdated'
+    : query.sort === 'updatedAt:asc'
+      ? 'oldestUpdated'
+      : query.sort === 'name:asc'
+        ? 'nameAZ'
+        : 'sortOrder'
+
+  const activeFilterChips = []
+  if (query.search) {
+    activeFilterChips.push({
+      key: 'search',
+      label: t('categories.filterChipSearch', { value: query.search }),
+      removeLabel: t('categories.removeFilter', { filter: t('common.search') }),
+      onRemove: () => {
+        setSearchInput('')
+        updateQuery({ search: '' }, { resetPage: true })
+      },
+    })
+  }
+  if (query.visibility !== 'ALL') {
+    activeFilterChips.push({
+      key: 'visibility',
+      label: t('categories.filterChipVisibility', {
+        value: query.visibility === 'VISIBLE'
+          ? t('categories.filterVisibilityVisible')
+          : t('categories.filterVisibilityHidden'),
+      }),
+      removeLabel: t('categories.removeFilter', { filter: t('categories.filterVisibility') }),
+      onRemove: () => updateQuery({ visibility: 'ALL' }, { resetPage: true }),
+    })
+  }
+  if (query.sort !== 'sortOrder:asc') {
+    activeFilterChips.push({
+      key: 'sort',
+      label: t('categories.filterChipSort', { value: t(`sort.${sortLabelKey}`) }),
+      removeLabel: t('categories.removeFilter', { filter: t('categories.filterSort') }),
+      onRemove: () => updateQuery({ sort: 'sortOrder:asc' }, { resetPage: true }),
+    })
+  }
+
   return (
     <section className="screen">
       <header className="screen-header">
@@ -670,14 +715,9 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <h1>{t('categories.title')}</h1>
           <p>{t('categories.description')}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => navigate('/admin/categories/new')}
-          disabled={!canUpdate}
-        >
+        <Button onClick={() => navigate('/admin/categories/new')} disabled={!canUpdate}>
           {canUpdate ? t('categories.create') : t('common.noPermission')}
-        </button>
+        </Button>
       </header>
 
       {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
@@ -696,8 +736,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {t('categories.filterVisibility')}
           <Select
             value={query.visibility}
-            onValueChange={(event) =>
-              updateQuery({ visibility: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ visibility: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('categories.filterVisibilityAll')}</SelectItem>
             <SelectItem value="VISIBLE">{t('categories.filterVisibilityVisible')}</SelectItem>
@@ -708,8 +748,8 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {t('categories.filterSort')}
           <Select
             value={query.sort}
-            onValueChange={(event) =>
-              updateQuery({ sort: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ sort: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="sortOrder:asc">{t('sort.sortOrder')}</SelectItem>
             <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
@@ -719,12 +759,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </label>
         {useTreeMode && (
           <div className="filter-bar-actions">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={expandAll}>
+            <Button variant="ghost" size="sm" onClick={expandAll}>
               {t('categories.expandAll')}
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={collapseAll}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={collapseAll}>
               {t('categories.collapseAll')}
-            </button>
+            </Button>
           </div>
         )}
       </section>
@@ -732,96 +772,37 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {/* Active filter chips. Visible only when at least one filter
           differs from the default — gives users a quick way to see and
           undo what's narrowing the list. */}
-      {(query.search || query.visibility !== 'ALL' || query.sort !== 'sortOrder:asc') && (
-        <div className="filter-chips" aria-label={t('categories.activeFiltersAria')}>
-          {query.search && (
-            <button
-              type="button"
-              className="filter-chip"
-              onClick={() => { setSearchInput(''); updateQuery({ search: '' }, { resetPage: true }) }}
-              aria-label={t('categories.removeFilter', { filter: t('common.search') })}
-            >
-              <span>{t('categories.filterChipSearch', { value: query.search })}</span>
-              <X size={12} aria-hidden="true" />
-            </button>
-          )}
-          {query.visibility !== 'ALL' && (
-            <button
-              type="button"
-              className="filter-chip"
-              onClick={() => updateQuery({ visibility: 'ALL' }, { resetPage: true })}
-              aria-label={t('categories.removeFilter', { filter: t('categories.filterVisibility') })}
-            >
-              <span>{t('categories.filterChipVisibility', {
-                value: query.visibility === 'VISIBLE'
-                  ? t('categories.filterVisibilityVisible')
-                  : t('categories.filterVisibilityHidden'),
-              })}</span>
-              <X size={12} aria-hidden="true" />
-            </button>
-          )}
-          {query.sort !== 'sortOrder:asc' && (
-            <button
-              type="button"
-              className="filter-chip"
-              onClick={() => updateQuery({ sort: 'sortOrder:asc' }, { resetPage: true })}
-              aria-label={t('categories.removeFilter', { filter: t('categories.filterSort') })}
-            >
-              <span>{t('categories.filterChipSort', { value: t('sort.' + (
-                query.sort === 'updatedAt:desc' ? 'newestUpdated'
-                  : query.sort === 'updatedAt:asc' ? 'oldestUpdated'
-                    : query.sort === 'name:asc' ? 'nameAZ'
-                      : 'sortOrder'
-              )) })}</span>
-              <X size={12} aria-hidden="true" />
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm filter-chip-reset"
-            onClick={resetFilters}
-          >
-            {t('common.resetFilters')}
-          </button>
-        </div>
-      )}
+      <FilterChips
+        chips={activeFilterChips}
+        onClearAll={resetFilters}
+        clearAllLabel={t('common.resetFilters')}
+        removeChipLabel={t('common.clear')}
+        ariaLabel={t('categories.activeFiltersAria')}
+      />
 
       {/* ── Bulk action bar ── */}
-      {canUpdate && selectedIds.size > 0 && (
-        <div className="bulk-action-bar">
-          <span>
-            {bulkProgress
-              ? t('categories.bulkProcessing', { done: bulkProgress.done, total: bulkProgress.total })
-              : t('categories.bulkSelectedCount', { count: selectedIds.size })}
-          </span>
-          <div className="bulk-action-bar-actions">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={clearSelection}
-              disabled={Boolean(bulkProgress)}
-            >
-              {t('categories.bulkClear')}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => runBulkVisibility(true)}
-              disabled={Boolean(bulkProgress)}
-            >
-              {t('categories.bulkShow')}
-            </button>
-            <button
-              type="button"
-              className="btn btn-danger btn-sm"
-              onClick={() => runBulkVisibility(false)}
-              disabled={Boolean(bulkProgress)}
-            >
-              {t('categories.bulkHide')}
-            </button>
-          </div>
-        </div>
-      )}
+      <BulkActionBar
+        selectedCount={canUpdate && selectedIds.size > 0
+          ? (bulkProgress
+            ? t('categories.bulkProcessing', { done: bulkProgress.done, total: bulkProgress.total })
+            : t('categories.bulkSelectedCount', { count: selectedIds.size }))
+          : null}
+        onClear={clearSelection}
+        closeLabel={t('categories.bulkClear')}
+        actions={[
+          {
+            label: t('categories.bulkShow'),
+            onClick: () => runBulkVisibility(true),
+            disabled: Boolean(bulkProgress),
+          },
+          {
+            label: t('categories.bulkHide'),
+            tone: 'danger',
+            onClick: () => runBulkVisibility(false),
+            disabled: Boolean(bulkProgress),
+          },
+        ]}
+      />
 
       {/* ── Tree mode ── */}
       {useTreeMode && (
@@ -851,7 +832,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   {Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="skel-row">
                       {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                        <td key={j}><span className="bb-skel" style={{ width: '80%', height: 18 }} /></td>
+                        <td key={j}><span className="bb-skel w-4/5 h-[18px]" /></td>
                       ))}
                     </tr>
                   ))}
@@ -871,14 +852,14 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               </p>
               <div className="cat-empty-actions">
                 {(searchTerm || query.visibility !== 'ALL' || query.sort !== 'sortOrder:asc') && (
-                  <button type="button" className="btn btn-secondary" onClick={resetFilters}>
+                  <Button variant="outline" onClick={resetFilters}>
                     {t('common.resetFilters')}
-                  </button>
+                  </Button>
                 )}
                 {canUpdate && (
-                  <button type="button" className="btn btn-primary" onClick={() => navigate('/admin/categories/new')}>
+                  <Button onClick={() => navigate('/admin/categories/new')}>
                     {t('categories.create')}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -981,7 +962,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                       ? Array.from({ length: query.pageSize }).map((_, i) => (
                           <tr key={i} className="skel-row">
                             {Array.from({ length: canUpdate ? 7 : 6 }).map((__, j) => (
-                              <td key={j}><span className="bb-skel" style={{ width: '80%', height: 18 }} /></td>
+                              <td key={j}><span className="bb-skel w-4/5 h-[18px]" /></td>
                             ))}
                           </tr>
                         ))

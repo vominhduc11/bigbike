@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.menu;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "menu_items")
+@Getter
+@Setter
 public class MenuItemEntity {
 
     @Id
@@ -60,45 +64,4 @@ public class MenuItemEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public MenuEntity getMenu() { return menu; }
-    public void setMenu(MenuEntity menu) { this.menu = menu; }
-
-    public UUID getParentId() { return parentId; }
-    public void setParentId(UUID parentId) { this.parentId = parentId; }
-
-    public String getLabel() { return label; }
-    public void setLabel(String label) { this.label = label; }
-
-    public String getUrl() { return url; }
-    public void setUrl(String url) { this.url = url; }
-
-    public String getTargetType() { return targetType; }
-    public void setTargetType(String targetType) { this.targetType = targetType; }
-
-    public UUID getTargetId() { return targetId; }
-    public void setTargetId(UUID targetId) { this.targetId = targetId; }
-
-    public int getSortOrder() { return sortOrder; }
-    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
-
-    public boolean isOpenInNewTab() { return openInNewTab; }
-    public void setOpenInNewTab(boolean openInNewTab) { this.openInNewTab = openInNewTab; }
-
-    public String getCssClass() { return cssClass; }
-    public void setCssClass(String cssClass) { this.cssClass = cssClass; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public Long getLegacyId() { return legacyId; }
-    public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

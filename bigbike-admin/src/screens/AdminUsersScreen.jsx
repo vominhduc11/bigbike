@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Eye, EyeOff } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { createAdminUser, fetchAdminUsers, fetchRoles, updateAdminUser } from '../lib/adminApi'
+import { createAdminUser, fetchAdminUsers, fetchRoles, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
+import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
@@ -14,38 +19,56 @@ const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' 
 
 // Static metadata for built-in roles (label i18n key + badge color)
 const ROLE_META = {
-  SUPER_ADMIN:  { labelKey: 'adminUsers.roleSuperAdmin',  color: '#c0392b', bg: '#fdecea' },
-  ADMIN:        { labelKey: 'adminUsers.roleAdmin',        color: '#1a56db', bg: '#ebf5ff' },
-  SHOP_MANAGER: { labelKey: 'adminUsers.roleShopManager',  color: '#0770a2', bg: '#e1f0fa' },
-  EDITOR:       { labelKey: 'adminUsers.roleEditor',       color: '#6741d9', bg: '#f0ebff' },
-  AUTHOR:       { labelKey: 'adminUsers.roleAuthor',       color: '#1e6091', bg: '#e8f4fd' },
-  CONTRIBUTOR:  { labelKey: 'adminUsers.roleContributor',  color: '#495057', bg: '#f1f3f5' },
-  SEO_EDITOR:   { labelKey: 'adminUsers.roleSeoEditor',    color: '#087f5b', bg: '#e6fcf5' },
+  SUPER_ADMIN:  { labelKey: 'adminUsers.roleSuperAdmin'  },
+  ADMIN:        { labelKey: 'adminUsers.roleAdmin'        },
+  SHOP_MANAGER: { labelKey: 'adminUsers.roleShopManager'  },
+  EDITOR:       { labelKey: 'adminUsers.roleEditor'       },
+  AUTHOR:       { labelKey: 'adminUsers.roleAuthor'       },
+  CONTRIBUTOR:  { labelKey: 'adminUsers.roleContributor'  },
+  SEO_EDITOR:   { labelKey: 'adminUsers.roleSeoEditor'    },
 }
 
 const STATUS_META = {
-  ACTIVE:    { labelKey: 'adminUsers.statusActive',    color: 'var(--admin-color-status-success-text)', bg: 'var(--admin-color-status-success-bg)' },
-  DISABLED:  { labelKey: 'adminUsers.statusDisabled',  color: 'var(--admin-color-status-danger-text)',  bg: 'var(--admin-color-status-danger-bg)' },
-  SUSPENDED: { labelKey: 'adminUsers.statusSuspended', color: 'var(--admin-color-status-warning-text)', bg: 'var(--admin-color-status-warning-bg)' },
+  ACTIVE:    { labelKey: 'adminUsers.statusActive'    },
+  DISABLED:  { labelKey: 'adminUsers.statusDisabled'  },
+  SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
+}
+
+const ROLE_BADGE_VARIANTS = {
+  SUPER_ADMIN: 'danger',
+  ADMIN: 'info',
+  SHOP_MANAGER: 'info',
+  EDITOR: 'secondary',
+  AUTHOR: 'info',
+  CONTRIBUTOR: 'muted',
+  SEO_EDITOR: 'success',
+}
+
+const STATUS_BADGE_VARIANTS = {
+  ACTIVE: 'success',
+  DISABLED: 'danger',
+  SUSPENDED: 'warning',
 }
 
 function RoleBadge({ role, t }) {
   const meta = ROLE_META[role]
   const label = meta ? t(meta.labelKey) : role
+  const variant = ROLE_BADGE_VARIANTS[role] ?? 'muted'
   return (
-    <span className="au-badge" style={meta ? { color: meta.color, background: meta.bg } : {}}>
+    <Badge variant={variant}>
       {label || '—'}
-    </span>
+    </Badge>
   )
 }
 
 function StatusBadge({ status, t }) {
   const meta = STATUS_META[status]
   const label = meta ? t(meta.labelKey) : status
+  const variant = STATUS_BADGE_VARIANTS[status] ?? 'muted'
   return (
-    <span className="au-badge" style={meta ? { color: meta.color, background: meta.bg } : {}}>
+    <Badge variant={variant}>
       {label || '—'}
-    </span>
+    </Badge>
   )
 }
 
@@ -62,41 +85,29 @@ function PasswordField({ value, onChange, placeholder, label, hint }) {
           placeholder={placeholder}
           autoComplete="new-password"
          />
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary btn-sm"
+          variant="outline"
+          size="sm"
           onClick={() => setShow((s) => !s)}
-          style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+          aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+          className="shrink-0 whitespace-nowrap"
         >
-          {show ? '🙈' : '👁'}
-        </button>
+          {show ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+        </Button>
       </div>
       {hint && <span className="au-field-hint">{hint}</span>}
     </label>
   )
 }
 
-function ConfirmDialog({ title, message, onConfirm, onCancel, t }) {
-  return (
-    <div className="au-modal-overlay" onClick={onCancel}>
-      <div className="au-modal au-modal--sm" onClick={(e) => e.stopPropagation()}>
-        <h3 className="au-modal-title">{title}</h3>
-        <p className="au-modal-body">{message}</p>
-        <div className="au-modal-footer">
-          <button type="button" className="btn btn-secondary" onClick={onCancel}>
-            {t('adminUsers.confirmNo')}
-          </button>
-          <button type="button" className="btn btn-primary" onClick={onConfirm}>
-            {t('adminUsers.confirmYes')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
-export function AdminUsersScreen({ canUpdate }) {
+export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const { t } = useTranslation()
+
+  // Self-edit guard: an admin must not be able to change their own role or
+  // disable/suspend their own account, which would lock themselves out.
+  // Editing own display name / password stays allowed.
 
   // ── List state ──────────────────────────────────────────────────────────
   const [query, setQuery] = useState(INITIAL_QUERY)
@@ -131,10 +142,9 @@ export function AdminUsersScreen({ canUpdate }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ email: '', displayName: '', role: 'ADMIN', password: '' })
   const [createError, setCreateError] = useState('')
+  const [createFieldErrors, setCreateFieldErrors] = useState({})
   const [createSaving, setCreateSaving] = useState(false)
 
-  // ── Confirm dialog state ────────────────────────────────────────────────
-  const [confirm, setConfirm] = useState(null) // { title, message, onConfirm }
 
   // ── Load list ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -179,6 +189,7 @@ export function AdminUsersScreen({ canUpdate }) {
   function closeCreate() {
     setCreateOpen(false)
     setCreateError('')
+    setCreateFieldErrors({})
   }
 
   function handleFilterChange(field, value) {
@@ -189,27 +200,18 @@ export function AdminUsersScreen({ canUpdate }) {
   }
 
   // Submit edit — with confirmation for sensitive changes
-  function requestEditSubmit() {
+  async function requestEditSubmit() {
     const statusChanged = editForm.status !== editUser.status
     const roleChanged = editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
     const sensitiveRole = roleChanged
 
     if (sensitiveStatus) {
-      setConfirm({
-        title: t('adminUsers.confirmSensitiveTitle'),
-        message: t('adminUsers.confirmDisable'),
-        onConfirm: () => { setConfirm(null); submitEdit() },
-      })
-      return
-    }
-    if (sensitiveRole) {
-      setConfirm({
-        title: t('adminUsers.confirmSensitiveTitle'),
-        message: t('adminUsers.confirmRoleChange'),
-        onConfirm: () => { setConfirm(null); submitEdit() },
-      })
-      return
+      const ok = await showConfirm(t('adminUsers.confirmDisable'), t('adminUsers.confirmSensitiveTitle'))
+      if (!ok) return
+    } else if (sensitiveRole) {
+      const ok = await showConfirm(t('adminUsers.confirmRoleChange'), t('adminUsers.confirmSensitiveTitle'))
+      if (!ok) return
     }
     submitEdit()
   }
@@ -220,10 +222,13 @@ export function AdminUsersScreen({ canUpdate }) {
     setEditError('')
     setEditSuccess(false)
     try {
+      // Never send role/status changes for the current user's own account —
+      // the form locks those fields, this is the defensive backstop.
+      const editingSelf = currentUserId != null && editUser.id === currentUserId
       const payload = {
         displayName: editForm.displayName.trim() || undefined,
-        status: editForm.status || undefined,
-        role: editForm.role || undefined,
+        status: editingSelf ? undefined : (editForm.status || undefined),
+        role: editingSelf ? undefined : (editForm.role || undefined),
         newPassword: editForm.newPassword.trim() || undefined,
       }
       const r = await updateAdminUser(editUser.id, payload)
@@ -238,12 +243,13 @@ export function AdminUsersScreen({ canUpdate }) {
     } finally {
       setEditSaving(false)
     }
-  }, [editUser, editForm, t])
+  }, [editUser, editForm, currentUserId, t])
 
   async function handleCreate(e) {
     e.preventDefault()
     setCreateSaving(true)
     setCreateError('')
+    setCreateFieldErrors({})
     try {
       const r = await createAdminUser({
         email: createForm.email.trim(),
@@ -254,7 +260,12 @@ export function AdminUsersScreen({ canUpdate }) {
       setListState((p) => ({ ...p, items: [r.item, ...p.items] }))
       closeCreate()
     } catch (err) {
-      setCreateError(err.message || t('common.error'))
+      const fieldErrs = mapValidationErrors(err)
+      if (Object.keys(fieldErrs).length > 0) {
+        setCreateFieldErrors(fieldErrs)
+      } else {
+        setCreateError(err.message || t('common.error'))
+      }
     } finally {
       setCreateSaving(false)
     }
@@ -267,8 +278,8 @@ export function AdminUsersScreen({ canUpdate }) {
       label: t('adminUsers.colUser'),
       render: (u) => (
         <div>
-          <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{u.displayName || u.email}</div>
-          {u.displayName && <div style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-secondary)' }}>{u.email}</div>}
+          <div className="text-sm font-semibold">{u.displayName || u.email}</div>
+          {u.displayName && <div className="text-xs text-muted-foreground">{u.email}</div>}
         </div>
       ),
     },
@@ -285,21 +296,22 @@ export function AdminUsersScreen({ canUpdate }) {
     {
       key: 'lastLoginAt',
       label: t('adminUsers.colLastLogin'),
-      render: (u) => u.lastLoginAt ? formatDateTime(u.lastLoginAt) : <span style={{ color: 'var(--admin-color-text-muted)' }}>{t('adminUsers.notLastLogin')}</span>,
+      render: (u) => u.lastLoginAt ? formatDateTime(u.lastLoginAt) : <span className="text-muted-foreground">{t('adminUsers.notLastLogin')}</span>,
     },
     canUpdate ? {
       key: 'actions',
       label: '',
       align: 'right',
       render: (u) => (
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>
+        <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
           {t('common.edit')}
-        </button>
+        </Button>
       ),
     } : null,
   ].filter(Boolean), [canUpdate, t])
 
   // ── Derived ──────────────────────────────────────────────────────────────
+  const isSelf = editUser != null && currentUserId != null && editUser.id === currentUserId
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
   const isEmptyResult = listState.status === 'success' && listState.items.length === 0
 
@@ -313,9 +325,9 @@ export function AdminUsersScreen({ canUpdate }) {
         </div>
         {canUpdate && (
           <div className="screen-actions">
-            <button type="button" className="btn btn-primary" onClick={openCreate}>
+            <Button onClick={openCreate}>
               {t('adminUsers.createBtn')}
-            </button>
+            </Button>
           </div>
         )}
       </header>
@@ -411,23 +423,39 @@ export function AdminUsersScreen({ canUpdate }) {
       )}
 
       {/* ── Edit Drawer ──────────────────────────────────────────────────── */}
-      {editUser && (
-        <div className="audit-drawer-overlay" onClick={closeEdit}>
-          <div className="audit-drawer" onClick={(e) => e.stopPropagation()}>
-            <header className="audit-drawer-header">
-              <h2 className="audit-drawer-title">{t('adminUsers.editTitle')}</h2>
-              <button type="button" className="btn-icon" onClick={closeEdit} aria-label={t('common.close')}>✕</button>
-            </header>
-            <div className="audit-drawer-body" style={{ gap: 0 }}>
+      <Modal
+        open={Boolean(editUser)}
+        title={t('adminUsers.editTitle')}
+        onClose={closeEdit}
+        wide
+        actions={
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={closeEdit}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="button" size="sm" loading={editSaving} onClick={requestEditSubmit}>
+              {t('adminUsers.saveBtn')}
+            </Button>
+          </>
+        }
+      >
+        {editUser && (
+          <>
+            <div className="audit-drawer-body !gap-0">
               {editError && (
-                <p style={{ color: 'var(--c-danger)', marginBottom: '1rem', fontSize: '0.875rem' }}>{editError}</p>
+                <p className="mb-4 text-sm text-danger">{editError}</p>
               )}
               {editSuccess && !editError && (
-                <p style={{ color: 'var(--c-success)', marginBottom: '1rem', fontSize: '0.875rem' }}>{t('adminUsers.saveSuccess')}</p>
+                <p className="mb-4 text-sm text-success">{t('adminUsers.saveSuccess')}</p>
               )}
 
               <div className="au-drawer-section">
                 <h3 className="au-drawer-section-title">{t('adminUsers.sectionAccount')}</h3>
+                {isSelf && (
+                  <p className="mb-3 rounded-xs border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning">
+                    {t('adminUsers.selfEditLocked')}
+                  </p>
+                )}
                 <div className="au-form-grid">
                   <label className="au-field">
                     <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
@@ -440,6 +468,7 @@ export function AdminUsersScreen({ canUpdate }) {
                     <span className="au-field-label">{t('adminUsers.formRole')}</span>
                     <Select
                       value={editForm.role}
+                      disabled={isSelf}
                       onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
                     ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                       {roleOptions.map((r) => {
@@ -456,6 +485,7 @@ export function AdminUsersScreen({ canUpdate }) {
                     <span className="au-field-label">{t('adminUsers.formStatus')}</span>
                     <Select
                       value={editForm.status}
+                      disabled={isSelf}
                       onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
                     ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                       {Object.entries(STATUS_META).map(([key, meta]) => (
@@ -466,7 +496,7 @@ export function AdminUsersScreen({ canUpdate }) {
                 </div>
               </div>
 
-              <div className="au-drawer-section" style={{ marginTop: '1.5rem' }}>
+              <div className="au-drawer-section mt-6">
                 <h3 className="au-drawer-section-title">{t('adminUsers.sectionPassword')}</h3>
                 <PasswordField
                   value={editForm.newPassword}
@@ -477,102 +507,60 @@ export function AdminUsersScreen({ canUpdate }) {
                 />
               </div>
 
-              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={editSaving}
-                  onClick={requestEditSubmit}
-                >
-                  {editSaving ? t('common.saving') : t('adminUsers.saveBtn')}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={closeEdit}>
-                  {t('common.cancel')}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* ── Create Modal ─────────────────────────────────────────────────── */}
-      {createOpen && (
-        <div className="au-modal-overlay" onClick={closeCreate}>
-          <div className="au-modal" onClick={(e) => e.stopPropagation()}>
-            <header className="au-modal-header">
-              <h2 className="au-modal-title">{t('adminUsers.createTitle')}</h2>
-              <button type="button" className="btn-icon" onClick={closeCreate} aria-label={t('common.close')}>✕</button>
-            </header>
-            <form onSubmit={handleCreate}>
-              <div className="au-modal-body">
-                {createError && (
-                  <p style={{ color: 'var(--c-danger)', marginBottom: '1rem', fontSize: '0.875rem' }}>{createError}</p>
-                )}
-                <div className="au-form-grid">
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formEmail')}</span>
-                    <Input
-                      type="email"
-                      value={createForm.email}
-                      onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
-                      required
-                     />
-                  </label>
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
-                    <Input
-                      value={createForm.displayName}
-                      onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))}
-                      required
-                     />
-                  </label>
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formRole')}</span>
-                    <Select
-                      value={createForm.role}
-                      onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}
-                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                      {roleOptions.map((r) => {
-                        const meta = ROLE_META[r]
-                        return (
-                          <SelectItem key={r} value={r}>
-                            {meta ? t(meta.labelKey) : r}
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent></Select>
-                  </label>
-                  <PasswordField
-                    value={createForm.password}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
-                    label={t('adminUsers.formPassword')}
-                    hint={t('adminUsers.formPasswordStrengthHint')}
-                  />
-                </div>
-              </div>
-              <div className="au-modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={closeCreate}>
-                  {t('common.cancel')}
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={createSaving}>
-                  {createSaving ? t('common.saving') : t('adminUsers.createBtn')}
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={createOpen}
+        title={t('adminUsers.createTitle')}
+        onClose={closeCreate}
+        actions={
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={closeCreate}>{t('common.cancel')}</Button>
+            <Button type="submit" form="create-user-form" size="sm" loading={createSaving}>
+              {t('adminUsers.createBtn')}
+            </Button>
+          </>
+        }
+      >
+        <form id="create-user-form" onSubmit={handleCreate} className="flex flex-col gap-3">
+          {createError && <p className="text-sm text-destructive">{createError}</p>}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">{t('adminUsers.formEmail')}</label>
+            <Input type="email" value={createForm.email}
+              onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} required />
+            {createFieldErrors.email && <p className="text-xs text-destructive">{createFieldErrors.email}</p>}
           </div>
-        </div>
-      )}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">{t('adminUsers.formDisplayName')}</label>
+            <Input value={createForm.displayName}
+              onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))} required />
+            {createFieldErrors.displayName && <p className="text-xs text-destructive">{createFieldErrors.displayName}</p>}
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">{t('adminUsers.formRole')}</label>
+            <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {roleOptions.map((r) => {
+                  const meta = ROLE_META[r]
+                  return <SelectItem key={r} value={r}>{meta ? t(meta.labelKey) : r}</SelectItem>
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <PasswordField
+            value={createForm.password}
+            onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+            label={t('adminUsers.formPassword')}
+            hint={createFieldErrors.password || t('adminUsers.formPasswordStrengthHint')}
+          />
+        </form>
+      </Modal>
 
-      {/* ── Confirm Dialog ───────────────────────────────────────────────── */}
-      {confirm && (
-        <ConfirmDialog
-          title={confirm.title}
-          message={confirm.message}
-          onConfirm={confirm.onConfirm}
-          onCancel={() => setConfirm(null)}
-          t={t}
-        />
-      )}
     </section>
   )
 }

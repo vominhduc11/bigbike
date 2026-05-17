@@ -18,6 +18,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
@@ -38,10 +39,10 @@ const HOMEPAGE_BLOCK_LIMITS = {
   FEATURED_GRID: 12,
   RECOMMENDED_CAROUSEL: 10,
 }
-const HOMEPAGE_BLOCK_LABELS = {
-  NONE: 'Không hiển thị trang chủ',
-  FEATURED_GRID: 'Sản phẩm nổi bật (grid)',
-  RECOMMENDED_CAROUSEL: 'Gợi ý dành cho bạn (carousel)',
+const HOMEPAGE_BLOCK_LABEL_KEYS = {
+  NONE: 'products.hbNone',
+  FEATURED_GRID: 'products.hbFeatured',
+  RECOMMENDED_CAROUSEL: 'products.hbRecommended',
 }
 
 export function ProductListScreen({ navigate, canUpdate }) {
@@ -87,9 +88,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
       } catch { /* quota */ }
       navigate('/admin/products/new')
     } catch {
-      toast.error('Không thể tải dữ liệu sản phẩm để sao chép.')
+      toast.error(t('products.dupLoadError'))
     }
-  }, [navigate])
+  }, [navigate, t])
 
   const handleDelete = useCallback(async (product) => {
     const confirmed = await showConfirm(
@@ -103,7 +104,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
       await softDeleteProduct(product.id)
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-      toast.success(t('products.deleteSuccess', { defaultValue: 'Đã xoá sản phẩm' }))
+      toast.success(t('products.deleteSuccess'))
     } catch (error) {
       const message = error instanceof ApiClientError
         ? error.message
@@ -116,8 +117,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   const handleRestore = useCallback(async (product) => {
     const confirmed = await showConfirm(
-      t('products.restoreConfirm', { defaultValue: `Khôi phục "${product.name}" từ thùng rác?` }),
-      t('products.restoreConfirmTitle', { defaultValue: 'Khôi phục sản phẩm' }),
+      t('products.restoreConfirm', { name: product.name }),
+      t('products.restoreConfirmTitle'),
+      { variant: 'default', confirmLabel: t('products.restore') },
     )
     if (!confirmed) return
 
@@ -126,11 +128,11 @@ export function ProductListScreen({ navigate, canUpdate }) {
       await restoreProduct(product.id)
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-      toast.success(t('products.restoreSuccess', { defaultValue: 'Đã khôi phục sản phẩm' }))
+      toast.success(t('products.restoreSuccess'))
     } catch (error) {
       const message = error instanceof ApiClientError
         ? error.message
-        : (error?.message || t('products.restoreError', { defaultValue: 'Không thể khôi phục sản phẩm' }))
+        : (error?.message || t('products.restoreError'))
       toast.error(message)
     } finally {
       setRestoringId(null)
@@ -192,20 +194,20 @@ export function ProductListScreen({ navigate, canUpdate }) {
       },
       {
         key: 'homepage',
-        label: 'Trang chủ',
+        label: t('products.colHomepage'),
         render: (product) => {
           const block = product.homepageBlock
           if (!block || block === 'NONE') {
-            return <span style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>—</span>
+            return <span className="text-muted-foreground">—</span>
           }
-          const label = block === 'FEATURED_GRID' ? 'Nổi bật (grid)' : 'Gợi ý (carousel)'
+          const label = block === 'FEATURED_GRID' ? t('products.homepageFeatured') : t('products.homepageRecommended')
           const orderText = Number.isFinite(product.homepageOrder)
             ? ` · #${product.homepageOrder}`
             : ''
           return (
-            <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
-              <strong style={{ fontSize: 12 }}>{label}</strong>
-              {orderText && <small style={{ color: 'var(--admin-color-text-muted, #8a8a8a)' }}>Thứ tự{orderText}</small>}
+            <span className="inline-flex flex-col gap-0.5">
+              <strong className="text-xs">{label}</strong>
+              {orderText && <small className="text-xs text-muted-foreground">{t('products.homepageOrderLabel')}{orderText}</small>}
             </span>
           )
         },
@@ -225,43 +227,36 @@ export function ProductListScreen({ navigate, canUpdate }) {
             const isTrashed = product.publishStatus === 'TRASH'
             return (
               <div className="row-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => navigate(`/admin/products/${product.id}`)}
-              >
+              <Button variant="outline" onClick={() => navigate(`/admin/products/${product.id}`)}>
                 {t('common.edit')}
-              </button>
+              </Button>
                 {canUpdate && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
+                  <Button
+                    variant="outline"
                     onClick={() => handleDuplicate(product)}
-                    title="Sao chép sản phẩm này sang sản phẩm mới"
+                    title={t('products.duplicateTitle')}
                   >
-                    Sao chép
-                  </button>
+                    {t('products.duplicate')}
+                  </Button>
                 )}
                 {canUpdate && isTrashed && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
+                  <Button
+                    variant="outline"
                     onClick={() => handleRestore(product)}
                     disabled={isDeleting || isRestoring}
-                    title={t('products.restoreConfirmTitle', { defaultValue: 'Khôi phục sản phẩm' })}
+                    title={t('products.restoreConfirmTitle')}
                   >
-                    {isRestoring ? t('products.restoringLabel', { defaultValue: 'Đang khôi phục…' }) : t('products.restore', { defaultValue: 'Khôi phục' })}
-                  </button>
+                    {isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                  </Button>
                 )}
-                <button
-                  type="button"
-                  className="btn btn-danger"
+                <Button
+                  variant="danger"
                   onClick={() => handleDelete(product)}
                   disabled={!canUpdate || isDeleting || isRestoring || isTrashed}
                   title={isTrashed ? t('products.trashedTitle') : t('products.deleteConfirmTitle')}
                 >
                   {isDeleting ? t('products.deletingLabel') : t('common.delete')}
-                </button>
+                </Button>
               </div>
             )
           },
@@ -291,21 +286,18 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <h1>{t('products.title')}</h1>
           <p>{t('products.description')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="flex items-center gap-2">
           <ExportButton
-            label="Xuất CSV"
             filename={`products_${new Date().toISOString().slice(0,10)}.csv`}
             onExport={() => exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })}
           />
-          <button
-            type="button"
-            className="btn btn-primary"
+          <Button
             onClick={() => navigate('/admin/products/new')}
             disabled={!canUpdate}
             title={!canUpdate ? t('products.requirePermission') : undefined}
           >
             {canUpdate ? t('products.create') : t('common.noPermission')}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -379,15 +371,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
         </label>
 
         <label>
-          Khối trang chủ
+          {t('products.filterHomepageBlock')}
           <Select
             value={query.homepageBlock}
             onValueChange={(val) => updateQuery({ homepageBlock: val }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="NONE">Không trên trang chủ</SelectItem>
-            <SelectItem value="FEATURED_GRID">Nổi bật (grid)</SelectItem>
-            <SelectItem value="RECOMMENDED_CAROUSEL">Gợi ý (carousel)</SelectItem>
+            <SelectItem value="NONE">{t('products.homepageNone')}</SelectItem>
+            <SelectItem value="FEATURED_GRID">{t('products.homepageFeatured')}</SelectItem>
+            <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.homepageRecommended')}</SelectItem>
           </SelectContent></Select>
         </label>
 
@@ -402,7 +394,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
             <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
             <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
             <SelectItem value="name:desc">{t('sort.nameZA')}</SelectItem>
-            <SelectItem value="homepageOrder:asc">Thứ tự trang chủ (nhỏ → lớn)</SelectItem>
+            <SelectItem value="homepageOrder:asc">{t('products.sortHomepageOrder')}</SelectItem>
           </SelectContent></Select>
         </label>
 
@@ -427,25 +419,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
         (() => {
           const totalFlagged = state.pagination?.totalItems ?? state.items.length
           const limit = HOMEPAGE_BLOCK_LIMITS[query.homepageBlock]
-          const blockLabel = HOMEPAGE_BLOCK_LABELS[query.homepageBlock]
+          const blockLabel = t(HOMEPAGE_BLOCK_LABEL_KEYS[query.homepageBlock] ?? query.homepageBlock)
           if (totalFlagged <= limit) return null
           return (
             <div
               role="status"
-              style={{
-                margin: '12px 0',
-                padding: '10px 14px',
-                borderRadius: 8,
-                background: 'rgba(217, 119, 6, 0.08)',
-                border: '1px solid rgba(217, 119, 6, 0.35)',
-                color: 'var(--admin-color-warning, #b45309)',
-                fontSize: 13,
-              }}
+              className="my-3 rounded-sm border border-warning-border bg-warning-bg px-3.5 py-2.5 text-sm text-warning"
             >
-              <strong>Đang ở khối này: {totalFlagged} sản phẩm.</strong>{' '}
-              Trang chủ chỉ hiển thị tối đa <strong>{limit} sản phẩm</strong> ở khối "{blockLabel}".
-              Số dư sẽ bị bỏ qua âm thầm — sắp xếp theo cột "Thứ tự trang chủ" để chọn ra
-              {' '}{limit} sản phẩm hiển thị.
+              <strong>{t('products.homepageWarnCount', { count: totalFlagged })}</strong>{' '}
+              {t('products.homepageWarnDetail', { limit, block: blockLabel })}
             </div>
           )
         })()

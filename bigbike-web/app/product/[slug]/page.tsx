@@ -73,6 +73,7 @@ export async function generateMetadata({
     canonicalPath: toProductPath(product.slug),
     noIndex: false,
     ogImage: product.image?.url ?? undefined,
+    ogType: "website",
   });
 }
 
@@ -272,6 +273,9 @@ export default async function ProductDetailPage({
           />
         )}
       </div>
+
+      {/* Spacer so the mobile sticky purchase bar never covers page content. */}
+      <div className="md:hidden h-24" aria-hidden="true" />
     </>
   );
 }

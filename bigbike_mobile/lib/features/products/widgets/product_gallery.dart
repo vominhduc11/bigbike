@@ -35,7 +35,7 @@ class _ProductGalleryState extends State<ProductGallery> {
             enableInfiniteScroll: all.length > 1,
             onPageChanged: (i, _) => setState(() => _current = i),
           ),
-          itemBuilder: (_, i, __) => MediaImage(
+          itemBuilder: (_, i, _) => MediaImage(
             src: all[i],
             width: double.infinity,
             height: 300,
@@ -62,7 +62,7 @@ class _ProductGalleryState extends State<ProductGallery> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: all.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (_, i) => GestureDetector(
                 onTap: () => _controller.animateToPage(i),
                 child: Container(

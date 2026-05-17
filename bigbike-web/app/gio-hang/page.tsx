@@ -9,8 +9,18 @@ import { formatVnd } from "@/lib/utils/format";
 import { toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { CartSkeleton } from "@/components/ui/Skeletons";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -42,6 +52,7 @@ export default function CartPage() {
   const [couponInput, setCouponInput] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchCart()
@@ -86,15 +97,15 @@ export default function CartPage() {
   }, []);
 
   const handleClear = useCallback(async () => {
-    if (!cart?.items.length) return;
-    if (!window.confirm("Xoá toàn bộ giỏ hàng?")) return;
     try {
       const updated = await clearCart();
       setCart(updated);
     } catch (e: unknown) {
       setError((e as Error).message);
+    } finally {
+      setClearConfirmOpen(false);
     }
-  }, [cart]);
+  }, []);
 
   const handleApplyCoupon = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +139,25 @@ export default function CartPage() {
 
   if (loading) {
     return <CartSkeleton />;
+  }
+
+  if (!cart) {
+    return (
+      <>
+        <div className="bb-breadcrumb">
+          <Link href="/">Trang chủ</Link>
+          <span className="sep">/</span>
+          <span>Giỏ hàng</span>
+        </div>
+        <div className="bb-cart-page bb-container">
+          <ErrorState
+            title="Không tải được giỏ hàng"
+            message={error || "Vui lòng thử lại hoặc quay lại trang chủ."}
+            retryHref="/gio-hang/"
+          />
+        </div>
+      </>
+    );
   }
 
   const hasItems = cart && cart.items.length > 0;
@@ -188,41 +218,13 @@ export default function CartPage() {
                       </div>
 
                       <div className="bb-cart-row-qty">
-                        <div className="bb-cart-qty-vertical">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="plus"
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                            disabled={mutating[item.id]}
-                            aria-label="Tăng"
-                          >
-                            +
-                          </Button>
-                          <Input
-                            type="number"
-                            min={1}
-                            className="quantity-input"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (Number.isFinite(v) && v >= 1) handleQuantityChange(item.id, v);
-                            }}
-                            disabled={mutating[item.id]}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="minus"
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                            disabled={mutating[item.id] || item.quantity <= 1}
-                            aria-label="Giảm"
-                          >
-                            −
-                          </Button>
-                        </div>
+                        <QuantityStepper
+                          value={item.quantity}
+                          onChange={(qty) => handleQuantityChange(item.id, qty)}
+                          min={1}
+                          disabled={mutating[item.id]}
+                          ariaLabel={`Số lượng ${item.productName}`}
+                        />
                       </div>
 
                       <div className="bb-cart-row-action">
@@ -248,7 +250,7 @@ export default function CartPage() {
                   <Link href={toProductListPath()} className="bb-cart-continue">
                     <span aria-hidden="true">‹</span> TIẾP TỤC MUA HÀNG
                   </Link>
-                  <Button type="button" variant="ghost" className="bb-cart-clear-link" onClick={handleClear}>
+                  <Button type="button" variant="ghost" className="bb-cart-clear-link" onClick={() => setClearConfirmOpen(true)}>
                     Xoá toàn bộ
                   </Button>
                   <Button asChild variant="primary" className="bb-cart-checkout-btn">
@@ -259,7 +261,7 @@ export default function CartPage() {
             )}
           </div>
 
-          <aside className="bb-cart-side">
+          {hasItems && <aside className="bb-cart-side">
             <div className="bb-cart-summary">
               <div className="bb-cart-summary-row">
                 <p>Tạm tính:</p>
@@ -306,11 +308,12 @@ export default function CartPage() {
                 </div>
               )}
               <form className="bb-cart-promo-form" onSubmit={handleApplyCoupon}>
-                <fieldset>
-                  <legend>Nhập mã khuyến mãi</legend>
-                </fieldset>
+                <label htmlFor="cart-coupon-input" className="bb-cart-promo-label">
+                  Nhập mã khuyến mãi
+                </label>
                 <div className="bb-cart-promo-group">
                   <Input
+                    id="cart-coupon-input"
                     type="text"
                     placeholder="Nhập mã khuyến mãi..."
                     value={couponInput}
@@ -333,7 +336,26 @@ export default function CartPage() {
                 </p>
               </div>
             </div>
-          </aside>
+          </aside>}
+
+          <Dialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Xoá toàn bộ giỏ hàng?</DialogTitle>
+                <DialogDescription>
+                  Tất cả sản phẩm trong giỏ hàng sẽ bị xoá. Hành động này không thể hoàn tác.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setClearConfirmOpen(false)}>
+                  Huỷ
+                </Button>
+                <Button variant="primary" onClick={handleClear}>
+                  Xoá toàn bộ
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </>

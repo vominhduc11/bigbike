@@ -140,7 +140,7 @@ export function HomeSkeleton() {
   return (
     <SkeletonRoot label="Đang tải trang chủ" className="bb-home">
       {/* Hero slider */}
-      <div className="bb-slider" style={{ position: "relative" }}>
+      <div className="relative w-full select-none bg-black [aspect-ratio:16/5.5] max-[600px]:aspect-[4/5]">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
 

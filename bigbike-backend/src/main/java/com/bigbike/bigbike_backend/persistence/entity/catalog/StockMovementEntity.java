@@ -1,7 +1,10 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,13 +16,15 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "stock_movements")
+@Getter
+@Setter
 public class StockMovementEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_variant_id", nullable = true)
     private ProductVariantEntity variant;
 
@@ -53,39 +58,4 @@ public class StockMovementEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public ProductVariantEntity getVariant() { return variant; }
-    public void setVariant(ProductVariantEntity variant) { this.variant = variant; }
-
-    public String getProductId() { return productId; }
-    public void setProductId(String productId) { this.productId = productId; }
-
-    public String getMovementType() { return movementType; }
-    public void setMovementType(String movementType) { this.movementType = movementType; }
-
-    public int getQuantityDelta() { return quantityDelta; }
-    public void setQuantityDelta(int quantityDelta) { this.quantityDelta = quantityDelta; }
-
-    public int getQuantityBefore() { return quantityBefore; }
-    public void setQuantityBefore(int quantityBefore) { this.quantityBefore = quantityBefore; }
-
-    public int getQuantityAfter() { return quantityAfter; }
-    public void setQuantityAfter(int quantityAfter) { this.quantityAfter = quantityAfter; }
-
-    public String getReferenceType() { return referenceType; }
-    public void setReferenceType(String referenceType) { this.referenceType = referenceType; }
-
-    public UUID getReferenceId() { return referenceId; }
-    public void setReferenceId(UUID referenceId) { this.referenceId = referenceId; }
-
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-
-    public UUID getAdminId() { return adminId; }
-    public void setAdminId(UUID adminId) { this.adminId = adminId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

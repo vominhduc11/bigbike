@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMediaReferences, updateMedia } from '../lib/adminApi'
 import { Button } from '@/components/ui/button'
@@ -13,20 +13,20 @@ function IconClose() {
   )
 }
 
-const TYPE_LABEL = {
-  PRODUCT: 'Sản phẩm',
-  PRODUCT_GALLERY: 'Gallery sản phẩm',
-  PRODUCT_VARIANT: 'Biến thể sản phẩm',
-  PRODUCT_VARIANT_GALLERY: 'Gallery biến thể',
-  CATEGORY: 'Danh mục',
-  BRAND: 'Thương hiệu',
-  HOME_VIDEO: 'Video trang chủ',
-  CONTENT: 'Bài viết',
-  CONTENT_PRODUCT_IMG: 'Bài viết (ảnh sản phẩm)',
-  CONTENT_SEO_OG: 'Bài viết (SEO OG)',
-  PAGE_SEO_OG: 'Trang (SEO OG)',
-  SLIDER_DESKTOP: 'Banner desktop',
-  SLIDER_MOBILE: 'Banner mobile',
+const REFERENCE_TYPE_KEYS = {
+  PRODUCT: 'media.referenceType.PRODUCT',
+  PRODUCT_GALLERY: 'media.referenceType.PRODUCT_GALLERY',
+  PRODUCT_VARIANT: 'media.referenceType.PRODUCT_VARIANT',
+  PRODUCT_VARIANT_GALLERY: 'media.referenceType.PRODUCT_VARIANT_GALLERY',
+  CATEGORY: 'media.referenceType.CATEGORY',
+  BRAND: 'media.referenceType.BRAND',
+  HOME_VIDEO: 'media.referenceType.HOME_VIDEO',
+  CONTENT: 'media.referenceType.CONTENT',
+  CONTENT_PRODUCT_IMG: 'media.referenceType.CONTENT_PRODUCT_IMG',
+  CONTENT_SEO_OG: 'media.referenceType.CONTENT_SEO_OG',
+  PAGE_SEO_OG: 'media.referenceType.PAGE_SEO_OG',
+  SLIDER_DESKTOP: 'media.referenceType.SLIDER_DESKTOP',
+  SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
 }
 
 /**
@@ -35,6 +35,8 @@ const TYPE_LABEL = {
  */
 export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const { t } = useTranslation()
+  const modalRef = useRef(null)
+  const previousFocusRef = useRef(null)
   const [altText, setAltText] = useState(media.altText ?? '')
   const [title, setTitle] = useState(media.title ?? '')
   const [caption, setCaption] = useState(media.caption ?? '')
@@ -60,6 +62,43 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
       .finally(() => setRefsLoading(false))
   }, [media.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const modal = modalRef.current
+    const initialFocusTarget = modal?.querySelector(focusableSelector)
+    if (initialFocusTarget) initialFocusTarget.focus()
+
+    function onKey(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const currentModal = modalRef.current
+      if (!currentModal) return
+      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
+      if (!focusables.length) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus()
+      }
+    }
+  }, [onClose])
+
   async function handleSave(e) {
     e.preventDefault()
     setSaving(true)
@@ -79,8 +118,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   return (
     <>
       <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('media.editTitle')}
-        style={{ maxWidth: 820, width: '100%' }}>
+      <div ref={modalRef} className="mpicker-modal max-w-[820px] w-full" role="dialog" aria-modal="true" aria-label={t('media.editTitle')}>
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('media.editTitle')}</h3>
           <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
@@ -88,107 +126,94 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
           </Button>
         </div>
 
-        <div className="mpicker-body" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="mpicker-body flex flex-col gap-5 p-4">
 
           {/* Preview + form fields */}
-          <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-            <div style={{ flexShrink: 0, width: 360, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ width: '100%', height: 240, background: 'var(--c-bg-subtle)', borderRadius: 6, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="flex gap-5 flex-wrap">
+            <div className="shrink-0 w-[360px] max-w-full flex flex-col gap-2">
+              <div className="w-full h-[240px] bg-surface-muted rounded-md overflow-hidden flex items-center justify-center">
                 {isImage && media.publicUrl ? (
                   <button
                     type="button"
                     onClick={() => onPreview && onPreview()}
                     aria-label={t('media.preview')}
-                    style={{ all: 'unset', cursor: onPreview ? 'zoom-in' : 'default', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    className="w-full h-full flex items-center justify-center border-none p-0 bg-transparent"
+                    style={{ cursor: onPreview ? 'zoom-in' : 'default' }}
                   >
-                    <img src={media.publicUrl} alt={altText || ''} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    <img src={media.publicUrl} alt={altText || ''} className="max-w-full max-h-full object-contain" />
                   </button>
                 ) : isVideo && media.publicUrl ? (
-                  <video src={media.publicUrl} controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} preload="metadata" />
+                  <video src={media.publicUrl} controls className="w-full h-full object-contain bg-black" preload="metadata" />
                 ) : isAudio && media.publicUrl ? (
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                    <audio src={media.publicUrl} controls preload="metadata" style={{ width: '100%' }} />
+                  <div className="w-full flex flex-col items-center gap-3 p-4">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <audio src={media.publicUrl} controls preload="metadata" className="w-full" />
                   </div>
                 ) : (
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                   </svg>
                 )}
               </div>
               {onPreview && media.publicUrl && (isImage || isVideo || isAudio) && (
-                <Button variant="secondary"
-                  type="button"
-                  onClick={() => onPreview()}
-                  style={{ width: '100%', fontSize: '0.8rem' }}
-                >
+                <Button variant="secondary" type="button" onClick={() => onPreview()} className="w-full text-xs">
                   {t('media.preview')}
                 </Button>
               )}
             </div>
 
-            <form id="media-detail-form" onSubmit={handleSave} style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldAltText')}</span>
-                <Input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder={t('media.fieldAltTextPlaceholder')}  />
+            <form id="media-detail-form" onSubmit={handleSave} className="flex-1 min-w-[220px] flex flex-col gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold">{t('media.fieldAltText')}</span>
+                <Input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder={t('media.fieldAltTextPlaceholder')} />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldTitle')}</span>
-                <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('media.fieldTitlePlaceholder')}  />
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold">{t('media.fieldTitle')}</span>
+                <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('media.fieldTitlePlaceholder')} />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('media.fieldCaption')}</span>
-                <Textarea rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('media.fieldCaptionPlaceholder')} style={{ resize: 'vertical' }}  />
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold">{t('media.fieldCaption')}</span>
+                <Textarea rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('media.fieldCaptionPlaceholder')} className="resize-y" />
               </label>
-              {error && <p style={{ color: 'var(--c-danger)', fontSize: '0.8rem', margin: 0 }}>{error}</p>}
+              {error && <p className="text-danger text-xs m-0">{error}</p>}
             </form>
           </div>
 
           {/* Usage section */}
-          <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: '1rem' }}>
-            <p style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-bold mb-2 flex items-center gap-2">
               {t('media.usageTitle')}
               {usageCount > 0
-                ? <span style={{ background: 'var(--c-primary)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{usageCount}</span>
-                : <span style={{ background: 'var(--c-success)', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 600 }}>{t('media.usageUnused')}</span>
+                ? <span className="bg-primary text-white rounded-full px-2 py-px text-[0.7rem] font-bold">{usageCount}</span>
+                : <span className="bg-success text-white rounded-full px-2 py-px text-[0.7rem] font-semibold">{t('media.usageUnused')}</span>
               }
             </p>
 
             {refsLoading && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--c-text-muted)' }}>{t('common.loading')}</p>
+              <p className="text-[0.78rem] text-muted-foreground">{t('common.loading')}</p>
             )}
 
             {!refsLoading && usageCount === 0 && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--c-text-muted)' }}>{t('media.usageNoneDesc')}</p>
+              <p className="text-[0.78rem] text-muted-foreground">{t('media.usageNoneDesc')}</p>
             )}
 
             {!refsLoading && refs.length > 0 && (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
                 {refs.map((ref, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
-                    <span style={{
-                      background: 'var(--c-bg-subtle)',
-                      border: '1px solid var(--c-border)',
-                      borderRadius: 4,
-                      padding: '1px 6px',
-                      fontSize: '0.68rem',
-                      fontWeight: 600,
-                      color: 'var(--c-text-muted)',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}>
-                      {TYPE_LABEL[ref.type] ?? ref.type}
+                  <li key={i} className="flex items-center gap-2 text-[0.78rem]">
+                    <span className="bg-surface-muted border border-border rounded-xs px-1.5 py-px text-[0.68rem] font-semibold text-muted-foreground whitespace-nowrap shrink-0">
+                      {REFERENCE_TYPE_KEYS[ref.type] ? t(REFERENCE_TYPE_KEYS[ref.type]) : ref.type}
                     </span>
                     {ref.adminPath ? (
                       <a
                         href={ref.adminPath}
-                        style={{ color: 'var(--c-primary)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        className="text-primary no-underline truncate"
                         title={ref.name}
                       >
                         {ref.name}
                       </a>
                     ) : (
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={ref.name}>{ref.name}</span>
+                      <span className="truncate" title={ref.name}>{ref.name}</span>
                     )}
                   </li>
                 ))}
@@ -199,7 +224,7 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
         </div>
 
         <div className="mpicker-footer">
-          <span style={{ fontSize: '0.75rem', color: 'var(--c-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+          <span className="text-xs text-muted-foreground truncate max-w-[260px]">
             {(media.filename ?? '').split('/').pop()}
           </span>
           <div className="mpicker-footer-actions">

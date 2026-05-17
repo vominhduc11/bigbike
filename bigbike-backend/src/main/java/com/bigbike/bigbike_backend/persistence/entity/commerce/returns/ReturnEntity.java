@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.returns;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "returns")
+@Getter
+@Setter
 public class ReturnEntity {
 
     @Id
@@ -53,39 +57,4 @@ public class ReturnEntity {
     @Column(nullable = false)
     private Long version;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getReturnNumber() { return returnNumber; }
-    public void setReturnNumber(String returnNumber) { this.returnNumber = returnNumber; }
-
-    public UUID getOrderId() { return orderId; }
-    public void setOrderId(UUID orderId) { this.orderId = orderId; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
-
-    public String getCustomerNote() { return customerNote; }
-    public void setCustomerNote(String customerNote) { this.customerNote = customerNote; }
-
-    public String getAdminNote() { return adminNote; }
-    public void setAdminNote(String adminNote) { this.adminNote = adminNote; }
-
-    public BigDecimal getRefundAmount() { return refundAmount; }
-    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
 }

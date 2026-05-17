@@ -68,8 +68,8 @@ class MediaImage extends StatelessWidget {
         height: height,
         memCacheWidth: memW,
         memCacheHeight: memH,
-        placeholder: (_, __) => loadingWidget,
-        errorWidget: (_, __, ___) => errorView,
+        placeholder: (_, _) => loadingWidget,
+        errorWidget: (_, _, _) => errorView,
       );
     }
 

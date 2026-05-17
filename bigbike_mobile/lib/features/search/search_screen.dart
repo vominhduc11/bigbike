@@ -126,11 +126,11 @@ class _SearchResults extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              _Chip('Tất cả', _SearchTab.all, tab, onTabChanged),
+              _chip('Tất cả', _SearchTab.all, tab, onTabChanged),
               const SizedBox(width: 8),
-              _Chip('Sản phẩm (${results.products.length})', _SearchTab.products, tab, onTabChanged),
+              _chip('Sản phẩm (${results.products.length})', _SearchTab.products, tab, onTabChanged),
               const SizedBox(width: 8),
-              _Chip('Tin tức (${results.articles.length})', _SearchTab.articles, tab, onTabChanged),
+              _chip('Tin tức (${results.articles.length})', _SearchTab.articles, tab, onTabChanged),
             ],
           ),
         ),
@@ -213,7 +213,7 @@ class _SearchResults extends StatelessWidget {
     );
   }
 
-  Widget _Chip(String label, _SearchTab t, _SearchTab current, void Function(_SearchTab) onChange) {
+  Widget _chip(String label, _SearchTab t, _SearchTab current, void Function(_SearchTab) onChange) {
     final selected = t == current;
     return GestureDetector(
       onTap: () => onChange(t),

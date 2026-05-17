@@ -33,6 +33,7 @@ type QuickBuyModalProps = {
   selectedVariantId: string;
   quantity: number;
   productName: string;
+  unitPrice: number;
   onClose: () => void;
 };
 
@@ -53,6 +54,7 @@ export function QuickBuyModal({
   selectedVariantId,
   quantity,
   productName,
+  unitPrice,
   onClose,
 }: QuickBuyModalProps) {
   const router = useRouter();
@@ -62,7 +64,7 @@ export function QuickBuyModal({
   const [address, setAddress] = useState<CheckoutAddress>(EMPTY_ADDRESS);
   const [prefilled, setPrefilled] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [shippingMethodId, setShippingMethodId] = useState("");
+  const [preferredShippingMethodId, setPreferredShippingMethodId] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [checkoutOptions, setCheckoutOptions] = useState<CheckoutOptions | null>(null);
   const [checkoutOptionsError, setCheckoutOptionsError] = useState("");
@@ -78,6 +80,7 @@ export function QuickBuyModal({
     const profile = auth.profile;
     const defaultAddr = savedAddresses?.find((a) => a.isDefault) ?? savedAddresses?.[0];
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress({
       fullName: defaultAddr?.fullName ?? profile.displayName ?? "",
       email: profile.email ?? "",
@@ -109,12 +112,10 @@ export function QuickBuyModal({
     return inZone;
   }, [checkoutOptions, address.province]);
 
-  useEffect(() => {
-    setShippingMethodId((prev) => {
-      const stillValid = filteredShippingMethods.some((m) => m.id === prev);
-      return stillValid ? prev : (filteredShippingMethods[0]?.id ?? "");
-    });
-  }, [filteredShippingMethods]);
+  const shippingMethodId = useMemo(() => {
+    const stillValid = filteredShippingMethods.some((m) => m.id === preferredShippingMethodId);
+    return stillValid ? preferredShippingMethodId : (filteredShippingMethods[0]?.id ?? "");
+  }, [filteredShippingMethods, preferredShippingMethodId]);
 
   function updateAddressField<K extends keyof CheckoutAddress>(
     key: K,
@@ -172,6 +173,35 @@ export function QuickBuyModal({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
+          {/* Order summary */}
+          {(() => {
+            const selectedShipping = filteredShippingMethods.find((m) => m.id === shippingMethodId);
+            const shippingCost = selectedShipping?.cost ?? 0;
+            const itemTotal = unitPrice * quantity;
+            const grandTotal = itemTotal + shippingCost;
+            return (
+              <div className="mb-5 border border-border bg-muted/30 p-4 text-sm">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Tóm tắt đơn hàng</p>
+                <div className="flex justify-between gap-3 py-1">
+                  <span className="text-muted-foreground line-clamp-1">{productName} × {quantity}</span>
+                  <b className="shrink-0 text-foreground">{formatVnd(itemTotal)}</b>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-border/40 py-1 mt-1">
+                  <span className="text-muted-foreground">
+                    Phí vận chuyển{selectedShipping ? ` (${selectedShipping.title})` : ""}
+                  </span>
+                  <b className="shrink-0 text-foreground">
+                    {shippingMethodId ? (shippingCost > 0 ? formatVnd(shippingCost) : "Miễn phí") : "—"}
+                  </b>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-border py-2 mt-1">
+                  <span className="font-semibold text-foreground">Tổng tiền</span>
+                  <b className="shrink-0 text-brand text-base">{formatVnd(grandTotal)}</b>
+                </div>
+              </div>
+            );
+          })()}
+
           {checkoutOptionsError && (
             <p className="mb-4 text-sm text-destructive">{checkoutOptionsError}</p>
           )}
@@ -202,13 +232,13 @@ export function QuickBuyModal({
                 <Input
                   required
                   type="tel"
-                  inputMode="numeric"
-                  pattern="0[3-9][0-9]{8}"
-                  maxLength={10}
+                  inputMode="tel"
+                  pattern="(0[3-9][0-9]{8}|[+]84[3-9][0-9]{8})"
+                  maxLength={13}
                   value={address.phone}
                   onChange={(e) => updateAddressField("phone", e.target.value)}
                   autoComplete="tel"
-                  placeholder="09xxxxxxxx"
+                  placeholder="09xxxxxxxx hoặc +84..."
                 />
               </div>
 
@@ -284,7 +314,7 @@ export function QuickBuyModal({
               {filteredShippingMethods.length === 0 && address.province ? (
                 <p className="text-sm text-destructive">Chưa có phương thức vận chuyển cho khu vực này.</p>
               ) : (
-                <Select value={shippingMethodId} onValueChange={setShippingMethodId}>
+                <Select value={shippingMethodId} onValueChange={setPreferredShippingMethodId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn phương thức" />
                   </SelectTrigger>

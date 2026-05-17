@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { PageHero } from "@/components/layout/PageHero";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
@@ -16,7 +15,9 @@ export default async function NotFoundPage() {
   return (
     <section className="min-h-[62vh] bg-background py-20 text-center">
       <PageHero
-        title="Xin lỗi, nội dung bạn tìm kiếm không còn tồn tại có thể nội dung đã cũ hoặc bị xóa."
+        kicker="Lỗi 404"
+        title="Không tìm thấy trang"
+        description="Nội dung bạn tìm kiếm không còn tồn tại — có thể đã cũ hoặc đã được gỡ bỏ."
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "404" },
@@ -24,15 +25,15 @@ export default async function NotFoundPage() {
       />
       <div className="bb-container">
         <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7">
-          <div className="flex justify-center">
-            <Image
-              src="/wp/404.png"
-              alt="Không tìm thấy trang"
-              width={480}
-              height={320}
-              className="max-w-full h-auto"
-              priority
-            />
+          <div className="flex justify-center select-none" aria-hidden="true">
+            <div className="relative">
+              <span className="font-display font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-tighter text-foreground/[0.07] select-none">
+                404
+              </span>
+              <span className="absolute inset-0 flex items-center justify-center font-display font-bold text-[clamp(3.5rem,10vw,7rem)] leading-none tracking-tight text-brand">
+                404
+              </span>
+            </div>
           </div>
           <p className="text-base text-muted-foreground">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
 

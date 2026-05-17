@@ -159,7 +159,7 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
           <Button
             type="submit"
             form="refund-form"
-            variant="destructive"
+            variant="danger"
             disabled={saving || maxRefundable <= 0}
           >
             {saving ? t('refund.processing') : t('refund.confirm')}

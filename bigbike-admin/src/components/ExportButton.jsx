@@ -31,7 +31,6 @@ export function ExportButton({ onExport, filename = 'export.csv', label }) {
       type="button"
       onClick={handleExport}
       disabled={exporting}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
     >
       <Download size={14} />
       {exporting ? t('export.exporting') : (label || t('export.exportCsv'))}

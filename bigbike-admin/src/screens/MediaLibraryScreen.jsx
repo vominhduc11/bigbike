@@ -31,10 +31,11 @@ import { useDebounce } from '../lib/useDebounce'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
 import { useKeyboardNav } from '../lib/useKeyboardNav'
-import styles from './MediaLibraryScreen.module.css'
+import { cn } from '@/lib/utils'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const ALLOWED_MIME = [
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -341,11 +342,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
   return (
     <section
-      className={`screen ${styles.dropzone} ${isDragging && canUpdate ? styles.dropzoneActive : ''} ${panelOpen ? styles.panelOpen : ''}`}
+      className={`screen medialib-dropzone ${isDragging && canUpdate ? 'medialib-dropzone-active' : ''} ${panelOpen ? 'medialib-panel-open' : ''}`}
       ref={screenRef}
     >
       {isDragging && canUpdate && (
-        <div className={styles.uploadOverlay}>
+        <div className="medialib-upload-overlay">
           <Upload size={48} />
           <span>{t('media.dropToUpload')}</span>
         </div>
@@ -357,23 +358,22 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           <h1>{t('media.title')}</h1>
           <p>{t('media.description')}</p>
         </div>
-        <div className={styles.headerActions}>
-          <button type="button"
-            className={isTrash ? 'btn btn-primary' : 'btn btn-secondary'}
+        <div className="medialib-header-actions">
+          <Button
+            variant={isTrash ? 'default' : 'outline'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
             title={t('media.trashShortcut')}>
-            <Trash2 size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            <Trash2 size={14} />
             {t('media.trashShortcut')}
-          </button>
+          </Button>
           {canUpdate && (
             <>
               <input ref={fileInputRef} type="file" multiple accept={ALLOWED_MIME.join(',')}
-                style={{ display: 'none' }} onChange={handleFileChange} />
-              <button type="button" className="btn btn-primary"
-                onClick={() => fileInputRef.current?.click()}>
-                <Upload size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+                className="hidden" onChange={handleFileChange} />
+              <Button onClick={() => fileInputRef.current?.click()}>
+                <Upload size={14} />
                 {t('common.upload')}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -384,7 +384,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {/* Upload queue */}
       {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} t={t} />}
 
-      <div className={styles.layout}>
+      <div className="medialib-layout">
         <MediaFolderSidebar
           folderFilter={query.folderFilter}
           tag={query.tag}
@@ -395,20 +395,20 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           onSelectTag={(v) => updateQuery({ tag: v })}
         />
 
-        <div className={styles.mainCol} ref={dropZoneRef}>
+        <div className="medialib-main-col" ref={dropZoneRef}>
 
       {/* ── Filter bar ─────────────────────────────────────────── */}
-      <section className={styles.filterBar}>
-        <label style={{ flex: '1 1 220px', minWidth: 200 }}>
+      <section className="medialib-filter-bar">
+        <label className="flex-[1_1_220px] min-w-[200px]">
           {t('common.search')}
-          <div className={styles.searchWrap}>
+          <div className="medialib-search-wrap">
             <Input type="search" value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('media.searchPlaceholder')}
-              style={{ paddingRight: searchInput ? 32 : 12 }}  />
+              className={searchInput ? 'pr-8' : 'pr-3'}  />
             {searchInput && (
               <button type="button" onClick={() => setSearchInput('')}
-                aria-label={t('common.clear')} className={styles.searchClear}>
+                aria-label={t('common.clear')} className="medialib-search-clear">
                 <XIcon size={14} />
               </button>
             )}
@@ -449,14 +449,13 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           </SelectContent></Select>
         </label>
 
-        <button type="button" className="btn btn-secondary" onClick={() => setShowAdvanced((s) => !s)}
-          style={{ fontSize: '0.8rem' }}>
+        <Button variant="outline" size="sm" onClick={() => setShowAdvanced((s) => !s)}>
           {showAdvanced ? t('media.hideAdvanced') : t('media.showAdvanced')}
-        </button>
+        </Button>
       </section>
 
       {showAdvanced && (
-        <section className={styles.filterBar}>
+        <section className="medialib-filter-bar">
           <label>{t('media.uploadedFrom')}<Input type="date" value={query.uploadedFrom} onChange={(e) => updateQuery({ uploadedFrom: e.target.value })}  /></label>
           <label>{t('media.uploadedTo')}<Input type="date" value={query.uploadedTo} onChange={(e) => updateQuery({ uploadedTo: e.target.value })}  /></label>
           <label>{t('media.minSizeMB')}<Input type="number" min="0" step="0.1"
@@ -473,10 +472,15 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       )}
 
       {/* Toolbar: chips + summary + view switch */}
-      <div className={styles.toolbarRow}>
-        <FilterChips chips={activeChips} onClearAll={resetFilters} clearAllLabel={t('common.resetFilters')} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
-          <p className={styles.resultSummary}>
+      <div className="medialib-toolbar-row">
+        <FilterChips
+          chips={activeChips}
+          onClearAll={resetFilters}
+          clearAllLabel={t('common.resetFilters')}
+          removeChipLabel={t('common.clear')}
+        />
+        <div className="flex items-center gap-3 ml-auto">
+          <p className="medialib-result-summary">
             {state.pagination
               ? <>
                   {t('media.found')}: <strong>{formatNumber(state.pagination.total)}</strong>
@@ -484,14 +488,14 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
                 </>
               : ''}
           </p>
-          <div className={styles.viewSwitcher} role="tablist">
+          <div className="medialib-view-switcher" role="tablist">
             <button type="button" onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
-              className={query.view === 'grid' ? styles.active : ''}
+              className={query.view === 'grid' ? 'medialib-is-active' : ''}
               title={t('media.viewGrid')} aria-label={t('media.viewGrid')}>
               <GridIcon size={14} />
             </button>
             <button type="button" onClick={() => updateQuery({ view: 'list' }, { resetPage: false })}
-              className={query.view === 'list' ? styles.active : ''}
+              className={query.view === 'list' ? 'medialib-is-active' : ''}
               title={t('media.viewList')} aria-label={t('media.viewList')}>
               <ListIcon size={14} />
             </button>
@@ -504,6 +508,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         <BulkActionBar
           selectedCount={t('media.bulkSelected', { count: selectedIds.size })}
           onClear={clearSelection}
+          closeLabel={t('common.clear')}
           actions={isTrash ? [
             { label: t('media.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy },
             ...(canHardDelete ? [{ label: t('media.bulkHardDelete'), onClick: handleBulkHardDelete, tone: 'danger', disabled: bulkBusy }] : []),
@@ -518,40 +523,34 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {/* Bulk move popover */}
       {bulkMoveOpen && (
         <div onClick={() => setBulkMoveOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            background: 'var(--c-surface)', padding: 20, borderRadius: 8,
-            minWidth: 320, maxWidth: '90vw',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-          }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '0.95rem' }}>
+          className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+          <div onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-border rounded-md p-5 min-w-[320px] max-w-[90vw] shadow-xl">
+            <h3 className="m-0 mb-3 text-[0.95rem]">
               {t('media.bulkMoveTitle', { count: selectedIds.size })}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 320, overflowY: 'auto' }}>
-              <button type="button" onClick={() => handleBulkMove(null)}
-                disabled={bulkBusy} className="btn btn-secondary"
-                style={{ justifyContent: 'flex-start', textAlign: 'left' }}>
+            <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
+              <Button variant="outline" onClick={() => handleBulkMove(null)}
+                disabled={bulkBusy} className="justify-start text-left">
                 — {t('media.uncategorized')} —
-              </button>
+              </Button>
               {folders.map((f) => (
-                <button key={f.id} type="button" onClick={() => handleBulkMove(f.id)}
-                  disabled={bulkBusy} className="btn btn-secondary"
-                  style={{ justifyContent: 'flex-start', textAlign: 'left' }}>
-                  {f.name} <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--c-text-muted)' }}>{f.mediaCount}</span>
-                </button>
+                <Button key={f.id} variant="outline" onClick={() => handleBulkMove(f.id)}
+                  disabled={bulkBusy} className="justify-start text-left">
+                  {f.name} <span className="ml-auto text-[0.7rem] text-muted-foreground">{f.mediaCount}</span>
+                </Button>
               ))}
             </div>
-            <button type="button" onClick={() => setBulkMoveOpen(false)}
-              className="btn btn-secondary" style={{ width: '100%', marginTop: 12 }}>
+            <Button variant="outline" onClick={() => setBulkMoveOpen(false)} className="w-full mt-3">
               {t('common.cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {canUpdate && state.status === 'success' && state.items.length > 0 && (
-        <div style={{ marginBottom: 8, fontSize: '0.8rem' }}>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+        <div className="mb-2 text-xs">
+          <label className="inline-flex items-center gap-1.5 cursor-pointer">
             <Checkbox checked={allOnPageSelected}
               onCheckedChange={(checked) => checked ? selectAllOnPage() : clearSelection()}  />
             <span>{t('media.selectAllOnPage')}</span>
@@ -571,27 +570,27 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       {state.status === 'success' && state.items.length > 0 && (
         <>
           {query.view === 'list' ? (
-            <div className={styles.list} ref={gridRef}>
-              <div className={styles.listHeader}>
+            <div className="medialib-list" ref={gridRef}>
+              <div className="medialib-list-header">
                 <span></span><span></span>
                 <span>{t('media.colName')}</span>
                 <span>{t('media.colSize')}</span>
                 <span>{t('media.colDimensions')}</span>
                 <span>{t('media.colDate')}</span>
                 <span>{t('media.colUsage')}</span>
-                <span style={{ textAlign: 'right' }}>{t('common.actions')}</span>
+                <span className="text-right">{t('common.actions')}</span>
               </div>
               {state.items.map((m, i) => <MediaListRow key={m.id} {...rowProps(m, i)} />)}
             </div>
           ) : (
-            <div className={styles.grid} ref={gridRef}>
+            <div className="medialib-grid" ref={gridRef}>
               {state.items.map((m, i) => <MediaCard key={m.id} {...rowProps(m, i)} />)}
             </div>
           )}
 
-          <div className={styles.paginationRow}>
+          <div className="medialib-pagination-row">
             <PaginationControls pagination={state.pagination} onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
-            <label className={styles.pageSizeWrap}>
+            <label className="medialib-page-size-wrap">
               {t('common.pageSize')}
               <Select value={query.pageSize}
                 onValueChange={(val) => updateQuery({ pageSize: Number(val) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -637,34 +636,27 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 function UploadQueue({ queue, onDismiss, t }) {
   const pending = queue.filter((u) => u.status === 'uploading' || u.status === 'pending').length
   return (
-    <div style={{
-      position: 'fixed', bottom: 16, right: 16, zIndex: 50,
-      background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-      borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-      width: 360, maxHeight: 360, overflowY: 'auto',
-    }}>
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--c-border)', fontWeight: 700, fontSize: '0.85rem' }}>
+    <div className="fixed bottom-4 right-4 z-50 bg-surface border border-border rounded-md shadow-xl w-[360px] max-h-[360px] overflow-y-auto">
+      <div className="px-3 py-2 border-b border-border font-bold text-sm">
         {pending > 0 ? t('media.uploading') + ` (${pending})` : t('media.uploadComplete', { count: queue.length })}
       </div>
       {queue.map((u) => (
-        <div key={u.id} style={{ padding: '8px 12px', borderBottom: '1px solid var(--c-border)', fontSize: '0.78rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={u.name}>{u.name}</span>
+        <div key={u.id} className="px-3 py-2 border-b border-border text-[0.78rem]">
+          <div className="flex justify-between items-center gap-1.5">
+            <span className="truncate flex-1" title={u.name}>{u.name}</span>
             <button type="button" onClick={() => onDismiss(u.id)} aria-label="Dismiss"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--c-text-muted)' }}>
+              className="bg-transparent border-none cursor-pointer p-0.5 text-muted-foreground">
               <XIcon size={12} />
             </button>
           </div>
           {u.status === 'error' ? (
-            <p style={{ color: 'var(--c-danger)', margin: '4px 0 0 0', fontSize: '0.72rem' }}>{u.error}</p>
+            <p className="text-danger mt-1 mb-0 text-[0.72rem]">{u.error}</p>
           ) : (
-            <div style={{ height: 4, background: 'var(--c-bg-subtle)', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: `${u.progress}%`,
-                background: u.status === 'done' ? 'var(--c-success)' : 'var(--c-primary)',
-                transition: 'width 0.2s',
-              }} />
+            <div className="h-1 bg-surface-muted rounded-full mt-1 overflow-hidden">
+              <div
+                className={cn('h-full transition-[width] duration-200', u.status === 'done' ? 'bg-success' : 'bg-primary')}
+                style={{ width: `${u.progress}%` }}
+              />
             </div>
           )}
         </div>

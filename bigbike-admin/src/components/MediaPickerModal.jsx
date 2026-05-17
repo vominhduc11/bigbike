@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
@@ -59,6 +60,9 @@ function IconCheck() {
  *   onClose()              — called when modal should close
  */
 export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose }) {
+  const { t } = useTranslation()
+  const modalRef = useRef(null)
+  const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 280)
   const [page, setPage] = useState(1)
@@ -94,11 +98,42 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     return () => { active = false }
   }, [debouncedSearch, page])
 
-  // Close on ESC
+  // Focus trap + ESC + restore focus
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
+    previousFocusRef.current = document.activeElement
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const modal = modalRef.current
+    const initialFocusTarget = modal?.querySelector(focusableSelector)
+    if (initialFocusTarget) initialFocusTarget.focus()
+
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const currentModal = modalRef.current
+      if (!currentModal) return
+      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
+      if (!focusables.length) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus()
+      }
+    }
   }, [onClose])
 
   // Lock body scroll
@@ -114,11 +149,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     const valid = []
     for (const file of files) {
       if (!ALLOWED_MIME.includes(file.type)) {
-        setUploadError(`"${file.name}" không hỗ trợ định dạng ${file.type}.`)
+        setUploadError(t('media.unsupportedType', { type: file.type }))
         continue
       }
       if (file.size > MAX_FILE_SIZE) {
-        setUploadError(`"${file.name}" quá lớn (${formatBytes(file.size)}). Tối đa 50 MB.`)
+        setUploadError(t('media.fileTooLarge', { size: formatBytes(file.size), limit: '50 MB' }))
         continue
       }
       valid.push(file)
@@ -141,7 +176,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, progress: 100 } : item))
         }
       } catch (err) {
-        setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, error: err.message || 'Thất bại' } : item))
+        setUploadQueue((q) => q.map((item) => item.name === file.name ? { ...item, error: err.message || t('media.picker.uploadFailed') } : item))
       }
     }
 
@@ -219,10 +254,11 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     <>
       <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
       <div
+        ref={modalRef}
         className={`mpicker-modal${isDragOver ? ' mpicker-modal--dragover' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Chọn ảnh từ thư viện"
+        aria-label={t('media.picker.dialogLabel')}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -231,15 +267,15 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         {isDragOver && (
           <div className="mpicker-drag-overlay" aria-hidden="true">
             <IconUpload />
-            <p>Thả ảnh để tải lên</p>
+            <p>{t('media.picker.dropToUpload')}</p>
           </div>
         )}
 
         {/* Header */}
         <div className="mpicker-header">
           <h3 className="mpicker-title">
-            Thư viện ảnh
-            {multiSelect && <span className="mpicker-mode-badge">Chọn nhiều</span>}
+            {t('media.picker.title')}
+            {multiSelect && <span className="mpicker-mode-badge">{t('media.picker.multiMode')}</span>}
           </h3>
           <div className="mpicker-header-actions">
             <input
@@ -247,7 +283,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               type="file"
               accept={ALLOWED_MIME.join(',')}
               multiple
-              style={{ display: 'none' }}
+              className="hidden"
               onChange={handleFileChange}
               disabled={uploading}
             />
@@ -255,12 +291,12 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              title="Kéo thả ảnh vào cửa sổ này hoặc click để chọn file"
+              title={t('media.picker.uploadTitle')}
             >
               <IconUpload />
-              {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
+              {uploading ? t('media.picker.uploading') : t('media.picker.uploadButton')}
             </Button>
-            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label="Đóng">
+            <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
               <IconClose />
             </Button>
           </div>
@@ -285,7 +321,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         <div className="mpicker-search">
           <Input
             type="search"
-            placeholder="Tìm kiếm ảnh..."
+            placeholder={t('media.picker.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
            />
@@ -294,14 +330,14 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         {uploadError && (
           <div className="mpicker-upload-error">
             {uploadError}
-            <button type="button" onClick={() => setUploadError('')} aria-label="Đóng lỗi">✕</button>
+            <button type="button" onClick={() => setUploadError('')} aria-label={t('media.picker.dismissError')}>✕</button>
           </div>
         )}
 
         {/* Grid */}
         <div className="mpicker-body">
           {isLoading && (
-            <div className="mpicker-state">Đang tải...</div>
+            <div className="mpicker-state">{t('common.loading')}</div>
           )}
           {state.status === 'error' && (
             <div className="mpicker-state mpicker-state-error">{state.error}</div>
@@ -309,7 +345,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           {state.status === 'success' && state.items.length === 0 && (
             <div className="mpicker-state mpicker-state-empty">
               <IconImage />
-              <p>Không có ảnh nào{search ? ' phù hợp' : ''}. Kéo thả ảnh vào đây để tải lên.</p>
+              <p>{search ? t('media.picker.emptySearch') : t('media.picker.empty')}</p>
             </div>
           )}
           {state.status === 'success' && state.items.length > 0 && (
@@ -344,7 +380,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                     )}
                     <div className="mpicker-item-info">
                       <span className="mpicker-item-name">
-                        {(media.filename?.split('/').pop() ?? 'ảnh').replace(/\.[^.]+$/, '')}
+                        {(media.filename?.split('/').pop() ?? t('media.picker.defaultItemName')).replace(/\.[^.]+$/, '')}
                       </span>
                       {media.fileSize ? (
                         <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
@@ -365,15 +401,15 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || isLoading}
             >
-              ← Trước
+              {t('media.picker.prev')}
             </Button>
-            <span className="mpicker-page-info">Trang {page} / {state.totalPages}</span>
+            <span className="mpicker-page-info">{t('media.picker.pageInfo', { page, totalPages: state.totalPages })}</span>
             <Button variant="secondary" size="sm"
               type="button"
               onClick={() => setPage((p) => Math.min(state.totalPages, p + 1))}
               disabled={page >= state.totalPages || isLoading}
             >
-              Sau →
+              {t('media.picker.next')}
             </Button>
           </div>
         )}
@@ -382,25 +418,23 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         <div className="mpicker-footer">
           {hasSelection ? (
             <span className="mpicker-hint mpicker-hint--selected">
-              Đã chọn {selectionCount} ảnh
+              {t('media.picker.selectedCount', { count: selectionCount })}
             </span>
           ) : (
             <span className="mpicker-hint">
-              {multiSelect ? 'Chọn nhiều ảnh (Ctrl+Click)' : 'Chọn một ảnh để sử dụng'}
+              {multiSelect ? t('media.picker.multiSelectHint') : t('media.picker.singleSelectHint')}
             </span>
           )}
           <div className="mpicker-footer-actions">
             <Button variant="secondary" type="button" onClick={onClose}>
-              Hủy
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
               onClick={handleConfirm}
               disabled={!hasSelection}
             >
-              {multiSelect
-                ? `Chọn ${selectionCount > 0 ? `${selectionCount} ảnh` : 'ảnh'}`
-                : 'Chọn ảnh này'}
+              {multiSelect ? t('media.picker.confirmMulti', { count: selectionCount }) : t('media.picker.confirmSingle')}
             </Button>
           </div>
         </div>

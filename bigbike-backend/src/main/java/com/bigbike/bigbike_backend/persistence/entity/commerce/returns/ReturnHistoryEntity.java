@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.returns;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "return_history")
+@Getter
+@Setter
 public class ReturnHistoryEntity {
 
     @Id
@@ -35,24 +39,4 @@ public class ReturnHistoryEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getReturnId() { return returnId; }
-    public void setReturnId(UUID returnId) { this.returnId = returnId; }
-
-    public String getFromStatus() { return fromStatus; }
-    public void setFromStatus(String fromStatus) { this.fromStatus = fromStatus; }
-
-    public String getToStatus() { return toStatus; }
-    public void setToStatus(String toStatus) { this.toStatus = toStatus; }
-
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-
-    public UUID getAdminId() { return adminId; }
-    public void setAdminId(UUID adminId) { this.adminId = adminId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto.contact;
 
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
@@ -10,7 +11,9 @@ import java.util.UUID;
  * admin note or assignee.
  */
 public record UpdateContactMessageRequest(
+        @Size(max = 32, message = "status is too long.")
         String status,
+        @Size(max = 4000, message = "adminNote is too long.")
         String adminNote,
         UUID assignedAdminId
 ) {}

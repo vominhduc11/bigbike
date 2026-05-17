@@ -18,17 +18,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 
-function orderStatusBadgeClass(status: string): string {
-  const map: Record<string, string> = {
-    COMPLETED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
-    PROCESSING: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    ON_HOLD: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    CANCELLED: "bg-[rgba(255,12,9,0.16)] text-brand",
-    REFUNDED: "bg-[rgba(255,12,9,0.16)] text-brand",
-    FAILED: "bg-[rgba(255,12,9,0.16)] text-brand",
+function orderStatusTone(status: string): StatusTone {
+  const map: Record<string, StatusTone> = {
+    COMPLETED: "success",
+    PROCESSING: "warning",
+    ON_HOLD: "warning",
+    CANCELLED: "danger",
+    REFUNDED: "danger",
+    FAILED: "danger",
   };
-  return map[status] ?? "bg-[var(--bb-bg-surface-raised)] text-muted-foreground";
+  return map[status] ?? "neutral";
 }
 
 type TimelineStep = { key: string; label: string; sub: string };
@@ -205,9 +206,9 @@ function OrderTimeline({ status, isBacs }: { status: string; isBacs?: boolean })
           <div key={step.key} className="flex gap-[14px]">
             <div className="flex flex-col items-center flex-shrink-0 w-5">
               <div className={`bb-round w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-                done ? "border-[#4ade80] bg-[rgba(74,222,128,0.12)] text-[#4ade80]" :
+                done ? "border-[var(--bb-state-success)] bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success)]" :
                 active ? "border-brand bg-[rgba(255,12,9,0.15)] shadow-[0_0_0_4px_rgba(255,12,9,0.1)]" :
-                cancelled ? "border-[#ef4444] bg-[rgba(239,68,68,0.12)]" :
+                cancelled ? "border-destructive bg-[var(--bb-state-danger-bg)]" :
                 "border-[var(--bb-border-default)] bg-[var(--bb-bg-surface-raised)]"
               }`}>
                 {done && (
@@ -217,14 +218,14 @@ function OrderTimeline({ status, isBacs }: { status: string; isBacs?: boolean })
                 )}
               </div>
               {i < steps.length - 1 && (
-                <div className={`w-[2px] flex-1 min-h-5 my-[3px] ${done ? "bg-[rgba(74,222,128,0.4)]" : "bg-border"}`} />
+                <div className={`w-[2px] flex-1 min-h-5 my-[3px] ${done ? "bg-[var(--bb-state-success-border)]" : "bg-border"}`} />
               )}
             </div>
             <div className="pb-[18px] pt-[1px]">
               <p className={`text-[12px] font-bold tracking-[0.04em] uppercase m-0 ${
                 done ? "text-muted-foreground" :
                 active ? "text-foreground" :
-                cancelled ? "text-[#ef4444]" :
+                cancelled ? "text-destructive" :
                 "text-muted-foreground"
               }`}>{step.label}</p>
               {active && <p className="text-[11px] text-muted-foreground m-0 mt-[3px]">{step.sub}</p>}
@@ -338,12 +339,12 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${orderStatusBadgeClass(order.status)}`}>
+                <StatusBadge tone={orderStatusTone(order.status)}>
                   {orderStatusLabel(order.status)}
-                </span>
-                <span className="text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase bg-[var(--bb-bg-surface-raised)] text-muted-foreground">
+                </StatusBadge>
+                <StatusBadge tone="neutral">
                   {paymentStatusLabel(order.paymentStatus)}
-                </span>
+                </StatusBadge>
               </div>
             </div>
 

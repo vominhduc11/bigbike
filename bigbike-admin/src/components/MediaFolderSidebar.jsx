@@ -9,7 +9,6 @@ import {
   fetchMediaTags,
   updateMediaFolder,
 } from '../lib/adminApi'
-import styles from './MediaFolderSidebar.module.css'
 import { Input } from '@/components/ui/input'
 
 /**
@@ -85,20 +84,20 @@ export function MediaFolderSidebar({
   }
 
   return (
-    <aside className={styles.sidebar}>
-      <section className={styles.section}>
-        <p className={styles.sectionTitle}>{t('media.folders')}</p>
-        <ul className={styles.list}>
+    <aside className="mediafolder-sidebar">
+      <section className="mediafolder-section">
+        <p className="mediafolder-section-title">{t('media.folders')}</p>
+        <ul className="mediafolder-list">
           <li>
             <button type="button" onClick={() => onSelectFolder('')}
-              className={`${styles.item} ${!folderFilter ? styles.selected : ''}`}>
+              className={`mediafolder-item ${!folderFilter ? 'mediafolder-is-selected' : ''}`}>
               <FolderOpen size={14} />
               <span>{t('media.allFolders')}</span>
             </button>
           </li>
           <li>
             <button type="button" onClick={() => onSelectFolder('NONE')}
-              className={`${styles.item} ${folderFilter === 'NONE' ? styles.selected : ''}`}>
+              className={`mediafolder-item ${folderFilter === 'NONE' ? 'mediafolder-is-selected' : ''}`}>
               <Inbox size={14} />
               <span>{t('media.uncategorized')}</span>
             </button>
@@ -106,20 +105,20 @@ export function MediaFolderSidebar({
         </ul>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <p className={styles.sectionTitle}>{t('media.myFolders')}</p>
+      <section className="mediafolder-section">
+        <div className="mediafolder-section-header">
+          <p className="mediafolder-section-title">{t('media.myFolders')}</p>
           {canUpdate && (
-            <button type="button" onClick={() => setCreating(true)} className={styles.addBtn}
+            <button type="button" onClick={() => setCreating(true)} className="mediafolder-add-btn"
               aria-label={t('media.folderAdd')} title={t('media.folderAdd')}>
               <Plus size={14} />
             </button>
           )}
         </div>
         {folders.length === 0 && !creating && (
-          <p className={styles.empty}>{t('media.foldersEmpty')}</p>
+          <p className="mediafolder-empty">{t('media.foldersEmpty')}</p>
         )}
-        <ul className={styles.list}>
+        <ul className="mediafolder-list">
           {creating && (
             <li>
               <FolderInput onSubmit={handleCreate} onCancel={() => setCreating(false)}
@@ -133,21 +132,21 @@ export function MediaFolderSidebar({
                   onSubmit={(name) => handleRename(f.id, name)}
                   onCancel={() => setEditingId(null)} />
               ) : (
-                <div className={`${styles.item} ${folderFilter === f.id ? styles.selected : ''} ${styles.itemHover}`}>
+                <div className={`mediafolder-item ${folderFilter === f.id ? 'mediafolder-is-selected' : ''} mediafolder-item-hover`}>
                   <button type="button" onClick={() => onSelectFolder(f.id)}
-                    className={styles.itemBtn}>
+                    className="mediafolder-item-btn">
                     <Folder size={14} />
-                    <span className={styles.itemLabel}>{f.name}</span>
-                    <span className={styles.itemCount}>{f.mediaCount}</span>
+                    <span className="mediafolder-item-label">{f.name}</span>
+                    <span className="mediafolder-item-count">{f.mediaCount}</span>
                   </button>
                   {canUpdate && (
-                    <div className={styles.itemActions}>
+                    <div className="mediafolder-item-actions">
                       <button type="button" onClick={() => setEditingId(f.id)}
-                        className={styles.actionBtn} aria-label={t('common.edit')} title={t('common.edit')}>
+                        className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>
                         <Edit2 size={11} />
                       </button>
                       <button type="button" onClick={() => handleDelete(f)}
-                        className={styles.actionBtn} aria-label={t('common.delete')} title={t('common.delete')}>
+                        className="mediafolder-action-btn" aria-label={t('common.delete')} title={t('common.delete')}>
                         <Trash2 size={11} />
                       </button>
                     </div>
@@ -160,13 +159,13 @@ export function MediaFolderSidebar({
       </section>
 
       {tags.length > 0 && (
-        <section className={styles.section}>
-          <p className={styles.sectionTitle}>{t('media.popularTags')}</p>
-          <div className={styles.tagsWrap}>
+        <section className="mediafolder-section">
+          <p className="mediafolder-section-title">{t('media.popularTags')}</p>
+          <div className="mediafolder-tags-wrap">
             {tags.map((tg) => (
               <button key={tg} type="button"
                 onClick={() => onSelectTag(tag === tg ? '' : tg)}
-                className={`${styles.tag} ${tag === tg ? styles.tagSelected : ''}`}>
+                className={`mediafolder-tag ${tag === tg ? 'mediafolder-tag-selected' : ''}`}>
                 <Hash size={11} /> {tg}
               </button>
             ))}
@@ -181,11 +180,11 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
   const [value, setValue] = useState(defaultValue)
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(value) }}
-      className={styles.editForm}>
+      className="mediafolder-edit-form">
       <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
         onBlur={() => { if (!value.trim()) onCancel() }}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
-        style={{ fontSize: '0.8rem', padding: '4px 8px' }}  />
+        className="text-[0.8rem] py-1 px-2"  />
     </form>
   )
 }

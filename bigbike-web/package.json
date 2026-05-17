@@ -33,7 +33,6 @@
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-query": "^5.100.5",
     "@tanstack/react-query-devtools": "^5.100.5",
-    "@tippyjs/react": "^4.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "isomorphic-dompurify": "^3.11.0",
@@ -45,7 +44,6 @@
     "react-hook-form": "^7.74.0",
     "swiper": "^12.1.4",
     "tailwind-merge": "^3.6.0",
-    "tippy.js": "^6.3.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {

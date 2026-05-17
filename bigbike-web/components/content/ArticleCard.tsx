@@ -49,14 +49,14 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       href={toArticlePath(article.slug)}
       className={
         isFeatured
-          ? "group grid grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] mb-[22px] min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
+          ? "group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-[22px] md:min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
           : "group flex flex-col no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
       }
     >
       <div
         className={
           isFeatured
-            ? "relative overflow-hidden bg-muted shrink-0 h-full min-h-[320px]"
+            ? "relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-[320px]"
             : "relative aspect-video overflow-hidden bg-muted shrink-0"
         }
       >

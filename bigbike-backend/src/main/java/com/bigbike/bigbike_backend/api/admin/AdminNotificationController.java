@@ -6,6 +6,10 @@ import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationEnt
 import com.bigbike.bigbike_backend.service.admin.AdminNotificationService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,7 +40,7 @@ public class AdminNotificationController {
 
     @PostMapping("/mark-read")
     public ApiDataResponse<Map<String, Object>> markRead(
-            @RequestBody MarkReadRequest body, HttpServletRequest request) {
+            @Valid @RequestBody MarkReadRequest body, HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "orders.read");
         int updated = notificationService.markRead(body.ids());
         return apiResponseFactory.data(Map.of("updated", updated), request);
@@ -61,5 +65,7 @@ public class AdminNotificationController {
         );
     }
 
-    public record MarkReadRequest(List<UUID> ids) {}
+    public record MarkReadRequest(
+            @NotEmpty @Size(max = 500) List<@NotNull UUID> ids
+    ) {}
 }

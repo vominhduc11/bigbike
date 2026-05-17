@@ -58,6 +58,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
     canonicalPath: toArticlePath(article.slug),
     noIndex: false,
     ogImage: article.coverImage?.url ?? undefined,
+    ogType: "article",
   });
 }
 
@@ -130,7 +131,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <div className="grid grid-cols-1 max-w-[1200px] mx-auto mb-[60px] px-6 gap-10 lg:grid-cols-[8fr_4fr] lg:items-start">
        <div className="min-w-0 p-0">
         <header className="mb-7 p-[28px_32px] border border-border [background:radial-gradient(circle_at_88%_0%,rgba(255,12,9,0.18),transparent_32%),linear-gradient(145deg,#111,#171717)]">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-[14px] text-muted-foreground text-[11px] font-bold tracking-[0.1em] uppercase">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-[14px] text-white/70 text-[11px] font-bold tracking-[0.1em] uppercase">
             <Link
               href={categoryHref}
               className="inline-flex items-center min-h-[28px] px-[10px] border border-brand rounded-full bg-brand/[0.4] text-white no-underline transition-all hover:text-brand hover:bg-brand/[0.18]"
@@ -148,12 +149,12 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </div>
           <h1 className="font-display text-[clamp(1.8rem,3vw,2.6rem)] uppercase tracking-[0.01em] leading-[1.1] m-0 mb-[14px] text-white">{articleTitle}</h1>
           {article.excerpt && (
-            <p className="text-muted-foreground text-[15px] leading-[1.65] m-0">{article.excerpt}</p>
+            <p className="text-white/75 text-[15px] leading-[1.65] m-0">{article.excerpt}</p>
           )}
           {article.tags && article.tags.length > 0 ? (
             <div className="flex flex-wrap gap-2 mt-[18px]" aria-label="Thẻ bài viết">
               {article.tags.slice(0, 8).map((tag) => (
-                <span key={tag} className="border border-border rounded-full px-[10px] py-[5px] text-muted-foreground text-[11px] font-bold tracking-[0.08em] uppercase">{tag}</span>
+                <span key={tag} className="border border-white/20 rounded-full px-[10px] py-[5px] text-white/65 text-[11px] font-bold tracking-[0.08em] uppercase">{tag}</span>
               ))}
             </div>
           ) : null}
@@ -231,7 +232,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                 <li key={a.id} className="block">
                   <Link href={toArticlePath(a.slug)} className="group grid grid-cols-[90px_1fr] gap-3 no-underline text-inherit items-start">
                     {a.coverImage?.url && (
-                      <span className="block aspect-[4/3] overflow-hidden bg-[#f2f2f2]">
+                      <span className="block aspect-[4/3] overflow-hidden bg-secondary">
                         <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} className="w-full h-full object-cover" />
                       </span>
                     )}
@@ -258,7 +259,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                 <li key={a.id} className="block">
                   <Link href={toArticlePath(a.slug)} className="group grid grid-cols-[90px_1fr] gap-3 no-underline text-inherit items-start">
                     {a.coverImage?.url && (
-                      <span className="block aspect-[4/3] overflow-hidden bg-[#f2f2f2]">
+                      <span className="block aspect-[4/3] overflow-hidden bg-secondary">
                         <MediaImage image={a.coverImage} altFallback={a.title} width={120} height={90} className="w-full h-full object-cover" />
                       </span>
                     )}

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.auth;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "admin_refresh_tokens")
+@Getter
+@Setter
 public class AdminRefreshTokenEntity {
 
     @Id
@@ -38,27 +42,4 @@ public class AdminRefreshTokenEntity {
     @Column(name = "user_agent", columnDefinition = "text")
     private String userAgent;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getAdminUserId() { return adminUserId; }
-    public void setAdminUserId(UUID adminUserId) { this.adminUserId = adminUserId; }
-
-    public String getTokenHash() { return tokenHash; }
-    public void setTokenHash(String tokenHash) { this.tokenHash = tokenHash; }
-
-    public Instant getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
-
-    public Instant getRevokedAt() { return revokedAt; }
-    public void setRevokedAt(Instant revokedAt) { this.revokedAt = revokedAt; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public String getCreatedByIp() { return createdByIp; }
-    public void setCreatedByIp(String createdByIp) { this.createdByIp = createdByIp; }
-
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
 }

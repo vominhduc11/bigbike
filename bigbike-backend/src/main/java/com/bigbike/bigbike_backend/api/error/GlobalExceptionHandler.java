@@ -20,6 +20,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 @Slf4j
@@ -33,7 +34,12 @@ public class GlobalExceptionHandler {
         return build(ex.status(), ex.code(), ex.getMessage(), ex.details(), request);
     }
 
-    @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class, BindException.class})
+    @ExceptionHandler({
+            ConstraintViolationException.class,
+            MethodArgumentNotValidException.class,
+            BindException.class,
+            HandlerMethodValidationException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleConstraintViolations(Exception ex, HttpServletRequest request) {
         List<ApiErrorDetail> details = ValidationErrorMapper.from(ex);
         log.warn("Validation failed [{}]: {}", request.getRequestURI(), details);

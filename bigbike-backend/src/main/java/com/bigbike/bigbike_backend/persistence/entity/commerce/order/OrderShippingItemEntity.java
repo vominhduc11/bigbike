@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.order;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "order_shipping_items")
+@Getter
+@Setter
 public class OrderShippingItemEntity {
 
     @Id
@@ -49,33 +53,4 @@ public class OrderShippingItemEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public OrderEntity getOrder() { return order; }
-    public void setOrder(OrderEntity order) { this.order = order; }
-
-    public Long getLegacyItemId() { return legacyItemId; }
-    public void setLegacyItemId(Long legacyItemId) { this.legacyItemId = legacyItemId; }
-
-    public UUID getShippingMethodId() { return shippingMethodId; }
-    public void setShippingMethodId(UUID shippingMethodId) { this.shippingMethodId = shippingMethodId; }
-
-    public String getMethodCode() { return methodCode; }
-    public void setMethodCode(String methodCode) { this.methodCode = methodCode; }
-
-    public String getMethodTitle() { return methodTitle; }
-    public void setMethodTitle(String methodTitle) { this.methodTitle = methodTitle; }
-
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
-
-    public String getMetadata() { return metadata; }
-    public void setMetadata(String metadata) { this.metadata = metadata; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

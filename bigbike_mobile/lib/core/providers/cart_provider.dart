@@ -27,7 +27,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
         data: {
           'productId': productId,
           'quantity': quantity,
-          if (variantId != null) 'variantId': variantId,
+          'variantId': ?variantId,
         },
       );
       state = AsyncValue.data(Cart.fromJson(data));

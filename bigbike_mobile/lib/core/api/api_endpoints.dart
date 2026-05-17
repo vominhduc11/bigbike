@@ -64,6 +64,10 @@ class ApiEndpoints {
       '/api/v1/customer/orders/returns/$returnId';
   static String createReturn(String orderId) =>
       '/api/v1/customer/orders/$orderId/returns';
+  static String cancelOrder(String id) =>
+      '/api/v1/customer/orders/$id/cancel';
+  static String orderReturnEligibility(String id) =>
+      '/api/v1/customer/orders/$id/return-eligibility';
 
   // Wishlist
   static const String wishlist = '/api/v1/customer/wishlist';
@@ -72,6 +76,9 @@ class ApiEndpoints {
 
   // Contact
   static const String contact = '/api/v1/contact';
+
+  // Warranty — public lookup; serial passed as the `serial` query param.
+  static const String warrantyLookup = '/api/v1/warranties/lookup';
 
   // VN Address data
   static const String provinces = '/api/v1/address/provinces';

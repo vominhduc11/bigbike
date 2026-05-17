@@ -7,6 +7,7 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -36,15 +37,15 @@ const RETURN_REASON_LABELS: Record<string, string> = {
 
 const RETURNABLE_STATUSES = ["COMPLETED"];
 
-function returnStatusBadgeClass(status: string): string {
-  const map: Record<string, string> = {
-    COMPLETED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
-    REFUNDED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
-    APPROVED: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    RECEIVED: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    REJECTED: "bg-[rgba(255,12,9,0.16)] text-brand",
+function returnStatusTone(status: string): StatusTone {
+  const map: Record<string, StatusTone> = {
+    COMPLETED: "success",
+    REFUNDED: "success",
+    APPROVED: "warning",
+    RECEIVED: "warning",
+    REJECTED: "danger",
   };
-  return map[status] ?? "bg-[var(--bb-bg-surface-raised)] text-muted-foreground";
+  return map[status] ?? "neutral";
 }
 
 function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
@@ -85,7 +86,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                 { label: "Lý do", value: <b className="text-foreground font-semibold">{RETURN_REASON_LABELS[detail.reason] ?? detail.reason}</b> },
                 {
                   label: "Trạng thái",
-                  value: <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${returnStatusBadgeClass(detail.status)}`}>{RETURN_STATUS_LABELS[detail.status] ?? detail.status}</span>,
+                  value: <StatusBadge tone={returnStatusTone(detail.status)}>{RETURN_STATUS_LABELS[detail.status] ?? detail.status}</StatusBadge>,
                 },
                 detail.refundAmount > 0 ? { label: "Hoàn tiền", value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
                 { label: "Ngày tạo", value: <b className="text-foreground font-semibold">{formatDate(detail.createdAt)}</b> },
@@ -107,7 +108,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 
             {/* Admin note */}
             {detail.adminNote && (
-              <div className="py-3 px-[14px] text-[12px] leading-[1.6] bg-[rgba(249,157,28,0.1)] text-[#f99d1c] border border-[rgba(249,157,28,0.25)] [&_p]:m-0">
+              <div className="py-3 px-[14px] text-[12px] leading-[1.6] bg-[var(--bb-state-warning-bg)] text-[var(--bb-state-warning-text)] border border-[var(--bb-state-warning-border)] [&_p]:m-0">
                 <p className="text-xs font-bold tracking-[0.1em] uppercase mb-[6px]">Phản hồi từ cửa hàng</p>
                 <p>{detail.adminNote}</p>
               </div>
@@ -477,9 +478,9 @@ function ReturnsContent() {
                       </div>
                     )}
                   </div>
-                  <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${returnStatusBadgeClass(ret.status)}`}>
+                  <StatusBadge tone={returnStatusTone(ret.status)}>
                     {RETURN_STATUS_LABELS[ret.status] ?? ret.status}
-                  </span>
+                  </StatusBadge>
                 </div>
               </button>
             ))}

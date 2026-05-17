@@ -33,8 +33,10 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const EMPTY_FORM = {
@@ -66,52 +68,40 @@ function VideoPreviewModal({ video, onClose }) {
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.82)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/[0.82]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          position: 'relative', width: '90vw', maxWidth: 800,
-          background: '#000', borderRadius: 'var(--admin-radius-md)', overflow: 'hidden',
-        }}
+        className="relative w-[90vw] max-w-[800px] overflow-hidden rounded-md bg-black"
       >
         <button
           type="button"
           onClick={onClose}
-          style={{
-            position: 'absolute', top: 10, right: 12, zIndex: 1,
-            background: 'rgba(0,0,0,0.6)', border: 'none', color: 'var(--admin-color-text-inverse)',
-            fontSize: 22, lineHeight: 1, cursor: 'pointer', borderRadius: 'var(--admin-radius-xs)',
-            padding: '2px 8px',
-          }}
+          className="absolute top-2.5 right-3 z-[1] rounded-xs border-none bg-black/60 text-[22px] leading-none cursor-pointer px-2 py-0.5 text-white"
           aria-label="Đóng"
         >×</button>
 
-        <div style={{ position: 'relative', paddingBottom: '56.25%' }}>
+        <div className="relative pb-[56.25%]">
           {embedUrl ? (
             <iframe
               src={embedUrl}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+              className="absolute inset-0 w-full h-full border-none"
             />
           ) : video.videoUrl ? (
             <video
               src={video.videoUrl}
               controls
               autoPlay
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+              className="absolute inset-0 w-full h-full"
             />
           ) : null}
         </div>
 
         {video.title && (
-          <p style={{ margin: 0, padding: '10px 16px', color: 'var(--admin-color-text-inverse)', fontSize: 13, fontWeight: 600, background: '#111' }}>
+          <p className="m-0 px-4 py-2.5 text-xs font-semibold text-white bg-[#111]">
             {video.title}
           </p>
         )}
@@ -139,25 +129,17 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
   return (
     <div
       ref={setNodeRef}
-      style={{
-        ...style,
-        background: selected ? 'var(--admin-color-surface-selected)' : 'var(--admin-color-surface-base)',
-        border: selected ? '1px solid var(--admin-color-primary)' : '1px solid var(--admin-color-border-subtle)',
-        borderRadius: 'var(--admin-radius-md)',
-        padding: '12px 16px',
-        display: 'flex',
-        gap: 12,
-        alignItems: 'flex-start',
-        boxShadow: 'var(--admin-shadow-xs)',
-        opacity: video.isActive === false && !selected ? 0.55 : undefined,
-      }}
+      style={{ ...style, opacity: video.isActive === false && !selected ? 0.55 : undefined }}
+      className={cn(
+        'flex gap-3 items-start rounded-md px-4 py-3 shadow-xs',
+        selected ? 'bg-surface-selected border border-primary' : 'bg-surface border border-border'
+      )}
     >
       {canUpdate && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        <div className="flex items-center gap-1 shrink-0">
           <Checkbox
             checked={selected}
             onCheckedChange={(checked) => onSelect(video.id, checked)}
-            style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
             aria-label={`Chọn video ${video.title}`}
            />
           {!selectionMode && (
@@ -165,10 +147,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
               type="button"
               {...attributes}
               {...listeners}
-              style={{
-                background: 'none', border: 'none', cursor: 'grab',
-                padding: '2px 4px', color: 'var(--admin-color-text-muted)', touchAction: 'none',
-              }}
+              className="bg-transparent border-none cursor-grab px-1 py-0.5 text-muted-foreground touch-none"
               aria-label={t('homeVideos.dragToReorder')}
             >
               <GripVertical size={16} />
@@ -180,25 +159,16 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       <button
         type="button"
         onClick={onPreview}
-        style={{
-          flexShrink: 0, width: 96, height: 58,
-          borderRadius: 'var(--admin-radius-sm)', overflow: 'hidden',
-          background: '#111', border: 'none', padding: 0,
-          cursor: 'pointer', position: 'relative',
-        }}
+        className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-[#111] border-none p-0 cursor-pointer relative"
         aria-label={`Xem trước: ${video.title}`}
       >
         {thumbSrc
-          ? <img src={thumbSrc} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          ? <img src={thumbSrc} alt={video.title} className="w-full h-full object-cover block" />
           : video.videoUrl
-            ? <video src={video.videoUrl} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }} />
-            : <div style={{ width: '100%', height: '100%', background: '#222' }} />
+            ? <video src={video.videoUrl} preload="metadata" muted className="w-full h-full object-cover block pointer-events-none" />
+            : <div className="w-full h-full bg-[#222]" />
         }
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.3)',
-        }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <svg viewBox="0 0 40 40" width={28} height={28} fill="none">
             <circle cx="20" cy="20" r="20" fill="rgba(0,0,0,0.55)" />
             <polygon points="16,12 16,28 30,20" fill="white" />
@@ -206,50 +176,34 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         </div>
       </button>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div className="flex-1 min-w-0">
+        <div className="truncate font-semibold text-sm mb-1">
           {video.title}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--admin-color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="truncate text-xs text-muted-foreground">
           {video.videoUrl}
         </div>
-        <div style={{ marginTop: 4, fontSize: 12 }}>
-          <span style={{
-            display: 'inline-block',
-            padding: '2px 8px',
-            borderRadius: 'var(--admin-radius-full)',
-            background: video.isActive ? 'var(--admin-color-status-success-bg)' : 'var(--admin-color-surface-raised)',
-            color: video.isActive ? 'var(--admin-color-status-success-text)' : 'var(--admin-color-text-muted)',
-            fontWeight: 600,
-          }}>
+        <div className="mt-1 text-xs">
+          <span className={cn(
+            'inline-block px-2 py-0.5 rounded-full font-semibold',
+            video.isActive ? 'bg-success-bg text-success' : 'bg-surface-raised text-muted-foreground'
+          )}>
             {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
           </span>
         </div>
       </div>
 
       {canUpdate && (
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => onToggleActive(video)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
-          >
+        <div className="flex gap-2 shrink-0">
+          <Button type="button" variant="outline" size="sm" onClick={() => onToggleActive(video)}>
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onEdit(video)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
-          >
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(video.id)}
-            style={{ fontSize: 12, padding: '4px 10px', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', color: 'var(--c-danger)' }}
-          >
+          </Button>
+          <Button type="button" variant="danger" size="sm" onClick={() => onDelete(video.id)}>
             {t('common.delete')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -511,22 +465,16 @@ export function HomeVideoListScreen({ canUpdate }) {
   const listContent = items.length === 0 ? (
     <StatePanel tone="neutral" title={t('homeVideos.empty')} description={t('homeVideos.emptyDescription')} />
   ) : (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="flex flex-col gap-2.5">
 
       {/* Filter bar */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
+      <div className="flex gap-2 items-center">
+        <Input
           type="search"
           value={searchText}
           onChange={(e) => { setSearchText(e.target.value); setSelectedIds(new Set()) }}
           placeholder="Tìm theo tên video..."
-          style={{
-            flex: 1, padding: '7px 12px',
-            border: '1px solid var(--admin-color-border-subtle)',
-            borderRadius: 'var(--admin-radius-sm)', fontSize: 13,
-            background: 'var(--admin-color-surface-base)',
-            color: 'inherit', outline: 'none',
-          }}
+          className="flex-1"
         />
         <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
           <SelectTrigger className="w-auto text-xs h-8"><SelectValue /></SelectTrigger>
@@ -537,13 +485,10 @@ export function HomeVideoListScreen({ canUpdate }) {
           </SelectContent>
         </Select>
         {isFiltering && (
-          <button
-            type="button"
-            onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}
-            style={{ fontSize: 12, padding: '7px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >
+          <Button type="button" variant="outline" size="sm" className="whitespace-nowrap"
+            onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}>
             Xoá bộ lọc
-          </button>
+          </Button>
         )}
       </div>
 
@@ -552,69 +497,41 @@ export function HomeVideoListScreen({ canUpdate }) {
       ) : (<>
 
       {canUpdate && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px' }}>
+        <div className="flex items-center gap-2.5 px-1 py-1.5">
           <Checkbox
             ref={selectAllRef}
             checked={allSelected}
             onCheckedChange={(checked) => handleSelectAll(checked)}
-            style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--admin-color-primary)' }}
             aria-label="Chọn tất cả"
            />
-          <span style={{ fontSize: 13, color: 'var(--admin-color-text-muted)' }}>
+          <span className="text-sm text-muted-foreground">
             {selectionMode ? `Đã chọn ${selectedIds.size} / ${items.length}` : 'Chọn tất cả'}
           </span>
           {selectionMode && (
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              style={{ fontSize: 12, padding: '2px 8px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer', marginLeft: 4 }}
-            >
+            <Button type="button" variant="outline" size="sm" className="ml-1"
+              onClick={() => setSelectedIds(new Set())}>
               Bỏ chọn
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {selectionMode && canUpdate && (
-        <div style={{
-          display: 'flex', gap: 8, alignItems: 'center',
-          padding: '10px 14px',
-          background: 'var(--admin-color-surface-raised)',
-          border: '1px solid var(--admin-color-border-subtle)',
-          borderRadius: 'var(--admin-radius-md)',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>
+        <div className="flex gap-2 items-center rounded-md border border-border bg-surface-raised px-3.5 py-2.5">
+          <span className="text-sm font-semibold mr-1">
             {selectedIds.size} video đã chọn:
           </span>
-          <button
-            type="button"
-            disabled={isBulkBusy}
-            onClick={() => handleBulkSetActive(false)}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
-          >
-            Ẩn
-          </button>
-          <button
-            type="button"
-            disabled={isBulkBusy}
-            onClick={() => handleBulkSetActive(true)}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', opacity: isBulkBusy ? 0.6 : 1 }}
-          >
-            Hiện
-          </button>
-          <button
-            type="button"
-            disabled={isBulkBusy}
-            onClick={handleBulkDelete}
-            style={{ fontSize: 12, padding: '5px 12px', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: isBulkBusy ? 'not-allowed' : 'pointer', color: 'var(--c-danger)', opacity: isBulkBusy ? 0.6 : 1 }}
-          >
-            Xoá
-          </button>
+          <Button type="button" variant="outline" size="sm" disabled={isBulkBusy}
+            onClick={() => handleBulkSetActive(false)}>Ẩn</Button>
+          <Button type="button" variant="outline" size="sm" disabled={isBulkBusy}
+            onClick={() => handleBulkSetActive(true)}>Hiện</Button>
+          <Button type="button" variant="danger" size="sm" disabled={isBulkBusy}
+            onClick={handleBulkDelete}>Xoá</Button>
         </div>
       )}
 
       {isFiltering && (
-        <p style={{ fontSize: 12, color: 'var(--admin-color-text-muted)', margin: '0 0 4px 2px' }}>
+        <p className="text-xs text-muted-foreground m-0 mb-1 ml-0.5">
           {filteredItems.length} / {items.length} video — kéo thả sắp xếp bị tắt khi đang lọc
         </p>
       )}
@@ -638,59 +555,46 @@ export function HomeVideoListScreen({ canUpdate }) {
   )
 
   return (
-    <div style={{ padding: '24px 0', maxWidth: 760 }}>
+    <div className="py-6 max-w-[760px]">
       {!canUpdate && <ReadOnlyBanner />}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{t('homeVideos.title')}</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="m-0 text-xl font-bold">{t('homeVideos.title')}</h1>
         {canUpdate && !showForm && (
-          <button
-            type="button"
-            onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
-            style={{ padding: '8px 16px', background: 'var(--admin-color-primary)', color: 'var(--admin-color-text-inverse)', border: 'none', borderRadius: 'var(--admin-radius-sm)', fontWeight: 600, cursor: 'pointer' }}
-          >
+          <Button type="button"
+            onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}>
             {t('homeVideos.addButton')}
-          </button>
+          </Button>
         )}
       </div>
 
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          style={{
-            background: 'var(--admin-color-surface-base)',
-            border: '1px solid var(--admin-color-border-subtle)',
-            borderRadius: 'var(--admin-radius-md)',
-            padding: 20,
-            marginBottom: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-          }}
+          className="flex flex-col gap-3.5 rounded-md border border-border bg-surface p-5 mb-6"
         >
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
+          <h3 className="m-0 text-[15px] font-bold">
             {editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}
           </h3>
 
           {formError ? (
-            <p style={{ color: 'var(--c-danger)', margin: 0 }}>{formError}</p>
+            <p className="text-danger m-0">{formError}</p>
           ) : null}
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
+          <label className="flex flex-col gap-1 text-sm font-semibold">
             {t('homeVideos.formTitle')}
-            <input
+            <Input
               required
               value={form.title}
               onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
               placeholder={t('homeVideos.formTitlePlaceholder')}
-              style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', fontSize: 14 }}
             />
           </label>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600 }}>
+          <div className="flex flex-col gap-1.5 text-sm font-semibold">
             {t('homeVideos.formSource')}
-            <div style={{ display: 'flex', gap: 20, fontWeight: 400 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <div className="flex gap-5 font-normal">
+              <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
                   name="videoType"
@@ -700,7 +604,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 />
                 {t('homeVideos.sourceYoutube')}
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
                   name="videoType"
@@ -714,31 +618,30 @@ export function HomeVideoListScreen({ canUpdate }) {
           </div>
 
           {form.videoType === 'youtube' ? (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
+            <label className="flex flex-col gap-1 text-sm font-semibold">
               {t('homeVideos.formYoutubeUrl')}
-              <input
+              <Input
                 required
                 type="url"
                 value={form.videoUrl}
                 onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
                 placeholder="https://www.youtube.com/watch?v=..."
-                style={{ padding: '8px 10px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', fontSize: 14 }}
               />
-              <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
+              <span className="text-[11px] text-muted-foreground font-normal">
                 {t('homeVideos.youtubeHint')}
               </span>
               {youtubePreviewId && (
                 <img
                   src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
                   alt={t('homeVideos.youtubePreviewAlt')}
-                  style={{ marginTop: 6, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 'var(--admin-radius-xs)', border: '1px solid var(--admin-color-border-subtle)' }}
+                  className="mt-1.5 w-full max-w-xs h-auto rounded-xs border border-border"
                 />
               )}
             </label>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
+            <div className="flex flex-col gap-1 text-sm font-semibold">
               {t('homeVideos.formUpload')}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="flex gap-2 items-center">
                 <Button variant="secondary" size="sm"
                   type="button"
                   onClick={() => setVideoPickerOpen(true)}
@@ -758,18 +661,18 @@ export function HomeVideoListScreen({ canUpdate }) {
                 )}
               </div>
               {form.videoUrl ? (
-                <span style={{ fontSize: 11, color: 'var(--admin-color-status-success-text)', fontWeight: 400 }}>
+                <span className="text-[11px] text-success font-normal">
                   ✓ {form.videoUrl.split('/').pop()}
                 </span>
               ) : (
-                <span style={{ fontSize: 11, color: 'var(--admin-color-text-muted)', fontWeight: 400 }}>
+                <span className="text-[11px] text-muted-foreground font-normal">
                   {t('homeVideos.uploadHint')}
                 </span>
               )}
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
+          <div className="flex flex-col gap-1 text-sm font-semibold">
             {t('homeVideos.formThumbnail')}
             <ImageUrlInput
               value={form.thumbnailUrl}
@@ -779,29 +682,21 @@ export function HomeVideoListScreen({ canUpdate }) {
             />
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
             <Checkbox
               checked={form.isActive}
-              onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
+              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: !!checked }))}
              />
             {t('homeVideos.formIsActive')}
           </label>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              type="submit"
-              disabled={isBusy}
-              style={{ padding: '8px 20px', background: 'var(--admin-color-primary)', color: 'var(--admin-color-text-inverse)', border: 'none', borderRadius: 'var(--admin-radius-sm)', fontWeight: 600, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.7 : 1 }}
-            >
-              {isBusy ? t('homeVideos.saving') : editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
-            </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              style={{ padding: '8px 16px', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', background: 'none', cursor: 'pointer' }}
-            >
+          <div className="flex gap-2.5">
+            <Button type="submit" loading={isBusy}>
+              {editingVideo ? t('homeVideos.saveChanges') : t('homeVideos.save')}
+            </Button>
+            <Button type="button" variant="secondary" onClick={resetForm}>
               {t('common.cancel')}
-            </button>
+            </Button>
           </div>
         </form>
       )}

@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminSettingsService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
@@ -63,7 +64,7 @@ public class AdminSettingsController {
 
     @PatchMapping
     public ApiDataResponse<List<AdminSiteSettingResponse>> batchUpdateSettings(
-            @RequestBody BatchUpdateSettingsRequest body,
+            @Valid @RequestBody BatchUpdateSettingsRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "settings.write");
@@ -74,7 +75,7 @@ public class AdminSettingsController {
     @PatchMapping("/{settingKey}")
     public ApiDataResponse<AdminSiteSettingResponse> updateSetting(
             @PathVariable String settingKey,
-            @RequestBody UpdateSiteSettingRequest body,
+            @Valid @RequestBody UpdateSiteSettingRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "settings.write");

@@ -16,12 +16,14 @@ import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
+import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 
 const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
 const MENU_NOTICE_DISMISSED_KEY = 'bigbike-admin-cat-menu-notice-dismissed'
@@ -48,24 +50,6 @@ function toSlug(text) {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-}
-
-function localizePublishStatus(status, t) {
-  switch (status) {
-    case 'PUBLISHED':
-      return t('categories.detail.productStatusPublished')
-    case 'DRAFT':
-      return t('categories.detail.productStatusDraft')
-    case 'HIDDEN':
-    case 'PRIVATE':
-      return t('categories.detail.productStatusHidden')
-    case 'ARCHIVED':
-      return t('categories.detail.productStatusArchived')
-    case 'TRASH':
-      return t('categories.detail.productStatusTrash')
-    default:
-      return t('categories.detail.productStatusUnknown')
-  }
 }
 
 function buildEmptyForm() {
@@ -450,9 +434,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           )}
           {!isCreate && state.item && (
             <div className="cat-detail-meta">
-              <span className={`status-badge ${state.item.isVisible ? 'status-success' : 'status-neutral'}`}>
-                {state.item.isVisible ? t('categories.visibleLabel') : t('categories.hiddenLabel')}
-              </span>
+              <StatusBadge type="visibility" status={state.item.isVisible} />
               {productsTotal > 0 && (
                 <span className="cat-detail-meta-item" title={t('categories.detail.productCountTitle')}>
                   <Package size={13} aria-hidden="true" />
@@ -483,24 +465,21 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         </div>
         <div className="screen-actions">
           {!isCreate && state.item?.slug && (
-            <a
-              className="btn btn-ghost"
-              href={`${STOREFRONT_BASE}/${state.item.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('categories.detail.viewOnSiteTitle')}
-            >
-              <ExternalLink size={14} aria-hidden="true" />
-              <span>{t('categories.detail.viewOnSite')}</span>
-            </a>
+            <Button asChild variant="ghost">
+              <a
+                href={`${STOREFRONT_BASE}/${state.item.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('categories.detail.viewOnSiteTitle')}
+              >
+                <ExternalLink size={14} aria-hidden="true" />
+                <span>{t('categories.detail.viewOnSite')}</span>
+              </a>
+            </Button>
           )}
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate('/admin/categories')}
-          >
+          <Button variant="outline" onClick={() => navigate('/admin/categories')}>
             {t('categories.detail.backToList')}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -522,20 +501,12 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
             <p>{t('categories.detail.menuNoticeDesc')}</p>
             <div className="dismissible-banner-actions">
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => navigate('/admin/menus')}
-              >
+              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={handleDismissMenuNotice}
-              >
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDismissMenuNotice}>
                 {t('categories.detail.menuNoticeDismiss')}
-              </button>
+              </Button>
             </div>
           </div>
           <button
@@ -700,13 +671,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <p className="detail-section-desc">{t('categories.detail.productsSectionDesc')}</p>
               </div>
               {productsTotal > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}>
                   {t('categories.detail.productsViewAll', { count: productsTotal })}
-                </button>
+                </Button>
               )}
             </header>
             <div className="detail-section-content">
@@ -732,9 +699,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                           <strong>{p.name}</strong>
                           <span className="cat-products-sku">{p.sku || p.slug}</span>
                         </div>
-                        <span className={`status-badge status-${p.publishStatus === 'PUBLISHED' ? 'success' : p.publishStatus === 'TRASH' ? 'danger' : 'neutral'}`}>
-                          {localizePublishStatus(p.publishStatus, t)}
-                        </span>
+                        <PublishStatusBadge value={p.publishStatus} />
                       </button>
                     </li>
                   ))}
@@ -764,26 +729,15 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
             </small>
             {isDirty && !isReadOnly && (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={handleDiscardChanges}
-                disabled={isSubmitting}
-              >
+              <Button variant="ghost" onClick={handleDiscardChanges} disabled={isSubmitting}>
                 {t('categories.detail.discardChanges')}
-              </button>
+              </Button>
             )}
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isReadOnly || !isDirty}
-            >
-              {isSubmitting
-                ? t('common.saving')
-                : isCreate
-                  ? t('categories.detail.createBtn')
-                  : t('categories.detail.saveBtn')}
-            </button>
+            <Button type="submit" loading={isSubmitting} disabled={isReadOnly || !isDirty}>
+              {isCreate
+                ? t('categories.detail.createBtn')
+                : t('categories.detail.saveBtn')}
+            </Button>
           </div>
         </div>
 
@@ -793,19 +747,14 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         <div className="danger-zone">
           <div className="danger-zone-info">
             <strong>
-              <AlertTriangle size={13} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />
+              <AlertTriangle size={13} aria-hidden="true" className="align-middle mr-1.5" />
               {t('categories.detail.dangerZoneTitle')}
             </strong>
             <p>{t('categories.detail.dangerZoneDesc')}</p>
           </div>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={handleHardDelete}
-            disabled={hardDeleteMutation.isPending}
-          >
-            {hardDeleteMutation.isPending ? t('common.deleting') : t('categories.detail.hardDeleteBtn')}
-          </button>
+          <Button variant="danger" onClick={handleHardDelete} loading={hardDeleteMutation.isPending}>
+            {t('categories.detail.hardDeleteBtn')}
+          </Button>
         </div>
       )}
     </section>

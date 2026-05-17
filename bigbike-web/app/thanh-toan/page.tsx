@@ -20,16 +20,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+// BigBike settles payments manually — only COD and bank transfer (BACS) are
+// offered. No automated gateway (MoMo/VNPay) is integrated.
 const PAY_LOGO_STYLE: Record<string, string> = {
-  COD: "bg-[#222] text-white border border-white/20",
-  BACS: "bg-[#005ba4] text-white",
-  MOMO: "bg-[#a50064] text-white",
-  VNPAY: "bg-[#005ba4] text-white",
+  COD: "bg-foreground text-white border border-white/20",
+  BACS: "bg-info text-white",
 };
 
 const PAYMENT_DESC: Record<string, string> = {
   COD: "Thanh toán khi nhận hàng — kiểm tra hàng rồi mới trả tiền.",
-  BACS: "Chuyển khoản ngân hàng — thông tin TK gửi qua email sau khi đặt hàng.",
+  BACS: "Chuyển khoản ngân hàng — thông tin tài khoản hiển thị ngay sau khi đặt hàng.",
 };
 
 function MiniRadioStackSkeleton({ rows = 2 }: { rows?: number }) {
@@ -138,6 +138,7 @@ export default function CheckoutPage() {
     defaultValues: { country: "VN" },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const address = watch();
 
   // Prefill form from profile/address when logged in — runs once, never overwrites user edits

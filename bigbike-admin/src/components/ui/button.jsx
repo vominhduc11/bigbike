@@ -1,5 +1,6 @@
 import { Slot } from '@radix-ui/react-slot'
 import { cva } from 'class-variance-authority'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
@@ -26,13 +27,38 @@ const buttonVariants = cva(
   }
 )
 
-export function Button({ className, variant, size, asChild = false, ...props }) {
+export function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  loading = false,
+  disabled,
+  children,
+  ...props
+}) {
   const Comp = asChild ? Slot : 'button'
+  // asChild forwards to a single child element (Radix Slot) — Slot rejects
+  // multiple children, so we can't inject a sibling spinner. Pass children
+  // through untouched there; the loading affordance only applies to real buttons.
+  const showSpinner = loading && !asChild
+  // Icon buttons are a fixed square: swap the icon for the spinner instead of
+  // showing both side by side.
+  const hideChildren = showSpinner && size === 'icon'
   return (
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {asChild ? children : (
+        <>
+          {showSpinner && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+          {!hideChildren && children}
+        </>
+      )}
+    </Comp>
   )
 }
 

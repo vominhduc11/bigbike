@@ -1,9 +1,10 @@
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/env";
 
 export const runtime = "nodejs";
 
-const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET ?? process.env.WEB_REVALIDATE_SECRET;
+const REVALIDATE_SECRET = env.REVALIDATE_SECRET ?? env.WEB_REVALIDATE_SECRET;
 
 function parseTags(body: unknown): string[] {
   if (!body || typeof body !== "object" || !("tags" in body) || !Array.isArray((body as { tags: unknown }).tags)) {

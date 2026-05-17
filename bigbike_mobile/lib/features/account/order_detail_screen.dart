@@ -7,6 +7,17 @@ import '../../core/widgets/error_view.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/widgets/media_image.dart';
 import '../../core/utils/formatters.dart';
+import 'create_return_screen.dart';
+
+// Mirrors web's isCustomerCancellable — only UNPAID orders that haven't shipped.
+bool _isCancellable(OrderDetail o) {
+  if (o.paymentStatus != 'UNPAID') return false;
+  if (o.status == 'PENDING' || o.status == 'ON_HOLD') return true;
+  if (o.status == 'PROCESSING') {
+    return o.fulfillmentStatus != 'SHIPPED' && o.fulfillmentStatus != 'DELIVERED';
+  }
+  return false;
+}
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -53,17 +64,76 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ? ErrorView(message: _error!, onRetry: _load)
               : _order == null
                   ? const EmptyState(message: 'Không tìm thấy đơn hàng')
-                  : _OrderContent(order: _order!),
+                  : _OrderContent(order: _order!, onReload: _load),
     );
   }
 }
 
-class _OrderContent extends StatelessWidget {
+class _OrderContent extends StatefulWidget {
   final OrderDetail order;
-  const _OrderContent({required this.order});
+  final VoidCallback onReload;
+  const _OrderContent({required this.order, required this.onReload});
+
+  @override
+  State<_OrderContent> createState() => _OrderContentState();
+}
+
+class _OrderContentState extends State<_OrderContent> {
+  bool _showCancelConfirm = false;
+  bool _cancelling = false;
+  String? _cancelError;
+  bool _checkingEligibility = false;
+
+  Future<void> _doCancel() async {
+    setState(() { _cancelling = true; _cancelError = null; });
+    try {
+      await ApiClient().patch<Map<String, dynamic>>(
+          ApiEndpoints.cancelOrder(widget.order.id), data: {});
+      setState(() { _showCancelConfirm = false; _cancelling = false; });
+      widget.onReload();
+    } catch (e) {
+      setState(() {
+        _cancelError = e.toString();
+        _cancelling = false;
+        _showCancelConfirm = false;
+      });
+    }
+  }
+
+  Future<void> _openReturnWithEligibilityCheck() async {
+    setState(() => _checkingEligibility = true);
+    bool eligible = true;
+    String? reason;
+    try {
+      final data = await ApiClient().get<Map<String, dynamic>>(
+          ApiEndpoints.orderReturnEligibility(widget.order.id));
+      eligible = data['eligible'] as bool? ?? true;
+      reason = data['reason'] as String?;
+    } catch (_) {
+      // Eligibility endpoint failure: degrade gracefully, allow navigation
+    } finally {
+      if (mounted) setState(() => _checkingEligibility = false);
+    }
+    if (!mounted) return;
+    if (!eligible) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(reason ?? 'Đơn hàng không đủ điều kiện đổi trả.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateReturnScreen(preselectedOrderId: widget.order.id),
+      ),
+    );
+    if (created == true && mounted) widget.onReload();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final order = widget.order;
     final shipping = order.shippingAddress;
 
     return ListView(
@@ -98,7 +168,7 @@ class _OrderContent extends StatelessWidget {
 
         // Address
         if (shipping != null)
-          _Section('Địa chỉ giao hàng', [
+          _section('Địa chỉ giao hàng', [
             shipping.fullName,
             shipping.phone,
             shipping.fullAddress,
@@ -165,30 +235,125 @@ class _OrderContent extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _TotalRow('Tạm tính', formatVnd(order.subtotalAmount)),
+              _totalRow('Tạm tính', formatVnd(order.subtotalAmount)),
               if (order.discountAmount > 0)
-                _TotalRow('Giảm giá', '-${formatVnd(order.discountAmount)}', color: AppColors.success),
+                _totalRow('Giảm giá', '-${formatVnd(order.discountAmount)}', color: AppColors.success),
               if (order.shippingAmount > 0)
-                _TotalRow('Phí giao hàng', formatVnd(order.shippingAmount)),
+                _totalRow('Phí giao hàng', formatVnd(order.shippingAmount)),
               const Divider(color: AppColors.divider, height: 16),
-              _TotalRow('Tổng cộng', formatVnd(order.totalAmount),
+              _totalRow('Tổng cộng', formatVnd(order.totalAmount),
                   bold: true, color: AppColors.primary),
             ],
           ),
         ),
 
         const SizedBox(height: 12),
+
         if (order.placedAt != null)
           Center(
             child: Text('Đặt lúc ${formatDateTime(order.placedAt)}',
                 style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           ),
+
+        // Cancel error banner
+        if (_cancelError != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+            ),
+            child: Text(_cancelError!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+          ),
+        ],
+
+        // Cancel section
+        if (_isCancellable(order)) ...[
+          const SizedBox(height: 12),
+          if (_showCancelConfirm)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.bgSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Xác nhận huỷ đơn #${order.orderNumber}?',
+                      style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Đơn hàng sẽ bị huỷ và tồn kho sẽ được hoàn lại. Thao tác không thể khôi phục.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _cancelling ? null : () => setState(() => _showCancelConfirm = false),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.borderSubtle),
+                          ),
+                          child: const Text('Không huỷ'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _cancelling ? null : _doCancel,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            disabledBackgroundColor: AppColors.error.withValues(alpha: 0.4),
+                          ),
+                          child: _cancelling
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Xác nhận huỷ', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          else
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => setState(() { _showCancelConfirm = true; _cancelError = null; }),
+                child: const Text('Huỷ đơn hàng', style: TextStyle(color: AppColors.error)),
+              ),
+            ),
+        ],
+
+        // Return section
+        if (order.status == 'COMPLETED') ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _checkingEligibility ? null : _openReturnWithEligibilityCheck,
+              icon: _checkingEligibility
+                  ? const SizedBox(
+                      width: 14, height: 14,
+                      child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+                  : const Icon(Icons.assignment_return_outlined, size: 16, color: AppColors.primary),
+              label: const Text('Yêu cầu đổi trả', style: TextStyle(color: AppColors.primary)),
+            ),
+          ),
+        ],
+
         const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _Section(String title, List<String> lines) {
+  Widget _section(String title, List<String> lines) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -205,7 +370,7 @@ class _OrderContent extends StatelessWidget {
     );
   }
 
-  Widget _TotalRow(String label, String value, {bool bold = false, Color? color}) {
+  Widget _totalRow(String label, String value, {bool bold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(

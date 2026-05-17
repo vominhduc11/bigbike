@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { StatePanel } from '../components/StatePanel'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posCreateRefund, posSearchProducts } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
+import { Modal } from '../components/layout'
 import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -166,19 +168,12 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   }
 
   return (
-    <div className="pos-modal-overlay" onClick={onClose}>
-      <div className="pos-modal" onClick={(e) => e.stopPropagation()}>
-        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose}>
-          <X size={16} />
-        </Button>
-        <h3 style={{ marginTop: 0, marginBottom: 16 }}>{t('pos.paymentMethod')}</h3>
-
+    <Modal open title={t('pos.paymentMethod')} onClose={onClose}>
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <div>
               <label className="field-label">Tên khách (tuỳ chọn)</label>
               <Input
-                style={{ width: '100%' }}
                 placeholder="Nguyễn Văn A"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -187,7 +182,6 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
             <div>
               <label className="field-label">Số điện thoại (tuỳ chọn)</label>
               <Input
-                style={{ width: '100%' }}
                 placeholder="0901 234 567"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
@@ -196,46 +190,36 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           </div>
 
           {method !== 'CREDIT' && (
-            <div style={{ marginBottom: 12 }}>
+            <div className="mb-3">
               <label className="field-label">Liên kết khách hàng cũ (tuỳ chọn)</label>
               {!walkInCustomer ? (
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
                   <Input
-                    style={{ width: '100%' }}
                     placeholder="Tìm theo tên hoặc email..."
                     value={walkInQuery}
                     onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
                     autoComplete="off"
                   />
                   {walkInResults.length > 0 && (
-                    <div style={{
-                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                      background: 'var(--admin-color-surface-raised)',
-                      border: '1px solid var(--admin-color-border-subtle)',
-                      borderRadius: 'var(--admin-radius-md)',
-                      boxShadow: 'var(--admin-shadow-md)',
-                      maxHeight: 180, overflowY: 'auto',
-                    }}>
+                    <div className="absolute top-full left-0 right-0 z-[100] bg-surface-raised border border-border rounded-md shadow-md max-h-[180px] overflow-y-auto">
                       {walkInResults.map((c) => (
                         <button
                           key={c.id}
                           type="button"
-                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--admin-color-surface-hover)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                          className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
                           onClick={() => handleSelectWalkIn(c)}
                         >
                           <strong>{c.displayName || c.email}</strong>
-                          {c.email && c.displayName && <span style={{ color: 'var(--admin-color-text-muted)', marginLeft: 8, fontSize: '0.75rem' }}>{c.email}</span>}
+                          {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--admin-color-surface-base)', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-md)' }}>
-                  <span style={{ flex: 1, fontSize: '0.85rem' }}>Đã liên kết: <strong>{walkInCustomer.displayName || walkInCustomer.email}</strong></span>
-                  <button type="button" onClick={() => { setWalkInCustomer(null); setWalkInQuery('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-surface border border-border rounded-md">
+                  <span className="flex-1 text-sm">Đã liên kết: <strong>{walkInCustomer.displayName || walkInCustomer.email}</strong></span>
+                  <button type="button" onClick={() => { setWalkInCustomer(null); setWalkInQuery('') }} className="bg-transparent border-none cursor-pointer p-0.5 flex">
                     <X size={13} />
                   </button>
                 </div>
@@ -257,10 +241,9 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           </div>
 
           {method === 'CASH' && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-3">
               <label className="field-label">Tiền khách đưa (tuỳ chọn)</label>
               <Input
-                style={{ width: '100%' }}
                 type="number"
                 min={0}
                 placeholder="Nhập số tiền khách đưa..."
@@ -268,21 +251,20 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                 onChange={(e) => setTendered(e.target.value)}
                />
               {change !== null && change >= 0 && (
-                <p style={{ marginTop: 4, fontSize: '0.85rem', color: 'var(--admin-color-success, #22c55e)' }}>
+                <p className="mt-1 text-sm text-success">
                   Tiền thừa trả lại: <strong>{formatCurrencyVnd(change)}</strong>
                 </p>
               )}
               {insufficientTendered && (
-                <p className="field-error" style={{ marginTop: 4 }}>Tiền đưa chưa đủ tổng thanh toán.</p>
+                <p className="field-error mt-1">Tiền đưa chưa đủ tổng thanh toán.</p>
               )}
             </div>
           )}
 
           {method === 'CARD_TERMINAL' && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-3">
               <label className="field-label">Mã giao dịch thẻ (tuỳ chọn)</label>
               <Input
-                style={{ width: '100%' }}
                 placeholder="REF-12345"
                 value={cardRef}
                 onChange={(e) => setCardRef(e.target.value)}
@@ -291,11 +273,10 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           )}
 
           {method === 'CREDIT' && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-3">
               <label className="field-label">Tìm khách hàng *</label>
-              <div style={{ position: 'relative' }}>
+              <div className="relative">
                 <Input
-                  style={{ width: '100%' }}
                   placeholder="Nhập tên hoặc email khách hàng..."
                   value={customerQuery}
                   onChange={(e) => {
@@ -307,68 +288,49 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                   autoComplete="off"
                  />
                 {customerResults.length > 0 && (
-                  <div style={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                    background: 'var(--admin-color-surface-raised)',
-                    border: '1px solid var(--admin-color-border-subtle)',
-                    borderRadius: 'var(--admin-radius-md)',
-                    boxShadow: 'var(--admin-shadow-md)',
-                    maxHeight: 200, overflowY: 'auto',
-                  }}>
+                  <div className="absolute top-full left-0 right-0 z-[100] bg-surface-raised border border-border rounded-md shadow-md max-h-[200px] overflow-y-auto">
                     {customerResults.map((c) => (
                       <button
                         key={c.id}
                         type="button"
-                        style={{
-                          display: 'block', width: '100%', textAlign: 'left',
-                          padding: '8px 12px', background: 'none', border: 'none',
-                          cursor: 'pointer', fontSize: '0.875rem',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--admin-color-surface-hover)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                        className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
                         onClick={() => handleSelectCustomer(c)}
                       >
                         <strong>{c.displayName || c.email}</strong>
-                        {c.email && c.displayName && <span style={{ color: 'var(--admin-color-text-muted)', marginLeft: 8, fontSize: '0.75rem' }}>{c.email}</span>}
+                        {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {creditLoading && <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginTop: 6 }}>Đang tải thông tin tín dụng...</p>}
+              {creditLoading && <p className="text-sm text-muted-foreground mt-1.5">Đang tải thông tin tín dụng...</p>}
 
               {selectedCustomer && customerCredit && !creditLoading && (
-                <div style={{
-                  marginTop: 10, padding: '10px 12px',
-                  background: 'var(--admin-color-surface-base)',
-                  border: '1px solid var(--admin-color-border-subtle)',
-                  borderRadius: 'var(--admin-radius-md)',
-                  fontSize: '0.85rem',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div className="mt-2.5 px-3 py-2.5 bg-surface border border-border rounded-md text-sm">
+                  <div className="flex justify-between mb-1">
                     <span>Bán chịu:</span>
-                    <strong style={{ color: creditEnabled ? 'var(--admin-color-success, #22c55e)' : 'var(--admin-color-danger, #ef4444)' }}>
+                    <strong className={creditEnabled ? 'text-success' : 'text-danger'}>
                       {creditEnabled ? 'Được phép' : 'Bị tắt'}
                     </strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div className="flex justify-between mb-1">
                     <span>Trạng thái:</span>
                     <strong>{customerCredit.creditStatus}</strong>
                   </div>
                   {customerCredit.creditLimit != null && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div className="flex justify-between mb-1">
                         <span>Hạn mức:</span>
                         <span>{formatCurrencyVnd(customerCredit.creditLimit)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div className="flex justify-between mb-1">
                         <span>Đang nợ:</span>
                         <span>{formatCurrencyVnd(customerCredit.currentOutstanding)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div className="flex justify-between">
                         <span>Còn có thể bán chịu:</span>
-                        <strong style={{ color: availableCredit >= total ? 'var(--admin-color-success, #22c55e)' : 'var(--admin-color-warning, #f59e0b)' }}>
+                        <strong className={availableCredit >= total ? 'text-success' : 'text-warning'}>
                           {formatCurrencyVnd(availableCredit)}
                         </strong>
                       </div>
@@ -378,32 +340,30 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
               )}
 
               {creditBlocked && (
-                <p className="field-error" style={{ marginTop: 6 }}>
+                <p className="field-error mt-1.5">
                   Khách hàng không đủ điều kiện bán chịu
                   {!creditEnabled ? ' (chưa được bật tín dụng)' : ` (trạng thái: ${customerCredit?.creditStatus})`}.
                 </p>
               )}
 
               {overLimit && canOverrideCreditLimit && (
-                <p style={{ marginTop: 6, fontSize: '0.85rem', color: 'var(--admin-color-warning, #f59e0b)' }}>
+                <p className="mt-1.5 text-sm text-warning">
                   Vượt hạn mức tín dụng — sẽ override (bạn có quyền).
                 </p>
               )}
 
               {creditOverLimitBlocked && (
-                <p className="field-error" style={{ marginTop: 6 }}>
+                <p className="field-error mt-1.5">
                   Vượt hạn mức tín dụng ({formatCurrencyVnd(total)} &gt; còn lại {formatCurrencyVnd(availableCredit)}). Bạn không có quyền override.
                 </p>
               )}
 
-
             </div>
           )}
 
-          <div style={{ marginTop: 12 }}>
+          <div className="mt-3">
             <label className="field-label">Mã giảm giá (tuỳ chọn)</label>
             <Input
-              style={{ width: '100%' }}
               placeholder="Nhập mã giảm giá POS..."
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -411,10 +371,9 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
              />
           </div>
 
-          <div style={{ marginTop: 12 }}>
+          <div className="mt-3">
             <label className="field-label">{t('pos.note')}</label>
             <Input
-              style={{ width: '100%' }}
               placeholder={t('pos.notePlaceholder')}
               value={staffNote}
               onChange={(e) => setStaffNote(e.target.value)}
@@ -426,18 +385,18 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
             <strong>{formatCurrencyVnd(total)}</strong>
           </div>
 
-          {error && <p className="field-error" style={{ marginBottom: 8 }}>{error}</p>}
+          {error && <p className="field-error mb-2">{error}</p>}
 
           <Button
             type="submit"
-            style={{ width: '100%' }}
+            className="w-full"
+            loading={submitting}
             disabled={submitDisabled}
           >
-            {submitting ? t('common.saving') : t('pos.confirmPayment')}
+            {t('pos.confirmPayment')}
           </Button>
         </form>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -507,11 +466,11 @@ function printReceipt(order, cart) {
     iframe.contentDocument.write(html)
     iframe.contentDocument.close()
     setTimeout(() => {
-      try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch {}
-      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 1000)
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch { /* print best-effort */ }
+      setTimeout(() => { try { document.body.removeChild(iframe) } catch { /* already removed */ } }, 1000)
     }, 300)
-  } catch {
-    try { document.body.removeChild(iframe) } catch {}
+  } catch { /* iframe print unsupported */
+    try { document.body.removeChild(iframe) } catch { /* already removed */ }
   }
 }
 
@@ -555,39 +514,29 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
   }
 
   return (
-    <div className="pos-modal-overlay" onClick={onClose}>
-      <div className="pos-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
-        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose} aria-label={t('common.close')}>
-          <X size={16} />
-        </Button>
-        <h3 style={{ marginTop: 0, marginBottom: 4 }}>{t('pos.refundTitle')}</h3>
-        <p style={{ marginTop: 0, marginBottom: 12, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
+    <Modal open title={t('pos.refundTitle')} onClose={onClose}>
+        <p className="text-sm text-muted-foreground mb-3">
           {t('pos.orderNumber')}: <strong>{order?.orderNumber || '—'}</strong>
           {' · '}{t('pos.refundMax')}: <strong>{formatCurrencyVnd(maxRefundable)}</strong>
         </p>
 
         {hasSerialItems && (
-          <div role="note" className="bg-warning-bg text-warning border border-warning" style={{
-            padding: '8px 10px', marginBottom: 12, fontSize: '0.8rem',
-            background: 'var(--admin-color-warning-bg, #fef3c7)',
-            color: 'var(--admin-color-warning, #b45309)',
-            borderLeft: '3px solid var(--admin-color-warning, #f59e0b)',
-          }}>
+          <div role="note" className="px-2.5 py-2 mb-3 text-[0.8rem] bg-warning-bg text-warning border-l-[3px] border-warning-border border-l-warning">
             {t('pos.refundSerialWarning')}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 12 }}>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>
-              {t('pos.refundLabelAmount')}: <strong style={{ fontSize: '1rem', color: 'var(--admin-color-text)' }}>{formatCurrencyVnd(maxRefundable)}</strong>
+          <div className="mb-3">
+            <p className="m-0 text-sm text-muted-foreground">
+              {t('pos.refundLabelAmount')}: <strong className="text-base text-foreground">{formatCurrencyVnd(maxRefundable)}</strong>
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--admin-color-text-muted)' }}>
+            <p className="m-0 mt-1 text-[0.78rem] text-muted-foreground">
               {t('pos.refundFullOnly')}
             </p>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
+          <div className="mb-3">
             <label className="field-label" htmlFor="pos-refund-reason">{t('pos.refundLabelReason')}</label>
             <Select value={reasonValue} onValueChange={setReasonValue}>
               <SelectTrigger id="pos-refund-reason"><SelectValue /></SelectTrigger>
@@ -597,7 +546,7 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
             </Select>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
+          <div className="mb-3">
             <label className="field-label" htmlFor="pos-refund-note">{t('pos.refundLabelNote')}</label>
             <Textarea
               id="pos-refund-note"
@@ -605,27 +554,26 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t('pos.refundNotePlaceholder')}
-              style={{ width: '100%', resize: 'vertical', minHeight: 56 }}
+              className="w-full resize-y min-h-14"
             />
           </div>
 
           {error && (
-            <p style={{ marginTop: 0, marginBottom: 12, fontSize: '0.82rem', color: 'var(--admin-color-danger, #dc2626)' }}>
+            <p className="m-0 mb-3 text-xs text-danger">
               {error}
             </p>
           )}
 
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <div className="flex gap-2 justify-end">
             <Button variant="secondary" type="button" onClick={onClose} disabled={submitting}>
               {t('common.cancel')}
             </Button>
-            <Button variant="destructive" type="submit" disabled={submitDisabled}>
+            <Button variant="danger" type="submit" disabled={submitDisabled}>
               {submitting ? t('pos.refundProcessing') : t('pos.refundConfirm')}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -656,108 +604,95 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
   const refundableRemaining = canHaveRefund ? Math.max(0, effectivePaid - alreadyRefunded) : 0
   const canRefundAction = canHaveRefund && refundableRemaining > 0
   return (
-    <div className="pos-modal-overlay" onClick={onClose}>
-      <div className="pos-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-        <Button variant="secondary" size="icon" className="pos-modal-close" type="button" onClick={onClose}>
-          <X size={16} />
-        </Button>
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--admin-color-success,#22c55e)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Modal open title={t('pos.success')} onClose={onClose}>
+        <div className="text-center mb-4">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-success mx-auto">
             <circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" />
           </svg>
-          <h3 style={{ marginTop: 8, marginBottom: 4 }}>{t('pos.success')}</h3>
-          <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem', margin: 0 }}>
+          <p className="text-sm text-muted-foreground mt-2 mb-0">
             {t('pos.orderNumber')}: <strong>{order?.orderNumber || '—'}</strong>
           </p>
         </div>
 
         {items.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 12 }}>
+          <table className="w-full border-collapse text-xs mb-3">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--admin-color-border-subtle)' }}>
-                <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Sản phẩm</th>
-                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>SL</th>
-                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>Đơn giá</th>
-                <th style={{ textAlign: 'right', padding: '4px 6px', fontWeight: 600 }}>T.tiền</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-1.5 py-1 font-semibold">Sản phẩm</th>
+                <th className="text-right px-1.5 py-1 font-semibold">SL</th>
+                <th className="text-right px-1.5 py-1 font-semibold">Đơn giá</th>
+                <th className="text-right px-1.5 py-1 font-semibold">T.tiền</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
                 <tr key={item.cartKey}>
-                  <td style={{ padding: '4px 6px' }}>
+                  <td className="px-1.5 py-1">
                     <div>{item.productName}</div>
-                    {item.variantName && <div style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.variantName}</div>}
+                    {item.variantName && <div className="text-[0.75rem] text-muted-foreground">{item.variantName}</div>}
                   </td>
-                  <td style={{ textAlign: 'right', padding: '4px 6px' }}>{item.qty}</td>
-                  <td style={{ textAlign: 'right', padding: '4px 6px', whiteSpace: 'nowrap' }}>
+                  <td className="text-right px-1.5 py-1">{item.qty}</td>
+                  <td className="text-right px-1.5 py-1 whitespace-nowrap">
                     {formatCurrencyVnd(effectivePrice(item))}
                     {item.overriddenPrice != null && (
-                      <div style={{ fontSize: '0.7rem', color: 'var(--admin-color-text-muted)', textDecoration: 'line-through' }}>
+                      <div className="text-[0.7rem] text-muted-foreground line-through">
                         {formatCurrencyVnd(item.price)}
                       </div>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right', padding: '4px 6px', whiteSpace: 'nowrap' }}>{formatCurrencyVnd(effectivePrice(item) * item.qty)}</td>
+                  <td className="text-right px-1.5 py-1 whitespace-nowrap">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: '1px solid var(--admin-color-border-subtle)', fontWeight: 700 }}>
-                <td colSpan={3} style={{ padding: '6px 6px 2px', textAlign: 'right' }}>Tổng cộng</td>
-                <td style={{ padding: '6px 6px 2px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatCurrencyVnd(total)}</td>
+              <tr className="border-t border-border font-bold">
+                <td colSpan={3} className="px-1.5 pt-1.5 pb-0.5 text-right">Tổng cộng</td>
+                <td className="px-1.5 pt-1.5 pb-0.5 text-right whitespace-nowrap">{formatCurrencyVnd(total)}</td>
               </tr>
             </tfoot>
           </table>
         )}
 
         {isCreditOrder && (
-          <p style={{ fontSize: '0.85rem', marginBottom: 8, color: 'var(--admin-color-warning, #f59e0b)', textAlign: 'center' }}>
+          <p className="text-sm mb-2 text-warning text-center">
             Công nợ: <strong>{order?.paymentStatus || 'UNPAID'}</strong>
           </p>
         )}
         {!isCreditOrder && order?.changeAmount != null && order.changeAmount > 0 && (
-          <p style={{ fontSize: '0.85rem', marginBottom: 8, textAlign: 'center' }}>
-            Tiền thừa: <strong style={{ color: 'var(--admin-color-success, #22c55e)' }}>{formatCurrencyVnd(order.changeAmount)}</strong>
+          <p className="text-sm mb-2 text-center">
+            Tiền thừa: <strong className="text-success">{formatCurrencyVnd(order.changeAmount)}</strong>
           </p>
         )}
         {refundedAmount > 0 && (
-          <p style={{ fontSize: '0.85rem', marginBottom: 8, textAlign: 'center', color: 'var(--admin-color-danger, #dc2626)' }}>
+          <p className="text-sm mb-2 text-center text-danger">
             {t('pos.refundedBadge')}: <strong>{formatCurrencyVnd(refundedAmount)}</strong>
           </p>
         )}
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button variant="secondary"
-            type="button"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="secondary" type="button" className="flex items-center gap-1.5"
             onClick={() => printReceipt(order, items)}
           >
             <Printer size={14} /> In hóa đơn
           </Button>
           {canHaveRefund && canRefund && (
             <Button
-              variant="destructive"
+              variant="danger"
               type="button"
               disabled={!canRefundAction}
               title={!canRefundAction ? t('pos.refundedBadge') : undefined}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              className="flex items-center gap-1.5"
               onClick={() => setShowRefund(true)}
             >
               <RotateCcw size={14} /> {t('pos.refundButton')}
             </Button>
           )}
           {!canHaveRefund && isCreditOrder && (
-            <span style={{
-              flex: '0 0 auto',
-              padding: '0.5rem 0.75rem',
-              fontSize: '0.78rem',
-              color: 'var(--admin-color-text-muted)',
-              alignSelf: 'center',
-            }}>
+            <span className="shrink-0 px-3 py-2 text-[0.78rem] text-muted-foreground self-center">
               {t('pos.refundUnavailableCredit')}
             </span>
           )}
-          <Button type="button" style={{ flex: 1, minWidth: 120 }} onClick={onClose}>
+          <Button type="button" className="flex-1 min-w-[120px]" onClick={onClose}>
             {t('pos.newSale')}
           </Button>
         </div>
@@ -774,8 +709,7 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
             }}
           />
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -921,7 +855,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           </div>
 
           {searching && (
-            <p style={{ padding: '8px 0', color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>{t('common.loading')}...</p>
+            <p className="py-2 text-muted-foreground text-sm">{t('common.loading')}...</p>
           )}
 
           {!searching && results.length === 0 && dq.trim() && (
@@ -988,12 +922,12 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                       <span className="pos-cart-item-sku">{item.variantName || item.sku}</span>
                     )}
                     {editingPriceId === item.cartKey ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <div className="flex items-center gap-1 mt-0.5">
                         <Input
                           ref={priceInputRef}
                           type="number"
                           min={0}
-                          style={{ width: 110, padding: '2px 6px', fontSize: '0.8rem' }}
+                          className="w-[110px] py-0.5 px-1.5 text-xs h-auto"
                           value={priceInput}
                           onChange={(e) => setPriceInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -1004,11 +938,11 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                          />
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div className="flex items-center gap-1">
                         <span className="pos-cart-item-price">
                           {formatCurrencyVnd(effectivePrice(item))}
                           {item.overriddenPrice != null && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--admin-color-text-muted)', textDecoration: 'line-through', marginLeft: 4 }}>
+                            <span className="text-[0.7rem] text-muted-foreground line-through ml-1">
                               {formatCurrencyVnd(item.price)}
                             </span>
                           )}
@@ -1017,7 +951,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                           <Button variant="secondary" size="sm"
                             type="button"
                             title="Sửa giá"
-                            style={{ opacity: 0.6 }}
+                            className="opacity-60"
                             onClick={() => startEditPrice(item)}
                           >
                             <Pencil size={11} />
@@ -1042,15 +976,15 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
             {cart.length > 0 && (
               <Button variant="secondary" size="sm"
                 type="button"
-                style={{ marginBottom: 8, alignSelf: 'flex-start' }}
-                onClick={() => {
-                  if (window.confirm('Xoá toàn bộ giỏ hàng?')) {
+                className="mb-2 self-start"
+                onClick={async () => {
+                  if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
                     setCart([])
                     try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
                   }
                 }}
               >
-                <Trash2 size={13} style={{ marginRight: 4 }} /> Xoá giỏ hàng
+                <Trash2 size={13} className="mr-1" /> Xoá giỏ hàng
               </Button>
             )}
             <div className="pos-cart-total">

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.menu;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "menus")
+@Getter
+@Setter
 public class MenuEntity {
 
     @Id
@@ -32,21 +36,4 @@ public class MenuEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

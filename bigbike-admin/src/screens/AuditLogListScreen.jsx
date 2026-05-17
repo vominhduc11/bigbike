@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 // ── Actions that are dangerous — shown with a warning indicator ────────────────
 const DANGEROUS_ACTIONS = new Set([
@@ -47,6 +50,10 @@ function getDatePreset(preset) {
     return { from: fmt(from), to: todayStr }
   }
   return { from: '', to: '' }
+}
+
+function toBadgeVariant(tone) {
+  return tone === 'neutral' ? 'muted' : tone
 }
 
 // ── Diff helpers ───────────────────────────────────────────────────────────────
@@ -152,7 +159,7 @@ function ModuleBadge({ resourceType }) {
   }
   const tone = TONE_MAP[resourceType] || 'neutral'
   const label = t(`auditLog.module.${resourceType}`, { defaultValue: resourceType || t('auditLog.module.OTHER') })
-  return <span className={`status-badge status-${tone}`}>{label}</span>
+  return <Badge variant={toBadgeVariant(tone)}>{label}</Badge>
 }
 
 function ActorCell({ log }) {
@@ -183,7 +190,7 @@ function ResourceCell({ log }) {
     // #9: show raw ID instead of "ID #abc123" prefix — just the short hex
     return <span className="audit-resource-label audit-resource-id" title={log.resourceId}>{log.resourceId.slice(0, 8)}</span>
   }
-  return <span style={{ color: 'var(--admin-color-text-muted)' }}>—</span>
+  return <span className="text-muted-foreground">—</span>
 }
 
 function ActionLabel({ action }) {
@@ -215,7 +222,6 @@ function DetailRow({ label, children }) {
 
 function AuditDetailDrawer({ log, onClose }) {
   const { t } = useTranslation()
-  const closeRef = useRef(null)
   const isDangerous = DANGEROUS_ACTIONS.has(log.action)
   const hasRaw = !!(log.beforeData || log.afterData)
   const [showRaw, setShowRaw] = useState(false)
@@ -258,39 +264,27 @@ function AuditDetailDrawer({ log, onClose }) {
     return changes
   }, [log.beforeData, log.afterData, t])
 
-  useEffect(() => { closeRef.current?.focus() }, [])
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
-
   return (
-    <div
-      className="audit-drawer-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-      aria-hidden="false"
+    <Modal
+      open={Boolean(log)}
+      onClose={onClose}
+      title={t('auditLog.drawerTitle')}
+      closeLabel={t('auditLog.drawerClose')}
+      wide
     >
-      <aside className="audit-drawer" role="dialog" aria-modal="true" aria-labelledby="audit-drawer-title">
+      <div className="audit-drawer-body px-0 py-0">
         <div className="audit-drawer-header">
           <h2 id="audit-drawer-title" className="audit-drawer-title">
             {t('auditLog.drawerTitle')}
           </h2>
-          <button
-            ref={closeRef}
-            type="button"
-            className="btn btn-secondary"
+          <Button
+            variant="outline"
+            size="icon"
             onClick={onClose}
             aria-label={t('auditLog.drawerClose')}
-            style={{ padding: '0.2rem 0.55rem', fontSize: '1rem', lineHeight: 1 }}
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="audit-drawer-body">
@@ -306,17 +300,15 @@ function AuditDetailDrawer({ log, onClose }) {
             </DetailRow>
 
             <DetailRow label={t('auditLog.drawerActorLabel')}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <div className="flex flex-wrap items-center gap-1.5">
                 {displayName
-                  ? <strong style={{ fontSize: '0.875rem' }}>{displayName}</strong>
-                  : <span style={{ fontSize: '0.875rem', color: 'var(--admin-color-text-muted)', fontStyle: 'italic' }}>
-                      {actorFallback}
-                    </span>
+                  ? <strong className="text-sm">{displayName}</strong>
+                  : <span className="text-sm italic text-muted-foreground">{actorFallback}</span>
                 }
                 {log.actorType && log.actorType !== 'ADMIN' && (
-                  <span className="status-badge status-neutral" style={{ fontSize: '0.72rem' }}>
+                  <Badge variant="muted" className="text-xs">
                     {t(`auditLog.actorType.${log.actorType}`, { defaultValue: log.actorType })}
-                  </span>
+                  </Badge>
                 )}
               </div>
             </DetailRow>
@@ -326,12 +318,12 @@ function AuditDetailDrawer({ log, onClose }) {
             </DetailRow>
 
             <DetailRow label={t('auditLog.drawerModuleLabel')}>
-              <span className={`status-badge status-${moduleTone}`}>{moduleLabel}</span>
+              <Badge variant={toBadgeVariant(moduleTone)}>{moduleLabel}</Badge>
             </DetailRow>
 
             {(log.resourceCode || log.resourceDisplayName || log.resourceId) && (
               <DetailRow label={t('auditLog.drawerEntityLabel')}>
-                <strong style={{ fontSize: '0.875rem' }}>
+                <strong className="text-sm">
                   {log.resourceCode || log.resourceDisplayName || log.resourceId?.slice(0, 8)}
                 </strong>
               </DetailRow>
@@ -378,7 +370,7 @@ function AuditDetailDrawer({ log, onClose }) {
                 aria-expanded={showRaw}
               >
                 {t('auditLog.drawerTechData')}
-                <span aria-hidden="true" style={{ marginLeft: 4 }}>{showRaw ? '▲' : '▼'}</span>
+                <span aria-hidden="true" className="ml-1">{showRaw ? '▲' : '▼'}</span>
               </button>
               {showRaw && (
                 <div className="audit-tech-body">
@@ -392,7 +384,7 @@ function AuditDetailDrawer({ log, onClose }) {
                   )}
                   {log.afterData && (
                     <>
-                      <p className="audit-tech-label" style={{ marginTop: '0.75rem' }}>{t('auditLog.drawerAfter')}</p>
+                      <p className="audit-tech-label mt-3">{t('auditLog.drawerAfter')}</p>
                       <pre className="audit-tech-pre">
                         {JSON.stringify(tryParse(log.afterData) ?? log.afterData, null, 2)}
                       </pre>
@@ -403,8 +395,8 @@ function AuditDetailDrawer({ log, onClose }) {
             </div>
           )}
         </div>
-      </aside>
-    </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -449,12 +441,12 @@ function AuditCard({ log, onClick }) {
         </time>
       </div>
       <div className="audit-card-meta">
-        <span className={`status-badge status-${moduleTone}`} style={{ fontSize: '0.72rem' }}>
+        <Badge variant={toBadgeVariant(moduleTone)} className="text-xs">
           {moduleLabel}
-        </span>
+        </Badge>
         <span>{actorName}</span>
         {resourceLabel && (
-          <span className="audit-resource-label" style={{ fontSize: '0.75rem' }}>{resourceLabel}</span>
+          <span className="audit-resource-label text-xs">{resourceLabel}</span>
         )}
       </div>
       <div className="audit-card-chevron" aria-hidden="true">›</div>
@@ -487,12 +479,12 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
       <div className="audit-mobile-filter-sheet">
         <div className="audit-mobile-filter-header">
           <strong>{t('auditLog.mobileFilterLabel')}</strong>
-          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ padding: '0.2rem 0.55rem' }}>✕</button>
+          <Button variant="outline" size="icon" onClick={onClose}>✕</Button>
         </div>
         <div className="audit-mobile-filter-body">
           <label>
             <span>{t('auditLog.filterSearch')}</span>
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div className="flex gap-1.5">
               <Input
                 type="search"
                 value={searchInput}
@@ -500,9 +492,9 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
                 onKeyDown={(e) => { if (e.key === 'Enter') { onSearch(); onClose() } }}
                 placeholder={t('auditLog.filterSearchPlaceholder')}
                />
-              <button type="button" className="btn btn-secondary" onClick={() => { onSearch(); onClose() }}>
+              <Button variant="outline" onClick={() => { onSearch(); onClose() }}>
                 {t('auditLog.mobileSearchBtn')}
-              </button>
+              </Button>
             </div>
           </label>
 
@@ -529,36 +521,36 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
           </label>
 
           <div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+            <span className="mb-1.5 block text-sm font-medium">
               {t('auditLog.filterQuickTime')}
             </span>
             <div className="audit-preset-chips">
               {PRESET_KEYS.map((key) => (
-                <button key={key} type="button" className="btn btn-secondary btn-sm" onClick={() => applyPreset(key)}>
+                <Button key={key} variant="outline" size="sm" onClick={() => applyPreset(key)}>
                   {t(`auditLog.preset.${key}`)}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <label style={{ flex: 1 }}>
+          <div className="flex gap-2">
+            <label className="flex-1">
               <span>{t('auditLog.filterFrom')}</span>
               <Input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)}  />
             </label>
-            <label style={{ flex: 1 }}>
+            <label className="flex-1">
               <span>{t('auditLog.filterTo')}</span>
               <Input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)}  />
             </label>
           </div>
-          <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={applyDates}>
+          <Button className="w-full" onClick={applyDates}>
             {t('auditLog.mobileFilterApplyDates')}
-          </button>
+          </Button>
 
           {isFiltered && (
-            <button type="button" className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { onReset(); onClose() }}>
+            <Button variant="outline" className="w-full" onClick={() => { onReset(); onClose() }}>
               {t('auditLog.mobileFilterResetAll')}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -687,16 +679,15 @@ export function AuditLogListScreen() {
         <div>
           <p className="eyebrow">{t('auditLog.eyebrow')}</p>
           <h1>{t('auditLog.title')}</h1>
-          <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+          <p className="mt-1 text-sm text-muted-foreground">
             {t('auditLog.description')}
           </p>
         </div>
         <div className="audit-header-actions">
           {/* #5: Refresh button removed — WebSocket keeps data live */}
           {/* #8: Export button with tooltip showing row count */}
-          <button
-            type="button"
-            className="btn btn-secondary"
+          <Button
+            variant="outline"
             onClick={handleExport}
             disabled={state.items.length === 0}
             title={
@@ -706,7 +697,7 @@ export function AuditLogListScreen() {
             }
           >
             ↓ {t('auditLog.exportBtn')}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -718,18 +709,18 @@ export function AuditLogListScreen() {
         <div className="audit-filter-row">
           <label className="audit-filter-search-group">
             <span>{t('auditLog.filterSearch')}</span>
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div className="flex gap-1.5">
               <Input
                 type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={t('auditLog.filterSearchPlaceholder')}
-                style={{ minWidth: 220 }}
+                className="min-w-56"
                />
-              <button type="button" className="btn btn-secondary" onClick={handleSearch}>
+              <Button variant="outline" onClick={handleSearch}>
                 {t('auditLog.filterQuickSearch')}
-              </button>
+              </Button>
             </div>
           </label>
 
@@ -774,24 +765,25 @@ export function AuditLogListScreen() {
         {/* Row 2: date presets + date pickers + clear */}
         <div className="audit-filter-row audit-filter-row--dates">
           <div>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, display: 'block', marginBottom: '0.35rem' }}>
+            <span className="block text-sm font-medium mb-1.5">
               {t('auditLog.filterQuickTime')}
             </span>
             <div className="audit-preset-chips">
               {PRESET_KEYS.map((key) => (
-                <button
+                <Button
                   key={key}
-                  type="button"
-                  className={`btn btn-secondary btn-sm${activePreset === key ? ' audit-preset-active' : ''}`}
+                  variant="outline"
+                  size="sm"
+                  className={activePreset === key ? 'audit-preset-active' : undefined}
                   onClick={() => handlePreset(key)}
                 >
                   {t(`auditLog.preset.${key}`)}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+          <div className="flex gap-2 items-end">
             <label>
               <span>{t('auditLog.filterFrom')}</span>
               <Input
@@ -809,14 +801,9 @@ export function AuditLogListScreen() {
                />
             </label>
             {isFiltered && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleReset}
-                style={{ alignSelf: 'flex-end' }}
-              >
+              <Button variant="outline" onClick={handleReset} className="self-end">
                 {t('auditLog.resetFilters')}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -824,13 +811,9 @@ export function AuditLogListScreen() {
 
       {/* ── Mobile filter toggle — #10: hidden at ≤900px via CSS ── */}
       <div className="audit-mobile-filter-toggle">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setShowMobileFilter(true)}
-        >
+        <Button variant="outline" onClick={() => setShowMobileFilter(true)}>
           {t('auditLog.mobileFilterLabel')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-        </button>
+        </Button>
         {query.q && (
           <span className="audit-mobile-search-chip">
             "{query.q}"
@@ -838,9 +821,9 @@ export function AuditLogListScreen() {
           </span>
         )}
         {isFiltered && (
-          <button type="button" className="btn btn-secondary" onClick={handleReset} style={{ fontSize: '0.8rem' }}>
+          <Button variant="outline" size="sm" onClick={handleReset}>
             {t('auditLog.resetFilters')}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -896,8 +879,8 @@ export function AuditLogListScreen() {
             {state.status === 'loading'
               ? Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="audit-card audit-card--skeleton" aria-hidden="true">
-                    <div className="skeleton-cell" style={{ width: '60%', height: 14, marginBottom: 8, borderRadius: 4 }} />
-                    <div className="skeleton-cell" style={{ width: '40%', height: 12, borderRadius: 4 }} />
+                    <div className="skeleton-cell w-3/5 h-3.5 mb-2 rounded" />
+                    <div className="skeleton-cell w-2/5 h-3 rounded" />
                   </div>
                 ))
               : state.items.map((log) => (

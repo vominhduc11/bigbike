@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { AdminTable } from '../components/AdminTable'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
-import { fetchAllSerials, updateSerialStatus } from '../lib/adminApi'
+import { fetchAllSerials, updateSerialStatus, getWarrantyBySerial } from '../lib/adminApi'
+import { useAdminList } from '../lib/useAdminList'
 import { formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
 import {
   SERIAL_STATUS_LABELS,
   SERIAL_STATUS_CLASSES,
@@ -32,11 +36,100 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('vi-VN')
 }
 
+// ── Warranty panel ────────────────────────────────────────────────────────────
+
+const WARRANTY_STATUS_CLASSES = {
+  ACTIVE: 'text-primary bg-primary/10',
+  EXPIRED: 'text-muted-foreground bg-muted',
+  VOIDED: 'text-destructive bg-destructive/10',
+}
+const WARRANTY_STATUS_LABELS = {
+  ACTIVE: 'Còn bảo hành',
+  EXPIRED: 'Hết hạn',
+  VOIDED: 'Đã hủy',
+}
+
+function WarrantyStatusBadge({ status }) {
+  const classes = WARRANTY_STATUS_CLASSES[status] ?? 'text-muted-foreground bg-muted'
+  const label = WARRANTY_STATUS_LABELS[status] ?? status
+  return (
+    <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${classes}`}>
+      {label}
+    </span>
+  )
+}
+
+// Fetches warranty for one serial only when its detail modal is open — never for the table.
+function SerialWarrantyPanel({ serialId, canRead }) {
+  const [state, setState] = useState({ status: 'loading' })
+
+  // The panel is mounted with key={serialId} by the modal, so each serial gets
+  // a fresh component instance starting from the 'loading' initial state — no
+  // need to reset state inside the effect.
+  useEffect(() => {
+    if (!canRead || !serialId) return
+    let active = true
+    getWarrantyBySerial(serialId)
+      .then((w) => { if (active) setState({ status: 'success', warranty: w }) })
+      .catch((err) => {
+        if (!active) return
+        if (err?.status === 404) setState({ status: 'empty' })
+        else if (err?.status === 403) setState({ status: 'forbidden' })
+        else setState({ status: 'error', error: err?.message || 'Lỗi khi tải thông tin bảo hành.' })
+      })
+    return () => { active = false }
+  }, [serialId, canRead])
+
+  if (!canRead) return null
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <p className="text-sm font-semibold">Bảo hành</p>
+      {state.status === 'loading' && (
+        <p className="text-sm text-muted-foreground">Đang tải thông tin bảo hành…</p>
+      )}
+      {state.status === 'empty' && (
+        <p className="text-sm text-muted-foreground">Chưa có bảo hành cho serial này.</p>
+      )}
+      {state.status === 'forbidden' && (
+        <p className="text-sm text-muted-foreground">Bạn không có quyền xem thông tin bảo hành.</p>
+      )}
+      {state.status === 'error' && (
+        <p className="text-sm text-destructive">{state.error}</p>
+      )}
+      {state.status === 'success' && (
+        <div className="grid grid-cols-2 gap-2.5 text-sm">
+          <div>
+            <span className="text-muted-foreground">Trạng thái: </span>
+            <WarrantyStatusBadge status={state.warranty.status} />
+          </div>
+          <div>
+            <span className="text-muted-foreground">Bắt đầu: </span>
+            <span>{formatDate(state.warranty.startDate)}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Kết thúc: </span>
+            <span>{formatDate(state.warranty.endDate)}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Email KH: </span>
+            <span>{state.warranty.customerEmail || '—'}</span>
+          </div>
+          <div className="col-span-2">
+            <span className="text-muted-foreground">SĐT KH: </span>
+            <span>{state.warranty.customerPhone || '—'}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Detail modal ──────────────────────────────────────────────────────────────
 
 const TERMINAL_STATES = new Set(['SCRAPPED'])
 
-function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
+function SerialDetailModal({ item, onClose, onUpdated, canUpdate, canReadWarranty }) {
   const [detail, setDetail] = useState(item)
   const [changingStatus, setChangingStatus] = useState(false)
   const [targetStatus, setTargetStatus] = useState('')
@@ -79,14 +172,8 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="serial-detail-title">
-      <div className="modal-box modal-box--flex" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title" id="serial-detail-title">Chi tiết serial</h2>
-          <button type="button" className="btn-icon btn-secondary-ghost" onClick={onClose} aria-label="Đóng">✕</button>
-        </div>
-
-        <div className="modal-body flex flex-col gap-4">
+    <Modal open title="Chi tiết serial" onClose={onClose}>
+        <div className="flex flex-col gap-4">
           {/* Serial number */}
           <div className="bg-surface border border-border p-3 text-center">
             <p className="text-xs text-muted-foreground mb-1">Số serial</p>
@@ -133,15 +220,14 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
             )}
           </div>
 
+          {/* Warranty */}
+          <SerialWarrantyPanel key={detail.id} serialId={detail.id} canRead={canReadWarranty} />
+
           {/* Status change */}
           {canUpdate && transitions.length > 0 && !changingStatus && (
-            <button
-              type="button"
-              className="btn btn-secondary self-start"
-              onClick={() => setChangingStatus(true)}
-            >
+            <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setChangingStatus(true)}>
               Đổi trạng thái
-            </button>
+            </Button>
           )}
 
           {canUpdate && changingStatus && (
@@ -175,18 +261,17 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
               )}
               {error && <p className="text-destructive text-xs">{error}</p>}
               <div className="flex gap-2">
-                <button type="submit" className="btn btn-primary" disabled={saving || !targetStatus}>
-                  {saving ? 'Đang lưu…' : confirmTerminal ? 'Xác nhận lần cuối' : 'Xác nhận'}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={() => { setChangingStatus(false); setTargetStatus(''); setStatusNote(''); setError(''); setConfirmTerminal(false) }}>
+                <Button type="submit" size="sm" loading={saving} disabled={!targetStatus}>
+                  {confirmTerminal ? 'Xác nhận lần cuối' : 'Xác nhận'}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setChangingStatus(false); setTargetStatus(''); setStatusNote(''); setError(''); setConfirmTerminal(false) }}>
                   Huỷ
-                </button>
+                </Button>
               </div>
             </form>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -194,39 +279,23 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate }) {
 
 const INITIAL_QUERY = { q: '', status: 'ALL', page: 1, pageSize: 20 }
 
-export function SerialListScreen({ canUpdate = false }) {
+export function SerialListScreen({ canUpdate = false, canReadWarranty = false }) {
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState('')
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirst = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
   const [selected, setSelected] = useState(null)
+
+  const state = useAdminList(['serials', query], () => fetchAllSerials(query))
 
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return }
     setQuery((q) => ({ ...q, q: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  useEffect(() => {
-    let active = true
-    setState((s) => ({ ...s, status: 'loading' }))
-    fetchAllSerials(query)
-      .then((r) => {
-        if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination })
-      })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, error: e.message })
-      })
-    return () => { active = false }
-  }, [query])
-
   function handleUpdated(updatedItem) {
-    setState((s) => ({
-      ...s,
-      items: s.items.map((i) => i.id === updatedItem.id ? updatedItem : i),
-    }))
+    queryClient.invalidateQueries({ queryKey: ['serials'] })
     setSelected(updatedItem)
   }
 
@@ -236,7 +305,7 @@ export function SerialListScreen({ canUpdate = false }) {
       label: 'Số serial',
       skeletonWidth: '70%',
       render: (item) => (
-        <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{item.serialNumber}</span>
+        <span className="font-mono font-semibold">{item.serialNumber}</span>
       ),
     },
     {
@@ -245,9 +314,9 @@ export function SerialListScreen({ canUpdate = false }) {
       skeletonWidth: '80%',
       render: (item) => (
         <span>
-          <p style={{ fontWeight: 500 }}>{item.productName || '—'}</p>
+          <p className="font-medium">{item.productName || '—'}</p>
           {item.variantName && (
-            <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>{item.variantName}</p>
+            <p className="text-xs text-muted-foreground">{item.variantName}</p>
           )}
         </span>
       ),
@@ -264,7 +333,7 @@ export function SerialListScreen({ canUpdate = false }) {
       align: 'right',
       skeletonWidth: '45%',
       render: (item) => (
-        <span style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)' }}>
+        <span className="text-xs text-muted-foreground">
           {formatDate(item.receivedAt)}
         </span>
       ),
@@ -275,7 +344,7 @@ export function SerialListScreen({ canUpdate = false }) {
       align: 'right',
       skeletonWidth: '45%',
       render: (item) => (
-        <span style={{ fontSize: '0.82rem', color: item.soldAt ? 'var(--admin-color-text)' : 'var(--admin-color-text-muted)' }}>
+        <span className={`text-xs ${item.soldAt ? 'text-foreground' : 'text-muted-foreground'}`}>
           {formatDate(item.soldAt)}
         </span>
       ),
@@ -321,7 +390,7 @@ export function SerialListScreen({ canUpdate = false }) {
           title="Lỗi tải dữ liệu"
           description={state.error}
           actionLabel="Thử lại"
-          onAction={() => setQuery((q) => ({ ...q }))}
+          onAction={() => state.refetch()}
         />
       )}
 
@@ -354,6 +423,7 @@ export function SerialListScreen({ canUpdate = false }) {
           onClose={() => setSelected(null)}
           onUpdated={handleUpdated}
           canUpdate={canUpdate}
+          canReadWarranty={canReadWarranty}
         />
       )}
     </section>

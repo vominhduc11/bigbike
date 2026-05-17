@@ -103,7 +103,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: _returns!.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _ReturnCard(
                         data: _returns![i],
                         onTap: () => _openDetail(_returns![i]),
@@ -163,7 +163,7 @@ class _ReturnCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _statusColor(status).withOpacity(0.12),
+                    color: _statusColor(status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -285,7 +285,7 @@ class _ReturnDetailScreenState extends State<ReturnDetailScreen> {
 
         // Admin note
         if (adminNote != null && adminNote.isNotEmpty) ...[
-          _NoteCard(label: 'Phản hồi cửa hàng', content: adminNote, color: AppColors.warning.withOpacity(0.08), labelColor: AppColors.warning),
+          _NoteCard(label: 'Phản hồi cửa hàng', content: adminNote, color: AppColors.warning.withValues(alpha: 0.08), labelColor: AppColors.warning),
           const SizedBox(height: 12),
         ],
 

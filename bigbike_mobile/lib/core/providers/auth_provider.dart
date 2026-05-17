@@ -65,7 +65,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         'email': email,
         'password': password,
         'firstName': firstName,
-        if (lastName != null) 'lastName': lastName,
+        'lastName': ?lastName,
       });
       final next = await _fetchMe();
       state = AsyncValue.data(next);

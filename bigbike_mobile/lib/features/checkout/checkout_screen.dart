@@ -415,32 +415,40 @@ class _ShippingPaymentStep extends StatelessWidget {
             child: CircularProgressIndicator(color: AppColors.primary),
           )
         else
-          ...options!.shippingMethods.map(
-            (m) => RadioListTile<String>(
-              value: m.id,
-              groupValue: shippingMethodId,
-              onChanged: onShippingChanged,
-              activeColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                m.title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-              subtitle: m.cost > 0
-                  ? Text(
-                      formatVnd(m.cost),
+          RadioGroup<String>(
+            groupValue: shippingMethodId,
+            onChanged: onShippingChanged,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...options!.shippingMethods.map(
+                  (m) => RadioListTile<String>(
+                    value: m.id,
+                    activeColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      m.title,
                       style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
                       ),
-                    )
-                  : const Text(
-                      'Miễn phí',
-                      style: TextStyle(color: AppColors.success, fontSize: 13),
                     ),
+                    subtitle: m.cost > 0
+                        ? Text(
+                            formatVnd(m.cost),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          )
+                        : const Text(
+                            'Miễn phí',
+                            style: TextStyle(
+                                color: AppColors.success, fontSize: 13),
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         const SizedBox(height: 16),
@@ -454,29 +462,36 @@ class _ShippingPaymentStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (options != null)
-          ...options!.paymentMethods.map(
-            (m) => RadioListTile<String>(
-              value: m.code,
-              groupValue: paymentMethodCode,
-              onChanged: onPaymentChanged,
-              activeColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                m.title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-              subtitle: m.description != null
-                  ? Text(
-                      m.description!,
+          RadioGroup<String>(
+            groupValue: paymentMethodCode,
+            onChanged: onPaymentChanged,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...options!.paymentMethods.map(
+                  (m) => RadioListTile<String>(
+                    value: m.code,
+                    activeColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      m.title,
                       style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
                       ),
-                    )
-                  : null,
+                    ),
+                    subtitle: m.description != null
+                        ? Text(
+                            m.description!,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ],
             ),
           ),
         const SizedBox(height: 16),
@@ -524,12 +539,12 @@ class _ReviewStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Section('Địa chỉ giao hàng', [
+        _section('Địa chỉ giao hàng', [
           '$name • $phone',
           '$address, $district, $province',
         ]),
         const SizedBox(height: 12),
-        _Section('Phương thức', [
+        _section('Phương thức', [
           'Giao hàng: ${shipping?.title ?? '—'}',
           'Thanh toán: ${payment?.title ?? '—'}',
         ]),
@@ -594,7 +609,7 @@ class _ReviewStep extends StatelessWidget {
     );
   }
 
-  Widget _Section(String title, List<String> lines) {
+  Widget _section(String title, List<String> lines) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),

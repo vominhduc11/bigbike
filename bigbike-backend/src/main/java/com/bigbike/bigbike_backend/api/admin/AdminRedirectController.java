@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,23 +43,28 @@ public class AdminRedirectController {
     private final ApiResponseFactory apiResponseFactory;
 
     public record CreateRedirectRequest(
-            @NotBlank String sourcePattern,
-            @NotBlank String targetUrl,
-            String redirectType,
-            Integer statusCode,
+            @NotBlank @Size(max = 1024) String sourcePattern,
+            @NotBlank @Size(max = 2048) String targetUrl,
+            @Size(max = 32) String redirectType,
+            @Min(100) @Max(599) Integer statusCode,
             @JsonAlias("isEnabled")
             Boolean enabled,
-            String notes,
+            @Size(max = 2000) String notes,
             Long legacyId
     ) {}
 
     public record UpdateRedirectRequest(
+            @Size(max = 1024)
             String sourcePattern,
+            @Size(max = 2048)
             String targetUrl,
+            @Size(max = 32)
             String redirectType,
+            @Min(100) @Max(599)
             Integer statusCode,
             @JsonAlias("isEnabled")
             Boolean enabled,
+            @Size(max = 2000)
             String notes,
             Long legacyId
     ) {}
@@ -111,7 +117,7 @@ public class AdminRedirectController {
     @PatchMapping("/{id}")
     public ApiDataResponse<AdminRedirectService.AdminRedirectResponse> updateRedirect(
             @PathVariable UUID id,
-            @RequestBody UpdateRedirectRequest payload,
+            @Valid @RequestBody UpdateRedirectRequest payload,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "redirects.write");

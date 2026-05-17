@@ -21,6 +21,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -131,7 +134,7 @@ public class AdminMediaController {
 
     @PostMapping("/bulk-move")
     public ApiDataResponse<java.util.Map<String, Object>> bulkMove(
-            @RequestBody BulkMoveRequest body,
+            @Valid @RequestBody BulkMoveRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
@@ -139,11 +142,14 @@ public class AdminMediaController {
         return apiResponseFactory.data(java.util.Map.of("affected", affected), request);
     }
 
-    public record BulkMoveRequest(List<UUID> ids, UUID folderId) {}
+    public record BulkMoveRequest(
+            @NotEmpty @Size(max = 500) List<@NotNull UUID> ids,
+            UUID folderId
+    ) {}
 
     @PostMapping("/bulk-delete")
     public ApiDataResponse<java.util.Map<String, Object>> bulkDelete(
-            @RequestBody BulkIdsRequest body,
+            @Valid @RequestBody BulkIdsRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
@@ -153,7 +159,7 @@ public class AdminMediaController {
 
     @PostMapping("/bulk-restore")
     public ApiDataResponse<java.util.Map<String, Object>> bulkRestore(
-            @RequestBody BulkIdsRequest body,
+            @Valid @RequestBody BulkIdsRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "media.write");
@@ -163,7 +169,7 @@ public class AdminMediaController {
 
     @PostMapping("/bulk-hard-delete")
     public ApiDataResponse<java.util.Map<String, Object>> bulkHardDelete(
-            @RequestBody BulkIdsRequest body,
+            @Valid @RequestBody BulkIdsRequest body,
             HttpServletRequest request
     ) {
         // Hard delete is irreversible — gated to roles with the wildcard permission.
@@ -177,7 +183,9 @@ public class AdminMediaController {
         ), request);
     }
 
-    public record BulkIdsRequest(List<UUID> ids) {}
+    public record BulkIdsRequest(
+            @NotEmpty @Size(max = 500) List<@NotNull UUID> ids
+    ) {}
 
     private static Instant parseInstant(String value) {
         if (value == null || value.isBlank()) return null;

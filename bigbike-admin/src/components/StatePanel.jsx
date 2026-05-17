@@ -17,8 +17,8 @@ export function StatePanel({
 }) {
   return (
     <section
-      className={`flex flex-col items-center justify-center gap-3 rounded-[var(--admin-radius-sm)] px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
-      role="status"
+      className={`flex flex-col items-center justify-center gap-3 rounded-sm px-6 py-10 text-center ${TONE_CLASSES[tone] ?? TONE_CLASSES.neutral}`}
+      role={tone === 'danger' ? 'alert' : 'status'}
     >
       <h2 className="text-base font-semibold font-body">{title}</h2>
       {description ? <p className="text-sm opacity-80">{description}</p> : null}

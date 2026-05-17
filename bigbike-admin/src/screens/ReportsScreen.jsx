@@ -10,6 +10,7 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchAnalytics, exportOrdersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const PRESET_VALUES = [
   { key: 'preset7d',  value: '7d',  days: 7 },
@@ -17,45 +18,22 @@ const PRESET_VALUES = [
   { key: 'preset90d', value: '90d', days: 90 },
 ]
 
-function kpiStyle() {
-  return {
-    background: 'var(--admin-color-surface-raised)',
-    border: '1px solid var(--admin-color-border-subtle)',
-    borderRadius: 'var(--admin-radius-md)',
-    padding: '16px 20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  }
-}
-
 function KpiCard({ label, value }) {
   return (
-    <div style={kpiStyle()}>
-      <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', margin: 0 }}>{label}</p>
-      <p style={{ fontSize: '1.35rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    <div className="bg-surface-raised border border-border rounded-md px-5 py-4 flex flex-col gap-1.5">
+      <p className="text-xs text-muted-foreground m-0">{label}</p>
+      <p className="text-2xl font-bold m-0">{value}</p>
     </div>
   )
 }
 
 function ChartCard({ title, children }) {
   return (
-    <div style={{
-      background: 'var(--admin-color-surface-raised)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-md)',
-      overflow: 'hidden',
-      marginBottom: 20,
-    }}>
-      <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--admin-color-border-subtle)',
-        fontWeight: 600,
-        fontSize: 'var(--admin-text-sm)',
-      }}>
+    <div className="bg-surface-raised border border-border rounded-md overflow-hidden mb-5">
+      <div className="px-4 py-3 border-b border-border font-semibold text-sm">
         {title}
       </div>
-      <div style={{ padding: '16px 8px 8px' }}>
+      <div className="px-2 pt-4 pb-2">
         {children}
       </div>
     </div>
@@ -65,15 +43,8 @@ function ChartCard({ title, children }) {
 function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{
-      background: 'var(--admin-color-surface-base)',
-      border: '1px solid var(--admin-color-border-subtle)',
-      borderRadius: 'var(--admin-radius-md)',
-      padding: '8px 12px',
-      boxShadow: 'var(--admin-shadow-md)',
-      fontSize: 'var(--admin-text-xs)',
-    }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
+    <div className="bg-surface border border-border rounded-md px-3 py-2 shadow-md text-xs">
+      <div className="font-semibold mb-1">{label}</div>
       {payload.map((p) => (
         <div key={p.dataKey} style={{ color: p.color }}>
           {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value, locale) : p.value}
@@ -85,8 +56,8 @@ function RevenueTooltip({ active, payload, label, locale }) {
 
 function RankTable({ title, rows, cols, noDataLabel }) {
   return (
-    <div className="table-wrap" style={{ flex: 1 }}>
-      <p style={{ padding: '12px 16px', fontWeight: 600, borderBottom: '1px solid var(--admin-color-border-subtle)', margin: 0 }}>{title}</p>
+    <div className="table-wrap flex-1">
+      <p className="px-4 py-3 font-semibold border-b border-border m-0">{title}</p>
       <table className="admin-table">
         <thead>
           <tr>
@@ -96,10 +67,10 @@ function RankTable({ title, rows, cols, noDataLabel }) {
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={cols.length + 1} style={{ textAlign: 'center', color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>{noDataLabel}</td></tr>
+            <tr><td colSpan={cols.length + 1} className="text-center text-muted-foreground text-sm">{noDataLabel}</td></tr>
           ) : rows.map((row, idx) => (
             <tr key={idx}>
-              <td style={{ color: 'var(--admin-color-text-muted)', width: 36 }}>{idx + 1}</td>
+              <td className="text-muted-foreground w-9">{idx + 1}</td>
               {cols.map((c) => (
                 <td key={c.key} className={c.right ? 'align-right' : undefined}>{c.render ? c.render(row) : row[c.key]}</td>
               ))}
@@ -185,38 +156,36 @@ export function ReportsScreen() {
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {/* Date range controls */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
+      <div className="flex gap-2 flex-wrap mb-5 items-center">
         {PRESET_VALUES.map((p) => (
-          <button
+          <Button
             key={p.value}
-            type="button"
-            className={preset === p.value ? 'btn btn-primary' : 'btn btn-secondary'}
-            style={{ fontSize: '0.8rem' }}
+            variant={preset === p.value ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setPreset(p.value)}
           >
             {t(`reports.${p.key}`)}
-          </button>
+          </Button>
         ))}
-        <button
-          type="button"
-          className={preset === 'custom' ? 'btn btn-primary' : 'btn btn-secondary'}
-          style={{ fontSize: '0.8rem' }}
+        <Button
+          variant={preset === 'custom' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setPreset('custom')}
         >
           {t('reports.presetCustom')}
-        </button>
+        </Button>
         {preset === 'custom' && (
           <>
             <Input
               type="date"
-              style={{ fontSize: '0.8rem' }}
+              className="text-sm"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
              />
-            <span style={{ color: 'var(--admin-color-text-muted)' }}>→</span>
+            <span className="text-muted-foreground">→</span>
             <Input
               type="date"
-              style={{ fontSize: '0.8rem' }}
+              className="text-sm"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
              />
@@ -235,7 +204,7 @@ export function ReportsScreen() {
       {state.status === 'success' && state.data && (
         <>
           {/* KPI row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
             <KpiCard label={t('reports.kpiGmv')} value={formatCurrencyVnd(state.data.summary.grossOrderValue, locale)} />
             <KpiCard label={t('reports.kpiPaidRevenue')} value={formatCurrencyVnd(state.data.summary.paidRevenue, locale)} />
             <KpiCard label={t('reports.kpiRefund')} value={formatCurrencyVnd(state.data.summary.refundAmount, locale)} />
@@ -251,8 +220,8 @@ export function ReportsScreen() {
                 <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                   <defs>
                     <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#e8281e" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#e8281e" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
@@ -275,7 +244,7 @@ export function ReportsScreen() {
                     type="monotone"
                     dataKey="revenue"
                     name={t('reports.chartRevenueSeries')}
-                    stroke="#e8281e"
+                    stroke="var(--admin-color-brand-red)"
                     strokeWidth={2}
                     fill="url(#revenueGrad)"
                     dot={false}
@@ -316,14 +285,14 @@ export function ReportsScreen() {
                     formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
                     cursor={{ fill: 'var(--admin-color-surface-hover)' }}
                   />
-                  <Bar dataKey="revenue" fill="#e8281e" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                  <Bar dataKey="revenue" fill="var(--admin-color-brand-red)" radius={[0, 3, 3, 0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           )}
 
           {/* Tables row */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div className="flex gap-4 flex-wrap">
             <RankTable
               title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}

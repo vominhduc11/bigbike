@@ -4,8 +4,10 @@ import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, safeText } from "@/lib/utils/format";
-import { toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
+import { toHomePath, toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
+
+const FALLBACK_HOTLINE = "0906.902.404";
 
 function pickSetting(
   settings: { settingKey: string; settingValue: string }[],
@@ -35,6 +37,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
   ]);
   const order = orderLookup.data;
   const settings = settingsResult.data ?? [];
+  const hotline = pickSetting(settings, ["hotline", "phone", "support_phone"]) || FALLBACK_HOTLINE;
   const bankName = pickSetting(settings, ["bank_name"]);
   const bankNumber = pickSetting(settings, ["bank_account_number", "bank_number"]);
   const bankHolder = pickSetting(settings, ["bank_account_holder", "bank_holder"]);
@@ -58,6 +61,31 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
       : isCod
         ? "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc."
         : "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc.";
+
+  if (!orderNumber || !orderKey) {
+    return (
+      <div className="max-w-[720px] mx-auto my-[60px] px-6 text-center max-sm:px-4 max-sm:my-8">
+        <div className="bb-round w-[88px] h-[88px] rounded-full bg-muted flex items-center justify-center mx-auto mb-[22px] border-2 border-border">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-bold mb-[10px]">Thông tin không hợp lệ</div>
+        <h1 className="font-display text-[32px] tracking-[0.01em] uppercase m-0 mb-[10px]">Không tìm thấy đơn hàng</h1>
+        <p className="text-muted-foreground m-0 mb-7">Link xác nhận không chứa thông tin đơn hàng. Bạn có thể xem lại đơn hàng trong tài khoản hoặc liên hệ hỗ trợ.</p>
+        <div className="flex gap-[10px] justify-center max-sm:flex-col">
+          <Button asChild variant="secondary">
+            <Link href={toHomePath()}>Về trang chủ</Link>
+          </Button>
+          <Button asChild variant="primary">
+            <Link href={toOrderHistoryPath()}>Xem đơn hàng của tôi →</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -175,7 +203,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-[10px] m-0 leading-[1.5]">
-              Sau khi chuyển khoản, đơn sẽ được xác nhận trong 1 giờ làm việc. Nếu cần hỗ trợ, vui lòng liên hệ hotline 0906.902.404.
+              Sau khi chuyển khoản, đơn sẽ được xác nhận trong 1 giờ làm việc. Nếu cần hỗ trợ, vui lòng liên hệ hotline {hotline}.
             </p>
           </div>
         )}
@@ -184,7 +212,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
           <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
             <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
             <p className="text-sm text-foreground m-0 leading-[1.6]">
-              Vui lòng liên hệ hotline <b className="text-brand">0906.902.404</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <b>BIGBIKE {order.orderNumber}</b>.
+              Vui lòng liên hệ hotline <b className="text-brand">{hotline}</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <b>BIGBIKE {order.orderNumber}</b>.
             </p>
           </div>
         )}

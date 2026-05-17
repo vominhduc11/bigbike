@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.public_.dto.ContactRequest;
 import com.bigbike.bigbike_backend.service.ContactService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +24,7 @@ public class ContactController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiDataResponse<Void> submit(@RequestBody ContactRequest req, HttpServletRequest request) {
+    public ApiDataResponse<Void> submit(@Valid @RequestBody ContactRequest req, HttpServletRequest request) {
         contactService.submit(req, request);
         return apiResponseFactory.data(null, request);
     }

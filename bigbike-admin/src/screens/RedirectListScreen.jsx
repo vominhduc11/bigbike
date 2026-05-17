@@ -16,10 +16,12 @@ import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { formatDateTime } from '../lib/formatters'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
@@ -176,7 +178,7 @@ export function RedirectListScreen({ canUpdate }) {
       key: 'sourcePattern',
       label: t('redirects.colSource', { defaultValue: 'Source' }),
       render: (redirect) => (
-        <code style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 700, wordBreak: 'break-all' }}>
+        <code className="text-xs font-bold break-all">
           {redirect.sourcePattern}
         </code>
       ),
@@ -185,8 +187,8 @@ export function RedirectListScreen({ canUpdate }) {
       key: 'targetUrl',
       label: t('redirects.colTarget', { defaultValue: 'Target' }),
       render: (redirect) => (
-        <span style={{ wordBreak: 'break-all' }}>
-          <ExternalLink size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+        <span className="break-all">
+          <ExternalLink size={12} className="mr-1 align-text-bottom" />
           {redirect.targetUrl}
         </span>
       ),
@@ -205,9 +207,9 @@ export function RedirectListScreen({ canUpdate }) {
       key: 'enabled',
       label: t('redirects.colEnabled', { defaultValue: 'Enabled' }),
       render: (redirect) => (
-        <span className={`status-badge status-${redirect.enabled !== false ? 'success' : 'neutral'}`}>
+        <Badge variant={redirect.enabled !== false ? 'success' : 'muted'}>
           {redirect.enabled !== false ? t('common.on') : t('common.off')}
-        </span>
+        </Badge>
       ),
     },
     {
@@ -226,15 +228,15 @@ export function RedirectListScreen({ canUpdate }) {
       label: '',
       align: 'right',
       render: (redirect) => (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" className="btn btn-secondary" onClick={() => openEditForm(redirect)}>
-            <Pencil size={14} style={{ marginRight: 4 }} />
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" onClick={() => openEditForm(redirect)}>
+            <Pencil size={14} />
             {t('common.edit')}
-          </button>
-          <button type="button" className="btn btn-danger" onClick={() => handleDelete(redirect)}>
-            <Trash2 size={14} style={{ marginRight: 4 }} />
+          </Button>
+          <Button variant="danger" onClick={() => handleDelete(redirect)}>
+            <Trash2 size={14} />
             {t('common.delete')}
-          </button>
+          </Button>
         </div>
       ),
     } : null,
@@ -271,10 +273,10 @@ export function RedirectListScreen({ canUpdate }) {
           <p>{t('redirects.description', { defaultValue: 'Manage SEO migration redirects and legacy URL mappings.' })}</p>
         </div>
         {canUpdate && (
-          <button type="button" className="btn btn-primary" onClick={openCreateForm}>
-            <Plus size={16} style={{ marginRight: 6 }} />
+          <Button onClick={openCreateForm}>
+            <Plus size={16} />
             {t('redirects.createBtn', { defaultValue: 'Create redirect' })}
-          </button>
+          </Button>
         )}
       </header>
 
@@ -283,22 +285,15 @@ export function RedirectListScreen({ canUpdate }) {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          style={{
-            background: 'var(--admin-color-surface-base)',
-            border: '1px solid var(--admin-color-border-subtle)',
-            borderRadius: 'var(--admin-radius-md)',
-            padding: 16,
-            marginBottom: 16,
-            boxShadow: 'var(--admin-shadow-xs)',
-          }}
+          className="rounded-md border border-border bg-surface p-4 mb-4 shadow-xs"
         >
-          <h3 style={{ marginBottom: 12 }}>
+          <h3 className="mb-3">
             {editingRedirect
               ? t('redirects.editTitle', { defaultValue: 'Edit redirect' })
               : t('redirects.createTitle', { defaultValue: 'Create redirect' })}
           </h3>
           {formError && <p className="inline-error">{formError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <label>
               {t('redirects.formSource', { defaultValue: 'Source pattern' })}
               <Input
@@ -347,14 +342,14 @@ export function RedirectListScreen({ canUpdate }) {
                 onChange={(e) => setForm((prev) => ({ ...prev, legacyId: e.target.value }))}
                />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24 }}>
+            <label className="flex items-center gap-2 mt-6">
               <Checkbox
                 checked={form.enabled}
                 onChange={(e) => setForm((prev) => ({ ...prev, enabled: e.target.checked }))}
                />
               {t('redirects.formEnabled', { defaultValue: 'Enabled' })}
             </label>
-            <label style={{ gridColumn: '1 / -1' }}>
+            <label className="col-span-full">
               {t('redirects.formNotes', { defaultValue: 'Notes' })}
               <Textarea
                 rows={3}
@@ -364,13 +359,13 @@ export function RedirectListScreen({ canUpdate }) {
                />
             </label>
           </div>
-          <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-            <button type="submit" className="btn btn-primary" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? t('common.saving') : t('common.save')}
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={closeForm} disabled={saveMutation.isPending}>
+          <div className="mt-4 flex gap-2">
+            <Button type="submit" loading={saveMutation.isPending}>
+              {t('common.save')}
+            </Button>
+            <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
               {t('common.cancel')}
-            </button>
+            </Button>
           </div>
         </form>
       )}

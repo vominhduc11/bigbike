@@ -10,6 +10,8 @@ import { StatePanel } from '../components/StatePanel'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
+import { sanitizeHtml } from '../lib/sanitizeHtml'
+import { showConfirm } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -64,15 +66,29 @@ function validateValue(key, value) {
   if (!value) return null
   const k = key.toLowerCase()
   if (k.includes('email')) {
-    if (!value.includes('@')) return 'Nhập đúng định dạng email, vd: ten@bigbike.vn'
+    if (!value.includes('@')) return 'settings.valEmail'
   }
   if (k.includes('url') || k.includes('href')) {
     if (!value.startsWith('http://') && !value.startsWith('https://') && !value.startsWith('/')) {
-      return 'Nhập đường dẫn web đầy đủ, vd: https://bigbike.vn/khuyen-mai'
+      return 'settings.valUrl'
     }
   }
   if (k.includes('hotline') || k.includes('phone')) {
-    if (!/^[\d\s+-]+$/.test(value)) return 'Số điện thoại chỉ được chứa chữ số, dấu + hoặc dấu gạch'
+    if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
+  }
+  // Tax rate must be a fraction in [0, 1] (vd 0.10 = 10%).
+  if (k.includes('rate')) {
+    const n = Number(value)
+    if (Number.isNaN(n) || n < 0 || n > 1) {
+      return 'settings.valRate'
+    }
+  }
+  // Money / stock thresholds must be non-negative numbers.
+  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')) {
+    const n = Number(value)
+    if (Number.isNaN(n) || n < 0) {
+      return 'settings.valNumber'
+    }
   }
   return null
 }
@@ -82,6 +98,10 @@ function validateValue(key, value) {
 const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX',
 ]
+
+// Tabs whose values directly affect pricing / checkout / operations — saving
+// these requires an explicit confirmation.
+const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - SECURITY: thiết lập kỹ thuật (login attempts, session timeout) — devops set, không phải admin shop
@@ -97,7 +117,7 @@ const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
-  PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero', fallbackLabel: 'Hero trang' },
+  PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
   STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
@@ -178,6 +198,7 @@ function tabLabel(group, t) {
 // ── SettingField ──────────────────────────────────────────────────────────────
 
 function SettingField({ setting, canUpdate, draft, error, onChange }) {
+  const { t } = useTranslation()
   const rawValue = displayValue(setting.value)
   const currentValue = draft !== undefined ? draft : rawValue
   const isDirty = draft !== undefined && draft !== rawValue
@@ -191,7 +212,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
     <div className={`sv2-field${isDirty ? ' sv2-field--dirty' : ''}${isHtml ? ' sv2-field--html' : ''}`}>
       <div className="sv2-field-label">
         {label}
-        {isDirty && <span className="sv2-field-dirty-dot" aria-label="Chưa lưu" />}
+        {isDirty && <span className="sv2-field-dirty-dot" aria-label={t('settings.unsavedDot')} />}
       </div>
 
       {canUpdate ? (
@@ -199,7 +220,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
           <RichTextEditor
             value={currentValue}
             onChange={(html) => onChange(setting.key, html)}
-            placeholder="Soạn nội dung HTML..."
+            placeholder={t('settings.htmlPlaceholder')}
             hasError={Boolean(error)}
             enableImagePicker
           />
@@ -215,7 +236,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
             type={type}
             inputMode={type === 'number' ? 'numeric' : undefined}
             value={currentValue}
-            placeholder={placeholder || (rawValue ? '' : 'Bấm để nhập...')}
+            placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
             aria-describedby={error ? `err-${setting.key}` : undefined}
           />
@@ -223,13 +244,13 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
       ) : isHtml ? (
         <div
           className="sv2-field-readonly sv2-field-readonly--html"
-          dangerouslySetInnerHTML={{ __html: rawValue || '<em>Chưa có nội dung</em>' }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
         />
       ) : isImage && rawValue ? (
         <img src={rawValue} alt="" className="img-preview" loading="lazy" />
       ) : (
         <div className="sv2-field-readonly">
-          {rawValue || <em className="sv2-empty">Chưa có giá trị</em>}
+          {rawValue || <em className="sv2-empty">{t('settings.valueEmpty')}</em>}
         </div>
       )}
 
@@ -243,6 +264,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
 // ── SettingTabPanel ───────────────────────────────────────────────────────────
 
 function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSave, onDiscard, saving }) {
+  const { t } = useTranslation()
   const dirtyCount = Object.keys(drafts).filter(
     (k) => items.some((s) => s.key === k)
   ).length
@@ -268,7 +290,7 @@ function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSa
         <div className="sv2-footer">
           <span className="sv2-footer-info">
             <AlertCircle size={14} />
-            {dirtyCount === 1 ? '1 thay đổi chưa lưu' : `${dirtyCount} thay đổi chưa lưu`}
+            {t('settings.unsavedCount', { count: dirtyCount })}
           </span>
           <div className="sv2-footer-actions">
             <Button variant="secondary"
@@ -276,14 +298,15 @@ function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSa
               onClick={onDiscard}
               disabled={saving}
             >
-              Huỷ
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
               onClick={onSave}
-              disabled={saving || hasError}
+              loading={saving}
+              disabled={hasError}
             >
-              {saving ? 'Đang lưu...' : `Lưu (${dirtyCount})`}
+              {t('settings.saveCount', { count: dirtyCount })}
             </Button>
           </div>
         </div>
@@ -351,8 +374,8 @@ export function SettingsScreen({ canUpdate }) {
     setDrafts((p) => ({ ...p, [key]: value }))
     // Validate inline
     const err = validateValue(key, value)
-    setErrors((p) => ({ ...p, [key]: err || '' }))
-  }, [])
+    setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
+  }, [t])
 
   const handleDiscard = useCallback(() => {
     const keys = activeItems.map((s) => s.key)
@@ -374,11 +397,19 @@ export function SettingsScreen({ canUpdate }) {
     const newErrors = {}
     for (const s of dirty) {
       const err = validateValue(s.key, drafts[s.key])
-      if (err) newErrors[s.key] = err
+      if (err) newErrors[s.key] = t(err)
     }
     if (Object.keys(newErrors).length > 0) {
       setErrors((p) => ({ ...p, ...newErrors }))
       return
+    }
+
+    if (SENSITIVE_SETTING_TABS.has(activeTab)) {
+      const ok = await showConfirm(
+        t('settings.confirmSaveMessage'),
+        t('settings.confirmSaveTitle'),
+      )
+      if (!ok) return
     }
 
     setSaving(true)
@@ -413,7 +444,7 @@ export function SettingsScreen({ canUpdate }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, drafts, t])
+  }, [activeItems, drafts, activeTab, t])
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -447,7 +478,7 @@ export function SettingsScreen({ canUpdate }) {
       ) : (
         <div className="sv2-layout">
           {/* Tab sidebar */}
-          <nav className="sv2-tabs" aria-label="Nhóm cài đặt">
+          <nav className="sv2-tabs" aria-label={t('settings.tabsAria')}>
             {[...groups.entries()].map(([group, items]) => {
               const meta = TAB_META[group] || FALLBACK_META
               const Icon = meta.icon
@@ -466,7 +497,7 @@ export function SettingsScreen({ canUpdate }) {
                   <Icon size={16} className="sv2-tab-icon" />
                   <span className="sv2-tab-label">{label}</span>
                   {dirtyInGroup > 0 && (
-                    <span className="sv2-tab-badge" aria-label={`${dirtyInGroup} thay đổi`}>{dirtyInGroup}</span>
+                    <span className="sv2-tab-badge" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>{dirtyInGroup}</span>
                   )}
                 </button>
               )
@@ -478,7 +509,7 @@ export function SettingsScreen({ canUpdate }) {
             {saveSuccess && (
               <div className="sv2-toast" role="status">
                 <CheckCircle2 size={15} />
-                Đã lưu thành công
+                {t('settings.saveSuccess')}
               </div>
             )}
 

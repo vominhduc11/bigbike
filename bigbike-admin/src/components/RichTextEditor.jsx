@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExt from '@tiptap/extension-image'
@@ -10,6 +11,7 @@ import {
 import { MediaPickerModal } from './MediaPickerModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 function ToolbarButton({ onClick, active, disabled, title, children }) {
   return (
@@ -18,20 +20,14 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
       disabled={disabled}
       title={title}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 30, height: 30,
-        borderRadius: 'var(--admin-radius-xs)',
-        border: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        background: active ? 'var(--admin-color-brand-red-subtle)' : 'transparent',
-        color: active
-          ? 'var(--admin-color-brand-red)'
-          : disabled ? 'var(--admin-color-text-placeholder)' : 'var(--admin-color-text-secondary)',
-        transition: 'var(--admin-transition-fast)',
-      }}
-      onMouseEnter={(e) => { if (!active && !disabled) e.currentTarget.style.background = 'var(--admin-color-surface-hover)' }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? 'var(--admin-color-brand-red-subtle)' : 'transparent' }}
+      className={cn(
+        'inline-flex items-center justify-center w-[30px] h-[30px] rounded-xs border-none transition-colors',
+        active
+          ? 'bg-primary/10 text-primary'
+          : disabled
+            ? 'cursor-not-allowed text-muted-foreground/50'
+            : 'cursor-pointer text-muted-foreground hover:bg-surface-hover'
+      )}
     >
       {children}
     </button>
@@ -40,16 +36,12 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
 
 function Divider() {
   return (
-    <span style={{
-      display: 'inline-block', width: 1, height: 18,
-      background: 'var(--admin-color-border-default)',
-      margin: '0 4px',
-      flexShrink: 0,
-    }} />
+    <span className="inline-block w-px h-[18px] bg-border mx-1 shrink-0" />
   )
 }
 
 export function RichTextEditor({ value, onChange, placeholder, disabled, hasError, enableImagePicker = false }) {
+  const { t } = useTranslation()
   const [imagePickerOpen, setImagePickerOpen] = useState(false)
   const [linkModal, setLinkModal] = useState({ open: false, value: '' })
   const linkInputRef = useCallback((el) => { if (el) el.focus() }, [])
@@ -125,43 +117,36 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   )
 
   return (
-    <div style={{
-      border: `1.5px solid ${hasError ? 'var(--admin-color-status-danger-border)' : 'var(--admin-color-border-default)'}`,
-      borderRadius: 'var(--admin-radius-md)',
-      background: disabled ? 'var(--admin-color-surface-muted)' : 'var(--admin-color-surface-base)',
-      overflow: 'hidden',
-      transition: 'border-color var(--admin-transition-fast)',
-    }}>
+    <div className={cn(
+      'rounded-md overflow-hidden transition-colors border-[1.5px]',
+      hasError ? 'border-danger-border' : 'border-border',
+      disabled ? 'bg-surface-muted' : 'bg-surface'
+    )}>
       {/* Toolbar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2,
-        padding: '6px 10px',
-        borderBottom: '1px solid var(--admin-color-border-subtle)',
-        background: 'var(--admin-color-surface-muted)',
-      }}>
-        {btn(() => editor.chain().focus().undo().run(), false, 'Hoàn tác (Ctrl+Z)', <Undo size={14} />, !editor.can().undo())}
-        {btn(() => editor.chain().focus().redo().run(), false, 'Làm lại (Ctrl+Y)', <Redo size={14} />, !editor.can().redo())}
+      <div className="flex items-center flex-wrap gap-0.5 py-1.5 px-2.5 border-b border-border bg-surface-muted">
+        {btn(() => editor.chain().focus().undo().run(), false, t('richEditor.undo'), <Undo size={14} />, !editor.can().undo())}
+        {btn(() => editor.chain().focus().redo().run(), false, t('richEditor.redo'), <Redo size={14} />, !editor.can().redo())}
         <Divider />
-        {btn(() => editor.chain().focus().toggleBold().run(), editor.isActive('bold'), 'Đậm (Ctrl+B)', <Bold size={14} />)}
-        {btn(() => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'), 'Nghiêng (Ctrl+I)', <Italic size={14} />)}
-        {btn(() => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'), 'Gạch chân (Ctrl+U)', <Underline size={14} />)}
-        {btn(() => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'), 'Gạch ngang', <Strikethrough size={14} />)}
-        {btn(() => editor.chain().focus().toggleCode().run(), editor.isActive('code'), 'Code inline', <Code size={14} />)}
+        {btn(() => editor.chain().focus().toggleBold().run(), editor.isActive('bold'), t('richEditor.bold'), <Bold size={14} />)}
+        {btn(() => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'), t('richEditor.italic'), <Italic size={14} />)}
+        {btn(() => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'), t('richEditor.underline'), <Underline size={14} />)}
+        {btn(() => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'), t('richEditor.strike'), <Strikethrough size={14} />)}
+        {btn(() => editor.chain().focus().toggleCode().run(), editor.isActive('code'), t('richEditor.code'), <Code size={14} />)}
         <Divider />
-        {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }), 'Tiêu đề H2', <Heading2 size={14} />)}
-        {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }), 'Tiêu đề H3', <Heading3 size={14} />)}
+        {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }), t('richEditor.h2'), <Heading2 size={14} />)}
+        {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }), t('richEditor.h3'), <Heading3 size={14} />)}
         <Divider />
-        {btn(() => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'), 'Danh sách chấm', <List size={14} />)}
-        {btn(() => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'), 'Danh sách số', <ListOrdered size={14} />)}
-        {btn(() => editor.chain().focus().toggleBlockquote().run(), editor.isActive('blockquote'), 'Trích dẫn', <Quote size={14} />)}
-        {btn(() => editor.chain().focus().setHorizontalRule().run(), false, 'Đường kẻ ngang', <Minus size={14} />)}
+        {btn(() => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'), t('richEditor.bulletList'), <List size={14} />)}
+        {btn(() => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'), t('richEditor.orderedList'), <ListOrdered size={14} />)}
+        {btn(() => editor.chain().focus().toggleBlockquote().run(), editor.isActive('blockquote'), t('richEditor.quote'), <Quote size={14} />)}
+        {btn(() => editor.chain().focus().setHorizontalRule().run(), false, t('richEditor.hr'), <Minus size={14} />)}
         <Divider />
-        {btn(handleLink, editor.isActive('link'), 'Chèn liên kết', <Link size={14} />)}
-        {editor.isActive('link') && btn(() => editor.chain().focus().unsetLink().run(), false, 'Xoá liên kết', <Link2Off size={14} />)}
+        {btn(handleLink, editor.isActive('link'), t('richEditor.link'), <Link size={14} />)}
+        {editor.isActive('link') && btn(() => editor.chain().focus().unsetLink().run(), false, t('richEditor.unlink'), <Link2Off size={14} />)}
         {enableImagePicker && (
           <>
             <Divider />
-            {btn(() => setImagePickerOpen(true), false, 'Chèn ảnh từ thư viện', <Image size={14} />)}
+            {btn(() => setImagePickerOpen(true), false, t('richEditor.image'), <Image size={14} />)}
           </>
         )}
       </div>
@@ -169,8 +154,7 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       {/* Editor content */}
       <EditorContent
         editor={editor}
-        className="rich-editor-content"
-        style={{ minHeight: 240 }}
+        className="rich-editor-content min-h-[240px]"
       />
 
       {imagePickerOpen && (
@@ -185,21 +169,14 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
 
       {/* Link modal */}
       {linkModal.open && (
-        <div style={{
-          padding: '10px 12px',
-          borderTop: '1px solid var(--admin-color-border-subtle)',
-          background: 'var(--admin-color-surface-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <label style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', whiteSpace: 'nowrap' }}>
+        <div className="py-2.5 px-3 border-t border-border bg-surface-muted flex items-center gap-2">
+          <label className="text-xs text-muted-foreground whitespace-nowrap">
             URL:
           </label>
           <Input
             ref={linkInputRef}
             type="url"
-            style={{ flex: 1, fontSize: 'var(--admin-text-xs)', padding: '4px 8px' }}
+            className="flex-1 text-xs"
             placeholder="https://..."
             value={linkModal.value}
             onChange={(e) => setLinkModal((m) => ({ ...m, value: e.target.value }))}
@@ -208,25 +185,18 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
               if (e.key === 'Escape') cancelLink()
             }}
            />
-          <Button type="button" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={applyLink}>
-            Áp dụng
+          <Button type="button" size="sm" onClick={applyLink}>
+            {t('richEditor.apply')}
           </Button>
-          <Button variant="secondary" type="button" style={{ fontSize: 'var(--admin-text-xs)', padding: '4px 10px' }} onClick={cancelLink}>
-            Huỷ
+          <Button variant="secondary" type="button" size="sm" onClick={cancelLink}>
+            {t('common.cancel')}
           </Button>
         </div>
       )}
 
       {/* Character count */}
-      <div style={{
-        padding: '4px 12px',
-        borderTop: '1px solid var(--admin-color-border-subtle)',
-        fontSize: 'var(--admin-text-xs)',
-        color: 'var(--admin-color-text-muted)',
-        textAlign: 'right',
-        background: 'var(--admin-color-surface-muted)',
-      }}>
-        {editor.storage.characterCount?.characters?.() ?? editor.getText().length} ký tự
+      <div className="py-1 px-3 border-t border-border text-xs text-muted-foreground text-right bg-surface-muted">
+        {t('richEditor.charCount', { count: editor.storage.characterCount?.characters?.() ?? editor.getText().length })}
       </div>
     </div>
   )

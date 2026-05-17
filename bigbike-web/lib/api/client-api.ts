@@ -16,11 +16,12 @@ import type {
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
 import type { Product } from "@/lib/contracts/public";
+import { env } from "@/env";
 
 // Re-export for consumers that import from client-api
 export type { CustomerReturn } from "@/lib/contracts/commerce";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";

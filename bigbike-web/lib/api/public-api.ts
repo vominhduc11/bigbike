@@ -17,10 +17,11 @@ import type {
   Product,
 } from "@/lib/contracts/public";
 import type { OrderDetail } from "@/lib/contracts/commerce";
+import { env } from "@/env";
 
 const API_BASE_URL =
-  process.env.BIGBIKE_API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  env.BIGBIKE_API_BASE_URL ??
+  env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8080";
 
 const DEFAULT_META_ERROR = {

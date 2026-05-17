@@ -10,8 +10,10 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
@@ -73,9 +75,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
         key: 'type',
         label: t('content.colType'),
         render: (item) => (
-          <span className={`status-badge ${item.type === 'PAGE' ? 'status-neutral' : 'status-info'}`}>
+          <Badge variant={item.type === 'PAGE' ? 'muted' : 'info'}>
             {item.type === 'PAGE' ? t('content.typePage') : t('content.typeArticle')}
-          </span>
+          </Badge>
         ),
       },
       {
@@ -93,13 +95,9 @@ export function ContentListScreen({ navigate, canUpdate }) {
         label: t('content.colActions'),
         align: 'right',
         render: (item) => (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}
-          >
+          <Button variant="outline" onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}>
             {t('common.edit')}
-          </button>
+          </Button>
         ),
       },
     ],
@@ -128,22 +126,12 @@ export function ContentListScreen({ navigate, canUpdate }) {
           <p>{t('content.description')}</p>
         </div>
         <div className="screen-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate('/admin/content/articles/new')}
-            disabled={!canUpdate}
-          >
+          <Button variant="outline" onClick={() => navigate('/admin/content/articles/new')} disabled={!canUpdate}>
             {t('content.newArticle')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => navigate('/admin/content/pages/new')}
-            disabled={!canUpdate}
-          >
+          </Button>
+          <Button onClick={() => navigate('/admin/content/pages/new')} disabled={!canUpdate}>
             {t('content.newPage')}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -163,8 +151,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
           {t('content.filterType')}
           <Select
             value={query.type}
-            onValueChange={(event) =>
-              updateQuery({ type: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ type: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             <SelectItem value="ARTICLE">{t('content.typeArticle')}</SelectItem>
@@ -175,8 +163,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
           {t('content.filterPublish')}
           <Select
             value={query.publishStatus}
-            onValueChange={(event) =>
-              updateQuery({ publishStatus: event.target.value }, { resetPage: true })}
+            onValueChange={(value) =>
+              updateQuery({ publishStatus: value }, { resetPage: true })}
           ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>

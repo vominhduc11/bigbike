@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { env } from "@/env";
 
 export const dynamic = "force-dynamic";
 
 const BACKEND =
-  process.env.BIGBIKE_API_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  env.BIGBIKE_API_BASE_URL ??
+  env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:8080";
 
 type Params = { params: Promise<{ id: string }> };

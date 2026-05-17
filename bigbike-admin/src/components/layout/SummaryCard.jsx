@@ -11,12 +11,15 @@ export function SummaryCardGrid({ children }) {
  * If `onClick` is provided, the card renders as a <button> and acts as a
  * filter shortcut. If `active` is true, the card is highlighted.
  *
+ * `trend` — optional node rendered below the value (e.g. a trend pill).
+ *
  * tone: brand | success | warning | danger | info | neutral
  */
 export function SummaryCard({
   label,
   value,
   hint,
+  trend,
   icon,
   tone = 'neutral',
   onClick,
@@ -39,6 +42,7 @@ export function SummaryCard({
         <span>{label}</span>
       </div>
       <div className="summary-card-value">{value}</div>
+      {trend ? <div className="summary-card-trend">{trend}</div> : null}
       {hint ? <div className="summary-card-hint">{hint}</div> : null}
     </>
   )

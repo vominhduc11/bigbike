@@ -59,7 +59,7 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
                       child: ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _data?.items.length ?? 0,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        separatorBuilder: (_, _) => const SizedBox(height: 16),
                         itemBuilder: (ctx, i) => _ArticleCard(article: _data!.items[i]),
                       ),
                     ),

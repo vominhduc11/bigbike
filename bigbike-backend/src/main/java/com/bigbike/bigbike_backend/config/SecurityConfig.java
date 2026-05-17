@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -85,10 +86,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor
                         .requestMatchers("/ws/**").permitAll()
-                        // All admin endpoints: any valid JWT may reach the URL.
-                        // Fine-grained permission enforcement is done by controller-level
+                        // All admin endpoints: must be authenticated AND not a customer
+                        // (defense in depth — keeps a logged-in customer out at the URL
+                        // layer, while still allowing any admin role incl. custom roles).
+                        // Fine-grained permission enforcement is still done by controller-level
                         // requirePermission() backed by AdminPermissionService (DB-driven).
-                        .requestMatchers("/api/v1/admin/**").authenticated()
+                        .requestMatchers("/api/v1/admin/**").access(
+                                new WebExpressionAuthorizationManager(
+                                        "isAuthenticated() and !hasRole('CUSTOMER')"))
                         // Customer order read requires ROLE_CUSTOMER
                         .requestMatchers("/api/v1/customer/orders/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/customer/orders").hasRole("CUSTOMER")

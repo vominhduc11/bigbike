@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +19,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "product_serials")
+@Getter
+@Setter
 public class ProductSerialEntity {
 
     @Id
@@ -68,48 +72,4 @@ public class ProductSerialEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public ProductEntity getProduct() { return product; }
-    public void setProduct(ProductEntity product) { this.product = product; }
-
-    public ProductVariantEntity getVariant() { return variant; }
-    public void setVariant(ProductVariantEntity variant) { this.variant = variant; }
-
-    public String getSerialNumber() { return serialNumber; }
-    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
-
-    public ProductSerialStatus getStatus() { return status; }
-    public void setStatus(ProductSerialStatus status) { this.status = status; }
-
-    public Instant getReservedUntil() { return reservedUntil; }
-    public void setReservedUntil(Instant reservedUntil) { this.reservedUntil = reservedUntil; }
-
-    public UUID getOrderLineItemId() { return orderLineItemId; }
-    public void setOrderLineItemId(UUID orderLineItemId) { this.orderLineItemId = orderLineItemId; }
-
-    public UUID getReturnItemId() { return returnItemId; }
-    public void setReturnItemId(UUID returnItemId) { this.returnItemId = returnItemId; }
-
-    public Instant getReceivedAt() { return receivedAt; }
-    public void setReceivedAt(Instant receivedAt) { this.receivedAt = receivedAt; }
-
-    public Instant getSoldAt() { return soldAt; }
-    public void setSoldAt(Instant soldAt) { this.soldAt = soldAt; }
-
-    public Instant getReturnedAt() { return returnedAt; }
-    public void setReturnedAt(Instant returnedAt) { this.returnedAt = returnedAt; }
-
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-
-    public UUID getAdminId() { return adminId; }
-    public void setAdminId(UUID adminId) { this.adminId = adminId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

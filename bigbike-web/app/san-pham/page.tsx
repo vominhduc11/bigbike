@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { Button } from "@/components/ui/button";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
 import { PageHero } from "@/components/layout/PageHero";
@@ -165,6 +167,15 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     sort: sortParsed.value,
   };
 
+  const hasActiveFilters = Boolean(
+    qParsed.value ||
+      categoryParsed.value ||
+      brandParsed.value ||
+      colorParsed.value ||
+      minPriceParsed.value ||
+      maxPriceParsed.value,
+  );
+
   return (
     <>
       <PageHero
@@ -221,6 +232,13 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
             <EmptyState
               title="Không tìm thấy sản phẩm"
               description="Thử đổi bộ lọc hoặc bỏ qua từ khoá tìm kiếm."
+              action={
+                hasActiveFilters ? (
+                  <Button asChild variant="primary">
+                    <Link href={toProductListPath()}>Xoá bộ lọc</Link>
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <>

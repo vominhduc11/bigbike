@@ -39,7 +39,7 @@ class SiteSettings {
           if (key != null && value != null) flat[key] = value;
         }
       }
-    } else if (j is Map<String, dynamic>) {
+    } else {
       j.forEach((k, v) { if (v is String) flat[k] = v; });
     }
     return SiteSettings(

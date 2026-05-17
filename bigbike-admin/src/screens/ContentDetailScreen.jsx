@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 
 function normalizeContentType(value) {
   return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
@@ -334,18 +335,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           </p>
         </div>
         <div className="screen-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate('/admin/content')}
-          >
+          <Button variant="outline" onClick={() => navigate('/admin/content')}>
             {t('content.detail.backToList')}
-          </button>
+          </Button>
           {!isCreate && canUpdate && (
-            <button
-              type="button"
-              className="btn btn-danger"
-              disabled={isSubmitting}
+            <Button
+              variant="danger"
+              loading={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
                   t('content.detail.archiveConfirm'),
@@ -357,7 +353,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               }}
             >
               {t('content.detail.archiveBtn')}
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -488,7 +484,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             ) : null}
 
             <div className="form-field form-field-wide">
-              <span style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 500, color: 'var(--admin-color-text-secondary)' }}>
+              <span className="text-sm font-medium text-muted-foreground">
                 {t('content.detail.body')}
               </span>
               <RichTextEditor
@@ -630,17 +626,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             ) : null}
           </div>
           <div className="screen-actions">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isReadOnly || !isDirty}
-            >
+            <Button type="submit" disabled={isReadOnly || !isDirty}>
               {isSubmitting
                 ? t('common.saving')
                 : isCreate
                   ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
                   : t('content.detail.saveBtn')}
-            </button>
+            </Button>
           </div>
         </div>
 

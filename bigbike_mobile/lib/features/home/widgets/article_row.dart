@@ -16,7 +16,7 @@ class ArticleRow extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: articles.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.divider),
       itemBuilder: (context, i) => _ArticleItem(article: articles[i]),
     );

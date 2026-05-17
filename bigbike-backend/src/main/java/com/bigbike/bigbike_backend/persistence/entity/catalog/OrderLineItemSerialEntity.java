@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "order_line_item_serials")
+@Getter
+@Setter
 public class OrderLineItemSerialEntity {
 
     @Id
@@ -26,15 +30,4 @@ public class OrderLineItemSerialEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getOrderLineItemId() { return orderLineItemId; }
-    public void setOrderLineItemId(UUID orderLineItemId) { this.orderLineItemId = orderLineItemId; }
-
-    public UUID getSerialId() { return serialId; }
-    public void setSerialId(UUID serialId) { this.serialId = serialId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

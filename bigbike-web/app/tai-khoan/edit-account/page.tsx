@@ -105,7 +105,7 @@ function EditAccountContent() {
           <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"H\u1ecd t\u00ean"}</label>
-              <Input type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="H\u1ecd v\u00e0 t\u00ean" />
+              <Input type="text" name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={"H\u1ecd v\u00e0 t\u00ean"} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"S\u1ed1 \u0111i\u1ec7n tho\u1ea1i"}</label>

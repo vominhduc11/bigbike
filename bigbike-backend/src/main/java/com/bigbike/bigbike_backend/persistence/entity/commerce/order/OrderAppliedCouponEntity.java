@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.order;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "order_applied_coupons")
+@Getter
+@Setter
 public class OrderAppliedCouponEntity {
 
     @Id
@@ -40,24 +44,4 @@ public class OrderAppliedCouponEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public OrderEntity getOrder() { return order; }
-    public void setOrder(OrderEntity order) { this.order = order; }
-
-    public UUID getCouponId() { return couponId; }
-    public void setCouponId(UUID couponId) { this.couponId = couponId; }
-
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-
-    public BigDecimal getDiscountAmount() { return discountAmount; }
-    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
-
-    public String getMetadata() { return metadata; }
-    public void setMetadata(String metadata) { this.metadata = metadata; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

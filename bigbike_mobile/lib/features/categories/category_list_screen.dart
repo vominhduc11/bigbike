@@ -21,7 +21,7 @@ class _CategoryListScreenState
   PaginatedResponse<Category>? _data;
   bool _loading = true;
   String? _error;
-  int _page = 1;
+  final int _page = 1;
 
   @override
   void initState() {

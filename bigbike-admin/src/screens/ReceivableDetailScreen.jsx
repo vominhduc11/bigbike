@@ -82,7 +82,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
       <Button variant="ghost" size="sm"
         type="button"
         onClick={() => navigate('/admin/receivables')}
-        style={{ alignSelf: 'flex-start' }}
+        className="self-start"
       >
         <ArrowLeft size={14} aria-hidden="true" />
         {t('receivables.detail.backToList')}
@@ -122,7 +122,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
         />
       </SummaryCardGrid>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--admin-space-4)' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
         <DetailSection title={t('receivables.detail.sectionFinancial')}>
           <div className="info-grid">
             <span className="info-grid-label">{t('receivables.detail.rowOriginalAmount')}</span>
@@ -209,7 +209,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
 
       {(ar.note || ar.writeOffReason) && (
         <DetailSection title={t('receivables.detail.sectionNotes')}>
-          {ar.note && <p style={{ margin: '0 0 var(--admin-space-3)' }}>{ar.note}</p>}
+          {ar.note && <p className="mb-3">{ar.note}</p>}
           {ar.writeOffReason && (
             <div className="modal-note modal-note--warn">
               <strong>{t('receivables.detail.writeOffReason')}</strong> {ar.writeOffReason}

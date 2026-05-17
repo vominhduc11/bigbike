@@ -1,7 +1,6 @@
 import { Edit2, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import styles from '../screens/MediaLibraryScreen.module.css'
 import { formatText } from '../lib/formatters'
 import { Checkbox } from '@/components/ui/checkbox'
 
@@ -28,10 +27,10 @@ export function MediaCard({
   const meta = [formatSize(media.fileSize), dimensions].filter(Boolean).join(' · ')
 
   const className = [
-    styles.card,
-    selected ? styles.selected : '',
-    focused ? styles.focused : '',
-    media.status === 'DELETED' ? styles.cardDeleted : '',
+    'medialib-card',
+    selected ? 'medialib-is-selected' : '',
+    focused ? 'medialib-is-focused' : '',
+    media.status === 'DELETED' ? 'medialib-card-deleted' : '',
   ].filter(Boolean).join(' ')
 
   function handleCopyUrl(e) {
@@ -57,7 +56,7 @@ export function MediaCard({
   return (
     <div className={className}>
       {media.status === 'DELETED' && (
-        <span className={`${styles.cardBadge} ${styles.cardBadgeDeleted}`}>
+        <span className="medialib-card-badge medialib-card-badge-deleted">
           {t('media.statusDeleted')}
         </span>
       )}
@@ -65,20 +64,20 @@ export function MediaCard({
         <Checkbox checked={selected} onCheckedChange={onToggleSelect}
           aria-label={t('media.select')}
           onClick={(e) => e.stopPropagation()}
-          className={styles.cardCheckbox}  />
+          className="medialib-card-checkbox"  />
       )}
 
       <div role="button" tabIndex={0}
         onClick={onPreview}
         onKeyDown={onThumbKeyDown}
         aria-label={t('media.preview')}
-        className={styles.thumbWrap}>
+        className="medialib-thumb-wrap">
         {isImage(media.mimeType) && media.publicUrl ? (
           <img src={media.publicUrl} alt={media.altText || filename} loading="lazy" />
         ) : isVideo(media.mimeType) && media.publicUrl ? (
           <video src={`${media.publicUrl}#t=0.001`} muted preload="metadata" />
         ) : (
-          <div className={styles.thumbPlaceholder}>
+          <div className="medialib-thumb-placeholder">
             {isAudio(media.mimeType)
               ? <Music size={36} />
               : <FileText size={36} />}
@@ -86,39 +85,39 @@ export function MediaCard({
         )}
 
         {(onEdit || onDelete || onRestore || onHardDelete || onCopyUrl) && (
-          <div className={styles.actionOverlay}>
-            <div className={styles.overlayActions}>
+          <div className="medialib-action-overlay">
+            <div className="medialib-overlay-actions">
               {media.publicUrl && (
                 <button type="button" onClick={handleCopyUrl}
-                  className={styles.iconBtn}
+                  className="medialib-icon-btn"
                   title={t('media.copyUrl')} aria-label={t('media.copyUrl')}>
                   <Copy size={14} />
                 </button>
               )}
               {onEdit && (
                 <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }}
-                  className={styles.iconBtn}
+                  className="medialib-icon-btn"
                   title={t('common.edit')} aria-label={t('common.edit')}>
                   <Edit2 size={14} />
                 </button>
               )}
               {onRestore && (
                 <button type="button" onClick={(e) => { e.stopPropagation(); onRestore() }}
-                  className={styles.iconBtn} disabled={deleting}
+                  className="medialib-icon-btn" disabled={deleting}
                   title={t('media.restore')} aria-label={t('media.restore')}>
                   <RotateCcw size={14} />
                 </button>
               )}
               {onDelete && (
                 <button type="button" onClick={(e) => { e.stopPropagation(); onDelete() }}
-                  className={`${styles.iconBtn} ${styles.danger}`} disabled={deleting}
+                  className="medialib-icon-btn medialib-btn-danger" disabled={deleting}
                   title={t('common.delete')} aria-label={t('common.delete')}>
                   <Trash2 size={14} />
                 </button>
               )}
               {onHardDelete && (
                 <button type="button" onClick={(e) => { e.stopPropagation(); onHardDelete() }}
-                  className={`${styles.iconBtn} ${styles.dangerSolid}`} disabled={deleting}
+                  className="medialib-icon-btn medialib-btn-danger-solid" disabled={deleting}
                   title={t('media.hardDelete')} aria-label={t('media.hardDelete')}>
                   <AlertTriangle size={14} />
                 </button>
@@ -128,15 +127,15 @@ export function MediaCard({
         )}
       </div>
 
-      <div className={styles.cardBody}>
-        <p className={styles.cardName} title={media.filename ?? ''}>{filename}</p>
-        <p className={styles.cardMeta}>{meta || '—'}</p>
+      <div className="medialib-card-body">
+        <p className="medialib-card-name" title={media.filename ?? ''}>{filename}</p>
+        <p className="medialib-card-meta">{meta || '—'}</p>
         {media.usageCount > 0 ? (
-          <span className={`${styles.cardUsageBadge} ${styles.used}`}>
+          <span className="medialib-card-usage-badge medialib-is-used">
             {t('media.usedIn', { count: media.usageCount })}
           </span>
         ) : (
-          <span className={`${styles.cardUsageBadge} ${styles.unused}`}>
+          <span className="medialib-card-usage-badge medialib-is-unused">
             {t('media.usageUnused')}
           </span>
         )}

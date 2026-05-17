@@ -22,11 +22,15 @@ public interface WarrantyRecordJpaRepository
         SELECT w FROM WarrantyRecordEntity w
         WHERE (:status IS NULL OR w.status = :status)
           AND (:customerId IS NULL OR w.customerId = :customerId)
+          AND (:q IS NULL
+               OR LOWER(w.customerEmail) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(w.customerPhone) LIKE LOWER(CONCAT('%', :q, '%')))
         ORDER BY w.createdAt DESC
         """)
     Page<WarrantyRecordEntity> search(
             @Param("status") String status,
             @Param("customerId") UUID customerId,
+            @Param("q") String q,
             Pageable pageable
     );
 

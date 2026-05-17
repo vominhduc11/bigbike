@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.coupon;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +14,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "coupons")
+@Getter
+@Setter
 public class CouponEntity {
 
     @Id
@@ -72,60 +76,4 @@ public class CouponEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public Long getLegacyId() { return legacyId; }
-    public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }
-
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getDiscountType() { return discountType; }
-    public void setDiscountType(String discountType) { this.discountType = discountType; }
-
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
-
-    public BigDecimal getMinAmount() { return minAmount; }
-    public void setMinAmount(BigDecimal minAmount) { this.minAmount = minAmount; }
-
-    public BigDecimal getMaxAmount() { return maxAmount; }
-    public void setMaxAmount(BigDecimal maxAmount) { this.maxAmount = maxAmount; }
-
-    public Integer getUsageLimit() { return usageLimit; }
-    public void setUsageLimit(Integer usageLimit) { this.usageLimit = usageLimit; }
-
-    public int getUsageCount() { return usageCount; }
-    public void setUsageCount(int usageCount) { this.usageCount = usageCount; }
-
-    public Instant getStartsAt() { return startsAt; }
-    public void setStartsAt(Instant startsAt) { this.startsAt = startsAt; }
-
-    public Instant getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getChannel() { return channel; }
-    public void setChannel(String channel) { this.channel = channel; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getMetadata() { return metadata; }
-    public void setMetadata(String metadata) { this.metadata = metadata; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

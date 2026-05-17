@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
+import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Arrays;
@@ -75,6 +76,12 @@ public class DevAdminAuthService {
             return new AdminUserProfile(
                     principal.id(), "Admin", principal.email(),
                     List.of(principal.role()), permissions, "ACTIVE", now, now);
+        }
+
+        // A logged-in customer must never fall through to the dev-header bypass below:
+        // that path defaults the role to ADMIN and would escalate them to full admin.
+        if (auth != null && auth.getPrincipal() instanceof CustomerPrincipal) {
+            throw new UnauthorizedException("No authenticated admin principal.");
         }
 
         // Dev/test bypass path — only active when bigbike.auth.dev-header-enabled=true

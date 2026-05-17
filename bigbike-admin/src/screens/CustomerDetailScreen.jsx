@@ -10,45 +10,39 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
 
-const SEGMENT_COLORS = {
-  VIP: '#7c3aed',
-  LOYAL: '#2563eb',
-  REGULAR: '#16a34a',
-  NEW: '#d97706',
-  INACTIVE: '#9ca3af',
+const SEGMENT_BADGE_CLASSES = {
+  VIP:      'text-primary bg-surface-selected',
+  LOYAL:    'text-info bg-info-bg',
+  REGULAR:  'text-success bg-success-bg',
+  NEW:      'text-warning bg-warning-bg',
+  INACTIVE: 'text-muted-foreground bg-surface-muted',
 }
 
 function SegmentBadge({ segment }) {
-  const color = SEGMENT_COLORS[segment] ?? '#9ca3af'
+  const cls = SEGMENT_BADGE_CLASSES[segment] ?? 'text-muted-foreground bg-surface-muted'
   return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 10px',
-      borderRadius: '9999px',
-      background: color + '20',
-      color,
-      fontWeight: 600,
-      fontSize: '0.78rem',
-      letterSpacing: '0.02em',
-    }}>
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide ${cls}`}>
       {segment}
     </span>
   )
 }
 
 const CREDIT_STATUS_LABELS = { ACTIVE: 'Hoạt động', SUSPENDED: 'Tạm khóa', BLOCKED: 'Chặn vĩnh viễn' }
-const CREDIT_STATUS_COLORS = { ACTIVE: '#16a34a', SUSPENDED: '#d97706', BLOCKED: '#dc2626' }
+
+const CREDIT_STATUS_CLASSES = {
+  ACTIVE:    'text-success bg-success-bg',
+  SUSPENDED: 'text-warning bg-warning-bg',
+  BLOCKED:   'text-danger bg-danger-bg',
+}
 
 function CreditStatusBadge({ status }) {
-  const color = CREDIT_STATUS_COLORS[status] ?? '#9ca3af'
+  const cls = CREDIT_STATUS_CLASSES[status] ?? 'text-muted-foreground bg-surface-muted'
   return (
-    <span style={{
-      display: 'inline-block', padding: '2px 10px', borderRadius: '9999px',
-      background: color + '20', color, fontWeight: 600, fontSize: '0.78rem',
-    }}>
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
       {CREDIT_STATUS_LABELS[status] ?? status}
     </span>
   )
@@ -209,14 +203,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
           <h1>{formatText(customer.fullName)}</h1>
           <p>{formatText(customer.email)}</p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin/customers')}>
+        <Button variant="outline" onClick={() => navigate('/admin/customers')}>
           {t('customers.detail.backToList')}
-        </button>
+        </Button>
       </header>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div className="grid grid-cols-2 gap-6">
         <DetailSection title={t('customers.detail.sectionAccount')}>
           <p><strong>{t('customers.detail.email')}</strong> {formatText(customer.email)}</p>
           <p><strong>{t('customers.detail.phone')}</strong> {formatText(customer.phone)}</p>
@@ -247,16 +241,11 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
         <DetailSection title="Chỉnh sửa hồ sơ">
           {!editOpen ? (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => handleEditOpen(customer)}
-              disabled={!canUpdate}
-            >
+            <Button variant="outline" onClick={() => handleEditOpen(customer)} disabled={!canUpdate}>
               Chỉnh sửa
-            </button>
+            </Button>
           ) : (
-            <form onSubmit={handleEditSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <form onSubmit={handleEditSave} className="flex flex-col gap-3">
               <label>
                 Tên hiển thị
                 <Input
@@ -273,7 +262,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   value={customer.email || ''}
                   readOnly
                   disabled
-                  style={{ opacity: 0.6 }}
+                  className="opacity-60"
                  />
               </label>
               <label>
@@ -285,13 +274,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   disabled={editSaving}
                  />
               </label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary" disabled={editSaving}>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={editSaving}>
                   {editSaving ? 'Đang lưu...' : 'Lưu'}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={handleEditCancel} disabled={editSaving}>
+                </Button>
+                <Button variant="outline" onClick={handleEditCancel} disabled={editSaving}>
                   Hủy
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -299,45 +288,45 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
         {/* Customer value stats */}
         <DetailSection title={t('customers.detail.sectionStats')}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.5rem' }}>
+          <div className="grid grid-cols-2 gap-y-3 gap-x-6">
             <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>
+              <p className="text-xs text-muted-foreground mb-0.5">
                 {t('customers.detail.orderCount', { defaultValue: 'Tổng đơn hàng' })}
               </p>
-              <p style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1 }}>{customer.orderCount}</p>
+              <p className="text-xl font-bold leading-none">{customer.orderCount}</p>
             </div>
             <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>
+              <p className="text-xs text-muted-foreground mb-0.5">
                 {t('customers.detail.totalSpent', { defaultValue: 'Tổng chi tiêu (LTV)' })}
               </p>
-              <p style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1 }}>{formatCurrencyVnd(customer.totalSpent)}</p>
+              <p className="text-xl font-bold leading-none">{formatCurrencyVnd(customer.totalSpent)}</p>
             </div>
             <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>
+              <p className="text-xs text-muted-foreground mb-0.5">
                 {t('customers.detail.avgOrderValue', { defaultValue: 'Giá trị đơn TB (AOV)' })}
               </p>
-              <p style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1 }}>{formatCurrencyVnd(customer.avgOrderValue)}</p>
+              <p className="text-lg font-semibold leading-none">{formatCurrencyVnd(customer.avgOrderValue)}</p>
             </div>
             <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 4 }}>
+              <p className="text-xs text-muted-foreground mb-1">
                 {t('customers.detail.segment', { defaultValue: 'Phân khúc' })}
               </p>
               <SegmentBadge segment={customer.segment} />
             </div>
             {customer.firstOrderAt && (
               <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>
+                <p className="text-xs text-muted-foreground mb-0.5">
                   {t('customers.detail.firstOrder', { defaultValue: 'Đơn đầu tiên' })}
                 </p>
-                <p style={{ fontSize: '0.85rem' }}>{formatDateTime(customer.firstOrderAt)}</p>
+                <p className="text-sm">{formatDateTime(customer.firstOrderAt)}</p>
               </div>
             )}
             {customer.lastOrderAt && (
               <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>
+                <p className="text-xs text-muted-foreground mb-0.5">
                   {t('customers.detail.lastOrder', { defaultValue: 'Đơn gần nhất' })}
                 </p>
-                <p style={{ fontSize: '0.85rem' }}>{formatDateTime(customer.lastOrderAt)}</p>
+                <p className="text-sm">{formatDateTime(customer.lastOrderAt)}</p>
               </div>
             )}
           </div>
@@ -346,12 +335,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
         {/* Latest orders mini-list */}
         {customer.latestOrders && customer.latestOrders.length > 0 && (
           <DetailSection title={t('customers.detail.sectionLatestOrders', { defaultValue: 'Đơn hàng gần đây' })}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-2">
               {customer.latestOrders.map((o) => (
-                <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                  <span style={{ fontFamily: 'monospace', color: 'var(--admin-color-text-muted)' }}>#{o.orderNumber}</span>
+                <div key={o.id} className="flex justify-between items-center text-sm">
+                  <span className="font-mono text-muted-foreground">#{o.orderNumber}</span>
                   <StatusBadge status={o.status} type="order" />
-                  <span style={{ fontWeight: 600 }}>{formatCurrencyVnd(o.totalAmount)}</span>
+                  <span className="font-semibold">{formatCurrencyVnd(o.totalAmount)}</span>
                 </div>
               ))}
             </div>
@@ -361,54 +350,53 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
       {/* Credit profile section — full width below the grid */}
       {canReadReceivables && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div className="mt-6">
           <DetailSection title="Hồ sơ tín dụng (Công nợ)">
             {creditLoading ? (
-              <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>Đang tải...</p>
+              <p className="text-muted-foreground text-sm">Đang tải...</p>
             ) : credit === null ? (
-              <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.85rem' }}>Không có dữ liệu tín dụng.</p>
+              <p className="text-muted-foreground text-sm">Không có dữ liệu tín dụng.</p>
             ) : !creditEditOpen ? (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem 2rem', marginBottom: '1rem' }}>
+                <div className="grid grid-cols-3 gap-y-4 gap-x-8 mb-4">
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Bán chịu</p>
-                    <p style={{ fontWeight: 700 }}>{credit.creditEnabled ? 'Được phép' : 'Không cho phép'}</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Bán chịu</p>
+                    <p className="font-bold">{credit.creditEnabled ? 'Được phép' : 'Không cho phép'}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Trạng thái tín dụng</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Trạng thái tín dụng</p>
                     <CreditStatusBadge status={credit.creditStatus} />
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Hạn mức tín dụng</p>
-                    <p style={{ fontWeight: 700 }}>{credit.creditLimit != null ? formatCurrencyVnd(credit.creditLimit) : '—'}</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Hạn mức tín dụng</p>
+                    <p className="font-bold">{credit.creditLimit != null ? formatCurrencyVnd(credit.creditLimit) : '—'}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Thời hạn thanh toán</p>
-                    <p style={{ fontWeight: 600 }}>{credit.paymentTermsDays != null ? `${credit.paymentTermsDays} ngày` : '—'}</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Thời hạn thanh toán</p>
+                    <p className="font-semibold">{credit.paymentTermsDays != null ? `${credit.paymentTermsDays} ngày` : '—'}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Dư nợ hiện tại</p>
-                    <p style={{ fontWeight: 700, color: credit.currentOutstanding > 0 ? '#dc2626' : undefined }}>
+                    <p className="text-xs text-muted-foreground mb-0.5">Dư nợ hiện tại</p>
+                    <p className={`font-bold${credit.currentOutstanding > 0 ? ' text-danger' : ''}`}>
                       {formatCurrencyVnd(credit.currentOutstanding ?? 0)}
                     </p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', marginBottom: 2 }}>Hạn mức còn lại</p>
-                    <p style={{ fontWeight: 700, color: credit.availableCredit <= 0 ? '#dc2626' : '#16a34a' }}>
+                    <p className="text-xs text-muted-foreground mb-0.5">Hạn mức còn lại</p>
+                    <p className={`font-bold ${credit.availableCredit <= 0 ? 'text-danger' : 'text-success'}`}>
                       {credit.creditLimit != null ? formatCurrencyVnd(credit.availableCredit ?? 0) : '—'}
                     </p>
                   </div>
                 </div>
                 {credit.creditNote && (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: '0.75rem' }}>
+                  <p className="text-sm text-muted-foreground mb-3">
                     <strong>Ghi chú:</strong> {credit.creditNote}
                   </p>
                 )}
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div className="flex gap-3 items-center">
                   {canEditCredit && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setCreditForm({
                           creditEnabled: credit.creditEnabled ?? false,
@@ -421,20 +409,19 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                       }}
                     >
                       Chỉnh sửa tín dụng
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => navigate(`/admin/receivables?customerId=${customerId}`)}
                   >
                     Xem công nợ →
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : (
-              <form onSubmit={handleCreditSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 480 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <form onSubmit={handleCreditSave} className="flex flex-col gap-3 max-w-[480px]">
+                <label className="flex items-center gap-2">
                   <Checkbox
                     checked={creditForm.creditEnabled}
                     onChange={(e) => setCreditForm((p) => ({ ...p, creditEnabled: e.target.checked }))}
@@ -487,13 +474,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     disabled={creditSaving}
                    />
                 </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="submit" className="btn btn-primary" disabled={creditSaving}>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={creditSaving}>
                     {creditSaving ? 'Đang lưu...' : 'Lưu'}
-                  </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>
+                  </Button>
+                  <Button variant="outline" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>
                     Hủy
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -503,23 +490,19 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
       {/* Coupon gift section — full width below credit */}
       {canSendCoupon && customer.email && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div className="mt-6">
           <DetailSection title="Gửi mã giảm giá">
             {!couponGiftOpen ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => { setCouponGiftForm(EMPTY_COUPON_FORM); setCouponGiftOpen(true) }}
-                >
+              <div className="flex items-center gap-4">
+                <Button onClick={() => { setCouponGiftForm(EMPTY_COUPON_FORM); setCouponGiftOpen(true) }}>
                   Tạo & gửi mã giảm giá
-                </button>
-                <span style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
+                </Button>
+                <span className="text-sm text-muted-foreground">
                   Mã sẽ được gửi qua email đến <strong>{customer.email}</strong>
                 </span>
               </div>
             ) : (
-              <form onSubmit={handleCouponGiftSend} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 480 }}>
+              <form onSubmit={handleCouponGiftSend} className="flex flex-col gap-3 max-w-[480px]">
                 <label>
                   Loại giảm giá
                   <Select
@@ -592,18 +575,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   </Select>
                 </label>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <button type="submit" className="btn btn-primary" disabled={couponGiftSaving}>
+                <div className="flex gap-2 mt-1">
+                  <Button type="submit" disabled={couponGiftSaving}>
                     {couponGiftSaving ? 'Đang gửi...' : 'Tạo & gửi mã'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setCouponGiftOpen(false)}
-                    disabled={couponGiftSaving}
-                  >
+                  </Button>
+                  <Button variant="outline" onClick={() => setCouponGiftOpen(false)} disabled={couponGiftSaving}>
                     Hủy
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}

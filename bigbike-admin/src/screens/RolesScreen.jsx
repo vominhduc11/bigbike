@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Shield, Edit2, Check, X, AlertTriangle, ChevronLeft, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -131,6 +133,10 @@ const PERM_LABEL_KEY_MAP = {
   'audit-logs.read':            'roles.permAuditLogsRead',
 }
 
+// Permissions an admin must never be able to strip from their OWN role —
+// removing these would lock them out of role management entirely.
+const SELF_PROTECTED_PERMS = new Set(['roles.read', 'roles.write'])
+
 // Derived from catalog; rebuilt whenever catalog changes.
 function buildCatalogHelpers(catalog) {
   const knownKeys = new Set(catalog.flatMap(g => g.permissions.map(p => p.key)))
@@ -164,22 +170,12 @@ function Toast({ toast }) {
     <div
       role="status"
       aria-live="polite"
-      style={{
-        position: 'fixed', top: 80, right: 24, zIndex: 9000,
-        padding: '12px 20px', borderRadius: 'var(--admin-radius-sm)', maxWidth: 380,
-        background: isSuccess
-          ? 'var(--admin-color-status-success-bg)'
-          : 'var(--admin-color-status-danger-bg)',
-        color: isSuccess
-          ? 'var(--admin-color-status-success-text)'
-          : 'var(--admin-color-status-danger-text)',
-        border: `1px solid ${isSuccess
-          ? 'var(--admin-color-status-success-border)'
-          : 'var(--admin-color-status-danger-border)'}`,
-        fontSize: 'var(--admin-text-sm)', fontWeight: 500,
-        boxShadow: 'var(--admin-shadow-md)',
-        display: 'flex', alignItems: 'center', gap: 8,
-      }}
+      className={cn(
+        'fixed top-20 right-6 z-[9000] flex items-center gap-2 max-w-sm px-5 py-3 rounded-sm text-sm font-medium shadow-md border',
+        isSuccess
+          ? 'bg-success-bg text-success border-success-border'
+          : 'bg-danger-bg text-danger border-danger-border'
+      )}
     >
       {isSuccess ? <Check size={16} aria-hidden /> : <X size={16} aria-hidden />}
       {toast.msg}
@@ -193,20 +189,12 @@ function Badge({ isSystem }) {
   const { t } = useTranslation()
   const label = isSystem ? t('roles.systemBadge') : t('roles.customBadge')
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center',
-      padding: '1px 8px', borderRadius: 'var(--admin-radius-full)',
-      fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.04em',
-      background: isSystem
-        ? 'var(--admin-color-brand-red-muted)'
-        : 'var(--admin-color-surface-raised)',
-      color: isSystem
-        ? 'var(--admin-color-brand-red)'
-        : 'var(--admin-color-text-muted)',
-      border: `1px solid ${isSystem
-        ? 'rgba(232,40,30,0.25)'
-        : 'var(--admin-color-border-default)'}`,
-    }}>
+    <span className={cn(
+      'inline-flex items-center px-2 py-px rounded-full text-[0.7rem] font-bold tracking-wide border',
+      isSystem
+        ? 'bg-primary/10 text-primary border-primary/25'
+        : 'bg-surface-raised text-muted-foreground border-border'
+    )}>
       {label}
     </span>
   )
@@ -231,19 +219,16 @@ function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel }) {
       onClick={onCancel}
     >
       <div className="roles-confirm-dialog" onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <AlertTriangle size={20} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-hidden />
-          <strong id="sensitive-dialog-title" style={{ fontSize: 'var(--admin-text-base)', color: 'var(--admin-color-text-primary)' }}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <AlertTriangle size={20} className="text-warning shrink-0" aria-hidden />
+          <strong id="sensitive-dialog-title" className="text-base text-foreground">
             {t('roles.sensitivePermTitle')}
           </strong>
         </div>
-        <p style={{
-          fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-secondary)',
-          margin: '0 0 20px', whiteSpace: 'pre-line', lineHeight: 1.65,
-        }}>
+        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-[1.65]">
           {msg}
         </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div className="flex gap-2 justify-end">
           <Button variant="ghost" size="sm" onClick={onCancel}>{t('roles.cancelBtn')}</Button>
           <Button size="sm" onClick={onConfirm}>{t('roles.confirmBtn')}</Button>
         </div>
@@ -254,7 +239,7 @@ function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel }) {
 
 // ── Pre-save summary dialog ──────────────────────────────────────────────────
 
-function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onConfirm, onCancel, saving }) {
+function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, isOwnRole, onConfirm, onCancel, saving }) {
   const { t } = useTranslation()
   if (!pending) return null
   const { added, removed } = pending
@@ -269,28 +254,28 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onCon
       aria-labelledby="save-summary-title"
       onClick={onCancel}
     >
-      <div className="roles-confirm-dialog" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <Shield size={20} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0 }} aria-hidden />
-          <strong id="save-summary-title" style={{ fontSize: 'var(--admin-text-base)', color: 'var(--admin-color-text-primary)' }}>
+      <div className="roles-confirm-dialog max-w-[500px]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <Shield size={20} className="text-primary shrink-0" aria-hidden />
+          <strong id="save-summary-title" className="text-base text-foreground">
             {t('roles.saveSummaryTitle')}
           </strong>
         </div>
-        <p style={{ fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)', margin: '0 0 16px' }}>
+        <p className="m-0 mb-4 text-sm text-muted-foreground">
           {t('roles.saveSummaryRole', { name: roleName })}
         </p>
 
         {added.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 700, color: 'var(--admin-color-status-success-text)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div className="mb-3">
+            <div className="text-[0.7rem] font-bold text-success mb-1.5 uppercase tracking-[0.05em]">
               + {t('roles.saveSummaryAdding')}
             </div>
             {added.map(k => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', fontSize: 'var(--admin-text-sm)' }}>
-                <Check size={12} style={{ color: 'var(--admin-color-status-success-text)', flexShrink: 0 }} aria-hidden />
-                <span style={{ color: 'var(--admin-color-text-primary)' }}>{permLabels[k] || k}</span>
+              <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+                <Check size={12} className="text-success shrink-0" aria-hidden />
+                <span className="text-foreground">{permLabels[k] || k}</span>
                 {sensitiveKeys.has(k) && (
-                  <AlertTriangle size={12} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-label={t('roles.sensitivePermNote')} />
+                  <AlertTriangle size={12} className="text-warning shrink-0" aria-label={t('roles.sensitivePermNote')} />
                 )}
               </div>
             ))}
@@ -298,16 +283,16 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onCon
         )}
 
         {removed.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 'var(--admin-text-xs)', fontWeight: 700, color: 'var(--admin-color-status-danger-text)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div className="mb-3">
+            <div className="text-[0.7rem] font-bold text-danger mb-1.5 uppercase tracking-[0.05em]">
               − {t('roles.saveSummaryRemoving')}
             </div>
             {removed.map(k => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', fontSize: 'var(--admin-text-sm)' }}>
-                <X size={12} style={{ color: 'var(--admin-color-status-danger-text)', flexShrink: 0 }} aria-hidden />
-                <span style={{ color: 'var(--admin-color-text-primary)' }}>{permLabels[k] || k}</span>
+              <div key={k} className="flex items-center gap-1.5 py-0.5 text-sm">
+                <X size={12} className="text-danger shrink-0" aria-hidden />
+                <span className="text-foreground">{permLabels[k] || k}</span>
                 {sensitiveKeys.has(k) && (
-                  <AlertTriangle size={12} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-label={t('roles.sensitivePermNote')} />
+                  <AlertTriangle size={12} className="text-warning shrink-0" aria-label={t('roles.sensitivePermNote')} />
                 )}
               </div>
             ))}
@@ -315,26 +300,25 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, onCon
         )}
 
         {hasSensitive && (
-          <div style={{
-            padding: '8px 12px', borderRadius: 'var(--admin-radius-xs)', marginBottom: 16,
-            background: 'var(--admin-color-status-warning-bg)',
-            border: '1px solid var(--admin-color-status-warning-border)',
-            fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-status-warning-text)',
-            display: 'flex', alignItems: 'flex-start', gap: 6,
-          }}>
-            <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden />
+          <div className="flex items-start gap-1.5 px-3 py-2 rounded-xs mb-4 bg-warning-bg border border-warning-border text-xs text-warning">
+            <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden />
             <span>{t('roles.saveSensitiveWarning')}</span>
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        {isOwnRole && removed.length > 0 && (
+          <div className="flex items-start gap-1.5 px-3 py-2 rounded-xs mb-4 bg-danger-bg border border-danger-border text-xs text-danger">
+            <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden />
+            <span>{t('roles.saveOwnRoleWarning', {
+              defaultValue: 'Bạn đang sửa role của chính mình. Gỡ quyền ở đây sẽ ảnh hưởng trực tiếp tới quyền truy cập của bạn.',
+            })}</span>
+          </div>
+        )}
+
+        <div className="flex gap-2 justify-end">
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>{t('roles.cancelBtn')}</Button>
-          <Button size="sm"
-            onClick={onConfirm}
-            disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            {saving ? t('roles.saving') : t('roles.confirmSaveBtn')}
+          <Button size="sm" onClick={onConfirm} loading={saving} className="flex items-center gap-1.5">
+            {t('roles.confirmSaveBtn')}
           </Button>
         </div>
       </div>
@@ -381,18 +365,18 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
       aria-labelledby="create-role-title"
       onClick={onCancel}
     >
-      <form className="roles-confirm-dialog" style={{ maxWidth: 460 }} onSubmit={handleSubmit} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <Plus size={18} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0 }} aria-hidden />
-          <strong id="create-role-title" style={{ fontSize: 'var(--admin-text-base)', color: 'var(--admin-color-text-primary)' }}>
+      <form className="roles-confirm-dialog max-w-[460px]" onSubmit={handleSubmit} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2.5 mb-5">
+          <Plus size={18} className="text-primary shrink-0" aria-hidden />
+          <strong id="create-role-title" className="text-base text-foreground">
             {t('roles.createRoleTitle')}
           </strong>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-3.5">
           <div>
-            <label htmlFor="create-role-name" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
-              {t('roles.createRoleNameLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
+            <label htmlFor="create-role-name" className="block text-sm font-semibold mb-1 text-foreground">
+              {t('roles.createRoleNameLabel')} <span className="text-danger">*</span>
             </label>
             <Input
               id="create-role-name"
@@ -406,13 +390,13 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
 
           {/* Technical ID — hidden by default, auto-generated from name */}
           {!showId && id && (
-            <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>{t('roles.createRoleIdAutoLabel')}: </span>
-              <code style={{ fontFamily: 'var(--admin-font-mono)', color: 'var(--admin-color-text-secondary)' }}>{id}</code>
+              <code className="font-mono text-foreground">{id}</code>
               <button
                 type="button"
                 onClick={() => setShowId(true)}
-                style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                className="text-xs text-muted-foreground bg-transparent border-none cursor-pointer underline p-0"
               >
                 {t('roles.createRoleIdCustomize')}
               </button>
@@ -421,8 +405,8 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
 
           {showId && (
             <div>
-              <label htmlFor="create-role-id" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
-                {t('roles.createRoleIdLabel')} <span style={{ color: 'var(--admin-color-status-danger-text)' }}>*</span>
+              <label htmlFor="create-role-id" className="block text-sm font-semibold mb-1 text-foreground">
+                {t('roles.createRoleIdLabel')} <span className="text-danger">*</span>
               </label>
               <Input
                 id="create-role-id"
@@ -430,16 +414,16 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
                 value={id}
                 onChange={e => handleIdChange(e.target.value)}
                 placeholder={t('roles.createRoleIdPlaceholder')}
-                style={{ fontFamily: 'var(--admin-font-mono)' }}
+                className="font-mono"
                />
-              <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
+              <div className="text-xs text-muted-foreground mt-1">
                 {t('roles.createRoleIdHint')}
               </div>
             </div>
           )}
 
           <div>
-            <label htmlFor="create-role-desc" style={{ display: 'block', fontSize: 'var(--admin-text-sm)', fontWeight: 600, marginBottom: 4, color: 'var(--admin-color-text-primary)' }}>
+            <label htmlFor="create-role-desc" className="block text-sm font-semibold mb-1 text-foreground">
               {t('roles.createRoleDescLabel')}
             </label>
             <Input
@@ -453,21 +437,17 @@ function CreateRoleDialog({ onConfirm, onCancel, saving }) {
         </div>
 
         {error && (
-          <div style={{ marginTop: 10, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-status-danger-text)' }} role="alert">
+          <div className="mt-2.5 text-sm text-danger" role="alert">
             {error}
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+        <div className="flex gap-2 justify-end mt-5">
           <Button variant="ghost" size="sm" type="button" onClick={onCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
-          <Button size="sm"
-            type="submit"
-            disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            {saving ? t('common.saving') : t('roles.createRoleBtn')}
+          <Button size="sm" type="submit" loading={saving} className="flex items-center gap-1.5">
+            {t('roles.createRoleBtn')}
           </Button>
         </div>
       </form>
@@ -489,33 +469,21 @@ function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
       onClick={onCancel}
     >
       <div className="roles-confirm-dialog" onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <Trash2 size={20} style={{ color: 'var(--admin-color-status-danger-text)', flexShrink: 0 }} aria-hidden />
-          <strong id="delete-role-title" style={{ fontSize: 'var(--admin-text-base)', color: 'var(--admin-color-text-primary)' }}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <Trash2 size={20} className="text-danger shrink-0" aria-hidden />
+          <strong id="delete-role-title" className="text-base text-foreground">
             {t('roles.deleteRoleTitle')}
           </strong>
         </div>
-        <p style={{
-          fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-secondary)',
-          margin: '0 0 20px', lineHeight: 1.65, whiteSpace: 'pre-line',
-        }}>
+        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-[1.65]">
           {t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) })}
         </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div className="flex gap-2 justify-end">
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
             {t('roles.cancelBtn')}
           </Button>
-          <Button variant="secondary" size="sm"
-            style={{
-              background: 'var(--admin-color-status-danger-text)',
-              color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              opacity: saving ? 0.6 : 1,
-            }}
-            onClick={onConfirm}
-            disabled={saving}
-          >
-            {saving ? t('common.deleting') : t('roles.deleteRoleBtn')}
+          <Button variant="danger" size="sm" onClick={onConfirm} loading={saving}>
+            {t('roles.deleteRoleBtn')}
           </Button>
         </div>
       </div>
@@ -543,15 +511,15 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
             title={editMode && isDirty && !isActive ? t('roles.discardChanges') : undefined}
             aria-current={isActive ? 'true' : undefined}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
-              <Shield size={13} style={{ color: 'var(--admin-color-text-muted)', flexShrink: 0 }} aria-hidden />
-              <span style={{ fontWeight: 600, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-primary)' }}>
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+              <Shield size={13} className="text-muted-foreground shrink-0" aria-hidden />
+              <span className="font-semibold text-sm text-foreground">
                 {displayName}
               </span>
               <Badge isSystem={role.isSystem} />
             </div>
             {showDesc && (
-              <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', paddingLeft: 21, marginTop: 2 }}>
+              <div className="text-xs text-muted-foreground pl-[21px] mt-0.5">
                 {desc}
               </div>
             )}
@@ -560,11 +528,9 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
       })}
 
       {canUpdate && (
-        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--admin-color-border-subtle)' }}>
-          <Button variant="ghost" size="sm"
-            onClick={onCreateRole}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
-          >
+        <div className="px-3 py-2.5 border-t border-border">
+          <Button variant="ghost" size="sm" onClick={onCreateRole}
+            className="w-full flex items-center gap-1.5 justify-center">
             <Plus size={14} aria-hidden />
             {t('roles.createRoleBtn')}
           </Button>
@@ -579,13 +545,8 @@ function RoleSidebar({ roles, selectedId, onSelect, editMode, isDirty, canUpdate
 function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
   const { t } = useTranslation()
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{
-        fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.07em',
-        textTransform: 'uppercase', color: 'var(--admin-color-text-muted)',
-        padding: '6px 0', borderBottom: '2px solid var(--admin-color-border-subtle)',
-        marginBottom: 4,
-      }}>
+    <div className="mb-6">
+      <div className="text-[0.7rem] font-bold tracking-[0.07em] uppercase text-muted-foreground py-1.5 border-b-2 border-border mb-1">
         {t(group.groupKey)}
       </div>
 
@@ -604,36 +565,34 @@ function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
                 id={permId}
                 checked={granted}
                 onCheckedChange={() => onToggle(perm.key, label)}
-                style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+                className="w-4 h-4 cursor-pointer shrink-0 mt-0.5"
                />
             ) : (
               <div
-                style={{ width: 16, height: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}
+                className="w-4 h-4 shrink-0 flex items-center justify-center mt-0.5"
                 aria-hidden="true"
               >
                 {granted
-                  ? <Check size={14} style={{ color: 'var(--admin-color-status-success-text)' }} />
-                  : <X size={14} style={{ color: 'var(--admin-color-border-default)' }} />
+                  ? <Check size={14} className="text-success" />
+                  : <X size={14} className="text-border" />
                 }
               </div>
             )}
 
             <label
               htmlFor={canEdit ? permId : undefined}
-              style={{
-                flex: 1,
-                fontSize: 'var(--admin-text-sm)',
-                cursor: canEdit ? 'pointer' : 'default',
-                color: granted ? 'var(--admin-color-text-primary)' : 'var(--admin-color-text-muted)',
-                display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0,
-              }}
+              className={cn(
+                'flex-1 text-sm flex items-center gap-1.5 flex-wrap min-w-0',
+                canEdit ? 'cursor-pointer' : 'cursor-default',
+                granted ? 'text-foreground' : 'text-muted-foreground'
+              )}
             >
               <span>{label}</span>
               {isSensitive && (
                 <span
                   title={t('roles.sensitivePermNote')}
                   aria-label={t('roles.sensitivePermNote')}
-                  style={{ color: 'var(--admin-color-status-warning-text)', display: 'inline-flex', alignItems: 'center' }}
+                  className="text-warning inline-flex items-center"
                 >
                   <AlertTriangle size={12} aria-hidden />
                 </span>
@@ -659,29 +618,24 @@ function RoleSummaryCard({ activePerms, isSuperAdmin, sensitiveKeys }) {
   const hasSensitive = isSuperAdmin || [...sensitiveKeys].some(p => activePerms.has(p))
 
   return (
-    <div style={{
-      display: 'flex', flexWrap: 'wrap', gap: 16,
-      padding: '10px 0', marginBottom: 16,
-      borderBottom: '1px solid var(--admin-color-border-subtle)',
-      fontSize: 'var(--admin-text-sm)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Shield size={14} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0 }} aria-hidden />
-        <span style={{ color: 'var(--admin-color-text-muted)' }}>
+    <div className="flex flex-wrap gap-4 py-2.5 mb-4 border-b border-border text-sm">
+      <div className="flex items-center gap-1.5">
+        <Shield size={14} className="text-primary shrink-0" aria-hidden />
+        <span className="text-muted-foreground">
           {t('roles.summaryPermCount', { count: permCount })}
         </span>
       </div>
       {hasSensitive ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <AlertTriangle size={14} style={{ color: 'var(--admin-color-status-warning-text)', flexShrink: 0 }} aria-hidden />
-          <span style={{ color: 'var(--admin-color-status-warning-text)', fontWeight: 500 }}>
+        <div className="flex items-center gap-1.5">
+          <AlertTriangle size={14} className="text-warning shrink-0" aria-hidden />
+          <span className="text-warning font-medium">
             {t('roles.summaryHasSensitive')}
           </span>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Check size={14} style={{ color: 'var(--admin-color-status-success-text)', flexShrink: 0 }} aria-hidden />
-          <span style={{ color: 'var(--admin-color-text-muted)' }}>
+        <div className="flex items-center gap-1.5">
+          <Check size={14} className="text-success shrink-0" aria-hidden />
+          <span className="text-muted-foreground">
             {t('roles.summaryNoSensitive')}
           </span>
         </div>
@@ -706,42 +660,35 @@ function RoleDetail({
   const showDesc = desc && desc !== displayName
 
   return (
-    <div className="roles-detail" style={{ padding: '20px 24px' }}>
+    <div className="roles-detail px-6 py-5">
       {/* Header row */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: 12, marginBottom: 8, flexWrap: 'wrap',
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--admin-color-text-primary)' }}>
+      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
+            <h2 className="m-0 text-[1.05rem] font-bold text-foreground">
               {displayName}
             </h2>
             <Badge isSystem={role.isSystem} />
           </div>
           {showDesc && (
-            <p style={{ margin: 0, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)' }}>
+            <p className="m-0 text-sm text-muted-foreground">
               {desc}
             </p>
           )}
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+        <div className="flex gap-2 shrink-0 flex-wrap">
           {!editMode && canUpdate && !isSuperAdmin && (
             <>
-              <Button variant="secondary" size="sm"
-                onClick={onStartEdit}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
+              <Button variant="secondary" size="sm" onClick={onStartEdit}
+                className="flex items-center gap-1.5">
                 <Edit2 size={14} aria-hidden />
                 {t('roles.editBtn')}
               </Button>
               {!role.isSystem && (
-                <Button variant="ghost" size="sm"
-                  onClick={onDeleteRole}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--admin-color-status-danger-text)' }}
-                >
+                <Button variant="ghost" size="sm" onClick={onDeleteRole}
+                  className="flex items-center gap-1.5 text-danger">
                   <Trash2 size={14} aria-hidden />
                   {t('roles.deleteRoleBtn')}
                 </Button>
@@ -749,16 +696,13 @@ function RoleDetail({
             </>
           )}
           {editMode && (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={onCancelEdit} disabled={saving}>
                 {t('roles.cancelBtn')}
               </Button>
-              <Button size="sm"
-                onClick={onRequestSave}
-                disabled={saving || !isDirty}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                {saving ? t('roles.saving') : t('roles.saveBtn')}
+              <Button size="sm" onClick={onRequestSave} loading={saving} disabled={!isDirty}
+                className="flex items-center gap-1.5">
+                {t('roles.saveBtn')}
               </Button>
             </div>
           )}
@@ -770,42 +714,25 @@ function RoleDetail({
 
       {/* Unsaved-changes banner */}
       {editMode && isDirty && (
-        <div style={{
-          padding: '8px 12px', marginBottom: 14, borderRadius: 'var(--admin-radius-xs)',
-          background: 'var(--admin-color-status-warning-bg)',
-          border: '1px solid var(--admin-color-status-warning-border)',
-          fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-status-warning-text)',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <Info size={13} style={{ flexShrink: 0 }} aria-hidden />
+        <div className="flex items-center gap-2 px-3 py-2 mb-3.5 rounded-xs bg-warning-bg border border-warning-border text-xs text-warning">
+          <Info size={13} className="shrink-0" aria-hidden />
           {t('common.dirty')}
         </div>
       )}
 
       {/* View-only note */}
       {!canUpdate && !isSuperAdmin && (
-        <div style={{
-          padding: '10px 14px', marginBottom: 16, borderRadius: 'var(--admin-radius-xs)',
-          background: 'var(--admin-color-surface-muted)',
-          border: '1px solid var(--admin-color-border-default)',
-          fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <Info size={14} style={{ flexShrink: 0 }} aria-hidden />
+        <div className="flex items-center gap-2 px-3.5 py-2.5 mb-4 rounded-xs bg-surface-muted border border-border text-sm text-muted-foreground">
+          <Info size={14} className="shrink-0" aria-hidden />
           {t('roles.noEditPermission')}
         </div>
       )}
 
       {/* Super admin — business-friendly explanation */}
       {isSuperAdmin && (
-        <div style={{
-          padding: '10px 14px', marginBottom: 20, borderRadius: 'var(--admin-radius-xs)',
-          background: 'var(--admin-color-brand-red-muted)',
-          border: '1px solid rgba(232,40,30,0.25)',
-          display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <Shield size={14} style={{ color: 'var(--admin-color-brand-red)', flexShrink: 0, marginTop: 2 }} aria-hidden />
-          <p style={{ margin: 0, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-secondary)', lineHeight: 1.6 }}>
+        <div className="flex items-start gap-2 px-3.5 py-2.5 mb-5 rounded-xs bg-primary/10 border border-primary/25">
+          <Shield size={14} className="text-primary shrink-0 mt-0.5" aria-hidden />
+          <p className="m-0 text-sm text-muted-foreground leading-relaxed">
             {t('roles.superAdminBanner')}
           </p>
         </div>
@@ -828,28 +755,18 @@ function RoleDetail({
         const unknown = role.permissions.filter(p => !KNOWN_PERM_KEYS.has(p))
         if (unknown.length === 0) return null
         return (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{
-              fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.07em',
-              textTransform: 'uppercase', color: 'var(--admin-color-status-warning-text)',
-              padding: '6px 0', borderBottom: '2px solid var(--admin-color-border-subtle)',
-              marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,
-            }}>
+          <div className="mb-6">
+            <div className="flex items-center gap-1.5 text-[0.7rem] font-bold tracking-[0.07em] uppercase text-warning py-1.5 border-b-2 border-border mb-2">
               <AlertTriangle size={11} aria-hidden />
               {t('roles.otherPermsLabel')}
             </div>
-            <div style={{
-              padding: '8px 12px', marginBottom: 8, borderRadius: 'var(--admin-radius-xs)',
-              background: 'var(--admin-color-status-warning-bg)',
-              border: '1px solid var(--admin-color-status-warning-border)',
-              fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-status-warning-text)',
-            }}>
+            <div className="px-3 py-2 mb-2 rounded-xs bg-warning-bg border border-warning-border text-xs text-warning">
               {t('roles.otherPermsNote')}
             </div>
             {unknown.map(perm => (
               <div key={perm} className="roles-perm-row">
-                <Check size={14} style={{ color: 'var(--admin-color-status-success-text)', flexShrink: 0, marginTop: 2 }} aria-hidden />
-                <span style={{ flex: 1, fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-primary)', fontFamily: 'var(--admin-font-mono)' }}>
+                <Check size={14} className="text-success shrink-0 mt-0.5" aria-hidden />
+                <span className="flex-1 text-sm text-foreground font-mono">
                   {perm}
                 </span>
                 <span className="roles-perm-code">{perm}</span>
@@ -861,7 +778,7 @@ function RoleDetail({
 
       {/* Timestamp */}
       {role.updatedAt && (
-        <div style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', marginTop: 8 }}>
+        <div className="text-xs text-muted-foreground mt-2">
           {t('common.lastUpdated')}{' '}
           {new Date(role.updatedAt).toLocaleString(undefined, {
             day: '2-digit', month: '2-digit', year: 'numeric',
@@ -875,7 +792,7 @@ function RoleDetail({
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 
-export function RolesScreen({ canUpdate = false }) {
+export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   const { t } = useTranslation()
 
   const [roles, setRoles]                 = useState([])
@@ -930,6 +847,9 @@ export function RolesScreen({ canUpdate = false }) {
     buildCatalogHelpers(catalog)
 
   const selected      = roles.find(r => r.id === selectedId) || null
+  // True when the admin is editing a role they themselves are assigned —
+  // removing role-management perms here would lock them out.
+  const isOwnRole     = !!selected && Array.isArray(currentUserRoles) && currentUserRoles.includes(selected.id)
   const originalPerms = selected ? new Set(selected.permissions) : new Set()
   const isDirty       = editMode && draft ? !setsEqual(draft, originalPerms) : false
 
@@ -942,9 +862,9 @@ export function RolesScreen({ canUpdate = false }) {
 
   const selectedDisplayName = selected ? getRoleDisplayName(selected, t) : ''
 
-  function handleSelectRole(id) {
+  async function handleSelectRole(id) {
     if (editMode && isDirty) {
-      if (!window.confirm(t('roles.discardChanges'))) return
+      if (!await showConfirm(t('roles.discardChanges'), t('roles.discardChangesTitle', { defaultValue: 'Huỷ thay đổi?' }))) return
     }
     setSelectedId(id)
     setEditMode(false)
@@ -966,6 +886,16 @@ export function RolesScreen({ canUpdate = false }) {
   function handleToggle(permKey, permLabel) {
     if (!editMode || !draft) return
     const willAdd = !draft.has(permKey)
+    // Self-lockout guard: block removing role-management perms from your own role.
+    if (!willAdd && isOwnRole && SELF_PROTECTED_PERMS.has(permKey)) {
+      setToast({
+        kind: 'error',
+        msg: t('roles.selfLockoutBlocked', {
+          defaultValue: 'Không thể gỡ quyền quản lý phân quyền khỏi role của chính bạn — sẽ khiến bạn mất quyền truy cập.',
+        }),
+      })
+      return
+    }
     if (SENSITIVE_PERMS.has(permKey)) {
       setPendingToggle({ key: permKey, label: permLabel, willAdd })
       return
@@ -1072,6 +1002,7 @@ export function RolesScreen({ canUpdate = false }) {
         roleName={selectedDisplayName}
         permLabels={permLabels}
         sensitiveKeys={SENSITIVE_PERMS}
+        isOwnRole={isOwnRole}
         onConfirm={handleSave}
         onCancel={() => setSavePending(null)}
         saving={saving}
@@ -1094,29 +1025,24 @@ export function RolesScreen({ canUpdate = false }) {
 
       {/* Loading */}
       {loading && (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--admin-color-text-muted)' }}>
+        <div className="p-10 text-center text-muted-foreground">
           {t('roles.loading')}
         </div>
       )}
 
       {/* Error */}
       {!loading && loadError && (
-        <div style={{
-          padding: 24, borderRadius: 'var(--admin-radius-sm)',
-          border: '1px solid var(--admin-color-status-danger-border)',
-          background: 'var(--admin-color-status-danger-bg)',
-          color: 'var(--admin-color-status-danger-text)', fontSize: 'var(--admin-text-sm)',
-        }}>
+        <div className="p-6 rounded-sm border border-danger-border bg-danger-bg text-danger text-sm">
           {loadError}
         </div>
       )}
 
       {/* Empty */}
       {!loading && !loadError && roles.length === 0 && (
-        <div style={{ padding: 48, textAlign: 'center', color: 'var(--admin-color-text-muted)' }}>
-          <Shield size={40} style={{ marginBottom: 12, opacity: 0.3 }} aria-hidden />
-          <p style={{ margin: 0, fontWeight: 600 }}>{t('roles.empty')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 'var(--admin-text-sm)' }}>{t('roles.emptyDesc')}</p>
+        <div className="p-12 text-center text-muted-foreground">
+          <Shield size={40} className="mb-3 opacity-30" aria-hidden />
+          <p className="m-0 font-semibold">{t('roles.empty')}</p>
+          <p className="mt-1 m-0 text-sm">{t('roles.emptyDesc')}</p>
         </div>
       )}
 
@@ -1125,8 +1051,8 @@ export function RolesScreen({ canUpdate = false }) {
         <>
           {/* Mobile: back to list */}
           {mobileShowDetail && selected && (
-            <Button variant="ghost" size="sm" className="roles-back-btn"
-              style={{ alignItems: 'center', gap: 6, marginBottom: 12 }}
+            <Button variant="ghost" size="sm"
+              className="roles-back-btn flex items-center gap-1.5 mb-3"
               onClick={() => { setMobileShowDetail(false); setEditMode(false); setDraft(null) }}
             >
               <ChevronLeft size={16} aria-hidden />
@@ -1161,10 +1087,7 @@ export function RolesScreen({ canUpdate = false }) {
                 onDeleteRole={() => setDeletingRole(selected)}
               />
             ) : (
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 48, color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)',
-              }}>
+              <div className="flex items-center justify-center p-12 text-muted-foreground text-sm">
                 {t('roles.selectRole')}
               </div>
             )}

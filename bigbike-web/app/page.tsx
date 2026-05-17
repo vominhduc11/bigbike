@@ -463,11 +463,16 @@ export default async function HomePage() {
 
       {/* Block 9: Home Video Carousel */}
       {homeVideos.length > 0 && (
-        <section className="bb-video-section" aria-labelledby="home-video-heading">
-          <div className="bb-video-section-inner">
-            <div className="bb-container">
-              <div className="bb-video-section-header">
-                <h2 id="home-video-heading" className="bb-video-section-title">
+        <section className="relative bg-[var(--bb-bg-surface-dark-3)] p-0" aria-labelledby="home-video-heading">
+          <div
+            className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-[position:center_30%] bg-no-repeat py-[var(--bb-space-20)] pb-[calc(var(--bb-space-20)+8px)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(180deg,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.58)_50%,rgba(0,0,0,0.78)_100%)] before:content-[''] max-[991px]:py-[var(--bb-space-15)] max-[991px]:pb-[calc(var(--bb-space-15)+8px)] max-[575px]:py-[var(--bb-space-12)] max-[575px]:pb-[calc(var(--bb-space-12)+4px)]"
+          >
+            <div className="bb-container relative z-[1]">
+              <div className="mb-12 border-b border-[rgba(255,255,255,0.12)] pb-7 text-center text-white max-[575px]:mb-8 max-[575px]:pb-5">
+                <h2
+                  id="home-video-heading"
+                  className="m-0 font-display text-[42px] font-bold uppercase leading-[1.1] tracking-[0.06em] text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.9)] after:mx-auto after:mt-3.5 after:block after:h-[3px] after:w-12 after:bg-brand after:content-[''] max-[991px]:text-32 max-[575px]:text-[24px] max-[575px]:tracking-[0.04em]"
+                >
                   TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN
                 </h2>
               </div>

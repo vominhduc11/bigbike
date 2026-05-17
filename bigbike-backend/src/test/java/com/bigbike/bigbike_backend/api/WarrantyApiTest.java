@@ -57,6 +57,7 @@ class WarrantyApiTest {
     private String adminToken;
     private String editorToken;
     private String serialNumber;
+    private UUID serialId;
     private UUID warrantyId;
 
     @BeforeEach
@@ -82,6 +83,7 @@ class WarrantyApiTest {
         serial.setCreatedAt(now);
         serial.setUpdatedAt(now);
         ProductSerialEntity savedSerial = serialRepo.save(serial);
+        serialId = savedSerial.getId();
 
         WarrantyRecordEntity warranty = new WarrantyRecordEntity();
         warranty.setSerialId(savedSerial.getId());
@@ -153,7 +155,67 @@ class WarrantyApiTest {
                 .andExpect(status().isConflict());
     }
 
+    // ── 5. Admin warranty by-serial — GET /api/v1/admin/warranties/by-serial/{serialId} ──
+
+    @Test
+    void getWarrantyBySerial_validSerialWithWarranty_returns200() throws Exception {
+        // Seeded serial in @BeforeEach has an ACTIVE warranty.
+        // getBySerial returns WarrantyRecordResponse directly (no ApiDataResponse envelope),
+        // so fields are asserted at the JSON root — consistent with the void endpoint test above.
+        // customerEmail/customerPhone are not set on the seeded record, so they are not asserted here.
+        mockMvc.perform(get("/api/v1/admin/warranties/by-serial/" + serialId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(warrantyId.toString()))
+                .andExpect(jsonPath("$.serialId").value(serialId.toString()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.startDate").isNotEmpty())
+                .andExpect(jsonPath("$.endDate").isNotEmpty());
+    }
+
+    @Test
+    void getWarrantyBySerial_serialWithoutWarranty_returns404() throws Exception {
+        UUID serialWithoutWarranty = createSerialWithoutWarranty();
+        mockMvc.perform(get("/api/v1/admin/warranties/by-serial/" + serialWithoutWarranty)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getWarrantyBySerial_noToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/warranties/by-serial/" + serialId))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getWarrantyBySerial_editorLacksWarrantyRead_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/warranties/by-serial/" + serialId)
+                        .header("Authorization", "Bearer " + editorToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getWarrantyBySerial_invalidUuid_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/warranties/by-serial/not-a-uuid")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private UUID createSerialWithoutWarranty() {
+        var product = productRepo.findById("prod_ls2_ff800").orElseThrow();
+        Instant now = Instant.now();
+        ProductSerialEntity serial = new ProductSerialEntity();
+        serial.setProduct(product);
+        serial.setSerialNumber("SN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase());
+        serial.setStatus(ProductSerialStatus.IN_STOCK);
+        serial.setReceivedAt(now);
+        serial.setCreatedAt(now);
+        serial.setUpdatedAt(now);
+        return serialRepo.save(serial).getId();
+    }
 
     private void ensureAdminUser(String email, String password, String role) {
         adminUserRepo.findByEmail(email).orElseGet(() -> {

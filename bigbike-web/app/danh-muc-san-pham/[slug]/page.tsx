@@ -83,7 +83,9 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       colorName: color,
     }),
-    description: category.description ?? "Chi tiết danh mục sản phẩm BigBike.",
+    description: category.description
+      ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || "Chi tiết danh mục sản phẩm BigBike."
+      : "Chi tiết danh mục sản phẩm BigBike.",
     canonicalPath: toCategoryPath(category.slug),
     noIndex:
       page > 1 ||

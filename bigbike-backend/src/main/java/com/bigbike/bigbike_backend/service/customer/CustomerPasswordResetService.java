@@ -61,7 +61,8 @@ public class CustomerPasswordResetService {
 
         CustomerEntity customer = findByLogin(login.trim());
         if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) {
-            log.info("Password reset requested for login '{}' from {}. No mail was sent.", login, ipAddress);
+            // Do not log the login identifier — it is PII (email/phone).
+            log.info("Password reset requested for an unknown/email-less account from {}. No mail was sent.", ipAddress);
             return;
         }
 

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.shipping;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "shipping_methods")
+@Getter
+@Setter
 public class ShippingMethodEntity {
 
     @Id
@@ -61,45 +65,4 @@ public class ShippingMethodEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public ShippingZoneEntity getZone() { return zone; }
-    public void setZone(ShippingZoneEntity zone) { this.zone = zone; }
-
-    public Long getLegacyId() { return legacyId; }
-    public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }
-
-    public String getMethodCode() { return methodCode; }
-    public void setMethodCode(String methodCode) { this.methodCode = methodCode; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public BigDecimal getCost() { return cost; }
-    public void setCost(BigDecimal cost) { this.cost = cost; }
-
-    public BigDecimal getMinOrderAmount() { return minOrderAmount; }
-    public void setMinOrderAmount(BigDecimal minOrderAmount) { this.minOrderAmount = minOrderAmount; }
-
-    public BigDecimal getFreeShippingThreshold() { return freeShippingThreshold; }
-    public void setFreeShippingThreshold(BigDecimal freeShippingThreshold) { this.freeShippingThreshold = freeShippingThreshold; }
-
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
-
-    public String getSettings() { return settings; }
-    public void setSettings(String settings) { this.settings = settings; }
-
-    public int getSortOrder() { return sortOrder; }
-    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

@@ -1,30 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { AdminTable } from '../components/AdminTable'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchReturnDetail, fetchReturns, updateReturnStatus } from '../lib/adminApi'
+import { fetchReturnDetail, fetchReturns, inspectReturnItem, updateReturnStatus } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
+import { useAdminList } from '../lib/useAdminList'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
-const STATUSES = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED', 'REFUNDED']
-const STATUS_COLORS = {
-  PENDING: '#d97706',
-  APPROVED: '#2563eb',
-  RECEIVED: '#7c3aed',
-  COMPLETED: '#16a34a',
-  REFUNDED: '#16a34a',
-  REJECTED: '#dc2626',
+const STATUSES = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'INSPECTING', 'COMPLETED', 'REFUNDED']
+const STATUS_BADGE_CLASSES = {
+  PENDING:    'text-warning',
+  APPROVED:   'text-info',
+  RECEIVED:   'text-info',
+  INSPECTING: 'text-info',
+  COMPLETED:  'text-success',
+  REFUNDED:   'text-success',
+  REJECTED:   'text-danger',
 }
 const STATUS_LABELS_VI = {
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
   RECEIVED: 'Đã nhận hàng',
+  INSPECTING: 'Đang kiểm tra',
   COMPLETED: 'Hoàn thành',
   REFUNDED: 'Đã hoàn tiền',
   REJECTED: 'Từ chối',
@@ -36,16 +44,19 @@ const REASON_LABELS_VI = {
   CHANGED_MIND: 'Đổi ý',
   OTHER: 'Khác',
 }
+// Mirrors AdminReturnService.TRANSITIONS. INSPECTING is the optional QC step
+// required for high-risk goods (mũ bảo hiểm, áo giáp) before closing the return.
 const NEXT_STATUSES = {
   PENDING: ['APPROVED', 'REJECTED'],
   APPROVED: ['RECEIVED'],
-  RECEIVED: ['COMPLETED', 'REFUNDED'],
+  RECEIVED: ['INSPECTING', 'COMPLETED', 'REFUNDED'],
+  INSPECTING: ['COMPLETED', 'REFUNDED'],
 }
 
 function StatusBadge({ status }) {
-  const color = STATUS_COLORS[status] ?? '#9ca3af'
+  const cls = STATUS_BADGE_CLASSES[status] ?? 'text-muted-foreground'
   return (
-    <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>
+    <span className={`font-semibold text-sm ${cls}`}>
       {STATUS_LABELS_VI[status] ?? status}
     </span>
   )
@@ -63,8 +74,11 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   const [refundAmount, setRefundAmount] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [inspectingId, setInspectingId] = useState(null)
 
   const next = NEXT_STATUSES[detail.status] || []
+  const items = detail.items ?? []
+  const allInspected = items.length > 0 && items.every((i) => i.inspectionResult)
 
   useEffect(() => {
     fetchReturnDetail(ret.id)
@@ -74,6 +88,25 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    const refundNum = refundAmount ? Number(refundAmount) : 0
+    // REFUNDED records money back to the customer — require a positive amount.
+    if (newStatus === 'REFUNDED' && !(refundNum > 0)) {
+      setError('Nhập số tiền hoàn lớn hơn 0 trước khi xác nhận hoàn tiền.')
+      return
+    }
+    if (newStatus === 'REFUNDED') {
+      const ok = await showConfirm(
+        `Xác nhận hoàn ${formatCurrencyVnd(refundNum)} cho yêu cầu đổi trả ${detail.returnNumber}?\n\nThao tác này ghi nhận khoản hoàn tiền cho khách hàng.`,
+        'Xác nhận hoàn tiền',
+      )
+      if (!ok) return
+    } else if (newStatus === 'REJECTED') {
+      const ok = await showConfirm(
+        `Từ chối yêu cầu đổi trả ${detail.returnNumber}?\n\nKhách hàng sẽ thấy yêu cầu bị từ chối.`,
+        'Xác nhận từ chối',
+      )
+      if (!ok) return
+    }
     setSaving(true)
     setError('')
     try {
@@ -96,95 +129,128 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
     }
   }
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 620, overflowY: 'auto', maxHeight: '90vh' }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('returns.detailTitle')} — <span style={{ fontFamily: 'monospace' }}>{detail.returnNumber}</span></h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
-        </div>
+  async function handleInspect(itemId, result) {
+    setInspectingId(itemId)
+    setError('')
+    try {
+      const updated = await inspectReturnItem(detail.id, itemId, { result })
+      setDetail(updated)
+      onUpdate(updated)
+    } catch (err) {
+      setError(err.message || 'Lỗi khi lưu kết quả kiểm tra.')
+    } finally {
+      setInspectingId(null)
+    }
+  }
 
-        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+  return (
+    <Modal open wide title={<>{t('returns.detailTitle')} — <span className="font-mono">{detail.returnNumber}</span></>} onClose={onClose}>
+        <div className="flex flex-col gap-4">
           {/* Meta */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.85rem' }}>
+          <div className="grid grid-cols-2 gap-2.5 text-sm">
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>{t('returns.detailOrder')}: </span>
+              <span className="text-muted-foreground">{t('returns.detailOrder')}: </span>
               {detail.orderNumber ? (
-                <button type="button" className="bb-link" style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                <button type="button" className="bb-link font-mono text-sm"
                   onClick={() => { navigate(`/admin/orders/${detail.orderId}`); onClose() }}>
                   #{detail.orderNumber}
                 </button>
-              ) : <span style={{ fontFamily: 'monospace' }}>{detail.orderId?.slice(0, 8)}…</span>}
+              ) : <span className="font-mono">{detail.orderId?.slice(0, 8)}…</span>}
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>{t('returns.detailCustomer')}: </span>
+              <span className="text-muted-foreground">{t('returns.detailCustomer')}: </span>
               <span>{detail.customerEmail ?? '—'}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Trạng thái: </span>
+              <span className="text-muted-foreground">Trạng thái: </span>
               <StatusBadge status={detail.status} />
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Lý do: </span>
+              <span className="text-muted-foreground">Lý do: </span>
               <span>{REASON_LABELS_VI[detail.reason] ?? detail.reason}</span>
             </div>
             {detail.refundAmount > 0 && (
               <div>
-                <span style={{ color: 'var(--admin-color-text-muted)' }}>{t('returns.detailRefund')}: </span>
-                <strong style={{ color: '#16a34a' }}>{formatCurrencyVnd(detail.refundAmount)}</strong>
+                <span className="text-muted-foreground">{t('returns.detailRefund')}: </span>
+                <strong className="text-success">{formatCurrencyVnd(detail.refundAmount)}</strong>
               </div>
             )}
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày tạo: </span>
+              <span className="text-muted-foreground">Ngày tạo: </span>
               <span>{formatDateTime(detail.createdAt)}</span>
             </div>
           </div>
 
           {/* Customer note */}
           {detail.customerNote && (
-            <div style={{ background: 'var(--admin-color-bg-subtle)', borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem' }}>
-              <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <div className="bg-surface-muted rounded-sm px-3.5 py-2.5 text-sm">
+              <p className="mb-1 font-semibold text-muted-foreground">
                 {t('returns.detailCustomerNote')}
               </p>
-              <p style={{ margin: 0 }}>{detail.customerNote}</p>
+              <p className="m-0">{detail.customerNote}</p>
             </div>
           )}
 
           {/* Admin note */}
           {detail.adminNote && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem' }}>
-              <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#92400e' }}>{t('returns.detailAdminNote')}</p>
-              <p style={{ margin: 0, color: '#78350f' }}>{detail.adminNote}</p>
+            <div className="bg-warning-bg border border-warning-border rounded-sm px-3.5 py-2.5 text-sm">
+              <p className="mb-1 font-semibold text-warning">{t('returns.detailAdminNote')}</p>
+              <p className="m-0 text-warning">{detail.adminNote}</p>
             </div>
           )}
 
           {/* Items */}
           {loadingDetail ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>Đang tải chi tiết…</p>
-          ) : detail.items?.length > 0 && (
+            <p className="text-sm text-muted-foreground">Đang tải chi tiết…</p>
+          ) : items.length > 0 && (
             <div>
-              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: '0.85rem' }}>{t('returns.detailItems')}</p>
-              <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
+              <p className="mb-2 font-semibold text-sm">{t('returns.detailItems')}</p>
+              <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                    <th style={{ textAlign: 'left', padding: '4px 0', fontWeight: 600 }}>Sản phẩm</th>
-                    <th style={{ textAlign: 'center', padding: '4px 6px', fontWeight: 600 }}>SL</th>
-                    <th style={{ textAlign: 'right', padding: '4px 0', fontWeight: 600 }}>Đơn giá</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-1 font-semibold">Sản phẩm</th>
+                    <th className="text-center py-1 px-1.5 font-semibold">SL</th>
+                    <th className="text-right py-1 font-semibold">Đơn giá</th>
+                    <th className="text-right py-1 pl-1.5 font-semibold">Kiểm tra QC</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {detail.items.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid var(--admin-color-border-subtle)' }}>
-                      <td style={{ padding: '6px 0' }}>
-                        <div>{item.productName}</div>
-                        {item.variantName && <div style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.78rem' }}>{item.variantName}</div>}
-                        {item.reason && <div style={{ color: 'var(--admin-color-text-muted)', fontStyle: 'italic', fontSize: '0.78rem' }}>{item.reason}</div>}
-                      </td>
-                      <td style={{ textAlign: 'center', padding: '6px' }}>{item.quantity}</td>
-                      <td style={{ textAlign: 'right', padding: '6px 0' }}>{formatCurrencyVnd(item.unitPrice)}</td>
-                    </tr>
-                  ))}
+                  {items.map((item) => {
+                    const inspectable = detail.status === 'INSPECTING' && canUpdate
+                    const busy = inspectingId === item.id
+                    return (
+                      <tr key={item.id} className="border-b border-border">
+                        <td className="py-1.5">
+                          <div>{item.productName}</div>
+                          {item.variantName && <div className="text-muted-foreground">{item.variantName}</div>}
+                          {item.reason && <div className="text-muted-foreground italic">{item.reason}</div>}
+                        </td>
+                        <td className="text-center py-1.5 px-1.5">{item.quantity}</td>
+                        <td className="text-right py-1.5">{formatCurrencyVnd(item.unitPrice)}</td>
+                        <td className="text-right py-1.5 pl-1.5">
+                          {item.inspectionResult && (
+                            <div className={`font-semibold ${item.inspectionResult === 'PASS' ? 'text-success' : 'text-danger'}`}>
+                              {item.inspectionResult === 'PASS' ? 'Đạt' : 'Không đạt'}
+                            </div>
+                          )}
+                          {inspectable ? (
+                            <div className={`inline-flex gap-1 ${item.inspectionResult ? 'mt-1' : ''}`}>
+                              <Button type="button" size="sm"
+                                variant={item.inspectionResult === 'PASS' ? 'success' : 'outline'}
+                                disabled={busy}
+                                onClick={() => handleInspect(item.id, 'PASS')}>Đạt</Button>
+                              <Button type="button" size="sm"
+                                variant={item.inspectionResult === 'FAIL' ? 'danger' : 'outline'}
+                                disabled={busy}
+                                onClick={() => handleInspect(item.id, 'FAIL')}>Không đạt</Button>
+                            </div>
+                          ) : !item.inspectionResult ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -193,16 +259,16 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
           {/* History */}
           {detail.history?.length > 0 && (
             <div>
-              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: '0.85rem' }}>{t('returns.detailHistory')}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <p className="mb-2 font-semibold text-sm">{t('returns.detailHistory')}</p>
+              <div className="flex flex-col gap-1.5">
                 {detail.history.map((h, i) => (
-                  <div key={i} style={{ fontSize: '0.8rem', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                    <span style={{ color: 'var(--admin-color-text-muted)', whiteSpace: 'nowrap' }}>{formatDateTime(h.createdAt)}</span>
+                  <div key={i} className="text-sm flex gap-2 items-start">
+                    <span className="text-muted-foreground whitespace-nowrap">{formatDateTime(h.createdAt)}</span>
                     <span>
                       {h.fromStatus
                         ? <><StatusBadge status={h.fromStatus} />{' → '}<StatusBadge status={h.toStatus} /></>
                         : <StatusBadge status={h.toStatus} />}
-                      {h.note && <span style={{ color: 'var(--admin-color-text-muted)' }}> — {h.note}</span>}
+                      {h.note && <span className="text-muted-foreground"> — {h.note}</span>}
                     </span>
                   </div>
                 ))}
@@ -210,15 +276,21 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             </div>
           )}
 
+          {/* QC incomplete hint */}
+          {detail.status === 'INSPECTING' && !allInspected && (
+            <p className="text-sm text-warning">
+              Còn sản phẩm chưa có kết quả kiểm tra QC. Cần đánh dấu Đạt / Không đạt cho tất cả sản phẩm trước khi chuyển sang Hoàn thành hoặc Hoàn tiền.
+            </p>
+          )}
+
           {/* Update status form */}
           {canUpdate && next.length > 0 && !showUpdateForm && (
-            <button type="button" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}
-              onClick={() => { setShowUpdateForm(true); setNewStatus(next[0]) }}>
+            <Button size="sm" onClick={() => { setShowUpdateForm(true); setNewStatus(next[0]) }}>
               {t('returns.updateBtn')}
-            </button>
+            </Button>
           )}
           {showUpdateForm && (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--admin-color-border)', paddingTop: 14 }}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 border-t border-border pt-4">
               <div className="form-field">
                 <label className="field-label">Trạng thái mới *</label>
                 <Select value={newStatus} onValueChange={setNewStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -227,9 +299,9 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
               </div>
               {newStatus === 'REFUNDED' && (
                 <div className="form-field">
-                  <label className="field-label">{t('returns.detailRefund')}</label>
+                  <label className="field-label">{t('returns.detailRefund')} *</label>
                   <Input type="number" value={refundAmount}
-                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="0"  />
+                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="1"  />
                 </div>
               )}
               <div className="form-field">
@@ -238,17 +310,17 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                   onChange={(e) => setNote(e.target.value)}  />
               </div>
               {error && <p className="field-error">{error}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowUpdateForm(false)}>Huỷ</button>
-                <button type="submit" className="btn btn-primary" disabled={saving || !newStatus}>
-                  {saving ? 'Đang lưu…' : 'Xác nhận'}
-                </button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowUpdateForm(false)}>Huỷ</Button>
+                <Button type="submit" size="sm" loading={saving}
+                  disabled={!newStatus || (newStatus === 'REFUNDED' && !(Number(refundAmount) > 0))}>
+                  Xác nhận
+                </Button>
               </div>
             </form>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -256,54 +328,45 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
 
 const INITIAL_QUERY = { status: 'ALL', q: '', page: 1, pageSize: 20 }
 
-export function ReturnListScreen({ canUpdate }) {
+export function ReturnListScreen({ canUpdate, navigate }) {
   const { t } = useTranslation()
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [searchInput, setSearchInput] = useState('')
+  const queryClient = useQueryClient()
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('q') || INITIAL_QUERY.q
+  })
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirst = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   const [detailRet, setDetailRet] = useState(null)
+
+  const state = useAdminList(['returns', query], () => fetchReturns(query))
+
+  useEffect(() => {
+    syncQueryToUrl(query, INITIAL_QUERY)
+  }, [query])
 
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return }
     setQuery((q) => ({ ...q, q: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  useEffect(() => {
-    let active = true
-    fetchReturns(query)
-      .then((r) => {
-        if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' })
-      })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
-      })
-    return () => { active = false }
-  }, [query])
-
-  function navigate(path) {
-    window.history.pushState({}, '', path)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }
 
   const columns = useMemo(() => [
     {
       key: 'returnNumber', label: t('returns.colRma'), skeletonWidth: '70%',
-      render: (r) => <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{r.returnNumber}</span>,
+      render: (r) => <span className="font-mono font-medium">{r.returnNumber}</span>,
     },
     {
       key: 'orderNumber', label: t('returns.colOrder'), skeletonWidth: '55%',
       render: (r) => r.orderNumber
-        ? <button type="button" className="bb-link" style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+        ? <button type="button" className="bb-link font-mono text-xs"
             onClick={() => navigate(`/admin/orders/${r.orderId}`)}>#{r.orderNumber}</button>
-        : <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>{r.orderId?.slice(0, 8)}…</span>,
+        : <span className="font-mono text-xs text-muted-foreground">{r.orderId?.slice(0, 8)}…</span>,
     },
     {
       key: 'customerEmail', label: t('returns.colCustomer'), skeletonWidth: '65%',
-      render: (r) => <span style={{ fontSize: '0.8rem' }}>{r.customerEmail ?? '—'}</span>,
+      render: (r) => <span className="text-xs">{r.customerEmail ?? '—'}</span>,
     },
     {
       key: 'reason', label: t('returns.colReason'), skeletonWidth: '60%',
@@ -319,21 +382,20 @@ export function ReturnListScreen({ canUpdate }) {
     },
     {
       key: 'createdAt', label: t('returns.colDate'), skeletonWidth: '60%',
-      render: (r) => <span style={{ fontSize: '0.8rem' }}>{formatDateTime(r.createdAt)}</span>,
+      render: (r) => <span className="text-xs">{formatDateTime(r.createdAt)}</span>,
     },
     {
       key: 'actions', label: '', align: 'right', skeletonWidth: '55%',
       render: (r) => (
-        <button type="button" className="btn btn-secondary" style={{ fontSize: '0.78rem' }}
-          onClick={() => setDetailRet(r)}>
+        <Button variant="outline" size="sm" onClick={() => setDetailRet(r)}>
           {t('returns.viewBtn')}
-        </button>
+        </Button>
       ),
     },
-  ].filter(Boolean), [t])
+  ].filter(Boolean), [t, navigate])
 
-  function handleUpdateSuccess(updated) {
-    setState((s) => ({ ...s, items: s.items.map((i) => i.id === updated.id ? updated : i) }))
+  function handleUpdateSuccess() {
+    queryClient.invalidateQueries({ queryKey: ['returns'] })
   }
 
   return (
@@ -365,7 +427,7 @@ export function ReturnListScreen({ canUpdate }) {
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('returns.loadError')} description={state.error}
-          actionLabel={t('common.retry')} onAction={() => setQuery((q) => ({ ...q }))} />
+          actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
       {state.status === 'success' && state.items.length === 0 && (
         <StatePanel tone="neutral" title={t('returns.empty')} description={t('returns.emptyDesc')} />

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.order;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "order_notes")
+@Getter
+@Setter
 public class OrderNoteEntity {
 
     @Id
@@ -42,27 +46,4 @@ public class OrderNoteEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public OrderEntity getOrder() { return order; }
-    public void setOrder(OrderEntity order) { this.order = order; }
-
-    public String getAuthorType() { return authorType; }
-    public void setAuthorType(String authorType) { this.authorType = authorType; }
-
-    public UUID getAuthorId() { return authorId; }
-    public void setAuthorId(UUID authorId) { this.authorId = authorId; }
-
-    public String getNoteType() { return noteType; }
-    public void setNoteType(String noteType) { this.noteType = noteType; }
-
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-
-    public boolean isCustomerVisible() { return customerVisible; }
-    public void setCustomerVisible(boolean customerVisible) { this.customerVisible = customerVisible; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

@@ -68,7 +68,7 @@ class _AddressesScreenState extends State<AddressesScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: _addresses!.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _AddressCard(
                         address: _addresses![i],
                         onEdit: () => _showAddressForm(context, _addresses![i]),
@@ -230,7 +230,7 @@ class _AddressFormSheetState extends State<_AddressFormSheet> {
                 value: _isDefault,
                 onChanged: (v) => setState(() => _isDefault = v),
                 title: const Text('Đặt làm địa chỉ mặc định', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 contentPadding: EdgeInsets.zero,
               ),
               const SizedBox(height: 16),

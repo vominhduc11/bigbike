@@ -241,7 +241,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           {!isCreate && canUpdate && (
             <Button variant="danger"
               type="button"
-              disabled={isSubmitting}
+              loading={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
                   t('brands.detail.hideConfirm').replace('{slug}', form.slug || state.item?.slug || '…'),
@@ -252,7 +252,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 deleteMutation.mutate()
               }}
             >
-              {isSubmitting ? t('brands.detail.hidingBtn') : t('brands.detail.hideBtn')}
+              {t('brands.detail.hideBtn')}
             </Button>
           )}
         </div>

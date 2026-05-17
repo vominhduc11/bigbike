@@ -78,7 +78,7 @@ public class AdminCouponController {
     @PatchMapping("/{couponId}")
     public ApiDataResponse<AdminCouponDetailResponse> updateCoupon(
             @PathVariable UUID couponId,
-            @RequestBody UpdateCouponRequest body,
+            @Valid @RequestBody UpdateCouponRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "coupons.write");

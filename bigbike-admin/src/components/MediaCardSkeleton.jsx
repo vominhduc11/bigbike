@@ -1,14 +1,10 @@
 export function MediaCardSkeleton() {
   return (
-    <div style={{
-      border: '1px solid var(--c-border)',
-      borderRadius: 6, overflow: 'hidden',
-      background: 'var(--c-surface)',
-    }}>
-      <div className="skeleton-shimmer" style={{ height: 120, background: 'var(--c-bg-subtle)' }} />
-      <div style={{ padding: '0.5rem' }}>
-        <div className="skeleton-shimmer" style={{ height: 12, width: '85%', background: 'var(--c-bg-subtle)', borderRadius: 3, marginBottom: 6 }} />
-        <div className="skeleton-shimmer" style={{ height: 10, width: '40%', background: 'var(--c-bg-subtle)', borderRadius: 3 }} />
+    <div className="border border-border rounded-md overflow-hidden bg-surface">
+      <div className="skeleton-shimmer h-[120px] bg-surface-muted" />
+      <div className="p-2">
+        <div className="skeleton-shimmer h-3 w-[85%] bg-surface-muted rounded-sm mb-1.5" />
+        <div className="skeleton-shimmer h-2.5 w-[40%] bg-surface-muted rounded-sm" />
       </div>
     </div>
   )

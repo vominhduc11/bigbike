@@ -15,6 +15,11 @@ import {
   normalizeValue,
 } from "@/lib/utils/variant-match";
 import type { ProductVariant } from "@/lib/contracts/public";
+import { cn } from "@/lib/utils";
+
+// Attribute group heading (<h6>) — Barlow, 11px, wide-tracked uppercase.
+const OPT_GROUP_HEADING =
+  "m-0 mb-2.5 font-body text-11 uppercase tracking-[0.14em] text-muted-foreground";
 
 type VariantSelectorProps = {
   variants: ProductVariant[];
@@ -132,9 +137,9 @@ export function VariantSelector({
           const currentValue = selectedOptions[group.name] ?? "";
           const isColorGroup = isColorAttribute(group.name);
           return (
-            <div key={group.name} className="bb-pdp-opt-group">
-              <h6>{group.name}</h6>
-              <div className="bb-pdp-chips">
+            <div key={group.name} className="mb-5">
+              <h6 className={OPT_GROUP_HEADING}>{group.name}</h6>
+              <div className="flex flex-wrap gap-2">
                 {group.values.map((info) => {
                   const { value, colorHex, swatchImageUrl } = info;
                   // For OOS detection: see whether picking this chip on top
@@ -174,14 +179,11 @@ export function VariantSelector({
                       <button
                         key={`${group.name}-${value}`}
                         type="button"
-                        className={[
-                          "bb-pdp-swatch",
-                          swatchMode === "image" ? "bb-pdp-swatch-image" : "bb-pdp-swatch-hex",
-                          isActive ? "active" : "",
-                          !isAvailable && !isActive ? "oos" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
+                        className={cn(
+                          "group inline-flex cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-11 font-bold uppercase tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground",
+                          isActive && "text-brand",
+                          !isAvailable && !isActive && "cursor-not-allowed opacity-35",
+                        )}
                         onClick={() => {
                           if (!isAvailable && !isActive) return;
                           onSelectOption(group.name, value);
@@ -191,11 +193,25 @@ export function VariantSelector({
                         aria-label={value}
                       >
                         <span
-                          className="bb-pdp-swatch-thumb"
+                          className={cn(
+                            "block border-2 border-white/[0.18] bg-white bg-cover bg-center transition-[border-color,transform,box-shadow] group-hover:border-white/40",
+                            swatchMode === "image"
+                              ? "h-16 w-16"
+                              : "h-9 w-9 rounded-full border-white/[0.24] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.18)]",
+                            isActive && "scale-[1.04] border-brand shadow-[0_0_0_2px_rgba(255,12,9,0.25)]",
+                            !isAvailable && !isActive && "grayscale-[0.7]",
+                          )}
                           aria-hidden="true"
                           style={swatchStyle}
                         />
-                        <span className="bb-pdp-swatch-label">{value}</span>
+                        <span
+                          className={cn(
+                            "max-w-20 overflow-hidden text-ellipsis whitespace-nowrap text-center",
+                            !isAvailable && !isActive && "line-through",
+                          )}
+                        >
+                          {value}
+                        </span>
                       </button>
                     );
                   }
@@ -204,13 +220,11 @@ export function VariantSelector({
                     <button
                       key={`${group.name}-${value}`}
                       type="button"
-                      className={[
-                        "bb-pdp-chip",
-                        isActive ? "active" : "",
-                        !isAvailable && !isActive ? "oos" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
+                      className={cn(
+                        "inline-flex cursor-pointer items-center gap-2 rounded-full border border-[color:var(--bb-border-default)] bg-card px-3.5 py-2 text-xs font-bold uppercase tracking-[0.06em] text-foreground transition-all hover:border-[color:var(--bb-border-strong)] pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-md:min-h-11 max-md:min-w-11",
+                        isActive && "border-brand bg-brand",
+                        !isAvailable && !isActive && "cursor-not-allowed line-through opacity-35",
+                      )}
                       onClick={() => {
                         if (!isAvailable && !isActive) return;
                         onSelectOption(group.name, value);
@@ -219,7 +233,7 @@ export function VariantSelector({
                       title={value}
                       aria-label={value}
                     >
-                      <span className="bb-pdp-chip-label">{value}</span>
+                      <span>{value}</span>
                     </button>
                   );
                 })}
@@ -240,8 +254,8 @@ export function VariantSelector({
   })();
 
   return (
-    <div className="bb-pdp-opt-group">
-      <h6>Biến thể</h6>
+    <div className="mb-5">
+      <h6 className={OPT_GROUP_HEADING}>Biến thể</h6>
       <Select
         value={currentVariantId}
         onValueChange={(id) => {

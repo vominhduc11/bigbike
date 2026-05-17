@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DayPicker } from 'react-day-picker'
 import { vi } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
@@ -11,7 +12,9 @@ function formatDateLabel(date) {
   return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-export function DateRangePicker({ value, onChange, placeholder = 'Tất cả thời gian' }) {
+export function DateRangePicker({ value, onChange, placeholder }) {
+  const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('common.dateRangePlaceholder')
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -27,7 +30,7 @@ export function DateRangePicker({ value, onChange, placeholder = 'Tất cả th�
 
   const label = hasValue
     ? `${formatDateLabel(value.from)} — ${value.to ? formatDateLabel(value.to) : '...'}`
-    : placeholder
+    : resolvedPlaceholder
 
   function handleClear(e) {
     e.stopPropagation()
@@ -60,7 +63,7 @@ export function DateRangePicker({ value, onChange, placeholder = 'Tất cả th�
       </Button>
 
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 z-50 bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
+        <div className="absolute top-[calc(100%+6px)] right-0 z-50 bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
           <DayPicker
             locale={vi}
             mode="range"
@@ -86,7 +89,7 @@ export function DateRangePicker({ value, onChange, placeholder = 'Tất cả th�
                 onClick={handleClear}
                 className="text-xs text-muted-foreground hover:text-foreground bg-transparent border-none cursor-pointer px-1 py-0.5"
               >
-                Xoá bộ lọc ngày
+                {t('common.dateRangeClear')}
               </button>
             </div>
           )}

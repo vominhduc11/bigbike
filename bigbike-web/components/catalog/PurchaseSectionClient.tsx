@@ -11,6 +11,8 @@ import { VariantSelector } from "./VariantSelector";
 import { QuickBuyModal } from "./QuickBuyModal";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { formatVnd } from "@/lib/utils/format";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -153,6 +155,14 @@ export function PurchaseSectionClient({
   // displayed price. Variant-level price columns exist in the schema for
   // legacy reasons but are intentionally ignored.
   const effectivePricing: PricingData | null = snapshot?.pricing ?? null;
+
+  // Current price for the mobile sticky bar — mirrors PricingPanel's rule
+  // (sale price wins when present, else retail).
+  const stickyPrice = (() => {
+    const retail = effectivePricing?.retailPrice ?? fallbackPrice?.retailPrice ?? 0;
+    const sale = effectivePricing?.salePrice ?? fallbackPrice?.salePrice ?? null;
+    return sale && sale > 0 ? sale : retail;
+  })();
 
   const effectiveStockState =
     selectedVariant?.stockState ?? snapshot?.stock?.stockState ?? fallbackStockState;
@@ -303,31 +313,13 @@ export function PurchaseSectionClient({
         {/* Quantity stepper */}
         <div className="bb-pdp-qty">
           <p className="bb-pdp-qty-label">Số lượng</p>
-          <div className="bb-pdp-qty-stepper">
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              aria-label="Giảm"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10);
-                if (Number.isInteger(n) && n > 0) setQuantity(n);
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => q + 1)}
-              aria-label="Tăng"
-            >
-              +
-            </button>
-          </div>
+          <QuantityStepper
+            value={quantity}
+            onChange={setQuantity}
+            min={1}
+            max={effectiveStockData?.quantity ?? undefined}
+            ariaLabel="Số lượng sản phẩm"
+          />
         </div>
 
         {/* CTA buttons */}
@@ -354,7 +346,7 @@ export function PurchaseSectionClient({
             disabled={!isAvailable}
             className="flex-1"
           >
-            Mua ngay
+            {requiresVariantSelection ? "Chọn biến thể trước" : !isAvailable ? "Tạm hết hàng" : "Mua ngay"}
           </Button>
         </div>
 
@@ -424,9 +416,38 @@ export function PurchaseSectionClient({
           selectedVariantId={selectedVariant?.id ?? ""}
           quantity={quantity}
           productName={productName}
+          unitPrice={stickyPrice}
           onClose={() => setQuickBuyOpen(false)}
         />
       )}
+
+      {/* Mobile sticky purchase bar — keeps the primary CTA reachable while the
+          customer scrolls through a long PDP (specs, description, reviews).
+          Hidden on desktop where the in-flow CTA stays visible beside the gallery.
+          Right padding clears the floating chat button. */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-[var(--bb-z-overlay)] flex items-center gap-3 border-t border-border bg-white px-4 py-2.5 pr-20 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.1)]">
+        <div className="flex min-w-0 flex-col">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground leading-none">Giá</span>
+          <b className="font-display text-brand text-lg leading-tight">
+            {stickyPrice > 0 ? formatVnd(stickyPrice) : "Liên hệ"}
+          </b>
+        </div>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleAddToCart}
+          disabled={addLoading || !isAvailable}
+          className="flex-1"
+        >
+          {addLoading
+            ? "Đang thêm..."
+            : requiresVariantSelection
+              ? "Chọn biến thể"
+              : isAvailable
+                ? "Thêm vào giỏ"
+                : "Tạm hết hàng"}
+        </Button>
+      </div>
     </>
   );
 }

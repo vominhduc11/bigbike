@@ -9,15 +9,19 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.warranty.Warranty
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/warranties")
 @RequiredArgsConstructor
 public class PublicWarrantyController {
@@ -29,7 +33,7 @@ public class PublicWarrantyController {
     @Transactional(readOnly = true)
     @GetMapping("/lookup")
     public ApiDataResponse<WarrantyLookupResponse> lookup(
-            @RequestParam String serial,
+            @RequestParam @NotBlank @Size(max = 100) String serial,
             HttpServletRequest request
     ) {
         String normalized = serial.trim().toUpperCase();

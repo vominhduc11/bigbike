@@ -1,45 +1,37 @@
-/**
- * Read-only summary of currently applied filters with per-chip remove buttons
- * and a single "Clear all" action.
- *
- * Props:
- *   chips: Array<{ key: string, label: string, onRemove: () => void }>
- *   onClearAll?: () => void
- */
-export function FilterChips({ chips, onClearAll, clearAllLabel = 'Clear all' }) {
+import { X } from 'lucide-react'
+
+export function FilterChips({
+  chips,
+  onClearAll,
+  clearAllLabel = 'Xóa tất cả',
+  removeChipLabel = 'Xóa bộ lọc',
+  ariaLabel,
+}) {
   if (!chips || chips.length === 0) return null
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-      {chips.map((c) => (
-        <span key={c.key}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-            background: 'var(--c-bg-subtle)', border: '1px solid var(--c-border)',
-            borderRadius: 999, padding: '2px 4px 2px 10px',
-            fontSize: '0.75rem', color: 'var(--c-text)',
-          }}>
-          {c.label}
-          <button type="button" onClick={c.onRemove} aria-label="Remove filter"
-            style={{
-              all: 'unset', cursor: 'pointer', width: 18, height: 18,
-              borderRadius: '50%', display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              color: 'var(--c-text-muted)',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-danger)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--c-text-muted)' }}
-          >✕</button>
+    <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label={ariaLabel}>
+      {chips.map((chip) => (
+        <span
+          key={chip.key}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-muted py-0.5 pl-2.5 pr-1 text-xs text-foreground"
+        >
+          {chip.label}
+          <button
+            type="button"
+            onClick={chip.onRemove}
+            aria-label={chip.removeLabel || removeChipLabel}
+            className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-border hover:text-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <X size={10} aria-hidden="true" />
+          </button>
         </span>
       ))}
       {onClearAll && (
-        <button type="button" onClick={onClearAll}
-          style={{
-            all: 'unset', cursor: 'pointer',
-            fontSize: '0.75rem', color: 'var(--c-primary)',
-            padding: '2px 8px', borderRadius: 4,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline' }}
-          onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none' }}
+        <button
+          type="button"
+          onClick={onClearAll}
+          className="rounded-xs px-2 py-0.5 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           {clearAllLabel}
         </button>

@@ -14,6 +14,7 @@ import type { Article } from "@/lib/contracts/public";
 import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toArticlePath } from "@/lib/utils/routes";
+import { cn } from "@/lib/utils";
 
 type Props = { articles: Article[] };
 type LegacyExperienceKey = "ls2" | "scoyco" | "agv";
@@ -200,6 +201,7 @@ export function ExperienceCarousel({ articles }: Props) {
     "--bb-exp-slide-w": layout ? `${layout.slideWidth}px` : "42vw",
     opacity: layout ? 1 : 0,
     transform: `translate3d(${activeOffset}px, 0, 0)`,
+    transition: isRecenterJumping ? "none" : "transform 0.7s ease, opacity 0.16s ease",
   } as CSSProperties;
 
   function recenterIfNeeded(displayIndex: number) {
@@ -215,10 +217,13 @@ export function ExperienceCarousel({ articles }: Props) {
   }
 
   return (
-    <div className="bb-exp-carousel">
-      <div className="bb-exp-carousel-vp" ref={viewportRef}>
+    <div className="w-full pb-[42px]">
+      <div className="w-full overflow-hidden" ref={viewportRef}>
         <div
-          className={`bb-exp-carousel-track${isRecenterJumping ? " is-jumping" : ""}`}
+          className={cn(
+            "flex w-max gap-[var(--bb-exp-gap,40px)] will-change-transform",
+            isRecenterJumping && "pointer-events-none",
+          )}
           style={trackStyle}
           onTransitionEnd={(event) => {
             if (event.target === event.currentTarget && event.propertyName === "transform") {
@@ -241,43 +246,67 @@ export function ExperienceCarousel({ articles }: Props) {
             return (
               <div
                 key={`${article.id}-${i}`}
-                className={`bb-exp-carousel-slide${active ? " is-active" : ""}`}
+                className={cn(
+                  "flex min-w-0 flex-[0_0_var(--bb-exp-slide-w,42vw)] cursor-pointer select-none flex-col gap-0 transition-[opacity,transform] duration-500",
+                  active && "group cursor-default",
+                )}
                 onClick={!active ? () => setActiveDisplayIndex(i) : undefined}
                 onKeyDown={!active ? (event) => handleSlideKeyDown(event, i) : undefined}
                 role={!active ? "button" : undefined}
                 tabIndex={!active ? 0 : undefined}
                 aria-label={!active ? `Chuyển đến: ${title}` : undefined}
               >
-                <div className="bb-experience-img-wrap">
+                <div
+                  className="relative overflow-hidden [aspect-ratio:16/9]"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 50% 35%, rgba(255, 12, 9, 0.18), transparent 38%), linear-gradient(135deg, #1a1a1a, #2a0606)",
+                  }}
+                >
                   {bgSrc ? (
                     <Image
                       src={bgSrc}
                       alt={safeText(article.coverImage?.alt, title)}
                       fill
-                      className="bb-exp-bg"
+                      className="h-full w-full object-cover transition-transform duration-300"
                       sizes="(max-width: 767px) 84vw, 42vw"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]" />
                   )}
-                  <div className="bb-exp-overlay" />
                 </div>
-                <div className="bb-exp-content">
+                <div
+                  className={cn(
+                    "mt-[-32%] block translate-y-10 p-0 text-center opacity-0 invisible transition-[opacity,transform,visibility] duration-700 will-change-[opacity,transform]",
+                    active && "visible translate-y-0 opacity-100",
+                  )}
+                >
                   {productSrc && (
-                    <div className="bb-exp-product-wrap" aria-hidden="true">
+                    <div
+                      className={cn(
+                        "pointer-events-none relative mx-auto w-1/2 max-w-[375px] [aspect-ratio:1/1] [filter:drop-shadow(0_4px_16px_rgba(0,0,0,0.55))] transition-[transform,opacity] duration-300 ease",
+                        active && "group-hover:-translate-y-1.5",
+                      )}
+                      aria-hidden="true"
+                    >
                       <Image
                         src={productSrc}
                         alt={safeText(article.productImage?.alt, title)}
                         fill
-                        className="bb-exp-product-img"
+                        className="object-contain"
                         sizes="(max-width: 767px) 42vw, 22vw"
                       />
                     </div>
                   )}
-                  <div className="bb-exp-content-body">
-                    <p className="bb-exp-title">{title}</p>
+                  <div className="grid justify-items-center gap-10 pt-3">
+                    <p className="m-0 overflow-hidden text-center text-2xl font-bold uppercase leading-[1.25] text-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                      {title}
+                    </p>
                     {active && (
-                      <Link href={toArticlePath(article.slug)} className="bb-exp-cta">
+                      <Link
+                        href={toArticlePath(article.slug)}
+                        className="inline-flex items-center justify-center border border-brand bg-brand px-[0.95rem] py-2 text-xs font-bold uppercase tracking-[0.08em] text-white no-underline transition-[background,border-color,transform] duration-150 hover:-translate-y-px hover:border-[var(--bb-brand-primary-hover)] hover:bg-[var(--bb-brand-primary-hover)]"
+                      >
                         XEM CHI TIẾT
                       </Link>
                     )}

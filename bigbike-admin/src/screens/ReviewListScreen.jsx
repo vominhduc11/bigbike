@@ -8,21 +8,23 @@ import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
-const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'neutral', TRASH: 'neutral' }
+const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'muted', TRASH: 'muted' }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
 function ReviewStatusBadge({ review, t }) {
   return (
-    <span className={`status-badge status-${STATUS_TONES[review.status] || 'neutral'}`}>
+    <Badge variant={STATUS_TONES[review.status] || 'muted'}>
       {t(`reviews.status${review.status.charAt(0) + review.status.slice(1).toLowerCase()}`, {
         defaultValue: review.status,
       })}
-    </span>
+    </Badge>
   )
 }
 
@@ -110,27 +112,19 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         const productMeta = review.productSlug ? `/${review.productSlug}` : review.productId
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'flex-start' }}>
+          <div className="flex flex-col gap-0.5 items-start">
             {review.productId ? (
               <button
                 type="button"
                 onClick={() => handleOpenProduct(review.productId)}
-                style={{
-                  padding: 0,
-                  border: 'none',
-                  background: 'none',
-                  color: 'var(--admin-color-accent)',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  textAlign: 'left',
-                }}
+                className="p-0 border-none bg-transparent text-primary cursor-pointer font-bold text-left"
               >
                 {productLabel}
               </button>
             ) : (
               <strong>{productLabel}</strong>
             )}
-            <span style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+            <span className="text-xs text-muted-foreground">
               {formatText(productMeta, t('reviews.unknownProduct'))}
             </span>
           </div>
@@ -142,7 +136,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       key: 'body',
       label: t('reviews.colContent'),
       render: (review) => (
-        <span style={{ fontSize: '0.85rem' }}>
+        <span className="text-sm">
           {review.body?.slice(0, 80)}
           {review.body?.length > 80 ? '...' : ''}
         </span>
@@ -160,23 +154,23 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       align: 'right',
       render: (review) => (
         <div className="row-actions">
-          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleOpenReview(review.id)}>
+          <Button variant="outline" size="sm" onClick={() => handleOpenReview(review.id)}>
             {t('reviews.view')}
-          </button>
+          </Button>
           {canUpdate && review.status !== 'APPROVED' ? (
-            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(review, 'APPROVED')}>
+            <Button variant="outline" size="sm" onClick={() => handleStatusChange(review, 'APPROVED')}>
               {t('reviews.approve')}
-            </button>
+            </Button>
           ) : null}
           {canUpdate && review.status !== 'SPAM' ? (
-            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleStatusChange(review, 'SPAM')}>
+            <Button variant="outline" size="sm" onClick={() => handleStatusChange(review, 'SPAM')}>
               {t('reviews.spam')}
-            </button>
+            </Button>
           ) : null}
           {canUpdate ? (
-            <button type="button" className="btn btn-danger" style={{ fontSize: '0.75rem' }} onClick={() => handleDelete(review.id)}>
+            <Button variant="danger" size="sm" onClick={() => handleDelete(review.id)}>
               {t('common.delete')}
-            </button>
+            </Button>
           ) : null}
         </div>
       ),

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, X as XIcon, Music, FileText } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 /**
  * Full-screen preview overlay for media items.
@@ -40,34 +41,17 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
   return (
     <div role="dialog" aria-modal="true" aria-label={filename}
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.9)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '2rem',
-      }}
+      className="fixed inset-0 z-[1000] bg-black/90 flex flex-col items-center justify-center p-8"
     >
       {/* Close button */}
       <button type="button" onClick={onClose} aria-label={t('common.close')}
-        style={{
-          position: 'absolute', top: '1rem', right: '1rem',
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.15)', color: '#fff',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2,
-        }}>
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white border-none cursor-pointer flex items-center justify-center z-[2]">
         <XIcon size={22} />
       </button>
 
       {/* Counter */}
       {hasNav && (
-        <div style={{
-          position: 'absolute', top: '1rem', left: '1rem',
-          color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem',
-          background: 'rgba(0,0,0,0.4)', padding: '6px 12px', borderRadius: 4,
-        }}>
+        <div className="absolute top-4 left-4 text-white/80 text-sm bg-black/40 px-3 py-1.5 rounded-xs">
           {index + 1} / {total}
         </div>
       )}
@@ -78,15 +62,10 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
           onClick={(e) => { e.stopPropagation(); if (canPrev) onNavigate(index - 1) }}
           disabled={!canPrev}
           aria-label={t('media.previous')}
-          style={{
-            position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
-            width: 48, height: 48, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)', color: '#fff',
-            border: 'none', cursor: canPrev ? 'pointer' : 'not-allowed',
-            opacity: canPrev ? 1 : 0.3,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2,
-          }}>
+          className={cn(
+            'absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 text-white border-none flex items-center justify-center z-[2]',
+            canPrev ? 'cursor-pointer opacity-100' : 'cursor-not-allowed opacity-30'
+          )}>
           <ChevronLeft size={28} />
         </button>
       )}
@@ -97,59 +76,49 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
           onClick={(e) => { e.stopPropagation(); if (canNext) onNavigate(index + 1) }}
           disabled={!canNext}
           aria-label={t('media.next')}
-          style={{
-            position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
-            width: 48, height: 48, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)', color: '#fff',
-            border: 'none', cursor: canNext ? 'pointer' : 'not-allowed',
-            opacity: canNext ? 1 : 0.3,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2,
-          }}>
+          className={cn(
+            'absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 text-white border-none flex items-center justify-center z-[2]',
+            canNext ? 'cursor-pointer opacity-100' : 'cursor-not-allowed opacity-30'
+          )}>
           <ChevronRight size={28} />
         </button>
       )}
 
       {/* Content */}
       <div onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '90vw', maxHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        className="max-w-[90vw] max-h-[80vh] flex items-center justify-center">
         {isImage && current.publicUrl && (
           <img src={current.publicUrl} alt={current.altText || filename}
-            style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: 4 }} />
+            className="max-w-[90vw] max-h-[80vh] object-contain rounded-xs" />
         )}
         {isVideo && current.publicUrl && (
           <video src={current.publicUrl} controls autoPlay
-            style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: 4, background: '#000' }} />
+            className="max-w-[90vw] max-h-[80vh] rounded-xs bg-black" />
         )}
         {isAudio && current.publicUrl && (
-          <div style={{ background: 'var(--c-surface)', padding: '2rem', borderRadius: 8, minWidth: 320, color: 'var(--c-text)' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Music size={64} /></div>
-            <p style={{ margin: '0 0 1rem 0', fontWeight: 600, textAlign: 'center', wordBreak: 'break-all' }}>
+          <div className="bg-surface p-8 rounded-md min-w-[320px] text-foreground">
+            <div className="flex justify-center mb-3"><Music size={64} /></div>
+            <p className="m-0 mb-4 font-semibold text-center break-all">
               {filename}
             </p>
-            <audio src={current.publicUrl} controls autoPlay style={{ width: '100%' }} />
+            <audio src={current.publicUrl} controls autoPlay className="w-full" />
           </div>
         )}
         {!isImage && !isVideo && !isAudio && (
-          <div style={{ background: 'var(--c-surface)', padding: '2rem', borderRadius: 8, color: 'var(--c-text)', textAlign: 'center' }}>
-            <FileText size={48} style={{ margin: '0 auto 12px' }} />
-            <p style={{ margin: 0 }}>{filename}</p>
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--c-text-muted)' }}>{current.mimeType ?? ''}</p>
+          <div className="bg-surface p-8 rounded-md text-foreground text-center">
+            <FileText size={48} className="mx-auto mb-3" />
+            <p className="m-0">{filename}</p>
+            <p className="mt-2 mb-0 text-sm text-muted-foreground">{current.mimeType ?? ''}</p>
           </div>
         )}
       </div>
 
-      <p style={{
-        marginTop: '1rem', color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem',
-        maxWidth: '90vw', textAlign: 'center', wordBreak: 'break-all',
-      }}>
+      <p className="mt-4 text-white/85 text-sm max-w-[90vw] text-center break-all">
         {filename}
       </p>
 
       {hasNav && (
-        <p style={{
-          marginTop: 4, color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textAlign: 'center',
-        }}>
+        <p className="mt-1 text-white/50 text-[0.7rem] text-center">
           {t('media.lightboxHint')}
         </p>
       )}

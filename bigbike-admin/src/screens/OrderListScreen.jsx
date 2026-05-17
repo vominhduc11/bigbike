@@ -10,36 +10,21 @@ import { exportOrdersCsv, fetchOrders } from '../lib/adminApi'
 import { ExportButton } from '../components/ExportButton'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { StatusBadge } from '../components/StatusBadge'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-
-const STATUS_TONES = {
-  PENDING: 'warning',
-  ON_HOLD: 'warning',
-  PROCESSING: 'info',
-  COMPLETED: 'success',
-  CANCELLED: 'danger',
-  FAILED: 'danger',
-  REFUNDED: 'neutral',
-  UNKNOWN: 'neutral',
-}
+import { Button } from '@/components/ui/button'
 
 const ORDER_STATUS_KEYS = ['PENDING', 'ON_HOLD', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED']
 const PAYMENT_STATUS_KEYS = ['UNPAID', 'PAID', 'REFUNDED', 'CANCELLED']
-
-function OrderStatusBadge({ value }) {
-  const { t } = useTranslation()
-  const tone = STATUS_TONES[value] || 'neutral'
-  return <span className={`status-badge status-${tone}`}>{t(`status.order.${value}`, { defaultValue: value })}</span>
-}
 
 const INITIAL_QUERY = {
   search: '',
   orderStatus: 'ALL',
   paymentStatus: 'ALL',
-  dateRange: undefined,
   sort: 'createdAt:desc',
   page: 1,
   pageSize: 20,
@@ -48,13 +33,22 @@ const INITIAL_QUERY = {
 export function OrderListScreen({ navigate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [dateRange, setDateRange] = useState(undefined)
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
+  })
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
   const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
 
-  const state = useAdminList(['orders', query], () => fetchOrders(query))
+  const fullQuery = { ...query, dateRange }
+  const state = useAdminList(['orders', fullQuery], () => fetchOrders(fullQuery))
+
+  useEffect(() => {
+    syncQueryToUrl(query, INITIAL_QUERY)
+  }, [query])
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -78,22 +72,27 @@ export function OrderListScreen({ navigate }) {
       label: t('orders.colOrder'),
       render: (order) => (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+          <div className="flex items-center gap-1.5">
             <strong>{formatText(order.orderNumber)}</strong>
             {order.source === 'pos' && <span className="badge-pos">POS</span>}
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>{formatText(order.customerEmail)}</p>
+          <p className="text-sm text-muted-foreground">{formatText(order.customerEmail)}</p>
         </div>
       ),
     },
     { key: 'customerName', label: t('orders.colCustomer'), render: (order) => formatText(order.customerName) },
-    { key: 'orderStatus', label: t('orders.colStatus'), render: (order) => <OrderStatusBadge value={order.orderStatus} /> },
+    { key: 'orderStatus', label: t('orders.colStatus'), render: (order) => <StatusBadge type="order" status={order.orderStatus} /> },
+    {
+      key: 'paymentStatus',
+      label: t('orders.colPaymentStatus'),
+      render: (order) => <StatusBadge type="payment" status={order.paymentStatus} />,
+    },
     { key: 'total', label: t('orders.colTotal'), render: (order) => formatCurrencyVnd(order.total) },
     { key: 'createdAt', label: t('orders.colDate'), render: (order) => formatDateTime(order.createdAt) },
     {
       key: 'actions', label: '', align: 'right',
       render: (order) => (
-        <button type="button" className="btn btn-secondary" onClick={() => navigate(`/admin/orders/${order.id}`)}>{t('orders.viewDetail')}</button>
+        <Button variant="outline" onClick={() => navigate(`/admin/orders/${order.id}`)}>{t('orders.viewDetail')}</Button>
       ),
     },
   ], [navigate, t])
@@ -108,6 +107,7 @@ export function OrderListScreen({ navigate }) {
 
   function resetFilters() {
     setSearchInput(INITIAL_QUERY.search)
+    setDateRange(undefined)
     setQuery(INITIAL_QUERY)
   }
 
@@ -123,8 +123,8 @@ export function OrderListScreen({ navigate }) {
           filename={`orders_${new Date().toISOString().slice(0, 10)}.csv`}
           onExport={() => exportOrdersCsv({
             status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
-            from: query.dateRange?.from?.toISOString().slice(0, 10),
-            to: query.dateRange?.to?.toISOString().slice(0, 10),
+            from: dateRange?.from?.toISOString().slice(0, 10),
+            to: dateRange?.to?.toISOString().slice(0, 10),
           })}
         />
       </header>
@@ -149,21 +149,21 @@ export function OrderListScreen({ navigate }) {
           </SelectContent></Select>
         </label>
         <label>
-          {t('orders.filterPaymentStatus', { defaultValue: 'Thanh toán' })}
+          {t('orders.filterPaymentStatus')}
           <Select value={query.paymentStatus}
             onValueChange={(val) => updateQuery({ paymentStatus: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {PAYMENT_STATUS_KEYS.map((k) => (
-              <SelectItem key={k} value={k}>{t(`status.payment.${k}`, { defaultValue: k })}</SelectItem>
+              <SelectItem key={k} value={k}>{t(`status.payment.${k}`)}</SelectItem>
             ))}
           </SelectContent></Select>
         </label>
         <label>
-          {t('orders.filterDate', { defaultValue: 'Khoảng ngày' })}
-          <div style={{ marginTop: 5 }}>
+          {t('orders.filterDate')}
+          <div className="mt-1">
             <DateRangePicker
-              value={query.dateRange}
-              onChange={(range) => updateQuery({ dateRange: range }, { resetPage: true })}
+              value={dateRange}
+              onChange={(range) => { setDateRange(range); updateQuery({ page: 1 }) }}
             />
           </div>
         </label>
@@ -178,11 +178,11 @@ export function OrderListScreen({ navigate }) {
         </label>
         <label>
           {t('common.rowsPerPage')}
-          <Select value={query.pageSize}
+          <Select value={String(query.pageSize)}
             onValueChange={(val) => updateQuery({ pageSize: Number(val) }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
           </SelectContent></Select>
         </label>
       </section>

@@ -135,10 +135,13 @@ export function SearchToggle() {
     return [];
   }, [hasSuggestions, suggestions, showRecent, recent]);
 
-  // Reset highlight when list contents change
-  useEffect(() => {
+  // Reset highlight when list changes — setState during render is the React-approved
+  // pattern for resetting derived state when a computed value changes identity.
+  const [prevActiveList, setPrevActiveList] = useState(activeList);
+  if (prevActiveList !== activeList) {
+    setPrevActiveList(activeList);
     setActiveIndex(-1);
-  }, [activeList]);
+  }
 
   const doSearch = useCallback(
     (q: string) => {

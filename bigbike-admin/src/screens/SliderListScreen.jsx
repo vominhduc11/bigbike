@@ -26,9 +26,11 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { validateSafePublicLink } from '../lib/urlPolicies'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 const LOCATIONS = ['home', 'category', 'promotion']
 const EMPTY_FORM = {
@@ -59,33 +61,15 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
   return (
     <div
       ref={setNodeRef}
-      style={{
-        ...style,
-        background: 'var(--admin-color-surface-base)',
-        border: '1px solid var(--admin-color-border-subtle)',
-        borderRadius: 'var(--admin-radius-md)',
-        padding: '12px 16px',
-        display: 'flex',
-        gap: 12,
-        alignItems: 'flex-start',
-        boxShadow: 'var(--admin-shadow-xs)',
-        opacity: slider.isActive === false ? 0.55 : undefined,
-      }}
+      style={{ ...style, opacity: slider.isActive === false ? 0.55 : undefined }}
+      className="flex gap-3 items-start rounded-md border border-border bg-surface px-4 py-3 shadow-xs"
     >
       {canUpdate && (
         <button
           type="button"
           {...attributes}
           {...listeners}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'grab',
-            padding: '2px 4px',
-            color: 'var(--admin-color-text-muted)',
-            flexShrink: 0,
-            touchAction: 'none',
-          }}
+          className="bg-transparent border-none cursor-grab px-1 py-0.5 text-muted-foreground shrink-0 touch-none"
           title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
           aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
         >
@@ -93,13 +77,13 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
         </button>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+      <div className="flex flex-col gap-1 shrink-0">
         {slider.desktopImage?.url && (
           <img
             src={slider.desktopImage.url}
             alt={slider.desktopImage.alt || ''}
             title="Desktop"
-            style={{ width: 100, height: 52, objectFit: 'cover', borderRadius: 4 }}
+            className="object-cover rounded w-[100px] h-[52px]"
           />
         )}
         {slider.mobileImage?.url && (
@@ -107,58 +91,43 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
             src={slider.mobileImage.url}
             alt={slider.mobileImage.alt || ''}
             title="Mobile"
-            style={{ width: 60, height: 32, objectFit: 'cover', borderRadius: 4 }}
+            className="object-cover rounded w-[60px] h-[32px]"
           />
         )}
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-          <p style={{ fontWeight: 600, fontSize: 'var(--admin-text-sm)', margin: 0 }}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <p className="m-0 text-sm font-semibold">
             #{slider.sortOrder} · {slider.location}
           </p>
-          <span className={`status-badge status-${slider.isActive !== false ? 'success' : 'neutral'}`}>
+          <Badge variant={slider.isActive !== false ? 'success' : 'muted'}>
             {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
-          </span>
+          </Badge>
         </div>
         {slider.externalLink && (
-          <p style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p className="truncate text-xs text-muted-foreground">
             {t('sliders.linkLabel')} {slider.externalLink}
           </p>
         )}
         {slider.productId && (
-          <p style={{ fontSize: 'var(--admin-text-xs)', color: 'var(--admin-color-text-muted)' }}>
+          <p className="text-xs text-muted-foreground">
             {t('sliders.productLabel')} {slider.productId}
           </p>
         )}
       </div>
 
       {canUpdate && (
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'flex-start' }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ fontSize: 'var(--admin-text-xs)' }}
-            onClick={() => onToggleActive(slider)}
-          >
+        <div className="flex gap-1.5 shrink-0 items-start">
+          <Button variant="outline" size="sm" onClick={() => onToggleActive(slider)}>
             {slider.isActive !== false ? t('common.disable') : t('common.enable')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ fontSize: 'var(--admin-text-xs)' }}
-            onClick={() => onEdit(slider)}
-          >
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onEdit(slider)}>
             {t('common.edit')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            style={{ fontSize: 'var(--admin-text-xs)' }}
-            onClick={() => onDelete(slider.id)}
-          >
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => onDelete(slider.id)}>
             {t('common.delete')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -369,13 +338,9 @@ export function SliderListScreen({ canUpdate }) {
           <p>{t('sliders.description')}</p>
         </div>
         {canUpdate && (
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
-          >
+          <Button onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}>
             {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
-          </button>
+          </Button>
         )}
       </header>
 
@@ -396,7 +361,7 @@ export function SliderListScreen({ canUpdate }) {
             <h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2>
           </div>
           <div className="detail-section-content">
-            {formError && <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12 }}>{formError}</p>}
+            {formError && <p className="mb-3 text-danger">{formError}</p>}
             <div className="form-grid">
               <label className="form-field">
                 {t('sliders.formLocation')}
@@ -408,7 +373,7 @@ export function SliderListScreen({ canUpdate }) {
                 {t('sliders.formSortOrder')}
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))}  />
               </label>
-              <label className="form-field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label className="form-field flex items-center gap-2">
                 <Checkbox
                   checked={form.isActive}
                   onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
@@ -450,13 +415,13 @@ export function SliderListScreen({ canUpdate }) {
                 <Input value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))}  />
               </label>
             </div>
-            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-              <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                {isSaving ? t('sliders.saving') : (editingId ? t('common.update') : t('sliders.saveBtn'))}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={closeForm}>
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" loading={isSaving}>
+                {editingId ? t('common.update') : t('sliders.saveBtn')}
+              </Button>
+              <Button variant="outline" onClick={closeForm}>
                 {t('common.cancel')}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
@@ -476,7 +441,7 @@ export function SliderListScreen({ canUpdate }) {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div className="grid gap-2">
               {items.map((slider) => (
                 <SliderCard
                   key={slider.id}

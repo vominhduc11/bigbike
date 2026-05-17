@@ -8,10 +8,12 @@ import { StatePanel } from '../components/StatePanel'
 import { createCoupon, fetchCoupons, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
-const STATUS_TONES = { ACTIVE: 'success', INACTIVE: 'warning', EXPIRED: 'neutral', ARCHIVED: 'neutral' }
+const STATUS_TONES = { ACTIVE: 'success', INACTIVE: 'warning', EXPIRED: 'muted', ARCHIVED: 'muted' }
 function CouponStatusBadge({ value }) {
   const { t } = useTranslation()
   const labels = {
@@ -20,7 +22,8 @@ function CouponStatusBadge({ value }) {
     EXPIRED: t('coupons.statusExpired'),
     ARCHIVED: t('coupons.statusArchived'),
   }
-  return <span className={`status-badge status-${STATUS_TONES[value] || 'neutral'}`}>{labels[value] ?? value}</span>
+  const variant = STATUS_TONES[value] || 'muted'
+  return <Badge variant={variant}>{labels[value] ?? value}</Badge>
 }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
@@ -28,8 +31,9 @@ const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '
 
 const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
 function ChannelBadge({ value }) {
-  const tones = { ALL: 'neutral', ONLINE: 'info', POS: 'warning' }
-  return <span className={`status-badge status-${tones[value] || 'neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
+  const tones = { ALL: 'muted', ONLINE: 'info', POS: 'warning' }
+  const variant = tones[value] || 'muted'
+  return <Badge variant={variant}>{CHANNEL_LABELS[value] ?? value}</Badge>
 }
 
 // Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant
@@ -150,7 +154,7 @@ export function CouponListScreen({ canUpdate }) {
   }
 
   const columns = useMemo(() => [
-    { key: 'code', label: t('coupons.colCode'), render: (c) => <code style={{ fontWeight: 700 }}>{c.code}</code> },
+    { key: 'code', label: t('coupons.colCode'), render: (c) => <code className="font-bold">{c.code}</code> },
     {
       key: 'discount', label: t('coupons.colDiscount'),
       render: (c) => c.discountType === 'PERCENT' ? `${c.discountValue}%` : formatCurrencyVnd(c.discountValue),
@@ -164,11 +168,11 @@ export function CouponListScreen({ canUpdate }) {
     canUpdate ? {
       key: 'actions', label: '', align: 'right',
       render: (c) => (
-        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => openEdit(c)}>{t('common.edit')}</button>
-          <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => handleToggleStatus(c)}>
+        <div className="flex justify-end gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => openEdit(c)}>{t('common.edit')}</Button>
+          <Button variant="outline" size="sm" onClick={() => handleToggleStatus(c)}>
             {c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
-          </button>
+          </Button>
         </div>
       ),
     } : null,
@@ -222,13 +226,13 @@ export function CouponListScreen({ canUpdate }) {
           <p>{t('coupons.description')}</p>
         </div>
         {canUpdate && (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}>
               {bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
-            </button>
-            <button type="button" className="btn btn-primary" onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}>
+            </Button>
+            <Button onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}>
               {showForm ? t('common.cancel') : t('coupons.createBtn')}
-            </button>
+            </Button>
           </div>
         )}
       </header>
@@ -241,12 +245,12 @@ export function CouponListScreen({ canUpdate }) {
       )}
 
       {bulkOpen && (
-        <form onSubmit={handleBulkSend} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '0.25rem' }}>Gửi mã giảm giá đến toàn bộ khách hàng</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)', marginBottom: '1rem' }}>
+        <form onSubmit={handleBulkSend} className="mb-6 rounded-sm border border-border bg-surface p-6">
+          <h3 className="mb-1">Gửi mã giảm giá đến toàn bộ khách hàng</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
             Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="grid grid-cols-2 gap-4">
             <label>Loại giảm giá
               <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -290,28 +294,30 @@ export function CouponListScreen({ canUpdate }) {
             </label>
           </div>
           {bulkConfirm && (
-            <p style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', fontSize: '0.9rem', color: '#92400e' }}>
+            <p className="mt-4 rounded-sm border border-warning-border bg-warning-bg px-4 py-3 text-sm text-warning">
               Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
             </p>
           )}
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button type="submit" className="btn btn-primary" disabled={bulkSaving}>
-              {bulkSaving ? 'Đang gửi...' : bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
-            </button>
-            <button type="button" className="btn btn-secondary"
+          <div className="mt-4 flex items-center gap-2">
+            <Button type="submit" loading={bulkSaving}>
+              {bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
-              disabled={bulkSaving}>
+              disabled={bulkSaving}
+            >
               Hủy
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>{t('coupons.createTitle')}</h3>
-          {formError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{formError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleCreate} className="mb-6 rounded-sm border border-border bg-surface p-6">
+          <h3 className="mb-4">{t('coupons.createTitle')}</h3>
+          {formError && <p className="mb-3 text-sm text-danger">{formError}</p>}
+          <div className="grid grid-cols-2 gap-4">
             <label>{t('coupons.formCode')} <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}  /></label>
             <label>{t('coupons.formName')} <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}  /></label>
             <label>{t('coupons.formDiscountType')}
@@ -332,18 +338,18 @@ export function CouponListScreen({ canUpdate }) {
               </SelectContent></Select>
             </label>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? t('coupons.creating') : t('coupons.createBtn')}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError('') }}>{t('common.cancel')}</button>
+          <div className="mt-4 flex gap-2">
+            <Button type="submit" loading={formSaving}>{t('coupons.createBtn')}</Button>
+            <Button variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError('') }}>{t('common.cancel')}</Button>
           </div>
         </form>
       )}
 
       {editCoupon && (
-        <form onSubmit={handleEdit} style={{ background: 'var(--c-surface)', border: '1px solid var(--c-primary)', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>{t('coupons.editTitle', { code: editCoupon.code })}</h3>
-          {editError && <p style={{ color: 'var(--c-danger)', marginBottom: '0.75rem' }}>{editError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleEdit} className="mb-6 rounded-sm border border-primary bg-surface p-6">
+          <h3 className="mb-4">{t('coupons.editTitle', { code: editCoupon.code })}</h3>
+          {editError && <p className="mb-3 text-sm text-danger">{editError}</p>}
+          <div className="grid grid-cols-2 gap-4">
             <label>{t('coupons.formDiscountType')}
               <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
@@ -362,9 +368,9 @@ export function CouponListScreen({ canUpdate }) {
               </SelectContent></Select>
             </label>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</button>
+          <div className="mt-4 flex gap-2">
+            <Button type="submit" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</Button>
+            <Button variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
           </div>
         </form>
       )}

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
@@ -29,6 +28,7 @@ import '../../features/articles/article_list_screen.dart';
 import '../../features/articles/article_detail_screen.dart';
 import '../../features/contact/contact_screen.dart';
 import '../../features/content/content_screen.dart';
+import '../../features/warranty/warranty_lookup_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -38,9 +38,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuthenticated =
           authState.valueOrNull?.isAuthenticated ?? false;
-      final isAuthRoute = state.matchedLocation.startsWith('/dang-nhap') ||
-          state.matchedLocation.startsWith('/dang-ky') ||
-          state.matchedLocation.startsWith('/quen-mat-khau');
       final isAccountRoute =
           state.matchedLocation.startsWith('/tai-khoan') ||
           state.matchedLocation.startsWith('/thanh-toan');
@@ -197,6 +194,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/lien-he',
         builder: (c, s) => const ContactScreen(),
+      ),
+
+      // Warranty lookup (public — must be declared before the catch-all)
+      GoRoute(
+        path: '/bao-hanh',
+        builder: (c, s) => const WarrantyLookupScreen(),
       ),
 
       // Policy and guide pages (must be declared before the catch-all)

@@ -88,13 +88,13 @@ export function AdminTable({
               <TableRow key={i} className="hover:bg-transparent animate-pulse">
                 {selectable && (
                   <TableCell>
-                    <div className="h-4 w-4 rounded-[var(--admin-radius-xs)] bg-surface-muted" />
+                    <div className="h-4 w-4 rounded-xs bg-surface-muted" />
                   </TableCell>
                 )}
                 {columns.map((column) => (
                   <TableCell key={column.key} className={ALIGN_CLASS[column.align]}>
                     <div
-                      className="h-4 rounded-[var(--admin-radius-xs)] bg-surface-muted"
+                      className="h-4 rounded-xs bg-surface-muted"
                       style={{ width: column.skeletonWidth ?? '70%' }}
                     />
                   </TableCell>

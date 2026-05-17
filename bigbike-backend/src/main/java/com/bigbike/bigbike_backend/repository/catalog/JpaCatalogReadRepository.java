@@ -182,6 +182,16 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findProductsByIdsPublicView(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return productJpaRepository.findAllById(ids).stream()
+                .map(this::toDomainPublicView)
+                .toList();
+    }
+
+    @Override
     public List<Category> findAllCategories() {
         return categoryJpaRepository.findAll().stream().map(this::toDomain).toList();
     }

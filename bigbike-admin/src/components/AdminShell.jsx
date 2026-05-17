@@ -139,17 +139,9 @@ export function AdminShell({
           </nav>
 
           {/* Sidebar footer: user info on mobile */}
-          <div style={{
-            padding: 'var(--admin-space-4)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            flexShrink: 0,
-          }}>
-            <div style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
-              {user.fullName}
-            </div>
-            <div style={{ fontSize: 'var(--admin-text-xs)', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-              {formatRoles(user.roles)}
-            </div>
+          <div className="shrink-0 border-t border-white/[0.06] p-4">
+            <div className="text-sm font-semibold text-white/85">{user.fullName}</div>
+            <div className="mt-0.5 text-xs text-white/40">{formatRoles(user.roles)}</div>
           </div>
         </aside>
 

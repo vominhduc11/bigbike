@@ -481,8 +481,21 @@ export function normalizeOrder(input) {
   const payments = Array.isArray(s.payments) ? s.payments : []
   const paymentMethod = toTrimmedStringLocal(payments[0]?.paymentMethod) || undefined
 
-  // Backend has no customerName field; derive from email then phone
-  const customerName = toTrimmedStringLocal(s.customerEmail) || toTrimmedStringLocal(s.customerPhone) || undefined
+  // Derive customerName: prefer explicit name fields, then shipping address fullName.
+  // Do NOT fall back to email/phone — those are separate display fields and showing
+  // email in a "name" column causes duplicate display (bug: Name field showed email).
+  // NEEDS_BACKEND_CHANGE: backend should include customer name in order response.
+  const customerName =
+    toTrimmedStringLocal(s.customerName) ||
+    toTrimmedStringLocal(s.customer?.fullName) ||
+    toTrimmedStringLocal(s.customer?.name) ||
+    toTrimmedStringLocal(s.customer?.displayName) ||
+    toTrimmedStringLocal(
+      Array.isArray(s.addresses)
+        ? (s.addresses.find((a) => a?.type === 'SHIPPING') ?? s.addresses[0])?.fullName
+        : undefined
+    ) ||
+    undefined
 
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown-order',

@@ -9,16 +9,21 @@ type Props = {
   productId: string;
   hasVariants: boolean;
   slug: string;
+  stockState?: string | null;
 };
 
-export function ProductCardAddBar({ productId, hasVariants, slug }: Props) {
+export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: Props) {
   const { addToCart, showToast } = useCart();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
+  const isOutOfStock = stockState === "OUT_OF_STOCK";
+
   function handleClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOutOfStock) return;
 
     if (hasVariants) {
       router.push(toProductPath(slug));
@@ -36,11 +41,11 @@ export function ProductCardAddBar({ productId, hasVariants, slug }: Props) {
   return (
     <button
       type="button"
-      className="absolute left-0 right-0 bottom-0 bg-black text-white py-[14px] text-center font-display text-sm font-semibold tracking-[0.08em] uppercase translate-y-full transition-[transform,background-color] duration-[320ms] z-[2] cursor-pointer w-full hover:bg-brand-active [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0"
-      disabled={busy}
+      className="absolute left-0 right-0 bottom-0 bg-black text-white py-[14px] text-center font-display text-sm font-semibold tracking-[0.08em] uppercase translate-y-full transition-[transform,background-color] duration-[320ms] z-[2] cursor-pointer w-full hover:bg-brand-active [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
+      disabled={busy || isOutOfStock}
       onClick={handleClick}
     >
-      {hasVariants ? "CHỌN BIẾN THỂ" : busy ? "ĐANG THÊM..." : "THÊM VÀO GIỎ HÀNG"}
+      {isOutOfStock ? "TẠM HẾT HÀNG" : hasVariants ? "CHỌN BIẾN THỂ" : busy ? "ĐANG THÊM..." : "THÊM VÀO GIỎ HÀNG"}
     </button>
   );
 }

@@ -23,9 +23,9 @@ const LOW_STOCK_URGENCY_THRESHOLD = 10;
 
 function stockBadgeColorClass(state: string): string {
   switch (state) {
-    case "IN_STOCK": return "bg-[var(--bb-state-success-bg)] text-[#3d5230] border-[var(--bb-state-success-border)]";
+    case "IN_STOCK": return "bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success-text)] border-[var(--bb-state-success-border)]";
     case "LOW_STOCK": return "bg-[var(--bb-state-warning)] text-black border-[var(--bb-state-warning)]";
-    case "OUT_OF_STOCK": return "bg-[#dddddd] text-[#4a4a4a] border-[#dddddd]";
+    case "OUT_OF_STOCK": return "bg-[var(--bb-bg-surface-raised)] text-muted-foreground border-[var(--bb-border-default)]";
     default: return "";
   }
 }

@@ -78,6 +78,41 @@ export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
 }
 
 export async function GuidePage({ subSegments }: GuidePageProps) {
+  const isRoot = !subSegments || subSegments.length === 0;
+
+  // Root landing: static index without CMS dependency (CMS page "huong-dan" may not exist)
+  if (isRoot) {
+    return (
+      <section className="bb-page">
+        <PageHero
+          kicker="HƯỚNG DẪN"
+          title="Hướng dẫn mua hàng & sản phẩm"
+          description="Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike."
+          breadcrumb={[
+            { label: "Trang chủ", href: toHomePath() },
+            { label: "Hướng dẫn" },
+          ]}
+        />
+        <div className="bb-container bb-section">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
+              <Link
+                key={guide.pageSlug}
+                href={guide.path}
+                className="group block bg-card border border-border p-6 no-underline text-inherit transition-colors duration-200 hover:border-brand"
+              >
+                <h2 className="font-display text-[17px] uppercase tracking-[0.02em] m-0 mb-2 leading-snug transition-colors duration-200 group-hover:text-brand">
+                  {guide.title}
+                </h2>
+                <p className="text-sm text-muted-foreground m-0 leading-relaxed">{guide.description}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const route = resolveGuideRoute(subSegments);
   const [pageResult, menuResult] = await Promise.all([
     getPageBySlug(route.pageSlug),
@@ -98,7 +133,6 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   const currentPath = route.path;
   const menuItems = menuResult.data?.items ?? [];
   const pageTitle = safeText(page.title, route.title);
-  const isRoot = !subSegments || subSegments.length === 0;
 
   return (
     <section className="bb-page">
@@ -108,18 +142,11 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         kicker={page.heroKicker ?? "HƯỚNG DẪN"}
         title={page.heroTitle ?? pageTitle}
         description={page.heroDescription ?? route.description}
-        breadcrumb={
-          isRoot
-            ? [
-                { label: "Trang chủ", href: toHomePath() },
-                { label: pageTitle },
-              ]
-            : [
-                { label: "Trang chủ", href: toHomePath() },
-                { label: "Hướng dẫn", href: "/huong-dan/" },
-                { label: pageTitle },
-              ]
-        }
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Hướng dẫn", href: "/huong-dan/" },
+          { label: pageTitle },
+        ]}
       />
       <div className="bb-container">
         <div className="bb-detail-layout bb-section">
@@ -157,13 +184,6 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                 </nav>
               )}
             </div>
-
-            {subSegments && subSegments.length > 0 ? (
-              <div className="bb-card bb-card-content">
-                <h2 className="bb-sidebar-heading">Đường dẫn hiện tại</h2>
-                <p className="text-muted-foreground text-sm">{currentPath}</p>
-              </div>
-            ) : null}
           </aside>
         </div>
       </div>

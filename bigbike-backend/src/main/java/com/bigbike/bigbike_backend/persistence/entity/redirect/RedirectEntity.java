@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.redirect;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "redirects")
+@Getter
+@Setter
 public class RedirectEntity {
 
     @Id
@@ -50,39 +54,4 @@ public class RedirectEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getSourcePattern() { return sourcePattern; }
-    public void setSourcePattern(String sourcePattern) { this.sourcePattern = sourcePattern; }
-
-    public String getTargetUrl() { return targetUrl; }
-    public void setTargetUrl(String targetUrl) { this.targetUrl = targetUrl; }
-
-    public String getRedirectType() { return redirectType; }
-    public void setRedirectType(String redirectType) { this.redirectType = redirectType; }
-
-    public int getStatusCode() { return statusCode; }
-    public void setStatusCode(int statusCode) { this.statusCode = statusCode; }
-
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
-
-    public long getHitCount() { return hitCount; }
-    public void setHitCount(long hitCount) { this.hitCount = hitCount; }
-
-    public Instant getLastHitAt() { return lastHitAt; }
-    public void setLastHitAt(Instant lastHitAt) { this.lastHitAt = lastHitAt; }
-
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-
-    public Long getLegacyId() { return legacyId; }
-    public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

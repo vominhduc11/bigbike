@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { AdminTable } from '../components/AdminTable'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { fetchContactMessageDetail, fetchContactMessages, updateContactMessage } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 const STATUSES = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
 const EDITABLE_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
-const STATUS_COLORS = {
-  OPEN: '#d97706',
-  IN_PROGRESS: '#2563eb',
-  RESOLVED: '#16a34a',
-  CLOSED: '#6b7280',
-}
 const STATUS_LABELS_VI = {
   OPEN: 'Mới',
   IN_PROGRESS: 'Đang xử lý',
@@ -25,10 +21,16 @@ const STATUS_LABELS_VI = {
   CLOSED: 'Đã đóng',
 }
 
+const STATUS_CLASSES = {
+  OPEN:        'text-warning font-semibold text-xs',
+  IN_PROGRESS: 'text-info font-semibold text-xs',
+  RESOLVED:    'text-success font-semibold text-xs',
+  CLOSED:      'text-muted-foreground font-semibold text-xs',
+}
+
 function StatusBadge({ status }) {
-  const color = STATUS_COLORS[status] ?? '#9ca3af'
   return (
-    <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>
+    <span className={STATUS_CLASSES[status] ?? 'text-muted-foreground font-semibold text-xs'}>
       {STATUS_LABELS_VI[status] ?? status}
     </span>
   )
@@ -94,74 +96,65 @@ function ContactDetailModal({ message, onClose, onUpdate, canUpdate, userId }) {
   const dirty = status !== detail.status || (note || '') !== (detail.adminNote || '')
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 620, overflowY: 'auto', maxHeight: '90vh' }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Chi tiết tin liên hệ</h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <Modal open wide title="Chi tiết tin liên hệ" onClose={onClose}>
+        <div className="flex flex-col gap-4">
           {/* Customer info */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.85rem' }}>
+          <div className="grid grid-cols-2 gap-2.5 text-sm">
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Họ tên: </span>
+              <span className="text-muted-foreground">Họ tên: </span>
               <strong>{detail.fullName || '—'}</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Trạng thái: </span>
+              <span className="text-muted-foreground">Trạng thái: </span>
               <StatusBadge status={detail.status} />
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Điện thoại: </span>
+              <span className="text-muted-foreground">Điện thoại: </span>
               <span>{detail.phone || '—'}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Email: </span>
+              <span className="text-muted-foreground">Email: </span>
               <span>{detail.email || '—'}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày gửi: </span>
+              <span className="text-muted-foreground">Ngày gửi: </span>
               <span>{formatDateTime(detail.createdAt)}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--admin-color-text-muted)' }}>Người xử lý: </span>
+              <span className="text-muted-foreground">Người xử lý: </span>
               <span>{detail.assignedAdminName || 'Chưa gán'}</span>
             </div>
             {detail.resolvedAt && (
               <div>
-                <span style={{ color: 'var(--admin-color-text-muted)' }}>Ngày xử lý xong: </span>
+                <span className="text-muted-foreground">Ngày xử lý xong: </span>
                 <span>{formatDateTime(detail.resolvedAt)}</span>
               </div>
             )}
           </div>
 
           {/* Message content */}
-          <div style={{ background: 'var(--admin-color-bg-subtle)', borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem' }}>
-            <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
-              Nội dung khách gửi
-            </p>
-            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{detail.content || '—'}</p>
+          <div className="rounded-sm bg-surface-muted px-3.5 py-2.5 text-sm">
+            <p className="mb-1 font-semibold text-muted-foreground">Nội dung khách gửi</p>
+            <p className="whitespace-pre-wrap">{detail.content || '—'}</p>
           </div>
 
           {/* Existing admin note */}
           {detail.adminNote && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 14px', fontSize: '0.85rem' }}>
-              <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#92400e' }}>Ghi chú nội bộ hiện tại</p>
-              <p style={{ margin: 0, color: '#78350f', whiteSpace: 'pre-wrap' }}>{detail.adminNote}</p>
+            <div className="rounded-sm border border-warning-border bg-warning-bg px-3.5 py-2.5 text-sm">
+              <p className="mb-1 font-semibold text-warning">Ghi chú nội bộ hiện tại</p>
+              <p className="whitespace-pre-wrap text-warning">{detail.adminNote}</p>
             </div>
           )}
 
           {loadingDetail && (
-            <p style={{ fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>Đang tải chi tiết…</p>
+            <p className="text-sm text-muted-foreground">Đang tải chi tiết…</p>
           )}
 
           {/* Update form */}
           {canUpdate ? (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--admin-color-border)', paddingTop: 14 }}>
-              <div className="form-field">
-                <label className="field-label">Trạng thái</label>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 border-t border-border pt-3.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold">Trạng thái</label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -171,32 +164,30 @@ function ContactDetailModal({ message, onClose, onUpdate, canUpdate, userId }) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="form-field">
-                <label className="field-label">Ghi chú nội bộ</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold">Ghi chú nội bộ</label>
                 <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)}
                   placeholder="Ghi chú xử lý (chỉ admin thấy)" />
               </div>
-              {error && <p className="field-error">{error}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
+              {error && <p className="text-xs text-danger">{error}</p>}
+              <div className="flex gap-2">
                 {!detail.assignedAdminId && userId && (
-                  <button type="button" className="btn btn-secondary" disabled={assigning}
-                    onClick={handleAssignToMe}>
-                    {assigning ? 'Đang gán…' : 'Nhận xử lý'}
-                  </button>
+                  <Button type="button" variant="outline" size="sm" loading={assigning} onClick={handleAssignToMe}>
+                    Nhận xử lý
+                  </Button>
                 )}
-                <button type="submit" className="btn btn-primary" disabled={saving || !dirty}>
-                  {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
-                </button>
+                <Button type="submit" size="sm" loading={saving} disabled={!dirty}>
+                  Lưu thay đổi
+                </Button>
               </div>
             </form>
           ) : (
-            <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)', borderTop: '1px solid var(--admin-color-border)', paddingTop: 14 }}>
+            <p className="text-xs text-muted-foreground border-t border-border pt-4">
               Bạn không có quyền cập nhật tin liên hệ.
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -236,18 +227,18 @@ export function ContactInboxScreen({ canUpdate, userId }) {
       key: 'fullName', label: 'Khách hàng', skeletonWidth: '70%',
       render: (m) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{m.fullName || '—'}</div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)' }}>{m.phone}</div>
+          <div className="font-medium">{m.fullName || '—'}</div>
+          <div className="text-xs text-muted-foreground">{m.phone}</div>
         </div>
       ),
     },
     {
       key: 'email', label: 'Email', skeletonWidth: '65%',
-      render: (m) => <span style={{ fontSize: '0.8rem' }}>{m.email || '—'}</span>,
+      render: (m) => <span className="text-xs">{m.email || '—'}</span>,
     },
     {
       key: 'contentPreview', label: 'Nội dung', skeletonWidth: '90%',
-      render: (m) => <span style={{ fontSize: '0.82rem' }}>{m.contentPreview || '—'}</span>,
+      render: (m) => <span className="text-xs">{m.contentPreview || '—'}</span>,
     },
     {
       key: 'status', label: 'Trạng thái', skeletonWidth: '45%',
@@ -255,15 +246,14 @@ export function ContactInboxScreen({ canUpdate, userId }) {
     },
     {
       key: 'createdAt', label: 'Ngày gửi', skeletonWidth: '60%',
-      render: (m) => <span style={{ fontSize: '0.8rem' }}>{formatDateTime(m.createdAt)}</span>,
+      render: (m) => <span className="text-xs">{formatDateTime(m.createdAt)}</span>,
     },
     {
       key: 'actions', label: '', align: 'right', skeletonWidth: '55%',
       render: (m) => (
-        <button type="button" className="btn btn-secondary" style={{ fontSize: '0.78rem' }}
-          onClick={() => setDetailMsg(m)}>
+        <Button variant="outline" size="sm" onClick={() => setDetailMsg(m)}>
           Xem
-        </button>
+        </Button>
       ),
     },
   ], [])

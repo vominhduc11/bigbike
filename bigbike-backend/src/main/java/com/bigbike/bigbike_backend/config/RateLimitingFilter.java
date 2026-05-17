@@ -8,12 +8,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,9 +43,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    /** IPs allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies (comma-separated). */
-    private final Set<String> trustedProxies;
+    /**
+     * Proxies allowed to set X-Forwarded-For. Configurable via bigbike.trusted-proxies
+     * (comma-separated). Each entry is either an exact IP (e.g. {@code 127.0.0.1}) or a
+     * CIDR range (e.g. {@code 172.16.0.0/12}) — the latter is needed when the backend
+     * runs behind a reverse proxy on a Docker bridge / private subnet whose gateway IP
+     * is not fixed.
+     */
+    private final List<ProxyMatcher> trustedProxies;
 
     public RateLimitingFilter(
             @Value("${bigbike.trusted-proxies:127.0.0.1,::1}") String trustedProxiesConfig
@@ -50,7 +60,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         this.trustedProxies = Arrays.stream(trustedProxiesConfig.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
+                .map(ProxyMatcher::parse)
+                .filter(m -> m != null)
+                .toList();
     }
 
     private final Map<String, Bucket> loginBuckets               = new ConcurrentHashMap<>();
@@ -171,7 +183,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private String resolveClientIp(HttpServletRequest request) {
         String remoteAddr = request.getRemoteAddr();
-        if (trustedProxies.contains(remoteAddr)) {
+        if (isTrustedProxy(remoteAddr)) {
             String forwarded = request.getHeader("X-Forwarded-For");
             if (forwarded != null && !forwarded.isBlank()) {
                 String candidate = forwarded.split(",")[0].trim();
@@ -181,6 +193,80 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             }
         }
         return remoteAddr;
+    }
+
+    private boolean isTrustedProxy(String ip) {
+        if (ip == null) {
+            return false;
+        }
+        for (ProxyMatcher matcher : trustedProxies) {
+            if (matcher.matches(ip)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Matches a remote address against a trusted-proxy config entry — either an exact
+     * IP or a CIDR range. Comparison is done on raw {@link InetAddress} bytes so IPv4
+     * and IPv6 (and forms like {@code ::1} vs {@code 0:0:0:0:0:0:0:1}) compare correctly.
+     */
+    private static final class ProxyMatcher {
+        private final byte[] network;
+        private final int prefixBits;       // -1 → exact-IP match
+
+        private ProxyMatcher(byte[] network, int prefixBits) {
+            this.network = network;
+            this.prefixBits = prefixBits;
+        }
+
+        /** Parses one config entry; returns null (and logs) when the entry is malformed. */
+        static ProxyMatcher parse(String entry) {
+            try {
+                int slash = entry.indexOf('/');
+                if (slash < 0) {
+                    return new ProxyMatcher(InetAddress.getByName(entry).getAddress(), -1);
+                }
+                byte[] network = InetAddress.getByName(entry.substring(0, slash)).getAddress();
+                int prefix = Integer.parseInt(entry.substring(slash + 1).trim());
+                if (prefix < 0 || prefix > network.length * 8) {
+                    log.warn("Ignoring trusted-proxy entry with invalid CIDR prefix: {}", entry);
+                    return null;
+                }
+                return new ProxyMatcher(network, prefix);
+            } catch (UnknownHostException | NumberFormatException e) {
+                log.warn("Ignoring malformed trusted-proxy entry '{}': {}", entry, e.getMessage());
+                return null;
+            }
+        }
+
+        boolean matches(String ip) {
+            byte[] addr;
+            try {
+                addr = InetAddress.getByName(ip).getAddress();
+            } catch (UnknownHostException e) {
+                return false;
+            }
+            if (addr.length != network.length) {
+                return false; // IPv4 vs IPv6 mismatch
+            }
+            if (prefixBits < 0) {
+                return Arrays.equals(addr, network);
+            }
+            int fullBytes = prefixBits / 8;
+            for (int i = 0; i < fullBytes; i++) {
+                if (addr[i] != network[i]) {
+                    return false;
+                }
+            }
+            int remainingBits = prefixBits % 8;
+            if (remainingBits == 0) {
+                return true;
+            }
+            int mask = 0xFF << (8 - remainingBits);
+            return (addr[fullBytes] & mask) == (network[fullBytes] & mask);
+        }
     }
 
     private void sendRateLimitResponse(HttpServletResponse response) throws IOException {

@@ -14,8 +14,24 @@ import { readTokens } from './lib/authStorage'
 import { connectAdminWs, disconnectAdminWs } from './lib/adminWebSocket'
 import { LoginScreen } from './screens/LoginScreen'
 
+// Wrap lazy imports with a one-shot reload on chunk load failure.
+// After a new deploy, stale chunk hashes cause dynamic imports to 404.
+// One auto-reload fetches the new manifest and resolves the stale reference.
+const CHUNK_RELOAD_KEY = 'bb-admin-chunk-reload'
 function lazyScreen(factory, exportName) {
-  return lazy(() => factory().then((m) => ({ default: m[exportName] })))
+  return lazy(() =>
+    factory()
+      .then((m) => ({ default: m[exportName] }))
+      .catch((err) => {
+        const alreadyReloaded = sessionStorage.getItem(CHUNK_RELOAD_KEY) === '1'
+        if (!alreadyReloaded) {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+          window.location.reload()
+          return new Promise(() => {}) // prevent error propagation until reload
+        }
+        throw err
+      })
+  )
 }
 
 const DashboardScreen    = lazyScreen(() => import('./screens/DashboardScreen'),    'DashboardScreen')
@@ -402,7 +418,7 @@ function AdminApp() {
     case 'review-detail':
       screen = <ReviewDetailScreen reviewId={route.reviewId} navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
     case 'admin-users':
-      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} />; break
+      screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} currentUserId={authState.user?.id} />; break
     case 'settings':
       screen = <SettingsScreen canUpdate={hasPermission('settings.write')} />; break
     case 'audit-logs':
@@ -412,13 +428,13 @@ function AdminApp() {
     case 'inventory':
       screen = <InventoryScreen canUpdate={hasPermission('inventory.write')} />; break
     case 'serials':
-      screen = <SerialListScreen canUpdate={hasPermission('inventory.write')} />; break
+      screen = <SerialListScreen canUpdate={hasPermission('inventory.write')} canReadWarranty={hasPermission('warranty.read')} />; break
     case 'returns':
-      screen = <ReturnListScreen canUpdate={hasPermission('orders.write')} />; break
+      screen = <ReturnListScreen navigate={navigate} canUpdate={hasPermission('orders.write')} />; break
     case 'warranties':
       screen = <WarrantyListScreen canUpdate={hasPermission('warranty.write')} />; break
     case 'roles':
-      screen = <RolesScreen canUpdate={hasPermission('roles.write')} />; break
+      screen = <RolesScreen canUpdate={hasPermission('roles.write')} currentUserRoles={authState.user?.roles} />; break
     case 'pos':
       screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} canOverrideCreditLimit={hasPermission('receivables.override_limit')} canOverridePrice={hasPermission('pos.price_override')} canRefund={hasPermission('pos.refund')} />; break
     case 'receivables-list':

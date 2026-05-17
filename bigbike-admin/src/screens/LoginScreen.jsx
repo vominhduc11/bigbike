@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatePanel } from '../components/StatePanel'
 import { ApiClientError } from '../lib/adminApi'
@@ -14,6 +14,11 @@ export function LoginScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showForgot, setShowForgot] = useState(false)
+
+  const emailId = useId()
+  const passwordId = useId()
+  const errorId = useId()
+  const forgotId = useId()
 
   async function onSubmit(event) {
     event.preventDefault()
@@ -33,92 +38,127 @@ export function LoginScreen() {
     }
   }
 
+  const hasError = Boolean(error)
+
   return (
-    <div className="full-page-state">
-      <form className="login-card" onSubmit={onSubmit}>
-        <header>
-          <p className="eyebrow">{t('auth.title')}</p>
-          <h1>{t('auth.login')}</h1>
-          <p>{t('auth.subtitle')}</p>
+    <div className="full-page-state relative isolate overflow-hidden">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.5]"
+        style={{
+          backgroundImage:
+            'radial-gradient(var(--admin-color-border-default) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+          maskImage:
+            'radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 100%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 100%)',
+        }}
+      />
+      <form
+        className="relative grid w-full max-w-[400px] gap-5 rounded-[var(--admin-radius-lg)] border border-border bg-card p-8 shadow-[var(--admin-shadow-md)]"
+        onSubmit={onSubmit}
+        noValidate
+      >
+        <header className="grid gap-1.5">
+          <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-primary">
+            {t('auth.title')}
+          </p>
+          <h1 className="text-[length:var(--admin-text-2xl)] font-bold leading-tight tracking-[-0.02em] text-foreground">
+            {t('auth.login')}
+          </h1>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {t('auth.subtitle')}
+          </p>
         </header>
 
-        {error ? (
-          <StatePanel tone="danger" title={t('auth.loginError')} description={error} />
+        {hasError ? (
+          <div id={errorId} role="alert">
+            <StatePanel
+              tone="danger"
+              title={t('auth.loginError')}
+              description={error}
+            />
+          </div>
         ) : null}
 
-        <label>
-          {t('auth.email')}
+        <div className="grid gap-1.5">
+          <label
+            htmlFor={emailId}
+            className="text-sm font-medium text-foreground"
+          >
+            {t('auth.email')}
+          </label>
           <Input
+            id={emailId}
             type="email"
             autoComplete="email"
             required
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             disabled={submitting}
-           />
-        </label>
+            aria-invalid={hasError || undefined}
+            aria-describedby={hasError ? errorId : undefined}
+            className="h-10 bg-surface-muted"
+          />
+        </div>
 
-        <label>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span>{t('auth.password')}</span>
-            <button
-              type="button"
-              onClick={() => setShowForgot((v) => !v)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--admin-color-brand-red)',
-                fontSize: 'var(--admin-text-xs)',
-                fontWeight: 600,
-                padding: 0,
-                lineHeight: 1,
-              }}
-            >
-              {t('auth.forgotPassword')}
-            </button>
-          </div>
+        <div className="grid gap-1.5">
+          <label
+            htmlFor={passwordId}
+            className="text-sm font-medium text-foreground"
+          >
+            {t('auth.password')}
+          </label>
           <Input
+            id={passwordId}
             type="password"
             autoComplete="current-password"
             required
             minLength={1}
             maxLength={128}
+            placeholder={t('auth.passwordPlaceholder')}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             disabled={submitting}
-           />
-        </label>
+            aria-invalid={hasError || undefined}
+            aria-describedby={hasError ? errorId : undefined}
+            className="h-10 bg-surface-muted"
+          />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs font-semibold leading-none"
+              onClick={() => setShowForgot((v) => !v)}
+              aria-expanded={showForgot}
+              aria-controls={forgotId}
+            >
+              {t('auth.forgotPassword')}
+            </Button>
+          </div>
+        </div>
 
-        {showForgot && (
-          <div style={{
-            padding: 'var(--admin-space-3) var(--admin-space-4)',
-            background: 'var(--admin-color-status-info-bg)',
-            border: '1px solid var(--admin-color-status-info-border)',
-            borderRadius: 'var(--admin-radius-sm)',
-            fontSize: 'var(--admin-text-sm)',
-            color: 'var(--admin-color-status-info-text)',
-            lineHeight: 1.5,
-          }}>
+        {showForgot ? (
+          <div
+            id={forgotId}
+            className="rounded-[var(--admin-radius-xs)] border border-info-border bg-info-bg px-4 py-3 text-sm leading-relaxed text-info"
+          >
             {t('auth.forgotPasswordNote')}
           </div>
-        )}
+        ) : null}
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" size="lg" loading={submitting} disabled={submitting}>
           {submitting ? t('auth.loggingIn') : t('auth.login')}
         </Button>
 
-        <div style={{
-          paddingTop: 'var(--admin-space-3)',
-          borderTop: '1px solid var(--admin-color-border-subtle)',
-          textAlign: 'center',
-          fontSize: 'var(--admin-text-xs)',
-          color: 'var(--admin-color-text-muted)',
-        }}>
+        <div className="border-t border-border pt-3 text-center text-xs text-muted-foreground">
           {t('auth.supportContact')}:{' '}
           <a
             href="mailto:admin@bigbike.vn"
-            style={{ color: 'var(--admin-color-brand-red)', fontWeight: 600 }}
+            className="font-semibold text-primary hover:underline"
           >
             admin@bigbike.vn
           </a>

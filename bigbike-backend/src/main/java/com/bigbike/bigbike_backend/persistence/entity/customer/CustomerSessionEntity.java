@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.customer;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "customer_sessions")
+@Getter
+@Setter
 public class CustomerSessionEntity {
 
     @Id
@@ -56,45 +60,4 @@ public class CustomerSessionEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getSessionTokenHash() { return sessionTokenHash; }
-    public void setSessionTokenHash(String sessionTokenHash) { this.sessionTokenHash = sessionTokenHash; }
-
-    public String getRefreshTokenHash() { return refreshTokenHash; }
-    public void setRefreshTokenHash(String refreshTokenHash) { this.refreshTokenHash = refreshTokenHash; }
-
-    public String getCsrfTokenHash() { return csrfTokenHash; }
-    public void setCsrfTokenHash(String csrfTokenHash) { this.csrfTokenHash = csrfTokenHash; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-
-    public String getIpAddress() { return ipAddress; }
-    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
-
-    public Instant getSessionExpiresAt() { return sessionExpiresAt; }
-    public void setSessionExpiresAt(Instant sessionExpiresAt) { this.sessionExpiresAt = sessionExpiresAt; }
-
-    public Instant getRefreshExpiresAt() { return refreshExpiresAt; }
-    public void setRefreshExpiresAt(Instant refreshExpiresAt) { this.refreshExpiresAt = refreshExpiresAt; }
-
-    public Instant getLastActiveAt() { return lastActiveAt; }
-    public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
-
-    public Instant getRevokedAt() { return revokedAt; }
-    public void setRevokedAt(Instant revokedAt) { this.revokedAt = revokedAt; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

@@ -39,12 +39,14 @@ public class AdminWarrantyService {
     }
 
     public PageResult<WarrantyRecordResponse> search(
-            int page, int size, String status, UUID customerId
+            int page, int size, String status, UUID customerId, String q
     ) {
         int pg = Math.max(1, page) - 1;
         int sz = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        // Free-text search matches customer email / phone — blank is treated as no filter.
+        String query = (q == null || q.isBlank()) ? null : q.trim();
         PageRequest pageable = PageRequest.of(pg, sz, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<WarrantyRecordEntity> result = warrantyRepo.search(status, customerId, pageable);
+        Page<WarrantyRecordEntity> result = warrantyRepo.search(status, customerId, query, pageable);
 
         List<WarrantyRecordResponse> items = result.getContent().stream()
                 .map(warrantyMapper::toResponse)

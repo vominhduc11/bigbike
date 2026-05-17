@@ -383,6 +383,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findProductsByIdsPublicView(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return products.stream().filter(product -> ids.contains(product.id())).toList();
+    }
+
+    @Override
     public List<Category> findAllCategories() {
         return categories;
     }

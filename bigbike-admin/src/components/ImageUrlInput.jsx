@@ -74,7 +74,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
           onChange={(e) => onAltChange(e.target.value)}
           disabled={disabled}
           maxLength={255}
-          style={{ marginTop: 8 }}
+          className="mt-2"
          />
       )}
       {pickerOpen && (

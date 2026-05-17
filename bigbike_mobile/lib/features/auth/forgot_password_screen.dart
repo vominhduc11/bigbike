@@ -32,12 +32,12 @@ class _ForgotPasswordScreenState
       appBar: AppBar(title: const Text('Quên mật khẩu')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: _sent ? _SuccessView() : _FormView(),
+        child: _sent ? _successView() : _formView(),
       ),
     );
   }
 
-  Widget _FormView() {
+  Widget _formView() {
     return Form(
       key: _formKey,
       child: Column(
@@ -90,7 +90,7 @@ class _ForgotPasswordScreenState
     );
   }
 
-  Widget _SuccessView() {
+  Widget _successView() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -45,7 +45,7 @@ export function ProductTabs({ specifications, description, videos, productName }
   const defaultTab: TabId = hasDescription ? "description" : hasSpecs ? "specs" : "videos";
 
   return (
-    <Tabs defaultValue={defaultTab} className="bb-pdp-tabs">
+    <Tabs defaultValue={defaultTab} className="mt-0 mb-10">
       <TabsList className="w-full justify-start overflow-x-auto">
         {hasDescription && (
           <TabsTrigger value="description">Mô tả sản phẩm</TabsTrigger>
@@ -64,7 +64,7 @@ export function ProductTabs({ specifications, description, videos, productName }
       </TabsList>
 
       {hasDescription && (
-        <TabsContent value="description" className="bb-pdp-tab-panel pt-4">
+        <TabsContent value="description" className="pt-7 pb-8">
           <article
             className="bb-richtext bb-article-body"
             dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
@@ -73,8 +73,8 @@ export function ProductTabs({ specifications, description, videos, productName }
       )}
 
       {hasSpecs && (
-        <TabsContent value="specs" className="bb-pdp-tab-panel pt-4">
-          <table className="bb-spec-table">
+        <TabsContent value="specs" className="pt-7 pb-8">
+          <table className="w-full border-collapse">
             <tbody>
               {specifications.flatMap((spec, idx) => {
                 const group = spec.group?.trim() || null;
@@ -83,14 +83,18 @@ export function ProductTabs({ specifications, description, videos, productName }
                 return [
                   ...(showHeader
                     ? [
-                        <tr key={`group-${idx}`} className="bb-spec-group-header">
+                        <tr key={`group-${idx}`}>
                           <th colSpan={2}>{group}</th>
                         </tr>,
                       ]
                     : []),
                   <tr key={`${idx}-${spec.name}`}>
-                    <td>{safeText(spec.name, "Thông số")}</td>
-                    <td>{safeText(spec.value, "Đang cập nhật")}</td>
+                    <td className="w-[36%] border-b border-border py-2 align-top text-muted-foreground">
+                      {safeText(spec.name, "Thông số")}
+                    </td>
+                    <td className="border-b border-border py-2 align-top">
+                      {safeText(spec.value, "Đang cập nhật")}
+                    </td>
                   </tr>,
                 ];
               })}
@@ -100,8 +104,8 @@ export function ProductTabs({ specifications, description, videos, productName }
       )}
 
       {hasVideos && (
-        <TabsContent value="videos" className="bb-pdp-tab-panel pt-4">
-          <div className="bb-pdp-videos">
+        <TabsContent value="videos" className="pt-7 pb-8">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(320px,100%),1fr))] gap-6">
             {videos.map((video, index) => {
               const url = video.url ?? "";
               const ytId = url ? getYouTubeId(url) : null;
@@ -109,38 +113,41 @@ export function ProductTabs({ specifications, description, videos, productName }
                 !ytId && (video.provider === "upload" || isUploadedVideoUrl(url));
               const posterImage = video.thumbnail ?? undefined;
               return (
-                <article key={video.id ?? url ?? index} className="bb-pdp-video-card">
+                <article key={video.id ?? url ?? index} className="flex flex-col gap-3">
                   {ytId ? (
-                    <div className="bb-pdp-video-embed">
+                    <div className="relative aspect-video overflow-hidden bg-[#0a0a0a]">
                       <iframe
                         src={`https://www.youtube.com/embed/${ytId}`}
                         title={safeText(video.title, "Video sản phẩm")}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         loading="lazy"
+                        className="absolute inset-0 h-full w-full border-0 bg-black"
                       />
                     </div>
                   ) : isUpload && url ? (
-                    <div className="bb-pdp-video-embed">
+                    <div className="relative aspect-video overflow-hidden bg-[#0a0a0a]">
                       <video
                         src={url}
                         controls
                         preload="metadata"
                         playsInline
                         poster={posterImage?.url}
+                        className="absolute inset-0 h-full w-full border-0 bg-black"
                       />
                     </div>
                   ) : (
-                    <div className="bb-pdp-video-thumb">
+                    <div className="aspect-video overflow-hidden bg-[#141414]">
                       <MediaImage
                         image={posterImage}
                         altFallback={safeText(video.title, productName)}
                         width={960}
                         height={540}
+                        className="h-full w-full object-cover"
                       />
                     </div>
                   )}
-                  <h3 className="bb-video-title">{safeText(video.title, "Video sản phẩm")}</h3>
+                  <h3 className="mt-3 text-sm font-semibold text-foreground">{safeText(video.title, "Video sản phẩm")}</h3>
                   {url && !ytId && !isUpload && (
                     <a className="bb-link" href={url} target="_blank" rel="noreferrer">
                       Xem video →

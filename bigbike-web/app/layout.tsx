@@ -8,6 +8,7 @@ import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { env } from "@/env";
 
 const oswald = Oswald({
   subsets: ["latin", "vietnamese"],
@@ -51,7 +52,7 @@ export const viewport: Viewport = {
   ],
 };
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const GTM_ID = env.NEXT_PUBLIC_GTM_ID;
 
 export default function RootLayout({
   children,

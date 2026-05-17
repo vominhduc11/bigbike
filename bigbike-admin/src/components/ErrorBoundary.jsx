@@ -23,15 +23,12 @@ export class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          minHeight: '100vh', padding: '2rem', textAlign: 'center', gap: '1rem',
-        }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Đã xảy ra lỗi không mong đợi</h1>
-          <p style={{ color: 'var(--c-text-muted)', maxWidth: '480px' }}>
+        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4">
+          <h1 className="text-2xl font-bold">Đã xảy ra lỗi không mong đợi</h1>
+          <p className="text-muted-foreground max-w-[480px]">
             {this.state.error?.message || 'Vui lòng tải lại trang hoặc liên hệ kỹ thuật viên.'}
           </p>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="flex gap-3">
             <Button
               type="button"
               onClick={() => window.location.reload()}

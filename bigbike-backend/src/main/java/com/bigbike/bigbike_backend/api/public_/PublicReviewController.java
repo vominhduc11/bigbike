@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.service.public_.PublicReviewService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class PublicReviewController {
 
     @GetMapping
     public ApiDataResponse<PublicProductReviewsResponse> getReviews(
-            @PathVariable String productId,
+            @PathVariable @Size(max = 64) String productId,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
             HttpServletRequest request
@@ -44,7 +45,7 @@ public class PublicReviewController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiDataResponse<Map<String, Object>> submitReview(
-            @PathVariable String productId,
+            @PathVariable @Size(max = 64) String productId,
             @RequestBody SubmitReviewRequest body,
             HttpServletRequest request
     ) {

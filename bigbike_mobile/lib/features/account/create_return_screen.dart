@@ -178,9 +178,9 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
               ),
@@ -204,7 +204,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
                         ),
                       )
                     : DropdownButtonFormField<String>(
-                        value: _orders.any((o) => o['id'] == _selectedOrderId) ? _selectedOrderId : null,
+                        initialValue: _orders.any((o) => o['id'] == _selectedOrderId) ? _selectedOrderId : null,
                         decoration: _inputDecoration('Chọn đơn hàng'),
                         items: _orders.map((o) {
                           return DropdownMenuItem<String>(
@@ -311,7 +311,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
             const Text('Lý do đổi trả', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
-              value: _selectedReason,
+              initialValue: _selectedReason,
               decoration: _inputDecoration('Chọn lý do'),
               items: _reasonOptions.map((opt) {
                 return DropdownMenuItem<String>(
@@ -342,7 +342,7 @@ class _CreateReturnScreenState extends State<CreateReturnScreen> {
                 onPressed: canSubmit ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: _submitting

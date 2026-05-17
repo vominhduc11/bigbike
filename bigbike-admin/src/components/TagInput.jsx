@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X as XIcon, Hash } from 'lucide-react'
 import { fetchMediaTags } from '../lib/adminApi'
+import { cn } from '@/lib/utils'
 
 /**
  * Multi-tag input with prefix-based autocomplete from {@code GET /admin/media/tags}.
@@ -15,6 +17,7 @@ import { fetchMediaTags } from '../lib/adminApi'
  * Tags are normalized to lowercase + trim, dedup-ed.
  */
 export function TagInput({ value, onChange, placeholder, disabled }) {
+  const { t } = useTranslation()
   const tags = Array.isArray(value) ? value : []
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState([])
@@ -58,29 +61,18 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: 4,
-        border: '1px solid var(--c-border)', borderRadius: 4,
-        background: disabled ? 'var(--c-bg-subtle)' : 'var(--c-surface)',
-        padding: 4, minHeight: 32,
-      }}>
+    <div className="relative">
+      <div className={cn(
+        'flex flex-wrap gap-1 border border-border rounded-xs p-1 min-h-8',
+        disabled ? 'bg-surface-muted' : 'bg-surface'
+      )}>
         {tags.map((tg) => (
-          <span key={tg} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 3,
-            background: 'var(--c-primary)', color: '#fff',
-            borderRadius: 999, padding: '2px 4px 2px 8px',
-            fontSize: '0.72rem', fontWeight: 600,
-          }}>
+          <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-[0.72rem] font-semibold">
             <Hash size={10} />
             {tg}
             {!disabled && (
-              <button type="button" onClick={() => removeTag(tg)} aria-label={`Remove ${tg}`}
-                style={{
-                  background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer',
-                  width: 14, height: 14, borderRadius: '50%', color: '#fff',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                }}>
+              <button type="button" onClick={() => removeTag(tg)} aria-label={t('common.removeTag', { tag: tg })}
+                className="bg-white/20 border-none cursor-pointer w-3.5 h-3.5 rounded-full text-white inline-flex items-center justify-center p-0">
                 <XIcon size={9} />
               </button>
             )}
@@ -92,30 +84,15 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
           onFocus={() => setShowSugg(true)}
           onBlur={() => setTimeout(() => setShowSugg(false), 150)}
           placeholder={tags.length === 0 ? placeholder : ''}
-          style={{
-            flex: 1, minWidth: 80, border: 'none', outline: 'none',
-            background: 'transparent', fontSize: '0.85rem', padding: '2px 4px',
-          }} />
+          className="flex-1 min-w-[80px] border-none outline-none bg-transparent text-sm py-0.5 px-1" />
       </div>
 
       {showSugg && suggestions.length > 0 && !disabled && (
-        <ul style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 5,
-          listStyle: 'none', margin: '2px 0 0 0', padding: 4,
-          background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-          borderRadius: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          maxHeight: 200, overflowY: 'auto',
-        }}>
+        <ul className="absolute top-full left-0 right-0 z-[5] list-none mt-0.5 p-1 bg-surface border border-border rounded-xs shadow-md max-h-[200px] overflow-y-auto">
           {suggestions.slice(0, 10).map((s) => (
             <li key={s}>
               <button type="button" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
-                style={{
-                  all: 'unset', display: 'flex', alignItems: 'center', gap: 4,
-                  width: '100%', padding: '4px 8px', fontSize: '0.8rem',
-                  cursor: 'pointer', borderRadius: 3, boxSizing: 'border-box',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-bg-subtle)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                className="flex items-center gap-1 w-full px-2 py-1 text-[0.8rem] cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
                 <Hash size={12} /> {s}
               </button>
             </li>

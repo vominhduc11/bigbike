@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
+  // Production API — HTTPS only. Release builds must never talk to the backend
+  // over cleartext HTTP or to a localhost address.
+  static const String _apiProd = 'https://api.bigbike.vn';
   // For Android emulator: 10.0.2.2; iOS simulator: localhost; physical device: LAN IP
   static const String _androidEmulatorBase = 'http://10.0.2.2:8080';
   static const String _defaultBase = 'http://localhost:8080';
 
   static String get apiBaseUrl {
-    if (kDebugMode && defaultTargetPlatform == TargetPlatform.android) {
+    if (!kDebugMode) return _apiProd;
+    if (defaultTargetPlatform == TargetPlatform.android) {
       return _androidEmulatorBase;
     }
     return _defaultBase;

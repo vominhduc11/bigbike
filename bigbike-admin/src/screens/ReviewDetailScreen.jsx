@@ -121,9 +121,9 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         <DetailSection title={t('reviews.detail.sectionReview')}>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
+          <div className="grid gap-3">
             <p><strong>{t('reviews.colAuthor')}</strong> {formatText(review.authorName, '(---)')}</p>
             <p><strong>{t('reviews.detail.authorEmail')}</strong> {formatText(review.authorEmail, '(---)')}</p>
             <p><strong>{t('reviews.colRating')}</strong> {review.rating}</p>
@@ -134,7 +134,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionProduct')}>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
+          <div className="grid gap-3">
             <p><strong>{t('reviews.detail.productName')}</strong> {formatText(review.productName, t('reviews.unknownProduct'))}</p>
             <p><strong>{t('reviews.detail.productSlug')}</strong> {formatText(review.productSlug, '(---)')}</p>
             <p><strong>{t('reviews.detail.productId')}</strong> {formatText(review.productId, '(---)')}</p>
@@ -147,13 +147,13 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionContent')}>
-          <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+          <p className="m-0 whitespace-pre-wrap leading-relaxed">
             {formatText(review.body, '(---)')}
           </p>
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionActions')}>
-          <div className="row-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="row-actions justify-start flex-wrap">
             {canUpdate && review.status !== 'APPROVED' ? (
               <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('APPROVED')}>
                 {t('reviews.approve')}

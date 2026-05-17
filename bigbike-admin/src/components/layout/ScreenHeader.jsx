@@ -1,13 +1,9 @@
-/**
- * ScreenHeader — title block at the top of every screen.
- * Layout: eyebrow + title + description on the left, action slot on the right.
- */
 export function ScreenHeader({ eyebrow, title, description, actions, badge }) {
   return (
     <header className="screen-header">
       <div>
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="flex flex-wrap items-center gap-3">
           <h1>{title}</h1>
           {badge}
         </div>

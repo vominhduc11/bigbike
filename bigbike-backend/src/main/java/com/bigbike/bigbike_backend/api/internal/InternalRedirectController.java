@@ -3,6 +3,8 @@ package com.bigbike.bigbike_backend.api.internal;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -114,7 +116,14 @@ public class InternalRedirectController {
             // No token configured: allow only when explicitly opted in (e.g. local dev)
             return allowOpen;
         }
-        // Token configured: require matching header value
-        return internalToken.equals(request.getHeader(TOKEN_HEADER));
+        // Token configured: require matching header value. Constant-time compare
+        // avoids leaking the token byte-by-byte through response timing.
+        String provided = request.getHeader(TOKEN_HEADER);
+        if (provided == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                internalToken.getBytes(StandardCharsets.UTF_8),
+                provided.getBytes(StandardCharsets.UTF_8));
     }
 }

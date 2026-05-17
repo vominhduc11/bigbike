@@ -53,7 +53,7 @@ function buildTree(all: Category[]): TreeNode[] {
 export default async function CategoryListPage() {
   const result = await listCategories({ page: 1, size: 100, sort: "sortOrder:asc" });
 
-  const visible = result.data.filter((c) => c.isVisible);
+  const visible = result.data.filter((c) => c.isVisible && c.name.toLowerCase() !== "uncategorized");
   const roots = buildTree(visible);
 
   return (

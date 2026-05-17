@@ -76,6 +76,10 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-bigbike-media}
       # NOTE: backend application.properties reads ${CORS_ALLOWED_ORIGINS}, so inject under that exact name.
       CORS_ALLOWED_ORIGINS: "${BIGBIKE_CORS_ALLOWED_ORIGINS:?BIGBIKE_CORS_ALLOWED_ORIGINS must be set - e.g. https://bigbike.vn,https://www.bigbike.vn}"
+      # Reverse-proxy IPs trusted to set X-Forwarded-For (per-IP rate limiting). Accepts exact IPs
+      # or CIDR ranges. When the backend sits behind nginx / a Docker bridge, set this to the
+      # proxy IP or subnet — otherwise rate limiting collapses to one shared bucket.
+      BIGBIKE_TRUSTED_PROXIES: "${BIGBIKE_TRUSTED_PROXIES:-127.0.0.1,::1}"
       # Public-facing canonical URLs used in transactional email templates and admin links.
       BIGBIKE_SITE_BASE_URL: "${BIGBIKE_SITE_BASE_URL:-https://bigbike.vn}"
       BIGBIKE_ADMIN_BASE_URL: "${BIGBIKE_ADMIN_BASE_URL:-https://admin.bigbike.vn}"
@@ -124,8 +128,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
+    # Bind to loopback only — production traffic must arrive via the nginx reverse proxy
+    # (TLS, rate limit, security headers). localhost access for local dev still works.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     deploy:
       resources:
         limits:
@@ -170,8 +176,10 @@ services:
     depends_on:
       bigbike-backend:
         condition: service_healthy
+    # Bind to loopback only — the admin dashboard must not be reachable on an external
+    # interface without the nginx reverse proxy in front of it.
     ports:
-      - "4000:80"
+      - "127.0.0.1:4000:80"
     deploy:
       resources:
         limits:

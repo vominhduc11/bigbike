@@ -17,12 +17,16 @@ import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CatalogReadService {
 
@@ -82,10 +86,13 @@ public class CatalogReadService {
     }
 
     public PageResult<Product> getWishlistProducts(List<String> productIds, int page, int size) {
+        // One batch query instead of one per wishlist id; re-order by the input
+        // id list so the storefront keeps the same display order as before.
+        Map<String, Product> publishedById = catalogReadRepository.findProductsByIdsPublicView(productIds).stream()
+                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .collect(Collectors.toMap(Product::id, p -> p, (a, b) -> a));
         List<Product> products = productIds.stream()
-                .map(id -> catalogReadRepository.findProductByIdPublicView(id)
-                        .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
-                        .orElse(null))
+                .map(publishedById::get)
                 .filter(Objects::nonNull)
                 .toList();
         return paginationService.paginate(products, page, size);

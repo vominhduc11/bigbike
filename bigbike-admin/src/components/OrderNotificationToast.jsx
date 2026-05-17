@@ -1,18 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { cn } from '@/lib/utils'
 
 const TOAST_DURATION_MS = 6000
 const MAX_TOASTS = 5
-
-const STATUS_LABELS = {
-  PENDING: 'Chờ xác nhận',
-  ON_HOLD: 'Tạm giữ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã huỷ',
-  FAILED: 'Thất bại',
-  REFUNDED: 'Đã hoàn',
-}
 
 function formatVnd(amount) {
   if (amount == null) return ''
@@ -20,59 +12,39 @@ function formatVnd(amount) {
 }
 
 function Toast({ toast, onDismiss, navigate }) {
+  const { t } = useTranslation()
   const isNew = toast.type === 'NEW_ORDER'
 
   return (
     <div
       role="alert"
       aria-live="assertive"
-      style={{
-        background: 'var(--admin-color-surface-base)',
-        border: '1px solid var(--admin-color-border-subtle)',
-        borderLeft: isNew
-          ? '4px solid var(--admin-color-brand-red)'
-          : '4px solid var(--admin-color-status-info-text)',
-        borderRadius: 'var(--admin-radius-md)',
-        boxShadow: 'var(--admin-shadow-sm)',
-        padding: '12px 14px',
-        display: 'flex',
-        gap: '12px',
-        alignItems: 'flex-start',
-        minWidth: 280,
-        maxWidth: 340,
-        cursor: 'pointer',
-      }}
+      className={cn(
+        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start min-w-[280px] max-w-[340px] cursor-pointer border-l-4',
+        isNew ? 'border-l-primary' : 'border-l-info'
+      )}
       onClick={() => {
         onDismiss(toast.id)
         navigate(`/admin/orders/${toast.orderId}`)
       }}
     >
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', color: 'var(--admin-color-text-primary)' }}>
-          {isNew ? 'Đơn hàng mới' : 'Cập nhật đơn hàng'}
+      <div className="flex-1 overflow-hidden">
+        <p className="m-0 font-semibold text-[0.85rem] text-foreground">
+          {isNew ? t('notifications.newOrder') : t('notifications.orderUpdate')}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--admin-color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p className="mt-0.5 mb-0 text-[0.8rem] text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
           {toast.orderNumber} — {toast.customerName}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>
+        <p className="mt-0.5 mb-0 text-[0.8rem] text-muted-foreground">
           {formatVnd(toast.total)}
-          {!isNew && toast.status ? ` · ${STATUS_LABELS[toast.status] || toast.status}` : ''}
+          {!isNew && toast.status ? ` · ${t('status.order.' + toast.status, toast.status)}` : ''}
         </p>
       </div>
       <button
         type="button"
-        aria-label="Đóng thông báo"
+        aria-label={t('notifications.close')}
         onClick={(e) => { e.stopPropagation(); onDismiss(toast.id) }}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--admin-color-text-muted)',
-          fontSize: '1rem',
-          lineHeight: 1,
-          padding: 0,
-          flexShrink: 0,
-        }}
+        className="bg-transparent border-none cursor-pointer text-muted-foreground text-base leading-none p-0 shrink-0"
       >
         ✕
       </button>
@@ -81,6 +53,7 @@ function Toast({ toast, onDismiss, navigate }) {
 }
 
 export function OrderNotificationToast({ navigate }) {
+  const { t } = useTranslation()
   const [toasts, setToasts] = useState([])
   const counterRef = useRef(0)
 
@@ -105,20 +78,11 @@ export function OrderNotificationToast({ navigate }) {
 
   return (
     <div
-      aria-label="Thông báo đơn hàng"
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        pointerEvents: 'none',
-      }}
+      aria-label={t('notifications.regionLabel')}
+      className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none"
     >
       {toasts.map((toast) => (
-        <div key={toast.id} style={{ pointerEvents: 'auto' }}>
+        <div key={toast.id} className="pointer-events-auto">
           <Toast toast={toast} onDismiss={dismiss} navigate={navigate} />
         </div>
       ))}

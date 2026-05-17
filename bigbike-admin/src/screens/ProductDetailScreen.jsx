@@ -13,6 +13,7 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { createProductSchema, zodErrors } from '../lib/schemas'
+import { Modal } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
@@ -60,7 +61,13 @@ function CollapsibleSection({ id, title, description, children, forceOpen = fals
 
   return (
     <section id={id} className={`detail-section${isOpen ? '' : ' is-collapsed'}`}>
-      <header className="detail-section-header detail-section-header--toggle" onClick={toggle}>
+      <button
+        type="button"
+        className="detail-section-header detail-section-header--toggle"
+        onClick={toggle}
+        aria-expanded={isOpen}
+        aria-controls={`${id}-content`}
+      >
         <div>
           <h2>{title}</h2>
           {description ? <p className="detail-section-desc">{description}</p> : null}
@@ -68,8 +75,8 @@ function CollapsibleSection({ id, title, description, children, forceOpen = fals
         <span className="section-collapse-icon" aria-hidden="true">
           {isOpen ? <IconChevronUp /> : <IconChevronDown />}
         </span>
-      </header>
-      <div className="detail-section-collapse-wrap">
+      </button>
+      <div id={`${id}-content`} className="detail-section-collapse-wrap">
         <div className="detail-section-collapse-inner">
           {children}
         </div>
@@ -81,16 +88,17 @@ function CollapsibleSection({ id, title, description, children, forceOpen = fals
 // ── Section navigation ─────────────────────────────────────────────────────────
 
 const SECTION_ITEMS = [
-  { id: 'section-basic', label: 'Cơ bản' },
-  { id: 'section-pricing', label: 'Giá' },
-  { id: 'section-media', label: 'Ảnh' },
-  { id: 'section-gallery', label: 'Gallery' },
-  { id: 'section-videos', label: 'Video' },
-  { id: 'section-specs', label: 'Thông số' },
-  { id: 'section-variants', label: 'Biến thể' },
+  { id: 'section-basic', labelKey: 'products.detail.navBasic' },
+  { id: 'section-pricing', labelKey: 'products.detail.navPricing' },
+  { id: 'section-media', labelKey: 'products.detail.navMedia' },
+  { id: 'section-gallery', labelKey: 'products.detail.navGallery' },
+  { id: 'section-videos', labelKey: 'products.detail.navVideos' },
+  { id: 'section-specs', labelKey: 'products.detail.navSpecs' },
+  { id: 'section-variants', labelKey: 'products.detail.navVariants' },
 ]
 
 function SectionNav() {
+  const { t } = useTranslation()
   const [active, setActive] = useState(SECTION_ITEMS[0].id)
 
   useEffect(() => {
@@ -130,15 +138,15 @@ function SectionNav() {
   }
 
   return (
-    <nav className="section-nav" aria-label="Điều hướng">
-      {SECTION_ITEMS.map(({ id, label }) => (
+    <nav className="section-nav" aria-label={t('products.detail.sectionNavAria')}>
+      {SECTION_ITEMS.map(({ id, labelKey }) => (
         <button
           key={id}
           type="button"
           className={`section-nav-pill${active === id ? ' is-active' : ''}`}
           onClick={() => scrollToSection(id)}
         >
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </nav>
@@ -214,13 +222,13 @@ function clearFormFromStorage(key) {
 
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
-function getPublishReadiness(form) {
+function getPublishReadiness(form, t) {
   const items = [
-    { id: 'name',      label: 'Tên sản phẩm',           ok: Boolean(form.name.trim()),                             required: true },
-    { id: 'image',     label: 'Ảnh đại diện',            ok: Boolean(form.imageUrl.trim()),                         required: false },
-    { id: 'price',     label: 'Giá bán',                 ok: Boolean(form.retailPrice?.trim()),                     required: true },
-    { id: 'shortDesc', label: 'Mô tả ngắn (≥20 ký tự)', ok: form.shortDescription.trim().length >= 20,             required: false },
-    { id: 'desc',      label: 'Mô tả chi tiết',          ok: form.description.trim().length > 50,                   required: false },
+    { id: 'name', label: t('products.detail.checklist.name'), ok: Boolean(form.name.trim()), required: true },
+    { id: 'image', label: t('products.detail.checklist.image'), ok: Boolean(form.imageUrl.trim()), required: false },
+    { id: 'price', label: t('products.detail.checklist.price'), ok: Boolean(form.retailPrice?.trim()), required: true },
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: form.shortDescription.trim().length >= 20, required: false },
+    { id: 'desc', label: t('products.detail.checklist.desc'), ok: form.description.trim().length > 50, required: false },
   ]
 
 
@@ -522,6 +530,7 @@ function IconChevronUp() {
 }
 
 function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
+  const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const trimmed = item.url.trim()
   const thumbState = trimmed ? 'ok' : 'empty'
@@ -534,7 +543,7 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
         tabIndex={disabled ? -1 : 0}
         onClick={() => !disabled && setPickerOpen(true)}
         onKeyDown={(e) => e.key === 'Enter' && !disabled && setPickerOpen(true)}
-        aria-label="Chọn ảnh"
+        aria-label={t('products.detail.gallery.pickImage')}
       >
         {thumbState === 'ok' && <img src={trimmed} alt="" loading="eager" />}
         {thumbState === 'loading' && <span className="gallery-thumb-status">⋯</span>}
@@ -545,29 +554,30 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
             type="button"
             className="gallery-card-remove"
             onClick={(e) => { e.stopPropagation(); onRemove() }}
-            aria-label="Xóa ảnh"
+            aria-label={t('products.detail.gallery.removeImage')}
           >
             ✕
           </button>
         )}
       </div>
       <div className="gallery-card-body">
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm gallery-card-pick-btn"
+        <Button
+          variant="outline"
+          size="sm"
+          className="gallery-card-pick-btn"
           onClick={() => setPickerOpen(true)}
           disabled={disabled}
         >
-          {trimmed ? 'Đổi ảnh' : 'Chọn ảnh'}
-        </button>
+          {trimmed ? t('products.detail.gallery.changeImage') : t('products.detail.gallery.pickImage')}
+        </Button>
         <input
           type="text"
           className="gallery-card-alt-input"
-          placeholder="Alt text (mô tả ảnh)"
+          placeholder={t('products.detail.gallery.altPlaceholder')}
           value={item.alt || ''}
           onChange={(e) => onUpdate('alt', e.target.value)}
           disabled={disabled}
-          aria-label="Mô tả ảnh (alt text)"
+          aria-label={t('products.detail.gallery.altAriaLabel')}
         />
         {urlError && <small className="field-error">{urlError}</small>}
       </div>
@@ -582,6 +592,7 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
 }
 
 function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
+  const { t } = useTranslation()
   const [multiPickerOpen, setMultiPickerOpen] = useState(false)
 
   function updateItem(index, field, value) {
@@ -610,19 +621,20 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
         {!disabled && (
           <button type="button" className="gallery-card-add" onClick={addItem}>
             <span className="gallery-add-icon">+</span>
-            <span>Thêm ảnh</span>
+            <span>{t('products.detail.gallery.addImage')}</span>
           </button>
         )}
       </div>
       {!disabled && (
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm gallery-multi-pick-btn"
+        <Button
+          variant="outline"
+          size="sm"
+          className="gallery-multi-pick-btn"
           onClick={() => setMultiPickerOpen(true)}
-          title="Chọn nhiều ảnh cùng lúc từ thư viện"
+          title={t('products.detail.gallery.multiSelectTitle')}
         >
-          + Chọn nhiều ảnh
-        </button>
+          + {t('products.detail.gallery.multiSelect')}
+        </Button>
       )}
       {multiPickerOpen && (
         <MediaPickerModal
@@ -642,6 +654,7 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
 }
 
 function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
+  const { t } = useTranslation()
   const [pickerOpenIndex, setPickerOpenIndex] = useState(null)
 
   function updateItem(index, patch) {
@@ -680,14 +693,14 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                   onClick={() => updateItem(index, { type: 'upload', url: '' })}
                   disabled={disabled}
                 >
-                  Từ thư viện
+                  {t('products.detail.video.fromLibrary')}
                 </Button>
               </div>
 
               {type === 'youtube' ? (
                 <div>
                   <Input className={urlError  ? 'border-danger' : undefined}
-                    placeholder="URL video YouTube (https://...)"
+                    placeholder={t('products.detail.video.youtubePlaceholder')}
                     value={item.url}
                     onChange={(e) => updateItem(index, { url: e.target.value })}
                     disabled={disabled}
@@ -696,35 +709,37 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                   {ytId && (
                     <img
                       src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-                      alt="YouTube thumbnail preview"
-                      style={{ marginTop: 8, width: '100%', maxWidth: 240, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
+                      alt={t('products.detail.video.youtubePreviewAlt')}
+                      className="mt-2 w-full max-w-60 h-auto rounded border border-border"
                     />
                   )}
                 </div>
               ) : (
                 <div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      className={`btn btn-secondary btn-sm${urlError ? ' input-error' : ''}`}
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={urlError ? 'input-error' : undefined}
                       onClick={() => setPickerOpenIndex(index)}
                       disabled={disabled}
                     >
-                      {item.url ? 'Đổi video' : 'Chọn từ thư viện'}
-                    </button>
+                      {item.url ? t('products.detail.video.changeVideo') : t('products.detail.video.pickFromLibrary')}
+                    </Button>
                     {item.url && (
-                      <button
-                        type="button"
-                        className="btn btn-icon btn-danger-ghost"
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => updateItem(index, { url: '' })}
                         disabled={disabled}
-                        aria-label="Xoá video đã chọn"
+                        aria-label={t('products.detail.video.removeSelectedVideo')}
                       >
                         ✕
-                      </button>
+                      </Button>
                     )}
                     {item.url && (
-                      <span style={{ fontSize: 12, color: 'var(--admin-color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>
+                      <span className="truncate max-w-xs text-xs text-muted-foreground">
                         ✓ {item.url.split('/').pop()}
                       </span>
                     )}
@@ -735,11 +750,11 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                       src={`${item.url}#t=0.001`}
                       controls
                       preload="metadata"
-                      style={{ marginTop: 8, width: '100%', maxWidth: 320, height: 'auto', borderRadius: 4, border: '1px solid var(--admin-color-border-subtle)' }}
+                      className="mt-2 w-full max-w-xs h-auto rounded border border-border"
                     />
                   )}
                   <div className="flex flex-col gap-1 mt-2">
-                    <span className="text-xs text-muted-foreground">Ảnh thumbnail (tuỳ chọn)</span>
+                    <span className="text-xs text-muted-foreground">{t('products.detail.video.thumbnailOptional')}</span>
                     <ImageUrlInput
                       value={item.thumbnailUrl || ''}
                       onChange={(url) => updateItem(index, { thumbnailUrl: url })}
@@ -750,27 +765,28 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
               )}
 
               <Input
-                placeholder="Tiêu đề video"
+                placeholder={t('products.detail.video.titlePlaceholder')}
                 value={item.title}
                 onChange={(e) => updateItem(index, { title: e.target.value })}
                 disabled={disabled}
                />
             </div>
-            <button
-              type="button"
-              className="btn btn-icon btn-danger-ghost"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
               onClick={() => removeItem(index)}
               disabled={disabled}
-              aria-label="Xóa video"
+              aria-label={t('products.detail.video.removeVideo')}
             >
               ✕
-            </button>
+            </Button>
           </div>
         )
       })}
-      <button type="button" className="btn btn-secondary btn-sm" onClick={addItem} disabled={disabled}>
-        + Thêm video
-      </button>
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+        + {t('products.detail.video.addVideo')}
+      </Button>
       {pickerOpenIndex !== null && (
         <VideoPickerModal
           onSelect={(url) => {
@@ -785,6 +801,7 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
 }
 
 function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
+  const { t } = useTranslation()
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
@@ -806,7 +823,7 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
   return (
     <div className="list-editor">
       {items.length === 0 && (
-        <p className="list-editor-empty">Chưa có thông số. Nhấn "+ Thêm thông số" để bắt đầu.</p>
+        <p className="list-editor-empty">{t('products.detail.specs.empty')}</p>
       )}
       {items.map((item, index) => {
         const errName = validationErrors?.[`specifications.${index}.name`]
@@ -815,14 +832,14 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
         return (
           <div key={item._key} className="list-editor-row list-editor-row--stack">
             <div className="list-editor-reorder">
-              <button type="button" className="btn btn-icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label="Lên">▲</button>
-              <button type="button" className="btn btn-icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label="Xuống">▼</button>
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
             </div>
-            <div className="list-editor-fields list-editor-fields-3col" style={{ flex: 1 }}>
+            <div className="list-editor-fields list-editor-fields-3col flex-1">
               <div>
                 <Input className={errGroup  ? 'border-danger' : undefined}
-                  placeholder="Nhóm (vd: Vật liệu, Kích thước)"
-                  title="Tên nhóm gộp nhiều thông số lại"
+                  placeholder={t('products.detail.specs.groupPlaceholder')}
+                  title={t('products.detail.specs.groupTitle')}
                   value={item.groupName}
                   onChange={(e) => updateItem(index, 'groupName', e.target.value)}
                   disabled={disabled}
@@ -832,7 +849,7 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
               </div>
               <div>
                 <Input className={errName  ? 'border-danger' : undefined}
-                  placeholder="Tên thông số *"
+                  placeholder={t('products.detail.specs.namePlaceholder')}
                   value={item.name}
                   onChange={(e) => updateItem(index, 'name', e.target.value)}
                   disabled={disabled}
@@ -842,7 +859,7 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
               </div>
               <div>
                 <Input className={errValue  ? 'border-danger' : undefined}
-                  placeholder="Giá trị *"
+                  placeholder={t('products.detail.specs.valuePlaceholder')}
                   value={item.value}
                   onChange={(e) => updateItem(index, 'value', e.target.value)}
                   disabled={disabled}
@@ -851,26 +868,28 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
                 {errValue && <small className="field-error">{errValue}</small>}
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-icon btn-danger-ghost"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
               onClick={() => removeItem(index)}
               disabled={disabled}
-              aria-label="Xóa thông số"
+              aria-label={t('products.detail.specs.removeSpec')}
             >
               ✕
-            </button>
+            </Button>
           </div>
         )
       })}
-      <button type="button" className="btn btn-secondary btn-sm" onClick={addItem} disabled={disabled}>
-        + Thêm thông số
-      </button>
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+        + {t('products.detail.specs.addSpec')}
+      </Button>
     </div>
   )
 }
 
 function VariantOptionsEditor({ options, onChange, disabled }) {
+  const { t } = useTranslation()
   function updateOption(i, field, value) {
     const next = options.map((o, idx) => idx === i ? { ...o, [field]: value } : o)
     onChange(next)
@@ -887,31 +906,32 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
       {options.map((opt, i) => (
         <div key={i} className="list-editor-row variant-option-row">
           <Input
-            placeholder="Thuộc tính (vd: Màu)"
+            placeholder={t('products.detail.variant.optionNamePlaceholder')}
             value={opt.name}
             onChange={(e) => updateOption(i, 'name', e.target.value)}
             disabled={disabled}
            />
           <Input
-            placeholder="Giá trị (vd: Đỏ)"
+            placeholder={t('products.detail.variant.optionValuePlaceholder')}
             value={opt.value}
             onChange={(e) => updateOption(i, 'value', e.target.value)}
             disabled={disabled}
            />
-          <button
-            type="button"
-            className="btn btn-icon btn-danger-ghost"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
             onClick={() => removeOption(i)}
             disabled={disabled}
-            aria-label="Xóa thuộc tính"
+            aria-label={t('products.detail.variant.removeOption')}
           >
             ✕
-          </button>
+          </Button>
         </div>
       ))}
-      <button type="button" className="btn btn-secondary btn-sm" onClick={addOption} disabled={disabled}>
-        + Thêm thuộc tính
-      </button>
+      <Button variant="outline" size="sm" onClick={addOption} disabled={disabled}>
+        + {t('products.detail.variant.addOption')}
+      </Button>
     </div>
   )
 }
@@ -927,11 +947,12 @@ function VariantCard({
   disabled,
   fieldErrors = {},
 }) {
+  const { t } = useTranslation()
   function updateField(field, value) {
     onChange(variant._key, { [field]: value })
   }
 
-  const label = variant.name.trim() || `Biến thể ${index + 1}`
+  const label = variant.name.trim() || t('products.detail.variant.defaultLabel', { index: index + 1 })
   const optionSummary = variant.options.filter((o) => o.name && o.value).map((o) => `${o.name}: ${o.value}`).join(', ')
   const hasErrors = Object.keys(fieldErrors).length > 0
   const colorValue = getVariantColorValue(variant)
@@ -944,28 +965,29 @@ function VariantCard({
           <span className="variant-card-index">#{index + 1}</span>
           <span>{label}</span>
           {optionSummary && <span className="variant-card-summary">{optionSummary}</span>}
-          {hasErrors && <span className="variant-card-error-badge" title="Có lỗi cần sửa">!</span>}
+          {hasErrors && <span className="variant-card-error-badge" title={t('products.detail.variant.hasError')}>!</span>}
         </div>
         <div className="variant-card-actions">
-          <button
-            type="button"
-            className="btn btn-icon btn-secondary-ghost"
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={(e) => { e.stopPropagation(); onDuplicate(variant._key) }}
             disabled={disabled}
-            aria-label="Sao chép biến thể"
-            title="Sao chép biến thể"
+            aria-label={t('products.detail.variant.duplicate')}
+            title={t('products.detail.variant.duplicate')}
           >
             ⎘
-          </button>
-          <button
-            type="button"
-            className="btn btn-icon btn-danger-ghost"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
             onClick={(e) => { e.stopPropagation(); onRemove(variant._key) }}
             disabled={disabled}
-            aria-label="Xóa biến thể"
+            aria-label={t('products.detail.variant.remove')}
           >
             ✕
-          </button>
+          </Button>
           <span className="variant-card-toggle">{expanded ? <IconChevronUp /> : <IconChevronDown />}</span>
         </div>
       </div>
@@ -973,18 +995,18 @@ function VariantCard({
       {expanded && (
         <div className="variant-card-body form-grid">
           <label className="form-field">
-            <span>Tên biến thể *</span>
+            <span>{t('products.detail.variant.name')}</span>
             <Input
               value={variant.name}
               onChange={(e) => updateField('name', e.target.value)}
               disabled={disabled}
-              placeholder="vd: Size M - Đỏ"
+              placeholder={t('products.detail.variant.namePlaceholder')}
              />
             {fieldErrors.name && <small className="field-error">{fieldErrors.name}</small>}
           </label>
 
           <label className="form-field">
-            <span>SKU</span>
+            <span>{t('products.detail.variant.sku')}</span>
             <Input
               value={variant.sku}
               onChange={(e) => updateField('sku', e.target.value)}
@@ -999,12 +1021,14 @@ function VariantCard({
 
           <div className="form-field form-field-wide">
             <span className="form-field-label">
-              {hasColor ? `Ảnh chính theo màu: ${colorValue}` : 'Ảnh chính theo màu'}
-            </span>
-            <p className="detail-section-desc" style={{ marginTop: 0, marginBottom: 8 }}>
               {hasColor
-                ? 'Ảnh này dùng chung cho mọi size/biến thể có cùng màu. Đổi size trong cùng màu sẽ không đổi ảnh chính.'
-                : 'Thêm thuộc tính Màu/Color cho biến thể để cấu hình ảnh chính theo màu.'}
+                ? t('products.detail.variant.colorImageLabelWithValue', { color: colorValue })
+                : t('products.detail.variant.colorImageLabel')}
+            </span>
+            <p className="detail-section-desc mt-0 mb-2">
+              {hasColor
+                ? t('products.detail.variant.colorImageHintWithColor')
+                : t('products.detail.variant.colorImageHintNoColor')}
             </p>
             {hasColor && (
               <>
@@ -1025,11 +1049,11 @@ function VariantCard({
               onCheckedChange={(checked) => updateField('isAvailable', checked)}
               disabled={disabled}
              />
-            <span>Kích hoạt bán</span>
+            <span>{t('products.detail.variant.isAvailable')}</span>
           </label>
 
           <div className="form-field form-field-wide">
-            <span className="form-field-label">Thuộc tính biến thể</span>
+            <span className="form-field-label">{t('products.detail.variant.optionsLabel')}</span>
             <VariantOptionsEditor
               options={variant.options}
               onChange={(opts) => updateField('options', opts)}
@@ -1039,12 +1063,14 @@ function VariantCard({
 
           <div className="form-field form-field-wide">
             <span className="form-field-label">
-              {hasColor ? `Gallery theo màu: ${colorValue}` : 'Gallery theo màu'}
-            </span>
-            <p className="detail-section-desc" style={{ marginTop: 0, marginBottom: 8 }}>
               {hasColor
-                ? 'Gallery này dùng chung cho mọi size/biến thể có cùng màu. Đổi size trong cùng màu sẽ không đổi danh sách ảnh.'
-                : 'Thêm thuộc tính Màu/Color cho biến thể để cấu hình gallery riêng theo màu. Nếu để trống, storefront sẽ dùng gallery chung của sản phẩm.'}
+                ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
+                : t('products.detail.variant.colorGalleryLabel')}
+            </span>
+            <p className="detail-section-desc mt-0 mb-2">
+              {hasColor
+                ? t('products.detail.variant.colorGalleryHintWithColor')
+                : t('products.detail.variant.colorGalleryHintNoColor')}
             </p>
             {fieldErrors.gallery && <small className="field-error">{fieldErrors.gallery}</small>}
             {hasColor && (
@@ -1067,6 +1093,7 @@ function VariantCard({
 const VARIANTS_FILTER_THRESHOLD = 6
 
 function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOpenMatrixWizard }) {
+  const { t } = useTranslation()
   // Single-open accordion: only one card body is expanded at a time. With
   // 50–500 biến thể, having all open at once produces unmanageable scroll.
   const [expandedKey, setExpandedKey] = useState(() => items[0]?._key ?? null)
@@ -1142,8 +1169,8 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
         const hasData = hasGalleryImages(current.gallery) || String(current.imageUrl || '').trim()
         if (hasData) {
           showConfirm(
-            'Biến thể này đang có ảnh và gallery riêng. Đổi màu sẽ xóa toàn bộ ảnh hiện tại. Tiếp tục?',
-            'Đổi màu biến thể',
+            t('products.detail.variant.changeColorConfirm'),
+            t('products.detail.variant.changeColorTitle'),
           ).then((confirmed) => { if (confirmed) applyColorChange() })
           return
         }
@@ -1196,7 +1223,7 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
       _key: crypto.randomUUID(),
       id: '',
       sku: makeCopySku(original.sku),
-      name: original.name ? `${original.name} (sao chép)` : '',
+      name: original.name ? t('products.detail.variant.copySuffixTemplate', { name: original.name }) : '',
       options: original.options.map((o) => ({ ...o })),
       gallery: (original.gallery ?? []).map((img) => ({ ...img })),
     }
@@ -1209,10 +1236,10 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
     const idx = items.findIndex((v) => v._key === key)
     if (idx === -1) return
     const variant = items[idx]
-    const label = variant.name.trim() || `Biến thể ${idx + 1}`
+    const label = variant.name.trim() || t('products.detail.variant.defaultLabel', { index: idx + 1 })
     const confirmed = await showConfirm(
-      `Xoá biến thể "${label}"? Thao tác này không thể hoàn tác.`,
-      'Xoá biến thể',
+      t('products.detail.variant.removeConfirm', { label }),
+      t('products.detail.variant.remove'),
     )
     if (!confirmed) return
     onChange(items.filter((v) => v._key !== key))
@@ -1252,25 +1279,25 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
             type="search" className="variants-filter-input"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder={`Lọc theo tên / SKU / thuộc tính (${items.length} biến thể)`}
+            placeholder={t('products.detail.variant.filterPlaceholder', { count: items.length })}
             disabled={disabled}
-            aria-label="Lọc biến thể"
+            aria-label={t('products.detail.variant.filterAria')}
            />
         )}
         {showFilter && filterTerm && (
           <span className="variants-filter-status">
-            {visible.length}/{items.length} khớp
+            {t('products.detail.variant.filterMatch', { visible: visible.length, total: items.length })}
           </span>
         )}
         {!disabled && onOpenMatrixWizard && (
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onOpenMatrixWizard}
-            title="Tạo tự động tất cả tổ hợp Size × Màu × ..."
+            title={t('products.detail.variant.generateMatrixTitle')}
           >
-            ⊞ Sinh ma trận
-          </button>
+            ⊞ {t('products.detail.variant.generateMatrix')}
+          </Button>
         )}
       </div>
 
@@ -1298,12 +1325,12 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
       })}
 
       {filterTerm && visible.length === 0 && (
-        <p className="variants-empty">Không có biến thể nào khớp với “{filter}”.</p>
+        <p className="variants-empty">{t('products.detail.variant.filterEmpty', { filter })}</p>
       )}
 
-      <button type="button" className="btn btn-secondary btn-sm" onClick={addVariant} disabled={disabled}>
-        + Thêm biến thể
-      </button>
+      <Button variant="outline" size="sm" onClick={addVariant} disabled={disabled}>
+        + {t('products.detail.variant.addVariant')}
+      </Button>
     </div>
   )
 }
@@ -1311,12 +1338,13 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
 // ── Draft recovery banner ──────────────────────────────────────────────────────
 
 function DraftRecoveryBanner({ ts, onRestore, onDiscard }) {
+  const { t } = useTranslation()
   return (
     <div className="draft-recovery-banner">
-      <span>Phát hiện bản nháp chưa lưu lúc <strong>{formatDateTime(new Date(ts).toISOString())}</strong>.</span>
+      <span>{t('products.detail.draftRecovery.found', { time: formatDateTime(new Date(ts).toISOString()) })}</span>
       <div className="draft-recovery-actions">
-        <button type="button" className="btn btn-primary btn-sm" onClick={onRestore}>Khôi phục</button>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={onDiscard}>Bỏ qua</button>
+        <Button size="sm" onClick={onRestore}>{t('products.detail.draftRecovery.restore')}</Button>
+        <Button variant="outline" size="sm" onClick={onDiscard}>{t('products.detail.draftRecovery.discard')}</Button>
       </div>
     </div>
   )
@@ -1325,49 +1353,54 @@ function DraftRecoveryBanner({ ts, onRestore, onDiscard }) {
 // ── Publish quality checklist modal ───────────────────────────────────────────
 
 function PublishChecklistModal({ form, onConfirm, onCancel }) {
-  const items = getPublishReadiness(form)
+  const { t } = useTranslation()
+  const items = getPublishReadiness(form, t)
   const blockers = items.filter((i) => !i.ok && i.required)
   const warnings = items.filter((i) => !i.ok && !i.required)
 
   return (
-    <div className="modal-overlay" onClick={onCancel} role="presentation">
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="checklist-title">
-        <h3 className="modal-title" id="checklist-title">Kiểm tra trước khi đăng bán</h3>
-        <ul className="publish-checklist">
-          {items.map((item) => (
-            <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
-              <span className="checklist-icon" aria-hidden="true">{item.ok ? '✓' : item.required ? '✕' : '⚠'}</span>
-              <span>{item.label}</span>
-            </li>
-          ))}
-        </ul>
-        {blockers.length > 0 && (
-          <p className="modal-note modal-note--error">
-            Còn <strong>{blockers.length}</strong> mục bắt buộc chưa điền. Vui lòng quay lại bổ sung.
-          </p>
-        )}
-        {blockers.length === 0 && warnings.length > 0 && (
-          <p className="modal-note modal-note--warn">
-            Còn <strong>{warnings.length}</strong> mục chưa hoàn chỉnh (không bắt buộc). Bạn vẫn có thể đăng.
-          </p>
-        )}
-        <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onCancel}>Quay lại sửa</button>
+    <Modal
+      open
+      title={t('products.detail.checklist.title')}
+      onClose={onCancel}
+      actions={
+        <>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>{t('products.detail.checklist.backToEdit')}</Button>
           {blockers.length === 0 && (
-            <button type="button" className="btn btn-success" onClick={onConfirm}>Đăng bán ngay</button>
+            <Button type="button" size="sm" onClick={onConfirm}>{t('products.detail.checklist.publishNow')}</Button>
           )}
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <ul className="publish-checklist">
+        {items.map((item) => (
+          <li key={item.id} className={`checklist-item ${item.ok ? 'checklist-ok' : item.required ? 'checklist-error' : 'checklist-warn'}`}>
+            <span className="checklist-icon" aria-hidden="true">{item.ok ? '✓' : item.required ? '✕' : '⚠'}</span>
+            <span>{item.label}</span>
+          </li>
+        ))}
+      </ul>
+      {blockers.length > 0 && (
+        <p className="modal-note modal-note--error">
+          {t('products.detail.checklist.blockerMessage', { count: blockers.length })}
+        </p>
+      )}
+      {blockers.length === 0 && warnings.length > 0 && (
+        <p className="modal-note modal-note--warn">
+          {t('products.detail.checklist.warningMessage', { count: warnings.length })}
+        </p>
+      )}
+    </Modal>
   )
 }
 
 // ── Variant matrix wizard ──────────────────────────────────────────────────────
 
 function VariantMatrixWizard({ onGenerate, onClose }) {
+  const { t } = useTranslation()
   const [attributes, setAttributes] = useState([
-    { name: 'Màu sắc', values: '' },
-    { name: 'Size', values: '' },
+    { name: t('products.detail.matrix.defaultColor'), values: '' },
+    { name: t('products.detail.matrix.defaultSize'), values: '' },
   ])
 
   function updateAttr(i, field, value) {
@@ -1411,69 +1444,70 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
-      <div className="modal-box modal-box--wide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="wizard-title">
-        <h3 className="modal-title" id="wizard-title">Sinh ma trận biến thể</h3>
-        <p className="detail-section-desc" style={{ marginBottom: 16 }}>
-          Nhập thuộc tính và giá trị (cách nhau bằng dấu phẩy). Hệ thống tạo tất cả tổ hợp tự động.
+    <Modal
+      open
+      wide
+      title={t('products.detail.matrix.title')}
+      onClose={onClose}
+      actions={
+        <>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="button" size="sm" onClick={generate} disabled={estimatedCount === 0}>
+            {t('products.detail.matrix.generateButton', { count: estimatedCount })}
+          </Button>
+        </>
+      }
+    >
+        <p className="detail-section-desc mb-4">
+          {t('products.detail.matrix.description')}
         </p>
 
         <div className="wizard-attrs">
           {attributes.map((attr, i) => (
             <div key={i} className="wizard-attr-row">
               <Input
-                placeholder="Thuộc tính (vd: Màu sắc)"
+                placeholder={t('products.detail.matrix.attributePlaceholder')}
                 value={attr.name}
                 onChange={(e) => updateAttr(i, 'name', e.target.value)}
                />
               <Input className="wizard-attr-values"
-                placeholder="Giá trị (vd: Đỏ, Xanh, Trắng)"
+                placeholder={t('products.detail.matrix.valuesPlaceholder')}
                 value={attr.values}
                 onChange={(e) => updateAttr(i, 'values', e.target.value)}
                />
-              <button
-                type="button"
-                className="btn btn-icon btn-danger-ghost"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
                 onClick={() => removeAttr(i)}
                 disabled={attributes.length <= 1}
-                aria-label="Xóa thuộc tính"
+                aria-label={t('products.detail.variant.removeOption')}
               >
                 ✕
-              </button>
+              </Button>
             </div>
           ))}
         </div>
 
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={addAttr}
           disabled={attributes.length >= 5}
-          style={{ marginTop: 8 }}
+          className="mt-2"
         >
-          + Thêm thuộc tính
-        </button>
+          + {t('products.detail.variant.addOption')}
+        </Button>
 
         {estimatedCount > 0 && (
           <p className={`wizard-estimate${estimatedCount > 50 ? ' wizard-estimate--warn' : ''}`}>
-            Sẽ tạo <strong>{estimatedCount}</strong> biến thể
-            {estimatedCount > 50 ? ' — khá nhiều, kiểm tra lại.' : '.'}
+            {estimatedCount > 50
+              ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
+              : t('products.detail.matrix.estimate', { count: estimatedCount })}
           </p>
         )}
 
-        <div className="modal-actions" style={{ marginTop: 20 }}>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy</button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={generate}
-            disabled={estimatedCount === 0}
-          >
-            Sinh {estimatedCount > 0 ? `${estimatedCount} biến thể` : 'biến thể'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -1572,14 +1606,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         setForm(duplicated)
         setIsDirty(true)
         slugEditedByUser.current = false
-        toast.success(`Đã sao chép từ "${item.name || 'sản phẩm'}". Vui lòng đặt tên và slug mới.`)
+        toast.success(t('products.detail.duplicateSuccess', { name: item.name || t('products.detail.productFallbackName') }))
         return
       }
     } catch { /* ignore parse errors */ }
 
     const draft = loadFormFromStorage(autosaveKey)
     if (draft?.form) setDraftRecovery(draft)
-  }, [autosaveKey, isCreate])
+  }, [autosaveKey, isCreate, t])
 
   // Autosave when dirty
   useEffect(() => {
@@ -1766,23 +1800,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <p>{isCreate ? t('products.detail.createDesc') : t('products.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate('/admin/products')}
-          >
+          <Button variant="outline" onClick={() => navigate('/admin/products')}>
             {t('products.detail.backToList')}
-          </button>
+          </Button>
           {!isCreate && state.item?.publishStatus !== 'PUBLISHED' ? (
-            <a
-              href={`/product/${form.slug}/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary"
-              title="Xem trước trang sản phẩm (tab mới)"
-            >
-              Xem trước
-            </a>
+            <Button asChild variant="outline">
+              <a
+                href={`/product/${form.slug}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('products.detail.previewTitle')}
+              >
+                {t('products.detail.preview')}
+              </a>
+            </Button>
           ) : null}
         </div>
       </header>
@@ -1877,8 +1908,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               {validationErrors.slug ? (
                 <small className="field-error">{validationErrors.slug}</small>
               ) : (
-                <small className="detail-section-desc" style={{ marginTop: 2 }}>
-                  Chỉ chữ thường a–z, số 0–9 và dấu gạch ngang. Tự điền từ tên sản phẩm.
+                <small className="detail-section-desc mt-0.5">
+                  {t('products.detail.slugHint')}
                 </small>
               )}
             </label>
@@ -1896,7 +1927,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 disabled={isReadOnly}
                 maxLength={100}
                />
-              <small className="detail-section-desc" style={{ marginTop: 2 }}>
+              <small className="detail-section-desc mt-0.5">
                 {t('products.detail.skuHint')}
               </small>
             </label>
@@ -1909,7 +1940,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 disabled={isReadOnly}
               ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
-                  <SelectItem value={form.categoryId} disabled>ID: {form.categoryId} (không tìm thấy)</SelectItem>
+                  <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
                 )}
                 {categories.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -1928,7 +1959,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 disabled={isReadOnly}
               ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 {form.brandId && !brands.some((b) => b.id === form.brandId) && (
-                  <SelectItem value={form.brandId} disabled>ID: {form.brandId} (không tìm thấy)</SelectItem>
+                  <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
                 )}
                 {brands.map((b) => (
                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
@@ -1947,11 +1978,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 value={form.shortDescription}
                 onChange={(e) => updateField('shortDescription', e.target.value)}
                 maxLength={500}
-                placeholder="Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…"
+                placeholder={t('products.detail.shortDescriptionPlaceholder')}
                 disabled={isReadOnly}
                />
-              <small className="detail-section-desc" style={{ marginTop: 4 }}>
-                Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.
+              <small className="detail-section-desc mt-1">
+                {t('products.detail.shortDescriptionHint')}
               </small>
               {validationErrors.shortDescription ? (
                 <small className="field-error">{validationErrors.shortDescription}</small>
@@ -1970,7 +2001,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <RichTextEditor
                 value={form.description}
                 onChange={(html) => updateField('description', html)}
-                placeholder="Nhập mô tả chi tiết sản phẩm..."
+                placeholder={t('products.detail.descriptionPlaceholder')}
                 disabled={isReadOnly}
                 hasError={Boolean(validationErrors.description)}
                 enableImagePicker
@@ -1981,30 +2012,29 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </div>
 
             <label className="form-field form-field-wide">
-              <span>Vị trí trên trang chủ</span>
+              <span>{t('products.detail.homepageBlock')}</span>
               <Select
                 value={form.homepageBlock || 'NONE'}
                 onValueChange={(val) => updateField('homepageBlock', val)}
                 disabled={isReadOnly}
               ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="NONE">Không hiển thị trang chủ</SelectItem>
-                <SelectItem value="FEATURED_GRID">Sản phẩm nổi bật — grid trên trang chủ (tối đa 12)</SelectItem>
-                <SelectItem value="RECOMMENDED_CAROUSEL">Gợi ý dành cho bạn — carousel trên trang chủ (tối đa 10)</SelectItem>
+                <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
+                <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
+                <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
               </SelectContent></Select>
-              <small className="detail-section-desc" style={{ marginTop: 4 }}>
-                Mỗi sản phẩm chỉ có thể ở một trong hai khối. Số sản phẩm vượt quá hạn mức của khối sẽ không hiển thị —
-                dùng ô "Thứ tự trang chủ" để chọn ra sản phẩm lên trang chủ trước.
+              <small className="detail-section-desc mt-1">
+                {t('products.detail.homepageHint')}
               </small>
               {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
-                <small className="detail-section-desc" style={{ color: 'var(--admin-color-warning, #d97706)', marginTop: 4 }}>
-                  Sản phẩm chưa được Xuất bản — chỉ hiển thị trên web sau khi chuyển trạng thái sang Xuất bản.
+                <small className="detail-section-desc text-warning mt-1">
+                  {t('products.detail.homepagePublishWarning')}
                 </small>
               )}
             </label>
 
             {form.homepageBlock && form.homepageBlock !== 'NONE' && (
-              <label className="form-field" style={{ maxWidth: 240 }}>
-                <span>Thứ tự trang chủ</span>
+              <label className="form-field max-w-60">
+                <span>{t('products.detail.homepageOrder')}</span>
                 <Input
                   type="number"
                   inputMode="numeric"
@@ -2012,12 +2042,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   min={0}
                   value={form.homepageOrder}
                   onChange={(e) => updateField('homepageOrder', e.target.value)}
-                  placeholder="VD: 1"
+                  placeholder={t('products.detail.homepageOrderPlaceholder')}
                   disabled={isReadOnly}
                  />
                 <small className="detail-section-desc">
-                  Để trống nếu không cần ghim — sản phẩm sẽ xếp theo ngày tạo mới nhất.
-                  Số nhỏ hơn sẽ hiển thị trước.
+                  {t('products.detail.homepageOrderHint')}
                 </small>
               </label>
             )}
@@ -2028,7 +2057,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         <CollapsibleSection id="section-pricing" title={t('products.detail.sectionPricing')} forceOpen={sectionErrors.pricing}>
           {form.variants.length > 0 && (
             <div className="section-info-banner">
-              Sản phẩm này có biến thể — giá dưới đây áp dụng chung cho tất cả biến thể. Giỏ hàng và thanh toán đều dùng giá này.
+              {t('products.detail.variantPricingHint')}
             </div>
           )}
           <div className="detail-section-content form-grid">
@@ -2049,8 +2078,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </label>
 
             <label className="form-field">
-              <span title="Giá gốc sẽ hiển thị gạch ngang khi có giá khuyến mãi">
-                Giá gốc (gạch ngang) ℹ
+              <span title={t('products.detail.compareAtPriceTitle')}>
+                {t('products.detail.compareAtPriceLabel')}
               </span>
               <Input
                 type="text"
@@ -2079,14 +2108,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                  />
                 {!isReadOnly && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm discount-pct-btn"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="discount-pct-btn"
                     onClick={() => setShowDiscountHelper((p) => !p)}
-                    title="Tính giảm theo %"
+                    title={t('products.detail.discountButtonTitle')}
                   >
-                    % giảm
-                  </button>
+                    {t('products.detail.discountButton')}
+                  </Button>
                 )}
               </div>
               {showDiscountHelper && !isReadOnly && (
@@ -2095,13 +2125,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     type="number"
                     min="1"
                     max="99"
-                    placeholder="% giảm (vd: 20)"
+                    placeholder={t('products.detail.discountInputPlaceholder')}
                     value={discountPct}
                     onChange={(e) => setDiscountPct(e.target.value)}
                    />
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
+                  <Button
+                    size="sm"
                     disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
                     onClick={() => {
                       const base = Number(form.retailPrice) || Number(form.compareAtPrice)
@@ -2113,19 +2142,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       }
                     }}
                   >
-                    Áp dụng
-                  </button>
-                  <small className="detail-section-desc" style={{ marginTop: 0 }}>
+                    {t('products.detail.apply')}
+                  </Button>
+                  <small className="detail-section-desc mt-0">
                     {(Number(form.retailPrice) || Number(form.compareAtPrice))
-                      ? 'Tính từ giá niêm yết (hoặc giá gốc nếu không có).'
-                      : 'Vui lòng nhập Giá niêm yết hoặc Giá gốc trước.'}
+                      ? t('products.detail.discountFromBaseHint')
+                      : t('products.detail.discountNeedsBaseHint')}
                   </small>
                 </div>
               )}
               {validationErrors.salePrice ? (
                 <small className="field-error">{validationErrors.salePrice}</small>
               ) : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice) ? (
-                <small className="field-error">Giá sale phải thấp hơn giá niêm yết.</small>
+                <small className="field-error">{t('products.detail.saleMustBeLower')}</small>
               ) : null}
             </div>
 
@@ -2163,8 +2192,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <span>{t('products.detail.forceOutOfStock')}</span>
               </label>
               {form.forceOutOfStock && (
-                <small className="detail-section-desc" style={{ marginTop: 4 }}>
-                  Sản phẩm sẽ hiển thị "Hết hàng" và không cho mua trên web, bất kể giá trị Tồn kho ở trên.
+                <small className="detail-section-desc mt-1">
+                  {t('products.detail.forceOutOfStockHint')}
                 </small>
               )}
             </div>
@@ -2172,7 +2201,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Ảnh đại diện ── */}
-        <CollapsibleSection id="section-media" title="Ảnh đại diện" forceOpen={sectionErrors.media}>
+        <CollapsibleSection id="section-media" title={t('products.detail.mainImageTitle')} forceOpen={sectionErrors.media}>
           <div className="detail-section-content form-grid">
             <div className="form-field form-field-wide">
               <span className="form-field-label">{t('products.detail.imageUrl')}</span>
@@ -2189,7 +2218,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         {/* ── SEO ── */}
 
         {/* ── Gallery ── */}
-        <CollapsibleSection id="section-gallery" title="Gallery ảnh" description="Ảnh dùng chung cho mọi màu: chứng chỉ, lớp lót, size chart, đóng gói... Hiển thị khi chưa chọn biến thể hoặc khi màu chưa có gallery riêng." forceOpen={sectionErrors.gallery}>
+        <CollapsibleSection id="section-gallery" title={t('products.detail.gallerySectionTitle')} description={t('products.detail.gallerySectionDescription')} forceOpen={sectionErrors.gallery}>
           <div className="detail-section-content">
             <GalleryEditor
               items={form.gallery}
@@ -2201,7 +2230,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Videos ── */}
-        <CollapsibleSection id="section-videos" title="Video" description="Link YouTube hoặc video sản phẩm" forceOpen={sectionErrors.videos}>
+        <CollapsibleSection id="section-videos" title={t('products.detail.videoSectionTitle')} description={t('products.detail.videoSectionDescription')} forceOpen={sectionErrors.videos}>
           <div className="detail-section-content">
             <VideoEditor
               items={form.videos}
@@ -2213,7 +2242,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Thông số kỹ thuật ── */}
-        <CollapsibleSection id="section-specs" title="Thông số kỹ thuật" description={'Hiển thị trong tab "Thông số kỹ thuật" trang sản phẩm'} forceOpen={sectionErrors.specs}>
+        <CollapsibleSection id="section-specs" title={t('products.detail.specsSectionTitle')} description={t('products.detail.specsSectionDescription')} forceOpen={sectionErrors.specs}>
           <div className="detail-section-content">
             <SpecificationsEditor
               items={form.specifications}
@@ -2225,7 +2254,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── Biến thể ── */}
-        <CollapsibleSection id="section-variants" title="Biến thể sản phẩm" description="Size, màu sắc và các tùy chọn khác" forceOpen={sectionErrors.variants}>
+        <CollapsibleSection id="section-variants" title={t('products.detail.variantSectionTitle')} description={t('products.detail.variantSectionDescription')} forceOpen={sectionErrors.variants}>
           <div className="detail-section-content">
             <VariantsEditor
               items={form.variants}
@@ -2248,29 +2277,27 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           </div>
           <div className="screen-actions">
             {form.publishStatus !== 'PUBLISHED' && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                disabled={isReadOnly || !isDirty || isSubmitting}
-                title="Lưu giữ trạng thái nháp"
+              <Button
+                variant="outline"
+                loading={isSubmitting}
+                disabled={isReadOnly || !isDirty}
+                title={t('products.detail.saveDraftTitle')}
                 onClick={() => handleSave('DRAFT')}
               >
-                {isSubmitting ? t('common.saving') : 'Lưu nháp'}
-              </button>
+                {t('products.detail.saveDraft')}
+              </Button>
             )}
-            <button
-              type="button"
-              className={`btn ${form.publishStatus === 'PUBLISHED' ? 'btn-primary' : 'btn-success'}`}
-              disabled={isReadOnly || !isDirty || isSubmitting}
-              title={form.publishStatus === 'PUBLISHED' ? 'Cmd+Enter / Ctrl+Enter' : 'Lưu và đăng sản phẩm lên web'}
+            <Button
+              variant={form.publishStatus === 'PUBLISHED' ? 'default' : 'success'}
+              loading={isSubmitting}
+              disabled={isReadOnly || !isDirty}
+              title={form.publishStatus === 'PUBLISHED' ? t('products.detail.saveShortcutTitle') : t('products.detail.publishTitle')}
               onClick={() => handleSave(form.publishStatus === 'PUBLISHED' ? undefined : 'PUBLISHED')}
             >
-              {isSubmitting
-                ? t('common.saving')
-                : form.publishStatus === 'PUBLISHED'
-                  ? (isCreate ? t('products.detail.createBtn') : t('products.detail.saveBtn'))
-                  : (isCreate ? 'Tạo & Đăng bán' : 'Lưu & Đăng bán')}
-            </button>
+              {form.publishStatus === 'PUBLISHED'
+                ? (isCreate ? t('products.detail.createBtn') : t('products.detail.saveBtn'))
+                : (isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish'))}
+            </Button>
           </div>
         </div>
       </form>

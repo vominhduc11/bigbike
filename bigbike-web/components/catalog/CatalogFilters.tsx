@@ -86,6 +86,10 @@ const COLOR_OPTIONS = [
   { value: "vang", label: "Vàng", hex: "#eab308" },
 ];
 
+// Row of a radio filter (category / brand) — label + radio + text.
+const FILTER_ROW =
+  "flex items-center gap-[9px] py-[5px] text-xs text-muted-foreground cursor-pointer select-none transition-colors hover:text-foreground";
+
 export function CatalogFilters({
   brands,
   categories = [],
@@ -109,25 +113,31 @@ export function CatalogFilters({
   const defaultOpenValues: string[] = ["category", "brand", "price"];
 
   return (
-    <aside className="bb-filters-v2">
+    <aside className="sticky top-[calc(var(--bb-header-height)+34px+16px)] self-start border-r border-border pr-7 max-[769px]:static max-[769px]:mb-6 max-[769px]:border-r-0 max-[769px]:border-b max-[769px]:border-b-white/[0.08] max-[769px]:pr-0 max-[769px]:pb-1">
       {/* Header */}
-      <div className="bb-filters-v2-header">
-        <span className="bb-filters-v2-title">BỘ LỌC</span>
-        <div className="bb-filters-v2-header-actions">
+      <div className="mb-4 flex items-center justify-between border-b-2 border-brand pb-3 max-[769px]:px-0 max-[769px]:pt-1 max-[769px]:pb-2.5">
+        <span className="font-display text-sm font-semibold uppercase tracking-[0.06em] text-foreground">BỘ LỌC</span>
+        <div className="flex items-center gap-3">
           {hasActiveFilters && (
-            <Link href={resetHref} className="bb-filters-v2-clear">
+            <Link
+              href={resetHref}
+              className="text-11 font-semibold uppercase tracking-[0.06em] text-muted-foreground no-underline transition-colors hover:text-brand"
+            >
               Xoá tất cả
             </Link>
           )}
           <button
             type="button"
-            className="bb-filters-mobile-toggle"
+            className="hidden cursor-pointer border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground max-[769px]:flex max-[769px]:items-center"
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}
           >
             <svg
-              className={cn("bb-filter-chevron", mobileOpen && "open")}
+              className={cn(
+                "shrink-0 text-muted-foreground transition-transform duration-300",
+                mobileOpen && "rotate-180",
+              )}
               width="12"
               height="12"
               viewBox="0 0 12 12"
@@ -144,15 +154,15 @@ export function CatalogFilters({
         </div>
       </div>
 
-      <div className={cn("bb-filters-v2-body", mobileOpen && "is-open")}>
+      <div className={cn("block max-[769px]:hidden", mobileOpen && "max-[769px]:block")}>
         {/* Active filter chips */}
         {chips.length > 0 && (
-          <div className="bb-filter-chips">
+          <div className="mb-4 flex flex-wrap gap-1.5">
             {chips.map((chip) => (
               <Link
                 key={chip.label}
                 href={chip.removeHref}
-                className="bb-filter-chip"
+                className="inline-flex items-center gap-1.5 border border-[color:var(--bb-brand-primary-border)] bg-brand/10 px-2.5 py-1 text-10 font-bold uppercase tracking-[0.08em] text-brand no-underline transition-colors hover:bg-brand/20"
                 aria-label={`Bỏ bộ lọc: ${chip.label}`}
               >
                 {chip.label}
@@ -164,7 +174,7 @@ export function CatalogFilters({
           </div>
         )}
 
-        <form method="GET" className="bb-filters-v2-form">
+        <form method="GET" className="flex flex-col gap-0.5">
           {Object.entries(hiddenParams).map(([key, value]) =>
             value ? <input key={key} type="hidden" name={key} value={value} /> : null,
           )}
@@ -182,14 +192,14 @@ export function CatalogFilters({
                 </AccordionTrigger>
                 <AccordionContent>
                   <RadioGroup name="category" defaultValue={current.category ?? ""} className="flex flex-col gap-1 pb-1">
-                    <label className="bb-filter-row">
-                      <RadioGroupItem value="" />
-                      <span className="bb-filter-row-label">Tất cả sản phẩm</span>
+                    <label className={FILTER_ROW}>
+                      <RadioGroupItem value="" aria-label="Tất cả sản phẩm" />
+                      <span className="leading-[1.3]">Tất cả sản phẩm</span>
                     </label>
                     {visibleCategories.map((category) => (
-                      <label key={category.id} className="bb-filter-row">
-                        <RadioGroupItem value={category.slug} />
-                        <span className="bb-filter-row-label">{category.name}</span>
+                      <label key={category.id} className={FILTER_ROW}>
+                        <RadioGroupItem value={category.slug} aria-label={category.name} />
+                        <span className="leading-[1.3]">{category.name}</span>
                       </label>
                     ))}
                   </RadioGroup>
@@ -206,14 +216,14 @@ export function CatalogFilters({
                 <AccordionContent>
                   <div className="flex flex-col gap-1 pb-1">
                     {brands.length > 6 && (
-                      <div className="bb-filter-search-wrap mb-2">
-                        <svg className="bb-filter-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                      <div className="relative mb-2">
+                        <svg className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                           <circle cx="5.5" cy="5.5" r="4" />
                           <path d="M8.5 8.5l3 3" />
                         </svg>
                         <Input
                           type="text"
-                          className="bb-filter-search"
+                          className="min-h-0 py-2 pl-[30px] pr-2.5 text-xs"
                           placeholder="Tìm thương hiệu..."
                           value={brandSearch}
                           onChange={(e) => setBrandSearch(e.target.value)}
@@ -221,20 +231,22 @@ export function CatalogFilters({
                         />
                       </div>
                     )}
-                    <RadioGroup name="pwb-brand" defaultValue={current.brand ?? ""} className="flex flex-col gap-1">
-                      <label className="bb-filter-row">
-                        <RadioGroupItem value="" />
-                        <span className="bb-filter-row-label">Tất cả</span>
-                      </label>
-                      {filteredBrands.map((b) => (
-                        <label key={b.id} className="bb-filter-row">
-                          <RadioGroupItem value={b.slug} />
-                          <span className="bb-filter-row-label">{b.name}</span>
+                    <div className="max-h-[220px] overflow-y-auto pr-1">
+                      <RadioGroup name="pwb-brand" defaultValue={current.brand ?? ""} className="flex flex-col gap-1">
+                        <label className={FILTER_ROW}>
+                          <RadioGroupItem value="" aria-label="Tất cả thương hiệu" />
+                          <span className="leading-[1.3]">Tất cả</span>
                         </label>
-                      ))}
-                    </RadioGroup>
+                        {filteredBrands.map((b) => (
+                          <label key={b.id} className={FILTER_ROW}>
+                            <RadioGroupItem value={b.slug} aria-label={b.name} />
+                            <span className="leading-[1.3]">{b.name}</span>
+                          </label>
+                        ))}
+                      </RadioGroup>
+                    </div>
                     {filteredBrands.length === 0 && (
-                      <p className="bb-filter-empty text-xs text-muted-foreground">Không tìm thấy</p>
+                      <p className="m-0 py-1 text-11 text-muted-foreground">Không tìm thấy</p>
                     )}
                   </div>
                 </AccordionContent>
@@ -248,9 +260,9 @@ export function CatalogFilters({
               </AccordionTrigger>
               <AccordionContent>
                 <div className="pb-2">
-                  <div className="bb-filter-price-row">
-                    <div className="bb-filter-price-field">
-                      <label className="bb-filter-price-label" htmlFor="min_price">Từ (₫)</label>
+                  <div className="mb-2.5 flex items-end gap-2">
+                    <div className="flex flex-1 flex-col gap-1">
+                      <label className="text-10 uppercase tracking-[0.1em] text-muted-foreground" htmlFor="min_price">Từ (₫)</label>
                       <Input
                         id="min_price"
                         name="min_price"
@@ -259,12 +271,12 @@ export function CatalogFilters({
                         step="50000"
                         defaultValue={current.minPrice}
                         placeholder="0"
-                        className="bb-filter-price-input"
+                        className="min-h-0 px-2.5 py-2 text-xs"
                       />
                     </div>
-                    <span className="bb-filter-price-sep">—</span>
-                    <div className="bb-filter-price-field">
-                      <label className="bb-filter-price-label" htmlFor="max_price">Đến (₫)</label>
+                    <span className="shrink-0 pb-2 text-13 text-muted-foreground">—</span>
+                    <div className="flex flex-1 flex-col gap-1">
+                      <label className="text-10 uppercase tracking-[0.1em] text-muted-foreground" htmlFor="max_price">Đến (₫)</label>
                       <Input
                         id="max_price"
                         name="max_price"
@@ -273,11 +285,11 @@ export function CatalogFilters({
                         step="50000"
                         defaultValue={current.maxPrice}
                         placeholder="∞"
-                        className="bb-filter-price-input"
+                        className="min-h-0 px-2.5 py-2 text-xs"
                       />
                     </div>
                   </div>
-                  <div className="bb-filter-price-presets">
+                  <div className="mt-1 flex flex-wrap gap-1.5">
                     {[
                       { label: "< 1tr", min: undefined, max: 1000000 },
                       { label: "1–3tr", min: 1000000, max: 3000000 },
@@ -315,25 +327,35 @@ export function CatalogFilters({
                 Màu sắc
               </AccordionTrigger>
               <AccordionContent>
-                <RadioGroup name="filter_color" defaultValue={current.color ?? ""} className="bb-filter-color-grid pb-1">
+                <RadioGroup name="filter_color" defaultValue={current.color ?? ""} className="grid grid-cols-4 gap-2 pt-0.5 pb-1">
                   {COLOR_OPTIONS.map((opt) => {
                     const isActive = (current.color ?? "") === opt.value;
                     return (
                       <BBTooltip key={opt.value || "all-color"} content={opt.label} placement="top">
-                        <label className={cn("bb-filter-color-swatch", isActive && "active")}>
+                        <label className="group flex cursor-pointer flex-col items-center gap-[5px]">
                           <RadioGroupItem
                             value={opt.value}
-                            className="bb-filter-color-input"
+                            className="sr-only"
                             aria-label={opt.label}
                           />
                           <span
-                            className="bb-filter-color-dot"
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary transition-[border-color,transform] group-hover:scale-[1.08] group-hover:border-[color:var(--bb-border-strong)]",
+                              isActive && "scale-[1.08] border-brand shadow-[0_0_0_3px_rgba(255,12,9,0.28)]",
+                            )}
                             style={opt.hex ? { background: opt.hex } : undefined}
                             aria-hidden="true"
                           >
-                            {!opt.hex && <span className="text-xs text-muted-foreground font-bold leading-none">ALL</span>}
+                            {!opt.hex && <span className="text-xs font-bold leading-none text-muted-foreground">ALL</span>}
                           </span>
-                          <span className="bb-filter-color-name">{opt.label}</span>
+                          <span
+                            className={cn(
+                              "text-9 text-center font-bold uppercase leading-none tracking-[0.06em] text-muted-foreground",
+                              isActive && "text-brand",
+                            )}
+                          >
+                            {opt.label}
+                          </span>
                         </label>
                       </BBTooltip>
                     );
@@ -344,7 +366,7 @@ export function CatalogFilters({
 
           </Accordion>
 
-          <Button className="bb-filter-apply mt-4 w-full" type="submit">
+          <Button className="mt-4 w-full gap-[7px] py-3 font-display text-xs tracking-[0.12em]" type="submit">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M1 3h12M3 7h8M5 11h4" />
             </svg>

@@ -1,9 +1,9 @@
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import 'api_exception.dart';
+import 'secure_cookie_storage.dart';
 
 class ApiClient {
   late final Dio _dio;
@@ -16,9 +16,10 @@ class ApiClient {
 
   Future<void> init() async {
     if (_initialized) return;
-    final dir = await getApplicationDocumentsDirectory();
+    // Cookies (incl. the auth session cookie) are persisted in the platform
+    // secure store, not a plaintext file. See SecureCookieStorage.
     _cookieJar = PersistCookieJar(
-      storage: FileStorage('${dir.path}/.cookies/'),
+      storage: SecureCookieStorage(),
     );
 
     _dio = Dio(

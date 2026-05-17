@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -32,8 +32,10 @@ import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { Modal as LayoutModal } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 
 function safeMenuDetailCache(data) {
@@ -178,33 +180,14 @@ const SLOT_CONTEXT_NOTES = {
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 function Modal({ title, onClose, children, footer }) {
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
-
-  function handleOverlayClick(e) {
-    if (e.target === e.currentTarget) onClose()
-  }
-
   return (
-    <div className="menu-modal-overlay" onClick={handleOverlayClick}>
-      <div className="menu-modal" role="dialog" aria-modal="true" aria-labelledby="menu-modal-title">
-        <div className="menu-modal-header">
-          <h2 id="menu-modal-title">{title}</h2>
-          <button type="button" className="menu-modal-close" onClick={onClose} aria-label="Đóng">
-            <X size={16} />
-          </button>
-        </div>
-        <div className="menu-modal-body">{children}</div>
-        {footer && <div className="menu-modal-footer">{footer}</div>}
-      </div>
-    </div>
+    <LayoutModal open title={title} onClose={onClose} actions={footer}>
+      {children}
+    </LayoutModal>
   )
 }
 
-function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
+function MenuParentSelect({ value, onChange, options, label }) {
   return (
     <label className="form-field">
       {label}
@@ -327,7 +310,7 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
       </td>
       <td>
         <span className="menu-item-parent-cell">
-          {parentLabel || <span style={{ color: 'var(--admin-color-text-muted)' }}>{rootLabel}</span>}
+          {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
         </span>
       </td>
       <td>
@@ -336,30 +319,12 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
       {canUpdate && (
         <td className="menu-item-actions-cell">
           <div className="menu-row-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ padding: '3px 8px' }}
-              onClick={() => onEdit(item)}
-              title="Chỉnh sửa mục này"
-              disabled={isDeleting}
-            >
+            <Button variant="outline" size="icon" onClick={() => onEdit(item)} title="Chỉnh sửa mục này" disabled={isDeleting}>
               <Pencil size={13} />
-            </button>
-            <button
-              type="button"
-              className="btn btn-danger"
-              style={{ padding: '3px 8px' }}
-              onClick={() => onDelete(item.id)}
-              title="Xoá mục này"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <span style={{ display: 'inline-block', width: 13, height: 13, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-              ) : (
-                <Trash2 size={13} />
-              )}
-            </button>
+            </Button>
+            <Button variant="danger" size="icon" onClick={() => onDelete(item.id)} title="Xoá mục này" loading={isDeleting}>
+              <Trash2 size={13} />
+            </Button>
           </div>
         </td>
       )}
@@ -400,16 +365,15 @@ export function MenuScreen({ canUpdate }) {
     queryFn: fetchMenus,
   })
 
-  const menus = menusData?.items ?? []
   const warning = menusData?.mode === 'mock' ? (menusData?.warning ?? '') : ''
 
   const menuByLocation = useMemo(() => {
     const map = new Map()
-    menus.forEach((m) => {
+    ;(menusData?.items ?? []).forEach((m) => {
       if (m.location) map.set(m.location, m)
     })
     return map
-  }, [menus])
+  }, [menusData])
 
   const selectedMenuSummary = menuByLocation.get(selectedLocation) ?? null
   const selectedMenuId = selectedMenuSummary?.id ?? null
@@ -706,7 +670,7 @@ export function MenuScreen({ canUpdate }) {
             </div>
           </div>
         ) : detailLoading ? (
-          <div style={{ padding: 24 }}>
+          <div className="p-6">
             <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
           </div>
         ) : menuDetail ? (
@@ -718,15 +682,10 @@ export function MenuScreen({ canUpdate }) {
                 <span className="menu-panel-head-loc">{menuDetail.location}</span>
               </div>
               {canUpdate && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ flexShrink: 0 }}
-                  onClick={openAddItem}
-                >
+                <Button className="shrink-0" onClick={openAddItem}>
                   <Plus size={14} />
                   {t('menus.addItem')}
-                </button>
+                </Button>
               )}
             </div>
 
@@ -758,19 +717,19 @@ export function MenuScreen({ canUpdate }) {
 
             {/* Items table */}
             {menuItems.length === 0 ? (
-              <div style={{ padding: '32px 20px', textAlign: 'center' }}>
-                <p style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)', marginBottom: 12 }}>
+              <div className="px-5 py-8 text-center">
+                <p className="text-muted-foreground text-sm mb-3">
                   {t('menus.noItems')}
                 </p>
                 {canUpdate && (
-                  <button type="button" className="btn btn-primary" onClick={openAddItem}>
+                  <Button onClick={openAddItem}>
                     <Plus size={14} />
                     {t('menus.addItem')}
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : filteredFlatItems.length === 0 ? (
-              <div style={{ padding: '24px 20px', color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-sm)' }}>
+              <div className="px-5 py-6 text-sm text-muted-foreground">
                 Không tìm thấy mục nào phù hợp với &ldquo;{search}&rdquo;.
               </div>
             ) : (
@@ -828,21 +787,12 @@ export function MenuScreen({ canUpdate }) {
           onClose={() => { setShowItemModal(false); setNewItem(EMPTY_ITEM); setItemError('') }}
           footer={
             <>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => { setShowItemModal(false); setNewItem(EMPTY_ITEM); setItemError('') }}
-              >
+              <Button variant="outline" onClick={() => { setShowItemModal(false); setNewItem(EMPTY_ITEM); setItemError('') }}>
                 {t('common.cancel')}
-              </button>
-              <button
-                type="submit"
-                form="add-item-form"
-                className="btn btn-primary"
-                disabled={addItemMutation.isPending || !isItemFormValid(newItem)}
-              >
-                {addItemMutation.isPending ? t('common.saving') : t('common.add')}
-              </button>
+              </Button>
+              <Button type="submit" form="add-item-form" loading={addItemMutation.isPending} disabled={!isItemFormValid(newItem)}>
+                {t('common.add')}
+              </Button>
             </>
           }
         >
@@ -853,7 +803,7 @@ export function MenuScreen({ canUpdate }) {
               </div>
             )}
             {itemError && (
-              <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12, fontSize: 'var(--admin-text-sm)' }}>
+              <p className="mb-3 text-sm text-danger">
                 {itemError}
               </p>
             )}
@@ -875,27 +825,18 @@ export function MenuScreen({ canUpdate }) {
           onClose={() => { setEditItem(null); setEditItemError('') }}
           footer={
             <>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => { setEditItem(null); setEditItemError('') }}
-              >
+              <Button variant="outline" onClick={() => { setEditItem(null); setEditItemError('') }}>
                 {t('common.cancel')}
-              </button>
-              <button
-                type="submit"
-                form="edit-item-form"
-                className="btn btn-primary"
-                disabled={updateItemMutation.isPending || !isItemFormValid(editItemForm)}
-              >
-                {updateItemMutation.isPending ? t('common.saving') : t('menus.saveMenu')}
-              </button>
+              </Button>
+              <Button type="submit" form="edit-item-form" loading={updateItemMutation.isPending} disabled={!isItemFormValid(editItemForm)}>
+                {t('menus.saveMenu')}
+              </Button>
             </>
           }
         >
           <form id="edit-item-form" onSubmit={handleEditItem}>
             {editItemError && (
-              <p style={{ color: 'var(--admin-color-status-danger-text)', marginBottom: 12, fontSize: 'var(--admin-text-sm)' }}>
+              <p className="mb-3 text-sm text-danger">
                 {editItemError}
               </p>
             )}

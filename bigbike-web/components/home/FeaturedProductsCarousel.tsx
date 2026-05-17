@@ -10,8 +10,13 @@ import "swiper/css/pagination";
 import type { Product } from "@/lib/contracts/public";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { BB_BREAKPOINTS } from "@/lib/ui/breakpoints";
+import { cn } from "@/lib/utils";
 
 type Props = { products: Product[] };
+
+// Carousel arrow button — transparent glyph, hidden on touch / mobile.
+const CAR_BTN =
+  "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[3.125rem] font-light leading-none text-foreground shadow-none transition-[background,box-shadow] hover:text-brand pointer-coarse:hidden max-md:hidden";
 
 export function FeaturedProductsCarousel({ products }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
@@ -20,10 +25,10 @@ export function FeaturedProductsCarousel({ products }: Props) {
   if (products.length === 0) return null;
 
   return (
-    <div className={`bb-prod-carousel-wrap${isLocked ? " bb-prod-carousel-wrap--locked" : ""}`}>
+    <div className={cn("relative", isLocked && "[&_.swiper-wrapper]:justify-center")}>
       {!isLocked && (
         <button
-          className="bb-car-btn bb-car-prev"
+          className={cn(CAR_BTN, "-left-5 xl:-left-[60px]")}
           onClick={() => swiperRef.current?.slidePrev()}
           aria-label="Cuộn trái"
         >
@@ -31,7 +36,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
         </button>
       )}
 
-      <div className="bb-prod-carousel-viewport">
+      <div className="w-full overflow-hidden">
         <Swiper
           modules={[Navigation, Pagination]}
           onSwiper={(s) => {
@@ -56,7 +61,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
           }}
         >
           {products.map((p) => (
-            <SwiperSlide key={p.id} className="bb-prod-carousel-item">
+            <SwiperSlide key={p.id} className="h-auto w-auto min-w-0 [scroll-snap-align:start]">
               <ProductCard product={p} variant="featured" />
             </SwiperSlide>
           ))}
@@ -65,7 +70,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
 
       {!isLocked && (
         <button
-          className="bb-car-btn bb-car-next"
+          className={cn(CAR_BTN, "-right-5 xl:-right-[60px]")}
           onClick={() => swiperRef.current?.slideNext()}
           aria-label="Cuộn phải"
         >

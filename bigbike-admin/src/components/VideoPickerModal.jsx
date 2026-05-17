@@ -52,6 +52,8 @@ function IconCheck() {
 
 export function VideoPickerModal({ onSelect, onClose }) {
   const { t } = useTranslation()
+  const modalRef = useRef(null)
+  const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 280)
   const [page, setPage] = useState(1)
@@ -95,11 +97,40 @@ export function VideoPickerModal({ onSelect, onClose }) {
   }, [debouncedSearch, page, reloadKey, t])
 
   useEffect(() => {
+    previousFocusRef.current = document.activeElement
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const modal = modalRef.current
+    const initialFocusTarget = modal?.querySelector(focusableSelector)
+    if (initialFocusTarget) initialFocusTarget.focus()
+
     function onKey(event) {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const currentModal = modalRef.current
+      if (!currentModal) return
+      const focusables = Array.from(currentModal.querySelectorAll(focusableSelector))
+      if (!focusables.length) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus()
+      }
+    }
   }, [onClose])
 
   useEffect(() => {
@@ -154,7 +185,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
   return (
     <>
       <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('homeVideos.picker.dialogLabel')}>
+      <div ref={modalRef} className="mpicker-modal" role="dialog" aria-modal="true" aria-label={t('homeVideos.picker.dialogLabel')}>
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('homeVideos.picker.title')}</h3>
           <div className="mpicker-header-actions">
@@ -162,7 +193,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
               ref={fileInputRef}
               type="file"
               accept={ALLOWED_MIME.join(',')}
-              style={{ display: 'none' }}
+              className="hidden"
               onChange={handleFileChange}
               disabled={uploading}
             />
@@ -227,7 +258,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
                   >
                     <div className="mpicker-thumb mpicker-thumb-video">
                       {url ? (
-                        <video src={`${url}#t=0.001`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted preload="metadata" />
+                        <video src={`${url}#t=0.001`} className="w-full h-full object-cover" muted preload="metadata" />
                       ) : (
                         <IconVideo />
                       )}
@@ -278,7 +309,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
 
         <div className="mpicker-footer">
           {selectedUrl ? (
-            <span style={{ fontSize: 12, color: 'var(--admin-color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
+            <span className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap max-w-[300px]">
               {selectedUrl.split('/').pop()}
             </span>
           ) : (

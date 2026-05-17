@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.order;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "order_line_items")
+@Getter
+@Setter
 public class OrderLineItemEntity {
 
     @Id
@@ -79,63 +83,4 @@ public class OrderLineItemEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public OrderEntity getOrder() { return order; }
-    public void setOrder(OrderEntity order) { this.order = order; }
-
-    public Long getLegacyItemId() { return legacyItemId; }
-    public void setLegacyItemId(Long legacyItemId) { this.legacyItemId = legacyItemId; }
-
-    public UUID getProductId() { return productId; }
-    public void setProductId(UUID productId) { this.productId = productId; }
-
-    public String getProductPk() { return productPk; }
-    public void setProductPk(String productPk) { this.productPk = productPk; }
-
-    public UUID getProductVariantId() { return productVariantId; }
-    public void setProductVariantId(UUID productVariantId) { this.productVariantId = productVariantId; }
-
-    public String getSku() { return sku; }
-    public void setSku(String sku) { this.sku = sku; }
-
-    public String getProductName() { return productName; }
-    public void setProductName(String productName) { this.productName = productName; }
-
-    public String getVariantName() { return variantName; }
-    public void setVariantName(String variantName) { this.variantName = variantName; }
-
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-
-    public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
-
-    public BigDecimal getRegularPrice() { return regularPrice; }
-    public void setRegularPrice(BigDecimal regularPrice) { this.regularPrice = regularPrice; }
-
-    public BigDecimal getSalePrice() { return salePrice; }
-    public void setSalePrice(BigDecimal salePrice) { this.salePrice = salePrice; }
-
-    public BigDecimal getLineSubtotal() { return lineSubtotal; }
-    public void setLineSubtotal(BigDecimal lineSubtotal) { this.lineSubtotal = lineSubtotal; }
-
-    public BigDecimal getLineDiscount() { return lineDiscount; }
-    public void setLineDiscount(BigDecimal lineDiscount) { this.lineDiscount = lineDiscount; }
-
-    public BigDecimal getLineTax() { return lineTax; }
-    public void setLineTax(BigDecimal lineTax) { this.lineTax = lineTax; }
-
-    public BigDecimal getLineTotal() { return lineTotal; }
-    public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }
-
-    public String getMetadata() { return metadata; }
-    public void setMetadata(String metadata) { this.metadata = metadata; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

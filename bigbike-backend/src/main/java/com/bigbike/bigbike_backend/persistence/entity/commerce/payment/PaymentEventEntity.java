@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.payment;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment_events")
+@Getter
+@Setter
 public class PaymentEventEntity {
 
     @Id
@@ -47,36 +51,4 @@ public class PaymentEventEntity {
     @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getPaymentId() { return paymentId; }
-    public void setPaymentId(UUID paymentId) { this.paymentId = paymentId; }
-
-    public UUID getOrderId() { return orderId; }
-    public void setOrderId(UUID orderId) { this.orderId = orderId; }
-
-    public String getProvider() { return provider; }
-    public void setProvider(String provider) { this.provider = provider; }
-
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
-
-    public String getEventId() { return eventId; }
-    public void setEventId(String eventId) { this.eventId = eventId; }
-
-    public String getPayload() { return payload; }
-    public void setPayload(String payload) { this.payload = payload; }
-
-    public Instant getReceivedAt() { return receivedAt; }
-    public void setReceivedAt(Instant receivedAt) { this.receivedAt = receivedAt; }
-
-    public Instant getProcessedAt() { return processedAt; }
-    public void setProcessedAt(Instant processedAt) { this.processedAt = processedAt; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getErrorMessage() { return errorMessage; }
-    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }

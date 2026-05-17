@@ -26,6 +26,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
@@ -186,61 +187,58 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                   return (
                     <tr key={item.id}>
                       <td>
-                        <button
-                          type="button"
-                          className="btn btn-link"
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 font-semibold"
                           onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--admin-color-brand-red)', fontWeight: 600, cursor: 'pointer' }}
                         >
                           {item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}
-                        </button>
+                        </Button>
                       </td>
                       <td>{item.customerName || '—'}</td>
                       <td className="hide-on-tablet">{item.customerPhone || '—'}</td>
                       <td className="align-right hide-on-tablet">{formatCurrency(item.originalAmount, locale)}</td>
                       <td className="align-right hide-on-tablet">{formatCurrency(item.paidAmount, locale)}</td>
                       <td className="align-right">
-                        <strong style={{ color: item.outstandingAmount > 0 ? 'var(--admin-color-status-danger-text)' : 'inherit' }}>
+                        <strong className={item.outstandingAmount > 0 ? 'text-danger' : ''}>
                           {formatCurrency(item.outstandingAmount, locale)}
                         </strong>
                       </td>
                       <td>
                         <div>{item.dueDate || '—'}</div>
                         {item.overdueDays != null && (
-                          <div style={{ fontSize: 12, color: 'var(--admin-color-status-danger-text)', fontWeight: 600 }}>
+                          <div className="text-xs text-danger font-semibold">
                             {t('receivables.overdueDays', { days: item.overdueDays })}
                           </div>
                         )}
                       </td>
                       <td><StatusBadge status={item.status} t={t} /></td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div className="flex gap-1.5 flex-wrap">
                           {canRecordPayment && !closed && (
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-sm"
-                              onClick={() => setPaymentTarget(item)}
-                            >
+                            <Button size="sm" onClick={() => setPaymentTarget(item)}>
                               {t('receivables.btn.recordPayment')}
-                            </button>
+                            </Button>
                           )}
                           {canWriteOff && !closed && (
-                            <button
-                              type="button"
-                              className="btn btn-ghost-danger btn-sm has-tooltip"
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
                               onClick={() => setWriteOffTarget(item)}
                               title={t('receivables.btn.writeOffTooltip')}
                             >
                               {t('receivables.btn.writeOff')}
-                            </button>
+                            </Button>
                           )}
-                          <button
-                            type="button"
-                            className="btn btn-secondary-ghost btn-sm"
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => navigate(`/admin/receivables/${item.id}`)}
                           >
                             {t('receivables.btn.detail')}
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -284,17 +282,17 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                   actions={
                     <>
                       {canRecordPayment && !closed && (
-                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setPaymentTarget(item)}>
+                        <Button size="sm" onClick={() => setPaymentTarget(item)}>
                           {t('receivables.btn.recordPayment')}
-                        </button>
+                        </Button>
                       )}
-                      <button
-                        type="button"
-                        className="btn btn-secondary-ghost btn-sm"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => navigate(`/admin/receivables/${item.id}`)}
                       >
                         {t('receivables.btn.detail')}
-                      </button>
+                      </Button>
                     </>
                   }
                 />
@@ -303,26 +301,26 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
           </MobileCardList>
 
           {pagination && pagination.totalPages > 1 && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
+            <div className="flex gap-2 justify-center items-center mt-2">
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={pagination.page <= 1}
                 onClick={() => handlePage(pagination.page - 1)}
               >
                 {t('receivables.paginationPrev')}
-              </button>
-              <span style={{ fontSize: 'var(--admin-text-sm)', color: 'var(--admin-color-text-muted)' }}>
+              </Button>
+              <span className="text-sm text-muted-foreground">
                 {t('receivables.paginationOf', { page: pagination.page, total: pagination.totalPages })}
               </span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => handlePage(pagination.page + 1)}
               >
                 {t('receivables.paginationNext')}
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -392,30 +390,29 @@ export function RecordPaymentModal({ receivable, onClose }) {
       title={
         <>
           <div>{t('receivables.recordPayment.title')}</div>
-          <div style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 400, color: 'var(--admin-color-text-muted)', marginTop: 2 }}>
+          <div className="text-sm font-normal text-muted-foreground mt-0.5">
             {t('receivables.recordPayment.subtitle', { orderNumber: receivable.orderNumber || receivable.orderId?.slice(0, 8) })}
           </div>
         </>
       }
       actions={
         <>
-          <button type="button" className="btn btn-secondary" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose}>
             {t('receivables.recordPayment.cancel')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={!validAmount || mutation.isPending}
+          </Button>
+          <Button
+            loading={mutation.isPending}
+            disabled={!validAmount}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? t('receivables.recordPayment.saving') : t('receivables.recordPayment.confirm')}
-          </button>
+            {t('receivables.recordPayment.confirm')}
+          </Button>
         </>
       }
     >
-      <p style={{ margin: '0 0 16px', color: 'var(--admin-color-text-secondary)' }}>
+      <p className="mb-4 text-muted-foreground">
         {t('receivables.recordPayment.outstanding')}{' '}
-        <strong style={{ color: 'var(--admin-color-status-danger-text)' }}>{formatCurrency(outstanding, locale)}</strong>
+        <strong className="text-danger">{formatCurrency(outstanding, locale)}</strong>
       </p>
 
       {error && <div className="modal-note modal-note--error">{error}</div>}
@@ -501,31 +498,31 @@ export function WriteOffModal({ receivable, onClose }) {
       title={
         <>
           <div>{t('receivables.writeOff.title')}</div>
-          <div style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 400, color: 'var(--admin-color-text-muted)', marginTop: 2 }}>
+          <div className="text-sm font-normal text-muted-foreground mt-0.5">
             {t('receivables.writeOff.subtitle', { orderNumber: receivable.orderNumber || receivable.orderId?.slice(0, 8) })}
           </div>
         </>
       }
       actions={
         <>
-          <button type="button" className="btn btn-secondary" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose}>
             {t('receivables.writeOff.cancel')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            disabled={!reason.trim() || mutation.isPending}
+          </Button>
+          <Button
+            variant="danger"
+            loading={mutation.isPending}
+            disabled={!reason.trim()}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? t('receivables.writeOff.processing') : t('receivables.writeOff.confirm')}
-          </button>
+            {t('receivables.writeOff.confirm')}
+          </Button>
         </>
       }
     >
-      <p style={{ margin: '0 0 8px' }}>{t('receivables.writeOff.intro')}</p>
-      <p style={{ margin: '0 0 16px', color: 'var(--admin-color-text-secondary)' }}>
+      <p className="mb-2">{t('receivables.writeOff.intro')}</p>
+      <p className="mb-4 text-muted-foreground">
         {t('receivables.writeOff.outstanding')}{' '}
-        <strong style={{ color: 'var(--admin-color-status-danger-text)' }}>{formatCurrency(receivable.outstandingAmount, locale)}</strong>
+        <strong className="text-danger">{formatCurrency(receivable.outstandingAmount, locale)}</strong>
       </p>
 
       <div className="modal-note modal-note--warn">{t('receivables.writeOff.irreversible')}</div>

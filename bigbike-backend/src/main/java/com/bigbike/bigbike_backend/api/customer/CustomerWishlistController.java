@@ -11,6 +11,11 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.WishlistItemJ
 import com.bigbike.bigbike_backend.service.catalog.CatalogReadService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +37,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/customer/wishlist")
 @RequiredArgsConstructor
 public class CustomerWishlistController {
@@ -41,8 +48,8 @@ public class CustomerWishlistController {
 
     @GetMapping("/products")
     public ApiListResponse<Product> getWishlistProducts(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             HttpServletRequest request
     ) {
         UUID customerId = requireCustomerId();
@@ -70,20 +77,17 @@ public class CustomerWishlistController {
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     public ApiDataResponse<Map<String, Object>> addToWishlist(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody WishlistProductRequest body,
             HttpServletRequest request
     ) {
         UUID customerId = requireCustomerId();
-        String productId = body.get("productId");
-        if (productId == null || productId.isBlank()) {
-            throw new IllegalArgumentException("productId là bắt buộc.");
-        }
+        String productId = body.productId().trim();
 
         boolean alreadyExists = wishlistRepo.existsByCustomerIdAndProductId(customerId, productId);
         if (!alreadyExists) {
             WishlistItemEntity item = new WishlistItemEntity();
             item.setCustomerId(customerId);
-            item.setProductId(productId.trim());
+            item.setProductId(productId);
             item.setAddedAt(Instant.now());
             wishlistRepo.save(item);
         }
@@ -94,10 +98,16 @@ public class CustomerWishlistController {
     @DeleteMapping("/{productId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
-    public void removeFromWishlist(@PathVariable String productId, HttpServletRequest request) {
+    public void removeFromWishlist(@PathVariable @Size(max = 64) String productId, HttpServletRequest request) {
         UUID customerId = requireCustomerId();
         wishlistRepo.deleteByCustomerIdAndProductId(customerId, productId);
     }
+
+    public record WishlistProductRequest(
+            @NotBlank
+            @Size(max = 64)
+            String productId
+    ) {}
 
     private UUID requireCustomerId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

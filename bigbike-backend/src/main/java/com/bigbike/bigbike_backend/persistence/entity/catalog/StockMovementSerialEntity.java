@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "stock_movement_serials")
+@Getter
+@Setter
 public class StockMovementSerialEntity {
 
     @Id
@@ -30,15 +34,4 @@ public class StockMovementSerialEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public StockMovementEntity getMovement() { return movement; }
-    public void setMovement(StockMovementEntity movement) { this.movement = movement; }
-
-    public String getSerialNumber() { return serialNumber; }
-    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

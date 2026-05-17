@@ -186,13 +186,13 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
       <div className="bb-container mb-14">
         <div className="bg-card border border-border p-[18px] mb-[26px]">
-          <form method="GET" className="grid grid-cols-[minmax(240px,1fr)_minmax(150px,0.45fr)_minmax(160px,0.42fr)_auto] gap-3 items-end" aria-label={"L\u1ecdc b\u00e0i vi\u1ebft"}>
+          <form method="GET" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_minmax(150px,0.45fr)_minmax(160px,0.42fr)_auto] gap-3 items-end" aria-label={"L\u1ecdc b\u00e0i vi\u1ebft"}>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">{"T\u00ecm ki\u1ebfm"}</label>
               <Input
                 name="q"
                 defaultValue={qParsed.value}
-                placeholder="VD: ch\u1ecdn size m\u0169, g\u0103ng tay touring..."
+                placeholder={"VD: ch\u1ecdn size m\u0169, g\u0103ng tay touring..."}
               />
             </div>
             <div className="flex flex-col gap-1.5">

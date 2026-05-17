@@ -35,6 +35,11 @@ import com.bigbike.bigbike_backend.service.receivable.CreditPolicyService.Eligib
 import com.bigbike.bigbike_backend.service.receivable.ReceivableService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -51,23 +56,39 @@ import org.springframework.transaction.annotation.Transactional;
 public class PosOrderService {
 
     public record PosLineItemRequest(
+            @NotBlank
+            @Size(max = 64)
             String productId,
+            @Size(max = 64)
             String productVariantId,
             int quantity,
+            @DecimalMin(value = "0.00", inclusive = false)
             BigDecimal unitPriceOverride  // null = dùng giá DB
     ) {}
 
     public record PosCreateOrderRequest(
-            List<PosLineItemRequest> items,
+            @Size(max = 100)
+            List<@Valid PosLineItemRequest> items,
+            @Size(max = 255)
             String customerName,
+            @Size(max = 30)
             String customerPhone,
+            @Size(max = 1000)
             String customerNote,
+            @NotBlank
+            @Size(max = 32)
             String paymentMethod,        // CASH | CARD_TERMINAL | CREDIT
+            @PositiveOrZero
             Long tenderedAmount,         // Tiền khách đưa (cho CASH), null cho CARD/CREDIT
+            @Size(max = 1000)
             String staffNote,
+            @Size(max = 100)
             String posIdempotencyKey,    // Client UUID to prevent duplicate submissions
+            @Size(max = 100)
             String cardReferenceNumber,  // Optional: mã giao dịch thẻ / terminal ref
+            @Size(max = 64)
             String customerId,           // Required for CREDIT payment method
+            @Size(max = 100)
             String couponCode            // Optional: mã giảm giá (ALL hoặc POS channel)
     ) {}
 

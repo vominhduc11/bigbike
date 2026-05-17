@@ -63,7 +63,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           child: ListView.separated(
                             padding: const EdgeInsets.all(16),
                             itemCount: _data!.items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemBuilder: (ctx, i) => _OrderCard(
                               order: _data!.items[i],
                               onTap: () => ctx.push('/tai-khoan/don-hang/${_data!.items[i].id}'),

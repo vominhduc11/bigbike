@@ -17,7 +17,7 @@ class AccountScreen extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(
                 color: AppColors.primary)),
-        error: (_, __) => _GuestView(),
+        error: (_, _) => _GuestView(),
         data: (state) => state.isAuthenticated
             ? _AccountView(profile: state.profile!)
             : _GuestView(),
@@ -138,6 +138,11 @@ class _AccountView extends ConsumerWidget {
           onTap: () => context.push('/tai-khoan/doi-tra'),
         ),
         const Divider(color: AppColors.divider, height: 1),
+        _MenuItem(
+          icon: Icons.verified_user_outlined,
+          label: 'Tra cứu bảo hành',
+          onTap: () => context.push('/bao-hanh'),
+        ),
         _MenuItem(
           icon: Icons.phone_outlined,
           label: 'Liên hệ hỗ trợ',

@@ -1,10 +1,15 @@
+/**
+ * Canonical VND formatter for admin — "1.250.000 ₫".
+ * Accepts integer or float; rounds to nearest integer.
+ * Returns em-dash for null/undefined/NaN.
+ */
 export function formatCurrencyVnd(amount, locale = 'vi-VN') {
-  if (!Number.isInteger(amount)) {
-    return '—'
-  }
-
-  return `${new Intl.NumberFormat(locale).format(amount)} VND`
+  if (amount == null || Number.isNaN(Number(amount))) return '—'
+  return `${new Intl.NumberFormat(locale).format(Math.round(Number(amount)))} ₫`
 }
+
+/** Alias kept for backward compatibility — same output as formatCurrencyVnd. */
+export const formatVndShort = formatCurrencyVnd
 
 export function formatDateTime(value) {
   if (!value) {

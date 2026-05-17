@@ -142,7 +142,7 @@ export default async function AboutPage() {
             {SERVICE_TILES.map((tile) => (
               <div
                 key={tile.title}
-                className={`p-6 ${tile.highlight ? "bg-brand" : "bg-[#f8f8f8]"}`}
+                className={`p-6 ${tile.highlight ? "bg-brand" : "bg-muted"}`}
               >
                 <h4 className={`font-display text-base font-semibold uppercase mb-[10px] leading-tight ${tile.highlight ? "text-white" : "text-foreground"}`}>{tile.title}</h4>
                 <p className={`text-sm leading-[1.55] m-0 ${tile.highlight ? "text-white" : "text-muted-foreground"}`}>{tile.body}</p>

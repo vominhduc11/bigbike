@@ -132,7 +132,7 @@ in `bigbike-admin/src/lib/adminApi.js`, **with one exception**:
 
 | Method | Endpoint | Controller | Permission | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/admin/warranties/by-serial/{serialId}` | AdminWarrantyController | `warranty.read` | **UI_CANDIDATE** — no `adminApi.js` wrapper; valid serial-detail → warranty lookup use case; no HTTP test (F-08 ASSESSED) |
+| GET | `/api/v1/admin/warranties/by-serial/{serialId}` | AdminWarrantyController | `warranty.read` | **FIXED** — `getWarrantyBySerial` wrapper in `adminApi.js`; warranty panel wired into `SerialListScreen` detail modal; 5 HTTP tests in `WarrantyApiTest` (F-08 FIXED 2026-05-16) |
 
 Admin modules with full client coverage (backend ↔ `adminApi.js` 1:1, **OK**): products,
 categories, brands, content (articles/pages/authors/content-categories/reference), redirects,
@@ -353,7 +353,7 @@ not an assumption.
 - **Severity:** Low
 - **Contract type:** API (unconnected endpoint)
 - **Location:** `AdminWarrantyController.java:31` vs `adminApi.js`
-- **Decision: UI_CANDIDATE — keep, wire into SerialListScreen, add test, document in API_CONTRACT.md**
+- **Decision: FIXED 2026-05-16 — wired into SerialListScreen, HTTP tests added, documented in API_CONTRACT.md**
 
 **Full trace (2026-05-16):**
 
@@ -363,10 +363,10 @@ not an assumption.
 | Service | `AdminWarrantyService.getBySerial(UUID)` — `warrantyRepo.findBySerialId(serialId).map(warrantyMapper::toResponse).orElseThrow(NotFoundException)`. Clean, correct. Also declares `findBySerial(UUID)` returning `Optional<>` — currently has no callers; candidate for internal use from `SerialListScreen` enrichment. |
 | Repository | `WarrantyRecordJpaRepository.findBySerialId(UUID)` — Spring Data derived query; tested indirectly via `Phase1MPosApiTest` (repo-level assertions, not HTTP). |
 | DTO | `WarrantyRecordResponse` — 10 fields: `id, serialId, orderLineItemId, customerId, customerEmail, customerPhone, startDate, endDate, status, createdAt`. |
-| Test coverage | **NONE for this HTTP endpoint.** `WarrantyApiTest` covers public lookup (`GET /api/v1/warranties/lookup?serial=...`) and admin void, but has no test for `GET /admin/warranties/by-serial/{serialId}`. |
-| Admin UI | `adminApi.js` wraps `/admin/warranties` (list) and `/admin/warranties/{id}/void`. No `getWarrantyBySerial` wrapper exists. `WarrantyListScreen.jsx` uses list + void only; shows `serialId` in detail modal but does not call this endpoint. `SerialListScreen.jsx` shows serial details with no warranty link. |
+| Test coverage | **FIXED 2026-05-16** — `WarrantyApiTest` now has 5 HTTP tests for `GET /admin/warranties/by-serial/{serialId}`: valid serial with warranty → 200 (`id`/`serialId`/`status`/`startDate`/`endDate` asserted at JSON root); serial without warranty → 404; no token → 401; editor lacking `warranty.read` → 403; invalid UUID → 400 (`VALIDATION_ERROR`). |
+| Admin UI | **FIXED 2026-05-16** — `adminApi.js` now has `getWarrantyBySerial(serialId)` (reuses `requestJson` + `normalizeWarranty`; 404 surfaces as `ApiClientError`). `SerialListScreen.jsx` detail modal renders a "Bảo hành" panel that fetches warranty for the open serial only (never the table) — shows status badge / start / end / customer email+phone, with loading / 404-empty / 403 / error sub-states. Gated by `canReadWarranty` prop (`hasPermission('warranty.read')` from `App.jsx`). |
 | Web (`bigbike-web`) | `/bao-hanh` page uses the **public** `GET /api/v1/warranties/lookup?serial={serialNumber}` — separate endpoint, takes serial number string, customer-facing. Unrelated to this admin endpoint. |
-| Mobile | No warranty-related files found in `bigbike_mobile`. |
+| Mobile | **FIXED 2026-05-16** — `bigbike_mobile` now has a public warranty lookup feature (counterpart of web `/bao-hanh`): `warrantyLookup` endpoint constant, `WarrantyLookupResult` model, `WarrantyService.lookupWarranty()`, `WarrantyLookupScreen` (route `/bao-hanh`), account-menu entry "Tra cứu bảo hành". Uses the **public** `GET /api/v1/warranties/lookup?serial=` — unrelated to this admin endpoint. |
 | `API_CONTRACT.md` | **Entirely undocumented** — none of the 3 admin warranty endpoints appear in `API_CONTRACT.md`. |
 
 **Is this a duplicate?** No. The public `GET /api/v1/warranties/lookup` takes a human-readable serial number string and is customer-facing. This admin endpoint takes an internal UUID and is admin-only. They serve different consumers.
@@ -375,14 +375,13 @@ not an assumption.
 
 **Why UI_CANDIDATE and not KEEP_INTERNAL?** The endpoint provides uniquely useful admin support functionality that has no current UI surface. The correct resolution is to wire it in, not to leave it permanently undiscovered. KEEP_INTERNAL would imply a valid current consumer (like an internal batch job); there is none.
 
-**Recommended next actions (separate task):**
-1. Add `getWarrantyBySerial(serialId)` wrapper to `adminApi.js`.
-2. Add warranty info panel to `SerialListScreen` detail modal (optional `findBySerial` variant already in service for safe null handling).
-3. Add HTTP-level test to `WarrantyApiTest` covering `GET /admin/warranties/by-serial/{serialId}` (valid UUID → 200 with fields; unknown UUID → 404; no-auth → 401; wrong permission → 403).
-4. Document in `API_CONTRACT.md` alongside the other admin warranty endpoints (see fix below).
+**Actions taken (2026-05-16):**
+1. ✅ Added `getWarrantyBySerial(serialId)` wrapper to `adminApi.js` (reuses `requestJson` + `normalizeWarranty`).
+2. ✅ Added a "Bảo hành" panel to the `SerialListScreen` detail modal — fetches warranty only for the open serial; loading / 404-empty / 403 / error sub-states; gated by `canReadWarranty` (`warranty.read`).
+3. ✅ Added 5 HTTP tests to `WarrantyApiTest` for `GET /admin/warranties/by-serial/{serialId}` (200 with fields; unknown serial → 404; no-auth → 401; wrong permission → 403; invalid UUID → 400).
+4. ✅ Documented in `API_CONTRACT.md` alongside the other admin warranty endpoints.
 
-- **Auto-fix allowed:** No — UI wiring is a new feature; testing is a separate task.
-- **Status: ASSESSED — UI_CANDIDATE. Endpoint retained; documentation updated in `API_CONTRACT.md` 2026-05-16. UI wiring and test added to backlog.**
+- **Status: FIXED 2026-05-16 — wrapper + UI panel + HTTP tests + `API_CONTRACT.md` documentation all in place.**
 
 ---
 
@@ -492,8 +491,8 @@ recommend a dedicated admin-UI permission-guard pass.
 |---|---|---|
 | F-04 | Removed `filter_gender` param (no product gender field; no client usage) | **FIXED 2026-05-16** |
 | F-05 | ~~Wrap customer-returns endpoints~~ — backend already wrapped; doc updated | **FIXED 2026-05-16** — backend predated audit; `API_CONTRACT.md` corrected |
-| F-07 | Add wishlist / cancel / return-eligibility to mobile | Product scope decision |
-| F-08 | ~~Wire or remove `GET /admin/warranties/by-serial/{serialId}`~~ — **ASSESSED 2026-05-16**: UI_CANDIDATE. Endpoint retained. Backlog: wire into `SerialListScreen`, add HTTP test, document in `API_CONTRACT.md`. |
+| F-07 | Add wishlist / cancel / return-eligibility to mobile | **FIXED 2026-05-16** — confirmed: mobile is a full rewrite of web (feature parity mandatory). Added `cancelOrder` + `orderReturnEligibility` to `api_endpoints.dart`; `order_detail_screen.dart` now has cancel two-step confirmation + eligibility pre-check before return. Home videos (`CMS-004`) also closed: model + widget + home screen integration added. |
+| F-08 | Wire `GET /admin/warranties/by-serial/{serialId}` into admin UI + add tests | **FIXED 2026-05-16** — `getWarrantyBySerial` wrapper in `adminApi.js`; "Bảo hành" panel in `SerialListScreen` detail modal; 5 HTTP tests in `WarrantyApiTest`; documented in `API_CONTRACT.md`. Mobile public warranty lookup (`/bao-hanh`) also added — model + service + screen + route + account-menu entry. |
 
 ### DB / migration fixes
 

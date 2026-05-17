@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
+import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -27,17 +28,20 @@ import {
   updateSerialStatus,
 } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
+import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 const STOCK_STATES = ['ALL', 'IN_STOCK', 'OUT_OF_STOCK', 'LOW_STOCK']
 
-const STOCK_STATE_COLORS = {
-  IN_STOCK: '#16a34a',
-  LOW_STOCK: '#d97706',
-  OUT_OF_STOCK: '#dc2626',
+const STOCK_STATE_BADGE_CLASSES = {
+  IN_STOCK:     'text-success',
+  LOW_STOCK:    'text-warning',
+  OUT_OF_STOCK: 'text-danger',
 }
 
 const STOCK_STATE_LABELS = {
@@ -60,12 +64,9 @@ function ProductThumbnail({ image, alt, size = 40 }) {
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           width: size, height: size, flexShrink: 0,
-          borderRadius: 'var(--admin-radius-sm, 4px)',
-          background: 'var(--admin-color-surface-alt, #f3f4f6)',
-          border: '1px solid var(--admin-color-border, #e5e7eb)',
-          color: 'var(--admin-color-text-muted, #9ca3af)',
           fontSize: size * 0.45,
         }}
+        className="rounded-sm bg-surface-muted border border-border text-muted-foreground"
       >
         ◻
       </span>
@@ -82,10 +83,9 @@ function ProductThumbnail({ image, alt, size = 40 }) {
       style={{
         width: size, height: size, flexShrink: 0,
         objectFit: 'cover',
-        borderRadius: 'var(--admin-radius-sm, 4px)',
-        border: '1px solid var(--admin-color-border, #e5e7eb)',
         display: 'block',
       }}
+      className="rounded-sm border border-border"
     />
   )
 }
@@ -93,18 +93,19 @@ function ProductThumbnail({ image, alt, size = 40 }) {
 function StockBadge({ state }) {
   const label = STOCK_STATE_LABELS[state]
   if (!label) return null
-  const color = STOCK_STATE_COLORS[state]
+  const cls = STOCK_STATE_BADGE_CLASSES[state] ?? 'text-muted-foreground'
   return (
-    <span style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>
+    <span className={`font-semibold text-sm ${cls}`}>
       {label}
     </span>
   )
 }
 
+const MOVEMENT_TYPE_CLASSES = { IN: 'text-success', OUT: 'text-danger', RETURN: 'text-info' }
+
 function MovementTypeBadge({ type }) {
-  const colors = { IN: '#16a34a', OUT: '#dc2626', RETURN: '#7c3aed' }
   return (
-    <span style={{ color: colors[type] ?? '#6b7280', fontWeight: 600, fontSize: '0.78rem' }}>
+    <span className={`font-semibold text-xs ${MOVEMENT_TYPE_CLASSES[type] ?? 'text-muted-foreground'}`}>
       {type}
     </span>
   )
@@ -113,22 +114,22 @@ function MovementTypeBadge({ type }) {
 function SummaryBanner({ summary }) {
   if (!summary || summary.totalItems === 0) return null
   return (
-    <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+    <div className="flex gap-4 mb-4 flex-wrap">
       {summary.outOfStockCount > 0 && (
-        <div style={{ background: 'var(--admin-color-status-danger-bg)', border: '1px solid var(--admin-color-status-danger-border)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
-          <span style={{ color: 'var(--admin-color-status-danger-text)', fontWeight: 700 }}>{summary.outOfStockCount}</span>
-          <span style={{ color: 'var(--admin-color-status-danger-text)', marginLeft: 6, fontSize: '0.85rem' }}>Hết hàng</span>
+        <div className="bg-danger-bg border border-danger-border rounded-sm px-4 py-2">
+          <span className="text-danger font-bold">{summary.outOfStockCount}</span>
+          <span className="text-danger ml-1.5 text-sm">Hết hàng</span>
         </div>
       )}
       {summary.lowStockCount > 0 && (
-        <div style={{ background: 'var(--admin-color-status-warning-bg)', border: '1px solid var(--admin-color-status-warning-border)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
-          <span style={{ color: 'var(--admin-color-status-warning-text)', fontWeight: 700 }}>{summary.lowStockCount}</span>
-          <span style={{ color: 'var(--admin-color-status-warning-text)', marginLeft: 6, fontSize: '0.85rem' }}>Sắp hết hàng</span>
+        <div className="bg-warning-bg border border-warning-border rounded-sm px-4 py-2">
+          <span className="text-warning font-bold">{summary.lowStockCount}</span>
+          <span className="text-warning ml-1.5 text-sm">Sắp hết hàng</span>
         </div>
       )}
-      <div style={{ background: 'var(--admin-color-surface-base)', border: '1px solid var(--admin-color-border-subtle)', borderRadius: 'var(--admin-radius-sm)', padding: '8px 16px' }}>
-        <span style={{ fontWeight: 700 }}>{summary.totalItems}</span>
-        <span style={{ marginLeft: 6, fontSize: '0.85rem', color: 'var(--admin-color-text-muted)' }}>Tổng mục</span>
+      <div className="bg-surface border border-border rounded-sm px-4 py-2">
+        <span className="font-bold">{summary.totalItems}</span>
+        <span className="ml-1.5 text-sm text-muted-foreground">Tổng mục</span>
       </div>
     </div>
   )
@@ -318,56 +319,56 @@ function SerialListInput({ onChange, disabled, maxCount }) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: 6 }}>
-        <label className="form-label" style={{ margin: 0 }}>
+      <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1.5">
+        <label className="form-label m-0">
           {t('inventory.stockIn.labelSerials')}{' '}
-          <span aria-hidden="true" style={{ color: 'var(--admin-color-brand-red)' }}>*</span>
+          <span aria-hidden="true" className="text-primary">*</span>
         </label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div className="flex gap-1.5 flex-wrap">
           {hasContent && (
-            <button type="button" className="btn btn-secondary btn-sm"
+            <Button variant="outline" size="sm"
               onClick={handleClearAll} disabled={disabled || importing}>
               {t('inventory.stockIn.serialsClearAll')}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || importing}
           >
             {importing
               ? t('inventory.stockIn.serialsImportFileParsing')
               : t('inventory.stockIn.serialsImportFile')}
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
             accept=".xlsx,.xls,.csv,.txt"
             aria-label={t('inventory.stockIn.serialsImportFileLabel')}
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={handleFileImport}
           />
-          <button type="button" className="btn btn-secondary btn-sm"
+          <Button variant="outline" size="sm"
             onClick={handleTogglePanel} disabled={disabled || importing}>
             {panelOpen
               ? t('inventory.stockIn.serialsBatchClose')
               : t('inventory.stockIn.serialsBatchTitle')}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* File import error */}
       {importError && (
-        <p role="alert" style={{ color: 'var(--admin-color-danger, #dc2626)', fontSize: '0.8rem', margin: '0 0 0.4rem' }}>
+        <p role="alert" className="text-danger text-sm mb-1.5">
           {importError}
         </p>
       )}
 
       {/* Batch textarea panel */}
       {panelOpen && (
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="serial-batch-input" style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+        <div className="mb-3">
+          <label htmlFor="serial-batch-input" className="text-xs text-muted-foreground block mb-1">
             {t('inventory.stockIn.serialsBatchPanelLabel')}
           </label>
           <Textarea
@@ -378,7 +379,7 @@ function SerialListInput({ onChange, disabled, maxCount }) {
             onChange={handleTextChange}
             disabled={disabled}
             placeholder={t('inventory.stockIn.serialsBulkPlaceholder')}
-            style={{ fontFamily: 'monospace', fontSize: '0.82rem', resize: 'vertical', width: '100%', maxHeight: 320 }}
+            className="font-mono text-xs resize-y w-full max-h-80"
             aria-label={t('inventory.stockIn.serialsBatchPanelLabel')}
            />
         </div>
@@ -386,21 +387,9 @@ function SerialListInput({ onChange, disabled, maxCount }) {
 
       {/* Summary strip */}
       {hasContent && (
-        <div style={{
-          background: 'var(--admin-color-surface)',
-          border: '1px solid var(--admin-color-border)',
-          borderRadius: 4, padding: '0.4rem 0.75rem', marginBottom: '0.5rem',
-          fontSize: '0.78rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem', alignItems: 'center',
-        }}>
+        <div className="bg-surface border border-border rounded-xs px-3 py-1.5 mb-2 text-xs flex flex-wrap gap-x-4 gap-y-2 items-center">
           {safeMax > 0 && (
-            <span style={{
-              fontWeight: 700,
-              color: exceeds
-                ? 'var(--admin-color-danger, #dc2626)'
-                : underfill
-                  ? 'var(--admin-color-state-warning, #d97706)'
-                  : 'var(--admin-color-state-success, #16a34a)',
-            }}>
+            <span className={`font-bold ${exceeds ? 'text-danger' : underfill ? 'text-warning' : 'text-success'}`}>
               {parsed.unique.length} / {safeMax} serial
             </span>
           )}
@@ -409,19 +398,19 @@ function SerialListInput({ onChange, disabled, maxCount }) {
             {t('inventory.stockIn.serialsSummaryTotal')}
           </span>
           {parsed.blank > 0 && (
-            <span style={{ color: 'var(--admin-color-text-muted)' }}>
+            <span className="text-muted-foreground">
               <strong>{parsed.blank}</strong>{' '}
               {t('inventory.stockIn.serialsSummaryBlank')}
             </span>
           )}
           {parsed.dupeCount > 0 && (
-            <span style={{ color: 'var(--admin-color-state-warning, #d97706)' }}>
+            <span className="text-warning">
               <strong>{parsed.dupeCount}</strong>{' '}
               {t('inventory.stockIn.serialsSummaryDupes')}
             </span>
           )}
           {exceeds && (
-            <span style={{ color: 'var(--admin-color-danger, #dc2626)' }}>
+            <span className="text-danger">
               <strong>{parsed.unique.length - safeMax}</strong>{' '}
               {t('inventory.stockIn.serialsSummaryExceeds')}
             </span>
@@ -431,31 +420,31 @@ function SerialListInput({ onChange, disabled, maxCount }) {
 
       {/* Duplicate warning + copy/download actions */}
       {parsed.dupeCount > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--admin-color-state-warning, #d97706)', flex: 1 }}>
+        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+          <span className="text-xs text-warning flex-1">
             {t('inventory.stockIn.warnSerialDuplicateAutoRemoved', { count: parsed.dupeCount })}
           </span>
-          <button type="button" className="btn btn-secondary btn-sm"
+          <Button variant="outline" size="sm"
             onClick={handleCopyErrors} disabled={disabled}>
             {t('inventory.stockIn.serialsCopyErrors')}
-          </button>
-          <button type="button" className="btn btn-secondary btn-sm"
+          </Button>
+          <Button variant="outline" size="sm"
             onClick={handleDownloadErrors} disabled={disabled}>
             {t('inventory.stockIn.serialsDownloadErrors')}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Exceed-quantity error */}
       {exceeds && (
-        <p role="alert" style={{ color: 'var(--admin-color-danger, #dc2626)', fontSize: '0.8rem', marginBottom: '0.4rem', marginTop: 0 }}>
+        <p role="alert" className="text-danger text-sm mb-1.5">
           {t('inventory.stockIn.errorSerialCount', { serials: parsed.unique.length, qty: safeMax })}
         </p>
       )}
 
       {/* Underfill error */}
       {hasContent && underfill && (
-        <p role="alert" style={{ color: 'var(--admin-color-state-warning, #d97706)', fontSize: '0.8rem', marginBottom: '0.4rem', marginTop: 0 }}>
+        <p role="alert" className="text-warning text-sm mb-1.5">
           {t('inventory.stockIn.errorSerialCountTooFew', { serials: parsed.unique.length, qty: safeMax })}
         </p>
       )}
@@ -465,46 +454,27 @@ function SerialListInput({ onChange, disabled, maxCount }) {
         <div
           role="list"
           aria-label={t('inventory.stockIn.labelSerials')}
-          style={{
-            border: '1px solid var(--admin-color-border)',
-            borderRadius: 4, maxHeight: 240, overflowY: 'auto',
-          }}
+          className="border border-border rounded-xs max-h-60 overflow-y-auto"
         >
           {previewList.map((s, idx) => (
-            <div key={idx} role="listitem" style={{
-              display: 'flex', alignItems: 'center',
-              padding: '3px 8px',
-              borderBottom: idx < previewList.length - 1 || hiddenCount > 0
-                ? '1px solid var(--admin-color-border-subtle)' : 'none',
-              fontSize: '0.78rem',
-            }}>
-              <span style={{ color: 'var(--admin-color-text-muted)', minWidth: 32, fontSize: '0.7rem', flexShrink: 0 }}>
+            <div key={idx} role="listitem" className={`flex items-center px-2 py-0.5 text-xs${idx < previewList.length - 1 || hiddenCount > 0 ? ' border-b border-border' : ''}`}>
+              <span className="text-muted-foreground min-w-8 shrink-0 text-xs">
                 {idx + 1}.
               </span>
-              <span style={{ fontFamily: 'monospace', flex: 1, wordBreak: 'break-all' }}>{s}</span>
+              <span className="font-mono flex-1 break-all">{s}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveSerial(idx)}
                 disabled={disabled}
                 aria-label={`${t('inventory.stockIn.removeSerial')} ${s}`}
-                style={{
-                  background: 'none', border: 'none',
-                  cursor: disabled ? 'not-allowed' : 'pointer',
-                  color: 'var(--admin-color-text-muted)',
-                  padding: '0 4px', fontSize: '0.85rem', flexShrink: 0,
-                  opacity: disabled ? 0.5 : 1,
-                }}
+                className={`bg-transparent border-none shrink-0 px-1 text-sm text-muted-foreground${disabled ? ' cursor-not-allowed opacity-50' : ' cursor-pointer'}`}
               >
                 ✕
               </button>
             </div>
           ))}
           {hiddenCount > 0 && (
-            <div style={{
-              padding: '4px 8px', fontSize: '0.75rem',
-              color: 'var(--admin-color-text-muted)', textAlign: 'center',
-              background: 'var(--admin-color-surface)',
-            }}>
+            <div className="px-2 py-1 text-xs text-muted-foreground text-center bg-surface">
               + {hiddenCount} {t('inventory.stockIn.serialsPreviewMore')}
             </div>
           )}
@@ -630,36 +600,28 @@ function StockInModal({ item, onSuccess, onClose }) {
     : '—'
 
   return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="stock-in-title"
+    <Modal
+      open
+      wide
+      title={t('inventory.stockIn.title')}
+      onClose={submitting ? undefined : onClose}
+      actions={
+        <>
+          {formError && <p className="field-error mr-auto">{formError}</p>}
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" form="stock-in-form" size="sm" loading={submitting}>
+            {t('inventory.stockIn.submit')}
+          </Button>
+        </>
+      }
     >
-      <div className="modal-box modal-box--wide modal-box--flex">
-
-        {/* ── Fixed header ── */}
-        <header className="modal-header">
-          <h2 id="stock-in-title" className="modal-title">
-            {t('inventory.stockIn.title')}
-          </h2>
-          <button
-            type="button"
-            className="btn-icon btn-secondary-ghost"
-            onClick={onClose}
-            disabled={submitting}
-            aria-label={t('common.close')}
-          >
-            ✕
-          </button>
-        </header>
-
-        {/* ── Scrollable body ── */}
-        <div className="modal-body">
+        <div>
 
           {/* Variant picker — shown when no pre-selected item and user hasn't chosen yet */}
           {!item && showPicker && (
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <div className="form-group mb-4">
               <label className="form-label" htmlFor="stock-in-variant-search">
                 {t('inventory.stockIn.selectItem', { defaultValue: 'Chọn sản phẩm / biến thể' })}
               </label>
@@ -674,17 +636,17 @@ function StockInModal({ item, onSuccess, onClose }) {
                />
               <div className="variant-picker-list">
                 {pickerState.status === 'loading' && (
-                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+                  <div className="p-3 text-muted-foreground">
                     {t('common.loading')}
                   </div>
                 )}
                 {pickerState.status === 'error' && (
-                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-status-danger-text)' }}>
+                  <div className="p-3 text-danger">
                     {pickerState.error}
                   </div>
                 )}
                 {pickerState.status === 'success' && pickerState.items.length === 0 && (
-                  <div style={{ padding: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+                  <div className="p-3 text-muted-foreground">
                     {t('inventory.stockIn.noItemResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
                   </div>
                 )}
@@ -694,17 +656,16 @@ function StockInModal({ item, onSuccess, onClose }) {
                     <button
                       key={candidate.variantId || candidate.id}
                       type="button"
-                      className="variant-picker-item"
+                      className={cn('variant-picker-item', isSelected && 'bg-primary/10')}
                       onClick={() => handleSelectVariant(candidate)}
                       disabled={submitting}
-                      style={isSelected ? { background: 'var(--admin-color-surface-active, rgba(249,6,6,0.10))' } : undefined}
                     >
                       <span className="variant-picker-item__name">
                         {candidate.productName || '—'}
                         <span className="variant-picker-item__meta">
                           {candidate.variantId
                             ? ([candidate.variantName, candidate.variantSku].filter(Boolean).join(' · ') || '—')
-                            : <em style={{ fontStyle: 'italic', color: 'var(--admin-color-text-muted)' }}>Không có biến thể</em>
+                            : <em className="italic text-muted-foreground">Không có biến thể</em>
                           }
                         </span>
                       </span>
@@ -724,7 +685,7 @@ function StockInModal({ item, onSuccess, onClose }) {
               <div className="variant-summary">
                 <div className="variant-summary__info">
                   <div>
-                    <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                    <span className="text-muted-foreground text-xs">
                       {t('inventory.colProduct')}:{' '}
                     </span>
                     <strong className="variant-summary__product-name">
@@ -733,38 +694,32 @@ function StockInModal({ item, onSuccess, onClose }) {
                   </div>
                   {isVariantItem && (
                     <div>
-                      <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                      <span className="text-muted-foreground text-xs">
                         {t('inventory.colVariant')}:{' '}
                       </span>
                       <strong>{variantLabel}</strong>
                     </div>
                   )}
                   <div>
-                    <span style={{ color: 'var(--admin-color-text-muted)', fontSize: 'var(--admin-text-xs)' }}>
+                    <span className="text-muted-foreground text-xs">
                       {t('inventory.stockIn.currentQty')}:{' '}
                     </span>
                     <strong>{selectedItem.quantityOnHand ?? '—'}</strong>
                   </div>
                 </div>
                 {!item && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleChangeVariant}
                     disabled={submitting}
                   >
                     {t('inventory.stockIn.changeItem', { defaultValue: 'Đổi sản phẩm' })}
-                  </button>
+                  </Button>
                 )}
               </div>
               {selectedItem.forceOutOfStock && (
-                <div role="alert" style={{
-                  background: 'var(--admin-color-status-warning-bg)',
-                  border: '1px solid var(--admin-color-status-warning-border)',
-                  borderRadius: 'var(--admin-radius-sm)',
-                  padding: '8px 12px', marginBottom: 12,
-                  fontSize: '0.82rem', color: 'var(--admin-color-status-warning-text)',
-                }}>
+                <div role="alert" className="bg-warning-bg border border-warning-border rounded-sm px-3 py-2 mb-3 text-xs text-warning">
                   <strong>Lưu ý:</strong> Sản phẩm đang bị khoá trạng thái "Hết hàng" (forceOutOfStock). Sau khi nhập hàng, sản phẩm vẫn hiển thị là "Hết hàng" trên website cho đến khi tắt cờ này trong trang chỉnh sửa sản phẩm.
                 </div>
               )}
@@ -773,10 +728,10 @@ function StockInModal({ item, onSuccess, onClose }) {
 
           {/* Form fields — id links to submit button in footer */}
           <form id="stock-in-form" onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <div className="form-group mb-4">
               <label className="form-label" htmlFor="stock-in-qty">
                 {t('inventory.stockIn.labelQty')}{' '}
-                <span aria-hidden="true" style={{ color: 'var(--admin-color-brand-red)' }}>*</span>
+                <span aria-hidden="true" className="text-primary">*</span>
               </label>
               <Input
                 id="stock-in-qty"
@@ -791,7 +746,7 @@ function StockInModal({ item, onSuccess, onClose }) {
                />
             </div>
 
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <div className="form-group mb-4">
               <label className="form-label" htmlFor="stock-in-note">
                 {t('inventory.stockIn.labelNote')}
               </label>
@@ -814,34 +769,7 @@ function StockInModal({ item, onSuccess, onClose }) {
             </div>
           </form>
         </div>
-
-        {/* ── Fixed footer ── */}
-        <footer className="modal-footer">
-          {formError && (
-            <p className="field-error" style={{ marginBottom: '0.5rem' }}>{formError}</p>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--admin-space-2)' }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              form="stock-in-form"
-              className="btn btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? t('inventory.stockIn.submitting') : t('inventory.stockIn.submit')}
-            </button>
-          </div>
-        </footer>
-
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -995,34 +923,34 @@ function AddSerialsPanel({ item, onSuccess }) {
   return (
     <form onSubmit={handleSubmit}>
       {/* Supplier note — nổi bật ở đầu form */}
-      <div className="form-group" style={{ marginBottom: 16 }}>
+      <div className="form-group mb-4">
         <label className="form-label" htmlFor="serial-supplier-note">
           Số phiếu xuất / hoá đơn nhà phân phối
-          <span style={{ fontWeight: 400, color: 'var(--admin-color-text-muted)', marginLeft: 6 }}>(tuỳ chọn)</span>
+          <span className="font-normal text-muted-foreground ml-1.5">(tuỳ chọn)</span>
         </label>
         <Input
           id="serial-supplier-note"
-          style={{ width: '100%' }}
+          className="w-full"
           placeholder="VD: HD-2025-001, Phiếu xuất kho ABC..."
           value={supplierNote}
           onChange={(e) => setSupplierNote(e.target.value)}
           disabled={submitting}
          />
-        <p style={{ fontSize: '0.76rem', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
+        <p className="text-xs text-muted-foreground mt-1">
           Ghi chú sẽ được lưu kèm mỗi serial trong lô nhập này.
         </p>
       </div>
 
       {/* File import */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-        <p className="form-label" style={{ margin: 0 }}>Danh sách serial nhận về</p>
-        <button type="button" className="btn btn-secondary btn-sm"
+      <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+        <p className="form-label m-0">Danh sách serial nhận về</p>
+        <Button variant="outline" size="sm"
           onClick={() => fileInputRef.current?.click()} disabled={submitting || parsing}>
           {parsing ? 'Đang đọc file…' : 'Import từ file'}
-        </button>
+        </Button>
         <input ref={fileInputRef} type="file" accept=".csv,.txt,.xlsx,.xls"
-          style={{ display: 'none' }} onChange={handleFileImport} />
-        <span style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)' }}>
+          className="hidden" onChange={handleFileImport} />
+        <span className="text-xs text-muted-foreground">
           CSV / Excel — 1 cột: Mã serial
         </span>
       </div>
@@ -1037,51 +965,51 @@ function AddSerialsPanel({ item, onSuccess }) {
       )}
 
       {/* Manual row table */}
-      <p style={{ fontSize: '0.78rem', color: 'var(--admin-color-text-muted)', marginBottom: 6 }}>
+      <p className="text-xs text-muted-foreground mb-1.5">
         Mỗi dòng là một sản phẩm — nhập mã serial.
       </p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', marginBottom: 10 }}>
+      <table className="w-full border-collapse text-xs mb-2.5">
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600, width: 30 }}>#</th>
-            <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 600 }}>Mã serial</th>
-            <th style={{ width: 32 }} />
+          <tr className="border-b border-border">
+            <th className="text-left py-1 px-1.5 font-semibold w-8">#</th>
+            <th className="text-left py-1 px-1.5 font-semibold">Mã serial</th>
+            <th className="w-8" />
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
             <tr key={i}>
-              <td style={{ padding: '4px 6px', color: 'var(--admin-color-text-muted)' }}>{i + 1}</td>
-              <td style={{ padding: '4px 6px' }}>
-                <Input style={{ width: '100%' }}
+              <td className="py-1 px-1.5 text-muted-foreground">{i + 1}</td>
+              <td className="py-1 px-1.5">
+                <Input className="w-full"
                   placeholder="VD: SN-20240001"
                   value={row.serial}
                   onChange={(e) => updateRow(i, 'serial', e.target.value)}
                   disabled={submitting}  />
               </td>
-              <td style={{ padding: '4px 6px' }}>
+              <td className="py-1 px-1.5">
                 {rows.length > 1 && (
-                  <button type="button" className="btn-icon btn-secondary-ghost"
-                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</button>
+                  <Button variant="ghost" size="icon"
+                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</Button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button type="button" className="btn btn-secondary" style={{ marginBottom: 14 }}
+      <Button variant="outline" className="mb-3.5"
         onClick={addRow} disabled={submitting}>
         + Thêm dòng
-      </button>
+      </Button>
 
       {error && (
         <p role="alert" className="text-destructive text-xs mb-2">{error}</p>
       )}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button type="submit" className="btn btn-primary" disabled={submitting || validCount === 0}>
+      <div className="flex gap-2 items-center flex-wrap">
+        <Button type="submit" disabled={submitting || validCount === 0}>
           {submitting ? 'Đang nhập…' : `Nhập ${validCount} serial`}
-        </button>
+        </Button>
       </div>
 
       {/* Import result — skipped rows with reasons */}
@@ -1090,28 +1018,28 @@ function AddSerialsPanel({ item, onSuccess }) {
           <p className="font-semibold text-sm mb-1.5">
             Kết quả: {importResult.inserted} nhập thành công · {importResult.skipped} dòng bị bỏ qua
           </p>
-          <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+          <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-amber-200">
-                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Dòng</th>
-                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Trường</th>
-                <th style={{ textAlign: 'left', padding: '3px 6px' }}>Lý do</th>
+                <th className="text-left py-0.5 px-1.5">Dòng</th>
+                <th className="text-left py-0.5 px-1.5">Trường</th>
+                <th className="text-left py-0.5 px-1.5">Lý do</th>
               </tr>
             </thead>
             <tbody>
               {importResult.errors.map((err, idx) => (
                 <tr key={idx} className="border-b border-amber-100">
-                  <td style={{ padding: '3px 6px', fontFamily: 'monospace' }}>{err.rowIndex + 1}</td>
-                  <td className="text-amber-800" style={{ padding: '3px 6px' }}>{err.field}</td>
-                  <td style={{ padding: '3px 6px' }}>{err.message}</td>
+                  <td className="py-0.5 px-1.5 font-mono">{err.rowIndex + 1}</td>
+                  <td className="text-amber-800 py-0.5 px-1.5">{err.field}</td>
+                  <td className="py-0.5 px-1.5">{err.message}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button type="button" className="btn btn-secondary mt-2.5 text-xs"
+          <Button variant="outline" size="sm" className="mt-2.5"
             onClick={handleRetrySkipped}>
             Tải lại {importResult.skipped} dòng lỗi để sửa
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1151,41 +1079,31 @@ function SerialQrModal({ serial, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Mã QR serial"
-      onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: 320, textAlign: 'center' }}
-        onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2 className="modal-title" style={{ fontSize: '0.95rem' }}>Mã QR Serial</h2>
-          <button type="button" className="btn-icon btn-secondary-ghost"
-            onClick={onClose} aria-label="Đóng">✕</button>
-        </header>
-        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div id="serial-qr-print" ref={qrRef}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            {qrValue ? (
-              <QRCodeSVG value={qrValue} size={180} level="H" marginSize={2} />
-            ) : (
-              <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Không có dữ liệu để tạo QR.</p>
-            )}
-            <p style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.05em' }}>{label}</p>
-            {serial.receivedAt && (
-              <p style={{ fontSize: '0.72rem', color: '#6b7280' }}>Nhập kho: {formatDateTime(serial.receivedAt)}</p>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-            <button type="button" className="btn btn-primary" style={{ flex: 1 }}
-              onClick={handlePrint} disabled={!qrValue}>
-              In QR
-            </button>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }}
-              onClick={onClose}>
-              Đóng
-            </button>
-          </div>
+    <Modal
+      open
+      title="Mã QR Serial"
+      onClose={onClose}
+      actions={
+        <>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>Đóng</Button>
+          <Button type="button" size="sm" onClick={handlePrint} disabled={!qrValue}>In QR</Button>
+        </>
+      }
+    >
+      <div className="flex flex-col items-center gap-3">
+        <div id="serial-qr-print" ref={qrRef} className="flex flex-col items-center gap-2">
+          {qrValue ? (
+            <QRCodeSVG value={qrValue} size={180} level="H" marginSize={2} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có dữ liệu để tạo QR.</p>
+          )}
+          <p className="font-mono font-bold text-sm tracking-wide">{label}</p>
+          {serial.receivedAt && (
+            <p className="text-xs text-muted-foreground">Nhập kho: {formatDateTime(serial.receivedAt)}</p>
+          )}
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -1225,6 +1143,15 @@ function SerialListPanel({ item, refreshKey }) {
       toast.error('Lý do bắt buộc khi chuyển sang trạng thái ' + (SERIAL_STATUS_LABELS[statusChangeValue] ?? statusChangeValue) + '.')
       return
     }
+    // SCRAPPED is terminal — require explicit confirmation, consistent with
+    // the serial detail modal in SerialListScreen.
+    if (statusChangeValue === 'SCRAPPED') {
+      const ok = await showConfirm(
+        'Chuyển serial sang trạng thái Đã hủy?\n\nTrạng thái này không thể hoàn tác.',
+        'Xác nhận hủy serial',
+      )
+      if (!ok) return
+    }
     setChanging(true)
     try {
       const res = await updateSerialStatus(serialId, statusChangeValue, statusNote.trim() || undefined)
@@ -1249,10 +1176,10 @@ function SerialListPanel({ item, refreshKey }) {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-        <label style={{ fontSize: '0.82rem' }}>
+      <div className="flex gap-2 mb-3 items-center">
+        <label className="text-xs">
           Lọc trạng thái:
-          <Select style={{ marginLeft: 6 }} value={(query.status) || '__all__'}
+          <Select className="ml-1.5" value={(query.status) || '__all__'}
             onValueChange={(val) => { const v = val === '__all__' ? '' : val; setQuery((q) => ({ ...q, status: v, page: 1 })) }}><SelectTrigger><SelectValue placeholder="Tất cả" /></SelectTrigger><SelectContent>
             <SelectItem value="__all__">Tất cả trạng thái</SelectItem>
             {Object.keys(SERIAL_STATUS_LABELS).map((s) => (
@@ -1263,21 +1190,21 @@ function SerialListPanel({ item, refreshKey }) {
       </div>
 
       {state.status === 'loading' && (
-        <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)' }}>Đang tải…</p>
+        <p className="text-xs text-muted-foreground">Đang tải…</p>
       )}
 
       {state.status === 'success' && state.items.length === 0 && (
-        <p style={{ fontSize: '0.82rem', color: 'var(--admin-color-text-muted)' }}>
+        <p className="text-xs text-muted-foreground">
           Chưa có serial nào{query.status ? ` với trạng thái "${SERIAL_STATUS_LABELS[query.status] || query.status}"` : ''}.
         </p>
       )}
 
       {state.items.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+            <tr className="border-b border-border">
               {['Mã serial', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
-                <th key={h} style={{ textAlign: 'left', padding: '5px 8px', fontWeight: 600 }}>{h}</th>
+                <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
               ))}
             </tr>
           </thead>
@@ -1286,32 +1213,30 @@ function SerialListPanel({ item, refreshKey }) {
               const isChanging = statusChangeId === s.id
               const allowedTo = SERIAL_ALLOWED_TRANSITIONS[s.status] || []
               return (
-                <tr key={s.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{s.serialNumber || '—'}</td>
-                  <td style={{ padding: '6px 8px' }}><SerialStatusBadge status={s.status} /></td>
-                  <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
+                <tr key={s.id} className="border-b border-border">
+                  <td className="py-1.5 px-2 font-mono">{s.serialNumber || '—'}</td>
+                  <td className="py-1.5 px-2"><SerialStatusBadge status={s.status} /></td>
+                  <td className="py-1.5 px-2 text-muted-foreground">
                     {s.receivedAt ? formatDateTime(s.receivedAt) : '—'}
                   </td>
-                  <td style={{ padding: '6px 8px' }}>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <td className="py-1.5 px-2">
+                    <div className="flex gap-1 items-center flex-wrap">
                       {/* QR button — always visible */}
-                      <button type="button" className="btn btn-secondary"
-                        style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                      <Button variant="outline" size="sm"
                         title="Xem mã QR"
                         onClick={() => setQrSerial(s)}>
                         QR
-                      </button>
+                      </Button>
 
                       {/* Status change */}
                       {allowedTo.length > 0 && !isChanging && (
-                        <button type="button" className="btn btn-secondary"
-                          style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                        <Button variant="outline" size="sm"
                           onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
                           Đổi trạng thái
-                        </button>
+                        </Button>
                       )}
                       {isChanging && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div className="flex flex-col gap-1">
                           <Select value={(statusChangeValue) || '__all__'}
                             onValueChange={(val) => setStatusChangeValue(val === '__all__' ? '' : val)} disabled={changing}><SelectTrigger><SelectValue placeholder="-- Chọn --" /></SelectTrigger><SelectContent>
                             {allowedTo.map((st) => (
@@ -1326,19 +1251,17 @@ function SerialListPanel({ item, refreshKey }) {
                             value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
                             disabled={changing}
                             required={NOTE_REQUIRED_STATUSES.has(statusChangeValue)} />
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            <button type="button" className="btn btn-primary"
-                              style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                          <div className="flex gap-1">
+                            <Button size="sm"
                               onClick={() => handleStatusChange(s.id)}
                               disabled={changing || !statusChangeValue}>
                               {changing ? '…' : 'Xác nhận'}
-                            </button>
-                            <button type="button" className="btn btn-secondary"
-                              style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                            </Button>
+                            <Button variant="outline" size="sm"
                               onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
                               disabled={changing}>
                               Huỷ
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -1366,48 +1289,30 @@ function SerialListPanel({ item, refreshKey }) {
 function SerialManageModal({ item, onClose }) {
   const [activeTab, setActiveTab] = useState('list')
   const [listRefreshKey, setListRefreshKey] = useState(0)
-  const isVariant = Boolean(item?.variantId)
 
   const title = [item.productName, item.variantName].filter(Boolean).join(' · ')
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-box modal-box--wide">
-        <header className="modal-header">
-          <h2 className="modal-title">Quản lý serial — {title}</h2>
-          <button type="button" className="btn-icon btn-secondary-ghost"
-            onClick={onClose} aria-label="Đóng">✕</button>
-        </header>
-
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--admin-color-border)', padding: '0 24px' }}>
-          {[['list', 'Danh sách serial'], ['add', 'Thêm serial mới']].map(([id, label]) => (
-            <button key={id} type="button"
-              style={{
-                background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer',
-                fontWeight: activeTab === id ? 700 : 400,
-                borderBottom: activeTab === id ? '2px solid var(--admin-color-primary)' : '2px solid transparent',
-                marginBottom: -1,
-                color: activeTab === id ? 'var(--admin-color-primary)' : 'var(--admin-color-text-muted)',
-              }}
-              onClick={() => setActiveTab(id)}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="modal-body">
-          {activeTab === 'list' && (
-            <SerialListPanel item={item} refreshKey={listRefreshKey} />
-          )}
-          {activeTab === 'add' && (
-            <AddSerialsPanel
-              item={item}
-              onSuccess={() => { setActiveTab('list'); setListRefreshKey((k) => k + 1) }}
-            />
-          )}
-        </div>
+    <Modal open wide title={`Quản lý serial — ${title}`} onClose={onClose}>
+      <div className="flex border-b border-border -mx-5 px-5 mb-4">
+        {[['list', 'Danh sách serial'], ['add', 'Thêm serial mới']].map(([id, label]) => (
+          <button key={id} type="button"
+            className={`px-4 py-2 text-sm -mb-px border-b-2 transition-colors ${activeTab === id ? 'font-bold border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setActiveTab(id)}>
+            {label}
+          </button>
+        ))}
       </div>
-    </div>
+      {activeTab === 'list' && (
+        <SerialListPanel item={item} refreshKey={listRefreshKey} />
+      )}
+      {activeTab === 'add' && (
+        <AddSerialsPanel
+          item={item}
+          onSuccess={() => { setActiveTab('list'); setListRefreshKey((k) => k + 1) }}
+        />
+      )}
+    </Modal>
   )
 }
 
@@ -1449,38 +1354,30 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
 
   return (
     <>
-      <tr style={{
-        borderBottom: '1px solid var(--admin-color-border)',
-        background: 'var(--admin-color-surface-raised, var(--admin-color-surface-alt, #f9fafb))',
-      }}>
-        <td style={{ padding: '6px 4px 6px 8px', width: 32, verticalAlign: 'middle' }}>
+      <tr className="border-b border-border bg-surface-raised">
+        <td className="py-1.5 px-2 w-8 align-middle">
           {hasVariants ? (
             <button
               type="button"
               onClick={onToggle}
               aria-expanded={isExpanded}
               aria-label={isExpanded ? 'Thu gọn' : 'Mở rộng'}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--admin-color-text-muted)',
-                fontSize: '0.65rem', width: 20, height: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-              }}
+              className="bg-transparent border-none cursor-pointer text-muted-foreground flex items-center justify-center p-0 w-5 h-5 text-xs"
             >
               {isExpanded ? '▼' : '▶'}
             </button>
           ) : (
-            <span style={{ display: 'inline-block', width: 20 }} aria-hidden="true" />
+            <span className="inline-block w-5" aria-hidden="true" />
           )}
         </td>
 
-        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <td className="py-2 px-3 align-middle">
+          <span className="flex items-center gap-2.5">
             <ProductThumbnail image={group.productImage} alt={group.productName} size={36} />
             <span>
-              <p style={{ fontWeight: 600, margin: 0 }}>{group.productName}</p>
+              <p className="font-semibold m-0">{group.productName}</p>
               {group.productSku && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--admin-color-text-muted)', margin: 0, fontFamily: 'monospace' }}>
+                <p className="text-xs text-muted-foreground m-0 font-mono">
                   {group.productSku}
                 </p>
               )}
@@ -1488,31 +1385,30 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
           </span>
         </td>
 
-        <td style={{ padding: '8px 12px', fontSize: '0.8rem', color: 'var(--admin-color-text-muted)', verticalAlign: 'middle' }}>
+        <td className="py-2 px-3 text-sm text-muted-foreground align-middle">
           {group.isNoVariant ? <em>Không có biến thể</em> : `${group.variants.length} biến thể`}
         </td>
 
-        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
+        <td className="py-2 px-3 align-middle">
           <StockBadge state={group.aggregateStockState} />
           {group.forceOutOfStock && (
-            <span style={{ marginLeft: 6, fontSize: '0.75rem', color: 'var(--admin-color-state-warning, #d97706)', fontWeight: 600 }}>
+            <span className="ml-1.5 text-xs text-warning font-semibold">
               Khoá
             </span>
           )}
         </td>
 
-        <td style={{ padding: '8px 12px', textAlign: 'right', verticalAlign: 'middle' }}>
-          <strong style={{ fontSize: '1rem' }}>{group.totalQuantity}</strong>
+        <td className="py-2 px-3 text-right align-middle">
+          <strong className="text-base">{group.totalQuantity}</strong>
         </td>
 
-        <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.85rem', verticalAlign: 'middle' }}>
+        <td className="py-2 px-3 text-right text-sm align-middle">
           {formatCurrencyVnd(group.minRetailPrice)}
         </td>
 
-        <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-secondary"
-              style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+        <td className="py-2 px-3 align-middle">
+          <div className="flex gap-1.5 flex-wrap">
+            <Button variant="outline" size="sm" className="whitespace-nowrap"
               onClick={() => onViewHistory({
                 scope: 'product',
                 productId: group.productId,
@@ -1520,20 +1416,18 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
                 variantName: null,
               })}>
               Lịch sử
-            </button>
+            </Button>
             {canUpdate && group.isNoVariant && (
               (group.trackSerials || serialOnlyMode) ? (
-                <button type="button" className="btn btn-secondary"
-                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                <Button variant="outline" size="sm" className="whitespace-nowrap"
                   onClick={() => onSerialManage(buildProductItem())}>
                   Quản lý serial
-                </button>
+                </Button>
               ) : (
-                <button type="button" className="btn btn-secondary"
-                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                <Button variant="outline" size="sm" className="whitespace-nowrap"
                   onClick={() => onStockIn(buildProductItem())}>
                   Nhập hàng
-                </button>
+                </Button>
               )
             )}
           </div>
@@ -1545,45 +1439,41 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
         return (
           <tr
             key={variant.variantId}
-            style={{
-              borderBottom: '1px solid var(--admin-color-border-subtle, var(--admin-color-border))',
-              background: 'transparent',
-            }}
+            className="border-b border-border"
           >
-            <td style={{ padding: 0, width: 32 }} />
+            <td className="p-0 w-8" />
 
-            <td style={{ padding: '6px 12px 6px 40px', verticalAlign: 'middle' }}>
-              <p style={{ fontWeight: 500, fontSize: '0.875rem', margin: 0 }}>{variant.variantName || '—'}</p>
+            <td className="py-1.5 px-3 pl-10 align-middle">
+              <p className="font-medium text-sm m-0">{variant.variantName || '—'}</p>
               {variant.variantSku && (
-                <p style={{ fontSize: '0.72rem', color: 'var(--admin-color-text-muted)', margin: 0, fontFamily: 'monospace' }}>
+                <p className="text-xs text-muted-foreground m-0 font-mono">
                   {variant.variantSku}
                 </p>
               )}
             </td>
 
-            <td style={{ padding: '6px 12px' }} />
+            <td className="py-1.5 px-3" />
 
-            <td style={{ padding: '6px 12px', verticalAlign: 'middle' }}>
+            <td className="py-1.5 px-3 align-middle">
               <StockBadge state={variant.stockState} />
             </td>
 
-            <td style={{ padding: '6px 12px', textAlign: 'right', verticalAlign: 'middle' }}>
+            <td className="py-1.5 px-3 text-right align-middle">
               <strong>{variant.quantityOnHand}</strong>
               {variant.trackSerials && (
-                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-color-primary)', fontWeight: 600 }}>
+                <span className="block text-primary font-semibold text-xs">
                   Serial
                 </span>
               )}
             </td>
 
-            <td style={{ padding: '6px 12px', textAlign: 'right', fontSize: '0.82rem', color: 'var(--admin-color-text-muted)', verticalAlign: 'middle' }}>
+            <td className="py-1.5 px-3 text-right text-xs text-muted-foreground align-middle">
               {formatCurrencyVnd(variant.retailPrice)}
             </td>
 
-            <td style={{ padding: '6px 12px', verticalAlign: 'middle' }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" className="btn btn-secondary"
-                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+            <td className="py-1.5 px-3 align-middle">
+              <div className="flex gap-1.5 flex-wrap">
+                <Button variant="outline" size="sm" className="whitespace-nowrap"
                   onClick={() => onViewHistory({
                     scope: 'variant',
                     variantId: variant.variantId,
@@ -1591,19 +1481,17 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
                     variantName: variant.variantName,
                   })}>
                   Lịch sử
-                </button>
+                </Button>
                 {canUpdate && ((variant.trackSerials || serialOnlyMode) ? (
-                  <button type="button" className="btn btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                  <Button variant="outline" size="sm" className="whitespace-nowrap"
                     onClick={() => onSerialManage(item)}>
                     Quản lý serial
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" className="btn btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '0.25rem 0.625rem', whiteSpace: 'nowrap' }}
+                  <Button variant="outline" size="sm" className="whitespace-nowrap"
                     onClick={() => onStockIn(item)}>
                     Nhập hàng
-                  </button>
+                  </Button>
                 ))}
               </div>
             </td>
@@ -1638,27 +1526,27 @@ function InventoryGroupedTable({ groups, loading, pageSize, canUpdate, serialOnl
   const colCount = 7
 
   return (
-    <div style={{ overflowX: 'auto', width: '100%' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+    <div className="overflow-x-auto w-full">
+      <table className="w-full border-collapse text-sm">
         <thead>
-          <tr style={{ borderBottom: '2px solid var(--admin-color-border)' }}>
-            <th style={{ width: 32, padding: '8px 4px 8px 8px' }} />
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+          <tr className="border-b-2 border-border">
+            <th className="w-8 py-2 px-1" />
+            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colProduct')}
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colVariant')}
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colStockState')}
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
               {t('inventory.colQty')}
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
               {t('inventory.colPrice')}
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-color-text-muted)' }}>
+            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('common.actions')}
             </th>
           </tr>
@@ -1666,9 +1554,9 @@ function InventoryGroupedTable({ groups, loading, pageSize, canUpdate, serialOnl
         <tbody>
           {loading
             ? Array.from({ length: pageSize }, (_, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                  <td colSpan={colCount} style={{ padding: '10px 12px' }}>
-                    <div className="skeleton" style={{ height: 14, width: '100%' }} />
+                <tr key={i} className="border-b border-border">
+                  <td colSpan={colCount} className="py-2.5 px-3">
+                    <div className="skeleton h-3.5 w-full" />
                   </td>
                 </tr>
               ))
@@ -1715,15 +1603,8 @@ function MovementHistoryModal({ scope, onClose }) {
   const title = [scope.productName, scope.variantName].filter(Boolean).join(' · ')
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="modal-box modal-box--wide" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2 className="modal-title">Lịch sử biến động — {title || '—'}</h2>
-          <button type="button" className="btn-icon btn-secondary-ghost"
-            onClick={onClose} aria-label="Đóng">✕</button>
-        </header>
-
-        <div className="modal-body">
+    <Modal open wide title={`Lịch sử biến động — ${title || '—'}`} onClose={onClose}>
+        <div>
           {state.status === 'error' && (
             <StatePanel tone="danger" title="Lỗi tải dữ liệu" description={state.error}
               actionLabel="Thử lại" onAction={() => setQuery((q) => ({ ...q }))} />
@@ -1735,41 +1616,41 @@ function MovementHistoryModal({ scope, onClose }) {
 
           {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
             <>
-              <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
+              <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
+                  <tr className="border-b border-border">
                     {['Loại', 'Biến thể', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>{h}</th>
+                      <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {state.status === 'loading'
                     ? Array.from({ length: 6 }, (_, i) => (
-                        <tr key={i}><td colSpan={8} style={{ padding: '8px' }}>
-                          <div className="skeleton" style={{ height: 14, width: '100%' }} />
+                        <tr key={i}><td colSpan={8} className="p-2">
+                          <div className="skeleton h-3.5 w-full" />
                         </td></tr>
                       ))
                     : state.items.map((m) => (
-                        <tr key={m.id} style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                          <td style={{ padding: '6px 8px' }}><MovementTypeBadge type={m.movementType} /></td>
-                          <td style={{ padding: '6px 8px' }}>
+                        <tr key={m.id} className="border-b border-border">
+                          <td className="py-1.5 px-2"><MovementTypeBadge type={m.movementType} /></td>
+                          <td className="py-1.5 px-2">
                             {m.variantName
                               ? <span>{m.variantName}{m.variantSku ? ` · ${m.variantSku}` : ''}</span>
-                              : <em style={{ color: 'var(--admin-color-text-muted)' }}>(Sản phẩm)</em>}
+                              : <em className="text-muted-foreground">(Sản phẩm)</em>}
                           </td>
-                          <td style={{ padding: '6px 8px', fontWeight: 700, color: m.quantityDelta > 0 ? '#16a34a' : '#dc2626' }}>
+                          <td className={`py-1.5 px-2 font-bold ${m.quantityDelta > 0 ? 'text-success' : 'text-danger'}`}>
                             {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
                           </td>
-                          <td style={{ padding: '6px 8px' }}>{m.quantityAfter}</td>
-                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.referenceType || '—'}</td>
-                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>
+                          <td className="py-1.5 px-2">{m.quantityAfter}</td>
+                          <td className="py-1.5 px-2 text-muted-foreground">{m.referenceType || '—'}</td>
+                          <td className="py-1.5 px-2 text-muted-foreground">
                             {m.serialCount > 0
-                              ? <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{m.serialCount} S/N</span>
+                              ? <span className="font-mono">{m.serialCount} S/N</span>
                               : '—'}
                           </td>
-                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.note || '—'}</td>
-                          <td style={{ padding: '6px 8px', color: 'var(--admin-color-text-muted)' }}>{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
+                          <td className="py-1.5 px-2 text-muted-foreground">{m.note || '—'}</td>
+                          <td className="py-1.5 px-2 text-muted-foreground">{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
                         </tr>
                       ))}
                 </tbody>
@@ -1781,8 +1662,7 @@ function MovementHistoryModal({ scope, onClose }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -1877,9 +1757,8 @@ export function InventoryScreen({ canUpdate = false }) {
           <p>{t('inventory.description')}</p>
         </div>
         <div className="screen-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
+          <Button
+            variant="outline"
             disabled={csvDownloading}
             onClick={() => {
               setCsvDownloading(true)
@@ -1889,20 +1768,16 @@ export function InventoryScreen({ canUpdate = false }) {
             }}
           >
             {csvDownloading ? 'Đang xuất…' : 'Xuất CSV'}
-          </button>
+          </Button>
         </div>
       </header>
 
       <SummaryBanner summary={summary} />
 
       {serialOnlyMode && (
-        <div role="status" style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          background: '#eff6ff', border: '1px solid #bfdbfe',
-          borderRadius: 8, padding: '10px 16px', marginBottom: 12,
-        }}>
-          <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
-          <span style={{ color: '#1d4ed8', fontWeight: 600, fontSize: '0.875rem' }}>
+        <div role="status" className="flex items-center gap-2.5 bg-info-bg border border-info-border rounded-sm px-4 py-2.5 mb-3">
+          <span>ℹ️</span>
+          <span className="text-info font-semibold text-sm">
             Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.
           </span>
         </div>

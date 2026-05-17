@@ -900,11 +900,13 @@ export async function fetchOrderDetail(orderId) {
   }
 }
 
-export async function updateOrderStatus(orderId, orderStatus) {
+export async function updateOrderStatus(orderId, orderStatus, reason) {
   assertMutationEnabled()
+  const body = { status: orderStatus }
+  if (reason) body.reason = reason
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
-    body: { status: orderStatus },
+    body,
   })
   return parseDetailPayload(payload, normalizeOrder)
 }
@@ -2245,14 +2247,23 @@ export async function adminCreateReturn(body) {
   return normalizeReturn(payload?.data || payload || {})
 }
 
+// Records a per-item QC decision while the parent return is INSPECTING.
+// body: { result: 'PASS' | 'FAIL', note?: string }. Returns the updated return detail.
+export async function inspectReturnItem(returnId, itemId, body) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/returns/${returnId}/items/${itemId}/inspect`, {
+    method: 'PATCH',
+    body,
+  })
+  return normalizeReturn(payload?.data || payload || {})
+}
+
 export async function fetchReturnsByOrder(orderId) {
-  try {
-    const payload = await requestJson(`/admin/returns/by-order/${orderId}`)
-    const raw = Array.isArray(payload) ? payload : (payload?.data ?? [])
-    return raw.map(normalizeReturn)
-  } catch {
-    return []
-  }
+  // Let errors propagate so the caller can show a real error state instead of
+  // silently rendering an empty (false-negative) returns list.
+  const payload = await requestJson(`/admin/returns/by-order/${orderId}`)
+  const raw = Array.isArray(payload) ? payload : (payload?.data ?? [])
+  return raw.map(normalizeReturn)
 }
 
 // ── Contact inbox ─────────────────────────────────────────────────────────────
@@ -2625,6 +2636,7 @@ function normalizeWarranty(w = {}) {
 export async function fetchWarranties(query = {}) {
   const params = {}
   if (query.status && query.status !== 'ALL') params.status = query.status
+  if (query.q && query.q.trim()) params.q = query.q.trim()
   if (query.page) params.page = query.page
   if (query.pageSize) params.size = query.pageSize
   const payload = await requestJson('/admin/warranties', { query: params })
@@ -2634,6 +2646,14 @@ export async function fetchWarranties(query = {}) {
 export async function voidWarranty(warrantyId) {
   assertMutationEnabled()
   const payload = await requestJson(`/admin/warranties/${warrantyId}/void`, { method: 'PATCH' })
+  return normalizeWarranty(payload?.data || payload || {})
+}
+
+// GET /admin/warranties/by-serial/{serialId} — serialId is the internal serial UUID.
+// Throws ApiClientError (status 404) when the serial has no warranty record;
+// callers handle that case as an empty state.
+export async function getWarrantyBySerial(serialId) {
+  const payload = await requestJson(`/admin/warranties/by-serial/${serialId}`)
   return normalizeWarranty(payload?.data || payload || {})
 }
 

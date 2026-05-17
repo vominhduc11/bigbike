@@ -9,6 +9,7 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
+import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Ch\u1edd x\u00e1c nh\u1eadn",
@@ -20,16 +21,16 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   FAILED: "Th\u1ea5t b\u1ea1i",
 };
 
-function orderStatusBadgeClass(status: string): string {
-  const map: Record<string, string> = {
-    COMPLETED: "bg-[rgba(98,187,70,0.16)] text-[#62bb46]",
-    PROCESSING: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    ON_HOLD: "bg-[rgba(249,157,28,0.16)] text-[#f99d1c]",
-    CANCELLED: "bg-[rgba(255,12,9,0.16)] text-brand",
-    REFUNDED: "bg-[rgba(255,12,9,0.16)] text-brand",
-    FAILED: "bg-[rgba(255,12,9,0.16)] text-brand",
+function orderStatusTone(status: string): StatusTone {
+  const map: Record<string, StatusTone> = {
+    COMPLETED: "success",
+    PROCESSING: "warning",
+    ON_HOLD: "warning",
+    CANCELLED: "danger",
+    REFUNDED: "danger",
+    FAILED: "danger",
   };
-  return map[status] ?? "bg-[var(--bb-bg-surface-raised)] text-muted-foreground";
+  return map[status] ?? "neutral";
 }
 
 const TABS = [
@@ -170,9 +171,9 @@ function OrderHistoryContent() {
                     <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{`${order.itemCount} m\u00f3n`}</b>
                   </div>
                 </div>
-                <span className={`text-xs font-bold py-[5px] px-[10px] tracking-[0.1em] uppercase ${orderStatusBadgeClass(order.status)}`}>
+                <StatusBadge tone={orderStatusTone(order.status)}>
                   {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                </span>
+                </StatusBadge>
               </div>
               <div className="flex py-4 px-5 gap-[18px] items-center max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
                 <div className="flex gap-2 max-sm:overflow-x-auto">

@@ -8,6 +8,7 @@ import '../../core/models/product.dart';
 import '../../core/models/category.dart';
 import '../../core/models/brand.dart';
 import '../../core/models/article.dart';
+import '../../core/models/home_video.dart';
 import '../../core/models/common.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -16,6 +17,7 @@ import 'widgets/product_horizontal_list.dart';
 import 'widgets/category_grid.dart';
 import 'widgets/brand_row.dart';
 import 'widgets/article_row.dart';
+import 'widgets/home_video_row.dart';
 
 final _homeDataProvider = FutureProvider.autoDispose<_HomeData>((ref) async {
   final client = ApiClient();
@@ -34,6 +36,7 @@ final _homeDataProvider = FutureProvider.autoDispose<_HomeData>((ref) async {
         queryParams: {'size': '12'}),
     client.get<Map<String, dynamic>>(ApiEndpoints.articles,
         queryParams: {'category': 'blog', 'size': '4', 'sort': 'publishedAt:desc'}),
+    client.get<Map<String, dynamic>>(ApiEndpoints.homeVideos),
   ]);
 
   final sliders = (results[0]['data'] as List? ?? results[0]['items'] as List? ?? [])
@@ -48,6 +51,10 @@ final _homeDataProvider = FutureProvider.autoDispose<_HomeData>((ref) async {
       results[3], BrandSummary.fromJson);
   final articles = PaginatedResponse.fromJson(
       results[4], ArticleSummary.fromJson);
+  final videos = (results[5]['data'] as List? ?? results[5]['items'] as List? ?? [])
+      .cast<Map<String, dynamic>>()
+      .map(HomeVideo.fromJson)
+      .toList();
 
   return _HomeData(
     sliders: sliders,
@@ -55,6 +62,7 @@ final _homeDataProvider = FutureProvider.autoDispose<_HomeData>((ref) async {
     categories: categories.items,
     brands: brands.items,
     articles: articles.items,
+    videos: videos,
   );
 });
 
@@ -210,6 +218,11 @@ class HomeScreen extends ConsumerWidget {
                     ArticleRow(articles: data.articles),
                     const SizedBox(height: 24),
                   ],
+                  if (data.videos.isNotEmpty) ...[
+                    const _SectionHeader(title: 'Video'),
+                    HomeVideoRow(videos: data.videos),
+                    const SizedBox(height: 24),
+                  ],
                   SizedBox(height: 16 + bottomPadding),
                 ]),
               ),
@@ -255,6 +268,7 @@ class _HomeData {
   final List<Category> categories;
   final List<BrandSummary> brands;
   final List<ArticleSummary> articles;
+  final List<HomeVideo> videos;
 
   const _HomeData({
     required this.sliders,
@@ -262,5 +276,6 @@ class _HomeData {
     required this.categories,
     required this.brands,
     required this.articles,
+    required this.videos,
   });
 }

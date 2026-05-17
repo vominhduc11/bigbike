@@ -1,43 +1,42 @@
-/**
- * Floating action bar shown when one or more items are selected.
- * Sticky at the top of the content area.
- */
-export function BulkActionBar({ selectedCount, onClear, actions = [] }) {
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+
+export function BulkActionBar({ selectedCount, onClear, actions = [], closeLabel = 'Clear selection' }) {
   if (!selectedCount) return null
+
   return (
-    <div style={{
-      position: 'sticky', top: 0, zIndex: 5,
-      background: 'var(--c-primary)', color: '#fff',
-      padding: '0.6rem 1rem', borderRadius: 6, marginBottom: '0.75rem',
-      display: 'flex', alignItems: 'center', gap: '0.75rem',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-    }}>
-      <span style={{ fontWeight: 700, fontSize: '0.85rem', flex: 1 }}>
-        {selectedCount}
-      </span>
-      <div style={{ display: 'flex', gap: '0.4rem' }}>
-        {actions.map((a, i) => (
-          <button key={i} type="button" onClick={a.onClick} disabled={a.disabled}
-            style={{
-              background: a.tone === 'danger' ? 'var(--c-danger)' : 'rgba(255,255,255,0.18)',
-              color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
-              padding: '0.3rem 0.8rem', borderRadius: 4,
-              fontSize: '0.8rem', fontWeight: 600,
-              cursor: a.disabled ? 'not-allowed' : 'pointer',
-              opacity: a.disabled ? 0.6 : 1,
-            }}>
-            {a.label}
-          </button>
+    <div className="sticky top-0 z-10 mb-3 flex items-center gap-3 rounded-xs bg-primary px-4 py-2.5 text-primary-foreground shadow-md">
+      <span className="flex-1 text-sm font-bold">{selectedCount}</span>
+      <div className="flex gap-1.5">
+        {actions.map((action, index) => (
+          <Button
+            key={index}
+            type="button"
+            size="sm"
+            variant={action.tone === 'danger' ? 'danger' : 'ghost'}
+            className={cn(
+              'border border-white/30 text-white',
+              action.tone === 'danger'
+                ? 'hover:opacity-80'
+                : 'bg-white/15 hover:bg-white/25',
+            )}
+            onClick={action.onClick}
+            disabled={action.disabled}
+          >
+            {action.label}
+          </Button>
         ))}
-        <button type="button" onClick={onClear}
-          style={{
-            background: 'transparent', color: '#fff',
-            border: '1px solid rgba(255,255,255,0.3)',
-            padding: '0.3rem 0.8rem', borderRadius: 4,
-            fontSize: '0.8rem', cursor: 'pointer',
-          }}>
-          ✕
-        </button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="border border-white/30 bg-white/15 text-white hover:bg-white/25"
+          onClick={onClear}
+          aria-label={closeLabel}
+        >
+          <X size={14} />
+        </Button>
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,6 +13,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "product_tags")
+@Getter
+@Setter
 public class ProductTagEntity {
 
     @Id
@@ -25,35 +29,4 @@ public class ProductTagEntity {
     @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
     private Set<ProductEntity> products = new LinkedHashSet<>();
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Set<ProductEntity> getProducts() {
-        return products;
-    }
-
-    public void setProducts(Set<ProductEntity> products) {
-        this.products = products;
-    }
 }

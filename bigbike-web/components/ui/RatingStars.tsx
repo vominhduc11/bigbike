@@ -9,15 +9,13 @@ export function RatingStars({ value }: RatingStarsProps) {
 
   return (
     <span
-      className="bb-rating-stars"
+      className="relative inline-block whitespace-nowrap leading-none text-[#767676]"
       aria-label={`${normalized.toFixed(1)} sao`}
       title={`${normalized.toFixed(1)} sao`}
     >
-      <span className="bb-rating-stars-empty" aria-hidden="true">
-        ☆☆☆☆☆
-      </span>
+      <span aria-hidden="true">☆☆☆☆☆</span>
       <span
-        className="bb-rating-stars-fill"
+        className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-brand"
         style={{ width: `${(normalized / 5) * 100}%` }}
         aria-hidden="true"
       >

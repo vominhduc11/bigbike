@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.contact.AdminContactMessageList
 import com.bigbike.bigbike_backend.api.admin.dto.contact.UpdateContactMessageRequest;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.mapper.ContactMessageMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.contact.ContactMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
@@ -32,7 +33,6 @@ public class AdminContactService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
-    private static final int PREVIEW_LENGTH = 140;
 
     private static final Set<String> VALID_STATUSES =
             Set.of("OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED");
@@ -42,6 +42,7 @@ public class AdminContactService {
     private final ContactMessageJpaRepository contactRepo;
     private final AdminUserJpaRepository adminUserRepo;
     private final AuditLogJpaRepository auditLogRepo;
+    private final ContactMessageMapper contactMessageMapper;
 
     // ── List (paginated) ──────────────────────────────────────────────────────
 
@@ -135,12 +136,7 @@ public class AdminContactService {
     // ── Mapping ───────────────────────────────────────────────────────────────
 
     private AdminContactMessageListItem toListItem(ContactMessageEntity m) {
-        return new AdminContactMessageListItem(
-                m.getId(), m.getFullName(), m.getPhone(), m.getEmail(),
-                buildPreview(m.getContent()),
-                m.getStatus(), m.getAssignedAdminId(),
-                m.getCreatedAt(), m.getResolvedAt()
-        );
+        return contactMessageMapper.toListItem(m);
     }
 
     private AdminContactMessageDetail toDetail(ContactMessageEntity m) {
@@ -150,20 +146,7 @@ public class AdminContactService {
                     .map(a -> a.getDisplayName())
                     .orElse(null);
         }
-        return new AdminContactMessageDetail(
-                m.getId(), m.getFullName(), m.getPhone(), m.getEmail(),
-                m.getContent(), m.getStatus(), m.getAdminNote(),
-                m.getAssignedAdminId(), assignedName,
-                m.getIpAddress(), m.getUserAgent(),
-                m.getCreatedAt(), m.getUpdatedAt(), m.getResolvedAt()
-        );
-    }
-
-    private String buildPreview(String content) {
-        if (content == null) return null;
-        String compact = content.replaceAll("\\s+", " ").trim();
-        if (compact.length() <= PREVIEW_LENGTH) return compact;
-        return compact.substring(0, PREVIEW_LENGTH) + "…";
+        return contactMessageMapper.toDetail(m, assignedName);
     }
 
     // ── Audit log ─────────────────────────────────────────────────────────────

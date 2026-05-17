@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce.order;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,6 +20,8 @@ import java.util.UUID;
                 columnNames = {"flow_type", "scope_key", "idempotency_key"}
         )
 )
+@Getter
+@Setter
 public class CheckoutIdempotencyKeyEntity {
 
     @Id
@@ -51,33 +55,4 @@ public class CheckoutIdempotencyKeyEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getFlowType() { return flowType; }
-    public void setFlowType(String flowType) { this.flowType = flowType; }
-
-    public String getScopeKey() { return scopeKey; }
-    public void setScopeKey(String scopeKey) { this.scopeKey = scopeKey; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getGuestSessionId() { return guestSessionId; }
-    public void setGuestSessionId(String guestSessionId) { this.guestSessionId = guestSessionId; }
-
-    public String getIdempotencyKey() { return idempotencyKey; }
-    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
-
-    public String getRequestHash() { return requestHash; }
-    public void setRequestHash(String requestHash) { this.requestHash = requestHash; }
-
-    public UUID getOrderId() { return orderId; }
-    public void setOrderId(UUID orderId) { this.orderId = orderId; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

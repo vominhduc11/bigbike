@@ -1,30 +1,28 @@
+import DOMPurify from "isomorphic-dompurify";
+
+/**
+ * Sanitize rich-text / CMS HTML before rendering via dangerouslySetInnerHTML.
+ *
+ * Uses DOMPurify (DOM-based, battle-tested) rather than a hand-rolled regex
+ * sanitizer — regex HTML sanitizers are historically bypassable. WordPress
+ * shortcodes are stripped first (they are plain-text noise, not an XSS vector).
+ */
 export function sanitizeRichHtml(rawHtml: string | null | undefined): string {
   if (!rawHtml) {
     return "<p>Noi dung dang cap nhat.</p>";
   }
 
-  const withoutDangerousBlocks = rawHtml
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+  registerHooks();
+  const withoutShortcodes = stripWpShortcodes(rawHtml);
 
-  const withoutShortcodes = stripWpShortcodes(withoutDangerousBlocks);
-
-  return withoutShortcodes.replace(
-    /<\/?([a-zA-Z0-9-]+)(\s[^>]*)?>/g,
-    (tag, rawName: string, rawAttrs = "") => {
-      const name = rawName.toLowerCase();
-      if (!ALLOWED_TAGS.has(name)) {
-        return "";
-      }
-      if (tag.startsWith("</")) {
-        return VOID_TAGS.has(name) ? "" : `</${name}>`;
-      }
-
-      const attrs = sanitizeAttrs(name, rawAttrs);
-      return `<${name}${attrs ? ` ${attrs}` : ""}>`;
-    },
-  );
+  return DOMPurify.sanitize(withoutShortcodes, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
+    ALLOW_DATA_ATTR: false,
+  })
+    .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
+    .replace(/<\/h1>/gi, "</h2>");
 }
 
 // WordPress shortcode names known to wrap content (`[name]…[/name]`). The
@@ -84,106 +82,23 @@ function stripWpShortcodes(html: string): string {
   return out;
 }
 
-const VOID_TAGS = new Set(["br", "hr", "img"]);
+const ALLOWED_TAGS = [
+  "a", "b", "blockquote", "br", "caption", "cite", "code", "div", "em",
+  "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i",
+  "iframe", "img", "li", "ol", "p", "pre", "small", "span", "strong",
+  "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul",
+];
 
-const ALLOWED_TAGS = new Set([
-  "a",
-  "b",
-  "blockquote",
-  "br",
-  "caption",
-  "cite",
-  "code",
-  "div",
-  "em",
-  "figcaption",
-  "figure",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "hr",
-  "i",
-  "iframe",
-  "img",
-  "li",
-  "ol",
-  "p",
-  "pre",
-  "small",
-  "span",
-  "strong",
-  "table",
-  "tbody",
-  "td",
-  "tfoot",
-  "th",
-  "thead",
-  "tr",
-  "u",
-  "ul",
-]);
-
-const GLOBAL_ATTRS = new Set(["aria-label", "class", "id", "title"]);
-
-const TAG_ATTRS: Record<string, Set<string>> = {
-  a: new Set(["href", "rel", "target"]),
-  iframe: new Set(["allow", "allowfullscreen", "height", "loading", "src", "width"]),
-  img: new Set(["alt", "data-src", "height", "loading", "src", "width"]),
-  td: new Set(["colspan", "rowspan"]),
-  th: new Set(["colspan", "rowspan", "scope"]),
-};
-
-function sanitizeAttrs(tagName: string, rawAttrs: string): string {
-  const allowedForTag = TAG_ATTRS[tagName] ?? new Set<string>();
-  const attrs: string[] = [];
-  const attrPattern = /([a-zA-Z_:][\w:.-]*)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = attrPattern.exec(rawAttrs)) !== null) {
-    const name = match[1].toLowerCase();
-    if (name.startsWith("on") || (!GLOBAL_ATTRS.has(name) && !allowedForTag.has(name))) {
-      continue;
-    }
-
-    const value = unquote(match[2]).replace(/[\u0000-\u001f\u007f]/g, "").trim();
-    if ((name === "href" || name === "src" || name === "data-src") && !isSafeUrl(value, name, tagName)) {
-      continue;
-    }
-
-    attrs.push(`${name}="${escapeAttr(value)}"`);
-  }
-
-  if (
-    tagName === "a" &&
-    attrs.some((attr) => attr.startsWith("target=\"_blank\"")) &&
-    !attrs.some((attr) => attr.startsWith("rel="))
-  ) {
-    attrs.push('rel="noopener noreferrer"');
-  }
-
-  return attrs.join(" ");
-}
-
-function unquote(value: string): string {
-  if (
-    (value.startsWith("\"") && value.endsWith("\"")) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1);
-  }
-  return value;
-}
-
-function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+// DOMPurify applies ALLOWED_ATTR globally (not per-tag); each attribute below
+// is harmless on tags that ignore it. Event handlers and javascript: URLs are
+// blocked by DOMPurify regardless.
+const ALLOWED_ATTR = [
+  "aria-label", "class", "id", "title",
+  "href", "rel", "target",
+  "allow", "allowfullscreen", "loading", "src", "data-src",
+  "alt", "width", "height",
+  "colspan", "rowspan", "scope",
+];
 
 const ALLOWED_IFRAME_HOSTS = new Set([
   "www.youtube.com",
@@ -195,25 +110,40 @@ const ALLOWED_IFRAME_HOSTS = new Set([
   "maps.google.com",
 ]);
 
-function isSafeUrl(value: string, attrName: string, tagName?: string): boolean {
-  const normalized = value.replace(/\s/g, "").toLowerCase();
-  if (attrName === "src" && tagName === "iframe") {
-    try {
-      const host = new URL(value).hostname.toLowerCase();
-      return ALLOWED_IFRAME_HOSTS.has(host);
-    } catch {
-      return false;
+let hooksRegistered = false;
+
+/**
+ * One-time DOMPurify hook registration:
+ *  - drop <iframe> whose src host is not in the embed allowlist;
+ *  - force rel="noopener noreferrer" on target="_blank" links.
+ */
+function registerHooks(): void {
+  if (hooksRegistered) {
+    return;
+  }
+  hooksRegistered = true;
+
+  DOMPurify.addHook("uponSanitizeElement", (node, data) => {
+    if (data.tagName !== "iframe") {
+      return;
     }
-  }
-  if (
-    normalized.startsWith("/") ||
-    normalized.startsWith("#") ||
-    normalized.startsWith("http://") ||
-    normalized.startsWith("https://") ||
-    normalized.startsWith("mailto:") ||
-    normalized.startsWith("tel:")
-  ) {
-    return true;
-  }
-  return attrName !== "href" && normalized.startsWith("data:image/");
+    const el = node as Element;
+    const src = el.getAttribute("src") ?? "";
+    let allowed = false;
+    try {
+      allowed = ALLOWED_IFRAME_HOSTS.has(new URL(src).hostname.toLowerCase());
+    } catch {
+      allowed = false;
+    }
+    if (!allowed) {
+      el.parentNode?.removeChild(el);
+    }
+  });
+
+  DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+    const el = node as Element;
+    if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+      el.setAttribute("rel", "noopener noreferrer");
+    }
+  });
 }

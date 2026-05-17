@@ -7,8 +7,9 @@ import { AlertTriangle, CheckCircle2, Link2Off, LoaderCircle, MailCheck } from "
 import { Button } from "@/components/ui/button";
 import { resendEmailVerification } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { env } from "@/env";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";

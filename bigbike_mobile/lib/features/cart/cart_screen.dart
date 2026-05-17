@@ -360,23 +360,23 @@ class _CartTotalsWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _Row('Tạm tính', formatVnd(totals.subtotalAmount)),
+          _row('Tạm tính', formatVnd(totals.subtotalAmount)),
           if (totals.discountAmount > 0)
-            _Row('Giảm giá',
+            _row('Giảm giá',
                 '-${formatVnd(totals.discountAmount)}',
                 color: AppColors.success),
           if (totals.shippingAmount > 0)
-            _Row('Phí giao hàng',
+            _row('Phí giao hàng',
                 formatVnd(totals.shippingAmount)),
           const Divider(color: AppColors.divider, height: 16),
-          _Row('Tổng cộng', formatVnd(totals.totalAmount),
+          _row('Tổng cộng', formatVnd(totals.totalAmount),
               isBold: true, color: AppColors.primary),
         ],
       ),
     );
   }
 
-  Widget _Row(String label, String value,
+  Widget _row(String label, String value,
       {bool isBold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

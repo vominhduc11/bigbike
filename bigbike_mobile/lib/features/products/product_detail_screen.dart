@@ -161,10 +161,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         : null;
 
     final String? leadImage = colorImage ?? product.image;
-    final images = [
-      if (leadImage != null) leadImage,
+    final images = {
+      ?leadImage,
       ...product.gallery,
-    ].toSet().toList();
+    }.toList();
 
     final displayVariant = _selectedVariant;
     // Price always comes from the parent product — picking a variant must not
@@ -336,9 +336,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           color: AppColors.bgSection,
           child: Row(
             children: [
-              _TabBtn('Mô tả', 0),
-              _TabBtn('Thông số', 1),
-              _TabBtn('Đánh giá', 2),
+              _tabBtn('Mô tả', 0),
+              _tabBtn('Thông số', 1),
+              _tabBtn('Đánh giá', 2),
             ].map((w) => Expanded(child: w)).toList(),
           ),
         ),
@@ -347,7 +347,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _TabBtn(String label, int idx) => GestureDetector(
+  Widget _tabBtn(String label, int idx) => GestureDetector(
     onTap: () => setState(() => _tabIndex = idx),
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 12),

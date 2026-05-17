@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
+import { StatusBadge } from '../components/StatusBadge'
 import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { showConfirm } from '../lib/confirm'
+import { Modal } from '../components/layout'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,39 +26,95 @@ const PAYMENT_TRANSITIONS = {
   CANCELLED: [],
 }
 
+// Statuses that require a mandatory reason before transitioning.
+const REASON_REQUIRED = new Set(['CANCELLED', 'FAILED'])
+
+function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState('')
+
+  const isFailed = targetStatus === 'FAILED'
+  const title = isFailed ? t('orders.detail.confirmFailedTitle') : t('orders.detail.confirmCancelTitle')
+  const description = isFailed
+    ? t('orders.detail.confirmFailedDesc')
+    : t('orders.detail.confirmCancelDesc')
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!reason.trim()) {
+      setError(t('orders.detail.reasonRequired'))
+      return
+    }
+    onConfirm(reason.trim())
+  }
+
+  return (
+    <Modal open title={title} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
+          <Textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => { setReason(e.target.value); setError('') }}
+            placeholder={t('orders.detail.reasonPlaceholder')}
+            className="resize-y"
+            autoFocus
+          />
+          {error && <p className="text-xs text-danger">{error}</p>}
+        </div>
+        <div className="flex gap-2 justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" variant="danger" size="sm">
+            {title}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 // Visual config for order status action buttons.
 // BACS ON_HOLD → PROCESSING tự động mark PAID — label phải rõ ý nghĩa này.
 const ORDER_STATUS_ACTION = {
-  PROCESSING: { label: 'Xác nhận xử lý',             variant: 'primary',     confirm: false },
-  ON_HOLD:    { label: 'Tạm giữ đơn',                variant: 'secondary',   confirm: false },
-  COMPLETED:  { label: 'Hoàn thành đơn',             variant: 'success',     confirm: true  },
-  CANCELLED:  { label: 'Huỷ đơn',                    variant: 'destructive', confirm: true  },
-  FAILED:     { label: 'Đánh dấu thất bại',          variant: 'destructive', confirm: true  },
+  PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
+  ON_HOLD:    { labelKey: 'orders.detail.actionOnHold',     variant: 'secondary',   confirm: false },
+  COMPLETED:  { labelKey: 'orders.detail.actionCompleted',  variant: 'success',     confirm: true  },
+  CANCELLED:  { labelKey: 'orders.detail.actionCancelled',  variant: 'destructive', confirm: true  },
+  FAILED:     { labelKey: 'orders.detail.actionFailed',     variant: 'destructive', confirm: true  },
 }
 
 // Cho đơn BACS đang ON_HOLD, label nút PROCESSING cần rõ hơn.
-function getOrderStatusLabel(targetStatus, order) {
+function getOrderStatusLabel(targetStatus, order, t) {
   if (targetStatus === 'PROCESSING' && order?.orderStatus === 'ON_HOLD' && order?.paymentMethod === 'BACS') {
-    return 'Xác nhận đã nhận chuyển khoản'
+    return t('orders.detail.actionBacsConfirm')
   }
-  return ORDER_STATUS_ACTION[targetStatus]?.label ?? targetStatus
+  const key = ORDER_STATUS_ACTION[targetStatus]?.labelKey
+  return key ? t(key) : targetStatus
 }
 
 const PAYMENT_ACTION_LABEL = {
-  PAID:      'Xác nhận đã thu tiền',
-  UNPAID:    'Đặt lại chưa thanh toán',
-  CANCELLED: 'Huỷ thanh toán',
+  PAID:      'orders.detail.payActionPaid',
+  UNPAID:    'orders.detail.payActionUnpaid',
+  CANCELLED: 'orders.detail.payActionCancelled',
 }
 
 const RETURN_REASONS = [
-  { value: 'DEFECTIVE', label: 'Hàng bị lỗi' },
-  { value: 'WRONG_ITEM', label: 'Sai sản phẩm' },
-  { value: 'NOT_AS_DESCRIBED', label: 'Không như mô tả' },
-  { value: 'CHANGED_MIND', label: 'Đổi ý' },
-  { value: 'OTHER', label: 'Khác' },
+  { value: 'DEFECTIVE', labelKey: 'orders.detail.reasonDefective' },
+  { value: 'WRONG_ITEM', labelKey: 'orders.detail.reasonWrongItem' },
+  { value: 'NOT_AS_DESCRIBED', labelKey: 'orders.detail.reasonNotAsDescribed' },
+  { value: 'CHANGED_MIND', labelKey: 'orders.detail.reasonChangedMind' },
+  { value: 'OTHER', labelKey: 'orders.detail.reasonOther' },
 ]
 
+const RETURN_STATUS_KEY = { PENDING: 'orders.detail.rsPending', APPROVED: 'orders.detail.rsApproved', RECEIVED: 'orders.detail.rsReceived', COMPLETED: 'orders.detail.rsCompleted', REFUNDED: 'orders.detail.rsRefunded', REJECTED: 'orders.detail.rsRejected' }
+const RETURN_REASON_KEY = { DEFECTIVE: 'orders.detail.reasonDefective', WRONG_ITEM: 'orders.detail.reasonWrongItem', NOT_AS_DESCRIBED: 'orders.detail.reasonNotAsDescribed', CHANGED_MIND: 'orders.detail.reasonChangedMind', OTHER: 'orders.detail.reasonOther' }
+
 function AdminCreateReturnModal({ order, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const [reason, setReason] = useState('DEFECTIVE')
   const [customerNote, setCustomerNote] = useState('')
   const [qtys, setQtys] = useState(() =>
@@ -66,7 +127,7 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!hasAny) { setError('Chọn ít nhất 1 sản phẩm cần trả.'); return }
+    if (!hasAny) { setError(t('orders.detail.crmNoItemError')); return }
     setSaving(true)
     setError('')
     try {
@@ -81,88 +142,92 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
       })
       onSuccess(ret)
     } catch (err) {
-      setError(err.message || 'Lỗi khi tạo yêu cầu đổi trả.')
+      setError(err.message || t('orders.detail.crmError'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Tạo yêu cầu đổi trả</h2>
-          <button type="button" className="modal-close" onClick={onClose}>✕</button>
+    <Modal open title={t('orders.detail.createReturnTitle')} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <div className="form-field">
+          <label className="field-label">{t('orders.detail.crmReasonLabel')} *</label>
+          <Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
+          </SelectContent></Select>
         </div>
-        <div className="modal-body">
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="form-field">
-              <label className="field-label">Lý do *</label>
-              <Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-              </SelectContent></Select>
-            </div>
 
-            <div className="form-field">
-              <label className="field-label">Sản phẩm trả lại *</label>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                    <th style={{ textAlign: 'left', padding: '4px 0', fontWeight: 600 }}>Sản phẩm</th>
-                    <th style={{ textAlign: 'center', padding: '4px 8px', fontWeight: 600 }}>Đã mua</th>
-                    <th style={{ textAlign: 'center', padding: '4px 8px', fontWeight: 600 }}>Số lượng trả</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(order.items ?? []).map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid var(--admin-color-border-subtle)' }}>
-                      <td style={{ padding: '6px 0' }}>
-                        <div style={{ fontWeight: 500 }}>{item.productName}</div>
-                        {item.variantName && <div style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)' }}>{item.variantName}</div>}
-                      </td>
-                      <td style={{ textAlign: 'center', padding: '6px 8px' }}>{item.quantity}</td>
-                      <td style={{ textAlign: 'center', padding: '6px 8px' }}>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={item.quantity}
-                          style={{ width: 60, textAlign: 'center', padding: '3px 6px' }}
-                          value={qtys[item.id] ?? 0}
-                          onChange={(e) => setQtys((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, Math.max(0, Number(e.target.value))) }))}
-                         />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Ghi chú (tuỳ chọn)</label>
-              <Textarea rows={2} value={customerNote}
-                onChange={(e) => setCustomerNote(e.target.value)}  />
-            </div>
-
-            {error && <p className="field-error">{error}</p>}
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn btn-secondary" onClick={onClose}>Huỷ</button>
-              <button type="submit" className="btn btn-primary" disabled={saving || !hasAny}>
-                {saving ? 'Đang tạo…' : 'Tạo yêu cầu'}
-              </button>
-            </div>
-          </form>
+        <div className="form-field">
+          <label className="field-label">{t('orders.detail.crmItemsLabel')} *</label>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-1 font-semibold">{t('orders.detail.crmColProduct')}</th>
+                <th className="text-center py-1 px-2 font-semibold">{t('orders.detail.crmColBought')}</th>
+                <th className="text-center py-1 px-2 font-semibold">{t('orders.detail.crmColReturnQty')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(order.items ?? []).map((item) => (
+                <tr key={item.id} className="border-b border-border/50">
+                  <td className="py-1.5">
+                    <div className="font-medium">{item.productName}</div>
+                    {item.variantName && <div className="text-xs text-muted-foreground">{item.variantName}</div>}
+                  </td>
+                  <td className="text-center py-1.5 px-2">{item.quantity}</td>
+                  <td className="text-center py-1.5 px-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={item.quantity}
+                      className="w-16 text-center"
+                      value={qtys[item.id] ?? 0}
+                      onChange={(e) => setQtys((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, Math.max(0, Number(e.target.value))) }))}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+
+        <div className="form-field">
+          <label className="field-label">{t('orders.detail.crmNoteLabel')}</label>
+          <Textarea rows={2} value={customerNote}
+            onChange={(e) => setCustomerNote(e.target.value)}  />
+        </div>
+
+        {error && <p className="field-error">{error}</p>}
+
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" size="sm" loading={saving} disabled={!hasAny}>
+            {t('orders.detail.crmSubmit')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
-  const [state, setState] = useState({ status: 'loading', order: null, warning: '' })
+  const queryClient = useQueryClient()
+  const orderQuery = useQuery({
+    queryKey: ['order', orderId],
+    queryFn: () => fetchOrderDetail(orderId),
+  })
+  const order = orderQuery.data?.item ?? null
+  const warning = orderQuery.data?.mode === 'mock' ? (orderQuery.data?.warning ?? '') : ''
+  const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'
+
   const [saving, setSaving] = useState(false)
+  const [pendingTarget, setPendingTarget] = useState(null)
   const [allowedTransitions, setAllowedTransitions] = useState([])
+  const [transitionsError, setTransitionsError] = useState(false)
+  const [transitionsKey, setTransitionsKey] = useState(0)
+  const [returnsError, setReturnsError] = useState(false)
   const [showRefundModal, setShowRefundModal] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [noteCustomerVisible, setNoteCustomerVisible] = useState(false)
@@ -173,73 +238,57 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [shippingCarrier, setShippingCarrier] = useState('')
   const [orderReturns, setOrderReturns] = useState([])
   const [showCreateReturn, setShowCreateReturn] = useState(false)
+  const [reasonModal, setReasonModal] = useState(null) // { targetStatus }
+
+  // Patches the cached order in-place for instant UI feedback after a mutation,
+  // then invalidates the order list so navigating back shows fresh data.
+  function applyOrderUpdate(updatedOrder) {
+    queryClient.setQueryData(['order', orderId], (old) => ({ ...old, item: updatedOrder }))
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+  }
 
   useEffect(() => {
+    if (!orderQuery.isSuccess) return undefined
     let active = true
-    fetchOrderDetail(orderId)
-      .then((response) => {
-        if (!active) return
-        setState({ status: 'success', order: response.item, warning: response.mode === 'mock' ? response.warning : '' })
-      })
-      .catch((error) => {
-        if (!active) return
-        setState({ status: 'error', order: null, warning: '', error: error.message })
-      })
+    fetchReturnsByOrder(orderId)
+      .then((r) => { if (active) { setOrderReturns(r); setReturnsError(false) } })
+      .catch(() => { if (active) setReturnsError(true) })
     return () => { active = false }
-  }, [orderId])
+  }, [orderId, orderQuery.isSuccess])
 
   useEffect(() => {
-    if (state.status !== 'success') return undefined
-    let active = true
-    fetchReturnsByOrder(orderId).then((r) => { if (active) setOrderReturns(r) })
-    return () => { active = false }
-  }, [orderId, state.status])
-
-  useEffect(() => {
-    if (state.status !== 'success' || !state.order?.orderStatus) return undefined
+    if (!orderQuery.isSuccess || !order?.orderStatus) return undefined
     let active = true
     fetchOrderAllowedTransitions(orderId)
       .then((response) => {
         if (!active) return
         setAllowedTransitions(response.transitions || [])
+        setTransitionsError(false)
       })
       .catch(() => {
         if (!active) return
+        // Distinguish a failed load from a legitimately empty transition list,
+        // so the UI doesn't tell the admin "no actions" when it's really an error.
         setAllowedTransitions([])
+        setTransitionsError(true)
       })
     return () => { active = false }
-  }, [orderId, state.status, state.order?.orderStatus, state.order?.paymentStatus, state.order?.fulfillmentStatus])
+  }, [orderId, orderQuery.isSuccess, order?.orderStatus, order?.paymentStatus, order?.fulfillmentStatus, transitionsKey])
 
-  async function handleStatusChange(newStatus) {
-    const DANGEROUS = new Set(['CANCELLED', 'COMPLETED', 'REFUNDED'])
-    // BACS ON_HOLD → PROCESSING auto-marks payment as PAID. Require explicit confirmation
-    // so admin doesn't accidentally record a receipt they haven't actually verified.
-    const isBACSAutoPayConfirm =
-      newStatus === 'PROCESSING' &&
-      order?.orderStatus === 'ON_HOLD' &&
-      order?.paymentMethod === 'BACS'
-    if (isBACSAutoPayConfirm) {
-      const confirmed = window.confirm(
-        'Xác nhận đã nhận tiền chuyển khoản?\n\nHành động này sẽ đánh dấu đơn hàng là ĐÃ THU TIỀN (PAID) tự động. Chỉ xác nhận khi bạn đã kiểm tra sao kê ngân hàng.'
-      )
-      if (!confirmed) return
-    } else if (DANGEROUS.has(newStatus)) {
-      const labels = { CANCELLED: 'hủy', COMPLETED: 'hoàn thành', REFUNDED: 'hoàn tiền' }
-      const confirmed = window.confirm(
-        `Bạn có chắc muốn chuyển đơn hàng sang trạng thái "${labels[newStatus] ?? newStatus}"?\n\nHành động này không thể hoàn tác.`
-      )
-      if (!confirmed) return
-    }
+  async function doStatusChange(newStatus, reason) {
     setSaving(true)
+    setPendingTarget(newStatus)
     try {
-      const response = await updateOrderStatus(orderId, newStatus)
+      const body = { status: newStatus }
+      if (reason) body.reason = reason
+      const response = await updateOrderStatus(orderId, newStatus, reason)
       const updatedOrder = response.item
-      setState((prev) => ({ ...prev, order: updatedOrder }))
+      applyOrderUpdate(updatedOrder)
       const wasOnHold = order.orderStatus === 'ON_HOLD'
       const isBACS = order.paymentMethod === 'BACS'
       const autoMarkedPaid = wasOnHold && isBACS && newStatus === 'PROCESSING' && updatedOrder.paymentStatus === 'PAID'
       if (autoMarkedPaid) {
-        toast.success('Đã xác nhận đơn hàng. Thanh toán tự động được đánh dấu đã thu tiền.')
+        toast.success(t('orders.detail.autoMarkedPaidToast'))
       } else {
         toast.success(t('orders.detail.statusUpdated'))
       }
@@ -247,19 +296,62 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
     } finally {
       setSaving(false)
+      setPendingTarget(null)
     }
   }
 
+  async function handleStatusChange(newStatus) {
+    // CANCELLED / FAILED: open reason modal (mandatory reason, destructive confirm inside modal)
+    if (REASON_REQUIRED.has(newStatus)) {
+      setReasonModal({ targetStatus: newStatus })
+      return
+    }
+    // BACS ON_HOLD → PROCESSING auto-marks payment as PAID. Require explicit confirmation
+    // so admin doesn't accidentally record a receipt they haven't actually verified.
+    const isBACSAutoPayConfirm =
+      newStatus === 'PROCESSING' &&
+      order?.orderStatus === 'ON_HOLD' &&
+      order?.paymentMethod === 'BACS'
+    if (isBACSAutoPayConfirm) {
+      const confirmed = await showConfirm(
+        t('orders.detail.confirmBacsMessage'),
+        t('orders.detail.confirmBacsTitle')
+      )
+      if (!confirmed) return
+    } else if (newStatus === 'COMPLETED' || newStatus === 'REFUNDED') {
+      const labelKeys = { COMPLETED: 'orders.detail.dangerCompleted', REFUNDED: 'orders.detail.dangerRefunded' }
+      const label = labelKeys[newStatus] ? t(labelKeys[newStatus]) : newStatus
+      const confirmed = await showConfirm(
+        t('orders.detail.confirmStatusMessage', { label }),
+        t('orders.detail.confirmStatusTitle')
+      )
+      if (!confirmed) return
+    }
+    await doStatusChange(newStatus, undefined)
+  }
+
   async function handlePaymentStatusChange(newStatus) {
+    // Payment status changes move real money on the books — confirm the
+    // financially significant ones (BigBike reconciles payments manually).
+    const PAYMENT_CONFIRM = {
+      PAID: 'orders.detail.confirmPayPaidMessage',
+      CANCELLED: 'orders.detail.confirmPayCancelledMessage',
+    }
+    if (PAYMENT_CONFIRM[newStatus]) {
+      const confirmed = await showConfirm(t(PAYMENT_CONFIRM[newStatus]), t('orders.detail.confirmPaymentTitle'))
+      if (!confirmed) return
+    }
     setSaving(true)
+    setPendingTarget(newStatus)
     try {
       const response = await updateOrderPaymentStatus(orderId, newStatus)
-      setState((prev) => ({ ...prev, order: response.item }))
+      applyOrderUpdate(response.item)
       toast.success(t('orders.detail.paymentUpdated'))
     } catch (err) {
       toast.error(err.message || t('orders.detail.updatePaymentError'))
     } finally {
       setSaving(false)
+      setPendingTarget(null)
     }
   }
 
@@ -269,9 +361,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     setSubmittingNote(true)
     try {
       const note = await addOrderNote(orderId, { content: noteContent.trim(), customerVisible: noteCustomerVisible })
-      setState((prev) => ({
-        ...prev,
-        order: { ...prev.order, notes: [...(prev.order.notes ?? []), note] },
+      queryClient.setQueryData(['order', orderId], (old) => ({
+        ...old,
+        item: { ...old.item, notes: [...(old.item.notes ?? []), note] },
       }))
       setNoteContent('')
       setNoteCustomerVisible(false)
@@ -286,8 +378,15 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   async function handleFulfillmentUpdate(newFulfillmentStatus) {
     const DANGEROUS = new Set(['CANCELLED', 'RETURNED'])
     if (DANGEROUS.has(newFulfillmentStatus)) {
-      const labels = { CANCELLED: 'huỷ vận chuyển', RETURNED: 'trả hàng' }
-      if (!window.confirm(`Bạn có chắc muốn chuyển vận chuyển sang "${labels[newFulfillmentStatus]}"?\nHành động này không thể hoàn tác.`)) return
+      const labelKeys = { CANCELLED: 'orders.detail.ffDangerCancelled', RETURNED: 'orders.detail.ffDangerReturned' }
+      const label = t(labelKeys[newFulfillmentStatus])
+      if (!await showConfirm(t('orders.detail.confirmFulfillmentMessage', { label }), t('orders.detail.confirmFulfillmentTitle'))) return
+    }
+    // Tracking number is mandatory to move into SHIPPED — validate before the
+    // request so the admin gets a clear message instead of a backend reject.
+    if (newFulfillmentStatus === 'SHIPPED' && !trackingNumber.trim()) {
+      toast.error(t('orders.detail.trackingRequiredError'))
+      return
     }
     setFulfillmentSaving(true)
     try {
@@ -297,49 +396,47 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         if (shippingCarrier.trim()) body.shippingCarrier = shippingCarrier.trim()
       }
       const response = await updateOrderFulfillment(orderId, body)
-      setState((prev) => ({ ...prev, order: response.item }))
+      applyOrderUpdate(response.item)
       setShowShipForm(false)
       setTrackingNumber('')
       setShippingCarrier('')
-      toast.success('Đã cập nhật trạng thái vận chuyển.')
+      toast.success(t('orders.detail.fulfillmentUpdated'))
     } catch (err) {
-      toast.error(err.message || 'Lỗi cập nhật vận chuyển.')
+      toast.error(err.message || t('orders.detail.fulfillmentError'))
     } finally {
       setFulfillmentSaving(false)
     }
   }
 
-  if (state.status === 'loading') {
+  if (status === 'loading') {
     return <StatePanel tone="info" title={t('orders.detail.loading')} description={t('common.pleaseWait')} />
   }
-  if (state.status === 'error') {
-    return <StatePanel tone="danger" title={t('orders.detail.loadError')} description={state.error}
+  if (status === 'error') {
+    return <StatePanel tone="danger" title={t('orders.detail.loadError')} description={orderQuery.error?.message}
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
-  if (!state.order) {
+  if (!order) {
     return <StatePanel tone="neutral" title={t('orders.detail.notFound')} description={`ID: ${orderId}`}
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
-
-  const { order } = state
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
           <p className="eyebrow">{t('orders.detail.eyebrow')}</p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <h1 className="flex items-center gap-2 flex-wrap">
             {formatText(order.orderNumber, `#${orderId}`)}
             {order.source === 'pos' && <span className="badge-pos">POS</span>}
           </h1>
           <p>{t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}</p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin/orders')}>
+        <Button variant="outline" onClick={() => navigate('/admin/orders')}>
           {t('orders.detail.backToList')}
-        </button>
+        </Button>
       </header>
 
-      {state.warning && <ReadOnlyBanner warning={state.warning} />}
+      {warning && <ReadOnlyBanner warning={warning} />}
 
       <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
         <DetailSection title={t('orders.detail.customerInfo')}>
@@ -360,72 +457,76 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
         <DetailSection title={t('orders.detail.orderStatus')}>
           {/* Current order status badge */}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: 'var(--c-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div className="mb-3">
+            <p className="mb-1 text-xs text-muted-foreground uppercase tracking-wide">
               {t('orders.detail.orderStatus')}
             </p>
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>
-              {t(`status.order.${order.orderStatus}`, { defaultValue: order.orderStatus })}
-            </span>
+            <StatusBadge type="order" status={order.orderStatus} />
           </div>
 
           {/* Order status action buttons — chỉ hiện nút hợp lệ */}
           {canUpdate && allowedTransitions.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <div className="flex flex-wrap gap-2 mb-3">
               {allowedTransitions.map((s) => {
                 const cfg = ORDER_STATUS_ACTION[s] ?? { label: s, variant: 'secondary', confirm: false }
-                const variantClass = {
-                  primary:     'btn btn-primary',
-                  secondary:   'btn btn-secondary',
-                  success:     'btn btn-success',
-                  destructive: 'btn btn-danger',
-                }[cfg.variant] ?? 'btn btn-secondary'
+                const variant = {
+                  primary:     'default',
+                  secondary:   'outline',
+                  success:     'success',
+                  destructive: 'danger',
+                }[cfg.variant] ?? 'outline'
                 return (
-                  <button
+                  <Button
                     key={s}
-                    type="button"
-                    className={variantClass}
+                    variant={variant}
+                    loading={pendingTarget === s}
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
                   >
-                    {getOrderStatusLabel(s, order)}
-                  </button>
+                    {getOrderStatusLabel(s, order, t)}
+                  </Button>
                 )
               })}
             </div>
           )}
-          {canUpdate && allowedTransitions.length === 0 && (
-            <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)', marginBottom: '0.75rem' }}>
+          {canUpdate && transitionsError && (
+            <p className="text-sm text-danger mb-3">
+              {t('orders.detail.transitionsLoadError')}{' '}
+              <button type="button" className="bb-link" onClick={() => setTransitionsKey((k) => k + 1)}>
+                {t('common.retry')}
+              </button>
+            </p>
+          )}
+          {canUpdate && !transitionsError && allowedTransitions.length === 0 && (
+            <p className="text-sm text-muted-foreground mb-3">
               {t('orders.detail.noTransition')}
             </p>
           )}
 
           {/* Current payment status + action buttons */}
-          <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: '0.75rem' }}>
-            <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: 'var(--c-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div className="border-t border-border pt-3">
+            <p className="mb-1 text-xs text-muted-foreground uppercase tracking-wide">
               {t('orders.detail.paymentStatus')}
             </p>
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>
-              {t(`status.payment.${order.paymentStatus}`, { defaultValue: order.paymentStatus })}
-            </span>
+            <StatusBadge type="payment" status={order.paymentStatus} />
             {canUpdate && !['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus) && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div className="flex flex-wrap gap-2 mt-2">
                 {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
-                  <button
+                  <Button
                     key={s}
-                    type="button"
-                    className={s === 'CANCELLED' ? 'btn btn-danger' : 'btn btn-secondary'}
+                    variant={s === 'CANCELLED' ? 'danger' : 'outline'}
+                    loading={pendingTarget === s}
                     disabled={saving}
                     onClick={() => handlePaymentStatusChange(s)}
                   >
-                    {PAYMENT_ACTION_LABEL[s] ?? s}
-                  </button>
+                    {PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
+                  </Button>
                 ))}
               </div>
             )}
           </div>
 
-          <p style={{ marginTop: '0.75rem', fontSize: '0.875rem' }}>
+          <p className="mt-3 text-sm">
             <strong>{t('orders.detail.paymentMethod')}</strong> {formatText(order.paymentMethod)}
           </p>
         </DetailSection>
@@ -434,26 +535,26 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {/* Refund section: visible when payment status is PAID */}
       {canUpdate && order.paymentStatus === 'PAID' && (
         <DetailSection title={t('refund.sectionTitle')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <div className="flex items-center gap-6 flex-wrap">
             <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>{t('refund.paidAmount')}: <strong>{formatCurrencyVnd(order.paidAmount)}</strong></p>
+              <p className="text-sm">{t('refund.paidAmount')}: <strong>{formatCurrencyVnd(order.paidAmount)}</strong></p>
               {(order.refundAmount > 0) && (
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: 'var(--admin-color-danger)' }}>
+                <p className="mt-1 text-sm text-danger">
                   {t('refund.alreadyRefunded')}: <strong>{formatCurrencyVnd(order.refundAmount)}</strong>
                 </p>
               )}
             </div>
-            <button type="button" className="btn btn-danger" onClick={() => setShowRefundModal(true)}>
+            <Button variant="danger" onClick={() => setShowRefundModal(true)}>
               {t('refund.buttonCreate')}
-            </button>
+            </Button>
           </div>
           {order.refundReason && (
-            <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--admin-color-text-muted)' }}>
+            <p className="mt-2 text-sm text-muted-foreground">
               {t('refund.reason')}: {order.refundReason}
             </p>
           )}
           {order.refundedAt && (
-            <p style={{ fontSize: '0.8rem', color: 'var(--admin-color-text-muted)', marginTop: 4 }}>
+            <p className="text-sm text-muted-foreground mt-1">
               {t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}
             </p>
           )}
@@ -466,7 +567,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           paidAmount={order.paidAmount}
           alreadyRefunded={order.refundAmount || 0}
           onSuccess={(updatedOrder) => {
-            setState((prev) => ({ ...prev, order: updatedOrder }))
+            applyOrderUpdate(updatedOrder)
             setShowRefundModal(false)
           }}
           onClose={() => setShowRefundModal(false)}
@@ -475,77 +576,77 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {/* Fulfillment section — chỉ cho đơn giao hàng (không phải POS) */}
       {order.fulfillmentType === 'DELIVERY' && (
-        <DetailSection title="Vận chuyển">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <DetailSection title={t('orders.detail.fulfillment')}>
+          <div className="flex items-center gap-4 flex-wrap mb-3">
             <span>
-              <strong>Trạng thái:</strong>{' '}
+              <strong>{t('orders.detail.fulfillmentStatusLabel')}</strong>{' '}
               {order.fulfillmentStatus
-                ? ({ UNFULFILLED: 'Chưa xử lý', PROCESSING: 'Đang chuẩn bị', SHIPPED: 'Đang giao', DELIVERED: 'Đã giao', CANCELLED: 'Đã huỷ', RETURNED: 'Đã trả hàng' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
-                : 'Chưa giao vận chuyển'}
+                ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled', RETURNED: 'orders.detail.ffReturned' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
+                : t('orders.detail.ffNone')}
             </span>
             {order.trackingNumber && (
-              <span style={{ fontSize: '0.875rem', color: 'var(--c-text-muted)' }}>
+              <span className="text-sm text-muted-foreground">
                 {order.shippingCarrier && <strong>{order.shippingCarrier}: </strong>}
-                <span style={{ fontFamily: 'monospace' }}>{order.trackingNumber}</span>
+                <span className="font-mono">{order.trackingNumber}</span>
               </span>
             )}
             {order.shippedAt && (
-              <span style={{ fontSize: '0.875rem', color: 'var(--c-text-muted)' }}>
-                Giao vận chuyển: {formatDateTime(order.shippedAt)}
+              <span className="text-sm text-muted-foreground">
+                {t('orders.detail.shippedAtLabel')} {formatDateTime(order.shippedAt)}
               </span>
             )}
           </div>
 
           {canUpdate && (
             <>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              <div className="flex gap-2 flex-wrap mb-2">
                 {/* UNFULFILLED: chỉ cho chuyển sang PROCESSING trước, không được nhảy thẳng SHIPPED */}
                 {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                  <button type="button" className="btn btn-secondary" disabled={fulfillmentSaving}
+                  <Button variant="outline" disabled={fulfillmentSaving}
                     onClick={() => handleFulfillmentUpdate('PROCESSING')}>
-                    {fulfillmentSaving ? 'Đang lưu…' : 'Bắt đầu chuẩn bị hàng'}
-                  </button>
+                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
+                  </Button>
                 )}
                 {/* PROCESSING: cho điền mã vận đơn rồi chuyển SHIPPED */}
                 {order.fulfillmentStatus === 'PROCESSING' && (
-                  <button type="button" className="btn btn-secondary" disabled={fulfillmentSaving}
+                  <Button variant="outline" disabled={fulfillmentSaving}
                     onClick={() => setShowShipForm((p) => !p)}>
-                    Đánh dấu đã giao vận chuyển
-                  </button>
+                    {t('orders.detail.ffMarkShipped')}
+                  </Button>
                 )}
                 {order.fulfillmentStatus === 'SHIPPED' && (
-                  <button type="button" className="btn btn-primary" disabled={fulfillmentSaving}
+                  <Button disabled={fulfillmentSaving}
                     onClick={() => handleFulfillmentUpdate('DELIVERED')}>
-                    {fulfillmentSaving ? 'Đang lưu…' : 'Đánh dấu đã giao tới khách'}
-                  </button>
+                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
+                  </Button>
                 )}
               </div>
 
               {showShipForm && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 400, marginTop: 4 }}>
+                <div className="flex flex-col gap-2 max-w-[400px] mt-1">
                   <Input type="text"
-                    placeholder="Mã vận đơn *"
+                    placeholder={t('orders.detail.trackingPlaceholder')}
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     disabled={fulfillmentSaving}
                     required  />
-                  <p style={{ fontSize: '0.75rem', color: 'var(--c-text-muted)', margin: 0 }}>
-                    Mã vận đơn là bắt buộc để chuyển sang trạng thái Đang giao.
+                  <p className="text-xs text-muted-foreground">
+                    {t('orders.detail.trackingHint')}
                   </p>
                   <Input type="text"
-                    placeholder="Đơn vị vận chuyển — GHN, GHTK, ViettelPost…"
+                    placeholder={t('orders.detail.carrierPlaceholder')}
                     value={shippingCarrier}
                     onChange={(e) => setShippingCarrier(e.target.value)}
                     disabled={fulfillmentSaving}  />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button type="button" className="btn btn-primary" disabled={fulfillmentSaving}
+                  <div className="flex gap-2">
+                    <Button disabled={fulfillmentSaving}
                       onClick={() => handleFulfillmentUpdate('SHIPPED')}>
-                      {fulfillmentSaving ? 'Đang lưu…' : 'Xác nhận giao vận chuyển'}
-                    </button>
-                    <button type="button" className="btn btn-secondary" disabled={fulfillmentSaving}
+                      {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
+                    </Button>
+                    <Button variant="outline" disabled={fulfillmentSaving}
                       onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
-                      Huỷ
-                    </button>
+                      {t('common.cancel')}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -556,56 +657,58 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       <DetailSection title={t('orders.detail.items')}>
         {(order.items ?? []).length === 0 ? (
-          <p style={{ color: 'var(--c-text-muted)' }}>{t('orders.detail.noItems')}</p>
+          <p className="text-muted-foreground">{t('orders.detail.noItems')}</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--c-border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem 0' }}>{t('orders.detail.colProduct')}</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem 0' }}>{t('orders.detail.colQty')}</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem 0' }}>{t('orders.detail.colUnitPrice')}</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem 0' }}>{t('orders.detail.colLineTotal')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.items ?? []).map((item) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid var(--c-border)' }}>
-                  <td style={{ padding: '0.5rem 0' }}>{formatText(item.productName)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{item.quantity}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(item.unitPrice)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(item.lineTotal)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm" style={{ minWidth: '480px' }}>
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="text-left py-2">{t('orders.detail.colProduct')}</th>
+                  <th className="text-right py-2 whitespace-nowrap px-3" style={{ minWidth: '48px' }}>{t('orders.detail.colQty')}</th>
+                  <th className="text-right py-2 whitespace-nowrap px-3" style={{ minWidth: '110px' }}>{t('orders.detail.colUnitPrice')}</th>
+                  <th className="text-right py-2 whitespace-nowrap pl-3" style={{ minWidth: '110px' }}>{t('orders.detail.colLineTotal')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(order.items ?? []).map((item) => (
+                  <tr key={item.id} className="border-b border-border">
+                    <td className="py-2">{formatText(item.productName)}</td>
+                    <td className="text-right py-2 px-3">{item.quantity}</td>
+                    <td className="text-right py-2 px-3 whitespace-nowrap">{formatCurrencyVnd(item.unitPrice)}</td>
+                    <td className="text-right py-2 pl-3 whitespace-nowrap">{formatCurrencyVnd(item.lineTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-        <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+        <div className="mt-4 text-right">
           <p>{t('orders.detail.subtotal')} <strong>{formatCurrencyVnd(order.subtotal)}</strong></p>
           {order.shippingFee > 0 && <p>{t('orders.detail.shippingFee')} <strong>{formatCurrencyVnd(order.shippingFee)}</strong></p>}
           {order.discount > 0 && <p>{t('orders.detail.discount')} <strong>-{formatCurrencyVnd(order.discount)}</strong></p>}
-          <p style={{ fontSize: '1.1rem' }}>{t('orders.detail.total')} <strong>{formatCurrencyVnd(order.total)}</strong></p>
+          <p className="text-lg">{t('orders.detail.total')} <strong>{formatCurrencyVnd(order.total)}</strong></p>
         </div>
       </DetailSection>
 
       {/* Payments */}
       {(order.payments ?? []).length > 0 && (
         <DetailSection title={t('orders.detail.payments')}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--c-border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem 0' }}>{t('orders.detail.colPaymentMethod')}</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem 0' }}>{t('orders.detail.colPaymentStatus')}</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem 0' }}>{t('orders.detail.colAmount')}</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem 0' }}>{t('orders.detail.colPaidAt')}</th>
+              <tr className="border-b-2 border-border">
+                <th className="text-left py-2">{t('orders.detail.colPaymentMethod')}</th>
+                <th className="text-left py-2">{t('orders.detail.colPaymentStatus')}</th>
+                <th className="text-right py-2">{t('orders.detail.colAmount')}</th>
+                <th className="text-right py-2">{t('orders.detail.colPaidAt')}</th>
               </tr>
             </thead>
             <tbody>
               {(order.payments ?? []).map((p, i) => (
-                <tr key={p.id ?? i} style={{ borderBottom: '1px solid var(--c-border)' }}>
-                  <td style={{ padding: '0.5rem 0' }}>{formatText(p.paymentMethod)}</td>
-                  <td style={{ padding: '0.5rem 0' }}>{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{formatCurrencyVnd(p.amount)}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
+                <tr key={p.id ?? i} className="border-b border-border">
+                  <td className="py-2">{formatText(p.paymentMethod)}</td>
+                  <td className="py-2">{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
+                  <td className="text-right py-2">{formatCurrencyVnd(p.amount)}</td>
+                  <td className="text-right py-2">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -617,7 +720,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {(order.shippingItems ?? []).length > 0 && (
         <DetailSection title={t('orders.detail.shippingMethods')}>
           {(order.shippingItems ?? []).map((s, i) => (
-            <p key={s.id ?? i} style={{ margin: '0.25rem 0' }}>
+            <p key={s.id ?? i} className="my-1">
               <strong>{formatText(s.methodTitle)}</strong>
               {s.amount > 0 && <span> — {formatCurrencyVnd(s.amount)}</span>}
             </p>
@@ -626,55 +729,59 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       )}
 
       {/* Returns section */}
-      <DetailSection title="Đổi trả (RMA)">
-        {orderReturns.length === 0 ? (
-          <p style={{ color: 'var(--admin-color-text-muted)', fontSize: '0.875rem', margin: 0 }}>
-            Chưa có yêu cầu đổi trả nào.
+      <DetailSection title={t('orders.detail.returnsTitle')}>
+        {returnsError ? (
+          <p className="text-danger text-sm">
+            {t('orders.detail.returnsLoadError')}
+          </p>
+        ) : orderReturns.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            {t('orders.detail.returnsEmpty')}
           </p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', marginBottom: 12 }}>
+          <table className="w-full border-collapse text-sm mb-3">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--admin-color-border)' }}>
-                <th style={{ textAlign: 'left', padding: '4px 0', fontWeight: 600 }}>Mã RMA</th>
-                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Lý do</th>
-                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Trạng thái</th>
-                <th style={{ textAlign: 'right', padding: '4px 0', fontWeight: 600 }}>Hoàn tiền</th>
+              <tr className="border-b border-border">
+                <th className="text-left py-1 font-semibold">{t('orders.detail.colRma')}</th>
+                <th className="text-left py-1 px-2 font-semibold">{t('orders.detail.colReason')}</th>
+                <th className="text-left py-1 px-2 font-semibold">{t('orders.detail.colReturnStatus')}</th>
+                <th className="text-right py-1 font-semibold">{t('orders.detail.colRefund')}</th>
               </tr>
             </thead>
             <tbody>
-              {orderReturns.map((r) => {
-                const STATUS_COLORS = { PENDING: '#d97706', APPROVED: '#2563eb', RECEIVED: '#7c3aed', COMPLETED: '#16a34a', REFUNDED: '#16a34a', REJECTED: '#dc2626' }
-                const STATUS_VI = { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', RECEIVED: 'Đã nhận', COMPLETED: 'Hoàn thành', REFUNDED: 'Đã hoàn tiền', REJECTED: 'Từ chối' }
-                const REASON_VI = { DEFECTIVE: 'Hàng lỗi', WRONG_ITEM: 'Sai sản phẩm', NOT_AS_DESCRIBED: 'Không như mô tả', CHANGED_MIND: 'Đổi ý', OTHER: 'Khác' }
-                return (
-                  <tr key={r.id} style={{ borderBottom: '1px solid var(--admin-color-border-subtle)' }}>
-                    <td style={{ padding: '6px 0', fontFamily: 'monospace', fontWeight: 500 }}>{r.returnNumber}</td>
-                    <td style={{ padding: '6px 8px' }}>{REASON_VI[r.reason] ?? r.reason}</td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <span style={{ color: STATUS_COLORS[r.status] ?? '#9ca3af', fontWeight: 600 }}>
-                        {STATUS_VI[r.status] ?? r.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '6px 0', textAlign: 'right' }}>
-                      {r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}
-                    </td>
-                  </tr>
-                )
-              })}
+              {orderReturns.map((r) => (
+                <tr key={r.id} className="border-b border-border">
+                  <td className="py-1.5 font-mono font-medium">{r.returnNumber}</td>
+                  <td className="py-1.5 px-2">{RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}</td>
+                  <td className="py-1.5 px-2">
+                    <StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} />
+                  </td>
+                  <td className="py-1.5 text-right">
+                    {r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
         {canUpdate && order.orderStatus === 'COMPLETED' && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ marginTop: orderReturns.length > 0 ? 0 : 8 }}
-            onClick={() => setShowCreateReturn(true)}
-          >
-            + Tạo yêu cầu đổi trả
-          </button>
+          <Button variant="outline" className={orderReturns.length > 0 ? '' : 'mt-2'} onClick={() => setShowCreateReturn(true)}>
+            {t('orders.detail.createReturnBtn')}
+          </Button>
         )}
       </DetailSection>
+
+      {reasonModal && (
+        <ReasonConfirmModal
+          targetStatus={reasonModal.targetStatus}
+          t={t}
+          onConfirm={(reason) => {
+            setReasonModal(null)
+            doStatusChange(reasonModal.targetStatus, reason)
+          }}
+          onClose={() => setReasonModal(null)}
+        />
+      )}
 
       {showCreateReturn && (
         <AdminCreateReturnModal
@@ -682,15 +789,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           onClose={() => setShowCreateReturn(false)}
           onSuccess={(ret) => {
             setOrderReturns((prev) => [ret, ...prev])
+            queryClient.invalidateQueries({ queryKey: ['returns'] })
             setShowCreateReturn(false)
-            toast.success(`Đã tạo yêu cầu đổi trả ${ret.returnNumber}`)
+            toast.success(t('orders.detail.returnCreatedToast', { number: ret.returnNumber }))
           }}
         />
       )}
 
       {/* Timestamps */}
       <DetailSection title={t('orders.detail.timestamps')}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+        <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
           {order.placedAt && <p><strong>{t('orders.detail.tsPlacedAt')}</strong> {formatDateTime(order.placedAt)}</p>}
           {order.paidAt && <p><strong>{t('orders.detail.tsPaidAt')}</strong> {formatDateTime(order.paidAt)}</p>}
           {order.completedAt && <p><strong>{t('orders.detail.tsCompletedAt')}</strong> {formatDateTime(order.completedAt)}</p>}
@@ -702,29 +810,29 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {/* Notes */}
       <DetailSection title={t('orders.detail.notes')}>
         {(order.notes ?? []).length === 0 ? (
-          <p style={{ color: 'var(--c-text-muted)', fontSize: '0.875rem' }}>{t('orders.detail.noNotes')}</p>
+          <p className="text-muted-foreground text-sm">{t('orders.detail.noNotes')}</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem' }}>
+          <ul className="list-none p-0 mb-4">
             {(order.notes ?? []).map((note, i) => (
-              <li key={note.id ?? i} style={{ borderBottom: '1px solid var(--c-border)', padding: '0.5rem 0', fontSize: '0.875rem' }}>
-                <span style={{ color: 'var(--c-text-muted)', marginRight: '0.5rem' }}>{note.createdAt ? formatDateTime(note.createdAt) : ''}</span>
+              <li key={note.id ?? i} className="border-b border-border py-2 text-sm">
+                <span className="text-muted-foreground mr-2">{note.createdAt ? formatDateTime(note.createdAt) : ''}</span>
                 {note.content}
               </li>
             ))}
           </ul>
         )}
         {canUpdate && (
-          <form onSubmit={handleAddNote} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <form onSubmit={handleAddNote} className="flex flex-col gap-2">
             <Textarea
               rows={3}
               placeholder={t('orders.detail.notePlaceholder')}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               disabled={submittingNote}
-              style={{ resize: 'vertical' }}
+              className="resize-y"
              />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', cursor: 'pointer' }}>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
                 <Checkbox
                   checked={noteCustomerVisible}
                   onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
@@ -732,9 +840,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                  />
                 {t('orders.detail.noteCustomerVisible')}
               </label>
-              <button type="submit" className="btn btn-primary" disabled={submittingNote || !noteContent.trim()}>
-                {submittingNote ? t('common.saving') : t('orders.detail.submitNote')}
-              </button>
+              <Button type="submit" loading={submittingNote} disabled={!noteContent.trim()}>
+                {t('orders.detail.submitNote')}
+              </Button>
             </div>
           </form>
         )}

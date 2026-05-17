@@ -18,6 +18,9 @@ public interface CatalogReadRepository {
 
     Optional<Product> findProductByIdPublicView(String id);
 
+    /** Batch public-view lookup by id. Order of the result is not guaranteed; callers re-order. */
+    List<Product> findProductsByIdsPublicView(List<String> ids);
+
     List<Category> findAllCategories();
 
     /**

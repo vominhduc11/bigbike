@@ -7,39 +7,42 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { exportCustomersCsv, fetchCustomers } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
-const STATUS_TONES = { ACTIVE: 'success', PENDING: 'warning', DISABLED: 'warning', BLOCKED: 'danger', UNKNOWN: 'neutral' }
+const STATUS_TONES = { ACTIVE: 'success', PENDING: 'warning', DISABLED: 'warning', BLOCKED: 'danger', UNKNOWN: 'muted' }
 
 function CustomerStatusBadge({ value }) {
   const { t } = useTranslation()
-  const tone = STATUS_TONES[value] || 'neutral'
-  return <span className={`status-badge status-${tone}`}>{t(`status.customer.${value}`, { defaultValue: value })}</span>
+  const variant = STATUS_TONES[value] || 'muted'
+  return <Badge variant={variant}>{t(`status.customer.${value}`, { defaultValue: value })}</Badge>
 }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
 
 export function CustomerListScreen({ navigate }) {
   const { t } = useTranslation()
-  const [query, setQuery] = useState(INITIAL_QUERY)
-  const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
+  const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || INITIAL_QUERY.search
+  })
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+
+  const state = useAdminList(['customers', query], () => fetchCustomers(query))
 
   useEffect(() => {
-    let active = true
-    fetchCustomers(query)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
-    return () => { active = false }
+    syncQueryToUrl(query, INITIAL_QUERY)
   }, [query])
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
-    setState((prev) => ({ ...prev, status: 'loading' }))
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
@@ -49,7 +52,7 @@ export function CustomerListScreen({ navigate }) {
       render: (c) => (
         <div>
           <strong>{formatText(c.fullName)}</strong>
-          <p style={{ fontSize: '0.8rem', color: 'var(--c-text-muted)' }}>{formatText(c.email)}</p>
+          <p className="text-xs text-muted-foreground">{formatText(c.email)}</p>
         </div>
       ),
     },
@@ -61,13 +64,12 @@ export function CustomerListScreen({ navigate }) {
     {
       key: 'actions', label: '', align: 'right',
       render: (c) => (
-        <button type="button" className="btn btn-secondary" onClick={() => navigate(`/admin/customers/${c.id}`)}>{t('customers.viewDetail')}</button>
+        <Button variant="outline" onClick={() => navigate(`/admin/customers/${c.id}`)}>{t('customers.viewDetail')}</Button>
       ),
     },
   ], [navigate, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setState((p) => ({ ...p, status: 'loading' }))
     setQuery((p) => {
       const next = { ...p, ...partial }
       if (options.resetPage) next.page = 1
@@ -112,7 +114,7 @@ export function CustomerListScreen({ navigate }) {
         </label>
       </section>
 
-      {state.status === 'error' && <StatePanel tone="danger" title={t('customers.loadError')} description={state.error} actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
+      {state.status === 'error' && <StatePanel tone="danger" title={t('customers.loadError')} description={state.error} actionLabel={t('common.retry')} onAction={() => state.refetch()} />}
       {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title={t('customers.empty')} description={t('customers.emptyDesc')} actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />}
       {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
         <>

@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.commerce;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "wishlist_items")
+@Getter
+@Setter
 public class WishlistItemEntity {
 
     @Id
@@ -26,15 +30,4 @@ public class WishlistItemEntity {
     @Column(name = "added_at", nullable = false)
     private Instant addedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
-
-    public String getProductId() { return productId; }
-    public void setProductId(String productId) { this.productId = productId; }
-
-    public Instant getAddedAt() { return addedAt; }
-    public void setAddedAt(Instant addedAt) { this.addedAt = addedAt; }
 }
