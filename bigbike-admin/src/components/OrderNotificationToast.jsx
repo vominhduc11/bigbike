@@ -1,15 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { formatCurrencyVnd } from '../lib/formatters'
 import { cn } from '@/lib/utils'
 
 const TOAST_DURATION_MS = 6000
 const MAX_TOASTS = 5
-
-function formatVnd(amount) {
-  if (amount == null) return ''
-  return new Intl.NumberFormat('vi-VN').format(Math.round(Number(amount))) + ' ₫'
-}
 
 function Toast({ toast, onDismiss, navigate }) {
   const { t } = useTranslation()
@@ -36,7 +32,7 @@ function Toast({ toast, onDismiss, navigate }) {
           {toast.orderNumber} — {toast.customerName}
         </p>
         <p className="mt-0.5 mb-0 text-[0.8rem] text-muted-foreground">
-          {formatVnd(toast.total)}
+          {formatCurrencyVnd(toast.total)}
           {!isNew && toast.status ? ` · ${t('status.order.' + toast.status, toast.status)}` : ''}
         </p>
       </div>

@@ -660,7 +660,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           <p className="text-muted-foreground">{t('orders.detail.noItems')}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm" style={{ minWidth: '480px' }}>
+            <table className="w-full border-collapse text-sm" style={{ minWidth: '640px' }}>
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="text-left py-2">{t('orders.detail.colProduct')}</th>

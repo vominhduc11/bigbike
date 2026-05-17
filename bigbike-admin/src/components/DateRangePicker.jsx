@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DayPicker } from 'react-day-picker'
-import { vi } from 'react-day-picker/locale'
+import { enUS, vi } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
 import { CalendarDays, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,8 +13,9 @@ function formatDateLabel(date) {
 }
 
 export function DateRangePicker({ value, onChange, placeholder }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const resolvedPlaceholder = placeholder ?? t('common.dateRangePlaceholder')
+  const dayPickerLocale = i18n.language === 'en' ? enUS : vi
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -65,7 +66,7 @@ export function DateRangePicker({ value, onChange, placeholder }) {
       {open && (
         <div className="absolute top-[calc(100%+6px)] right-0 z-50 bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
           <DayPicker
-            locale={vi}
+            locale={dayPickerLocale}
             mode="range"
             selected={value}
             onSelect={(range) => {
