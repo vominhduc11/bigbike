@@ -231,6 +231,28 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(jsonPath("$.data.payments").isArray());
     }
 
+    // ── 10b. customerName returned in list + detail (from billing fullName) ───
+
+    @Test
+    void adminOrders_returnCustomerNameFromBillingFullName() throws Exception {
+        OrderInfo order = placeGuestOrder(6100000);
+
+        // List response includes customerName = billing fullName, not email
+        MvcResult listResult = mockMvc.perform(get("/api/v1/admin/orders")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String listBody = listResult.getResponse().getContentAsString();
+        assertThat(listBody).contains("customerName");
+        assertThat(listBody).contains("Test User");
+
+        // Detail response also carries customerName
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerName").value("Test User"));
+    }
+
     // ── 11. Admin sees ALL notes including internal ───────────────────────────
 
     @Test

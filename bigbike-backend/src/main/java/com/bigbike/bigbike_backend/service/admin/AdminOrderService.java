@@ -719,6 +719,15 @@ public class AdminOrderService {
         List<OrderAppliedCouponResponse> appliedCoupons = appliedCouponRepo.findByOrderId(order.getId())
                 .stream().map(this::toAppliedCoupon).toList();
 
+        String customerName = (order.getCustomerName() != null && !order.getCustomerName().isBlank())
+                ? order.getCustomerName()
+                : addresses.stream()
+                        .filter(a -> "SHIPPING".equals(a.type()))
+                        .findFirst()
+                        .map(OrderAddressResponse::fullName)
+                        .filter(s -> s != null && !s.isBlank())
+                        .orElse(null);
+
         return new AdminOrderDetailResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -732,6 +741,7 @@ public class AdminOrderService {
                 order.getShippedAt(),
                 order.getCustomerEmail(),
                 order.getCustomerPhone(),
+                customerName,
                 order.getCustomerNote(),
                 order.getCurrency(),
                 order.getSource(),
@@ -785,11 +795,8 @@ public class AdminOrderService {
     // ── Build helpers ─────────────────────────────────────────────────────────
 
     private static String safeCustomerName(OrderEntity order) {
-        if (order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
-            return order.getCustomerEmail();
-        }
-        if (order.getCustomerPhone() != null && !order.getCustomerPhone().isBlank()) {
-            return order.getCustomerPhone();
+        if (order.getCustomerName() != null && !order.getCustomerName().isBlank()) {
+            return order.getCustomerName();
         }
         return "Khách hàng";
     }
@@ -859,14 +866,11 @@ public class AdminOrderService {
     }
 
     private static OrderWsEvent buildStatusChangedEvent(OrderEntity order, String newStatus) {
-        String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()
-                ? order.getCustomerEmail()
-                : (order.getCustomerPhone() != null ? order.getCustomerPhone() : "Khách hàng");
         return new OrderWsEvent(
                 "ORDER_STATUS_CHANGED",
                 order.getId(),
                 order.getOrderNumber(),
-                customerName,
+                safeCustomerName(order),
                 order.getTotalAmount(),
                 newStatus,
                 order.getPaymentStatus(),

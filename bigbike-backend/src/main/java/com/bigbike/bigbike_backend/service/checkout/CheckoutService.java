@@ -194,6 +194,7 @@ public class CheckoutService {
                 customerId,
                 req.billingAddress().email(),
                 req.billingAddress().phone(),
+                req.billingAddress().fullName(),
                 req.customerNote(),
                 req.paymentMethod(),
                 subtotal,
@@ -346,6 +347,7 @@ public class CheckoutService {
                 customerId,
                 req.billingAddress().email(),
                 req.billingAddress().phone(),
+                req.billingAddress().fullName(),
                 req.customerNote(),
                 req.paymentMethod(),
                 lineSubtotal,
@@ -662,6 +664,7 @@ public class CheckoutService {
             UUID customerId,
             String email,
             String phone,
+            String customerName,
             String customerNote,
             String paymentMethod,
             BigDecimal subtotal,
@@ -688,6 +691,7 @@ public class CheckoutService {
         order.setPaymentMethod(paymentMethod);
         order.setCustomerEmail(email);
         order.setCustomerPhone(phone);
+        order.setCustomerName(customerName);
         order.setCustomerNote(customerNote);
         order.setCurrency(CURRENCY_VND);
         order.setSubtotalAmount(subtotal);

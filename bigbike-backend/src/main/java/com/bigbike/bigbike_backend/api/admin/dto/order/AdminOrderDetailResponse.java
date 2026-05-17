@@ -22,6 +22,7 @@ public record AdminOrderDetailResponse(
         Instant shippedAt,
         String customerEmail,
         String customerPhone,
+        String customerName,
         String customerNote,
         String currency,
         String source,

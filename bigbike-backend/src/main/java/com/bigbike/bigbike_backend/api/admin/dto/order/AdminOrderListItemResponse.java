@@ -11,6 +11,7 @@ public record AdminOrderListItemResponse(
         String paymentStatus,
         String customerEmail,
         String customerPhone,
+        String customerName,
         BigDecimal totalAmount,
         String currency,
         Instant placedAt,
