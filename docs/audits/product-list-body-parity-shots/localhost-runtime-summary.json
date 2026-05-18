@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-05-18T14:20:50.462Z",
+  "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+  "console": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "statuses": [
+    {
+      "viewport": "1920x1080",
+      "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "status": 200
+    },
+    {
+      "viewport": "1920x1080",
+      "url": "http://localhost:8080/api/v1/cart",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1200",
+      "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1200",
+      "url": "http://localhost:8080/api/v1/cart",
+      "status": 200
+    },
+    {
+      "viewport": "1024x1366",
+      "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "status": 200
+    },
+    {
+      "viewport": "1024x1366",
+      "url": "http://localhost:8080/api/v1/cart",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://localhost:8080/api/v1/cart",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://localhost:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://localhost:8080/api/v1/cart",
+      "status": 200
+    }
+  ],
+  "metrics": {
+    "1920x1080": {
+      "title": "MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "cards": 7,
+      "pagination": false,
+      "overflow": 0
+    },
+    "1440x1200": {
+      "title": "MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "cards": 7,
+      "pagination": false,
+      "overflow": 0
+    },
+    "1024x1366": {
+      "title": "MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "cards": 7,
+      "pagination": false,
+      "overflow": 0
+    },
+    "768x1024": {
+      "title": "MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "cards": 7,
+      "pagination": false,
+      "overflow": 0
+    },
+    "390x844": {
+      "title": "MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "cards": 7,
+      "pagination": false,
+      "overflow": 0
+    }
+  }
+}
