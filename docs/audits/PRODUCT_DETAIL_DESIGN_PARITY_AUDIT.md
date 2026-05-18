@@ -8,20 +8,84 @@ Scope: đối chiếu trang chi tiết sản phẩm hiện tại của `bigbike-
 - `product detail_video gallery.png`
 - `product detail_additional information(1).png`
 
+Phase cập nhật này chỉ xử lý data/contract blocker để audit visual parity chính xác hơn. Không sửa CSS/UI hàng loạt.
+
+## Contract Evidence
+
+Căn cứ docs đã đọc trước khi đổi dữ liệu:
+
+- `docs/business/BUSINESS_RULES.md`: public catalog/cart/checkout chỉ dùng sản phẩm `PUBLISHED`; web không tự bán sản phẩm không public.
+- `docs/business/STATE_MACHINES.md`: product state `DRAFT -> PUBLISHED` là transition hợp lệ; public read filter chỉ thấy `PUBLISHED`.
+- `docs/engineering/API_CONTRACT.md`: public product list/detail trả dữ liệu PDP từ `/api/v1/products` và `/api/v1/products/{slug}`; detail có các field rich content như `description`, `promotionContent`, `contentBottom`.
+- `docs/engineering/DATA_CONTRACT.md`: `contentBottom` là vùng SEO/copy phía dưới PDP; `description`/`promotionContent` là rich text content của PDP.
+
 ## Runtime
 
 - App frontend: `bigbike-web`
 - Route PDP thực tế: `/product/[slug]/`
+- Route đã chụp lại: `/product/mu-bao-hiem-ls2-ff327-challenger-carbon/`
 - Stack đang chạy bằng Docker Compose:
   - `bigbike-web` tại `127.0.0.1:3000`
   - `bigbike-backend` tại `127.0.0.1:8080`
   - `bigbike-postgres` tại `127.0.0.1:5432`
-- Route được chụp: `/product/mu-bao-hiem-ls2-ff800-storm/`
-- Lý do chọn route: sản phẩm FF327 đúng thiết kế vẫn đang `DRAFT`; FF800 là route helmet public gần bề mặt thiết kế nhất tại thời điểm chụp lại.
+
+## Data/Contract Blocker Status
+
+Kết luận phase này: data/contract blocker đã được gỡ ở local/dev.
+
+Thay đổi đã làm:
+
+- Thêm migration dev-only: `bigbike-backend/src/main/resources/db/migration-dev/V1010__seed_product_detail_parity_dev.sql`.
+- Publish đúng sản phẩm thiết kế `MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON`.
+- Set stock local/dev thành `IN_STOCK`, quantity `48`, `force_out_of_stock=false`.
+- Set 4 variants size `M/L/XL/XXL` thành available/in-stock.
+- Thêm 4 video rows cho tab Video.
+- Thêm 5 specification rows cho tab Thông số kỹ thuật.
+- Thêm `content_bottom`.
+- Publish 4 sản phẩm FF327 sibling để related products có đủ dữ liệu.
+- Revalidate Next cache tag `products` và `product:mu-bao-hiem-ls2-ff327-challenger-carbon` trước lần chụp cuối.
+
+Lưu ý asset:
+
+- Product gallery đang dùng asset FF327 có sẵn trong DB/MinIO. Asset này là helmet carbon đen có watermark BigBike, không trùng 100% ảnh helmet trắng trong design.
+- Video tab dùng URL video có sẵn gần nhất từ runtime/local data, không phải video asset chính xác từ design vì repo/runtime chưa có asset video đó.
+
+## Current Runtime Evidence
+
+DB local/dev:
+
+```text
+slug|publish_status|stock_state|stock_quantity|force_out_of_stock|variants|videos|specs|content_bottom_len
+mu-bao-hiem-ls2-ff327-challenger-carbon|PUBLISHED|IN_STOCK|48|f|4|4|5|343
+```
+
+Public API:
+
+```json
+{
+  "status": 200,
+  "slug": "mu-bao-hiem-ls2-ff327-challenger-carbon",
+  "name": "MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON",
+  "price": 9900000,
+  "stockState": "IN_STOCK",
+  "gallery": 5,
+  "videos": 4,
+  "specifications": 5,
+  "variants": 4,
+  "hasContentBottom": true,
+  "categorySlug": "non-bao-hiem-moto"
+}
+```
+
+Frontend route:
+
+- `GET http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/` trả `200`.
+- HTML có exact product title, `Video`, `Thông số`.
+- Related section render 6 product links trong DOM sau revalidate.
 
 ## Screenshot Artifacts
 
-Đã lưu 15 ảnh tại:
+Đã lưu lại 15 ảnh tại:
 
 ```text
 docs/audits/product-detail-parity-shots/
@@ -47,160 +111,77 @@ Metadata chụp tự động:
 docs/audits/product-detail-parity-shots/metadata.json
 ```
 
-## Data Blockers
+Metadata cuối:
 
-Kết luận parity 100% bị chặn ngay ở data/runtime:
+```json
+{
+  "generatedAt": "2026-05-18T13:36:23.157Z",
+  "route": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+  "captureCount": 15,
+  "allCapturesOk": true,
+  "relatedCounts": [6]
+}
+```
 
-1. Product đúng thiết kế `MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON` có trong DB nhưng đang `DRAFT`, không mở được qua public API/PDP.
-2. Public API hiện có 15 sản phẩm `PUBLISHED`, nhưng không có FF327.
-3. DB runtime hiện có:
-   - `product_videos`: 0 rows
-   - `product_specifications`: 0 rows
-   - `content_bottom`: 0 products
-   - `promotion_content`: 0 products
-4. Do đó tab `Video` và tab `Thông số kỹ thuật` không tồn tại trong DOM ở runtime. Các screenshot `video-gallery` và `additional-information` ghi nhận trạng thái không click được tab tương ứng, không phải trạng thái thiết kế thật.
+Toàn bộ 15 capture đều:
+
+- `httpStatus = 200`
+- Có đủ 3 tab: `Mô tả sản phẩm`, `Video`, `Thông số kỹ thuật`
+- Click đúng tab state cần chụp
+- Related DOM có 6 sản phẩm
 
 ## Verdict
 
-Không đạt 100% visual parity.
+Data/contract blocker: đã xử lý xong ở local/dev.
 
-Trang hiện tại chỉ khớp một phần ý tưởng tổng quát: header đen, logo BigBike, breadcrumb, gallery trái, thông tin mua hàng phải, tab xéo đen/trắng, related products và footer tối. Tuy nhiên bố cục, dữ liệu, typography, spacing, tab states, footer, related carousel, mobile/tablet behavior và nội dung đều lệch đáng kể so với thiết kế.
+Visual parity: vẫn chưa đạt 100%. Sau phase này audit không còn bị chặn bởi product `DRAFT` hoặc thiếu tabs, nhưng giao diện hiện tại vẫn khác thiết kế ở nhiều điểm cần một phase UI riêng.
 
-## Major Mismatches
+## Remaining Visual Mismatches
 
-### P0 - Không thể audit đủ 3 tab bằng data hiện tại
+### P1 - Header/navbar chưa khớp thiết kế
 
-Thiết kế yêu cầu 3 trạng thái tab riêng:
+Thiết kế có nav `Danh mục sản phẩm`, `Về Bigbike.vn`, `Bigbike News`, `Liên hệ` và cart badge đỏ số 9. Runtime đang là `Trang chủ`, `Tất cả sản phẩm`, `Tin tức`, `Giới thiệu`, `Liên hệ`, badge cart `0`, icon/header mobile khác thiết kế.
 
-- Overview / Nội tả
-- Video gallery
-- Additional information / Thông số kỹ thuật
+### P1 - Product hero chưa khớp thiết kế
 
-Runtime chỉ render 1 tab: `Mô tả sản phẩm`. Không có tab video hoặc specs vì backend không có dữ liệu tương ứng. Đây là blocker trước mọi chỉnh CSS.
+Runtime đã mở đúng product FF327 nhưng gallery asset là helmet carbon đen có watermark, không phải ảnh helmet trắng trong design. Layout desktop cũng khác: ảnh chính lớn hơn, thumbnail strip có nút up/down, price màu đỏ lớn, CTA đang ở trạng thái `Vui lòng chọn biến thể` thay vì button đỏ giống design.
 
-### P0 - Product/design data không trùng
+### P1 - Tab content chưa khớp layout thiết kế
 
-Thiết kế dùng helmet `MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON`, giá `9.900.000,00 đ`, còn hàng, size `M/L/XL/XXL`, gallery helmet trắng.
+Tabs đã tồn tại đủ 3 state, nhưng layout nội dung còn khác:
 
-Runtime public route chụp được là helmet `MŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06`, giá `3.190.000 đ`, trạng thái `Hết hàng`, nhiều color selector, size `M/L/XL/XXL`, gallery helmet khác hoàn toàn. Related products vẫn chỉ còn 1 card do data public ít.
+- Overview runtime render rich text dài, trong design là block mô tả + image grid cô đọng.
+- Video runtime dùng YouTube iframe/playlist từ data có sẵn, không phải gallery video đúng asset thiết kế.
+- Additional information runtime là table đơn giản; design có diagram kích thước W/H, ảnh sản phẩm và thumbnails.
 
-### P0 - Encoding check
+### P1 - Related carousel mới đạt data, chưa đạt visual
 
-Không phát hiện mojibake trong các file source PDP/header/footer được kiểm tra khi đọc bằng UTF-8 và scan bằng `rg`.
+Sau revalidate, runtime có 6 related products và desktop hiện 4 card đầu. Tuy nhiên card style vẫn khác design: ảnh/card spacing, sale ribbon, typography, rating/price alignment và arrow/dot position chưa khớp 100%.
 
-Lưu ý: PowerShell không truyền `-Encoding UTF8` có thể in tiếng Việt thành mojibake trong terminal, nhưng đó là lỗi cách đọc output, không phải bằng chứng file source bị hỏng.
+### P1 - Footer/content bottom chưa khớp thiết kế
 
-### P1 - Header/navbar lệch thiết kế
+`content_bottom` đã render, footer newsletter/contact links render được, nhưng copy, layout footer, BCT/license placement, copyright và spacing vẫn khác design.
 
-Thiết kế:
+### P1 - Mobile/tablet polish còn lệch
 
-- Logo treo lớn ở top-left, chạm xuống khỏi header.
-- Nav gồm `Danh mục sản phẩm`, `Về Bigbike.vn`, `Bigbike News`, `Liên hệ`.
-- Cart badge đỏ số 9.
+Ở viewport `390x1200`, sticky purchase bar và chat widget vẫn che một phần nội dung. Header mobile có nhiều icon/menu và layout khác thiết kế desktop reference. Cần thiết kế mobile/tablet cụ thể hoặc một pass responsive riêng để kết luận parity.
 
-Runtime:
+## Residual Runtime Notes
 
-- Logo có style treo nhưng kích thước/vị trí khác.
-- Nav là `Trang chủ`, `Tất cả sản phẩm`, `Tin tức`, `Giới thiệu`, `Liên hệ`.
-- Cart badge là 0.
-- Ở viewport `768x1200`, nav bị tràn/cắt ở mép trái.
-- Ở viewport `390x1200`, header có 2 icon menu/hamburger.
-
-### P1 - Product hero layout lệch thiết kế
-
-Thiết kế:
-
-- Container khoảng 1200px, product image và info cân đối, ảnh helmet lớn nhưng còn nhiều khoảng trắng.
-- Thumbnail 3 item, nền xám nhạt, không có nút up/down rõ.
-- Price màu đen trong design overview/video, badge còn hàng đen.
-
-Runtime:
-
-- Container rộng hơn, gallery main rất lớn ở desktop/tablet.
-- Thumbnail strip có nút up/down và border đỏ active.
-- Price đỏ lớn, badge `Hết hàng` xám.
-- Add-to-cart disabled/pink, không giống CTA đỏ trong design.
-
-### P1 - Tab area lệch thiết kế
-
-Thiết kế:
-
-- Có 3 tab xéo cùng hàng, label ngắn: `Khuyến mãi`, `Video`, `Thông số kỹ thuật` hoặc `Mô tả`, `Video`, `Thông số kỹ thuật`.
-- Active tab đen, inactive xám trắng.
-- Nội dung tab có layout đặc thù từng state.
-
-Runtime:
-
-- Chỉ có 1 tab `Mô tả sản phẩm`.
-- Nội dung tab nằm trong box border lớn, khác layout design overview vốn có image/text grid và additional info có diagram/spec layout.
-- Không có video gallery layout.
-- Không có additional information table/diagram.
-
-### P1 - Related products carousel lệch thiết kế
-
-Thiết kế:
-
-- 4 card helmet trên desktop.
-- Có arrow hai bên và pagination dots.
-- Product card compact, ảnh vuông, sale ribbon đỏ, rating/price ngang.
-
-Runtime:
-
-- Chỉ 1 related product card do data.
-- Không có carousel arrows/dots khi locked.
-- Card spacing/kích thước khác, thiếu sale ribbon.
-
-### P1 - Footer lệch thiết kế
-
-Thiết kế:
-
-- Footer top dark gray, content chia 3 cột với newsletter lớn bên trái.
-- Bottom black strip có logo, copyright, BCT badge và license text.
-
-Runtime:
-
-- Footer có nội dung khác, copyright năm 2026.
-- Không có BCT badge/license trong screenshot chụp.
-- Mobile footer chuyển accordion, khác thiết kế desktop full links.
-
-### P1 - Mobile/tablet behavior có lỗi layout
-
-Viewport `768x1200`:
-
-- Header nav bị cắt ở mép trái.
-- Product title xuống dưới gallery nhưng bị chat widget che một phần.
-
-Viewport `390x1200`:
-
-- Sticky purchase bar phủ lên vùng tab/content.
-- Chat widget và nút nổi che nội dung.
-- Header hiện 2 hamburger/menu icon.
-- Không có thiết kế mobile tương ứng để chứng minh parity; theo ảnh hiện tại vẫn chưa đạt polish.
-
-## Secondary Mismatches
-
-- Breadcrumb text/category không giống design.
-- Short description của product hiện không có ở route chụp, trong design có paragraph ngắn dưới rating.
-- Share icon style khác: runtime dùng button border vuông, design là icon xám nhẹ không border rõ.
-- Back-to-top button trong design là nút vuông đỏ; runtime screenshot không thấy nút đỏ tương ứng, chỉ thấy widget nổi/chat.
-- Footer newsletter copy, phone/email, social links khác design.
-- Long text block phía dưới trong design không xuất hiện vì `content_bottom` trống.
-- Console có lỗi `401` khi Playwright load trang, cần trace endpoint nếu muốn audit runtime sạch hơn.
+- Playwright vẫn ghi nhận console `401` trong vài lần load. Chưa trace endpoint trong phase này vì không nằm trong blocker data/tabs.
+- Không phát hiện mojibake trong text mới khi đọc/ghi bằng UTF-8. Các chuỗi tiếng Việt trong migration/report được viết thẳng UTF-8, không dùng unicode escape thủ công.
 
 ## Evidence Commands
 
 - `docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"`
-- `GET http://localhost:8080/api/v1/products?size=20&page=1&sort=createdAt:desc`
-- `GET http://localhost:8080/api/v1/products/<slug>`
-- Read-only DB queries against `bigbike-postgres`:
-  - `select publish_status, count(*) from products group by publish_status`
-  - `select count(*) from product_videos`
-  - `select count(*) from product_specifications`
-  - `select ... where lower(name) like '%ff327%'`
+- DB query against `bigbike-postgres` để verify publish/stock/video/spec/content bottom.
+- `GET http://localhost:8080/api/v1/products/mu-bao-hiem-ls2-ff327-challenger-carbon`
+- `POST http://localhost:3000/api/revalidate` với tags `products` và `product:mu-bao-hiem-ls2-ff327-challenger-carbon`
+- Playwright capture script từ `bigbike-web`, lưu ảnh vào `docs/audits/product-detail-parity-shots/`
 
 ## Recommended Next Steps
 
-1. Fix/confirm data first: publish or seed the exact FF327 product with gallery, videos, specs, content bottom, stock and related products matching the design.
-2. Khi kiểm tra text bằng terminal, luôn đọc file với UTF-8 để tránh kết luận nhầm do output mojibake.
-3. Re-run screenshots on the exact FF327 route.
-4. Only after data parity exists, perform CSS/component-level visual parity pass.
+1. Bắt đầu phase UI visual parity trên route FF327 thật, dùng bộ screenshot mới làm baseline.
+2. Quyết định asset policy: dùng đúng asset design hay chấp nhận asset FF327 hiện có trong DB/MinIO.
+3. Fix UI theo từng cụm: header, hero/gallery, tab layouts, related carousel, footer, mobile overlays.
+4. Sau mỗi cụm, re-run 5 viewport x 3 states và cập nhật metadata.

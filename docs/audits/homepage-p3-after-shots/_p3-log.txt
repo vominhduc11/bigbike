@@ -1,0 +1,19 @@
+[desktop-1920] scrollW=1920 clientW=1920 hOverflow=false consoleErrors=1
+   · Failed to load resource: the server responded with a status of 401 ()
+[laptop-1440] scrollW=1440 clientW=1440 hOverflow=false consoleErrors=1
+   · Failed to load resource: the server responded with a status of 401 ()
+[tablet-768] scrollW=768 clientW=768 hOverflow=false consoleErrors=1
+   · Failed to load resource: the server responded with a status of 401 ()
+[mobile-390] scrollW=390 clientW=390 hOverflow=false consoleErrors=1
+   · Failed to load resource: the server responded with a status of 401 ()
+[experience-section] ok
+[recommended-carousel] ok
+[category-grid] ok
+[promo-banner] ok
+[homepage-footer] ok
+[search] ok
+[account-guest] ok
+[megamenu] ok
+[burger] ok
+[state-page] consoleErrors=1
+   · Failed to load resource: the server responded with a status of 401 ()

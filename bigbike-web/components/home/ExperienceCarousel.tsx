@@ -273,7 +273,7 @@ function ExperienceOverlay({
             if (suppressClickRef.current) event.preventDefault();
           }}
         >
-          XEM CHI TIẾT
+          Xem tiếp
         </Link>
       </div>
     </div>

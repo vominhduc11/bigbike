@@ -1,17 +1,38 @@
 {
-  "generatedAt": "2026-05-18T13:12:01.659Z",
+  "generatedAt": "2026-05-18T13:36:23.157Z",
   "baseUrl": "http://localhost:3000",
-  "route": "/product/mu-bao-hiem-ls2-ff800-storm/",
+  "route": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+  "purpose": "Product detail data/contract unblock rerun for FF327 design product",
+  "product": {
+    "slug": "mu-bao-hiem-ls2-ff327-challenger-carbon",
+    "name": "MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON"
+  },
+  "cacheNote": "Revalidated Next fetch tags products and product:mu-bao-hiem-ls2-ff327-challenger-carbon before this capture set.",
   "captures": [
     {
       "viewport": "1920x1080",
       "state": "overview",
       "file": "1920x1080-overview.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
       "matchedTabIndex": 0,
@@ -20,73 +41,244 @@
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nTẠI SAO CHỌN MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FULL FACE?\n\nLS2 FF327 Challenger Carbon là một mũ bảo hiểm full face tuyệt vời của hãng LS2 dành cho người lái xe đô thị/đường phố. So với các loại mũ bảo hiểm khác, mũ full face cung cấp sự bảo vệ toàn diện nhất vì chúng bao phủ từ đầu đến cằm. Đó là lý do tại sao bạn chỉ thấy mũ full face trên đường đua. Khi quyết định chọn một chiếc mũ bảo hiểm mới và an toàn là ưu tiên hàng đầu của bạn, bạn không thể sai lầm với một chiếc mũ full face. Nếu FF327 Challenger Carbon không phải là mũ bạn đang tìm kiếm, đừng lo, chúng tôi có rất nhiều mũ bảo hiểm full face LS2 khác trong bộ sưu tập của chúng tôi.\n\nCÁC TÍNH NĂNG AN TOÀN CỦA FF327 CHALLENGER CARBON\n\nNhiệm vụ đầu tiên và quan trọng nhất của một chiếc mũ bảo hiểm là cung cấp bảo vệ. Với vật liệu Carbon, mũ FF327 Challenger Carbon màu đen này mang lại lợi thế về trọng lượng nhẹ và phân phối năng lượng tốt hơn khi va chạm. Ngoài ra, nó còn trông rất cool! Dây đeo cằm là một phần quan trọng của hiệu quả mũ bảo hiểm trong trường hợp tai nạn và đó cũng là phần mà bạn tương tác nhiều nhất khi đeo và tháo mũ. FF327 Challenger Carbon có một khóa gài kiểu Double-D. Đây có lẽ là loại khóa cổ điển nhất và có thiết kế đơn giản nhất. Tuy nhiên, nó được coi là"
     },
     {
       "viewport": "1920x1080",
       "state": "video-gallery",
       "file": "1920x1080-video-gallery.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 1,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nChi tiết form mũ và kính chắn gió LS2 FF327\nTrải nghiệm đội mũ LS2 FF327 cho touring\nHướng dẫn chọn size LS2 FF327 Challenger Carbon\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTH"
     },
     {
       "viewport": "1920x1080",
       "state": "additional-information",
       "file": "1920x1080-additional-information.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 2,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "true",
+          "value": "active"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nThông số kỹ thuật\nWeight\t3 kg\nDimensions\t40 x 70 x 40 cm\nChất liệu vỏ\tCarbon fiber\nChuẩn an toàn\tECE/R22-05\nKích thước\tM, L, XL, XXL\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\nHướng dẫn mua hàng\nChính sách bảo mật\nChính sách bảo hành\nChính sách đổi trả hàng\nĐiều"
     },
     {
       "viewport": "1440x1200",
       "state": "overview",
       "file": "1440x1200-overview.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
       "matchedTabIndex": 0,
@@ -95,73 +287,244 @@
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nTẠI SAO CHỌN MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FULL FACE?\n\nLS2 FF327 Challenger Carbon là một mũ bảo hiểm full face tuyệt vời của hãng LS2 dành cho người lái xe đô thị/đường phố. So với các loại mũ bảo hiểm khác, mũ full face cung cấp sự bảo vệ toàn diện nhất vì chúng bao phủ từ đầu đến cằm. Đó là lý do tại sao bạn chỉ thấy mũ full face trên đường đua. Khi quyết định chọn một chiếc mũ bảo hiểm mới và an toàn là ưu tiên hàng đầu của bạn, bạn không thể sai lầm với một chiếc mũ full face. Nếu FF327 Challenger Carbon không phải là mũ bạn đang tìm kiếm, đừng lo, chúng tôi có rất nhiều mũ bảo hiểm full face LS2 khác trong bộ sưu tập của chúng tôi.\n\nCÁC TÍNH NĂNG AN TOÀN CỦA FF327 CHALLENGER CARBON\n\nNhiệm vụ đầu tiên và quan trọng nhất của một chiếc mũ bảo hiểm là cung cấp bảo vệ. Với vật liệu Carbon, mũ FF327 Challenger Carbon màu đen này mang lại lợi thế về trọng lượng nhẹ và phân phối năng lượng tốt hơn khi va chạm. Ngoài ra, nó còn trông rất cool! Dây đeo cằm là một phần quan trọng của hiệu quả mũ bảo hiểm trong trường hợp tai nạn và đó cũng là phần mà bạn tương tác nhiều nhất khi đeo và tháo mũ. FF327 Challenger Carbon có một khóa gài kiểu Double-D. Đây có lẽ là loại khóa cổ điển nhất và có thiết kế đơn giản nhất. Tuy nhiên, nó được coi là"
     },
     {
       "viewport": "1440x1200",
       "state": "video-gallery",
       "file": "1440x1200-video-gallery.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 1,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nChi tiết form mũ và kính chắn gió LS2 FF327\nTrải nghiệm đội mũ LS2 FF327 cho touring\nHướng dẫn chọn size LS2 FF327 Challenger Carbon\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTH"
     },
     {
       "viewport": "1440x1200",
       "state": "additional-information",
       "file": "1440x1200-additional-information.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 2,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "true",
+          "value": "active"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nThông số kỹ thuật\nWeight\t3 kg\nDimensions\t40 x 70 x 40 cm\nChất liệu vỏ\tCarbon fiber\nChuẩn an toàn\tECE/R22-05\nKích thước\tM, L, XL, XXL\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\nHướng dẫn mua hàng\nChính sách bảo mật\nChính sách bảo hành\nChính sách đổi trả hàng\nĐiều"
     },
     {
       "viewport": "1024x1365",
       "state": "overview",
       "file": "1024x1365-overview.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
       "matchedTabIndex": 0,
@@ -170,73 +533,244 @@
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nTẠI SAO CHỌN MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FULL FACE?\n\nLS2 FF327 Challenger Carbon là một mũ bảo hiểm full face tuyệt vời của hãng LS2 dành cho người lái xe đô thị/đường phố. So với các loại mũ bảo hiểm khác, mũ full face cung cấp sự bảo vệ toàn diện nhất vì chúng bao phủ từ đầu đến cằm. Đó là lý do tại sao bạn chỉ thấy mũ full face trên đường đua. Khi quyết định chọn một chiếc mũ bảo hiểm mới và an toàn là ưu tiên hàng đầu của bạn, bạn không thể sai lầm với một chiếc mũ full face. Nếu FF327 Challenger Carbon không phải là mũ bạn đang tìm kiếm, đừng lo, chúng tôi có rất nhiều mũ bảo hiểm full face LS2 khác trong bộ sưu tập của chúng tôi.\n\nCÁC TÍNH NĂNG AN TOÀN CỦA FF327 CHALLENGER CARBON\n\nNhiệm vụ đầu tiên và quan trọng nhất của một chiếc mũ bảo hiểm là cung cấp bảo vệ. Với vật liệu Carbon, mũ FF327 Challenger Carbon màu đen này mang lại lợi thế về trọng lượng nhẹ và phân phối năng lượng tốt hơn khi va chạm. Ngoài ra, nó còn trông rất cool! Dây đeo cằm là một phần quan trọng của hiệu quả mũ bảo hiểm trong trường hợp tai nạn và đó cũng là phần mà bạn tương tác nhiều nhất khi đeo và tháo mũ. FF327 Challenger Carbon có một khóa gài kiểu Double-D. Đây có lẽ là loại khóa cổ điển nhất và có thiết kế đơn giản nhất. Tuy nhiên, nó được coi là"
     },
     {
       "viewport": "1024x1365",
       "state": "video-gallery",
       "file": "1024x1365-video-gallery.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 1,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nChi tiết form mũ và kính chắn gió LS2 FF327\nTrải nghiệm đội mũ LS2 FF327 cho touring\nHướng dẫn chọn size LS2 FF327 Challenger Carbon\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTH"
     },
     {
       "viewport": "1024x1365",
       "state": "additional-information",
       "file": "1024x1365-additional-information.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 2,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "true",
+          "value": "active"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nThông số kỹ thuật\nWeight\t3 kg\nDimensions\t40 x 70 x 40 cm\nChất liệu vỏ\tCarbon fiber\nChuẩn an toàn\tECE/R22-05\nKích thước\tM, L, XL, XXL\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\nHướng dẫn mua hàng\nChính sách bảo mật\nChính sách bảo hành\nChính sách đổi trả hàng\nĐiều"
     },
     {
       "viewport": "768x1200",
       "state": "overview",
       "file": "768x1200-overview.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
       "matchedTabIndex": 0,
@@ -245,73 +779,244 @@
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nTẠI SAO CHỌN MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FULL FACE?\n\nLS2 FF327 Challenger Carbon là một mũ bảo hiểm full face tuyệt vời của hãng LS2 dành cho người lái xe đô thị/đường phố. So với các loại mũ bảo hiểm khác, mũ full face cung cấp sự bảo vệ toàn diện nhất vì chúng bao phủ từ đầu đến cằm. Đó là lý do tại sao bạn chỉ thấy mũ full face trên đường đua. Khi quyết định chọn một chiếc mũ bảo hiểm mới và an toàn là ưu tiên hàng đầu của bạn, bạn không thể sai lầm với một chiếc mũ full face. Nếu FF327 Challenger Carbon không phải là mũ bạn đang tìm kiếm, đừng lo, chúng tôi có rất nhiều mũ bảo hiểm full face LS2 khác trong bộ sưu tập của chúng tôi.\n\nCÁC TÍNH NĂNG AN TOÀN CỦA FF327 CHALLENGER CARBON\n\nNhiệm vụ đầu tiên và quan trọng nhất của một chiếc mũ bảo hiểm là cung cấp bảo vệ. Với vật liệu Carbon, mũ FF327 Challenger Carbon màu đen này mang lại lợi thế về trọng lượng nhẹ và phân phối năng lượng tốt hơn khi va chạm. Ngoài ra, nó còn trông rất cool! Dây đeo cằm là một phần quan trọng của hiệu quả mũ bảo hiểm trong trường hợp tai nạn và đó cũng là phần mà bạn tương tác nhiều nhất khi đeo và tháo mũ. FF327 Challenger Carbon có một khóa gài kiểu Double-D. Đây có lẽ là loại khóa cổ điển nhất và có thiết kế đơn giản nhất. Tuy nhiên, nó được coi là"
     },
     {
       "viewport": "768x1200",
       "state": "video-gallery",
       "file": "768x1200-video-gallery.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 1,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nChi tiết form mũ và kính chắn gió LS2 FF327\nTrải nghiệm đội mũ LS2 FF327 cho touring\nHướng dẫn chọn size LS2 FF327 Challenger Carbon\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTH"
     },
     {
       "viewport": "768x1200",
       "state": "additional-information",
       "file": "768x1200-additional-information.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 2,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "true",
+          "value": "active"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nThông số kỹ thuật\nWeight\t3 kg\nDimensions\t40 x 70 x 40 cm\nChất liệu vỏ\tCarbon fiber\nChuẩn an toàn\tECE/R22-05\nKích thước\tM, L, XL, XXL\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\n‹\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n›\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\nHướng dẫn mua hàng\nChính sách bảo mật\nChính sách bảo hành\nChính sách đổi trả hàng\nĐiều"
     },
     {
       "viewport": "390x1200",
       "state": "overview",
       "file": "390x1200-overview.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
       "matchedTabIndex": 0,
@@ -320,63 +1025,219 @@
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n9.900.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nTẠI SAO CHỌN MŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FULL FACE?\n\nLS2 FF327 Challenger Carbon là một mũ bảo hiểm full face tuyệt vời của hãng LS2 dành cho người lái xe đô thị/đường phố. So với các loại mũ bảo hiểm khác, mũ full face cung cấp sự bảo vệ toàn diện nhất vì chúng bao phủ từ đầu đến cằm. Đó là lý do tại sao bạn chỉ thấy mũ full face trên đường đua. Khi quyết định chọn một chiếc mũ bảo hiểm mới và an toàn là ưu tiên hàng đầu của bạn, bạn không thể sai lầm với một chiếc mũ full face. Nếu FF327 Challenger Carbon không phải là mũ bạn đang tìm kiếm, đừng lo, chúng tôi có rất nhiều mũ bảo hiểm full face LS2 khác trong bộ sưu tập của chúng tôi.\n\nCÁC TÍNH NĂNG AN TOÀN CỦA FF327 CHALLENGER CARBON\n\nNhiệm vụ đầu tiên và quan trọng nhất của một chiếc mũ bảo hiểm là cung cấp bảo vệ. Với vật liệu Carbon, mũ FF327 Challenger Carbon màu đen này mang lại lợi thế về trọng lượng nhẹ và phân phối năng lượng tốt hơn khi va chạm. Ngoài ra, nó còn trông rất cool! Dây đeo cằm là một phần quan trọng của hiệu quả mũ bảo hiểm trong trường hợp tai nạn và đó cũng là phần mà bạn tương tác nhiều nhất khi đeo và tháo mũ. FF327 Challenger Carbon có một khóa gài kiểu Double-D. Đây có lẽ là loại khóa cổ điển nhất và có thiết kế đơn giản nhất. Tuy nhiên, nó được coi là an toàn nhất cho đến n"
     },
     {
       "viewport": "390x1200",
       "state": "video-gallery",
       "file": "390x1200-video-gallery.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 1,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n9.900.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nReview mũ bảo hiểm LS2 FF327 Challenger Carbon\nChi tiết form mũ và kính chắn gió LS2 FF327\nTrải nghiệm đội mũ LS2 FF327 cho touring\nHướng dẫn chọn size LS2 FF327 Challenger Carbon\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\n+\nLIÊN HỆ\n+\nMẠNG XÃ"
     },
     {
       "viewport": "390x1200",
       "state": "additional-information",
       "file": "390x1200-additional-information.png",
+      "url": "http://localhost:3000/product/mu-bao-hiem-ls2-ff327-challenger-carbon/",
+      "httpStatus": 200,
       "tabsBefore": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "true",
+          "value": "active"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "false",
+          "value": "inactive"
         }
       ],
-      "matchedTabIndex": null,
-      "clicked": false,
+      "matchedTabIndex": 2,
+      "clicked": true,
       "activeTabsAfter": [
         {
           "idx": 0,
           "text": "Mô tả sản phẩm",
-          "selected": "true"
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 1,
+          "text": "Video",
+          "selected": "false",
+          "value": "inactive"
+        },
+        {
+          "idx": 2,
+          "text": "Thông số kỹ thuật",
+          "selected": "true",
+          "value": "active"
         }
       ],
+      "related": {
+        "linkCount": 6,
+        "links": [
+          {
+            "href": "/product/mu-bao-hiem-fullface-ilm-racing-helmet-mf509/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-fold/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-carbon-alloy/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff800-storm/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-soi-thuy-tinh/",
+            "text": ""
+          },
+          {
+            "href": "/product/mu-bao-hiem-ls2-ff327-challenger-flex-soi-thuy-tinh-dac-biet/",
+            "text": ""
+          }
+        ]
+      },
       "consoleMessages": [
         "error: Failed to load resource: the server responded with a status of 401 ()"
       ],
-      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON\n9.900.000 đ\n(5 đánh giá)\nCÒN HÀNG\n\nÁp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.\n\nVui lòng chọn size/màu sắc để mua hàng:\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n9.900.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nVIDEO\nTHÔNG SỐ KỸ THUẬT\nThông số kỹ thuật\nWeight\t3 kg\nDimensions\t40 x 70 x 40 cm\nChất liệu vỏ\tCarbon fiber\nChuẩn an toàn\tECE/R22-05\nKích thước\tM, L, XL, XXL\nĐÁNH GIÁ SẢN PHẨM\nVIẾT ĐÁNH GIÁ\n\nSẢN PHẨM LIÊN QUAN\n\nKHÁM PHÁ THÊM SẢN PHẨM KHÁC\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM FULLFACE ILM RACING MF-509\n\n5.850.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON FOLD\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER CARBON ALLOY\n\n10.900.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n\n3.190.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER SỢI THUỶ TINH\n\n6.000.000 đ\n\n☆☆☆☆☆\n★★★★★\nXEM SẢN PHẨM\n\nMŨ BẢO HIỂM LS2 FF327 CHALLENGER FLEX BLACK\n\n6.500.000 đ\n\n☆☆☆☆☆\n★★★★★\n\nBigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.\n\nKhách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.\n\nBIGBIKE\n\nBIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN\nGỬI\n\nBigBike chuyên cung cấp gear moto chính hãng.\n\nTHÔNG TIN\n+\nLIÊN HỆ\n+\nMẠNG XÃ HỘI\n+\n\nBigbike mong được lắng nghe và đồng hành cùng bạn trên mọi cung đường.\n\n© 2026 BigBike"
     }
   ]
 }
