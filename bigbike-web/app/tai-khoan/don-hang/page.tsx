@@ -1,226 +1,323 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { fetchMyOrders } from "@/lib/api/client-api";
-import type { OrderListItem } from "@/lib/contracts/commerce";
-import { AccountShell } from "@/components/layout/AccountShell";
-import { formatDate, formatVnd } from "@/lib/utils/format";
+import {
+  ArrowRight,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  History,
+  MapPin,
+  Receipt,
+  ShoppingBag,
+} from "lucide-react";
+import { fetchMyOrder, fetchMyOrders } from "@/lib/api/client-api";
+import type { OrderDetail, OrderListItem } from "@/lib/contracts/commerce";
+import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
+import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
-import { Button } from "@/components/ui/button";
-import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Ch\u1edd x\u00e1c nh\u1eadn",
-  ON_HOLD: "T\u1ea1m gi\u1eef",
-  PROCESSING: "\u0110ang x\u1eed l\u00fd",
-  COMPLETED: "Ho\u00e0n th\u00e0nh",
-  CANCELLED: "\u0110\u00e3 hu\u1ef7",
-  REFUNDED: "Ho\u00e0n ti\u1ec1n",
-  FAILED: "Th\u1ea5t b\u1ea1i",
-};
-
-function orderStatusTone(status: string): StatusTone {
-  const map: Record<string, StatusTone> = {
-    COMPLETED: "success",
-    PROCESSING: "warning",
-    ON_HOLD: "warning",
-    CANCELLED: "danger",
-    REFUNDED: "danger",
-    FAILED: "danger",
-  };
-  return map[status] ?? "neutral";
+function joinAddress(parts: (string | null | undefined)[]): string {
+  return parts.filter(Boolean).join(", ");
 }
 
-const TABS = [
-  { key: "ALL", label: "T\u1ea5t c\u1ea3" },
-  { key: "PROCESSING", label: "\u0110ang x\u1eed l\u00fd" },
-  { key: "COMPLETED", label: "Ho\u00e0n th\u00e0nh" },
-  { key: "CANCELLED", label: "\u0110\u00e3 hu\u1ef7" },
-];
+function OrderDetailModal({
+  orderId,
+  open,
+  onOpenChange,
+}: {
+  orderId: string | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open || !orderId) return;
+    let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setError("");
+    setOrder(null);
+    fetchMyOrder(orderId)
+      .then((res) => { if (active) setOrder(res); })
+      .catch((e: Error) => { if (active) setError(e.message ?? "Không tải được đơn hàng."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [open, orderId]);
+
+  const shipAddr =
+    order?.addresses.find((a) => a.type.toUpperCase().includes("SHIP")) ??
+    order?.addresses[0] ??
+    null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[560px] w-[calc(100%-32px)] max-h-[88vh] overflow-y-auto p-0">
+        <DialogHeader className="p-5">
+          <DialogTitle className="font-mono normal-case tracking-[0.04em]">
+            {order ? order.orderNumber : "Chi tiết đơn hàng"}
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading && <p className="p-5 text-sm text-muted-foreground">Đang tải...</p>}
+        {error && <p className="p-5 text-sm text-destructive">{error}</p>}
+
+        {order && (
+          <div className="p-5 pt-0">
+            {/* date + status */}
+            <div className="flex flex-wrap items-center gap-5 border-b border-border pb-4 text-sm text-[#555555]">
+              <span className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                {formatDate(order.placedAt)}
+              </span>
+              <span className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                {orderStatusLabel(order.status)}
+              </span>
+            </div>
+
+            {/* invoice */}
+            <div className="mt-4 flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-brand" aria-hidden />
+              <p className="m-0 text-sm font-bold uppercase tracking-[0.06em] text-[#1a1a1a]">
+                Thông tin đơn đặt hàng
+              </p>
+            </div>
+            <p className="mt-3 mb-1 text-sm font-bold text-[#1a1a1a]">Hóa đơn</p>
+
+            <div className="border-t border-border">
+              {order.lineItems.map((li) => (
+                <div key={li.id} className="flex items-center gap-3 border-b border-border py-3">
+                  {li.productThumbnailUrl ? (
+                    <Image
+                      src={resolveMediaUrl(li.productThumbnailUrl) ?? li.productThumbnailUrl}
+                      alt={safeText(li.productName, "Sản phẩm")}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 shrink-0 border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-border bg-[var(--bb-bg-surface-raised)] font-display text-xs text-muted-foreground">
+                      BB
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 truncate text-sm font-semibold uppercase text-[#1a1a1a]">
+                      {safeText(li.productName, "Sản phẩm")}
+                    </p>
+                    {li.variantName && (
+                      <p className="m-0 mt-0.5 text-sm text-[#777777]">{li.variantName}</p>
+                    )}
+                  </div>
+                  <p className="m-0 shrink-0 text-sm text-[#555555]">
+                    {li.quantity} &nbsp;x&nbsp; {formatVnd(li.unitPrice)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* totals */}
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="flex justify-between text-sm text-[#555555]">
+                <span>Tạm tính:</span>
+                <span>{formatVnd(order.subtotalAmount)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-[#555555]">
+                <span>Phí giao hàng:</span>
+                <span>{formatVnd(order.shippingAmount)}</span>
+              </div>
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-[#7c3aed]">
+                  <span>Khuyến mãi:</span>
+                  <span>-{formatVnd(order.discountAmount)}</span>
+                </div>
+              )}
+              {order.feeAmount > 0 && (
+                <div className="flex justify-between text-sm text-[#555555]">
+                  <span>Phí phụ thu:</span>
+                  <span>{formatVnd(order.feeAmount)}</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-sm font-bold uppercase text-[#1a1a1a]">Tổng tạm tính:</span>
+              <span className="font-display text-xl font-bold text-brand">
+                {formatVnd(order.totalAmount)}
+              </span>
+            </div>
+
+            {/* shipping + payment */}
+            <div className="mt-5 grid grid-cols-1 gap-5 border-t border-border pt-4 sm:grid-cols-2">
+              <div>
+                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
+                  Thông tin giao hàng
+                </p>
+                {shipAddr ? (
+                  <div className="flex flex-col gap-1.5 text-sm text-[#555555]">
+                    <span className="font-semibold text-[#1a1a1a]">{shipAddr.fullName}</span>
+                    {shipAddr.phone && <span>{shipAddr.phone}</span>}
+                    {shipAddr.email && <span>{shipAddr.email}</span>}
+                    <span className="flex items-start gap-1.5">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#9a9a9a]" aria-hidden />
+                      {joinAddress([shipAddr.addressLine1, shipAddr.ward, shipAddr.district, shipAddr.province])}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="m-0 text-sm text-muted-foreground">—</p>
+                )}
+              </div>
+              <div>
+                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
+                  Thông tin thanh toán
+                </p>
+                <p className="m-0 text-sm text-[#555555]">
+                  {order.payments[0]?.paymentMethod
+                    ? paymentMethodLabel(order.payments[0].paymentMethod)
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-border pt-3 text-right">
+              <Link href={toOrderDetailPath(order.id)} className="bb-link text-sm">
+                Xem trang đơn hàng đầy đủ →
+              </Link>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function OrderHistoryContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState<number | undefined>(undefined);
   const [error, setError] = useState("");
-  const activeTab = searchParams.get("status") ?? "ALL";
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    const statusParam = activeTab !== "ALL" ? activeTab : undefined;
-    fetchMyOrders(page, statusParam)
+    fetchMyOrders(page)
       .then((res) => {
         setOrders(res.data);
         setTotalPages(res.pagination?.totalPages ?? 1);
-        setTotalItems(res.pagination?.totalItems);
         setError("");
       })
       .catch((e: Error | undefined) => {
-        if (e) setError(e.message ?? "Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c \u0111\u01a1n h\u00e0ng.");
+        if (e) setError(e.message ?? "Không tải được đơn hàng.");
       })
       .finally(() => setLoading(false));
-  }, [page, activeTab]);
+  }, [page]);
 
-  function handleTabClick(tabKey: string) {
-    const url = tabKey === "ALL"
-      ? "/tai-khoan/don-hang/"
-      : `/tai-khoan/don-hang/?status=${tabKey}`;
-    setPage(1);
-    router.replace(url, { scroll: false });
+  function openOrder(id: string) {
+    setActiveOrderId(id);
+    setModalOpen(true);
   }
 
   return (
     <>
-      <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
-        <div>
-          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">{"\u0110\u01a1n h\u00e0ng"}</h2>
-          <p className="text-xs text-muted-foreground mt-1 m-0">
-            {totalItems !== undefined
-              ? `${totalItems} \u0111\u01a1n h\u00e0ng`
-              : orders.length > 0
-              ? `${orders.length} \u0111\u01a1n h\u00e0ng`
-              : "L\u1ecbch s\u1eed mua h\u00e0ng"}
-          </p>
-        </div>
-      </div>
+      <AccountSectionHeading
+        title="Lịch sử mua hàng"
+        icon={<History className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
+      />
 
-      <div className="flex gap-0 mb-5 border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TABS.map((tab) => (
-          <Button
-            key={tab.key}
-            type="button"
-            variant="ghost"
-            className={`px-5 py-3 h-auto rounded-none text-[11px] font-bold tracking-[0.12em] uppercase border-b-2 -mb-px flex-shrink-0 transition-colors ${activeTab === tab.key ? "text-foreground border-b-brand" : "text-muted-foreground border-b-transparent hover:text-foreground"}`}
-            onClick={() => handleTabClick(tab.key)}
-          >
-            {tab.label}
-            {tab.key === activeTab && totalItems !== undefined && tab.key !== "ALL" && (
-              <span className="ml-2 bg-[var(--bb-bg-surface-raised)] py-[2px] px-[7px] rounded-full text-xs">{totalItems}</span>
-            )}
-          </Button>
-        ))}
-      </div>
-
-      {error && <p className="text-brand text-sm mb-4 m-0">{error}</p>}
+      {error && <p className="mb-4 text-sm text-brand">{error}</p>}
 
       {loading ? (
-        <div className="bb-skel-stack" aria-busy="true">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card border border-border mb-[14px] overflow-hidden">
-              <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
-                <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
-                  <div className="bb-skel-col">
-                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
-                    <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
-                  </div>
-                  <div className="bb-skel-col">
-                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
-                    <span className="bb-skel bb-skel--text" style={{ width: 90 }} />
-                  </div>
-                  <div className="bb-skel-col">
-                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
-                    <span className="bb-skel bb-skel--text" style={{ width: 70 }} />
-                  </div>
-                </div>
-                <span className="bb-skel bb-skel--chip" style={{ width: 90 }} />
-              </div>
-              <div className="flex py-4 px-5 gap-[18px] items-center max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-                <div className="bb-skel-row">
-                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: "var(--bb-radius-sm)" }} />
-                  <span className="bb-skel" style={{ width: 56, height: 56, borderRadius: "var(--bb-radius-sm)" }} />
-                </div>
-                <div className="bb-skel-col" style={{ flex: 1 }}>
-                  <span className="bb-skel bb-skel--text bb-skel-w-60" />
-                  <span className="bb-skel bb-skel--text bb-skel-w-40" />
-                </div>
-                <div className="bb-skel-col" style={{ alignItems: "flex-end" }}>
-                  <span className="bb-skel bb-skel--title" style={{ width: 120, height: "1.2em" }} />
-                  <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
-                </div>
-              </div>
+        <div className="flex flex-col gap-3.5" aria-busy="true">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border border-border p-5">
+              <span className="bb-skel bb-skel--text bb-skel-w-60" />
+              <span className="bb-skel bb-skel--text bb-skel-w-40" style={{ marginTop: 10 }} />
             </div>
           ))}
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-[60px] text-muted-foreground">
-          <p className="text-muted-foreground text-sm m-0">{"Kh\u00f4ng c\u00f3 \u0111\u01a1n h\u00e0ng n\u00e0o."}</p>
+        <div className="py-[60px] text-center">
+          <p className="m-0 text-sm text-muted-foreground">Bạn chưa có đơn hàng nào.</p>
         </div>
       ) : (
         <>
-          {orders.map((order) => (
-            <div key={order.id} className="bg-card border border-border mb-[14px] overflow-hidden">
-              <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
-                <div className="flex gap-[22px] max-sm:flex-wrap max-sm:gap-x-[18px] max-sm:gap-y-3">
-                  <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
-                    {"M\u00e3 \u0111\u01a1n"}
-                    <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">#{order.orderNumber}</b>
-                  </div>
-                  <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
-                    {"Ng\u00e0y \u0111\u1eb7t"}
-                    <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{formatDate(order.placedAt)}</b>
-                  </div>
-                  <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
-                    {"S\u1ea3n ph\u1ea9m"}
-                    <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{`${order.itemCount} m\u00f3n`}</b>
-                  </div>
+          <div className="flex flex-col gap-3.5">
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                className="flex flex-col gap-3 border border-border bg-white px-5 py-4 md:flex-row md:flex-wrap md:items-center md:gap-x-8 md:gap-y-3"
+              >
+                {/* Mobile: name + arrow share the top row. On desktop this
+                    wrapper dissolves (md:contents) so all fields sit on one row. */}
+                <div className="flex items-start justify-between gap-3 md:contents">
+                  <p className="m-0 line-clamp-2 min-w-0 flex-1 text-sm font-semibold uppercase leading-snug text-[#1a1a1a] md:min-w-[180px]">
+                    {order.productNames && order.productNames.length > 0
+                      ? order.productNames.join(" + ")
+                      : `${order.itemCount} sản phẩm`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openOrder(order.id)}
+                    aria-label={`Xem đơn ${order.orderNumber}`}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-[var(--bb-color-red-600)] md:order-last"
+                  >
+                    <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
+                  </button>
                 </div>
-                <StatusBadge tone={orderStatusTone(order.status)}>
-                  {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                </StatusBadge>
+                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                  <Receipt className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  {order.orderNumber}
+                </span>
+                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                  <Calendar className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  {formatDate(order.placedAt)}
+                </span>
+                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                  <ClipboardList className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  {orderStatusLabel(order.status)}
+                </span>
               </div>
-              <div className="flex py-4 px-5 gap-[18px] items-center max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-                <div className="flex gap-2 max-sm:overflow-x-auto">
-                  <div className="w-14 h-14 bg-[var(--bb-bg-surface-raised)] border border-border flex items-center justify-center font-display text-[9px] text-muted-foreground uppercase overflow-hidden flex-shrink-0">BB</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <b className="block text-sm text-foreground mb-[3px]">{`${order.itemCount} s\u1ea3n ph\u1ea9m`}</b>
-                  <span className="text-[11px] text-muted-foreground">{formatDate(order.placedAt)}</span>
-                </div>
-                <div className="text-right max-sm:text-left">
-                  <b className="block font-display text-[18px] text-brand tracking-[0.01em] leading-[1] mb-1">{formatVnd(order.totalAmount)}</b>
-                  <span className="text-xs text-muted-foreground tracking-[0.1em] uppercase">{order.currency}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 py-3 px-5 border-t border-border bg-[var(--bb-bg-surface-raised)]">
-                <Button asChild variant="secondary" size="sm">
-                  <Link href={toOrderDetailPath(order.id)}>{"Xem chi ti\u1ebft"}</Link>
-                </Button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {totalPages > 1 && (
-            <div className="flex gap-[10px] items-center mt-5">
-              <Button
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
+                aria-label="Trang trước"
+                className="text-[#555555] disabled:opacity-30"
               >
-                {"Trang tr\u01b0\u1edbc"}
-              </Button>
-              <span className="text-xs text-muted-foreground">{page} / {totalPages}</span>
-              <Button
+                <ChevronLeft className="h-5 w-5" aria-hidden />
+              </button>
+              <span className="text-sm text-[#1a1a1a]">
+                {page} <span className="text-[#9a9a9a]">- {totalPages}</span>
+              </span>
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
+                aria-label="Trang sau"
+                className="text-[#555555] disabled:opacity-30"
               >
-                Trang sau
-              </Button>
+                <ChevronRight className="h-5 w-5" aria-hidden />
+              </button>
             </div>
           )}
         </>
       )}
+
+      <OrderDetailModal orderId={activeOrderId} open={modalOpen} onOpenChange={setModalOpen} />
     </>
   );
 }

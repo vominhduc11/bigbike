@@ -5,8 +5,10 @@ import type {
   ApiListResponse,
   Article,
   Brand,
+  CatalogFacets,
   Category,
   ClientError,
+  ContentCategoryWithCount,
   DataResult,
   HomeSlider,
   HomeVideo,
@@ -309,6 +311,24 @@ export function getBrandBySlug(slug: string): Promise<DataResult<Brand>> {
   return loadData(`/api/v1/brands/${slug}`, 3600, ["brands", `brand:${slug}`]);
 }
 
+export type CatalogFacetsQuery = {
+  category?: string;
+  q?: string;
+};
+
+/** Product counts per filter value for the catalog sidebar. See /api/v1/catalog/facets. */
+export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<CatalogFacets>> {
+  return loadDataWithQuery<CatalogFacets>(
+    "/api/v1/catalog/facets",
+    {
+      category: query.category,
+      q: query.q,
+    },
+    3600,
+    ["products", "categories", "brands"],
+  );
+}
+
 export type ArticleListQuery = {
   page?: number;
   size?: number;
@@ -338,6 +358,10 @@ export function getArticleBySlug(slug: string): Promise<DataResult<Article>> {
   return loadData(`/api/v1/articles/${slug}`, 3600, ["articles", `article:${slug}`]);
 }
 
+export function listContentCategories(): Promise<ListResult<ContentCategoryWithCount>> {
+  return loadList("/api/v1/content-categories", {}, 3600, ["articles"]);
+}
+
 export function listPages(): Promise<ListResult<Page>> {
   return loadList("/api/v1/pages", {}, 3600, ["pages"]);
 }
@@ -354,8 +378,13 @@ export function listPublicSettings(): Promise<DataResult<PublicSiteSetting[]>> {
   return loadData("/api/v1/settings/public", 3600, ["settings"]);
 }
 
+/** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
+export function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
+  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location }, 3600, ["sliders"]);
+}
+
 export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
-  return loadDataWithQuery<HomeSlider[]>("/api/v1/sliders", { location: "home" }, 3600, ["sliders"]);
+  return listSliders("home");
 }
 
 export function listHomeVideos(): Promise<DataResult<HomeVideo[]>> {

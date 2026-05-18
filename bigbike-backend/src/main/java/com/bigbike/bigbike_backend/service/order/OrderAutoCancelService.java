@@ -32,6 +32,11 @@ public class OrderAutoCancelService {
     private static final String SETTING_KEY = "bacs_unpaid_auto_cancel_hours";
     private static final long DEFAULT_HOURS = 72L;
 
+    // Manual-confirm methods whose ON_HOLD/UNPAID orders are eligible for
+    // auto-cancel. ALEPAY/ZALOPAY are included for gateway phase 1.
+    private static final java.util.Set<String> MANUAL_CONFIRM_PAYMENT_METHODS =
+            java.util.Set.of("BACS", "ALEPAY", "ZALOPAY");
+
     private final OrderJpaRepository orderRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final SiteSettingJpaRepository settingRepo;
@@ -94,7 +99,7 @@ public class OrderAutoCancelService {
         // Re-check after re-loading to avoid racing with a manual admin action
         // or a payment confirmation that landed since the candidate query ran.
         if (!"ON_HOLD".equals(order.getStatus()) || !"UNPAID".equals(order.getPaymentStatus())
-                || !"BACS".equals(order.getPaymentMethod())) {
+                || !MANUAL_CONFIRM_PAYMENT_METHODS.contains(order.getPaymentMethod())) {
             return false;
         }
 

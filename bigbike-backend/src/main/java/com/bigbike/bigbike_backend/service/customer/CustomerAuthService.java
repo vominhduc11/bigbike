@@ -77,9 +77,8 @@ public class CustomerAuthService {
         }
 
         CustomerSessionResult tokens = sessionService.createSession(saved.getId(), ipAddress, userAgent);
-        return new CustomerAuthResult(
-                new CustomerAuthResponse(toSummary(saved), tokens.rawCsrfToken()),
-                tokens.rawSessionToken(), tokens.rawRefreshToken());
+        return CustomerAuthResult.of(
+                new CustomerAuthResponse(toSummary(saved), tokens.rawCsrfToken()), tokens);
     }
 
     @Transactional
@@ -114,10 +113,11 @@ public class CustomerAuthService {
             guestOrderLinkingService.linkVerifiedEmailOrders(customer.getId());
         }
 
-        CustomerSessionResult tokens = sessionService.createSession(customer.getId(), ipAddress, userAgent);
-        return new CustomerAuthResult(
-                new CustomerAuthResponse(toSummary(customer), tokens.rawCsrfToken()),
-                tokens.rawSessionToken(), tokens.rawRefreshToken());
+        boolean remember = Boolean.TRUE.equals(req.remember());
+        CustomerSessionResult tokens =
+                sessionService.createSession(customer.getId(), ipAddress, userAgent, remember);
+        return CustomerAuthResult.of(
+                new CustomerAuthResponse(toSummary(customer), tokens.rawCsrfToken()), tokens);
     }
 
     @Transactional
@@ -134,9 +134,8 @@ public class CustomerAuthService {
         }
 
         CustomerSessionResult tokens = sessionService.rotateSession(session);
-        return new CustomerAuthResult(
-                new CustomerAuthResponse(toSummary(customer), tokens.rawCsrfToken()),
-                tokens.rawSessionToken(), tokens.rawRefreshToken());
+        return CustomerAuthResult.of(
+                new CustomerAuthResponse(toSummary(customer), tokens.rawCsrfToken()), tokens);
     }
 
     @Transactional
@@ -208,6 +207,9 @@ public class CustomerAuthService {
                 throw ValidationException.fromField("dob", "INVALID", "Ngày sinh không hợp lệ. Định dạng: YYYY-MM-DD.");
             }
         }
+        if (req.newsletterSubscribed() != null) {
+            customer.setNewsletterSubscribed(req.newsletterSubscribed());
+        }
         customer.setUpdatedAt(Instant.now());
         try {
             return toSummary(customerRepo.saveAndFlush(customer));
@@ -240,7 +242,7 @@ public class CustomerAuthService {
 
     private CustomerSummary toSummary(CustomerEntity c) {
         return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
-                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null);
+                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null, c.isNewsletterSubscribed());
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {

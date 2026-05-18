@@ -132,7 +132,7 @@ function VideoModal({
             <span className="font-display text-2xl font-extrabold uppercase tracking-[0.22em] text-white/80">BIGBIKE</span>
           </div>
         )}
-        <p className="mt-3.5 text-center font-display text-[0.9375rem] font-semibold uppercase tracking-[0.04em] text-white/85">
+        <p className="mt-3.5 text-center font-display text-15 font-semibold uppercase tracking-[0.04em] text-white/85">
           {safeText(video.title, "Video")}
         </p>
       </div>

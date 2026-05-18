@@ -55,7 +55,7 @@ File này dùng làm nền cho:
 | Payment Provider | Third-party actor | Tự động cập nhật payment qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
 | Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping/fulfillment integration. | `NOT_FOUND_IN_REPO` | `AdminShippingController` confirms internal zones/methods only. |
 | Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Web analytics/Sentry/GTM references. | `INFERRED_FROM_STRUCTURE` | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` |
-| Support Agent | Internal user | Hỗ trợ khách hàng/contact/order issues. | Potentially admin customers/orders/contact. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
+| Support Agent | Internal user | Hỗ trợ khách hàng/order issues. | Potentially admin customers/orders. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | Internal user | Quản lý kho/tồn/stock movement. | Inventory module. | `NEEDS_VERIFICATION` | Inventory module exists, no explicit warehouse role found. |
 
 ## 4. Public Website Roles
@@ -65,13 +65,13 @@ File này dùng làm nền cho:
 | Field | Value |
 |---|---|
 | Purpose | Người truy cập chưa đăng nhập, xem sản phẩm/content và có thể mua hàng dạng guest. |
-| Access Area | Homepage, product listing/detail, category/brand, search, articles/pages, public menu/settings, cart, checkout, order lookup, contact. |
-| Main Actions | Xem sản phẩm/content, tìm kiếm, thêm giỏ hàng, checkout guest, quick-buy, gửi contact, submit review public nếu endpoint được dùng. |
+| Access Area | Homepage, product listing/detail, category/brand, search, articles/pages, public menu/settings, cart, checkout, order lookup. |
+| Main Actions | Xem sản phẩm/content, tìm kiếm, thêm giỏ hàng, checkout guest, quick-buy, submit review public nếu endpoint được dùng. |
 | Restricted Actions | Không được gọi admin APIs; không được xem customer account/order protected APIs nếu chưa authenticate; không được gọi customer protected routes. |
-| Related Modules | Homepage, Catalog, Search, Cart, Checkout, Content, Contact, Reviews, SEO/Menu. |
-| Related Business Processes | Customer Browsing, Cart/Checkout, Contact, Review submission. |
+| Related Modules | Homepage, Catalog, Search, Cart, Checkout, Content, Reviews, SEO/Menu. |
+| Related Business Processes | Customer Browsing, Cart/Checkout, Review submission. |
 | Status | `CONFIRMED_FROM_CODE` |
-| Evidence | `SecurityConfig`, `CheckoutService`, `CartController`, `CatalogController`, `ContentController`, `ContactController`, `bigbike-web/app/page.tsx` |
+| Evidence | `SecurityConfig`, `CheckoutService`, `CartController`, `CatalogController`, `ContentController`, `bigbike-web/app/page.tsx` |
 
 #### Business-level allowed actions
 
@@ -84,7 +84,6 @@ File này dùng làm nền cho:
 | Checkout guest | `CONFIRMED_FROM_CODE` | `CheckoutService`, `SecurityConfig`, `PHASE_1F_CHECKOUT_API_REPORT.md` | Guest/customer checkout supported. |
 | Quick-buy guest | `CONFIRMED_FROM_CODE` | `CheckoutService`, `SecurityConfig` | Quick-buy public POST. |
 | Order lookup | `CONFIRMED_FROM_CODE` | `OrderLookupController`, `SecurityConfig` | Public GET order lookup. |
-| Contact submission | `CONFIRMED_FROM_CODE` | `ContactController`, `SecurityConfig` | Public contact form. |
 | Access admin portal/API | `CONFIRMED_FROM_CODE` restricted | `SecurityConfig` | `/api/v1/admin/**` requires `ROLE_ADMIN`. |
 
 #### Needs Verification
@@ -347,7 +346,7 @@ Admin default role has broad business access to read/update many admin modules. 
 
 | Role | Main Responsibilities | Related Modules | Related Processes | Status |
 |---|---|---|---|---|
-| Guest / Visitor | Browse public content/products, search, cart/checkout guest, contact, order lookup. | Public Web, Catalog, Cart, Checkout, Content, Contact. | Customer Browsing, Cart/Checkout. | `CONFIRMED_FROM_CODE` |
+| Guest / Visitor | Browse public content/products, search, cart/checkout guest, order lookup. | Public Web, Catalog, Cart, Checkout, Content. | Customer Browsing, Cart/Checkout. | `CONFIRMED_FROM_CODE` |
 | Customer | Account auth, profile/address, checkout, order history/detail, returns. | Customer Account, Orders, Returns, Checkout. | Customer Account, Checkout, Return/Refund. | `CONFIRMED_FROM_CODE` |
 | Admin | Broad shop operation and admin module management. | Products, Orders, Customers, Media, Content, Settings, Reports, Users. | Product/Order/Content/Settings/Admin management. | `CONFIRMED_FROM_CODE` |
 | Super Admin | Highest-level system/admin governance. | All admin modules, users, roles, settings. | RBAC/User Management, Configuration, all operations. | `CONFIRMED_FROM_CODE` |
@@ -387,7 +386,7 @@ Admin default role has broad business access to read/update many admin modules. 
 
 | Role | Allowed / Related Modules | Level of Access | Status | Evidence |
 |---|---|---|---|---|
-| Guest / Visitor | Homepage, Catalog, Search, Cart, Checkout, Content, Contact, Order Lookup, Public Settings/Menu. | View public / transact guest. | `CONFIRMED_FROM_CODE` | `SecurityConfig`, public controllers, web routes |
+| Guest / Visitor | Homepage, Catalog, Search, Cart, Checkout, Content, Order Lookup, Public Settings/Menu. | View public / transact guest. | `CONFIRMED_FROM_CODE` | `SecurityConfig`, public controllers, web routes |
 | Customer | Account, Profile, Addresses, Orders, Returns, Cart, Checkout. | View/manage own account and orders. | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOrderController`, `SecurityConfig` |
 | Admin | Most admin business modules. | Manage/process/configure depending permission list. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
 | Super Admin | All admin modules. | Manage/configure/govern all. | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
@@ -472,7 +471,7 @@ Production auth caveat:
 | Role / Actor | Status | Reason / Gap |
 |---|---|---|
 | Staff as exact technical role | `NOT_FOUND_IN_REPO` | No `STAFF` role in `AdminRolePermissions.MAP`; business staff should map to built-in/custom roles. |
-| Support Agent | `NEEDS_VERIFICATION` | Customer/order/contact support may be needed, but no explicit `SUPPORT` role found. |
+| Support Agent | `NEEDS_VERIFICATION` | Customer/order support may be needed, but no explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | `NEEDS_VERIFICATION` | Inventory module exists, but no explicit warehouse role found. |
 | Payment Provider | `NOT_FOUND_IN_REPO` | No payment webhook/provider integration found. |
 | Shipping Provider | `NOT_FOUND_IN_REPO` | No carrier-specific integration found. |
@@ -486,7 +485,7 @@ Production auth caveat:
 
 | Role / Actor | Evidence Path | What It Proves | Confidence |
 |---|---|---|---|
-| Guest / Visitor | `SecurityConfig`, `CatalogController`, `CartController`, `CheckoutController`, `bigbike-web/app/page.tsx` | Public access to browsing/search/cart/checkout/contact/order lookup. | High |
+| Guest / Visitor | `SecurityConfig`, `CatalogController`, `CartController`, `CheckoutController`, `bigbike-web/app/page.tsx` | Public access to browsing/search/cart/checkout/order lookup. | High |
 | Customer | `CustomerAuthController`, `CustomerOrderController`, `CustomerAddressController`, `SecurityConfig`, `PHASE_1D_CUSTOMER_AUTH_REPORT.md` | Customer auth/account/order/return capabilities and `ROLE_CUSTOMER` protection. | High |
 | Admin | `AdminRolePermissions.java`, `SecurityConfig`, `DevAdminAuthService.java`, admin controllers | Admin role/permission mapping and admin API protection. | High |
 | Super Admin | `AdminRolePermissions.java`, `AdminAdminUsersService.java`, `AdminRolesController.java` | Wildcard permission and Super Admin guardrails. | High |

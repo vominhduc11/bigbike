@@ -95,7 +95,7 @@ export default async function PolicyPage({ params }: Props) {
             className="bb-richtext"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
           />
-          <p className="text-muted-foreground text-xs text-right mb-10">Cập nhật {formatDate(page.updatedAt)}</p>
+          <p className="text-muted-foreground text-sm text-right mb-10">Cập nhật {formatDate(page.updatedAt)}</p>
         </div>
       </div>
     </section>

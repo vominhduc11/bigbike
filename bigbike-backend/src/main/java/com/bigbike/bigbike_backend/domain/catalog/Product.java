@@ -34,6 +34,8 @@ public record Product(
         Integer ratingCount,
         /** Long-form rich-HTML SEO copy rendered at the bottom of PDP. */
         String contentBottom,
+        /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
+        String promotionContent,
         SeoMeta seo,
         Instant createdAt,
         Instant updatedAt

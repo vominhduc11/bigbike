@@ -385,7 +385,7 @@ export function SearchToggle() {
                                     fill="none"
                                     stroke="currentColor"
                                     strokeWidth="1.5"
-                                    className="text-white/30"
+                                    className="text-white/50"
                                     aria-hidden="true"
                                   >
                                     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -432,7 +432,7 @@ export function SearchToggle() {
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="text-white/30"
+                      className="text-white/50"
                       aria-hidden="true"
                     >
                       <circle cx="11" cy="11" r="8" />
@@ -442,7 +442,7 @@ export function SearchToggle() {
                     <p className="text-sm text-white/80">
                       Không tìm thấy sản phẩm phù hợp với &ldquo;{query.trim()}&rdquo;
                     </p>
-                    <p className="text-xs text-white/40">
+                    <p className="text-sm text-white/40">
                       Thử từ khoá khác hoặc{" "}
                       <Link
                         href={toProductListPath()}

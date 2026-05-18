@@ -18,7 +18,8 @@ import org.mapstruct.ReportingPolicy;
 public interface OrderMapper {
 
     @Mapping(target = "itemCount", source = "itemCount")
-    OrderListItemResponse toCustomerListItem(OrderEntity entity, int itemCount);
+    @Mapping(target = "productNames", source = "productNames")
+    OrderListItemResponse toCustomerListItem(OrderEntity entity, int itemCount, List<String> productNames);
 
     @Mapping(target = "itemCount", source = "itemCount")
     AdminOrderListItemResponse toAdminListItem(OrderEntity entity, int itemCount);

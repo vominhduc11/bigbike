@@ -1,9 +1,20 @@
+import i18n from './i18n'
+
 /**
- * Canonical VND formatter for admin — "1.250.000 ₫".
+ * Maps the active UI language to a number/date locale.
+ * BigBike chỉ có VI và EN — mặc định VI cho mọi ngôn ngữ khác.
+ */
+function activeLocale() {
+  return i18n.language === 'en' ? 'en-US' : 'vi-VN'
+}
+
+/**
+ * Canonical VND formatter for admin — "1.250.000 ₫" (VI) / "1,250,000 ₫" (EN).
+ * Tiền tệ luôn là VND; chỉ cách nhóm chữ số đổi theo ngôn ngữ đang chọn.
  * Accepts integer or float; rounds to nearest integer.
  * Returns em-dash for null/undefined/NaN.
  */
-export function formatCurrencyVnd(amount, locale = 'vi-VN') {
+export function formatCurrencyVnd(amount, locale = activeLocale()) {
   if (amount == null || Number.isNaN(Number(amount))) return '—'
   return `${new Intl.NumberFormat(locale).format(Math.round(Number(amount)))} ₫`
 }
@@ -21,7 +32,7 @@ export function formatDateTime(value) {
     return '—'
   }
 
-  return parsed.toLocaleString('vi-VN', {
+  return parsed.toLocaleString(activeLocale(), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -92,7 +103,7 @@ export function formatDateTimeWithSeconds(value) {
   if (!value) return '—'
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return '—'
-  return parsed.toLocaleString('vi-VN', {
+  return parsed.toLocaleString(activeLocale(), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

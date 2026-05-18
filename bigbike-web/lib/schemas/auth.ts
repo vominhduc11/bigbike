@@ -3,6 +3,7 @@ import { z } from "zod";
 export const loginSchema = z.object({
   login: z.string().min(1, "Vui lòng nhập email hoặc số điện thoại"),
   password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+  remember: z.boolean(),
 });
 
 export const registerSchema = z

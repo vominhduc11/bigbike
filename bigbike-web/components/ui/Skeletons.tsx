@@ -140,7 +140,7 @@ export function HomeSkeleton() {
   return (
     <SkeletonRoot label="Đang tải trang chủ" className="bb-home">
       {/* Hero slider */}
-      <div className="relative w-full select-none bg-black [aspect-ratio:16/5.5] max-[600px]:aspect-[4/5]">
+      <div className="relative w-full select-none bg-black [aspect-ratio:16/6] max-[600px]:aspect-[4/5]">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
 
@@ -158,24 +158,14 @@ export function HomeSkeleton() {
           ))}
         </div>
 
-        {/* Featured 3-tile */}
+        {/* Featured 3-tile — nhãn danh mục + tên + nút "Mua ngay" */}
         <div className="bb-section">
-          <div className="bb-section-head">
-            <div className="bb-skel-col" style={{ flex: 1 }}>
-              <SkelText w="20%" />
-              <SkelTitle w="40%" h="1.6em" />
-            </div>
-            <SkelButton w={120} />
-          </div>
-          <div className="bb-featured-grid-3">
+          <div className="grid grid-cols-3 gap-4 py-[var(--bb-space-12)] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bb-tile-3">
-                <div className="bb-skel-col" style={{ width: "62%" }}>
-                  <SkelText w="40%" />
-                  <SkelTitle w="80%" />
-                  <SkelText w="50%" />
-                  <SkelButton w={120} />
-                </div>
+              <div key={i} className="flex min-h-[200px] flex-col justify-center gap-3 bg-muted p-6">
+                <SkelText w="35%" />
+                <SkelTitle w="72%" />
+                <SkelButton w={110} />
               </div>
             ))}
           </div>
@@ -917,23 +907,38 @@ export function OrderConfirmSkeleton() {
   );
 }
 
-/** Contact page — h1 + intro + 2-col form+info */
+/** Contact page — hero + 2-col (info blocks / map) */
 export function ContactSkeleton() {
   return (
     <SkeletonRoot label="Đang tải trang liên hệ">
       <section className="bb-page">
+        <SkelBlock w="100%" h={300} />
         <div className="bb-container">
-          <header style={{ marginBottom: 24 }}>
-            <SkelTitle w="40%" h="2em" />
-            <SkelText w="60%" />
-          </header>
-          <div style={{ display: "grid", gap: 28, gridTemplateColumns: "1.2fr 1fr" }}>
-            <FormSkeleton fields={5} twoCol />
+          <div
+            style={{
+              display: "grid",
+              gap: 60,
+              gridTemplateColumns: "1fr 1fr",
+              paddingTop: 50,
+              paddingBottom: 60,
+            }}
+          >
             <div className="bb-skel-stack">
-              <SkelBlock w="100%" h={180} />
-              <SkelText w="80%" />
-              <SkelText w="60%" />
-              <SkelText w="70%" />
+              <SkelTitle w="55%" h="1.6em" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16 }}>
+                  <SkelBlock w={28} h={28} />
+                  <div style={{ flex: 1 }}>
+                    <SkelText w="40%" />
+                    <SkelText w="80%" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="bb-skel-stack">
+              <SkelTitle w="55%" h="1.6em" />
+              <SkelBlock w="100%" h={420} />
+              <SkelBlock w="100%" h={48} />
             </div>
           </div>
         </div>

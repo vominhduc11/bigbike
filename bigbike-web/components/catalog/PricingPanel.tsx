@@ -48,7 +48,7 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
       <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal">{formatVnd(current)}</b>
       {compare && compare > current && <s className="text-muted-foreground text-base">{formatVnd(compare)}</s>}
       {savings > 0 && (
-        <span className="bg-brand text-white py-1 px-2.5 font-bold text-11 tracking-[0.1em]">Tiết kiệm {formatVnd(savings)}</span>
+        <span className="bg-brand text-white py-1 px-2.5 font-bold text-sm tracking-[0.1em]">Tiết kiệm {formatVnd(savings)}</span>
       )}
     </div>
   );

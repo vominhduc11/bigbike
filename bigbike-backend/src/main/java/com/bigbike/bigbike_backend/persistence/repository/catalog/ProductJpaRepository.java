@@ -129,4 +129,8 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
 
     @Query("SELECT p.slug FROM ProductEntity p WHERE p.id IN :ids AND p.slug IS NOT NULL")
     List<String> findSlugsByIds(@Param("ids") List<String> ids);
+
+    /** (id, imageUrl) pairs — used to resolve order line-item thumbnails read-time. */
+    @Query("SELECT p.id, p.imageUrl FROM ProductEntity p WHERE p.id IN :ids")
+    List<Object[]> findImageUrlsByIds(@Param("ids") List<String> ids);
 }

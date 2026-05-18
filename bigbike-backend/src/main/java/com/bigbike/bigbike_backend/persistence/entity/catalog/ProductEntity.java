@@ -141,6 +141,9 @@ public class ProductEntity {
     @Column(name = "content_bottom", columnDefinition = "text")
     private String contentBottom;
 
+    @Column(name = "promotion_content", columnDefinition = "text")
+    private String promotionContent;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")

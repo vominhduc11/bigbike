@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { RegisterForm } from "./RegisterForm";
+import { AuthTabs } from "@/app/dang-nhap/AuthTabs";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đăng ký tài khoản",
@@ -10,5 +10,5 @@ export const metadata: Metadata = buildPublicMetadata({
 });
 
 export default function RegisterPage() {
-  return <RegisterForm />;
+  return <AuthTabs defaultTab="register" />;
 }

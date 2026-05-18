@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.repository.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import java.util.List;
 import java.util.Optional;
@@ -41,4 +42,8 @@ public interface ContentReadRepository {
     List<Article> findArticlesByFilter(PublishStatus publishStatus, String q);
 
     List<Page> findPagesByFilter(PublishStatus publishStatus, String q);
+
+    // --- Content categories with published-article counts (Tin tức filter) ---
+
+    List<ContentCategoryWithCount> listContentCategoriesWithCounts();
 }

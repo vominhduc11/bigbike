@@ -7,6 +7,7 @@ public record CustomerAddressResponse(
         String type,
         String fullName,
         String phone,
+        String email,
         String country,
         String province,
         String district,

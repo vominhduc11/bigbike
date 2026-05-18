@@ -12,7 +12,7 @@ import {
 
 describe("formatVnd", () => {
   it("formats a positive integer", () => {
-    expect(formatVnd(100000)).toBe("100.000 VND");
+    expect(formatVnd(100000)).toBe("100.000 đ");
   });
 
   it("returns 'Lien he' for null", () => {
@@ -24,7 +24,7 @@ describe("formatVnd", () => {
   });
 
   it("handles zero", () => {
-    expect(formatVnd(0)).toBe("0 VND");
+    expect(formatVnd(0)).toBe("0 đ");
   });
 });
 

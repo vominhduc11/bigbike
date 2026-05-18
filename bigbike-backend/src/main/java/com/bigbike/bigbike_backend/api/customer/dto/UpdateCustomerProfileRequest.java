@@ -23,5 +23,7 @@ public record UpdateCustomerProfileRequest(
         @Pattern(regexp = "^(male|female|other)?$", message = "Giới tính không hợp lệ.")
         String gender,
 
-        String dob
+        String dob,
+
+        Boolean newsletterSubscribed
 ) {}

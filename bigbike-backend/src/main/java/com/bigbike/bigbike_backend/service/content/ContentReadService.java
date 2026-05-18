@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.content;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -52,6 +53,11 @@ public class ContentReadService {
 
     public List<Page> listPublishedPages() {
         return contentReadRepository.findPagesByFilter(PublishStatus.PUBLISHED, null);
+    }
+
+    /** Content (news) categories with their PUBLISHED-article counts, for the Tin tức filter. */
+    public List<ContentCategoryWithCount> listContentCategories() {
+        return contentReadRepository.listContentCategoriesWithCounts();
     }
 
     private static Sort toSpringSort(SortSpec spec) {

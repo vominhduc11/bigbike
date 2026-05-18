@@ -45,6 +45,12 @@ public class UpsertArticleRequest {
 
     private List<@Size(max = 120, message = "Tag is too long.") String> tags;
 
+    /**
+     * Catalog product IDs showcased in the article ("Sản phẩm sử dụng trong bài viết").
+     * null keeps the existing set; an empty list clears it (same presence semantics as {@code tags}).
+     */
+    private List<@Size(max = 64, message = "Product ID is too long.") String> productIds;
+
     private PublishStatus publishStatus;
 
     @Valid

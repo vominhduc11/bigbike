@@ -168,17 +168,14 @@ export default async function ProductDetailPage({
       {/* Breadcrumb */}
       <nav className="bb-breadcrumb" aria-label="Điều hướng">
         <Link href={toHomePath()}>Trang chủ</Link>
-        {effectiveCategory?.name && effectiveCategory.slug ? (
+        <span className="sep" aria-hidden="true">/</span>
+        <Link href={toProductListPath()}>Danh mục sản phẩm</Link>
+        {effectiveCategory?.name && effectiveCategory.slug && (
           <>
             <span className="sep" aria-hidden="true">/</span>
             <Link href={toCategoryPath(effectiveCategory.slug)}>
               {effectiveCategory.name}
             </Link>
-          </>
-        ) : (
-          <>
-            <span className="sep" aria-hidden="true">/</span>
-            <Link href={toProductListPath()}>Sản phẩm</Link>
           </>
         )}
         <span className="sep" aria-hidden="true">/</span>
@@ -220,6 +217,7 @@ export default async function ProductDetailPage({
         <ProductTabs
           specifications={specs}
           description={product.description}
+          promotionContent={product.promotionContent}
           videos={videos}
           productName={productName}
         />
@@ -232,20 +230,11 @@ export default async function ProductDetailPage({
           <section className="bb-pdp-related">
             <div className="bb-pdp-related-header">
               <div>
-                <p className="bb-kicker">
-                  DANH MỤC{" "}
-                  {effectiveCategory?.name?.toUpperCase() ?? "SẢN PHẨM"}
-                </p>
-                <h2 className="bb-pdp-related-title">Sản phẩm liên quan</h2>
+                <p className="bb-kicker">SẢN PHẨM LIÊN QUAN</p>
+                <h2 className="bb-pdp-related-title">
+                  Khám phá thêm sản phẩm khác
+                </h2>
               </div>
-              {effectiveCategory?.slug && (
-                <Link
-                  href={toCategoryPath(effectiveCategory.slug)}
-                  className="bb-view-all-link"
-                >
-                  Xem tất cả →
-                </Link>
-              )}
             </div>
             <FeaturedProductsCarousel products={relatedProducts} />
           </section>

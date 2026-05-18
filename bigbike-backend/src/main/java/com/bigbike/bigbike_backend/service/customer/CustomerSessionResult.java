@@ -7,5 +7,9 @@ public record CustomerSessionResult(
         UUID customerId,
         String rawSessionToken,
         String rawRefreshToken,
-        String rawCsrfToken
+        String rawCsrfToken,
+        /** Lifetime applied to the bb_session / bb_csrf cookies, in seconds. */
+        long sessionTtlSeconds,
+        /** Lifetime applied to the bb_refresh cookie, in seconds — varies with "remember". */
+        long refreshTtlSeconds
 ) {}

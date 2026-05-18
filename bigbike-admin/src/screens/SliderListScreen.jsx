@@ -32,7 +32,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
-const LOCATIONS = ['home', 'category', 'promotion']
+const LOCATIONS = ['home', 'category', 'category_sidebar', 'promotion']
 const EMPTY_FORM = {
   location: 'home',
   sortOrder: '0',

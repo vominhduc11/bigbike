@@ -28,9 +28,37 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `GET` | `/api/v1/address/provinces` | List provinces | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
 | `GET` | `/api/v1/address/provinces/{provinceCode}/districts` | List districts by province code | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
 | `GET` | `/api/v1/address/districts/{districtCode}/wards` | List wards by district code | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
-| `POST` | `/api/v1/contact` | Submit contact form | `ApiDataResponse<Void>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `ContactController.java` |
+| `POST` | `/api/v1/newsletter` | Subscribe an email to the newsletter (idempotent on duplicate) | `ApiDataResponse<Void>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `NewsletterController.java` |
+| `GET` | `/api/v1/content-categories` | List content (news) categories with published-article counts, for the Tin tức category filter | `ApiListResponse<ContentCategoryWithCount>` | `CONFIRMED_FROM_CODE` | `ContentController.java` |
+| `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
 | `POST` | `/api/v1/customer/auth/verify-email` | Verify email token from request param | `ApiDataResponse<{verified:true}>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `POST` | `/api/v1/customer/auth/resend-verification` | Resend the email-verification message for the authenticated customer | `ApiDataResponse<Map<String,Object>>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
+| `GET` | `/api/v1/customer/auth/oauth/{provider}/authorize` | Start social login. `provider` ∈ `google` `facebook`. Sets a short-lived `bb_oauth_state` cookie and `302`-redirects to the provider consent screen. Optional `tiep` query param is the post-login returnTo path | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
+| `GET` | `/api/v1/customer/auth/oauth/{provider}/callback` | Provider redirect target. Validates `state`, exchanges `code`, links-or-creates the customer, sets the `bb_session`/`bb_refresh`/`bb_csrf` cookies and `302`-redirects back to the storefront (`returnTo` on success, `/dang-nhap/?error=oauth` on failure) | `302` redirect | `CONFIRMED_FROM_CODE` | `CustomerOAuthController.java` |
+
+### Customer login — `remember` flag
+
+`POST /api/v1/customer/auth/login` request body:
+
+```json
+{ "login": "email@example.com hoặc 0901234567", "password": "…", "remember": false }
+```
+
+- `remember` is optional; `null`/absent is treated as `false`.
+- `remember = false` → the `bb_refresh` cookie is issued with a **1-day** lifetime.
+- `remember = true` → the `bb_refresh` cookie keeps the **30-day** lifetime.
+- The chosen lifetime is persisted on `customer_sessions.remember` so the `refresh` endpoint preserves it on rotation.
+
+### Social login (OAuth2) flow
+
+1. Browser navigates to `…/oauth/{provider}/authorize?tiep=<returnTo>`.
+2. Backend stores a random `state` (carrying `tiep`) in the `bb_oauth_state` cookie (`SameSite=Lax`, HttpOnly, ~10 min) and redirects to Google/Facebook.
+3. Provider redirects back to `…/oauth/{provider}/callback?code=&state=`.
+4. Backend validates `state`, exchanges `code` for the provider profile (`subject`, `email`, `displayName`), then **links-or-creates** the customer:
+   - existing `(oauth_provider, oauth_subject)` → reuse that account;
+   - else a verified provider `email` matching an existing account → link OAuth fields onto it;
+   - else create a new active customer (`password_hash = null`, `email_verified_at = now()`).
+5. Backend issues a 30-day session and redirects to the storefront.
 | `GET` | `/api/v1/customer/addresses` | List own addresses | `ApiDataResponse<List<CustomerAddressResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `POST` | `/api/v1/customer/addresses` | Create own address | `ApiDataResponse<CustomerAddressResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `PATCH` | `/api/v1/customer/addresses/{id}` | Update own address | `ApiDataResponse<CustomerAddressResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
@@ -46,6 +74,54 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `POST` | `/api/v1/customer/wishlist` | Add a product to own wishlist (idempotent) | `ApiDataResponse<{productId,added}>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `DELETE` | `/api/v1/customer/wishlist/{productId}` | Remove a product from own wishlist | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 
+## Catalog Facets Contract
+
+`GET /api/v1/catalog/facets` — public, no auth. Aggregated product counts powering the storefront catalog filter sidebar.
+
+Query params (all optional):
+- `category` — category slug (`SLUG_REGEX`). Scopes the brand/color/price counts to that category.
+- `q` — free-text search term (`@Size(max=100)`).
+
+Response shape: `ApiDataResponse<CatalogFacets>`:
+- `categories`: `[{ key, label, image: null, count }]` — one bucket per visible category, ordered by `sortOrder`.
+- `brands`: `[{ key, label, image, count }]` — one bucket per visible brand; `image` is the brand logo `ImageAsset`.
+- `colors`: `[{ key, label, image: null, count }]` — the 10 fixed named colors (`bac`, `cam`, `hong`, `trang`, `xam`, `xanh-da-troi`, `xanh-la-cay`, `vang`, `den`, `do`).
+- `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 9 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-9tr`).
+
+**v1 counting semantics:** counts use a base context of `PUBLISHED + q`. Brand/color/price buckets additionally honor `category`; the `categories` bucket intentionally ignores the `category` param so every category keeps a navigable count. Counts are not cross-excluded per dimension — this matches the legacy WordPress filter widget. Status: `CONFIRMED_FROM_CODE` — `CatalogController.getCatalogFacets`, `CatalogReadService.computeFacets`.
+
+## Content Categories Contract
+
+`GET /api/v1/content-categories` — public, no auth. Powers the Tin tức (news) category filter, including the mobile category drawer.
+
+No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
+- `id`, `slug`, `name` — the content category.
+- `articleCount` — number of `PUBLISHED` articles in that category.
+
+**Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
+
+## Article Content Contract
+
+`GET /api/v1/articles/{slug}` — public, no auth. Returns `ApiDataResponse<Article>` for one
+`PUBLISHED` article. Served by `ContentController.getArticleBySlug`.
+
+The `Article` payload includes **`relatedProducts`** — an ordered `Product[]` of catalog products
+showcased in the "Sản phẩm sử dụng trong bài viết" section of the blog detail page:
+- Each entry is a list-item `Product` (id, sku, slug, name, brand, category, image, price,
+  stockState, rating, ratingCount) — no variants/specifications/gallery.
+- Only `PUBLISHED` products appear; trashed/draft products are filtered out by the read path.
+- Order follows the admin-defined `sort_order` of `article_product_map`.
+- Empty array when the article links no products.
+
+**Admin upsert** (`AdminContentMutationService`, article branch) accepts `productIds: string[]` on
+`UpsertArticleRequest`: it replaces the article's product set with the resolved, de-duplicated,
+order-preserving list. `null` keeps the existing set; `[]` clears it (same presence semantics as
+`tags`). The admin read DTO `AdminContentItem` returns `relatedProducts` as a lightweight
+`RelatedProductRef[]` (`id`, `slug`, `name`, `imageUrl`) for rendering product chips in the editor.
+
+Status: `CONFIRMED_FROM_CODE` — `ContentController`, `AdminContentMutationService`,
+`UpsertArticleRequest`, `AdminContentItem`. See [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article ↔ Product relation (V130)".
+
 ## Commerce Mutation Contracts
 
 | Endpoint | Current contract | Status | Evidence |
@@ -60,7 +136,7 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 `GET /api/v1/checkout/options` — no auth required; accessible to guests and authenticated customers.
 
 Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
-- `paymentMethods`: `[{ code, title }]` — currently `COD` ("Thanh toán khi nhận hàng") and `BACS` ("Chuyển khoản ngân hàng"). **Codes are uppercase strings.**
+- `paymentMethods`: `[{ code, title }]` — `COD` ("Thanh toán khi nhận hàng (COD)"), `ALEPAY` ("Visa / Master Card / JCB"), `ZALOPAY` ("Ngân hàng nội địa (Cổng thanh toán Zalo Pay)"), `BACS` ("Chuyển khoản"). **Codes are uppercase strings; `title` is the customer-facing label and may differ from the internal code (e.g. `ALEPAY` is shown as "Visa / Master Card / JCB" because Alepay is a card-processing gateway).**
 - `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount, zoneRegionCode }]`
   - `cost` — base shipping fee (VND, never null; zero-cost methods have `cost: 0`)
   - `freeShippingThreshold` — if `orderSubtotal >= freeShippingThreshold`, effective shipping is 0; `null` means no threshold
@@ -132,6 +208,16 @@ Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMut
 A product belongs to exactly one category, written via `categoryId`. The legacy `product_category_map` M:N side table was dropped in migration `V110__drop_product_category_map.sql` (2026-05-14). The `categories[]` array in product responses now always contains exactly the primary category, preserved for API compatibility.
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
+
+### Product rich-text content fields — `promotionContent`
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `promotionContent` (added `V124`): an optional rich-HTML string, max 50 000 characters, mutated with the presence-flag pattern (sending no key leaves the field untouched on PATCH; sending `null`/blank clears it). It joins the existing `description` and `contentBottom` rich-text fields.
+
+`promotionContent` is returned by the public product detail endpoint `GET /api/v1/products/{slug}` and the admin product read response. It is **not** included in product *list* responses (list mappers omit all long-form text). The web PDP renders it as the first "Khuyến mãi" tab; the tab is hidden when the field is empty.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `UpsertProductRequest.java` (`promotionContent` + `promotionContentPresent`), `AdminCatalogMutationService.applyProductPatch`, `Product.java` domain record, `JpaCatalogReadRepository` (detail mapper maps `promotion_content`; list mapper passes `null`), `V124__add_product_promotion_content.sql`.
 
 ## POS Contract
 
@@ -255,13 +341,13 @@ All three endpoints are gated by `warranty.read` (read) or `warranty.write` (voi
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/warranties/lookup?serial={serialNumber}` | None (public) | Customer-facing lookup by human-readable serial number string. Returns `ApiDataResponse<PublicWarrantyResponse>` with `{ serialNumber, productName, status, startDate, endDate, daysLeft }`. Consumed by web `/bao-hanh` and the mobile `WarrantyLookupScreen` (route `/bao-hanh`). | `CONFIRMED_FROM_CODE` | `PublicWarrantyController.java`, `WarrantyApiTest.java` |
 
-## Admin Contact Inbox Contract (V105)
+## Admin Newsletter Contract (V125)
+
+Backs the storefront footer email signup. Public `POST /api/v1/newsletter` stores one row per unique email (case-insensitive) in table `newsletter_subscribers` `{ id, email, created_at }`; duplicate submissions are idempotent and never error. Admins view the collected list:
 
 | Method | Path | Permission | Purpose | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/contact-messages?page&size&status&q` | `contact.read` | Paginated list with optional status filter and search across name/phone/email/content. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.list` |
-| `GET` | `/api/v1/admin/contact-messages/{id}` | `contact.read` | Detail with admin note, assignee display name, IP, user-agent. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.getDetail` |
-| `PATCH` | `/api/v1/admin/contact-messages/{id}` | `contact.write` | Patch status / admin note / assigned admin. All fields optional. `resolved_at` stamped on first entry into terminal state. | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.update` |
+| `GET` | `/api/v1/admin/newsletter-subscribers?page&size` | `newsletter.read` | Paginated list of newsletter email subscribers, newest first. | `CONFIRMED_FROM_CODE` | `AdminNewsletterController.java`, `NewsletterService.listSubscribers` |
 
 ## Admin Notification Center Contract (V102)
 
@@ -296,7 +382,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 | Topic | Current status | Evidence |
 |---|---|---|
-| Search, address, contact, customer address, customer returns are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
+| Search, address, customer address, customer returns are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
 | Verify-email and home-videos are wrapped in `api_endpoints.dart` (constants `verifyEmail` line 52, `homeVideos` line 26). Home-videos widget integration is still pending in the mobile app (tracked as `CMS-004`). | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` lines 26, 52 |
 
 ## Proposed Accounts Receivable Endpoints
@@ -327,3 +413,18 @@ Status: `CONFIRMED_FROM_CODE`
 `GET /api/v1/customer/orders/{orderId}` — extend `OrderDetailResponse` with two additional read-only fields:
 - `outstanding`: `BigDecimal` — `totalAmount - paidAmount` (zero for fully paid orders)
 - `dueAt`: `Instant` nullable — payment due date for credit orders (null for non-credit)
+
+### Account page fields — newsletter, address email, order product names (V126, V127)
+
+Additive fields backing the rebuilt account pages:
+
+- `CustomerSummary` (`GET`/`PATCH /api/v1/customer/me`) — adds `newsletterSubscribed: boolean`.
+  `UpdateCustomerProfileRequest` accepts optional `newsletterSubscribed: Boolean` (null = unchanged).
+- `CustomerAddressResponse` (`/api/v1/customer/addresses`) — adds `email: string` nullable.
+  `SaveCustomerAddressRequest` accepts optional `email` (`@Email`, max 255 chars).
+- `OrderListItemResponse` (`GET /api/v1/customer/orders`) — adds `productNames: string[]`,
+  the line-item product names of the order, used for the order-history list summary row.
+- `OrderLineItemResponse` (inside `OrderDetailResponse`, `GET /api/v1/customer/orders/{orderId}`)
+  — adds `productThumbnailUrl: string` nullable, the current catalog image of the product,
+  used to show a product thumbnail in the order-detail view. Resolved read-time (not
+  snapshotted); `null` when the product no longer exists. See `DATA_CONTRACT.md`.

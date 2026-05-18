@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { applyCoupon, clearCart, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
+import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
 import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
@@ -13,14 +13,6 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -52,7 +44,6 @@ export default function CartPage() {
   const [couponInput, setCouponInput] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchCart()
@@ -96,17 +87,6 @@ export default function CartPage() {
     }
   }, []);
 
-  const handleClear = useCallback(async () => {
-    try {
-      const updated = await clearCart();
-      setCart(updated);
-    } catch (e: unknown) {
-      setError((e as Error).message);
-    } finally {
-      setClearConfirmOpen(false);
-    }
-  }, []);
-
   const handleApplyCoupon = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const code = couponInput.trim();
@@ -143,20 +123,13 @@ export default function CartPage() {
 
   if (!cart) {
     return (
-      <>
-        <div className="bb-breadcrumb">
-          <Link href="/">Trang chủ</Link>
-          <span className="sep">/</span>
-          <span>Giỏ hàng</span>
-        </div>
-        <div className="bb-cart-page bb-container">
-          <ErrorState
-            title="Không tải được giỏ hàng"
-            message={error || "Vui lòng thử lại hoặc quay lại trang chủ."}
-            retryHref="/gio-hang/"
-          />
-        </div>
-      </>
+      <div className="bb-cart-page bb-container">
+        <ErrorState
+          title="Không tải được giỏ hàng"
+          message={error || "Vui lòng thử lại hoặc quay lại trang chủ."}
+          retryHref="/gio-hang/"
+        />
+      </div>
     );
   }
 
@@ -164,19 +137,8 @@ export default function CartPage() {
   const itemCount = cart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
 
   return (
-    <>
-      <div className="bb-breadcrumb">
-        <Link href="/">Trang chủ</Link>
-        <span className="sep">/</span>
-        <span>Giỏ hàng</span>
-      </div>
-
-      <div className="bb-cart-page bb-container">
-        <div className="bb-cart-title-row">
-          <h1>Giỏ hàng</h1>
-        </div>
-
-        {error && <p className="bb-error-text">{error}</p>}
+    <div className="bb-cart-page bb-container">
+      {error && <p className="bb-error-text">{error}</p>}
 
         <div className="bb-cart-grid">
           <div className="bb-cart-main">
@@ -192,7 +154,7 @@ export default function CartPage() {
               <>
                 <div className="bb-cart-avalable">
                   <h3>
-                    GIỎ HÀNG CỦA BẠN <span><b>{itemCount}</b></span>
+                    GIỎ HÀNG CỦA BẠN <span><b>{String(itemCount).padStart(2, "0")}</b></span>
                   </h3>
                 </div>
 
@@ -209,7 +171,6 @@ export default function CartPage() {
                       <div className="bb-cart-row-info">
                         <h3>{item.productName}</h3>
                         {item.variantName && <p className="bb-cart-row-meta">{item.variantName}</p>}
-                        {item.sku && <p className="bb-cart-row-meta">SKU: {item.sku}</p>}
                         <p className="bb-cart-row-price">
                           <b>
                             {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
@@ -245,18 +206,6 @@ export default function CartPage() {
                     </div>
                   ))}
                 </div>
-
-                <div className="bb-cart-checkout-row">
-                  <Link href={toProductListPath()} className="bb-cart-continue">
-                    <span aria-hidden="true">‹</span> TIẾP TỤC MUA HÀNG
-                  </Link>
-                  <Button type="button" variant="ghost" className="bb-cart-clear-link" onClick={() => setClearConfirmOpen(true)}>
-                    Xoá toàn bộ
-                  </Button>
-                  <Button asChild variant="primary" className="bb-cart-checkout-btn">
-                    <Link href={toCheckoutPath()}>THANH TOÁN</Link>
-                  </Button>
-                </div>
               </>
             )}
           </div>
@@ -269,17 +218,13 @@ export default function CartPage() {
               </div>
               {cart && cart.totals.discountAmount > 0 && (
                 <div className="bb-cart-summary-row">
-                  <p>Giảm giá:</p>
-                  <p className="discount"><b>−{formatVnd(cart.totals.discountAmount)}</b></p>
+                  <p>Khuyến mãi:</p>
+                  <p className="discount"><b>-{formatVnd(cart.totals.discountAmount)}</b></p>
                 </div>
               )}
               <div className="bb-cart-summary-row">
-                <p>Phí vận chuyển:</p>
-                <p>
-                  {cart && cart.totals.shippingAmount > 0
-                    ? <b>{formatVnd(cart.totals.shippingAmount)}</b>
-                    : <span className="bb-cart-ship-note">Tính ở bước thanh toán</span>}
-                </p>
+                <p>Phí giao hàng:</p>
+                <p><b>{formatVnd(cart.totals.shippingAmount)}</b></p>
               </div>
             </div>
 
@@ -288,10 +233,7 @@ export default function CartPage() {
                 <div className="bb-cart-applied-codes">
                   {cart.couponCodes.map((code) => (
                     <div key={code} className="bb-cart-applied-code">
-                      <span className="bb-cart-applied-label">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                        {code}
-                      </span>
+                      <span className="bb-cart-applied-label">{code}</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -301,7 +243,9 @@ export default function CartPage() {
                         disabled={couponLoading}
                         aria-label="Xoá mã"
                       >
-                        ×
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" />
+                        </svg>
                       </Button>
                     </div>
                   ))}
@@ -330,7 +274,7 @@ export default function CartPage() {
 
             <div className="bb-cart-total-summary">
               <div className="bb-cart-summary-row">
-                <p>Tổng cộng</p>
+                <p>Tổng tạm tính</p>
                 <p className="bb-cart-total-price">
                   <b>{cart ? formatVnd(cart.totals.totalAmount) : "0"}</b>
                 </p>
@@ -338,26 +282,29 @@ export default function CartPage() {
             </div>
           </aside>}
 
-          <Dialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Xoá toàn bộ giỏ hàng?</DialogTitle>
-                <DialogDescription>
-                  Tất cả sản phẩm trong giỏ hàng sẽ bị xoá. Hành động này không thể hoàn tác.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setClearConfirmOpen(false)}>
-                  Huỷ
-                </Button>
-                <Button variant="primary" onClick={handleClear}>
-                  Xoá toàn bộ
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {hasItems && (
+            <div className="bb-cart-checkout-row">
+              <Link href={toProductListPath()} className="bb-cart-continue">
+                <span aria-hidden="true">‹</span> TIẾP TỤC MUA HÀNG
+              </Link>
+              <Button asChild variant="primary" className="bb-cart-checkout-btn">
+                <Link href={toCheckoutPath()}>THANH TOÁN</Link>
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
-    </>
+
+      {hasItems && (
+        <div className="bb-cart-mobile-bar">
+          <div className="bb-cart-mobile-bar-total">
+            <span>Tổng tạm tính</span>
+            <b>{formatVnd(cart.totals.totalAmount)}</b>
+          </div>
+          <Button asChild variant="primary" className="bb-cart-mobile-bar-btn">
+            <Link href={toCheckoutPath()}>THANH TOÁN</Link>
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

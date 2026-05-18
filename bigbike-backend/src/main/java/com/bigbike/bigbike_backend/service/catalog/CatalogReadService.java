@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.catalog;
 
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
+import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -33,6 +34,46 @@ public class CatalogReadService {
     private static final Set<String> PRODUCT_SORT_FIELDS = Set.of("name", "price", "createdAt", "homepageOrder");
     private static final Set<String> CATEGORY_SORT_FIELDS = Set.of("name", "createdAt", "sortOrder");
     private static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt");
+
+    /**
+     * Fixed named colors shown in the storefront filter sidebar. Keys are slugs
+     * matched server-side by {@link #matchesColor}; labels are the Vietnamese
+     * display names. Order matches the legacy WordPress color widget.
+     */
+    private static final List<ColorFacet> COLOR_FACETS = List.of(
+            new ColorFacet("bac", "Bạc"),
+            new ColorFacet("cam", "Cam"),
+            new ColorFacet("hong", "Hồng"),
+            new ColorFacet("trang", "Trắng"),
+            new ColorFacet("xam", "Xám"),
+            new ColorFacet("xanh-da-troi", "Xanh da trời"),
+            new ColorFacet("xanh-la-cay", "Xanh lá cây"),
+            new ColorFacet("vang", "Vàng"),
+            new ColorFacet("den", "Đen"),
+            new ColorFacet("do", "Đỏ")
+    );
+
+    /**
+     * Fixed price bands shown in the storefront filter sidebar. The 8–9tr gap is
+     * intentional — it replicates the legacy WordPress price widget exactly.
+     */
+    private static final List<PriceBand> PRICE_BANDS = List.of(
+            new PriceBand("0-1tr", "0đ - 1.000.000đ", 0L, 1_000_000L),
+            new PriceBand("1-2tr", "1.000.000đ - 2.000.000đ", 1_000_000L, 2_000_000L),
+            new PriceBand("2-3tr", "2.000.000đ - 3.000.000đ", 2_000_000L, 3_000_000L),
+            new PriceBand("3-4tr", "3.000.000đ - 4.000.000đ", 3_000_000L, 4_000_000L),
+            new PriceBand("4-5tr", "4.000.000đ - 5.000.000đ", 4_000_000L, 5_000_000L),
+            new PriceBand("5-6tr", "5.000.000đ - 6.000.000đ", 5_000_000L, 6_000_000L),
+            new PriceBand("6-7tr", "6.000.000đ - 7.000.000đ", 6_000_000L, 7_000_000L),
+            new PriceBand("7-8tr", "7.000.000đ - 8.000.000đ", 7_000_000L, 8_000_000L),
+            new PriceBand("tren-9tr", "Trên 9.000.000đ", 9_000_000L, null)
+    );
+
+    private record ColorFacet(String slug, String label) {
+    }
+
+    private record PriceBand(String key, String label, Long min, Long max) {
+    }
 
     private final CatalogReadRepository catalogReadRepository;
     private final SortParser sortParser;
@@ -131,6 +172,83 @@ public class CatalogReadService {
         return catalogReadRepository.findBrandBySlug(slug)
                 .filter(Brand::isVisible)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
+    }
+
+    /**
+     * Compute product counts per filter value for the storefront catalog sidebar.
+     *
+     * <p>v1 uses a base context of {@code PUBLISHED + search query}. Brand, color and
+     * price counts also honor {@code categorySlug}; the category facet intentionally
+     * ignores {@code categorySlug} so every category still shows a navigable count.
+     * Counts are not cross-excluded per dimension — this matches the legacy WordPress
+     * filter widget and keeps the endpoint a single pass over the catalog.
+     */
+    public CatalogFacets computeFacets(String categorySlug, String q) {
+        List<Product> publishedMatchingQuery = catalogReadRepository.findAllProducts().stream()
+                .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(product -> matchesQuery(product, q))
+                .toList();
+
+        List<Product> inCategory = publishedMatchingQuery.stream()
+                .filter(product -> matchesCategory(product, categorySlug))
+                .toList();
+
+        return new CatalogFacets(
+                buildCategoryBuckets(publishedMatchingQuery),
+                buildBrandBuckets(inCategory),
+                buildColorBuckets(inCategory),
+                buildPriceBuckets(inCategory)
+        );
+    }
+
+    private List<CatalogFacets.FacetBucket> buildCategoryBuckets(List<Product> products) {
+        return catalogReadRepository.findAllCategories().stream()
+                .filter(Category::isVisible)
+                .sorted(Comparator.comparing(category ->
+                        category.sortOrder() == null ? Integer.MAX_VALUE : category.sortOrder()))
+                .map(category -> new CatalogFacets.FacetBucket(
+                        category.slug(),
+                        category.name(),
+                        null,
+                        products.stream().filter(p -> matchesCategory(p, category.slug())).count()
+                ))
+                .toList();
+    }
+
+    private List<CatalogFacets.FacetBucket> buildBrandBuckets(List<Product> products) {
+        return catalogReadRepository.findAllBrands().stream()
+                .filter(Brand::isVisible)
+                .sorted(Comparator.comparing(Brand::name, String.CASE_INSENSITIVE_ORDER))
+                .map(brand -> new CatalogFacets.FacetBucket(
+                        brand.slug(),
+                        brand.name(),
+                        brand.logo(),
+                        products.stream().filter(p -> matchesBrand(p, brand.slug())).count()
+                ))
+                .toList();
+    }
+
+    private static List<CatalogFacets.FacetBucket> buildColorBuckets(List<Product> products) {
+        return COLOR_FACETS.stream()
+                .map(color -> new CatalogFacets.FacetBucket(
+                        color.slug(),
+                        color.label(),
+                        null,
+                        products.stream().filter(p -> matchesColor(p, color.slug())).count()
+                ))
+                .toList();
+    }
+
+    private static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products) {
+        return PRICE_BANDS.stream()
+                .map(band -> new CatalogFacets.PriceBucket(
+                        band.key(),
+                        band.label(),
+                        band.min(),
+                        band.max(),
+                        products.stream().filter(p -> matchesPrice(p, band.min(), band.max())).count()
+                ))
+                .toList();
     }
 
     private static boolean matchesCategory(Product product, String categorySlug) {

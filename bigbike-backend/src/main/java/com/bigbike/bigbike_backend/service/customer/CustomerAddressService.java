@@ -87,6 +87,7 @@ public class CustomerAddressService {
     private void applyFields(CustomerAddressEntity address, SaveCustomerAddressRequest req) {
         if (req.fullName() != null)    address.setFullName(req.fullName());
         if (req.phone() != null)       address.setPhone(req.phone());
+        if (req.email() != null)       address.setEmail(req.email().isBlank() ? null : req.email().trim());
         if (req.province() != null)    address.setProvince(req.province());
         if (req.district() != null)    address.setDistrict(req.district());
         if (req.ward() != null)        address.setWard(req.ward());

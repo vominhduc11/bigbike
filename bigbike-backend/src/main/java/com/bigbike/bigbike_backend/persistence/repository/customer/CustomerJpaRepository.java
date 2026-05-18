@@ -14,4 +14,6 @@ public interface CustomerJpaRepository extends JpaRepository<CustomerEntity, UUI
     Optional<CustomerEntity> findByPhone(String phone);
 
     Optional<CustomerEntity> findByLegacyId(Long legacyId);
+
+    Optional<CustomerEntity> findByOauthProviderAndOauthSubject(String oauthProvider, String oauthSubject);
 }

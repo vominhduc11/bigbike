@@ -18,7 +18,7 @@ export function formatVnd(value: number | null | undefined): string {
 
   return new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(safeValue) + " VND";
+  }).format(safeValue) + " đ";
 }
 
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
@@ -188,7 +188,11 @@ export function paymentMethodLabel(method: string | null | undefined): string {
     case "COD":
       return "Thanh toán khi nhận hàng (COD)";
     case "BACS":
-      return "Chuyển khoản ngân hàng";
+      return "Chuyển khoản";
+    case "ALEPAY":
+      return "Visa / Master Card / JCB";
+    case "ZALOPAY":
+      return "Ngân hàng nội địa (Cổng thanh toán Zalo Pay)";
     case "":
       return "—";
     default:

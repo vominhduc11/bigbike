@@ -112,52 +112,40 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     );
   }
 
-  // --- tile variant (grid sản phẩm trang chủ, text trái / ảnh phải) ---
+  // --- tile variant: homepage "Sản phẩm nổi bật" — nhãn danh mục + tên + nút "Mua ngay", ảnh bên phải ---
+  // Bám bản thiết kế trang chủ + WP content-product-featured-item.php.
   if (variant === "tile") {
     const src = resolveMediaUrl(product.image?.url?.trim());
-    const brandName = product.brand?.name ?? "";
     const categoryName = product.category?.name ?? "";
     return (
-      <Link href={href} className="bb-tile-3">
-        <div className="relative z-[1]">
-          {brandName && <p className="bb-tile-3-brand">{brandName}</p>}
-          {categoryName && <p className="bb-tile-3-cat">{categoryName}</p>}
-          <h3 className="bb-tile-3-name">{name}</h3>
-          {product.rating != null && product.rating > 0 && (
-            <div className="bb-tile-3-rating">
-              <RatingStars value={product.rating} />
-              {product.ratingCount != null && product.ratingCount > 0 && (
-                <span className="bb-tile-3-rating-count">({product.ratingCount})</span>
-              )}
-            </div>
-          )}
-          <div className="bb-tile-3-price">
-            {product.price ? (
-              <>
-                <b className="bb-tile-3-price-current">{formatVnd(current)}</b>
-                {isSale && compare && compare > current && (
-                  <s className="bb-tile-3-price-compare">{formatVnd(compare)}</s>
-                )}
-              </>
-            ) : (
-              <b className="bb-tile-3-price-current">Liên hệ</b>
-            )}
-          </div>
-          <span className={`bb-tile-3-stock ${stockClass}`}>{stockLabel}</span>
-          <span className="bb-tile-3-cta">Xem sản phẩm</span>
-        </div>
+      <div className="group relative flex min-h-[200px] flex-col justify-center overflow-hidden bg-muted p-6">
         {src && (
-          <div className="bb-tile-3-img-wrap">
+          <div className="pointer-events-none absolute bottom-0 right-0 h-[82%] w-[44%]">
             <Image
               src={src}
               alt={safeText(product.image?.alt, name)}
               fill
-              className="bb-tile-3-img"
-              sizes="(max-width: 600px) 100vw, 33vw"
+              className="object-contain object-[right_bottom] transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 600px) 44vw, 18vw"
             />
           </div>
         )}
-      </Link>
+        <div className="pointer-events-none max-w-[60%]">
+          {categoryName && (
+            <p className="m-0 mb-1.5 font-display text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+              {categoryName}
+            </p>
+          )}
+          <h3 className="m-0 line-clamp-3 font-display text-lg font-semibold uppercase leading-tight text-foreground transition-colors group-hover:text-brand">
+            {name}
+          </h3>
+          <span className="mt-3.5 inline-flex items-center gap-1.5 bg-brand px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.1em] text-white transition-colors group-hover:bg-brand-hover">
+            Mua ngay
+            <span aria-hidden="true" className="text-sm leading-none">›</span>
+          </span>
+        </div>
+        <Link href={href} aria-label={`Xem ${name}`} className="absolute inset-0 z-[1]" />
+      </div>
     );
   }
 
@@ -172,7 +160,11 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
         tabIndex={0}
       />
       <div className="bb-product-image">
-        {isSale && <span className="bb-product-tag">Sale</span>}
+        {isSale && (
+          <span className="bb-product-tag">
+            {discountPercent != null && discountPercent > 0 ? `-${discountPercent}%` : "Sale"}
+          </span>
+        )}
         <WishlistButton productId={product.id} />
         <MediaImage image={product.image} altFallback={name} width={480} height={480} />
         <ProductCardAddBar

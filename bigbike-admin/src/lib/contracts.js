@@ -362,6 +362,19 @@ export function normalizeContentItem(input) {
     tags: Array.isArray(source.tags)
       ? source.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim())
       : [],
+    // Article ↔ product links — lightweight refs used to render product chips in the editor.
+    relatedProducts: Array.isArray(source.relatedProducts)
+      ? source.relatedProducts
+          .map((p) => (p && typeof p === 'object'
+            ? {
+                id: toTrimmedString(p.id) || undefined,
+                slug: toTrimmedString(p.slug) || undefined,
+                name: toTrimmedString(p.name) || undefined,
+                imageUrl: toTrimmedString(p.imageUrl) || undefined,
+              }
+            : null))
+          .filter((p) => p && p.id)
+      : [],
     categories: Array.isArray(source.categories)
       ? source.categories.map(normalizeCategorySummary).filter(Boolean)
       : [],

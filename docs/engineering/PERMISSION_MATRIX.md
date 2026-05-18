@@ -55,13 +55,9 @@ All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.
 | `/api/v1/admin/returns` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
 | `/api/v1/admin/returns/{returnId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
 | `/api/v1/admin/returns/{returnId}/items/{itemId}/inspect` PATCH | `orders.write` (V104) | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.inspectItem` |
-| `/api/v1/admin/contact-messages` GET | `contact.read` (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java` |
-| `/api/v1/admin/contact-messages/{id}` GET | `contact.read` (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java` |
-| `/api/v1/admin/contact-messages/{id}` PATCH | `contact.write` (V105) | `CONFIRMED_FROM_CODE` | `AdminContactController.java` |
 | `/api/v1/customer/orders/{orderId}/return-eligibility` GET | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
-| `/api/v1/contact` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/search*` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/address/**` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 

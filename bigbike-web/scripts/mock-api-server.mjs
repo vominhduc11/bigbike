@@ -363,6 +363,27 @@ function handleRequest(req, res) {
     return;
   }
 
+  // ── GET /api/v1/content-categories ─────────────────────────────────────
+  if (path === "/api/v1/content-categories" && req.method === "GET") {
+    const counts = new Map();
+    for (const a of ARTICLES) {
+      if (a.publishStatus !== "PUBLISHED") continue;
+      // Dedupe categories per article so an article counts once per category.
+      const seen = new Map();
+      for (const c of [a.category, ...(a.categories ?? [])].filter(Boolean)) {
+        if (!seen.has(c.slug)) seen.set(c.slug, c);
+      }
+      for (const c of seen.values()) {
+        const prev = counts.get(c.slug);
+        counts.set(c.slug, { ...c, articleCount: (prev?.articleCount ?? 0) + 1 });
+      }
+    }
+    const categories = [...counts.values()].sort((x, y) => x.name.localeCompare(y.name, "vi"));
+    res.writeHead(200);
+    res.end(JSON.stringify(listResponse(categories)));
+    return;
+  }
+
   // ── GET /api/v1/articles/:slug ─────────────────────────────────────────
   const artMatch = path.match(/^\/api\/v1\/articles\/([^/]+)$/);
   if (artMatch && req.method === "GET") {

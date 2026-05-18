@@ -91,7 +91,8 @@ public class AdminPosController {
                             detail.forceOutOfStock(), detail.publishStatus(),
                             detail.homepageBlock(), detail.homepageOrder(),
                             detail.rating(), detail.ratingCount(), detail.contentBottom(),
-                            detail.seo(), detail.createdAt(), detail.updatedAt());
+                            detail.promotionContent(), detail.seo(),
+                            detail.createdAt(), detail.updatedAt());
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();

@@ -8,7 +8,6 @@ import { StockStatus } from "./StockStatus";
 import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
-import { QuickBuyModal } from "./QuickBuyModal";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
@@ -21,32 +20,9 @@ import {
 } from "@/lib/utils/variant-match";
 import type { ImageAsset, ProductPrice, ProductVariant } from "@/lib/contracts/public";
 
-const FEATURES = [
-  "Hàng chính hãng 100%",
-  "Bảo hành theo chính sách hãng",
-  "Thanh toán COD hoặc chuyển khoản",
-  "Giao toàn quốc",
-];
-
-function IconCheck() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="bb-pdp-feat-icon"
-    >
-      <circle cx="7" cy="7" r="6" />
-      <path d="M4.5 7l2 2 3-3" />
-    </svg>
-  );
-}
+// Instagram has no public link-share endpoint — the icon links to the shop
+// profile (parity with the legacy WP product page social row).
+const SHOP_INSTAGRAM_URL = "https://www.instagram.com/bigbike.vn/";
 
 type ProductSnapshot = {
   pricing: PricingData;
@@ -80,8 +56,6 @@ export function PurchaseSectionClient({
   productId,
   productSlug,
   productName,
-  brandName,
-  categoryName,
   shortDescription,
   initialRating,
   initialRatingCount,
@@ -103,7 +77,6 @@ export function PurchaseSectionClient({
   const [quantity, setQuantity] = useState(1);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
-  const [quickBuyOpen, setQuickBuyOpen] = useState(false);
 
   // ── Dynamic fetch — one round-trip for pricing + stock + variants ──────────
 
@@ -132,7 +105,7 @@ export function PurchaseSectionClient({
 
   // FULL match — the customer has picked every attribute the product
   // defines AND a variant exists with those exact values. Required for
-  // add-to-cart / quick-buy.
+  // add-to-cart.
   const selectedVariant = useMemo<ProductVariant | null>(() => {
     if (!hasVariants || attributeNames.size === 0) return null;
     const allPicked = Array.from(attributeNames).every(
@@ -222,6 +195,8 @@ export function PurchaseSectionClient({
     }
   }
 
+  const showRating = typeof initialRating === "number" && initialRating > 0;
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -239,52 +214,41 @@ export function PurchaseSectionClient({
 
       {/* Right: Info + Purchase controls */}
       <div className="bb-pdp-info">
-        {/* Static header (ISR-rendered data) */}
-        <p className="bb-pdp-info-brand">
-          {brandName}
-          {categoryName ? ` · ${categoryName}` : ""}
-        </p>
         <h1 className="bb-pdp-info-title">{productName}</h1>
 
-        {/* Rating stars — only shown when we have verified reviews (count > 0).
-            Avoids showing a seeded/default rating with no actual customer reviews. */}
-        {initialRating && initialRating > 0 && (initialRatingCount ?? 0) > 0 ? (
-          <div className="bb-pdp-rating">
-            <span className="stars" aria-label={`${initialRating.toFixed(1)} sao`}>
-              {Array.from({ length: 5 }, (_, i) => (
-                <svg
-                  key={i}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  fill={i < Math.round(initialRating) ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="text-brand"
-                >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              ))}
-            </span>
-            <span>{initialRating.toFixed(1)}/5</span>
-            {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
-              <span className="bb-pdp-rating-count">({initialRatingCount} đánh giá)</span>
-            )}
-          </div>
-        ) : null}
-
-        {shortDescription && (
-          <p className="bb-pdp-short-desc">{shortDescription}</p>
-        )}
-
-        {/* Price + Stock — same row (matches original layout) */}
+        {/* Price + rating (left) and stock badge (right) — one row. */}
         <div className="bb-pdp-price-row">
-          <PricingPanel
-            data={effectivePricing}
-            fallback={fallbackPrice}
-            isLoading={snapshotLoading && !fallbackPrice}
-          />
+          <div className="bb-pdp-price-main">
+            <PricingPanel
+              data={effectivePricing}
+              fallback={fallbackPrice}
+              isLoading={snapshotLoading && !fallbackPrice}
+            />
+            {showRating ? (
+              <div className="bb-pdp-rating">
+                <span className="stars" aria-label={`${initialRating.toFixed(1)} sao`}>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <svg
+                      key={i}
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      fill={i < Math.round(initialRating) ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="text-brand"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </span>
+                {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
+                  <span className="bb-pdp-rating-count">({initialRatingCount} đánh giá)</span>
+                )}
+              </div>
+            ) : null}
+          </div>
           <div className="bb-stock-wrap">
             <StockStatus
               data={effectiveStockData}
@@ -293,6 +257,10 @@ export function PurchaseSectionClient({
             />
           </div>
         </div>
+
+        {shortDescription && (
+          <p className="bb-pdp-short-desc">{shortDescription}</p>
+        )}
 
         {/* "Please pick variant" prompt — only when product has variants the user
             hasn't fully picked AND product is not actually sold out. */}
@@ -310,9 +278,8 @@ export function PurchaseSectionClient({
           isLoading={snapshotLoading && !fallbackVariants.length}
         />
 
-        {/* Quantity stepper */}
-        <div className="bb-pdp-qty">
-          <p className="bb-pdp-qty-label">Số lượng</p>
+        {/* Quantity stepper + single add-to-cart button — one row. */}
+        <div className="bb-pdp-buy-row">
           <QuantityStepper
             value={quantity}
             onChange={setQuantity}
@@ -320,33 +287,19 @@ export function PurchaseSectionClient({
             max={effectiveStockData?.quantity ?? undefined}
             ariaLabel="Số lượng sản phẩm"
           />
-        </div>
-
-        {/* CTA buttons */}
-        <div className="bb-pdp-actions">
           <Button
             type="button"
             variant="primary"
             onClick={handleAddToCart}
             disabled={addLoading || !isAvailable}
-            className="flex-1"
           >
             {addLoading
               ? "Đang thêm..."
               : requiresVariantSelection
                 ? "Vui lòng chọn biến thể"
                 : isAvailable
-                  ? "Thêm vào giỏ"
+                  ? "Thêm vào giỏ hàng"
                   : "Tạm hết hàng"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setQuickBuyOpen(true)}
-            disabled={!isAvailable}
-            className="flex-1"
-          >
-            {requiresVariantSelection ? "Chọn biến thể trước" : !isAvailable ? "Tạm hết hàng" : "Mua ngay"}
           </Button>
         </div>
 
@@ -354,72 +307,58 @@ export function PurchaseSectionClient({
           <p className="bb-error-text bb-pdp-error">{addError}</p>
         )}
 
-        {/* Trust features */}
-        <div className="bb-pdp-features">
-          {FEATURES.map((feat) => (
-            <div key={feat} className="bb-pdp-feat">
-              <IconCheck />
-              {feat}
-            </div>
-          ))}
-        </div>
-
-        {/* Social share — Facebook + Zalo (mirrors WP single-product layout).
-            Reuses .bb-article-share styles already present in globals.css. */}
-        <div className="bb-article-share bb-pdp-share">
-          <span className="bb-article-share-label">Chia sẻ:</span>
+        {/* Social share — Facebook / Twitter / Instagram / Skype (parity with
+            the legacy WP single-product social row). */}
+        <div className="bb-pdp-share">
+          <span className="bb-pdp-share-label">Share</span>
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bb-article-share-btn bb-article-share-fb"
+            className="bb-pdp-share-btn"
             aria-label="Chia sẻ lên Facebook"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm1.75 3.5h-1c-.41 0-.5.19-.5.63V6h1.5l-.2 1.5H8.25V12h-1.5V7.5H6V6h.75V4.88C6.75 3.62 7.5 3 8.75 3c.58 0 1 .04 1 .04V4.5Z" />
+              <path d="M9.2 14V8.5h1.85l.28-2.15H9.2V5c0-.62.17-1.04 1.06-1.04h1.13V2.05A15.4 15.4 0 0 0 9.84 2C8.2 2 7.08 3 7.08 4.84V6.35H5.22V8.5h1.86V14H9.2Z" />
             </svg>
-            Facebook
-          </a>
-          <a
-            href={`https://zalo.me/share?url=${encodeURIComponent(canonicalUrl)}&title=${encodeURIComponent(productName)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bb-article-share-btn bb-article-share-zalo"
-            aria-label="Chia sẻ qua Zalo"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect width="16" height="16" rx="4" fill="currentColor" fillOpacity="0.15" />
-              <text x="8" y="11.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="9" fill="currentColor">Z</text>
-              <ellipse cx="8" cy="8" rx="5.5" ry="4.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
-            </svg>
-            Zalo
           </a>
           <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(productName)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bb-article-share-btn bb-article-share-twitter"
+            className="bb-pdp-share-btn"
             aria-label="Chia sẻ trên X (Twitter)"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M9.52 6.78 14.94 1h-1.28L8.95 6.02 5.21 1H1l5.7 7.66L1 14.71h1.28l4.99-5.31 3.95 5.31H15L9.52 6.78Zm-1.77 1.88-.58-.78L2.74 1.94h1.97l3.71 4.97.58.77 4.83 6.46h-1.97L7.75 8.66Z" />
             </svg>
-            Tweet
+          </a>
+          <a
+            href={SHOP_INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bb-pdp-share-btn"
+            aria-label="Instagram BigBike"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
+          <a
+            href={`https://web.skype.com/share?url=${encodeURIComponent(canonicalUrl)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bb-pdp-share-btn"
+            aria-label="Chia sẻ qua Skype"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2a10 10 0 0 1 8.66 15.02 6 6 0 0 1-8.34 8.3A10 10 0 1 1 12 2Zm.2 16.6c2.86 0 4.62-1.4 4.62-3.62 0-1.43-.68-2.94-3.5-3.57l-1.6-.36c-.6-.14-1.3-.33-1.3-.9 0-.63.55-1.06 1.55-1.06 2.02 0 1.83 1.38 2.84 1.38.53 0 .99-.31.99-.85 0-1.25-2-2.2-3.67-2.2-1.82 0-3.76.78-3.76 2.84 0 1 .35 2.05 2.32 2.54l2.16.54c.65.16 1.22.44 1.22 1.05 0 .6-.6 1.18-1.7 1.18-2.19 0-1.89-1.68-3.07-1.68-.53 0-.92.37-.92.9 0 1.03 1.25 2.74 3.99 2.74Z" />
+            </svg>
           </a>
         </div>
       </div>
-
-      {/* Quick-buy drawer (rendered outside info column for correct stacking) */}
-      {quickBuyOpen && (
-        <QuickBuyModal
-          productId={productId}
-          selectedVariantId={selectedVariant?.id ?? ""}
-          quantity={quantity}
-          productName={productName}
-          unitPrice={stickyPrice}
-          onClose={() => setQuickBuyOpen(false)}
-        />
-      )}
 
       {/* Mobile sticky purchase bar — keeps the primary CTA reachable while the
           customer scrolls through a long PDP (specs, description, reviews).
@@ -427,7 +366,7 @@ export function PurchaseSectionClient({
           Right padding clears the floating chat button. */}
       <div className="md:hidden fixed inset-x-0 bottom-0 z-[var(--bb-z-overlay)] flex items-center gap-3 border-t border-border bg-white px-4 py-2.5 pr-20 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.1)]">
         <div className="flex min-w-0 flex-col">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground leading-none">Giá</span>
+          <span className="text-sm uppercase tracking-[0.12em] text-muted-foreground leading-none">Giá</span>
           <b className="font-display text-brand text-lg leading-tight">
             {stickyPrice > 0 ? formatVnd(stickyPrice) : "Liên hệ"}
           </b>

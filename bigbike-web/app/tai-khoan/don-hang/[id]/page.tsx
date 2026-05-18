@@ -129,12 +129,12 @@ function CreateReturnForm({
 
   return (
     <div className="bg-card border border-border p-[22px_24px]">
-      <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[14px]">Tạo yêu cầu đổi trả</p>
+      <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[14px]">Tạo yêu cầu đổi trả</p>
       {formError && <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-3 text-sm text-destructive"><p className="m-0">{formError}</p></div>}
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 col-span-full">
-            <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">Chọn sản phẩm đổi trả</label>
+            <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">Chọn sản phẩm đổi trả</label>
             {lineItems.map((li) => (
               <div key={li.id} className="flex items-center gap-2.5 mb-2.5">
                 <Checkbox
@@ -162,7 +162,7 @@ function CreateReturnForm({
             ))}
           </div>
           <div className="flex flex-col gap-1.5 col-span-full">
-            <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Lý do đổi trả</label>
+            <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">Lý do đổi trả</label>
             <Select name="reason" required>
               <SelectTrigger>
                 <SelectValue placeholder="-- Chọn lý do --" />
@@ -175,7 +175,7 @@ function CreateReturnForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5 col-span-full">
-            <label className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">Ghi chú thêm (không bắt buộc)</label>
+            <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">Ghi chú thêm (không bắt buộc)</label>
             <Textarea name="customerNote" rows={2} placeholder="Mô tả thêm..." className="resize-y" />
           </div>
         </div>
@@ -222,13 +222,13 @@ function OrderTimeline({ status, isBacs }: { status: string; isBacs?: boolean })
               )}
             </div>
             <div className="pb-[18px] pt-[1px]">
-              <p className={`text-[12px] font-bold tracking-[0.04em] uppercase m-0 ${
+              <p className={`text-sm font-bold tracking-[0.04em] uppercase m-0 ${
                 done ? "text-muted-foreground" :
                 active ? "text-foreground" :
                 cancelled ? "text-destructive" :
                 "text-muted-foreground"
               }`}>{step.label}</p>
-              {active && <p className="text-[11px] text-muted-foreground m-0 mt-[3px]">{step.sub}</p>}
+              {active && <p className="text-sm text-muted-foreground m-0 mt-[3px]">{step.sub}</p>}
             </div>
           </div>
         );
@@ -273,10 +273,10 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2 className="font-display uppercase text-[26px] tracking-[0.01em] m-0 text-foreground">Chi tiết đơn hàng</h2>
-          {order && <p className="text-xs text-muted-foreground mt-1 m-0">#{order.orderNumber}</p>}
+          <h2 className="font-display uppercase text-26 tracking-[0.01em] m-0 text-foreground">Chi tiết đơn hàng</h2>
+          {order && <p className="text-sm text-muted-foreground mt-1 m-0">#{order.orderNumber}</p>}
         </div>
-        <Link href={toOrderHistoryPath()} className="bb-link text-xs">
+        <Link href={toOrderHistoryPath()} className="bb-link text-sm">
           ← Đơn hàng của tôi
         </Link>
       </div>
@@ -329,13 +329,13 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           <div className="bg-card border border-border overflow-hidden">
             <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
               <div className="flex gap-[22px] max-sm:flex-wrap max-sm:gap-x-[18px] max-sm:gap-y-3">
-                <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
+                <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
                   Mã đơn
-                  <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">#{order.orderNumber}</b>
+                  <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">#{order.orderNumber}</b>
                 </div>
-                <div className="text-xs text-muted-foreground tracking-[0.1em] uppercase">
+                <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
                   Đặt lúc
-                  <b className="block text-[12px] text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{formatDate(order.placedAt)}</b>
+                  <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{formatDate(order.placedAt)}</b>
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -354,10 +354,10 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                 <div key={item.id} className="flex justify-between items-center py-[10px] border-b border-border/5 gap-[14px] last:border-b-0">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground m-0 mb-[3px] font-semibold">{safeText(item.productName, "Sản phẩm")}</p>
-                    {item.variantName && <p className="text-[11px] text-muted-foreground m-0">{item.variantName}</p>}
-                    <p className="text-[11px] text-muted-foreground m-0 mt-[2px]">SL: {item.quantity} · {formatVnd(item.unitPrice)} / cái</p>
+                    {item.variantName && <p className="text-sm text-muted-foreground m-0">{item.variantName}</p>}
+                    <p className="text-sm text-muted-foreground m-0 mt-[2px]">SL: {item.quantity} · {formatVnd(item.unitPrice)} / cái</p>
                   </div>
-                  <strong className="text-[14px] text-foreground font-bold whitespace-nowrap">{formatVnd(item.lineTotal)}</strong>
+                  <strong className="text-sm text-foreground font-bold whitespace-nowrap">{formatVnd(item.lineTotal)}</strong>
                 </div>
               ))}
             </div>
@@ -376,7 +376,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
                   <span className={row.discount ? "text-[var(--bb-state-success)]" : undefined}>{row.value}</span>
                 </div>
               ))}
-              <div className="flex justify-between text-[16px] py-[10px] border-t border-border mt-2 font-bold">
+              <div className="flex justify-between text-base py-[10px] border-t border-border mt-2 font-bold">
                 <span>Tổng cộng</span>
                 <span className="text-brand font-display">{formatVnd(order.totalAmount)}</span>
               </div>
@@ -385,7 +385,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* Order status timeline */}
           <div className="bg-card border border-border p-[20px_22px]">
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Trạng thái đơn hàng</p>
+            <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Trạng thái đơn hàng</p>
             <OrderTimeline
               status={order.status}
               isBacs={order.payments[0]?.paymentMethod?.toUpperCase() === "BACS"}
@@ -395,41 +395,41 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           {/* Addresses */}
           <div className="grid grid-cols-2 gap-[14px] max-sm:grid-cols-1">
             <div className="bg-card border border-border py-[18px] px-5 relative">
-              <span className="absolute top-[14px] right-[14px] bg-[var(--bb-bg-surface-raised)] text-muted-foreground text-[9px] py-[3px] px-[7px] tracking-[0.1em] font-bold uppercase">Thanh toán</span>
-              <b className="block font-display text-[14px] tracking-[0.04em] uppercase text-foreground mb-1">{safeText(primaryAddress?.fullName, "—")}</b>
-              {primaryAddress?.phone && <p className="text-[11px] text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{primaryAddress.phone}</p>}
+              <span className="absolute top-[14px] right-[14px] bg-[var(--bb-bg-surface-raised)] text-muted-foreground text-sm py-[3px] px-[7px] tracking-[0.1em] font-bold uppercase">Thanh toán</span>
+              <b className="block font-display text-sm tracking-[0.04em] uppercase text-foreground mb-1">{safeText(primaryAddress?.fullName, "—")}</b>
+              {primaryAddress?.phone && <p className="text-sm text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{primaryAddress.phone}</p>}
               {primaryAddress?.addressLine1 && (
-                <p className="text-xs text-muted-foreground leading-[1.5] m-0">{[primaryAddress.addressLine1, primaryAddress.ward, primaryAddress.district, primaryAddress.province].filter(Boolean).join(", ")}</p>
+                <p className="text-sm text-muted-foreground leading-[1.5] m-0">{[primaryAddress.addressLine1, primaryAddress.ward, primaryAddress.district, primaryAddress.province].filter(Boolean).join(", ")}</p>
               )}
             </div>
             <div className="bg-card border border-border py-[18px] px-5 relative">
-              <span className="absolute top-[14px] right-[14px] bg-[var(--bb-bg-surface-raised)] text-muted-foreground text-[9px] py-[3px] px-[7px] tracking-[0.1em] font-bold uppercase">Giao hàng</span>
-              <b className="block font-display text-[14px] tracking-[0.04em] uppercase text-foreground mb-1">{safeText(shippingAddress?.fullName ?? primaryAddress?.fullName, "—")}</b>
+              <span className="absolute top-[14px] right-[14px] bg-[var(--bb-bg-surface-raised)] text-muted-foreground text-sm py-[3px] px-[7px] tracking-[0.1em] font-bold uppercase">Giao hàng</span>
+              <b className="block font-display text-sm tracking-[0.04em] uppercase text-foreground mb-1">{safeText(shippingAddress?.fullName ?? primaryAddress?.fullName, "—")}</b>
               {(shippingAddress?.phone ?? primaryAddress?.phone) && (
-                <p className="text-[11px] text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{shippingAddress?.phone ?? primaryAddress?.phone}</p>
+                <p className="text-sm text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{shippingAddress?.phone ?? primaryAddress?.phone}</p>
               )}
               {(shippingAddress?.addressLine1 ?? primaryAddress?.addressLine1) && (() => {
                 const addr = shippingAddress ?? primaryAddress;
-                return <p className="text-xs text-muted-foreground leading-[1.5] m-0">{[addr?.addressLine1, addr?.ward, addr?.district, addr?.province].filter(Boolean).join(", ")}</p>;
+                return <p className="text-sm text-muted-foreground leading-[1.5] m-0">{[addr?.addressLine1, addr?.ward, addr?.district, addr?.province].filter(Boolean).join(", ")}</p>;
               })()}
             </div>
           </div>
 
           {/* Payment info */}
           <div className="bg-card border border-border p-[20px_22px]">
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thanh toán &amp; vận chuyển</p>
+            <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thanh toán &amp; vận chuyển</p>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[14px]">
               <div>
-                <p className="text-[11px] text-muted-foreground mb-1 m-0">Phương thức</p>
+                <p className="text-sm text-muted-foreground mb-1 m-0">Phương thức</p>
                 <p className="text-sm text-foreground m-0">{order.payments[0]?.paymentMethod ? paymentMethodLabel(order.payments[0].paymentMethod) : paymentStatusLabel(order.paymentStatus)}</p>
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground mb-1 m-0">Đã thanh toán</p>
+                <p className="text-sm text-muted-foreground mb-1 m-0">Đã thanh toán</p>
                 <p className="text-sm text-foreground m-0">{formatVnd(order.paidAmount)}</p>
               </div>
               {order.shippingItems.length > 0 && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground mb-1 m-0">Vận chuyển</p>
+                  <p className="text-sm text-muted-foreground mb-1 m-0">Vận chuyển</p>
                   {order.shippingItems.map((item) => (
                     <p key={item.id} className="text-sm text-foreground m-0">{safeText(item.methodTitle, "—")} · {formatVnd(item.amount)}</p>
                   ))}
@@ -441,25 +441,25 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           {/* Refund info — visible when order has been refunded */}
           {order.refundAmount > 0 && (
             <div className="bg-card border border-border border-l-[3px] border-l-destructive p-[20px_22px]">
-              <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin hoàn tiền</p>
+              <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin hoàn tiền</p>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[14px]">
                 <div>
-                  <p className="text-[11px] text-muted-foreground mb-1 m-0">Trạng thái</p>
+                  <p className="text-sm text-muted-foreground mb-1 m-0">Trạng thái</p>
                   <p className="text-sm text-foreground m-0">{paymentStatusLabel(order.paymentStatus)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground mb-1 m-0">Số tiền hoàn</p>
+                  <p className="text-sm text-muted-foreground mb-1 m-0">Số tiền hoàn</p>
                   <p className="text-sm text-foreground font-semibold m-0">{formatVnd(order.refundAmount)}</p>
                 </div>
                 {order.refundedAt && (
                   <div>
-                    <p className="text-[11px] text-muted-foreground mb-1 m-0">Ngày hoàn tiền</p>
+                    <p className="text-sm text-muted-foreground mb-1 m-0">Ngày hoàn tiền</p>
                     <p className="text-sm text-foreground m-0">{formatDate(order.refundedAt)}</p>
                   </div>
                 )}
                 {order.refundReason && (
                   <div className="col-span-full">
-                    <p className="text-[11px] text-muted-foreground mb-1 m-0">Lý do</p>
+                    <p className="text-sm text-muted-foreground mb-1 m-0">Lý do</p>
                     <p className="text-sm text-foreground m-0">{order.refundReason}</p>
                   </div>
                 )}
@@ -470,7 +470,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           {/* Customer note */}
           {order.customerNote && (
             <div className="bg-card border border-border p-[20px_22px]">
-              <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Ghi chú</p>
+              <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Ghi chú</p>
               <p className="text-sm text-muted-foreground m-0">{order.customerNote}</p>
             </div>
           )}
@@ -478,11 +478,11 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
           {/* Order notes timeline */}
           {order.notes.length > 0 && (
             <div className="bg-card border border-border p-[20px_22px]">
-              <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Lịch sử</p>
+              <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Lịch sử</p>
               <div className="grid gap-3">
                 {order.notes.map((note) => (
                   <div key={note.id} className="border-l-2 border-border pl-[14px]">
-                    <p className="text-[11px] text-muted-foreground m-0 mb-1">{note.noteType ? safeText(note.noteType, "Ghi chú") : "Ghi chú"} · {formatDate(note.createdAt)}</p>
+                    <p className="text-sm text-muted-foreground m-0 mb-1">{note.noteType ? safeText(note.noteType, "Ghi chú") : "Ghi chú"} · {formatDate(note.createdAt)}</p>
                     <p className="text-sm text-muted-foreground m-0">{note.content}</p>
                   </div>
                 ))}

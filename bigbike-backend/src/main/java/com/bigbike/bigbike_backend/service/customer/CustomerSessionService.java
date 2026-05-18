@@ -14,19 +14,41 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CustomerSessionService {
 
+    // "Remember me" lifetimes — the long-lived session.
     public static final long SESSION_TTL_SECONDS = 604800L;   // 7 days
     public static final long REFRESH_TTL_SECONDS = 2592000L;  // 30 days
+    // No-remember lifetimes — session ends within a day of inactivity.
+    public static final long SESSION_TTL_SHORT_SECONDS = 86400L;   // 1 day
+    public static final long REFRESH_TTL_SHORT_SECONDS = 86400L;   // 1 day
+
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String STATUS_REVOKED = "REVOKED";
 
     private final CustomerSessionJpaRepository sessionRepo;
     private final JwtService jwtService;
 
+    private static long sessionTtl(boolean remember) {
+        return remember ? SESSION_TTL_SECONDS : SESSION_TTL_SHORT_SECONDS;
+    }
+
+    private static long refreshTtl(boolean remember) {
+        return remember ? REFRESH_TTL_SECONDS : REFRESH_TTL_SHORT_SECONDS;
+    }
+
+    /** Creates a long-lived ("remember me") session — used by register and social login. */
     @Transactional
     public CustomerSessionResult createSession(UUID customerId, String ipAddress, String userAgent) {
+        return createSession(customerId, ipAddress, userAgent, true);
+    }
+
+    @Transactional
+    public CustomerSessionResult createSession(UUID customerId, String ipAddress, String userAgent, boolean remember) {
         String rawSession = jwtService.generateRawRefreshToken();
         String rawRefresh = jwtService.generateRawRefreshToken();
         String rawCsrf = jwtService.generateRawRefreshToken();
+
+        long sessionTtl = sessionTtl(remember);
+        long refreshTtl = refreshTtl(remember);
 
         Instant now = Instant.now();
         CustomerSessionEntity session = new CustomerSessionEntity();
@@ -35,16 +57,18 @@ public class CustomerSessionService {
         session.setRefreshTokenHash(jwtService.hashToken(rawRefresh));
         session.setCsrfTokenHash(jwtService.hashToken(rawCsrf));
         session.setStatus(STATUS_ACTIVE);
+        session.setRemember(remember);
         session.setIpAddress(ipAddress);
         session.setUserAgent(userAgent);
-        session.setSessionExpiresAt(now.plusSeconds(SESSION_TTL_SECONDS));
-        session.setRefreshExpiresAt(now.plusSeconds(REFRESH_TTL_SECONDS));
+        session.setSessionExpiresAt(now.plusSeconds(sessionTtl));
+        session.setRefreshExpiresAt(now.plusSeconds(refreshTtl));
         session.setLastActiveAt(now);
         session.setCreatedAt(now);
         session.setUpdatedAt(now);
 
         CustomerSessionEntity saved = sessionRepo.save(session);
-        return new CustomerSessionResult(saved.getId(), customerId, rawSession, rawRefresh, rawCsrf);
+        return new CustomerSessionResult(saved.getId(), customerId, rawSession, rawRefresh, rawCsrf,
+                sessionTtl, refreshTtl);
     }
 
     @Transactional
@@ -67,17 +91,23 @@ public class CustomerSessionService {
         String rawNewRefresh = jwtService.generateRawRefreshToken();
         String rawNewCsrf = jwtService.generateRawRefreshToken();
 
+        // Preserve the original "remember" choice so a refresh keeps the same lifetime.
+        boolean remember = session.isRemember();
+        long sessionTtl = sessionTtl(remember);
+        long refreshTtl = refreshTtl(remember);
+
         Instant now = Instant.now();
         session.setSessionTokenHash(jwtService.hashToken(rawNewSession));
         session.setRefreshTokenHash(jwtService.hashToken(rawNewRefresh));
         session.setCsrfTokenHash(jwtService.hashToken(rawNewCsrf));
-        session.setSessionExpiresAt(now.plusSeconds(SESSION_TTL_SECONDS));
-        session.setRefreshExpiresAt(now.plusSeconds(REFRESH_TTL_SECONDS));
+        session.setSessionExpiresAt(now.plusSeconds(sessionTtl));
+        session.setRefreshExpiresAt(now.plusSeconds(refreshTtl));
         session.setLastActiveAt(now);
         session.setUpdatedAt(now);
         sessionRepo.save(session);
 
-        return new CustomerSessionResult(session.getId(), session.getCustomerId(), rawNewSession, rawNewRefresh, rawNewCsrf);
+        return new CustomerSessionResult(session.getId(), session.getCustomerId(),
+                rawNewSession, rawNewRefresh, rawNewCsrf, sessionTtl, refreshTtl);
     }
 
     @Transactional

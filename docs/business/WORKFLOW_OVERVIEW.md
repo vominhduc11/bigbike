@@ -12,6 +12,15 @@
 | 6 | System | Create order, payment, notes, shipping, order-applied coupons | `CONFIRMED_FROM_CODE` | `CheckoutService.java` |
 | 7 | System | Decrement stock and push admin order event | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 
+## Account Login Workflow
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Guest | Open `/dang-nhap` — one screen with "Đăng nhập" / "Đăng ký" tabs | `CONFIRMED_FROM_CODE` | `AuthTabs.tsx` |
+| 2a | Guest | Sign in with email/phone + password; "Ghi nhớ" keeps the session for 30 days (vs 1 day when unchecked) | `CONFIRMED_FROM_CODE` | `CustomerAuthService.login`, `CustomerSessionService` |
+| 2b | Guest | Or sign in with Google / Facebook — the account is linked to or created from the social profile | `CONFIRMED_FROM_CODE` | `CustomerOAuthService.linkOrCreate` |
+| 3 | System | Issue `bb_session` / `bb_refresh` / `bb_csrf` cookies and return the customer to the page they came from | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOAuthController` |
+
 ## POS Workflow
 
 | Step | Actor | Current flow | Status | Evidence |
@@ -51,13 +60,3 @@
 | 4 | Admin | Update return status: `PENDING → APPROVED/REJECTED → RECEIVED → INSPECTING (optional) → COMPLETED/REFUNDED` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.java` |
 | 4a | Admin | (Optional QC) After `RECEIVED → INSPECTING`, mark each ReturnItem PASS/FAIL via `PATCH /returns/{id}/items/{itemId}/inspect`. Mandatory for safety equipment (helmet, body armour). | `CONFIRMED_FROM_CODE` | `AdminReturnService.inspectItem` (V104) |
 | 5 | System | Stock restore on `COMPLETED/REFUNDED`. Items with `inspection_result = 'FAIL'` are **skipped** so customer-damaged goods don't re-enter inventory. | `CONFIRMED_FROM_CODE` | `AdminReturnService.restoreStockForReturn` |
-
-## Contact Inbox Workflow
-
-| Step | Actor | Current flow | Status | Evidence |
-|---|---|---|---|---|
-| 1 | Public visitor | Submit contact form via `POST /api/v1/contact` | `CONFIRMED_FROM_CODE` | `ContactController.java` |
-| 2 | System | Persist into `contact_messages` (status `OPEN`) and email admin best-effort. Email failure does not lose the message. | `CONFIRMED_FROM_CODE` | `ContactService.submit`, `V105__create_contact_messages.sql` |
-| 3 | Admin | List/filter contact messages via `GET /api/v1/admin/contact-messages` (permission `contact.read`) | `CONFIRMED_FROM_CODE` | `AdminContactController.java` |
-| 4 | Admin | Update status (`OPEN → IN_PROGRESS → RESOLVED/CLOSED`), add internal note, assign to teammate via `PATCH /api/v1/admin/contact-messages/{id}` (permission `contact.write`) | `CONFIRMED_FROM_CODE` | `AdminContactController.java`, `AdminContactService.java` |
-| 5 | System | Stamps `resolved_at` first time status enters `RESOLVED/CLOSED`; clears it on reopen so resolution-time metrics stay honest. | `CONFIRMED_FROM_CODE` | `AdminContactService.update` |

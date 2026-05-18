@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.domain.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import java.time.Instant;
@@ -22,6 +23,8 @@ public record Article(
         SeoMeta seo,
         Instant publishedAt,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        /** Catalog products showcased in the "Sản phẩm sử dụng trong bài viết" section. */
+        List<Product> relatedProducts
 ) {
 }

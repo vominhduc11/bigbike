@@ -2266,63 +2266,25 @@ export async function fetchReturnsByOrder(orderId) {
   return raw.map(normalizeReturn)
 }
 
-// ── Contact inbox ─────────────────────────────────────────────────────────────
-
-function normalizeContactMessage(s) {
+function normalizeNewsletterSubscriber(s) {
   if (!s || typeof s !== 'object') return {}
   return {
     id: s.id || '',
-    fullName: s.fullName || '',
-    phone: s.phone || '',
     email: s.email || '',
-    content: s.content || '',
-    contentPreview: s.contentPreview || s.content || '',
-    status: s.status || 'OPEN',
-    adminNote: s.adminNote || '',
-    assignedAdminId: s.assignedAdminId || null,
-    assignedAdminName: s.assignedAdminName || null,
-    ipAddress: s.ipAddress || null,
-    userAgent: s.userAgent || null,
     createdAt: s.createdAt || null,
-    updatedAt: s.updatedAt || null,
-    resolvedAt: s.resolvedAt || null,
   }
 }
 
-function buildContactQuery(query = {}) {
-  const params = {}
-  if (query.page) params.page = query.page
-  if (query.pageSize) params.size = query.pageSize
-  if (query.status && query.status !== 'ALL') params.status = query.status
-  if (query.q) params.q = query.q
-  return params
-}
-
-export async function fetchContactMessages(query = {}) {
+export async function fetchNewsletterSubscribers(query = {}) {
   try {
-    const payload = await requestJson('/admin/contact-messages', { query: buildContactQuery(query) })
-    return parseListPayload(payload, normalizeContactMessage, Number(query.pageSize) || 20)
+    const params = {}
+    if (query.page) params.page = query.page
+    if (query.pageSize) params.size = query.pageSize
+    const payload = await requestJson('/admin/newsletter-subscribers', { query: params })
+    return parseListPayload(payload, normalizeNewsletterSubscriber, Number(query.pageSize) || 20)
   } catch (error) {
     throw normalizeError(error)
   }
-}
-
-export async function fetchContactMessageDetail(id) {
-  try {
-    const payload = await requestJson(`/admin/contact-messages/${id}`)
-    return normalizeContactMessage(payload?.data || payload || {})
-  } catch {
-    return null
-  }
-}
-
-export async function updateContactMessage(id, body) {
-  assertMutationEnabled()
-  const payload = await requestJson(`/admin/contact-messages/${id}`, {
-    method: 'PATCH',
-    body,
-  })
-  return normalizeContactMessage(payload?.data || payload || {})
 }
 
 // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

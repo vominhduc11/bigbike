@@ -198,6 +198,25 @@ Evidence:
 - `BUSINESS_RULES.md` STOCK_RULE_001–007
 - `V108__backfill_stock_state_from_quantity.sql`
 
+### Product rich-text content fields
+
+Three independent rich-HTML columns on the `products` table feed distinct
+surfaces of the product detail page (PDP). All are admin-editable, optional
+(nullable), stored as `TEXT`, and limited to 50 000 characters by the upsert
+DTO (`@Size(max = 50000)`).
+
+| Field | DB column | PDP surface |
+|---|---|---|
+| `description` | `description` | "Mô tả sản phẩm" tab |
+| `promotionContent` | `promotion_content` (added `V124__add_product_promotion_content.sql`) | "Khuyến mãi" tab — the first PDP tab; tab is hidden when the field is empty |
+| `contentBottom` | `content_bottom` (added `V43`) | Long-form SEO copy band below the related-products grid |
+
+`promotionContent` is surfaced on both the public product detail response
+and the admin product read response (it is a component of the domain
+`Product` record). Empty/blank values are normalized to `NULL` on write.
+
+Status: `CONFIRMED_FROM_CODE`
+
 ### Product homepage placement (V111+)
 
 Two columns on the `products` table control homepage surface placement. The legacy boolean pair (`is_featured`, `show_on_homepage`) was **dropped in migration `V111__refactor_product_homepage_block.sql` (2026-05-14)** and must not be referenced in any new code or query.
@@ -256,6 +275,59 @@ Evidence:
 - `SettingDefinitionRegistry.java` — registers 15 `hero_(products|brands|news)_*` keys
 - `V98__add_page_hero_fields.sql`
 
+### Article ↔ Product relation (V130)
+
+An article may reference a set of catalog products ("Sản phẩm sử dụng trong bài viết" — products
+showcased on the blog detail page). The relation is many-to-many and ordered.
+
+**Join table `article_product_map`:**
+
+| Column | Type | Nullable | Purpose |
+|---|---|---|---|
+| `article_id` | `VARCHAR(64)` | NO | FK → `articles.id`, `ON DELETE CASCADE`. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`. |
+| `sort_order` | `INTEGER` | NO | Display order, ascending. Owned by Hibernate `@OrderColumn`. |
+
+Composite primary key `(article_id, product_id)`; indexes on both FK columns. Schema mirrors
+`article_tag_map` / `article_category_map`.
+
+**Domain exposure:**
+- `Article.relatedProducts` — `List<Product>`. The public read path
+  (`JpaContentReadRepository.toDomain(ArticleEntity)`) maps each linked `ProductEntity` to a
+  list-item `Product` (no variants/specs/gallery) and **filters out products that are not
+  `PUBLISHED`** — trashed/draft products never surface on the storefront.
+- `AdminContentItem.relatedProducts` — `List<RelatedProductRef>` (`id`, `slug`, `name`, `imageUrl`),
+  a lightweight shape so the admin article editor can render product chips without a second fetch.
+- `UpsertArticleRequest.productIds` — `List<String>`; the admin upsert replaces the article's product
+  set with the resolved, de-duplicated, order-preserving list. `null` keeps the existing set; an
+  empty list clears it (same presence semantics as `tags`).
+
+No backfill — the table starts empty. The legacy `articles.product_image_url` / `product_image_alt`
+columns are unrelated (a single decorative thumbnail) and are left untouched.
+
+Migration: `V130__add_article_product_map.sql`.
+
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.products`, `Article.relatedProducts`,
+`JpaContentReadRepository`, `AdminContentMutationService.resolveProducts`, `V130`.
+
+### Catalog facets response shape
+
+Read-only aggregation served by `GET /api/v1/catalog/facets` (see [API_CONTRACT.md](API_CONTRACT.md#catalog-facets-contract)). No DB table — computed in-memory from the catalog read model.
+
+`CatalogFacets`:
+| Field | Type | Purpose |
+|---|---|---|
+| `categories` | `FacetBucket[]` | One bucket per visible category. |
+| `brands` | `FacetBucket[]` | One bucket per visible brand; `image` carries the brand logo. |
+| `colors` | `FacetBucket[]` | The 10 fixed named colors. |
+| `priceBands` | `PriceBucket[]` | The 9 fixed price bands. |
+
+`FacetBucket`: `{ key: string, label: string, image: ImageAsset | null, count: long }` — `image` is non-null only for brand buckets.
+
+`PriceBucket`: `{ key: string, label: string, minPrice: long | null, maxPrice: long | null, count: long }` — `maxPrice` is `null` for the open-ended top band.
+
+Status: `CONFIRMED_FROM_CODE` — `CatalogFacets.java`, `CatalogReadService.computeFacets`.
+
 ## Accounts Receivable Data Fields
 
 Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivables.sql`.
@@ -269,6 +341,35 @@ Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivable
 | `payment_terms_days` | `INTEGER` | YES | `null` | Days until payment is due after credit sale |
 | `credit_status` | `VARCHAR(50)` | NO | `'ACTIVE'` | `ACTIVE` / `SUSPENDED` / `BLOCKED` |
 | `credit_note` | `TEXT` | YES | `null` | Internal admin note on credit profile |
+
+### customers / customer_addresses — account page fields (V126, V127)
+
+| Table | Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|---|
+| `customers` | `newsletter_subscribed` | `BOOLEAN` | NO | `false` | Newsletter opt-in; backs the "Đăng ký nhận tin" checkbox on the account info page |
+| `customer_addresses` | `email` | `VARCHAR(255)` | YES | `null` | Per-address contact email; backs the "Email" field on the address book popup |
+
+### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)
+
+`OrderLineItemResponse.productThumbnailUrl` (`String`, nullable) backs the product thumbnail
+in the customer order-detail view. It is **not** snapshotted on `order_line_items` — it is
+resolved read-time in `OrderReadService` by joining `order_line_items.product_pk` to
+`products.id` and reading the product's current `image_url`. Returns `null` when the product
+no longer exists. Rationale: unlike `productName` / `unitPrice` (which must stay historically
+fixed), the image is presentational, so showing the product's current image is acceptable and
+avoids a migration/backfill — including for orders imported from WordPress.
+
+Evidence: `OrderReadService.resolveProductThumbnails`, `ProductJpaRepository.findImageUrlsByIds`.
+
+### customers / customer_sessions — social login + remember-me (V129)
+
+| Table | Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|---|
+| `customers` | `oauth_provider` | `VARCHAR(20)` | YES | `null` | Social provider the account is linked to (`google` / `facebook`); `null` for password-only accounts |
+| `customers` | `oauth_subject` | `VARCHAR(255)` | YES | `null` | Stable provider-side user id (the OAuth `sub`). Unique together with `oauth_provider` |
+| `customer_sessions` | `remember` | `BOOLEAN` | NO | `false` | Whether the session was created with "Ghi nhớ" — drives the refresh-cookie lifetime and is preserved across refresh-token rotation |
+
+Partial unique index `ux_customers_oauth` on `(oauth_provider, oauth_subject)` where `oauth_provider IS NOT NULL` — prevents two accounts linking to the same provider identity.
 
 ### accounts_receivable table (V75; `version` column added in V83)
 

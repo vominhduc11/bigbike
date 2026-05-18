@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -84,6 +85,16 @@ public class ArticleEntity {
     @OrderColumn(name = "sort_order")
     @BatchSize(size = 50)
     private List<BlogTagEntity> tags = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "article_product_map",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id")
+    )
+    @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
+    private List<ProductEntity> products = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

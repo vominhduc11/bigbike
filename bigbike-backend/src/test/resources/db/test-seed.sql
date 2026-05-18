@@ -260,8 +260,6 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'shipping.rea
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'shipping.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='shipping.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reviews.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reviews.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reviews.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reviews.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'contact.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='contact.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'contact.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='contact.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'admin-users.read'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='admin-users.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'admin-users.write'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='admin-users.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'roles.read'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='roles.read');
@@ -300,8 +298,6 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'coupo
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'shipping.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='shipping.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reviews.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reviews.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reviews.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reviews.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'contact.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='contact.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'contact.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='contact.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'pos.read'                   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='pos.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'pos.write'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='pos.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'receivables.read'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='receivables.read');

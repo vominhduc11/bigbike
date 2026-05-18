@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.api.customer.dto.CustomerResetPasswordRequest
 import com.bigbike.bigbike_backend.api.customer.dto.CustomerRegisterRequest;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.config.ClientIpResolver;
+import com.bigbike.bigbike_backend.config.CustomerAuthCookies;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.customer.CustomerAuthResult;
@@ -20,9 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,10 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerAuthController {
 
     private static final String HEADER_USER_AGENT = "User-Agent";
-    private static final String COOKIE_REFRESH = "bb_refresh";
-    private static final String COOKIE_CSRF = "bb_csrf";
 
-    private final boolean cookiesSecure;
+    private final CustomerAuthCookies cookies;
     private final CustomerAuthService authService;
     private final CustomerSessionService sessionService;
     private final CustomerPasswordResetService passwordResetService;
@@ -48,14 +44,14 @@ public class CustomerAuthController {
     private final ClientIpResolver clientIpResolver;
 
     public CustomerAuthController(
-            @Value("${bigbike.cookies.secure:true}") boolean cookiesSecure,
+            CustomerAuthCookies cookies,
             CustomerAuthService authService,
             CustomerSessionService sessionService,
             CustomerPasswordResetService passwordResetService,
             ApiResponseFactory apiResponseFactory,
             EmailVerificationService emailVerificationService,
             ClientIpResolver clientIpResolver) {
-        this.cookiesSecure = cookiesSecure;
+        this.cookies = cookies;
         this.authService = authService;
         this.sessionService = sessionService;
         this.passwordResetService = passwordResetService;
@@ -130,7 +126,7 @@ public class CustomerAuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        String rawRefresh = CustomerSessionFilter.extractCookie(request, COOKIE_REFRESH);
+        String rawRefresh = CustomerSessionFilter.extractCookie(request, CustomerAuthCookies.COOKIE_REFRESH);
         if (rawRefresh == null) throw new UnauthorizedException("Refresh token missing.");
         CustomerAuthResult result = authService.refresh(rawRefresh, getClientIp(request), request.getHeader(HEADER_USER_AGENT));
         applySessionCookies(response, result);
@@ -146,40 +142,16 @@ public class CustomerAuthController {
                 sessionService.findBySessionToken(rawSession).ifPresent(authService::logout);
             }
         }
-        clearCookies(response);
+        cookies.clearSession(response);
         return apiResponseFactory.data(null, request);
     }
 
     // ── cookie helpers ────────────────────────────────────────────────────────
 
     private void applySessionCookies(HttpServletResponse response, CustomerAuthResult result) {
-        addCookie(response, CustomerSessionFilter.SESSION_COOKIE,
-                result.rawSessionToken(), "/",
-                (int) CustomerSessionService.SESSION_TTL_SECONDS, true);
-        addCookie(response, COOKIE_REFRESH,
-                result.rawRefreshToken(), "/api/v1/customer/auth/refresh",
-                (int) CustomerSessionService.REFRESH_TTL_SECONDS, true);
-        addCookie(response, COOKIE_CSRF,
-                result.response().csrfToken(), "/",
-                (int) CustomerSessionService.SESSION_TTL_SECONDS, false);
-    }
-
-    private void clearCookies(HttpServletResponse response) {
-        addCookie(response, CustomerSessionFilter.SESSION_COOKIE, "", "/", 0, true);
-        addCookie(response, COOKIE_REFRESH, "", "/api/v1/customer/auth/refresh", 0, true);
-        addCookie(response, COOKIE_CSRF, "", "/", 0, false);
-    }
-
-    private void addCookie(HttpServletResponse response, String name, String value,
-            String path, int maxAge, boolean httpOnly) {
-        ResponseCookie cookie = ResponseCookie.from(name, value)
-                .httpOnly(httpOnly)
-                .secure(cookiesSecure)
-                .path(path)
-                .maxAge(maxAge)
-                .sameSite("Strict")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        cookies.applySession(response,
+                result.rawSessionToken(), result.rawRefreshToken(), result.response().csrfToken(),
+                result.sessionTtlSeconds(), result.refreshTtlSeconds());
     }
 
     private String getClientIp(HttpServletRequest request) {

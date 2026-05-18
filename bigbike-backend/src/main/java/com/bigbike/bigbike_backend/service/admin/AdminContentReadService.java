@@ -103,8 +103,22 @@ public class AdminContentReadService {
                 null,
                 null,
                 null,
-                null
+                null,
+                toRelatedProductRefs(article)
         );
+    }
+
+    static List<com.bigbike.bigbike_backend.domain.content.RelatedProductRef> toRelatedProductRefs(Article article) {
+        if (article.relatedProducts() == null) {
+            return List.of();
+        }
+        return article.relatedProducts().stream()
+                .map(p -> new com.bigbike.bigbike_backend.domain.content.RelatedProductRef(
+                        p.id(),
+                        p.slug(),
+                        p.name(),
+                        p.image() != null ? p.image().url() : null))
+                .toList();
     }
 
     static AdminContentItem fromPage(Page page) {
@@ -133,7 +147,8 @@ public class AdminContentReadService {
                 pageHeroImage(page),
                 page.heroTitle(),
                 page.heroDescription(),
-                page.heroKicker()
+                page.heroKicker(),
+                null
         );
     }
 

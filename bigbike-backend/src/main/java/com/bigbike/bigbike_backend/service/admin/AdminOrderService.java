@@ -82,6 +82,13 @@ public class AdminOrderService {
             "UNPAID", "PAID", "REFUNDED", "CANCELLED"
     );
 
+    // Payment methods whose orders sit ON_HOLD until an admin confirms the money
+    // arrived. ALEPAY/ZALOPAY are listed for gateway phase 1; phase 2 will mark
+    // them PAID automatically via the provider webhook instead.
+    private static final Set<String> MANUAL_CONFIRM_PAYMENT_METHODS = Set.of(
+            "BACS", "ALEPAY", "ZALOPAY"
+    );
+
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
     static {
         ALLOWED_TRANSITIONS = new HashMap<>();
@@ -197,9 +204,12 @@ public class AdminOrderService {
         Page<OrderEntity> orderPage = orderRepo.findAll(spec, pageable);
         List<UUID> orderIds = orderPage.getContent().stream().map(OrderEntity::getId).toList();
         Map<UUID, Long> itemCountMap = batchCountLineItems(orderIds);
+        Map<UUID, String> fallbackNameMap = batchShippingNames(orderIds);
         List<AdminOrderListItemResponse> items = orderPage.getContent()
                 .stream()
-                .map(o -> toListItem(o, itemCountMap.getOrDefault(o.getId(), 0L)))
+                .map(o -> withResolvedCustomerName(
+                        toListItem(o, itemCountMap.getOrDefault(o.getId(), 0L)),
+                        fallbackNameMap))
                 .toList();
 
         return new PageResult<>(items, normalizedPage, normalizedSize,
@@ -327,11 +337,14 @@ public class AdminOrderService {
             }
         }
 
-        // BACS orders move ON_HOLD → PROCESSING only after admin confirms payment received.
+        // Manual-confirm methods (BACS, and ALEPAY/ZALOPAY in gateway phase 1) move
+        // ON_HOLD → PROCESSING only after admin confirms payment received.
         // Auto-mark payment PAID so admin does not need a separate step.
         if ("PROCESSING".equals(newStatus)
                 && "ON_HOLD".equals(currentStatus)
-                && "BACS".equalsIgnoreCase(order.getPaymentMethod())
+                && MANUAL_CONFIRM_PAYMENT_METHODS.contains(
+                        order.getPaymentMethod() == null
+                                ? "" : order.getPaymentMethod().toUpperCase())
                 && "UNPAID".equals(order.getPaymentStatus())) {
             order.setPaymentStatus("PAID");
             if (order.getPaidAmount() == null
@@ -699,6 +712,43 @@ public class AdminOrderService {
         return orderMapper.toAdminListItem(order, (int) itemCount);
     }
 
+    /**
+     * Batch-loads the shipping-address full name for the given orders, keyed by
+     * order id. Used as a fallback for legacy orders whose own customer_name is
+     * null even though the address carries the real name. One query, no N+1 —
+     * {@code getOrder().getId()} reads the FK off the lazy proxy without a fetch.
+     */
+    private Map<UUID, String> batchShippingNames(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) return Map.of();
+        Map<UUID, String> result = new HashMap<>();
+        for (OrderAddressEntity address : addressRepo.findByOrderIdInAndType(orderIds, "SHIPPING")) {
+            if (address.getFullName() != null && !address.getFullName().isBlank()) {
+                result.putIfAbsent(address.getOrder().getId(), address.getFullName());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Mirrors {@link #toDetail}'s customer-name fallback for the list: when an
+     * order has no customer_name of its own, use the shipping-address name so
+     * the list shows the same name the detail screen does.
+     */
+    private static AdminOrderListItemResponse withResolvedCustomerName(
+            AdminOrderListItemResponse dto, Map<UUID, String> fallbackNameMap) {
+        if (dto.customerName() != null && !dto.customerName().isBlank()) {
+            return dto;
+        }
+        String fallback = fallbackNameMap.get(dto.id());
+        if (fallback == null || fallback.isBlank()) {
+            return dto;
+        }
+        return new AdminOrderListItemResponse(
+                dto.id(), dto.orderNumber(), dto.status(), dto.paymentStatus(),
+                dto.customerEmail(), dto.customerPhone(), fallback,
+                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount());
+    }
+
     private AdminOrderDetailResponse toDetail(OrderEntity order) {
         List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
                 .stream().map(this::toLineItem).toList();
@@ -769,7 +819,8 @@ public class AdminOrderService {
     }
 
     private OrderLineItemResponse toLineItem(OrderLineItemEntity e) {
-        return orderItemMapper.toResponse(e);
+        // Admin order view does not surface product thumbnails — pass null.
+        return orderItemMapper.toResponse(e, null);
     }
 
     private OrderAddressResponse toAddress(OrderAddressEntity e) {

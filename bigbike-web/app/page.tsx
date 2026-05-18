@@ -1,15 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import type { Article, Category, HomeSlider } from "@/lib/contracts/public";
+import type { Article, Category, HomeSlider, Product } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
-import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
+import { FeaturedProductsTabbedGrid } from "@/components/home/FeaturedProductsTabbedGrid";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import {
+  getProductBySlug,
   listArticles,
   listBrands,
   listCategories,
@@ -93,7 +94,17 @@ function findSetting(
   return settings.find((s) => s.settingKey === key)?.settingValue ?? "";
 }
 
-function toHeroSlide(slider: HomeSlider) {
+/**
+ * Slug sản phẩm gắn với banner. Backend trả productLink dạng `/sp/<slug>.html`
+ * (dự phòng thêm dạng `/san-pham/<slug>`).
+ */
+function sliderProductSlug(slider: HomeSlider): string | null {
+  const link = slider.productLink?.trim() ?? "";
+  const match = link.match(/\/sp\/(.+?)\.html$/) ?? link.match(/\/san-pham\/([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
+function toHeroSlide(slider: HomeSlider, product: Product | null) {
   const desktopSrc = resolveMediaUrl(slider.desktopImage?.url?.trim());
   if (!desktopSrc) return null;
   const mobileSrc = resolveMediaUrl(slider.mobileImage?.url?.trim()) || desktopSrc;
@@ -106,6 +117,9 @@ function toHeroSlide(slider: HomeSlider) {
       toProductListPath(),
     ),
     alt: safeText(slider.desktopImage?.alt || slider.mobileImage?.alt, "BigBike"),
+    productName: product ? safeText(product.name, "") : "",
+    categoryName: product?.category?.name ?? "",
+    productCode: product?.sku?.trim() ?? "",
   };
 }
 
@@ -241,8 +255,16 @@ export default async function HomePage() {
     "Tại shop bán đồ phượt moto Bigbike, các sản phẩm đồ bảo hộ moto và phụ kiện phượt rất đa dạng về mẫu mã và kiểu dáng với giá cả vô cùng phải chăng. Ngoài ra, đội ngũ nhân viên của cửa hàng rất am hiểu sản phẩm, sẵn sàng tư vấn và chăm sóc khách hàng khi cần thiết.";
   const address = findSetting(settings, "address");
 
-  const slides = (slidersResult.data ?? [])
-    .map(toHeroSlide)
+  // Mỗi banner có thể gắn 1 sản phẩm — tải sản phẩm đó để hiện tên/danh mục lên hero.
+  const rawSliders = slidersResult.data ?? [];
+  const sliderProducts = await Promise.all(
+    rawSliders.map((slider) => {
+      const slug = sliderProductSlug(slider);
+      return slug ? getProductBySlug(slug) : Promise.resolve(null);
+    }),
+  );
+  const slides = rawSliders
+    .map((slider, index) => toHeroSlide(slider, sliderProducts[index]?.data ?? null))
     .filter((s): s is NonNullable<typeof s> => s !== null);
 
   const expArticles = expArticlesResult.data;
@@ -280,7 +302,7 @@ export default async function HomePage() {
         {/* Block 2: Featured Products (ISR) */}
         {featuredProducts.length > 0 && (
           <section aria-label="Sản phẩm nổi bật">
-            <div className="bb-featured-grid-3">
+            <div className="grid grid-cols-3 gap-4 py-[var(--bb-space-12)] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
               {featuredProducts.map((p) => (
                 <ProductCard key={p.id} product={p} variant="tile" />
               ))}
@@ -352,7 +374,7 @@ export default async function HomePage() {
                 SẢN PHẨM NỔI BẬT TẠI BIGBIKE
               </h2>
             </div>
-            <FeaturedProductsCarousel products={carouselProducts} />
+            <FeaturedProductsTabbedGrid products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
               <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
                 {categoriesResult.data.map((cat) => (
@@ -471,7 +493,7 @@ export default async function HomePage() {
               <div className="mb-12 border-b border-[rgba(255,255,255,0.12)] pb-7 text-center text-white max-[575px]:mb-8 max-[575px]:pb-5">
                 <h2
                   id="home-video-heading"
-                  className="m-0 font-display text-[42px] font-bold uppercase leading-[1.1] tracking-[0.06em] text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.9)] after:mx-auto after:mt-3.5 after:block after:h-[3px] after:w-12 after:bg-brand after:content-[''] max-[991px]:text-32 max-[575px]:text-[24px] max-[575px]:tracking-[0.04em]"
+                  className="m-0 font-display text-40 font-bold uppercase leading-[1.1] tracking-[0.06em] text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.9)] after:mx-auto after:mt-3.5 after:block after:h-[3px] after:w-12 after:bg-brand after:content-[''] max-[991px]:text-32 max-[575px]:text-26 max-[575px]:tracking-[0.04em]"
                 >
                   TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN
                 </h2>

@@ -72,19 +72,23 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         className={
           isFeatured
             ? "relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
-            : "relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card"
+            : "relative pt-5 px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card"
         }
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-[0.04em] uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
-          {publishedDate}
-        </span>
+        {isFeatured && (
+          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-[0.04em] uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+            {publishedDate}
+          </span>
+        )}
         <div className="flex flex-col gap-2 flex-1">
-          <p className="text-xs font-bold tracking-[0.14em] uppercase text-brand m-0">{category}</p>
+          <p className="text-sm font-bold tracking-[0.14em] uppercase text-brand m-0">
+            {isFeatured ? category : `${category} / ${publishedDate}`}
+          </p>
           <h3
             className={
               isFeatured
                 ? "font-display font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.12] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3 text-[clamp(1.4rem,2.6vw,2.3rem)]"
-                : "font-display text-[18px] font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.3] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-2"
+                : "font-display text-lg font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.3] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-2"
             }
           >
             {title}
@@ -98,9 +102,11 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-[6px] text-muted-foreground text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
-            {"\u0110\u1ecdc ti\u1ebfp"}
-          </span>
+          {isFeatured && (
+            <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
+              {"\u0110\u1ecdc ti\u1ebfp"}
+            </span>
+          )}
         </div>
       </div>
     </Link>

@@ -18,6 +18,8 @@ import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.BlogTagJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentAuthorJpaRepository;
@@ -43,6 +45,7 @@ public class AdminContentMutationService {
     private final ContentAuthorJpaRepository contentAuthorJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final BlogTagJpaRepository blogTagJpaRepository;
+    private final ProductJpaRepository productJpaRepository;
     private final ContentReadRepository contentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
@@ -54,6 +57,7 @@ public class AdminContentMutationService {
             ObjectProvider<ContentAuthorJpaRepository> contentAuthorJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
+            ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
@@ -64,6 +68,7 @@ public class AdminContentMutationService {
         this.contentAuthorJpaRepository = contentAuthorJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.blogTagJpaRepository = blogTagJpaRepositoryProvider.getIfAvailable();
+        this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
@@ -210,7 +215,8 @@ public class AdminContentMutationService {
                 || pageJpaRepository == null
                 || contentAuthorJpaRepository == null
                 || contentCategoryJpaRepository == null
-                || blogTagJpaRepository == null) {
+                || blogTagJpaRepository == null
+                || productJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
@@ -405,6 +411,9 @@ public class AdminContentMutationService {
         if (create || request.getTags() != null) {
             entity.setTags(resolveTags(request.getTags()));
         }
+        if (create || request.getProductIds() != null) {
+            entity.setProducts(resolveProducts(request.getProductIds()));
+        }
 
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
@@ -528,6 +537,26 @@ public class AdminContentMutationService {
             if (tag != null) {
                 resolved.add(tag);
             }
+        }
+        return resolved;
+    }
+
+    /**
+     * Resolves the article's product IDs to entities, de-duplicated and order-preserving.
+     * Unknown IDs are skipped silently (tolerant, consistent with {@link #resolveTags}).
+     */
+    private List<ProductEntity> resolveProducts(List<String> productIds) {
+        if (productIds == null) {
+            return new ArrayList<>();
+        }
+        List<ProductEntity> resolved = new ArrayList<>();
+        LinkedHashSet<String> seenIds = new LinkedHashSet<>();
+        for (String raw : productIds) {
+            String id = AdminMutationValidators.trimToNull(raw);
+            if (id == null || !seenIds.add(id)) {
+                continue;
+            }
+            productJpaRepository.findById(id).ifPresent(resolved::add);
         }
         return resolved;
     }
@@ -690,7 +719,8 @@ public class AdminContentMutationService {
                 null,
                 null,
                 null,
-                null
+                null,
+                AdminContentReadService.toRelatedProductRefs(article)
         );
     }
 
@@ -731,7 +761,8 @@ public class AdminContentMutationService {
                 heroImage,
                 page.heroTitle(),
                 page.heroDescription(),
-                page.heroKicker()
+                page.heroKicker(),
+                null
         );
     }
 

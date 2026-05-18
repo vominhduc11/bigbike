@@ -48,7 +48,6 @@ public class CustomerCsrfFilter extends OncePerRequestFilter {
     private static final Set<String> CSRF_EXEMPT_PREFIXES = Set.of(
             "/api/v1/auth/",         // admin auth (has its own CSRF)
             "/api/v1/admin/",        // admin API uses JWT Bearer tokens, not cookies — CSRF not needed
-            "/api/v1/contact",       // public contact form (no session required)
             "/api/internal/"         // internal API (called server-to-server)
     );
 

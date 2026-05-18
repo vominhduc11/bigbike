@@ -1,18 +1,27 @@
 package com.bigbike.bigbike_backend.repository.content;
 
+import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
+import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,6 +46,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     private final ArticleJpaRepository articleJpaRepository;
     private final PageJpaRepository pageJpaRepository;
+    private final ContentCategoryJpaRepository contentCategoryJpaRepository;
 
     // --- Single-entity lookups ---
 
@@ -120,6 +130,13 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 .stream().map(this::toDomain).toList();
     }
 
+    // --- Content categories with published-article counts ---
+
+    @Override
+    public List<ContentCategoryWithCount> listContentCategoriesWithCounts() {
+        return contentCategoryJpaRepository.findAllWithArticleCount();
+    }
+
     // --- Two-query helpers ---
 
     private org.springframework.data.domain.Page<Article> fetchAndOrderArticles(
@@ -192,8 +209,82 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 ),
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                toRelatedProducts(entity)
+        );
+    }
+
+    /** Maps the article's linked products to list-item domain records, PUBLISHED only, in admin order. */
+    private List<Product> toRelatedProducts(ArticleEntity entity) {
+        if (entity.getProducts() == null || entity.getProducts().isEmpty()) {
+            return List.of();
+        }
+        return entity.getProducts().stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getPublishStatus() == PublishStatus.PUBLISHED)
+                .map(JpaContentReadRepository::toRelatedProduct)
+                .toList();
+    }
+
+    private static Product toRelatedProduct(ProductEntity entity) {
+        CategorySummary primaryCategory = toCatalogCategorySummary(entity.getCategory());
+        List<CategorySummary> categories = primaryCategory == null ? List.of() : List.of(primaryCategory);
+        return new Product(
+                entity.getId(),
+                entity.getSku(),
+                entity.getSlug(),
+                entity.getName(),
+                null,
+                null,
+                toBrandSummary(entity.getBrand()),
+                primaryCategory,
+                categories,
+                toImageAsset(
+                        entity.getImageId(),
+                        entity.getImageUrl(),
+                        entity.getImageAlt(),
+                        entity.getImageWidth(),
+                        entity.getImageHeight(),
+                        entity.getImageMimeType()
+                ),
+                List.of(),
+                List.of(),
+                new ProductPrice(
+                        entity.getRetailPrice(),
+                        entity.getCompareAtPrice(),
+                        entity.getSalePrice(),
+                        entity.getCurrency()
+                ),
+                List.of(),
+                List.of(),
+                entity.getStockState(),
+                entity.getStockQuantity(),
+                entity.getForceOutOfStock(),
+                entity.getPublishStatus(),
+                entity.getHomepageBlock(),
+                entity.getHomepageOrder(),
+                entity.getRating(),
+                entity.getRatingCount(),
+                null,
+                null,
+                null,
+                entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+    }
+
+    private static BrandSummary toBrandSummary(BrandEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getName());
+    }
+
+    private static CategorySummary toCatalogCategorySummary(CategoryEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getName());
     }
 
     private Page toDomain(PageEntity entity) {

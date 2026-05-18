@@ -6,12 +6,15 @@ import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.domain.content.PageType;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageImpl;
@@ -60,7 +63,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 ),
                 Instant.parse("2026-04-10T03:00:00Z"),
                 Instant.parse("2026-04-09T02:00:00Z"),
-                Instant.parse("2026-04-10T03:00:00Z")
+                Instant.parse("2026-04-10T03:00:00Z"),
+                List.of()
         );
 
         Article article2 = new Article(
@@ -92,7 +96,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 ),
                 Instant.parse("2026-04-15T03:00:00Z"),
                 Instant.parse("2026-04-14T03:00:00Z"),
-                Instant.parse("2026-04-15T03:00:00Z")
+                Instant.parse("2026-04-15T03:00:00Z"),
+                List.of()
         );
 
         this.articles = List.of(article1, article2);
@@ -219,6 +224,31 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         return pages.stream()
                 .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
                 .filter(p -> matchesPageQuery(p, q))
+                .toList();
+    }
+
+    @Override
+    public List<ContentCategoryWithCount> listContentCategoriesWithCounts() {
+        // Collect every category referenced by any article (primary or many-to-many).
+        Map<String, ContentCategorySummary> bySlug = new LinkedHashMap<>();
+        for (Article a : articles) {
+            if (a.category() != null) {
+                bySlug.putIfAbsent(a.category().slug(), a.category());
+            }
+            if (a.categories() != null) {
+                for (ContentCategorySummary c : a.categories()) {
+                    if (c != null) bySlug.putIfAbsent(c.slug(), c);
+                }
+            }
+        }
+        return bySlug.values().stream()
+                .map(c -> new ContentCategoryWithCount(
+                        c.id(), c.slug(), c.name(),
+                        articles.stream()
+                                .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
+                                .filter(a -> matchesCategory(a, c.slug()))
+                                .count()))
+                .sorted(Comparator.comparing(ContentCategoryWithCount::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 

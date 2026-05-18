@@ -74,9 +74,6 @@ class ApiEndpoints {
   static const String wishlistProducts = '/api/v1/customer/wishlist/products';
   static String wishlistItem(String productId) => '/api/v1/customer/wishlist/$productId';
 
-  // Contact
-  static const String contact = '/api/v1/contact';
-
   // Warranty — public lookup; serial passed as the `serial` query param.
   static const String warrantyLookup = '/api/v1/warranties/lookup';
 

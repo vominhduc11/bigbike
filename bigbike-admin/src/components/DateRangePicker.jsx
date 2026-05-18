@@ -7,15 +7,17 @@ import { CalendarDays, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-function formatDateLabel(date) {
+function formatDateLabel(date, locale = 'vi-VN') {
   if (!date) return ''
-  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 export function DateRangePicker({ value, onChange, placeholder }) {
   const { t, i18n } = useTranslation()
   const resolvedPlaceholder = placeholder ?? t('common.dateRangePlaceholder')
-  const dayPickerLocale = i18n.language === 'en' ? enUS : vi
+  const isEn = i18n.language === 'en'
+  const dayPickerLocale = isEn ? enUS : vi
+  const dateLocale = isEn ? 'en-US' : 'vi-VN'
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -30,7 +32,7 @@ export function DateRangePicker({ value, onChange, placeholder }) {
   const hasValue = value?.from || value?.to
 
   const label = hasValue
-    ? `${formatDateLabel(value.from)} — ${value.to ? formatDateLabel(value.to) : '...'}`
+    ? `${formatDateLabel(value.from, dateLocale)} — ${value.to ? formatDateLabel(value.to, dateLocale) : '...'}`
     : resolvedPlaceholder
 
   function handleClear(e) {

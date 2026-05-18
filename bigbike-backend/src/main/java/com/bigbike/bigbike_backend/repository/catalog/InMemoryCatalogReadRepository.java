@@ -242,6 +242,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new BigDecimal("4.50"),
                 null,
                 null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -285,6 +286,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 new BigDecimal("4.50"),
                 null,
                 null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -326,6 +328,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
                 2,
                 new BigDecimal("4.50"),
+                null,
                 null,
                 null,
                 new SeoMeta(

@@ -4,7 +4,6 @@
 |---|---|---|---|---|---|
 | Catalog search | web, mobile | `PublicSearchController` | search service + payload DTOs | indirect via clients; no dedicated suite confirmed here | `CONFIRMED_FROM_CODE` |
 | Vietnam address lookup | web, mobile | `VnAddressController` | address service/data file | client endpoint coverage confirmed | `CONFIRMED_FROM_CODE` |
-| Contact form | web, mobile | `ContactController` | contact service | no dedicated suite confirmed in this pass | `CONFIRMED_FROM_CODE` |
 | Cart | web, mobile | `CartController` | `CartService`, cart tables, coupon attach/remove | `Phase1ECartApiTest.java` | `CONFIRMED_FROM_TEST` |
 | Checkout | web, mobile | `CheckoutController` | `CheckoutService`, order/payment/shipping/coupon/stock tables | `Phase1FCheckoutApiTest.java` | `CONFIRMED_FROM_TEST` |
 | Coupon lifecycle | admin, web, mobile, backend scheduler | `AdminCouponController`, cart/checkout endpoints | `CartService`, `CheckoutService`, `CouponExpiryScheduler` | `Phase1ECartApiTest.java`, `Phase1FCheckoutApiTest.java`, `Phase1JAdminSettingsMenuCouponApiTest.java` | `CONFIRMED_FROM_TEST` |

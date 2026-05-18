@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { LoginPageContent } from "./LoginForm";
+import { AuthTabs } from "./AuthTabs";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đăng nhập",
@@ -10,5 +10,5 @@ export const metadata: Metadata = buildPublicMetadata({
 });
 
 export default function LoginPage() {
-  return <LoginPageContent />;
+  return <AuthTabs defaultTab="login" />;
 }

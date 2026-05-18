@@ -109,7 +109,7 @@ export function HeaderUserMenu() {
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
             <p className="text-sm font-semibold normal-case">Chào bạn!</p>
-            <p className="text-xs text-muted-foreground normal-case">{guestSubText}</p>
+            <p className="text-sm text-muted-foreground normal-case">{guestSubText}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {!isOnLoginPage && (
@@ -149,7 +149,7 @@ export function HeaderUserMenu() {
       </TooltipProvider>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-xs text-muted-foreground normal-case">Xin chào,</p>
+          <p className="text-sm text-muted-foreground normal-case">Xin chào,</p>
           <p className="text-sm font-semibold truncate normal-case" title={profile.email}>
             {displayName}
           </p>

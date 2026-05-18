@@ -16,6 +16,7 @@
   --bb-color-blue: #007bff;
   --bb-color-cyan: #00bfff;
   --bb-color-warning: #fcb900;
+  --bb-color-purple: #6100d1;
 
   --bb-color-black: #000000;
   --bb-color-dark: #1a1a1a;
@@ -56,7 +57,7 @@
   /* Text on dark surfaces (header, footer, drawers) */
   --bb-text-inverse: var(--bb-color-white);
   --bb-text-inverse-secondary: var(--bb-color-gray-300);
-  --bb-text-inverse-muted: var(--bb-color-gray-500);
+  --bb-text-inverse-muted: var(--bb-color-gray-400); /* gray-400 (#abb8c3) = ~4.7:1 on #141414, passes WCAG AA */
   --bb-text-brand: var(--bb-brand-primary);
 
   --bb-border-subtle: var(--bb-color-gray-200);
@@ -85,6 +86,8 @@
   --bb-state-info: var(--bb-color-blue);
 
   --bb-product-price: var(--bb-brand-primary);
+  /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
+  --bb-discount: var(--bb-color-purple);
 
   /* Typography */
   /* WP parity: Oswald for display/heading (product titles, section heads, h1-h6, sub-menu) */
@@ -106,10 +109,10 @@
 
   /* WP-parity exact font sizes — token hóa các cỡ chữ lệch scale chuẩn.
      Expose thành Tailwind utility text-9 … text-40 trong globals.css @theme. */
-  --bb-text-9: 9px;
-  --bb-text-10: 10px;
-  --bb-text-11: 11px;
-  --bb-text-13: 13px;
+  --bb-text-9: 12px;
+  --bb-text-10: 12px;
+  --bb-text-11: 12px;
+  --bb-text-13: 14px;
   --bb-text-15: 15px;
   --bb-text-17: 17px;
   --bb-text-22: 22px;
@@ -343,6 +346,10 @@
     --bb-text-hero: 18px;
     --bb-text-h1: 20px;
     --bb-text-h2: 18px;
+    --bb-text-26: 20px;
+    --bb-text-32: 24px;
+    --bb-text-40: 26px;
+    --bb-text-22: 18px;
     --bb-section-y: 2rem;
   }
 }
@@ -352,6 +359,9 @@
     --bb-text-hero: 24px;
     --bb-text-h1: 24px;
     --bb-text-h2: 24px;
+    --bb-text-26: 22px;
+    --bb-text-32: 26px;
+    --bb-text-40: 32px;
     --bb-section-y: 3.25rem;
   }
 }

@@ -194,6 +194,8 @@ export type Product = {
   ratingCount?: number | null;
   /** Long-form rich-HTML SEO copy rendered at the bottom of the PDP. */
   contentBottom?: string | null;
+  /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
+  promotionContent?: string | null;
   seo?: SeoMeta;
   createdAt: string;
   updatedAt: string;
@@ -228,6 +230,33 @@ export type Brand = {
   updatedAt: string;
 };
 
+/** One filter value + the count of published products matching it. */
+export type FacetBucket = {
+  key: string;
+  label: string;
+  /** Brand logo — only populated for brand buckets. */
+  image?: ImageAsset | null;
+  count: number;
+};
+
+/** A fixed price band + the count of products priced within it. */
+export type PriceBucket = {
+  key: string;
+  label: string;
+  minPrice?: number | null;
+  /** Null for the open-ended top band. */
+  maxPrice?: number | null;
+  count: number;
+};
+
+/** Aggregated product counts powering the catalog filter sidebar. */
+export type CatalogFacets = {
+  categories: FacetBucket[];
+  brands: FacetBucket[];
+  colors: FacetBucket[];
+  priceBands: PriceBucket[];
+};
+
 export type AuthorSummary = {
   id: string;
   name: string;
@@ -237,6 +266,14 @@ export type ContentCategorySummary = {
   id: string;
   slug: string;
   name: string;
+};
+
+/** A content (news) category plus its count of published articles — powers the Tin tức filter. */
+export type ContentCategoryWithCount = {
+  id: string;
+  slug: string;
+  name: string;
+  articleCount: number;
 };
 
 export type Article = {
@@ -251,6 +288,8 @@ export type Article = {
   category?: ContentCategorySummary;
   categories?: ContentCategorySummary[];
   tags?: string[];
+  /** Catalog products showcased in the "Sản phẩm sử dụng trong bài viết" section. */
+  relatedProducts?: Product[];
   publishStatus: PublishStatus;
   seo?: SeoMeta;
   publishedAt?: string;

@@ -310,6 +310,7 @@ function buildEmptyForm() {
     shortDescription: '',
     description: '',
     contentBottom: '',
+    promotionContent: '',
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -355,6 +356,7 @@ function buildFormFromItem(item) {
     shortDescription: item.shortDescription || '',
     description: item.description || '',
     contentBottom: item.contentBottom || '',
+    promotionContent: item.promotionContent || '',
     brandId: item.brand?.id || '',
     categoryId: item.category?.id || '',
     retailPrice:
@@ -424,6 +426,7 @@ function toPayload(form) {
     shortDescription: form.shortDescription.trim() || undefined,
     description: form.description.trim() || undefined,
     contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
+    promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -2008,6 +2011,31 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               />
               {validationErrors.description && (
                 <small className="field-error">{validationErrors.description}</small>
+              )}
+            </div>
+
+            <div className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.promotionContent')}</span>
+                {form.promotionContent.length > 15000 && (
+                  <span className={`char-counter${form.promotionContent.length > 19000 ? ' char-counter-warn' : ''}`}>
+                    {form.promotionContent.length.toLocaleString()} / 20 000
+                  </span>
+                )}
+              </div>
+              <RichTextEditor
+                value={form.promotionContent}
+                onChange={(html) => updateField('promotionContent', html)}
+                placeholder={t('products.detail.promotionContentPlaceholder')}
+                disabled={isReadOnly}
+                hasError={Boolean(validationErrors.promotionContent)}
+                enableImagePicker
+              />
+              <small className="detail-section-desc mt-1">
+                {t('products.detail.promotionContentHint')}
+              </small>
+              {validationErrors.promotionContent && (
+                <small className="field-error">{validationErrors.promotionContent}</small>
               )}
             </div>
 

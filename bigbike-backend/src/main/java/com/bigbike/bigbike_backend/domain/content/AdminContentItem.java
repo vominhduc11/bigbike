@@ -31,6 +31,8 @@ public record AdminContentItem(
         ImageAsset heroImage,
         String heroTitle,
         String heroDescription,
-        String heroKicker
+        String heroKicker,
+        /** Article-only: catalog products linked to the article. Null for pages. */
+        List<RelatedProductRef> relatedProducts
 ) {
 }

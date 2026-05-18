@@ -17,9 +17,10 @@ import {
 import type { ProductVariant } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
 
-// Attribute group heading (<h6>) — Barlow, 11px, wide-tracked uppercase.
+// Attribute group heading (<h6>) — "Chọn size" / "Chọn màu sắc" label
+// trên variant group (khớp bản thiết kế WP cũ).
 const OPT_GROUP_HEADING =
-  "m-0 mb-2.5 font-body text-11 uppercase tracking-[0.14em] text-muted-foreground";
+  "m-0 mb-2.5 font-body text-sm font-semibold tracking-normal text-foreground";
 
 type VariantSelectorProps = {
   variants: ProductVariant[];
@@ -138,7 +139,7 @@ export function VariantSelector({
           const isColorGroup = isColorAttribute(group.name);
           return (
             <div key={group.name} className="mb-5">
-              <h6 className={OPT_GROUP_HEADING}>{group.name}</h6>
+              <h6 className={OPT_GROUP_HEADING}>Chọn {group.name.toLowerCase()}</h6>
               <div className="flex flex-wrap gap-2">
                 {group.values.map((info) => {
                   const { value, colorHex, swatchImageUrl } = info;
@@ -180,9 +181,9 @@ export function VariantSelector({
                         key={`${group.name}-${value}`}
                         type="button"
                         className={cn(
-                          "group inline-flex cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-11 font-bold uppercase tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground",
+                          "group inline-flex cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-bold uppercase tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground",
                           isActive && "text-brand",
-                          !isAvailable && !isActive && "cursor-not-allowed opacity-35",
+                          !isAvailable && !isActive && "cursor-not-allowed opacity-50",
                         )}
                         onClick={() => {
                           if (!isAvailable && !isActive) return;
@@ -221,9 +222,9 @@ export function VariantSelector({
                       key={`${group.name}-${value}`}
                       type="button"
                       className={cn(
-                        "inline-flex cursor-pointer items-center gap-2 rounded-full border border-[color:var(--bb-border-default)] bg-card px-3.5 py-2 text-xs font-bold uppercase tracking-[0.06em] text-foreground transition-all hover:border-[color:var(--bb-border-strong)] pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-md:min-h-11 max-md:min-w-11",
-                        isActive && "border-brand bg-brand",
-                        !isAvailable && !isActive && "cursor-not-allowed line-through opacity-35",
+                        "inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-none border border-[color:var(--bb-border-default)] bg-white px-4 text-sm font-bold uppercase tracking-[0.06em] text-foreground transition-all hover:border-foreground",
+                        isActive && "border-black bg-black text-white hover:border-black",
+                        !isAvailable && !isActive && "cursor-not-allowed line-through opacity-50",
                       )}
                       onClick={() => {
                         if (!isAvailable && !isActive) return;

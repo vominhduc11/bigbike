@@ -57,8 +57,18 @@ public class CustomerEntity {
     @Column(name = "dob")
     private LocalDate dob;
 
+    @Column(name = "newsletter_subscribed", nullable = false)
+    private boolean newsletterSubscribed = false;
+
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
+
+    // Social login linkage (V129)
+    @Column(name = "oauth_provider", length = 20)
+    private String oauthProvider;
+
+    @Column(name = "oauth_subject", length = 255)
+    private String oauthSubject;
 
     // Credit profile (V75)
     @Column(name = "credit_enabled", nullable = false)
@@ -124,8 +134,17 @@ public class CustomerEntity {
     public LocalDate getDob() { return dob; }
     public void setDob(LocalDate dob) { this.dob = dob; }
 
+    public boolean isNewsletterSubscribed() { return newsletterSubscribed; }
+    public void setNewsletterSubscribed(boolean newsletterSubscribed) { this.newsletterSubscribed = newsletterSubscribed; }
+
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+
+    public String getOauthProvider() { return oauthProvider; }
+    public void setOauthProvider(String oauthProvider) { this.oauthProvider = oauthProvider; }
+
+    public String getOauthSubject() { return oauthSubject; }
+    public void setOauthSubject(String oauthSubject) { this.oauthSubject = oauthSubject; }
 
     public boolean isCreditEnabled() { return creditEnabled; }
     public void setCreditEnabled(boolean creditEnabled) { this.creditEnabled = creditEnabled; }

@@ -28,7 +28,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity, no e-invoice provider integration. | `NOT_FOUND_IN_REPO` |
 | Bank-transfer reconciliation (mismatch handling) | Manual via `paymentStatus`/`paidAmount` patches; no structured "bank transfer record" / "payment correction" entity. | `DOCUMENTED_NOT_ENFORCED` |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data export or delete endpoint. | `NOT_FOUND_IN_REPO` |
-| Customer support / ticketing | Only public contact form exists; no ticketing/SLA/escalation. | `NOT_FOUND_IN_REPO` |
+| Customer support / ticketing | No customer-facing support channel beyond the static contact info (hotline/Zalo/Facebook/address) on `/lien-he`. No contact form, ticketing, SLA, or escalation. | `NOT_FOUND_IN_REPO` |
 | Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread, mark-read, mark-all-read endpoints. | `CONFIRMED_FROM_CODE` |
 | Refund history per partial refund | `refundedAt` is overwritten; no `refund_transactions` table (REPORT_RULE_011). | `CODE_DEFECT` |
 | Legal / compliance content (Privacy / Terms / Return / Shipping / Complaint policy + Bộ Công Thương registration / footer badge) | CMS-driven (`/chinh-sach/[slug]`); content correctness depends on what admin published. | `NEEDS_LEGAL_CONFIRMATION` |

@@ -2,7 +2,6 @@ import type {
   Cart,
   CheckoutOptions,
   CheckoutPayload,
-  ContactPayload,
   CreateReturnPayload,
   CustomerAddress,
   CustomerAuthData,
@@ -99,6 +98,12 @@ export function fetchCheckoutOptions(): Promise<CheckoutOptions> {
   return clientRequest("GET", "/api/v1/checkout/options");
 }
 
+export type PublicSetting = { settingKey: string; settingValue: string };
+
+export function fetchPublicSettings(): Promise<PublicSetting[]> {
+  return clientRequest("GET", "/api/v1/settings/public");
+}
+
 export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {
   const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
   return clientRequest("POST", "/api/v1/orders/quick-buy", payload, extra);
@@ -106,8 +111,21 @@ export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export function loginCustomer(login: string, password: string): Promise<CustomerAuthData> {
-  return clientRequest("POST", "/api/v1/customer/auth/login", { login, password });
+export function loginCustomer(
+  login: string,
+  password: string,
+  remember = false,
+): Promise<CustomerAuthData> {
+  return clientRequest("POST", "/api/v1/customer/auth/login", { login, password, remember });
+}
+
+/**
+ * Builds the social-login start URL. Returns an absolute backend URL — the browser
+ * must leave the SPA so the OAuth provider can complete the redirect round-trip.
+ */
+export function oauthAuthorizeUrl(provider: "google" | "facebook", returnTo?: string): string {
+  const base = `${API_BASE_URL}/api/v1/customer/auth/oauth/${provider}/authorize`;
+  return returnTo ? `${base}?tiep=${encodeURIComponent(returnTo)}` : base;
 }
 
 export function registerCustomer(
@@ -161,8 +179,8 @@ export function deleteAddress(id: string): Promise<void> {
   return clientRequest("DELETE", `/api/v1/customer/addresses/${encodeURIComponent(id)}`);
 }
 
-export function submitContactForm(payload: ContactPayload): Promise<void> {
-  return clientRequest<void>("POST", "/api/v1/contact", payload);
+export function subscribeNewsletter(email: string): Promise<void> {
+  return clientRequest<void>("POST", "/api/v1/newsletter", { email });
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────

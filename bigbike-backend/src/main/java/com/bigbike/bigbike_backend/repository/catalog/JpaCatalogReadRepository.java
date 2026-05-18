@@ -130,6 +130,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getRatingCount(),
                 null,
                 null,
+                null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
@@ -344,6 +345,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getRating(),
                 entity.getRatingCount(),
                 entity.getContentBottom(),
+                entity.getPromotionContent(),
                 toSeoMeta(
                         entity.getSeoTitle(),
                         entity.getSeoDescription(),

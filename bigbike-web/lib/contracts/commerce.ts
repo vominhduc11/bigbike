@@ -115,6 +115,8 @@ export type OrderLineItem = {
   lineSubtotal: number
   lineDiscount: number
   lineTotal: number
+  /** Current catalog image of the product; null when the product no longer exists. */
+  productThumbnailUrl: string | null
 }
 
 export type OrderAddress = {
@@ -191,6 +193,7 @@ export type CustomerProfile = {
   gender?: string | null
   dob?: string | null
   emailVerified?: boolean
+  newsletterSubscribed?: boolean
 }
 
 export type CustomerAuthData = {
@@ -213,6 +216,7 @@ export type OrderListItem = {
   currency: string
   placedAt: string
   itemCount: number
+  productNames?: string[]
 }
 
 export type CustomerAddress = {
@@ -220,6 +224,7 @@ export type CustomerAddress = {
   type: string
   fullName: string | null
   phone: string | null
+  email: string | null
   country: string
   province: string | null
   district: string | null
@@ -237,25 +242,20 @@ export type UpdateCustomerProfilePayload = {
   newPassword?: string
   gender?: string
   dob?: string
+  newsletterSubscribed?: boolean
 }
 
 export type SaveAddressPayload = {
   type: string
   fullName: string
   phone: string
+  email?: string
   province: string
   district: string
   ward: string
   addressLine1: string
   addressLine2?: string
   isDefault?: boolean
-}
-
-export type ContactPayload = {
-  fullName: string
-  phone: string
-  email?: string
-  content: string
 }
 
 export type CustomerReturnItem = {

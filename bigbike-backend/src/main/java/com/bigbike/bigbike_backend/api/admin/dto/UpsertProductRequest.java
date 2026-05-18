@@ -65,6 +65,10 @@ public class UpsertProductRequest {
     private String contentBottom;
     private boolean contentBottomPresent = false;
 
+    @Size(max = 50000, message = "Promotion content is too long.")
+    private String promotionContent;
+    private boolean promotionContentPresent = false;
+
     @Valid
     private SeoMetaRequest seo;
     private boolean seoPresent = false;
@@ -254,6 +258,19 @@ public class UpsertProductRequest {
 
     public boolean isContentBottomPresent() {
         return contentBottomPresent;
+    }
+
+    public String getPromotionContent() {
+        return promotionContent;
+    }
+
+    public void setPromotionContent(String promotionContent) {
+        this.promotionContent = promotionContent;
+        this.promotionContentPresent = true;
+    }
+
+    public boolean isPromotionContentPresent() {
+        return promotionContentPresent;
     }
 
     public SeoMetaRequest getSeo() {

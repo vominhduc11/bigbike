@@ -13,6 +13,7 @@ import {
   fetchMyAddresses,
   fetchMyOrder,
   fetchMyOrders,
+  fetchPublicSettings,
   removeCartItem,
   removeCoupon,
   updateAddress,
@@ -95,6 +96,14 @@ export function useCheckoutOptions() {
   return useQuery({
     queryKey: queryKeys.checkoutOptions(),
     queryFn: fetchCheckoutOptions,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePublicSettings() {
+  return useQuery({
+    queryKey: queryKeys.publicSettings(),
+    queryFn: fetchPublicSettings,
     staleTime: 5 * 60 * 1000,
   });
 }

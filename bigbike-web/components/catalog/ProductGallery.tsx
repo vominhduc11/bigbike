@@ -169,7 +169,7 @@ export function ProductGallery({
             <button
               type="button"
               className={cn(
-                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-25 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
+                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-50 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
                 FOCUS_RING,
               )}
               onClick={stripUp}
@@ -215,7 +215,7 @@ export function ProductGallery({
             <button
               type="button"
               className={cn(
-                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-25 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
+                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-50 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
                 FOCUS_RING,
               )}
               onClick={stripDown}

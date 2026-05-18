@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/verify-email").permitAll()
+                        // Social login (OAuth2) — GET browser redirects, no existing session required
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customer/auth/oauth/**").permitAll()
                         // Public catalog and content reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // Public review submission — no auth required, status defaults to PENDING
@@ -54,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/content-categories").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
@@ -82,8 +85,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirects/active").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/internal/redirects/hit/**").permitAll()
-                        // Contact form — public, no auth required
-                        .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
                         // WebSocket endpoint — auth is validated in STOMP CONNECT interceptor
                         .requestMatchers("/ws/**").permitAll()
                         // All admin endpoints: must be authenticated AND not a customer

@@ -1,0 +1,36 @@
+[desktop-1920] scrollW=1920 clientW=1920 hOverflow=false
+[desktop-1920] console errors: 1
+   - Failed to load resource: the server responded with a status of 401 ()
+[laptop-1440] scrollW=1440 clientW=1440 hOverflow=false
+[laptop-1440] console errors: 1
+   - Failed to load resource: the server responded with a status of 401 ()
+[tablet-768] scrollW=768 clientW=768 hOverflow=false
+[tablet-768] console errors: 1
+   - Failed to load resource: the server responded with a status of 401 ()
+[mobile-390] scrollW=390 clientW=390 hOverflow=false
+[mobile-390] console errors: 1
+   - Failed to load resource: the server responded with a status of 401 ()
+[state] search overlay captured
+[state] mega menu hovered: TẤT CẢ SẢN PHẨM
+[state] account dropdown (guest) captured
+[state] burger drawer captured
+[DOM] {
+ "headerHeight": "80px",
+ "headerBg": "rgb(0, 0, 0)",
+ "catItemCount": 12,
+ "productCardCount": 0,
+ "newsCardCount": 3,
+ "brandCount": 11,
+ "h2List": [
+  "SHOP BẢO HỘ MOTO UY TÍN",
+  "SẢN PHẨM NỔI BẬT TẠI BIGBIKE",
+  "PHỤ KIỆN ĐI PHƯỢT MOTO CAO CẤP",
+  "CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE",
+  "TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN",
+  "Shop bán đồ phượt moto chuyên cung cấp phụ kiện phượt moto",
+  "Shop bảo hộ moto đáng tin cậy của các biker",
+  "BIGBIKE MONG ĐƯỢC LẮNG NGHE VÀ THẤU HIỂU BẠN HƠN"
+ ],
+ "aboutTitle": "SHOP BẢO HỘ MOTO UY TÍN",
+ "promoBg": true
+}

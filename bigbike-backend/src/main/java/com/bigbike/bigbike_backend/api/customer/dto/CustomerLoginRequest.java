@@ -9,5 +9,8 @@ public record CustomerLoginRequest(
 
         @NotBlank(message = "Password is required")
         @Size(min = 1)
-        String password
+        String password,
+
+        /** "Ghi nhớ" — when true the session is kept for 30 days instead of 1. Null = false. */
+        Boolean remember
 ) {}

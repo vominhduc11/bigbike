@@ -33,6 +33,9 @@ public class CustomerAddressEntity {
     @Column(length = 50)
     private String phone;
 
+    @Column(length = 255)
+    private String email;
+
     @Column(nullable = false, length = 10)
     private String country = "VN";
 
@@ -77,6 +80,9 @@ public class CustomerAddressEntity {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getCountry() { return country; }
     public void setCountry(String country) { this.country = country; }

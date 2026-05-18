@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
+import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -162,6 +163,20 @@ public class CatalogController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(catalogReadService.getCategoryBySlug(slug), request);
+    }
+
+    /**
+     * Aggregated product counts per filter value, used by the storefront catalog
+     * filter sidebar. See {@link CatalogReadService#computeFacets} for the v1
+     * counting semantics.
+     */
+    @GetMapping("/catalog/facets")
+    public ApiDataResponse<CatalogFacets> getCatalogFacets(
+            @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
+            @RequestParam(required = false) @Size(max = 100) String q,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(catalogReadService.computeFacets(category, q), request);
     }
 
     @GetMapping("/brands")

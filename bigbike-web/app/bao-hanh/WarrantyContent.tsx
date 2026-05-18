@@ -69,14 +69,14 @@ export function WarrantyContent() {
   return (
     <div className="bb-container max-w-[560px] py-10">
       <div className="mb-7 pb-[22px] border-b border-border">
-        <span className="text-[11px] tracking-[0.18em] uppercase text-brand font-bold block mb-2">{"Hậu mãi · BigBike"}</span>
+        <span className="text-sm tracking-[0.18em] uppercase text-brand font-bold block mb-2">{"Hậu mãi · BigBike"}</span>
         <h1 className="font-display uppercase text-[clamp(1.375rem,5vw,2.8rem)] tracking-[0.01em] leading-[1.1] m-0 text-foreground">{"Tra cứu bảo hành"}</h1>
         <p className="text-muted-foreground text-sm mt-2 m-0">{"Nhập số serial trên tem sản phẩm để kiểm tra hạn bảo hành."}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-6">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="serial-input" className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground">
+          <label htmlFor="serial-input" className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">
             {"Số serial "}<span className="text-brand ml-[3px]">*</span>
           </label>
           <div className="flex gap-2 max-sm:flex-col">

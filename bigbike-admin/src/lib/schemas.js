@@ -360,6 +360,7 @@ export function createContentSchema(t, isCreate, normalizedType) {
     pageType: z.string().optional(),
     coverImageUrl: z.string().optional(),
     productImageUrl: z.string().optional(),
+    relatedProductIds: z.array(z.string()).optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
   }).superRefine((data, ctx) => {

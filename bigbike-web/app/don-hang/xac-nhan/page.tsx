@@ -1,9 +1,12 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, safeText } from "@/lib/utils/format";
+import { formatVnd } from "@/lib/utils/format";
 import { toHomePath, toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 
@@ -43,13 +46,18 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
   const bankHolder = pickSetting(settings, ["bank_account_holder", "bank_holder"]);
   const bankBranch = pickSetting(settings, ["bank_branch"]);
 
+  // Order-success biker illustration. The asset is supplied separately; until it
+  // is added to public/, the page falls back to a branded check badge so there is
+  // no broken image. Drop the file at public/illustrations/order-success.png.
+  const orderSuccessImage = "/illustrations/order-success.png";
+  const hasIllustration = existsSync(join(process.cwd(), "public", orderSuccessImage));
+
   const rawPaymentMethod = order?.payments?.[0]?.paymentMethod ?? "";
   const paymentMethodCode = rawPaymentMethod.trim().toUpperCase();
   const isBacs = paymentMethodCode === "BACS";
-  const isCod = paymentMethodCode === "COD";
   const paymentStatus = (order?.paymentStatus ?? "").trim().toUpperCase();
   const isAlreadyPaid = paymentStatus === "PAID";
-  const eyebrow = isAlreadyPaid
+  const heading = isAlreadyPaid
     ? "Thanh toán thành công"
     : isBacs
       ? "Chờ chuyển khoản"
@@ -58,9 +66,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
     ? "Đơn hàng đã được xác nhận. Chúng tôi sẽ liên hệ trong 1 giờ làm việc."
     : isBacs
       ? "Đơn hàng đã được ghi nhận. Vui lòng chuyển khoản theo thông tin bên dưới — chúng tôi sẽ xác nhận trong 1 giờ làm việc."
-      : isCod
-        ? "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc."
-        : "Đơn hàng đã được ghi nhận. Chúng tôi sẽ liên hệ xác nhận trong 1 giờ làm việc.";
+      : "Cảm ơn bạn đã mua sắm tại BigBike. Vui lòng kiểm tra email để biết thông tin chi tiết của đơn hàng.";
 
   if (!orderNumber || !orderKey) {
     return (
@@ -72,8 +78,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-bold mb-[10px]">Thông tin không hợp lệ</div>
-        <h1 className="font-display text-[32px] tracking-[0.01em] uppercase m-0 mb-[10px]">Không tìm thấy đơn hàng</h1>
+        <h1 className="font-display text-32 tracking-[0.01em] uppercase m-0 mb-[10px]">Không tìm thấy đơn hàng</h1>
         <p className="text-muted-foreground m-0 mb-7">Link xác nhận không chứa thông tin đơn hàng. Bạn có thể xem lại đơn hàng trong tài khoản hoặc liên hệ hỗ trợ.</p>
         <div className="flex gap-[10px] justify-center max-sm:flex-col">
           <Button asChild variant="secondary">
@@ -104,133 +109,85 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         />
       )}
 
-      <div className="max-w-[720px] mx-auto my-[60px] px-6 text-center max-sm:px-4 max-sm:my-8">
-        <div className="bb-round w-[88px] h-[88px] rounded-full bg-[rgba(255,12,9,0.08)] text-brand flex items-center justify-center mx-auto mb-[22px] border-2 border-[var(--bb-brand-primary-border)]">
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
+      <div className="max-w-[640px] mx-auto my-[60px] px-6 text-center max-sm:px-4 max-sm:my-8">
+        {/* Order-success illustration inside a branded pink circle. Falls back to
+            a check badge until the biker artwork is added to public/. */}
+        <div className="bb-round w-[180px] h-[180px] rounded-full bg-[rgba(255,12,9,0.10)] flex items-center justify-center mx-auto mb-7 overflow-hidden max-sm:w-[140px] max-sm:h-[140px]">
+          {hasIllustration ? (
+            <Image
+              src={orderSuccessImage}
+              alt="Đặt hàng thành công"
+              width={180}
+              height={180}
+              className="w-full h-full object-contain"
+              priority
+            />
+          ) : (
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="var(--bb-brand-primary, #FF0C09)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          )}
         </div>
-        <div className="text-[11px] tracking-[0.2em] uppercase text-brand font-bold mb-[10px]">{eyebrow}</div>
-        <h1 className="font-display text-[40px] tracking-[0.01em] uppercase m-0 mb-[10px]">Cảm ơn anh em đã tin BigBike!</h1>
-        <p className="text-muted-foreground m-0 mb-7">{subline}</p>
 
-        {orderNumber && (
-          <ul className="list-none mx-auto mb-7 p-0 max-w-[760px] bg-card border border-border flex flex-wrap gap-0">
-            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:[&:nth-child(2n)]:border-r-0 max-sm:last:border-b-0">
-              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Mã đơn hàng:</span>
-              <strong className="font-display text-[15px] text-brand font-semibold tracking-[0.01em]">#{orderNumber}</strong>
-            </li>
-            {order && (
-              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
-                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Ngày đặt:</span>
-                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{formatDate(order.placedAt)}</strong>
-              </li>
-            )}
-            {order?.customerEmail && (
-              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
-                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Email:</span>
-                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order.customerEmail}</strong>
-              </li>
-            )}
-            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
-              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Tổng giá trị:</span>
-              <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order ? formatVnd(order.totalAmount) : "—"}</strong>
-            </li>
-            {rawPaymentMethod && (
-              <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
-                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Phương thức thanh toán:</span>
-                <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">
-                  {paymentMethodLabel(rawPaymentMethod)}
-                </strong>
-              </li>
-            )}
-            <li className="flex-[1_1_calc(50%-1px)] py-2 px-[18px] text-left flex flex-col gap-1 border-r border-border border-b border-border [&:nth-child(2n)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 max-sm:flex-[1_1_100%] max-sm:border-r-0 max-sm:last:border-b-0">
-              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground">Trạng thái:</span>
-              <strong className="font-display text-[15px] text-foreground font-semibold tracking-[0.01em]">{order ? orderStatusLabel(order.status) : "Đã tiếp nhận"}</strong>
-            </li>
-          </ul>
-        )}
+        <h1 className="font-display text-32 tracking-[0.01em] uppercase m-0 mb-3 max-sm:text-2xl">{heading}</h1>
+        <p className="text-muted-foreground m-0 mb-4 leading-[1.7]">{subline}</p>
 
-        {order && (
-          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Sản phẩm đã đặt</p>
-            {order.lineItems.map((item) => (
-              <div key={item.id} className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">
-                  {safeText(item.productName, "Sản phẩm")}
-                  {item.variantName ? ` · ${item.variantName}` : ""} × {item.quantity}
-                </span>
-                <b className="text-foreground whitespace-nowrap font-bold">{formatVnd(item.lineTotal)}</b>
-              </div>
-            ))}
-            {order.customerNote && (
-              <p className="text-muted-foreground text-sm m-0 mt-[10px]">Ghi chú: {order.customerNote}</p>
-            )}
-          </div>
-        )}
+        <p className="m-0 mb-7 text-base text-foreground">
+          Mã đơn hàng: <strong className="font-display text-brand font-semibold tracking-[0.01em]">#{orderNumber}</strong>
+        </p>
 
         {isBacs && order && (bankNumber || bankName) && (
-          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
-            {bankName && (
-              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">Ngân hàng</span>
-                <b className="text-foreground whitespace-nowrap font-bold">{bankName}</b>
-              </div>
-            )}
-            {bankNumber && (
-              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">Số tài khoản</span>
-                <b className="text-foreground whitespace-nowrap font-bold">{bankNumber}</b>
-              </div>
-            )}
+          <div className="bg-card border border-border p-[20px_22px] max-w-[480px] mx-auto mb-7 text-left">
+            <p className="text-sm font-bold tracking-[0.06em] uppercase text-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
             {bankHolder && (
-              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">Chủ tài khoản</span>
+              <div className="flex justify-between items-baseline text-sm py-1.5 gap-3">
+                <span className="text-muted-foreground">Chủ tài khoản</span>
                 <b className="text-foreground whitespace-nowrap font-bold">{bankHolder}</b>
               </div>
             )}
-            {bankBranch && (
-              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">Chi nhánh</span>
-                <b className="text-foreground whitespace-nowrap font-bold">{bankBranch}</b>
+            {bankNumber && (
+              <div className="flex justify-between items-baseline text-sm py-1.5 gap-3">
+                <span className="text-muted-foreground">Số tài khoản</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankNumber}</b>
               </div>
             )}
-            {order.orderNumber && (
-              <div className="flex justify-between items-baseline text-sm py-1.5 border-b border-border/5 gap-3">
-                <span className="text-sm leading-[1.7] text-muted-foreground">Nội dung chuyển khoản</span>
-                <b className="text-foreground whitespace-nowrap font-bold">BIGBIKE {order.orderNumber}</b>
+            {bankName && (
+              <div className="flex justify-between items-baseline text-sm py-1.5 gap-3">
+                <span className="text-muted-foreground">Ngân hàng</span>
+                <b className="text-foreground whitespace-nowrap font-bold">{bankName}{bankBranch ? ` — ${bankBranch}` : ""}</b>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-[10px] m-0 leading-[1.5]">
-              Sau khi chuyển khoản, đơn sẽ được xác nhận trong 1 giờ làm việc. Nếu cần hỗ trợ, vui lòng liên hệ hotline {hotline}.
-            </p>
+            <div className="flex justify-between items-baseline text-sm py-1.5 gap-3">
+              <span className="text-muted-foreground">Nội dung chuyển khoản</span>
+              <b className="text-foreground whitespace-nowrap font-bold">BIGBIKE {orderNumber}</b>
+            </div>
+            {order && (
+              <div className="flex justify-between items-baseline text-sm py-1.5 gap-3">
+                <span className="text-muted-foreground">Số tiền</span>
+                <b className="text-brand whitespace-nowrap font-bold">{formatVnd(order.totalAmount)}</b>
+              </div>
+            )}
           </div>
         )}
 
         {isBacs && order && !bankNumber && !bankName && (
-          <div className="bg-card border border-border p-[20px_22px] max-w-[560px] mx-auto mb-[22px] text-left">
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-muted-foreground mb-[10px] m-0">Thông tin chuyển khoản</p>
+          <div className="bg-card border border-border p-[20px_22px] max-w-[480px] mx-auto mb-7 text-left">
             <p className="text-sm text-foreground m-0 leading-[1.6]">
-              Vui lòng liên hệ hotline <b className="text-brand">{hotline}</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <b>BIGBIKE {order.orderNumber}</b>.
+              Vui lòng liên hệ hotline <b className="text-brand">{hotline}</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <b>BIGBIKE {orderNumber}</b>.
             </p>
           </div>
         )}
 
-        {orderLookup.error && !order && orderNumber && (
+        {orderLookup.error && !order && (
           <p className="text-brand text-sm mb-4 m-0">Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.</p>
         )}
 
-        <div className="flex gap-[10px] justify-center max-sm:flex-col">
-          <Button asChild variant="secondary">
+        <div className="flex justify-center">
+          <Button asChild variant="primary" size="lg" className="w-full sm:w-auto sm:min-w-[280px]">
             <Link href={toProductListPath()}>Tiếp tục mua hàng</Link>
-          </Button>
-          <Button asChild variant="primary">
-            <Link href={toOrderHistoryPath()}>Xem đơn hàng của tôi →</Link>
           </Button>
         </div>
       </div>
     </>
   );
 }
-

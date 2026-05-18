@@ -8,6 +8,7 @@ import {
   fetchContentAuthors,
   fetchContentCategories,
   fetchContentDetail,
+  fetchProducts,
   mapValidationErrors,
   updateContent,
 } from '../lib/adminApi'
@@ -47,6 +48,8 @@ function buildEmptyForm(contentType) {
     productImageUrl: '',
     productImageAlt: '',
     tags: '',
+    relatedProductIds: [],
+    relatedProductChips: [],
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -79,6 +82,14 @@ function buildFormFromItem(contentType, item) {
     productImageUrl: item.productImage?.url || '',
     productImageAlt: item.productImage?.alt || '',
     tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
+    relatedProductIds: Array.isArray(item.relatedProducts)
+      ? item.relatedProducts.map((p) => p.id).filter(Boolean)
+      : [],
+    relatedProductChips: Array.isArray(item.relatedProducts)
+      ? item.relatedProducts
+          .filter((p) => p && p.id)
+          .map((p) => ({ id: p.id, name: p.name || p.id, slug: p.slug || '', imageUrl: p.imageUrl || '' }))
+      : [],
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -124,6 +135,9 @@ function toPayload(form, isCreate) {
 
     // Always send tags — empty array explicitly clears all tags
     payload.tags = normalizeTagsInput(form.tags)
+
+    // Always send productIds — empty array explicitly clears all linked products
+    payload.productIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
 
     // Always send authorId — empty string clears the author
     payload.authorId = form.authorId || ''
@@ -190,6 +204,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     staleTime: 5 * 60 * 1000,
   })
 
+  // Product picker for the "Sản phẩm liên quan" field (articles only).
+  const [productSearch, setProductSearch] = useState('')
+  const [productSearchDebounced, setProductSearchDebounced] = useState('')
+  useEffect(() => {
+    const handle = setTimeout(() => setProductSearchDebounced(productSearch.trim()), 300)
+    return () => clearTimeout(handle)
+  }, [productSearch])
+
+  const { data: productSearchResult, isFetching: isSearchingProducts } = useQuery({
+    queryKey: ['content-product-search', productSearchDebounced],
+    queryFn: () => fetchProducts({ q: productSearchDebounced, pageSize: 8 }),
+    enabled: normalizedType === 'ARTICLE' && productSearchDebounced.length >= 1,
+    staleTime: 60 * 1000,
+  })
+  const productSearchItems = productSearchResult?.items ?? []
 
   useEffect(() => {
     if (!fetchResult) return
@@ -263,6 +292,36 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       delete next[field]
       return next
     })
+  }
+
+  function addRelatedProduct(product) {
+    if (!product?.id) return
+    setForm((previous) => {
+      if (previous.relatedProductIds.includes(product.id)) return previous
+      return {
+        ...previous,
+        relatedProductIds: [...previous.relatedProductIds, product.id],
+        relatedProductChips: [
+          ...previous.relatedProductChips,
+          {
+            id: product.id,
+            name: product.name || product.id,
+            slug: product.slug || '',
+            imageUrl: product.image?.url || product.imageUrl || '',
+          },
+        ],
+      }
+    })
+    setProductSearch('')
+    setProductSearchDebounced('')
+  }
+
+  function removeRelatedProduct(productId) {
+    setForm((previous) => ({
+      ...previous,
+      relatedProductIds: previous.relatedProductIds.filter((id) => id !== productId),
+      relatedProductChips: previous.relatedProductChips.filter((chip) => chip.id !== productId),
+    }))
   }
 
   function handleSubmit(event) {
@@ -554,6 +613,89 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   placeholder={t('content.detail.tagsPlaceholder')}
                  />
               </label>
+
+              <div className="form-field form-field-wide">
+                <span>{t('content.detail.relatedProducts')}</span>
+                <p className="text-xs text-muted-foreground">
+                  {t('content.detail.relatedProductsHint')}
+                </p>
+
+                {form.relatedProductChips.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {form.relatedProductChips.map((chip) => (
+                      <span
+                        key={chip.id}
+                        className="inline-flex items-center gap-2 border border-border bg-muted px-2 py-1 text-sm"
+                      >
+                        {chip.imageUrl ? (
+                          <img src={chip.imageUrl} alt="" className="w-6 h-6 object-cover" />
+                        ) : null}
+                        <span>{chip.name}</span>
+                        {!isReadOnly ? (
+                          <button
+                            type="button"
+                            onClick={() => removeRelatedProduct(chip.id)}
+                            className="text-muted-foreground hover:text-brand"
+                            aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {!isReadOnly ? (
+                  <div className="relative mt-2">
+                    <Input
+                      value={productSearch}
+                      onChange={(event) => setProductSearch(event.target.value)}
+                      placeholder={t('content.detail.relatedProductsSearch')}
+                    />
+                    {productSearchDebounced.length >= 1 ? (
+                      <div className="absolute z-10 left-0 right-0 mt-1 border border-border bg-card max-h-64 overflow-auto shadow-md">
+                        {isSearchingProducts ? (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">
+                            {t('content.detail.relatedProductsSearching')}
+                          </p>
+                        ) : productSearchItems.length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">
+                            {t('content.detail.relatedProductsEmpty')}
+                          </p>
+                        ) : (
+                          productSearchItems.map((product) => {
+                            const already = form.relatedProductIds.includes(product.id)
+                            return (
+                              <button
+                                key={product.id}
+                                type="button"
+                                disabled={already}
+                                onClick={() => addRelatedProduct(product)}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {product.image?.url ? (
+                                  <img
+                                    src={product.image.url}
+                                    alt=""
+                                    className="w-8 h-8 object-cover shrink-0"
+                                  />
+                                ) : null}
+                                <span className="flex-1">{product.name}</span>
+                                {already ? (
+                                  <span className="text-xs text-muted-foreground">
+                                    {t('content.detail.relatedProductsAdded')}
+                                  </span>
+                                ) : null}
+                              </button>
+                            )
+                          })
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </section>
         ) : null}

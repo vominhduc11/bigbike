@@ -181,7 +181,7 @@ export function QuickBuyModal({
             const grandTotal = itemTotal + shippingCost;
             return (
               <div className="mb-5 border border-border bg-muted/30 p-4 text-sm">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Tóm tắt đơn hàng</p>
+                <p className="mb-2 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tóm tắt đơn hàng</p>
                 <div className="flex justify-between gap-3 py-1">
                   <span className="text-muted-foreground line-clamp-1">{productName} × {quantity}</span>
                   <b className="shrink-0 text-foreground">{formatVnd(itemTotal)}</b>

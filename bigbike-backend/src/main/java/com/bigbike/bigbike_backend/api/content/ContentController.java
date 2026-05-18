@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.content.ContentReadService;
@@ -50,6 +51,14 @@ public class ContentController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(contentReadService.getArticleBySlug(slug), request);
+    }
+
+    @GetMapping("/content-categories")
+    public ApiListResponse<ContentCategoryWithCount> listContentCategories(HttpServletRequest request) {
+        List<ContentCategoryWithCount> categories = contentReadService.listContentCategories();
+        PageResult<ContentCategoryWithCount> result =
+                new PageResult<>(categories, 1, categories.size(), categories.size(), 1);
+        return apiResponseFactory.list(result, request);
     }
 
     @GetMapping("/pages")

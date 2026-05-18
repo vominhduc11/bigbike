@@ -29,12 +29,12 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 
 | Topic | Current finding | Status | Evidence |
 |---|---|---|---|
-| External payment gateway | Out of scope by business decision. Checkout supports `COD` and `BACS` (bank transfer with manual admin reconciliation); POS records provider `POS`. SePay auto-reconciliation artifacts were removed in V59. | `OUT_OF_SCOPE` | `CheckoutService.java`, `PosOrderService.java`, `V59__remove_sepay_payment_artifacts.sql` |
+| External payment gateway | In scope. Checkout supports `COD`, `BACS` (manual bank transfer), `ALEPAY`, and `ZALOPAY`. `ALEPAY`/`ZALOPAY` are accepted payment-method codes; full online-gateway integration (redirect + webhook callback) is being delivered in two phases — phase 1 accepts the codes and treats them as manual-confirm orders, phase 2 adds the live gateway redirect + signed webhook reconciliation. | `IN_PROGRESS` | `CheckoutService.java`, `PaymentCallbackController.java` (phase 2), `INTEGRATION_GUIDE.md` |
 | External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. `OrderEntity.fulfillmentStatus` field exists without carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
 | Stock receipt workflow | Receipt tables were dropped in V120 (business decision, 2026-05-16) — schema-only, never built. Receiving runs through `stock_movements`. | `REMOVED` | `V120__drop_stock_receipt_tables.sql` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020 for legal entities; NEEDS_BUSINESS_CONFIRMATION on provider |
 | Customer-data export / delete (Nghị định 13/2023) | No customer-facing data-portability endpoint. | `NOT_FOUND_IN_REPO` | repo search |
-| Customer support / ticketing | Only public `ContactController POST /contact`; no ticketing / SLA / escalation. | `NOT_FOUND_IN_REPO` | repo search |
+| Customer support / ticketing | No customer-facing support channel beyond static contact info (hotline/Zalo/Facebook/address) on `/lien-he`; no contact form, ticketing, SLA, or escalation. | `NOT_FOUND_IN_REPO` | repo search |
 | Notification center (admin read/unread) | Persistent `admin_notifications` table (V102); `AdminNotificationController` with list-unread + mark-read endpoints. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Bộ Công Thương TMĐT registration / legal-content footer badge | CMS-driven legal pages; registration status outside repo. | `NEEDS_LEGAL_CONFIRMATION` | `app/chinh-sach/[slug]`, `app/huong-dan/[...sub]` |
 

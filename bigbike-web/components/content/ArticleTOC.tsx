@@ -90,7 +90,7 @@ export function ArticleTOC() {
       className={`px-4 py-[10px] bg-card border border-foreground mb-[14px] max-w-full ${expanded ? "w-full" : "w-fit"}`}
       aria-label="Mục lục"
     >
-      <div className="text-[1.2rem] leading-[1.4rem] pb-1 font-semibold text-foreground flex items-center gap-2">
+      <div className="text-lg leading-tight pb-1 font-semibold text-foreground flex items-center gap-2">
         <span>Mục lục</span>
         <button
           type="button"

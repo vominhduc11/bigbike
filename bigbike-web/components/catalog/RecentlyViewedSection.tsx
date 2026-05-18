@@ -63,15 +63,15 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
               </div>
               <div className="flex flex-col gap-[3px] px-2.5 pt-2 pb-2.5">
                 {p.categoryName && (
-                  <p className="m-0 text-9 font-bold uppercase tracking-[0.12em] text-brand">
+                  <p className="m-0 text-sm font-bold uppercase tracking-[0.12em] text-brand">
                     {p.categoryName}
                   </p>
                 )}
-                <p className="m-0 line-clamp-2 text-11 font-bold uppercase leading-[1.35] tracking-[0.03em] text-foreground">
+                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-[1.35] tracking-[0.03em] text-foreground">
                   {p.name}
                 </p>
                 {p.price != null && p.price > 0 && (
-                  <p className="m-0 text-xs font-bold text-brand">{formatVnd(p.price)}</p>
+                  <p className="m-0 text-sm font-bold text-brand">{formatVnd(p.price)}</p>
                 )}
               </div>
             </Link>

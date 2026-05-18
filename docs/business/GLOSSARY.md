@@ -354,8 +354,8 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Người truy cập public chưa đăng nhập. |
-| BigBike Context | Browse product/content/search, dùng cart/checkout guest, contact, order lookup. |
-| Related Modules / Processes | Homepage, Catalog, Search, Cart, Checkout, Content, Contact. |
+| BigBike Context | Browse product/content/search, dùng cart/checkout guest, order lookup. |
+| Related Modules / Processes | Homepage, Catalog, Search, Cart, Checkout, Content. |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `SecurityConfig.java`, `USER_ROLES.md` |
 

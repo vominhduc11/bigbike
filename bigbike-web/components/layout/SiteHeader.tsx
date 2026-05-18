@@ -5,6 +5,7 @@ import { HeaderNavItem, type HeaderNavNode } from "@/components/layout/HeaderNav
 import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
 import { SearchToggle } from "@/components/layout/SearchToggle";
+import { ShopInfoDrawer } from "@/components/layout/ShopInfoDrawer";
 import { StickyHeaderShell } from "@/components/layout/StickyHeaderShell";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import type { PublicMenuItem } from "@/lib/contracts/public";
@@ -66,7 +67,12 @@ export async function SiteHeader() {
     DEFAULT_SITE_NAME,
   );
   const hotline = getSettingValue(settings, ["hotline", "phone", "support_phone"]);
+  const hotline2 = getSettingValue(settings, ["hotline_2"]);
   const zaloUrl = getSettingValue(settings, ["zalo_url", "zalo"]);
+  const shopDescription = getSettingValue(settings, ["footer_description", "shop_description"]);
+  const shopAddress = getSettingValue(settings, ["contact_address", "address", "site_address"]);
+  const businessHours = getSettingValue(settings, ["business_hours"]);
+  const instagramUrl = getSettingValue(settings, ["instagram_url", "instagram"]);
 
   if (!menuResult.data) {
     console.warn(
@@ -118,6 +124,16 @@ export async function SiteHeader() {
               <SearchToggle />
               <CartIcon />
               <HeaderUserMenu />
+              <ShopInfoDrawer
+                siteName={siteName}
+                description={shopDescription}
+                hours={businessHours}
+                address={shopAddress}
+                hotline={hotline}
+                hotline2={hotline2}
+                zaloUrl={zaloUrl}
+                instagramUrl={instagramUrl}
+              />
               <MobileHeaderMenu
                 menuTree={resolvedMenuTree}
                 menuLabel={menuResult.data?.name ?? "Điều hướng chính"}

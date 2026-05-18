@@ -51,6 +51,10 @@ public class CustomerSessionEntity {
     @Column(name = "last_active_at")
     private Instant lastActiveAt;
 
+    /** Whether "Ghi nhớ" was checked at login — drives the refresh-cookie lifetime. */
+    @Column(name = "remember", nullable = false)
+    private boolean remember;
+
     @Column(name = "revoked_at")
     private Instant revokedAt;
 

@@ -16,6 +16,8 @@ import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
 import com.bigbike.bigbike_backend.mapper.PaymentMapper;
 import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -25,6 +27,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.Payme
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +50,7 @@ public class OrderReadService {
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
+    private final ProductJpaRepository productRepo;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
@@ -84,10 +88,15 @@ public class OrderReadService {
 
         List<UUID> orderIds = dbPage.getContent().stream().map(OrderEntity::getId).toList();
         Map<UUID, Long> countMap = batchCountLineItems(orderIds);
+        Map<UUID, List<String>> namesMap = batchProductNames(orderIds);
 
         List<OrderListItemResponse> items = new ArrayList<>(dbPage.getContent().size());
         for (OrderEntity o : dbPage.getContent()) {
-            items.add(toListItem(o, countMap.getOrDefault(o.getId(), 0L)));
+            items.add(toListItem(
+                    o,
+                    countMap.getOrDefault(o.getId(), 0L),
+                    namesMap.getOrDefault(o.getId(), List.of())
+            ));
         }
 
         return new PageResult<>(items, normalizedPage, normalizedSize, dbPage.getTotalElements(), dbPage.getTotalPages());
@@ -128,8 +137,8 @@ public class OrderReadService {
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
-    private OrderListItemResponse toListItem(OrderEntity order, long itemCount) {
-        return orderMapper.toCustomerListItem(order, (int) itemCount);
+    private OrderListItemResponse toListItem(OrderEntity order, long itemCount, List<String> productNames) {
+        return orderMapper.toCustomerListItem(order, (int) itemCount, productNames);
     }
 
     private Map<UUID, Long> batchCountLineItems(List<UUID> orderIds) {
@@ -141,13 +150,49 @@ public class OrderReadService {
                 ));
     }
 
+    /** Product-name summary per order, for the customer order history list. */
+    private Map<UUID, List<String>> batchProductNames(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) return Map.of();
+        return lineItemRepo.findProductNamesByOrderIdIn(orderIds).stream()
+                .filter(row -> row[1] != null)
+                .collect(Collectors.groupingBy(
+                        row -> (UUID) row[0],
+                        Collectors.mapping(row -> (String) row[1], Collectors.toList())
+                ));
+    }
+
+    /**
+     * Resolves a thumbnail URL per product (keyed by product_pk) for the given line items.
+     * Read-time lookup against the current catalog image — order line items do not
+     * snapshot the image. Returns only entries that actually have an image URL.
+     */
+    private Map<String, String> resolveProductThumbnails(List<OrderLineItemEntity> items) {
+        List<String> productPks = items.stream()
+                .map(OrderLineItemEntity::getProductPk)
+                .filter(pk -> pk != null && !pk.isBlank())
+                .distinct()
+                .toList();
+        if (productPks.isEmpty()) return Map.of();
+
+        Map<String, String> byPk = new HashMap<>();
+        for (Object[] row : productRepo.findImageUrlsByIds(productPks)) {
+            if (row[1] != null) {
+                byPk.put((String) row[0], (String) row[1]);
+            }
+        }
+        return byPk;
+    }
+
     private OrderDetailResponse toDetail(
             OrderEntity order,
             boolean customerVisibleNotesOnly,
             boolean includeOrderKey
     ) {
-        List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
-                .stream().map(orderItemMapper::toResponse).toList();
+        List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
+        Map<String, String> thumbnailByProductPk = resolveProductThumbnails(lineItemEntities);
+        List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
+                .map(e -> orderItemMapper.toResponse(e, thumbnailByProductPk.get(e.getProductPk())))
+                .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())
                 .stream().map(orderAddressMapper::toResponse).toList();

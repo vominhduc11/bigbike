@@ -9,7 +9,15 @@ import { PageHero, type PageHeroBreadcrumbItem } from "@/components/layout/PageH
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
+import {
+  PRODUCT_SORT_VALUES,
+  getCatalogFacets,
+  getCategoryBySlug,
+  listBrands,
+  listCategories,
+  listProducts,
+  listSliders,
+} from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -155,7 +163,14 @@ export default async function CategoryDetailPage({
     );
   }
 
-  const [categoryResult, productsResult, brandsResult, allCategoriesResult] = await Promise.all([
+  const [
+    categoryResult,
+    productsResult,
+    brandsResult,
+    allCategoriesResult,
+    facetsResult,
+    sidebarBannerResult,
+  ] = await Promise.all([
     getCategoryBySlug(slug),
     listProducts({
       page: pageParsed.value,
@@ -170,6 +185,8 @@ export default async function CategoryDetailPage({
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
+    getCatalogFacets({ category: slug, q: qParsed.value }),
+    listSliders("category_sidebar"),
   ]);
 
   if (!categoryResult.data && categoryResult.error?.status === 404) {
@@ -194,6 +211,19 @@ export default async function CategoryDetailPage({
     ? (allCategories.find((c) => c.id === category.parentId) ?? null)
     : null;
   const childCategories = allCategories.filter((c) => c.parentId === category.id && c.isVisible);
+
+  // Sidebar "Nhóm sản phẩm": this category's children for drill-down, else its
+  // siblings (so a leaf category shows itself highlighted among its peers),
+  // falling back to top-level categories.
+  const siblingCategories = (
+    category.parentId
+      ? allCategories.filter((c) => c.parentId === category.parentId)
+      : allCategories.filter((c) => !c.parentId)
+  ).filter((c) => c.isVisible);
+  const filterCategories = childCategories.length > 0 ? childCategories : siblingCategories;
+
+  // First active admin-managed slider for the catalog sidebar promo banner.
+  const sidebarBanner = sidebarBannerResult.data?.[0] ?? null;
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
 
@@ -266,24 +296,19 @@ export default async function CategoryDetailPage({
         <CatalogFilters
           key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
           brands={brandsResult.data}
+          categories={filterCategories}
+          facets={facetsResult.data}
           current={currentFilters}
           resetHref={canonicalPath}
+          banner={sidebarBanner}
         />
 
         <div>
           <div className="bb-catalog-head">
             <div className="bb-catalog-count">
-              {productsResult.data.length > 0 && pagination ? (
+              {pagination ? (
                 <>
-                  Hiển thị{" "}
-                  <b>
-                    {(pagination.page - 1) * pagination.pageSize + 1}–
-                    {Math.min(
-                      pagination.page * pagination.pageSize,
-                      pagination.totalItems,
-                    )}
-                  </b>{" "}
-                  / {pagination.totalItems} sản phẩm
+                  <b>{pagination.totalItems}</b> sản phẩm
                 </>
               ) : null}
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { stockStateLabel } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 
 export type StockData = {
   stockState: string;
@@ -21,15 +22,6 @@ type StockStatusProps = {
 // returns 18 for a LOW_STOCK product, "Chỉ còn 18" undermines urgency.
 const LOW_STOCK_URGENCY_THRESHOLD = 10;
 
-function stockBadgeColorClass(state: string): string {
-  switch (state) {
-    case "IN_STOCK": return "bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success-text)] border-[var(--bb-state-success-border)]";
-    case "LOW_STOCK": return "bg-[var(--bb-state-warning)] text-black border-[var(--bb-state-warning)]";
-    case "OUT_OF_STOCK": return "bg-[var(--bb-bg-surface-raised)] text-muted-foreground border-[var(--bb-border-default)]";
-    default: return "";
-  }
-}
-
 export function StockStatus({ data, fallbackState, isLoading }: StockStatusProps) {
   if (isLoading && !fallbackState) return null;
 
@@ -48,9 +40,15 @@ export function StockStatus({ data, fallbackState, isLoading }: StockStatusProps
       ? `Chỉ còn ${qty} sản phẩm`
       : baseLabel;
 
+  // Black, skewed parallelogram badge — matches the legacy WP product page.
   return (
-    <span className={`font-body text-[12px] leading-3 font-bold tracking-normal uppercase py-[3px] px-2 inline-block mt-[2px] self-start border ${stockBadgeColorClass(rawState)}`}>
-      {label}
+    <span
+      className={cn(
+        "bb-pdp-stock-badge",
+        rawState === "OUT_OF_STOCK" && "bb-pdp-stock-badge--out",
+      )}
+    >
+      <span className="bb-pdp-stock-badge-label">{label}</span>
     </span>
   );
 }

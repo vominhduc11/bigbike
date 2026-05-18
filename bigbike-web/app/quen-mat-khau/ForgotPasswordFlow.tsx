@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
@@ -12,15 +12,40 @@ import {
   type ForgotPasswordFormValues,
   type ResetPasswordFormValues,
 } from "@/lib/schemas/auth";
-import { toLoginPath, toRegisterPath } from "@/lib/utils/routes";
+import { toLoginPath } from "@/lib/utils/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
 };
+
+function AuthHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <header className="bb-auth-header">
+      <h1 className="bb-auth-title">{title}</h1>
+      {subtitle && <p className="bb-page-subtitle mx-auto">{subtitle}</p>}
+    </header>
+  );
+}
+
+function RequiredMark() {
+  return <span className="text-destructive">*</span>;
+}
+
+function RootError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive"
+    >
+      {message}
+    </div>
+  );
+}
 
 function RequestResetForm() {
   const [success, setSuccess] = useState(false);
@@ -45,51 +70,63 @@ function RequestResetForm() {
     }
   }
 
+  if (success) {
+    return (
+      <>
+        <AuthHeader title="QUÊN MẬT KHẨU" />
+        <div className="text-center">
+          <Image
+            src="/auth/forgot-password-sent.png"
+            alt="Đã gửi email khôi phục mật khẩu"
+            width={224}
+            height={200}
+            className="mx-auto"
+          />
+          <p className="bb-page-subtitle mx-auto mt-6">
+            Chúng tôi vừa gửi email khôi phục mật khẩu đến hộp thư quý khách cung cấp.
+            Vui lòng kiểm tra email và đặt lại mật khẩu.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      {errors.root && (
-        <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
-          {errors.root.message}
+      <AuthHeader
+        title="QUÊN MẬT KHẨU"
+        subtitle="Vui lòng nhập địa chỉ email để khôi phục mật khẩu của bạn."
+      />
+      <RootError message={errors.root?.message} />
+      <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="forgot-login">
+            Email <RequiredMark />
+          </Label>
+          <Input
+            id="forgot-login"
+            autoComplete="username"
+            placeholder="Email đăng nhập..."
+            aria-invalid={!!errors.login}
+            aria-describedby={errors.login ? "forgot-login-error" : undefined}
+            {...register("login")}
+          />
+          {errors.login && (
+            <p id="forgot-login-error" role="alert" className="text-sm text-destructive">
+              {errors.login.message}
+            </p>
+          )}
         </div>
-      )}
-
-      {success ? (
-        <Card className="p-5 mb-5">
-          <p>Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.</p>
-        </Card>
-      ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="forgot-login">Email hoặc số điện thoại</Label>
-            <Input
-              id="forgot-login"
-              autoComplete="username"
-              placeholder="email@example.com"
-              {...register("login")}
-            />
-            {errors.login && <p className="text-sm text-destructive">{errors.login.message}</p>}
-          </div>
-          <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
-          </Button>
-        </form>
-      )}
+        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Đang gửi..." : "Khôi phục mật khẩu"}
+        </Button>
+      </form>
     </>
   );
 }
 
 function ResetPasswordForm({ token }: { token: string }) {
-  const router = useRouter();
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    if (!success) return undefined;
-    const redirectTimer = setTimeout(() => router.replace(toLoginPath()), 1500);
-
-    return () => {
-      clearTimeout(redirectTimer);
-    };
-  }, [router, success]);
 
   const {
     register,
@@ -109,86 +146,85 @@ function ResetPasswordForm({ token }: { token: string }) {
     }
   }
 
+  if (success) {
+    return (
+      <div className="text-center">
+        <Image
+          src="/auth/reset-success.png"
+          alt="Đặt lại mật khẩu thành công"
+          width={200}
+          height={220}
+          className="mx-auto"
+        />
+        <h2 className="bb-auth-title mt-6">Đặt lại mật khẩu thành công</h2>
+        <p className="bb-page-subtitle mx-auto mt-3">
+          Đăng nhập tài khoản Bigbike với mật khẩu mới.
+        </p>
+        <Button asChild variant="primary" className="w-full mt-8">
+          <Link href={toLoginPath()}>Đăng nhập ngay</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
-      {errors.root && (
-        <div className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 mb-5 text-sm text-destructive">
-          {errors.root.message}
+      <AuthHeader
+        title="QUÊN MẬT KHẨU"
+        subtitle="Vui lòng nhập mật khẩu mới cho tài khoản Bigbike."
+      />
+      <RootError message={errors.root?.message} />
+      <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="reset-password">
+            Nhập mật khẩu mới <RequiredMark />
+          </Label>
+          <Input
+            id="reset-password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Vui lòng nhập mật khẩu mới..."
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "reset-password-error" : undefined}
+            {...register("password")}
+          />
+          {errors.password && (
+            <p id="reset-password-error" role="alert" className="text-sm text-destructive">
+              {errors.password.message}
+            </p>
+          )}
         </div>
-      )}
-
-      {success ? (
-        <Card className="p-5 mb-5">
-          <p>Mật khẩu đã được thay đổi. Đang chuyển sang trang đăng nhập...</p>
-          <Link href={toLoginPath()} className="bb-link bb-auth-footer-link mt-3">
-            Đi đến trang đăng nhập
-          </Link>
-        </Card>
-      ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="reset-password">Mật khẩu mới</Label>
-            <Input
-              id="reset-password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Nhập mật khẩu mới"
-              {...register("password")}
-            />
-            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="reset-confirm">Xác nhận mật khẩu</Label>
-            <Input
-              id="reset-confirm"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Nhập lại mật khẩu mới"
-              {...register("confirm")}
-            />
-            {errors.confirm && <p className="text-sm text-destructive">{errors.confirm.message}</p>}
-          </div>
-          <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
-          </Button>
-        </form>
-      )}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="reset-confirm">
+            Xác nhận mật khẩu mới <RequiredMark />
+          </Label>
+          <Input
+            id="reset-confirm"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Vui lòng xác nhận mật khẩu mới..."
+            aria-invalid={!!errors.confirm}
+            aria-describedby={errors.confirm ? "reset-confirm-error" : undefined}
+            {...register("confirm")}
+          />
+          {errors.confirm && (
+            <p id="reset-confirm-error" role="alert" className="text-sm text-destructive">
+              {errors.confirm.message}
+            </p>
+          )}
+        </div>
+        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Đang cập nhật..." : "Xác nhận"}
+        </Button>
+      </form>
     </>
   );
 }
 
 export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
-  const hasToken = Boolean(token);
-
   return (
     <div className="bb-auth-wrap">
-      <Card className="p-6 border-t-[3px] border-t-primary">
-        <header className="bb-auth-header">
-          <p className="bb-kicker">Tài khoản</p>
-          <h1 className="bb-auth-title">
-            {hasToken ? "Đặt lại mật khẩu" : "Quên mật khẩu"}
-          </h1>
-          <p className="bb-page-subtitle mx-auto">
-            {hasToken
-              ? "Nhập mật khẩu mới để hoàn tất."
-              : "Nhập email hoặc số điện thoại để nhận liên kết đặt lại mật khẩu."}
-          </p>
-        </header>
-
-        {hasToken && token ? (
-          <ResetPasswordForm token={token} />
-        ) : (
-          <RequestResetForm />
-        )}
-
-        <div className="bb-auth-footer mt-5">
-          <Link href={toLoginPath()} className="bb-link">Quay lại đăng nhập</Link>
-          {" "}
-          <span aria-hidden="true">·</span>
-          {" "}
-          <Link href={toRegisterPath()} className="bb-link">Tạo tài khoản mới</Link>
-        </div>
-      </Card>
+      {token ? <ResetPasswordForm token={token} /> : <RequestResetForm />}
     </div>
   );
 }

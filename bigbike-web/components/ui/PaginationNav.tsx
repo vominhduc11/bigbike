@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type PaginationNavProps = {
@@ -29,11 +30,11 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
   return (
     <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label="Phân trang">
       {page > 1 ? (
-        <Button asChild variant="secondary" size="sm">
-          <Link href={makeHref(page - 1)}>Trang trước</Link>
+        <Button asChild variant="secondary" size="icon">
+          <Link href={makeHref(page - 1)} aria-label="Trang trước"><ChevronLeft className="w-4 h-4" /></Link>
         </Button>
       ) : (
-        <Button variant="secondary" size="sm" disabled>Trang trước</Button>
+        <Button variant="secondary" size="icon" disabled aria-label="Trang trước"><ChevronLeft className="w-4 h-4" /></Button>
       )}
 
       <div className="flex items-center gap-1 flex-wrap">
@@ -58,11 +59,11 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
       </div>
 
       {page < totalPages ? (
-        <Button asChild variant="secondary" size="sm">
-          <Link href={makeHref(page + 1)}>Trang sau</Link>
+        <Button asChild variant="secondary" size="icon">
+          <Link href={makeHref(page + 1)} aria-label="Trang sau"><ChevronRight className="w-4 h-4" /></Link>
         </Button>
       ) : (
-        <Button variant="secondary" size="sm" disabled>Trang sau</Button>
+        <Button variant="secondary" size="icon" disabled aria-label="Trang sau"><ChevronRight className="w-4 h-4" /></Button>
       )}
     </nav>
   );

@@ -30,7 +30,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   login endpoints         → 5 req/min
  *   register endpoint       → 3 req/min
  *   token refresh           → 30 req/min
- *   contact form            → 3 req/min
  *   cart mutations          → 30 req/min
  *   checkout / quick-buy    → 5 req/min
  *   order lookup (GET)      → 20 req/min
@@ -40,7 +39,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CONTACT, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
@@ -70,7 +69,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> passwordResetBuckets       = new ConcurrentHashMap<>();
     private final Map<String, Bucket> resendVerificationBuckets  = new ConcurrentHashMap<>();
     private final Map<String, Bucket> refreshBuckets             = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> contactBuckets       = new ConcurrentHashMap<>();
     private final Map<String, Bucket> cartBuckets          = new ConcurrentHashMap<>();
     private final Map<String, Bucket> checkoutBuckets      = new ConcurrentHashMap<>();
     private final Map<String, Bucket> orderLookupBuckets   = new ConcurrentHashMap<>();
@@ -120,9 +118,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/auth/refresh".equals(path) || "/api/v1/customer/auth/refresh".equals(path)) {
                 return LimitTier.REFRESH;
             }
-            if ("/api/v1/contact".equals(path)) {
-                return LimitTier.CONTACT;
-            }
             if ("/api/v1/checkout".equals(path) || "/api/v1/orders/quick-buy".equals(path)) {
                 return LimitTier.CHECKOUT;
             }
@@ -157,8 +152,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     ip -> newBucket(3, Duration.ofHours(1)));
             case REFRESH       -> refreshBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(30, Duration.ofMinutes(1)));
-            case CONTACT       -> contactBuckets.computeIfAbsent(clientIp,
-                    ip -> newBucket(3, Duration.ofMinutes(1)));
             case CART          -> cartBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(30, Duration.ofMinutes(1)));
             case CHECKOUT      -> checkoutBuckets.computeIfAbsent(clientIp,

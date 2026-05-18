@@ -151,10 +151,6 @@
     {
       "name": "Public Address",
       "description": "Public Vietnam administrative address lookup endpoints"
-    },
-    {
-      "name": "Contact",
-      "description": "Public contact form submission"
     }
   ],
   "paths": {
@@ -248,7 +244,11 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"]
+              "enum": [
+                "NONE",
+                "FEATURED_GRID",
+                "RECOMMENDED_CAROUSEL"
+              ]
             },
             "description": "Filter to a single homepage placement slot."
           }
@@ -463,6 +463,38 @@
         "responses": {
           "200": {
             "description": "Brand list"
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/facets": {
+      "get": {
+        "tags": [
+          "Public Catalog"
+        ],
+        "summary": "Catalog filter facets (product counts per filter value)",
+        "operationId": "getCatalogFacets",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog facets (categories, brands, colors, priceBands)"
           }
         }
       }
@@ -2904,7 +2936,11 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"]
+              "enum": [
+                "NONE",
+                "FEATURED_GRID",
+                "RECOMMENDED_CAROUSEL"
+              ]
             },
             "description": "Filter to a single homepage placement slot."
           }
@@ -5373,63 +5409,6 @@
         }
       }
     },
-    "/api/v1/contact": {
-      "post": {
-        "tags": [
-          "Contact"
-        ],
-        "summary": "Submit contact form",
-        "operationId": "submitContact",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "fullName": {
-                    "type": "string"
-                  },
-                  "phone": {
-                    "type": "string"
-                  },
-                  "email": {
-                    "type": "string"
-                  },
-                  "content": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Contact submitted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "null"
-                    },
-                    "meta": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          }
-        }
-      }
-    },
     "/api/v1/customer/auth/verify-email": {
       "post": {
         "tags": [
@@ -6751,6 +6730,10 @@
           },
           "status": {
             "type": "string"
+          },
+          "newsletterSubscribed": {
+            "type": "boolean",
+            "description": "Newsletter opt-in flag"
           }
         }
       },
@@ -7123,7 +7106,12 @@
         "properties": {
           "paymentStatus": {
             "type": "string",
-            "enum": ["UNPAID", "PAID", "REFUNDED", "CANCELLED"]
+            "enum": [
+              "UNPAID",
+              "PAID",
+              "REFUNDED",
+              "CANCELLED"
+            ]
           }
         }
       },
@@ -7772,7 +7760,11 @@
           },
           "homepageBlock": {
             "type": "string",
-            "enum": ["NONE", "FEATURED_GRID", "RECOMMENDED_CAROUSEL"],
+            "enum": [
+              "NONE",
+              "FEATURED_GRID",
+              "RECOMMENDED_CAROUSEL"
+            ],
             "description": "Homepage placement slot. NONE = not pinned."
           },
           "homepageOrder": {

@@ -34,8 +34,6 @@ public final class PermissionCatalog {
             new Entry("shipping.write",               false),
             new Entry("reviews.read",                 false),
             new Entry("reviews.write",                false),
-            new Entry("contact.read",                 false),
-            new Entry("contact.write",                false),
             new Entry("pos.read",                     false),
             new Entry("pos.write",                    false),
             new Entry("pos.price_override",           true),

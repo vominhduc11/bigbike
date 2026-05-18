@@ -34,7 +34,7 @@ export function StatusBadge({ tone, children, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-block border font-bold uppercase text-xs leading-none tracking-[0.1em] py-[5px] px-[10px]",
+        "inline-block border font-bold uppercase text-sm leading-none tracking-[0.1em] py-[5px] px-[10px]",
         TONE_CLASS[tone],
         className,
       )}

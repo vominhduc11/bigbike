@@ -39,7 +39,7 @@ export function BrandCarousel({ brands }: Props) {
                       style={{ objectFit: "contain", width: "auto", height: 56 }}
                     />
                   ) : (
-                    <span className="text-[0.82rem] font-bold text-muted-foreground uppercase">{b.name}</span>
+                    <span className="text-13 font-bold text-muted-foreground uppercase">{b.name}</span>
                   )}
                 </Link>
               </SwiperSlide>

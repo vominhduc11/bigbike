@@ -189,6 +189,55 @@ class PublicReadApiTest {
                 .andExpect(jsonPath("$.data.slug").value("ls2"));
     }
 
+    // ── Catalog facets ──────────────────────────────────────────────────────────
+
+    @Test
+    void catalogFacets_returnsAllFacetGroups_andCategoryCountExcludesDraft() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String catSlug = "facet-cat-" + suffix;
+        CategoryEntity cat = seedCategory(catSlug, "Facet Cat " + suffix);
+        seedProduct("facet-p1-" + suffix, "Facet Product 1 " + suffix, cat, PublishStatus.PUBLISHED, 800_000L);
+        seedProduct("facet-p2-" + suffix, "Facet Product 2 " + suffix, cat, PublishStatus.PUBLISHED, 1_500_000L);
+        seedProduct("facet-p3-" + suffix, "Facet Product 3 " + suffix, cat, PublishStatus.DRAFT, 2_500_000L);
+
+        mockMvc.perform(get("/api/v1/catalog/facets").param("category", catSlug))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.categories").isArray())
+                .andExpect(jsonPath("$.data.brands").isArray())
+                .andExpect(jsonPath("$.data.colors").isArray())
+                .andExpect(jsonPath("$.data.priceBands").isArray())
+                // 10 fixed named colors, 9 fixed price bands
+                .andExpect(jsonPath("$.data.colors.length()").value(10))
+                .andExpect(jsonPath("$.data.priceBands.length()").value(9))
+                // category bucket counts only the 2 published products (draft excluded)
+                .andExpect(jsonPath("$.data.categories[?(@.key == '" + catSlug + "')].count").value(2));
+    }
+
+    @Test
+    void catalogFacets_priceBands_countByBand() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String catSlug = "facet-price-cat-" + suffix;
+        CategoryEntity cat = seedCategory(catSlug, "Facet Price Cat " + suffix);
+        seedProduct("facet-pr1-" + suffix, "Facet Price 1 " + suffix, cat, PublishStatus.PUBLISHED, 500_000L);
+        seedProduct("facet-pr2-" + suffix, "Facet Price 2 " + suffix, cat, PublishStatus.PUBLISHED, 1_500_000L);
+        seedProduct("facet-pr3-" + suffix, "Facet Price 3 " + suffix, cat, PublishStatus.PUBLISHED, 9_500_000L);
+
+        mockMvc.perform(get("/api/v1/catalog/facets").param("category", catSlug))
+                .andExpect(status().isOk())
+                // index 0 = 0-1tr, index 1 = 1-2tr, index 8 = tren-9tr (fixed order)
+                .andExpect(jsonPath("$.data.priceBands[0].key").value("0-1tr"))
+                .andExpect(jsonPath("$.data.priceBands[0].count").value(1))
+                .andExpect(jsonPath("$.data.priceBands[1].count").value(1))
+                .andExpect(jsonPath("$.data.priceBands[8].key").value("tren-9tr"))
+                .andExpect(jsonPath("$.data.priceBands[8].count").value(1));
+    }
+
+    @Test
+    void catalogFacets_invalidCategorySlug_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/catalog/facets").param("category", "Invalid Slug"))
+                .andExpect(status().isBadRequest());
+    }
+
     // ── Seed helpers ─────────────────────────────────────────────────────────────
 
     private CategoryEntity seedCategory(String slug, String name) {

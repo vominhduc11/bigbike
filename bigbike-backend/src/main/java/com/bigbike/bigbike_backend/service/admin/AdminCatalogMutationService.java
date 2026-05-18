@@ -766,6 +766,9 @@ public class AdminCatalogMutationService {
         if (create || request.isContentBottomPresent()) {
             entity.setContentBottom(AdminMutationValidators.trimToNull(request.getContentBottom()));
         }
+        if (create || request.isPromotionContentPresent()) {
+            entity.setPromotionContent(AdminMutationValidators.trimToNull(request.getPromotionContent()));
+        }
 
         if (create || request.isImagePresent()) {
             if (request.getImage() != null) {
