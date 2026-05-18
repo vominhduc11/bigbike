@@ -31,8 +31,23 @@ export function subscribeAuth(listener: Listener): () => void {
   };
 }
 
+/**
+ * Cookie `bb_csrf` (non-httpOnly) chỉ được backend set khi đăng nhập thành công
+ * và bị xoá khi logout (xem `config/CustomerAuthCookies`). Không có nó nghĩa là
+ * khách chắc chắn chưa đăng nhập — bỏ qua call `/customer/me` để guest không phát
+ * sinh một request 401 (đúng nghiệp vụ nhưng thừa) bị trình duyệt log ra console.
+ */
+function hasSessionHint(): boolean {
+  if (typeof document === "undefined") return false;
+  return /(?:^|;\s*)bb_csrf=[^;]/.test(document.cookie);
+}
+
 export function refreshAuth(): Promise<void> {
   if (inflight) return inflight;
+  if (!hasSessionHint()) {
+    setState({ status: "anonymous" });
+    return Promise.resolve();
+  }
   inflight = fetchMe()
     .then((profile) => {
       setState({ status: "authenticated", profile });
