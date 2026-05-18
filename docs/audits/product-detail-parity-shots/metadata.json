@@ -1,0 +1,382 @@
+{
+  "generatedAt": "2026-05-18T13:12:01.659Z",
+  "baseUrl": "http://localhost:3000",
+  "route": "/product/mu-bao-hiem-ls2-ff800-storm/",
+  "captures": [
+    {
+      "viewport": "1920x1080",
+      "state": "overview",
+      "file": "1920x1080-overview.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": 0,
+      "clicked": true,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1920x1080",
+      "state": "video-gallery",
+      "file": "1920x1080-video-gallery.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1920x1080",
+      "state": "additional-information",
+      "file": "1920x1080-additional-information.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1440x1200",
+      "state": "overview",
+      "file": "1440x1200-overview.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": 0,
+      "clicked": true,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1440x1200",
+      "state": "video-gallery",
+      "file": "1440x1200-video-gallery.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1440x1200",
+      "state": "additional-information",
+      "file": "1440x1200-additional-information.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1024x1365",
+      "state": "overview",
+      "file": "1024x1365-overview.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": 0,
+      "clicked": true,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1024x1365",
+      "state": "video-gallery",
+      "file": "1024x1365-video-gallery.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "1024x1365",
+      "state": "additional-information",
+      "file": "1024x1365-additional-information.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "768x1200",
+      "state": "overview",
+      "file": "768x1200-overview.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": 0,
+      "clicked": true,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "768x1200",
+      "state": "video-gallery",
+      "file": "768x1200-video-gallery.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "768x1200",
+      "state": "additional-information",
+      "file": "768x1200-additional-information.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "TRANG CHỦ\nTẤT CẢ SẢN PHẨM\nTIN TỨC\nGIỚI THIỆU\nLIÊN HỆ\n0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, "
+    },
+    {
+      "viewport": "390x1200",
+      "state": "overview",
+      "file": "390x1200-overview.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": 0,
+      "clicked": true,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+    },
+    {
+      "viewport": "390x1200",
+      "state": "video-gallery",
+      "file": "390x1200-video-gallery.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+    },
+    {
+      "viewport": "390x1200",
+      "state": "additional-information",
+      "file": "390x1200-additional-information.png",
+      "tabsBefore": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "matchedTabIndex": null,
+      "clicked": false,
+      "activeTabsAfter": [
+        {
+          "idx": 0,
+          "text": "Mô tả sản phẩm",
+          "selected": "true"
+        }
+      ],
+      "consoleMessages": [
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "bodyTextSample": "0\nTrang chủ\n/\nDanh mục sản phẩm\n/\nMŨ BẢO HIỂM\n/\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\nMŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06\n3.190.000 đ\nHẾT HÀNG\nChọn color\nCAM\nĐEN\nĐEN BÓNG\nĐỎ\nXÁM\nXANH LÁ\nĐEN ĐỎ TRẮNG\nMCPHEE\nNERVE\nSPRINTER\nXÁM BÓNG\nĐỎ TRẮNG XANH\nChọn size\nM\nL\nXL\nXXL\n−\n+\nVUI LÒNG CHỌN BIẾN THỂ\nShare\nGIÁ\n3.190.000 đ\nCHỌN BIẾN THỂ\nMÔ TẢ SẢN PHẨM\nMŨ FULLFACE LS2 FF800 STORM II LÀ PHIÊN BẢN NÂNG CẤP SAU SỰ THÀNH CÔNG CỦA STORM I TẠI THỊ TRƯỜNG VIỆT NAM. STORM II ĐẠT CHUẨN AN TOÀN ECE 22.06, MỘT TRONG NHỮNG TIÊU CHUẨN AN TOÀN NHẤT THẾ GIỚI HIỆN NAY.\nThiết kế đẳng cấp, thời trang và hiện đại\nChất liệu vỏ KPA cao cấp, đảm bảo độ bền và an toàn\nLớp lót tháo rời, dễ dàng vệ sinh và giữ cho bạn luôn thoải mái\nHệ thống thông gió chủ động, mang lại sự mát mẻ trong suốt chuyến đi\nKính chắn gió chống trầy xước, chống sương mù và chống tia UV\nHệ thống khóa micrometric, dễ dàng điều chỉnh độ chặt chẽ\nĐạt tiêu chuẩn an toàn quốc tế ECE 22.06 \nĐa dạng màu sắc và kích thước, phù hợp với mọi nhu cầu"
+    }
+  ]
+}

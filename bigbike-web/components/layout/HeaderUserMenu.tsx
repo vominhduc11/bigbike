@@ -147,28 +147,38 @@ export function HeaderUserMenu() {
           <TooltipContent>{displayName ?? "Tài khoản"}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
+      <DropdownMenuContent align="end" className="w-64 p-3">
+        <DropdownMenuLabel className="px-1 pb-2 pt-1 font-normal">
           <p className="text-sm text-muted-foreground normal-case">Xin chào,</p>
-          <p className="text-sm font-semibold truncate normal-case" title={profile.email}>
+          <p className="truncate text-sm font-semibold normal-case" title={profile.email}>
             {displayName}
           </p>
+          <p className="mt-1 text-xs leading-snug text-muted-foreground normal-case">
+            Trải nghiệm mua sắm không giới hạn cùng Bigbike.vn
+          </p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href={toAccountPath()}>Tài khoản của tôi</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={toOrderHistoryPath()}>Đơn hàng</Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={handleLogout}
-          disabled={loggingOut}
-          className="text-destructive focus:text-destructive"
-        >
-          {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
-        </DropdownMenuItem>
+        <div className="flex flex-col gap-2 pt-1">
+          <DropdownMenuItem
+            asChild
+            className="justify-center gap-1.5 rounded-none bg-brand px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-[var(--bb-brand-primary-hover)] focus:text-white"
+          >
+            <Link href={toAccountPath()}>
+              Tài khoản của tôi
+              <span aria-hidden="true">›</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="justify-center py-1 text-sm">
+            <Link href={toOrderHistoryPath()}>Đơn hàng của tôi</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={handleLogout}
+            disabled={loggingOut}
+            className="justify-center gap-1.5 rounded-none bg-black px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-black focus:text-white data-[disabled]:opacity-60"
+          >
+            {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+            <span aria-hidden="true">⇥</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

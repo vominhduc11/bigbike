@@ -121,7 +121,11 @@ export function SearchToggle() {
   }, []);
 
   const hasSuggestions = suggestions.length > 0;
-  const showRecent = recent.length > 0 && query.trim().length < 2;
+  const queryShort = query.trim().length < 2;
+  const showRecent = recent.length > 0 && queryShort;
+  // Khối "Lịch sử tìm kiếm" luôn hiện khi chưa nhập đủ keyword — kể cả khi
+  // chưa có lịch sử nào (hiện gợi ý thay vì ẩn cả khối).
+  const showHistoryBlock = queryShort && !hasSuggestions && !suggestLoading;
   const showEmpty =
     query.trim().length >= 2 && !suggestLoading && suggestions.length === 0;
 
@@ -298,7 +302,7 @@ export function SearchToggle() {
               <Input
                 ref={inputRef}
                 type="text"
-                placeholder="Tìm sản phẩm, thương hiệu..."
+                placeholder="Vui lòng nhập từ khóa..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKeyDown}
@@ -338,7 +342,7 @@ export function SearchToggle() {
                 <div className="bb-search-main">
                   <div className="bb-search-block">
                     <div className="bb-search-block-head">
-                      <span className="label">Sản phẩm gợi ý</span>
+                      <span className="label">Gợi ý</span>
                       <span className="count">{suggestions.length}</span>
                     </div>
                     <ul
@@ -457,28 +461,36 @@ export function SearchToggle() {
               </div>
             )}
 
-            {/* Recent searches (when no query yet) */}
-            {showRecent && (
+            {/* Lịch sử tìm kiếm — luôn hiện khi chưa nhập keyword */}
+            {showHistoryBlock && (
               <div className="bb-search-body">
                 <div className="bb-search-main">
                   <div className="bb-search-block">
                     <div className="bb-search-block-head">
-                      <span className="label">Tìm kiếm gần đây</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="tiny"
-                        onClick={clearRecent}
-                      >
-                        Xoá tất cả
-                      </Button>
+                      <span className="label">Lịch sử tìm kiếm</span>
+                      {recent.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="tiny"
+                          onClick={clearRecent}
+                        >
+                          Xoá tất cả
+                        </Button>
+                      )}
                     </div>
-                    <ul
-                      className="bb-search-recent"
-                      id={listboxId}
-                      role="listbox"
-                      aria-label="Tìm kiếm gần đây"
-                    >
+                    {recent.length === 0 ? (
+                      <p className="m-0 px-2.5 py-3 text-sm text-white/45">
+                        Chưa có lịch sử tìm kiếm. Nhập từ khoá để tìm sản phẩm
+                        hoặc thương hiệu.
+                      </p>
+                    ) : (
+                      <ul
+                        className="bb-search-recent"
+                        id={listboxId}
+                        role="listbox"
+                        aria-label="Lịch sử tìm kiếm"
+                      >
                       {recent.map((s, idx) => {
                         const isActive = idx === activeIndex;
                         return (
@@ -527,7 +539,8 @@ export function SearchToggle() {
                           </li>
                         );
                       })}
-                    </ul>
+                      </ul>
+                    )}
                   </div>
                 </div>
               </div>

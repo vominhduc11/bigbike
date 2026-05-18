@@ -60,7 +60,7 @@ export function ShopInfoDrawer({
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-md">
+      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-lg">
         <SheetTitle className="sr-only">Về {siteName}</SheetTitle>
         <SheetDescription className="sr-only">
           Giới thiệu và thông tin liên hệ của {siteName}.

@@ -70,6 +70,15 @@ function IconMail() {
   );
 }
 
+function IconMapPin() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={iconClass}>
+      <path d="M11.5 5.8c0 3.2-4.5 6.9-4.5 6.9S2.5 9 2.5 5.8a4.5 4.5 0 0 1 9 0Z" />
+      <circle cx="7" cy="5.8" r="1.6" />
+    </svg>
+  );
+}
+
 function IconFacebook() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className={iconClass}>
@@ -130,6 +139,7 @@ export async function SiteFooter() {
   const footerDescription = getSettingValue(settings, ["footer_description"], DEFAULT_FOOTER_DESCRIPTION);
   const hotline = getSettingValue(settings, ["hotline", "contact_phone", "support_phone"], "");
   const email = getSettingValue(settings, ["contact_email", "email", "support_email", "site.contact_email"], "");
+  const address = getSettingValue(settings, ["contact_address", "address", "site_address"], "");
   const facebookUrl = getSettingValue(settings, ["facebook_url"], "");
   const zaloUrl = getSettingValue(settings, ["zalo_url"], "");
   const youtubeUrl = getSettingValue(settings, ["youtube_url"], "");
@@ -156,35 +166,13 @@ export async function SiteFooter() {
   return (
     <footer className="border-t-[3px] border-brand bg-footer-top text-[var(--bb-text-inverse-secondary)]">
       {/* Main footer body */}
-      <div className="bb-container grid grid-cols-1 gap-6 py-10 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+      <div className="bb-container grid grid-cols-1 gap-6 py-10 md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.85fr)_minmax(0,1.05fr)_minmax(0,0.85fr)] md:gap-10">
         {/* Brand + newsletter column */}
-        <section className="grid gap-3">
+        <section className="grid content-start gap-3">
           <p className="m-0 text-brand text-sm font-bold tracking-[0.12em] uppercase">{siteName}</p>
           <h2 className="m-0 font-display uppercase text-2xl text-white md:text-3xl">{footerHeading}</h2>
           <div className="mt-1">
             <NewsletterForm />
-          </div>
-          <div className="grid gap-2 mt-1">
-            {hotline ? (
-              <p className="flex items-center gap-2 m-0">
-                <span className="text-brand">
-                  <IconPhone />
-                </span>
-                <a href={`tel:${hotline.replace(/[\s.]/g, "")}`} className="text-brand font-bold no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors">
-                  {hotline}
-                </a>
-              </p>
-            ) : null}
-            {email ? (
-              <p className="flex items-center gap-2 m-0">
-                <span className="text-brand">
-                  <IconMail />
-                </span>
-                <a href={`mailto:${email}`} className="text-brand font-bold no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors">
-                  {email}
-                </a>
-              </p>
-            ) : null}
           </div>
           <p className="m-0 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">{footerDescription}</p>
         </section>
@@ -196,6 +184,43 @@ export async function SiteFooter() {
               {safeText(item.label, "Liên kết")}
             </Link>
           ))}
+        </FooterCollapsible>
+
+        {/* Liên hệ */}
+        <FooterCollapsible title="Liên hệ">
+          {hotline ? (
+            <a
+              href={`tel:${hotline.replace(/[\s.]/g, "")}`}
+              className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
+            >
+              <span className="text-brand">
+                <IconPhone />
+              </span>
+              {hotline}
+            </a>
+          ) : null}
+          {email ? (
+            <a
+              href={`mailto:${email}`}
+              className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
+            >
+              <span className="text-brand">
+                <IconMail />
+              </span>
+              {email}
+            </a>
+          ) : null}
+          {address ? (
+            <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">
+              <span className="text-brand">
+                <IconMapPin />
+              </span>
+              {address}
+            </p>
+          ) : null}
+          {!hotline && !email && !address ? (
+            <p className="m-0 text-sm">Đang cập nhật thông tin liên hệ.</p>
+          ) : null}
         </FooterCollapsible>
 
         {/* Mạng xã hội */}
