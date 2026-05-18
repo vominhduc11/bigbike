@@ -902,14 +902,12 @@ html[data-header-hidden] .mega-item.open::before {
   display: none;
 }
 
+/* Mega panel = lop dinh vi (full width, trong suot). Card that la .mega-panel-inner. */
 .mega-panel {
   position: fixed;
   top: var(--bb-header-stack, 5rem);
   left: 0;
   right: 0;
-  background: #fff;
-  border-top: 2px solid var(--bb-brand-primary);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
   z-index: 199;
   visibility: hidden;
   opacity: 0;
@@ -918,7 +916,7 @@ html[data-header-hidden] .mega-item.open::before {
     opacity 0.22s ease,
     transform 0.22s ease,
     visibility 0s linear 0.22s;
-  padding: 28px 0 32px;
+  pointer-events: none;
 }
 
 .mega-item.open > div > .mega-panel {
@@ -929,124 +927,136 @@ html[data-header-hidden] .mega-item.open::before {
     opacity 0.22s ease,
     transform 0.22s ease,
     visibility 0s linear 0s;
+  pointer-events: auto;
 }
 
-/* áº¨n mega panel khi header bá»‹ hide (scroll xuá»‘ng nhanh) */
+/* An mega panel khi header bi hide (scroll xuong nhanh) */
 html[data-header-hidden] .mega-panel {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none;
 }
 
+/* Card bounded: cot trai danh muc cap 1 + cot phai flyout */
 .mega-panel-inner {
-  width: min(100% - 48px, var(--bb-container-xl, 75rem));
-  margin: 0 auto;
-}
-
-/* Quick links row (items khĂ´ng cĂ³ con) */
-.mega-quicklinks {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  padding-bottom: 20px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #ececec;
+  align-items: stretch;
+  width: min(100% - 48px, 60rem);
+  margin: 0 auto;
+  min-height: 320px;
+  background: #fff;
+  border-top: 3px solid var(--bb-brand-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
 }
 
-.mega-quicklinks a {
-  display: inline-flex;
+/* Cot trai - danh sach danh muc cap 1 */
+.mega-cat-list {
+  flex: 0 0 270px;
+  list-style: none;
+  margin: 0;
+  padding: 12px 0;
+  background: #fafafa;
+  border-right: 1px solid #ececec;
+}
+
+.mega-cat-item {
+  display: flex;
   align-items: center;
-  padding: 5px 16px;
-  border-radius: 20px;
-  background: #f4f4f4;
-  color: #444;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 22px;
   font-family: var(--bb-font-display);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-
-.mega-quicklinks a:hover,
-.mega-quicklinks a.active {
-  background: var(--bb-brand-primary);
-  color: #fff;
-}
-
-/* Grid cá»™t danh má»¥c */
-.mega-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 0 28px;
-}
-
-/* TiĂªu Ä‘á» cá»™t (link danh má»¥c cha) */
-.mega-col-title {
-  display: block;
-  font-family: var(--bb-font-display);
-  font-size: 12.5px;
-  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #1a1a1a;
+  letter-spacing: 0.04em;
+  color: #1f1f1f;
   text-decoration: none;
-  padding-bottom: 9px;
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--bb-brand-primary);
-  transition: color 0.15s;
-  white-space: nowrap;
+  transition: color 0.14s, background 0.14s;
+}
+
+.mega-cat-label {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.mega-col-title:hover,
-.mega-col-title.active {
+.mega-cat-item:hover,
+.mega-cat-item:focus-visible,
+.mega-cat-item.active {
+  color: var(--bb-brand-primary);
+  background: #fff;
+}
+
+.mega-cat-item.current {
   color: var(--bb-brand-primary);
 }
 
-/* Danh sĂ¡ch item trong cá»™t */
-.mega-col-list {
+.mega-cat-chevron {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+/* Cot phai - flyout danh muc con cua muc dang chon */
+.mega-flyout {
+  flex: 1;
+  min-width: 0;
+  padding: 22px 28px;
+}
+
+.mega-flyout-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  columns: 2;
+  column-gap: 32px;
 }
 
-.mega-col-item > a {
+.mega-flyout-item-wrap {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+.mega-flyout-item {
   display: block;
-  padding: 5px 0;
+  font-family: var(--bb-font-display);
   font-size: 13.5px;
-  color: #555;
+  font-weight: 600;
+  color: #1a1a1a;
   text-decoration: none;
-  line-height: 1.4;
-  transition: color 0.15s;
+  padding: 3px 0;
+  transition: color 0.14s;
 }
 
-.mega-col-item > a:hover,
-.mega-col-item > a.active {
+.mega-flyout-item:hover,
+.mega-flyout-item.active {
   color: var(--bb-brand-primary);
 }
 
-/* Sub-items cáº¥p 4 (thá»¥t lá», nhá» hÆ¡n) */
-.mega-col-sublist {
+.mega-flyout-sub {
   list-style: none;
-  margin: 2px 0 8px 10px;
+  margin: 2px 0 0 10px;
   padding: 0;
-  border-left: 2px solid #e8e8e8;
+  border-left: 2px solid #ececec;
 }
 
-.mega-col-sublist li > a {
+.mega-flyout-sub li > a {
   display: block;
   padding: 3px 0 3px 10px;
   font-size: 12.5px;
   color: #6f6f6f;
   text-decoration: none;
-  transition: color 0.15s;
+  transition: color 0.14s;
 }
 
-.mega-col-sublist li > a:hover,
-.mega-col-sublist li > a.active {
+.mega-flyout-sub li > a:hover,
+.mega-flyout-sub li > a.active {
   color: var(--bb-brand-primary);
+}
+
+.mega-flyout-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #999;
 }
 
 /* -- User control (port tu header .user-control) --------------

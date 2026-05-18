@@ -24,6 +24,8 @@ function isMegaNode(node: HeaderNavNode): boolean {
 }
 
 // ── Mega menu panel ────────────────────────────────────────────────────────
+// Bố cục theo thiết kế: cột trái là danh sách danh mục cấp 1, cột phải là
+// flyout hiển thị danh mục con của mục đang hover/focus.
 function MegaMenuPanel({
   nodes,
   onItemClick,
@@ -33,75 +35,88 @@ function MegaMenuPanel({
   onItemClick: () => void;
   pathname: string | null;
 }) {
-  const quickLinks = nodes.filter((n) => n.children.length === 0);
-  const columns = nodes.filter((n) => n.children.length > 0);
+  // Mặc định mở flyout của danh mục đầu tiên có con — tránh cột phải trống.
+  const firstWithChildren = nodes.findIndex((n) => n.children.length > 0);
+  const [activeIdx, setActiveIdx] = useState(
+    firstWithChildren >= 0 ? firstWithChildren : 0,
+  );
+  const safeIdx = activeIdx < nodes.length ? activeIdx : 0;
+  const activeNode = nodes[safeIdx];
 
   return (
     <div className="mega-panel">
       <div className="mega-panel-inner">
-        {quickLinks.length > 0 && (
-          <div className="mega-quicklinks">
-            {quickLinks.map((node) => (
+        <ul className="mega-cat-list">
+          {nodes.map((node, index) => (
+            <li key={node.id}>
               <Link
-                key={node.id}
                 href={normalizeMenuUrl(node.url)}
-                className={isNodeActive(pathname, node) ? "active" : undefined}
+                className={
+                  "mega-cat-item" +
+                  (index === safeIdx ? " active" : "") +
+                  (isNodeActive(pathname, node) ? " current" : "")
+                }
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noreferrer" : undefined}
+                onMouseEnter={() => setActiveIdx(index)}
+                onFocus={() => setActiveIdx(index)}
                 onClick={onItemClick}
               >
-                {node.label}
+                <span className="mega-cat-label">{node.label}</span>
+                {node.children.length > 0 && (
+                  <ChevronDown
+                    className="mega-cat-chevron"
+                    size={14}
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                    style={{ transform: "rotate(-90deg)" }}
+                  />
+                )}
               </Link>
-            ))}
-          </div>
-        )}
-
-        <div className="mega-columns">
-          {columns.map((col) => (
-            <div key={col.id} className="mega-col">
-              <Link
-                href={normalizeMenuUrl(col.url)}
-                className={"mega-col-title" + (isNodeActive(pathname, col) ? " active" : "")}
-                target={col.openInNewTab ? "_blank" : undefined}
-                rel={col.openInNewTab ? "noreferrer" : undefined}
-                onClick={onItemClick}
-              >
-                {col.label}
-              </Link>
-              <ul className="mega-col-list">
-                {col.children.map((item) => (
-                  <li key={item.id} className="mega-col-item">
-                    <Link
-                      href={normalizeMenuUrl(item.url)}
-                      className={isNodeActive(pathname, item) ? "active" : undefined}
-                      target={item.openInNewTab ? "_blank" : undefined}
-                      rel={item.openInNewTab ? "noreferrer" : undefined}
-                      onClick={onItemClick}
-                    >
-                      {item.label}
-                    </Link>
-                    {item.children.length > 0 && (
-                      <ul className="mega-col-sublist">
-                        {item.children.map((sub) => (
-                          <li key={sub.id}>
-                            <Link
-                              href={normalizeMenuUrl(sub.url)}
-                              className={isNodeActive(pathname, sub) ? "active" : undefined}
-                              target={sub.openInNewTab ? "_blank" : undefined}
-                              rel={sub.openInNewTab ? "noreferrer" : undefined}
-                              onClick={onItemClick}
-                            >
-                              {sub.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </li>
           ))}
+        </ul>
+
+        <div className="mega-flyout">
+          {activeNode && activeNode.children.length > 0 ? (
+            <ul className="mega-flyout-list">
+              {activeNode.children.map((item) => (
+                <li key={item.id} className="mega-flyout-item-wrap">
+                  <Link
+                    href={normalizeMenuUrl(item.url)}
+                    className={
+                      "mega-flyout-item" +
+                      (isNodeActive(pathname, item) ? " active" : "")
+                    }
+                    target={item.openInNewTab ? "_blank" : undefined}
+                    rel={item.openInNewTab ? "noreferrer" : undefined}
+                    onClick={onItemClick}
+                  >
+                    {item.label}
+                  </Link>
+                  {item.children.length > 0 && (
+                    <ul className="mega-flyout-sub">
+                      {item.children.map((sub) => (
+                        <li key={sub.id}>
+                          <Link
+                            href={normalizeMenuUrl(sub.url)}
+                            className={isNodeActive(pathname, sub) ? "active" : undefined}
+                            target={sub.openInNewTab ? "_blank" : undefined}
+                            rel={sub.openInNewTab ? "noreferrer" : undefined}
+                            onClick={onItemClick}
+                          >
+                            {sub.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mega-flyout-empty">Chọn một danh mục để xem chi tiết.</p>
+          )}
         </div>
       </div>
     </div>
@@ -305,7 +320,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
             openMenu(true);
             window.setTimeout(() => {
               const firstLink = wrapperRef.current?.querySelector<HTMLAnchorElement>(
-                ".mega-col-title, .bb-sub-menu a",
+                ".mega-cat-item, .bb-sub-menu a",
               );
               firstLink?.focus();
             }, 20);
