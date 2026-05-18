@@ -4412,7 +4412,10 @@ a {
   text-underline-offset: 2px;
 }
 
-a:hover {
+/* Text links turn brand-red on hover — but not anchors styled as buttons
+   (Button asChild → <a>), whose own variant colors must win. `font-cta`
+   is on every Button base class, so it is a reliable button marker. */
+a:not(.font-cta):hover {
   color: var(--bb-brand-primary);
 }
 

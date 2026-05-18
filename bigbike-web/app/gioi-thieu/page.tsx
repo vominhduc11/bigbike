@@ -63,7 +63,8 @@ function AboutHero({ imageUrl, imageAlt }: { imageUrl?: string | null; imageAlt?
   // Ảnh áo giáp ghép vào hero — dùng heroImageUrl của trang nếu có (PNG nền trong).
   const illustration = imageUrl?.trim() ? resolveMediaUrl(imageUrl.trim()) : null;
   return (
-    <header className="relative overflow-hidden bg-brand">
+    <header className="relative isolate overflow-hidden bg-brand">
+      {/* Nền núi + lát cắt chéo trắng nằm sẵn trong PNG — neo đáy để cạnh dưới hero là trắng */}
       <Image
         src="/wp/page-title-bg.png"
         alt=""
@@ -71,9 +72,16 @@ function AboutHero({ imageUrl, imageAlt }: { imageUrl?: string | null; imageAlt?
         priority
         sizes="100vw"
         aria-hidden="true"
-        className="object-cover object-center"
+        className="object-cover object-bottom"
       />
-      <div className="relative z-10 bb-container flex flex-col items-center text-center py-12 sm:py-16">
+      {/* Chữ BIGBIKE mờ làm watermark phía sau tiêu đề */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-[6%] select-none text-center font-display font-bold uppercase leading-none tracking-[0.08em] text-white/[0.08] text-[clamp(72px,15vw,220px)]"
+      >
+        BigBike
+      </span>
+      <div className="relative z-10 bb-container flex flex-col items-center text-center pt-14 pb-16 sm:pt-20 sm:pb-20">
         <h1 className="m-0 font-display font-bold uppercase tracking-wide leading-tight !text-white text-3xl sm:text-4xl md:text-5xl">
           Chào mừng đến với BigBike
         </h1>
@@ -82,7 +90,7 @@ function AboutHero({ imageUrl, imageAlt }: { imageUrl?: string | null; imageAlt?
           <img
             src={illustration}
             alt={imageAlt ?? "BigBike"}
-            className="mt-6 max-h-44 w-auto object-contain sm:max-h-52"
+            className="mt-8 w-auto object-contain drop-shadow-2xl max-h-[260px] sm:max-h-[340px] md:max-h-[400px]"
           />
         ) : null}
       </div>

@@ -86,11 +86,13 @@ export default async function ContactPage() {
             <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1.05 }}>
               Liên hệ
             </h1>
-            <nav className="mt-4 flex items-center gap-2 text-sm font-medium" aria-label="Điều hướng">
-              <Link href={toHomePath()} className="text-white/75 transition-colors hover:text-brand">
+            {/* Color sits on the <nav>, not the <a>: the global `a { color: inherit }`
+                rule overrides any text-* class placed directly on a link. */}
+            <nav className="mt-4 flex items-center gap-2 text-sm font-medium text-white/85" aria-label="Điều hướng">
+              <Link href={toHomePath()} className="transition-colors hover:text-brand">
                 Trang chủ
               </Link>
-              <span aria-hidden="true" className="text-brand">/</span>
+              <span aria-hidden="true" className="text-white/45">/</span>
               <span aria-current="page" className="text-white">Liên hệ</span>
             </nav>
           </div>
