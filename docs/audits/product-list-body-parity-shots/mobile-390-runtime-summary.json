@@ -1,0 +1,127 @@
+{
+  "390x844": {
+    "shots": {
+      "full": true,
+      "hero": {
+        "selector": ".bb-cat-hero",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-hero.png",
+        "error": null
+      },
+      "main-layout": {
+        "selector": ".bb-cat-layout",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-main-layout.png",
+        "error": null
+      },
+      "sidebar": {
+        "selector": ".bb-cat-layout aside",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-sidebar.png",
+        "error": null
+      },
+      "product-count-sort": {
+        "selector": ".bb-catalog-head",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-product-count-sort.png",
+        "error": null
+      },
+      "product-grid": {
+        "selector": ".bb-product-grid",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-product-grid.png",
+        "error": null
+      },
+      "product-card-normal": {
+        "selector": ".bb-product-card",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-product-card-normal.png",
+        "error": null
+      },
+      "pagination": {
+        "selector": "nav:has(.bb-pagination-page)",
+        "present": false,
+        "path": null,
+        "error": null
+      },
+      "seo-text-block": {
+        "selector": ".bb-cat-seo",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-seo-text-block.png",
+        "error": null
+      },
+      "product-card-hover": {
+        "selector": ".bb-product-card",
+        "present": true,
+        "path": "S:\\project\\bigbike\\docs\\audits\\product-list-body-parity-shots\\390x844-product-card-hover.png",
+        "error": null
+      }
+    },
+    "hover": {
+      "text": "",
+      "transform": "none",
+      "top": 11,
+      "bottom": 45,
+      "cardHeight": 512,
+      "visibleWithinCard": true,
+      "className": "bb-round absolute top-[10px] right-[10px] z-[3] rounded-full w-[34px] h-[34px] flex items-center justify-center cursor-pointer transition-colors duration-300 p-0 border bg-white/95 border-border text-muted-foreground hover:bg-white hover:border-brand hover:text-brand"
+    },
+    "toggle": {
+      "ariaExpanded": "false",
+      "display": "flex",
+      "visibility": "visible",
+      "width": 12,
+      "height": 12,
+      "visible": true
+    },
+    "metrics": {
+      "url": "http://127.0.0.1:3000/danh-muc-san-pham/non-bao-hiem-moto/",
+      "overflow": 0,
+      "docHeight": 6054,
+      "heroTitle": "MŨ BẢO HIỂM",
+      "heroBreadcrumb": "Trang chủ/Sản phẩm/MŨ BẢO HIỂM",
+      "count": "7 sản phẩm",
+      "sort": "Mới nhất",
+      "sections": [
+        "Nhóm sản phẩm",
+        "Giá bán",
+        "Thương hiệu",
+        "Màu sắc"
+      ],
+      "sidebarText": "Bộ lọcNhóm sản phẩmTất cả sản phẩmMũ Bảo Hiểm FullfaceMŨ BẢO HIỂM FULLFACE LẬT HÀMMŨ BẢO HIỂM 3/4Mũ Bảo Hiểm Cào Cào &amp; Dual SportGiá bán0đ - 1.000.000đ1.000.000đ - 2.000.000đ2.000.000đ - 3.000.000đ3.000.000đ - 4.000.000đ4.000.000đ - 5.000.000đ5.000.000đ - 6.000.000đ6.000.000đ - 7.000.000đ7.000.000đ - 8.000.000đTrên 9.000.000đThương hiệuTất cảAGVALPINESTARSAPROAUGIBULLFIGHTERCabergCUCYMADRIRIDEREGOENDURISTANFALCONFORMAFURYGANGAERNEGIVIGSADVHELITEHEVIKHJCILMKappaKEWIGKOMINEKRIEGALIQUI MOLYLS2M",
+      "gridColumns": 1,
+      "gridTemplateColumns": "358px",
+      "gap": "24px",
+      "cardCount": 7,
+      "cardRect": {
+        "x": 16,
+        "y": 727,
+        "width": 358,
+        "height": 512
+      },
+      "imageBg": "rgb(255, 255, 255)",
+      "productTitle": "MŨ BẢO HIỂM FULLFACE ILM RACING MF-509",
+      "price": "5.850.000 đ",
+      "seoPresent": true,
+      "seoText": "Nón bảo hiểm phượt moto - Mũ bảo hiểm xe máy là món đồ không thể thiếu Mũ bảo hiểm moto là một trong những phụ kiện bảo hộ quan trọng mà các tay chơi moto cần phải trang bị cho mình. Mũ bảo hiểm đi phượt moto sẽ giúp hạn chế tối đa các chấn thương ở vùng đầu khi gặp sự cố bất ngờ. Các loại nón bảo h",
+      "layoutRect": {
+        "x": 16,
+        "y": 582,
+        "width": 358,
+        "height": 3973
+      },
+      "sidebarRect": {
+        "x": 16,
+        "y": 582,
+        "width": 358,
+        "height": 57
+      },
+      "heroRect": {
+        "x": 0,
+        "y": 80,
+        "width": 390,
+        "height": 280
+      }
+    }
+  }
+}

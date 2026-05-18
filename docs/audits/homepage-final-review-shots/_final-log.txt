@@ -1,0 +1,13 @@
+[1920x1080] hOverflow=false (sw=1920,cw=1920) consoleErrors=0 resp401=0
+[1440x900] hOverflow=false (sw=1440,cw=1440) consoleErrors=0 resp401=0
+[768x1024] hOverflow=false (sw=768,cw=768) consoleErrors=0 resp401=0
+[390x844] hOverflow=false (sw=390,cw=390) consoleErrors=0 resp401=0
+[item-dac-sac-carousel] ok
+[category-grid] ok
+[promo-banner] ok
+[footer] ok
+[mega-menu] ok
+[search] ok
+[account] ok
+[burger] ok
+[states-page] consoleErrors=0 resp401=0
