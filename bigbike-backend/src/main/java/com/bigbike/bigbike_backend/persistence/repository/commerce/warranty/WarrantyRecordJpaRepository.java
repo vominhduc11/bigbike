@@ -18,13 +18,16 @@ public interface WarrantyRecordJpaRepository
 
     boolean existsBySerialId(UUID serialId);
 
+    // CAST(:q AS string) is required so Hibernate binds a null :q as VARCHAR,
+    // not bytea — otherwise PostgreSQL rejects LOWER(bytea). Same pattern as
+    // PageJpaRepository / ArticleJpaRepository / ProductSerialJpaRepository.
     @Query("""
         SELECT w FROM WarrantyRecordEntity w
         WHERE (:status IS NULL OR w.status = :status)
           AND (:customerId IS NULL OR w.customerId = :customerId)
           AND (:q IS NULL
-               OR LOWER(w.customerEmail) LIKE LOWER(CONCAT('%', :q, '%'))
-               OR LOWER(w.customerPhone) LIKE LOWER(CONCAT('%', :q, '%')))
+               OR LOWER(w.customerEmail) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
+               OR LOWER(w.customerPhone) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
         ORDER BY w.createdAt DESC
         """)
     Page<WarrantyRecordEntity> search(
