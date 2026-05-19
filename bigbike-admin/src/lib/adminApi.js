@@ -171,7 +171,7 @@ async function requestJson(endpoint, options = {}) {
   if (!response.ok) {
     const error = payload?.error || {}
     throw new ApiClientError(
-      error.message || `Request failed with status ${response.status}`,
+      error.message || `Yêu cầu thất bại (mã ${response.status}). Vui lòng thử lại.`,
       response.status,
       error.code || 'REQUEST_FAILED',
       error.details || [],
@@ -261,7 +261,7 @@ function normalizeError(error) {
     return error
   }
 
-  return new Error('Unexpected admin API error.')
+  return new Error('Đã xảy ra lỗi không xác định, vui lòng thử lại.')
 }
 
 function assertMutationEnabled() {

@@ -97,6 +97,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
     const confirmed = await showConfirm(
       t('products.deleteConfirm', { name: product.name }),
       t('products.deleteConfirmTitle'),
+      { confirmLabel: t('products.deleteConfirmTitle') },
     )
     if (!confirmed) return
 

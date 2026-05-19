@@ -30,24 +30,33 @@ function Breadcrumb({ activePath, navGroups, navigate, t }) {
 
   const isDetail = activePath !== match.path
   const isCreate = activePath.endsWith('/new') || activePath.includes('/new/')
+  // On the Dashboard root itself, the matched nav item already is "Tổng quan",
+  // so the first crumb would repeat it — render a single crumb instead.
+  const isDashboardRoot = !isDetail && match.path === '/admin/dashboard'
 
   return (
     <nav className="breadcrumb" aria-label="Breadcrumb">
       <ol>
-        <li>
-          <a href="/admin/dashboard" onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}>
-            {t('app.overview')}
-          </a>
-        </li>
-        <li aria-current={!isDetail ? 'page' : undefined}>
-          {isDetail ? (
-            <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
-              {match.label}
-            </a>
+        <li aria-current={isDashboardRoot ? 'page' : undefined}>
+          {isDashboardRoot ? (
+            <span>{t('app.overview')}</span>
           ) : (
-            <span>{match.label}</span>
+            <a href="/admin/dashboard" onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}>
+              {t('app.overview')}
+            </a>
           )}
         </li>
+        {!isDashboardRoot && (
+          <li aria-current={!isDetail ? 'page' : undefined}>
+            {isDetail ? (
+              <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
+                {match.label}
+              </a>
+            ) : (
+              <span>{match.label}</span>
+            )}
+          </li>
+        )}
         {isDetail && (
           <li aria-current="page">
             <span>{isCreate ? t('app.createNew') : t('app.detail')}</span>
