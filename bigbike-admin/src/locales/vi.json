@@ -364,6 +364,7 @@
     "duplicate": "Sao chép",
     "duplicateTitle": "Sao chép sản phẩm này sang sản phẩm mới",
     "filterHomepageBlock": "Khối trang chủ",
+    "advancedFilters": "Lọc nâng cao",
     "sortHomepageOrder": "Thứ tự trang chủ (nhỏ → lớn)",
     "homepageWarnCount": "Đang ở khối này: {{count}} sản phẩm.",
     "homepageWarnDetail": "Trang chủ chỉ hiển thị tối đa {{limit}} sản phẩm ở khối \"{{block}}\". Số dư sẽ bị bỏ qua âm thầm — sắp xếp theo cột \"Thứ tự trang chủ\" để chọn ra {{limit}} sản phẩm hiển thị.",

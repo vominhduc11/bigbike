@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { MoreHorizontal, SlidersHorizontal } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
@@ -20,6 +21,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 
 const INITIAL_QUERY = {
   search: '',
@@ -227,38 +232,49 @@ export function ProductListScreen({ navigate, canUpdate }) {
             const isDeleting = deletingId === product.id
             const isRestoring = restoringId === product.id
             const isTrashed = product.publishStatus === 'TRASH'
+            const isBusy = isDeleting || isRestoring
+            // "Sửa" stays inline as the safe primary action; secondary and
+            // destructive actions move into an overflow menu so the red
+            // "Xoá" button no longer sits on every row inviting misclicks.
             return (
               <div className="row-actions">
-              <Button variant="outline" onClick={() => navigate(`/admin/products/${product.id}`)}>
-                {t('common.edit')}
-              </Button>
-                {canUpdate && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDuplicate(product)}
-                    title={t('products.duplicateTitle')}
-                  >
-                    {t('products.duplicate')}
-                  </Button>
-                )}
-                {canUpdate && isTrashed && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleRestore(product)}
-                    disabled={isDeleting || isRestoring}
-                    title={t('products.restoreConfirmTitle')}
-                  >
-                    {isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                  </Button>
-                )}
-                <Button
-                  variant="danger"
-                  onClick={() => handleDelete(product)}
-                  disabled={!canUpdate || isDeleting || isRestoring || isTrashed}
-                  title={isTrashed ? t('products.trashedTitle') : t('products.deleteConfirmTitle')}
-                >
-                  {isDeleting ? t('products.deletingLabel') : t('common.delete')}
+                <Button variant="outline" onClick={() => navigate(`/admin/products/${product.id}`)}>
+                  {t('common.edit')}
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={t('common.actions')}
+                      title={t('common.actions')}
+                    >
+                      <MoreHorizontal size={16} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canUpdate && (
+                      <DropdownMenuItem onSelect={() => handleDuplicate(product)}>
+                        {t('products.duplicate')}
+                      </DropdownMenuItem>
+                    )}
+                    {canUpdate && isTrashed && (
+                      <DropdownMenuItem
+                        disabled={isBusy}
+                        onSelect={() => handleRestore(product)}
+                      >
+                        {isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      disabled={!canUpdate || isBusy || isTrashed}
+                      onSelect={() => handleDelete(product)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      {isDeleting ? t('products.deletingLabel') : t('common.delete')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )
           },
@@ -279,6 +295,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
     setSearchInput(INITIAL_QUERY.search)
     setQuery(INITIAL_QUERY)
   }
+
+  // Count how many of the collapsed "advanced" filters differ from default,
+  // so the trigger can show a badge — an active filter hidden in the popover
+  // must never be invisible to the user.
+  const activeAdvancedCount = [
+    query.brandId !== INITIAL_QUERY.brandId,
+    query.categoryId !== INITIAL_QUERY.categoryId,
+    query.homepageBlock !== INITIAL_QUERY.homepageBlock,
+    query.sort !== INITIAL_QUERY.sort,
+  ].filter(Boolean).length
 
   return (
     <section className="screen">
@@ -306,6 +332,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
 
+      {/* Primary filters stay visible; the rest collapse into a popover so
+          the bar — and the mobile scroll — stays short. */}
       <section className="filter-bar">
         <label>
           {t('common.search')}
@@ -346,75 +374,95 @@ export function ProductListScreen({ navigate, canUpdate }) {
           </SelectContent></Select>
         </label>
 
-        <label>
-          {t('products.filterBrand')}
-          <Select
-            value={query.brandId || 'ALL'}
-            onValueChange={(val) => updateQuery({ brandId: val === 'ALL' ? '' : val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            {brands.map((b) => (
-              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
+        <div className="flex flex-col justify-end">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <SlidersHorizontal size={15} />
+                {t('products.advancedFilters')}
+                {activeAdvancedCount > 0 && (
+                  <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                    {activeAdvancedCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-sm font-medium text-secondary-foreground">
+                {t('products.filterBrand')}
+                <Select
+                  value={query.brandId || 'ALL'}
+                  onValueChange={(val) => updateQuery({ brandId: val === 'ALL' ? '' : val }, { resetPage: true })}
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="ALL">{t('common.all')}</SelectItem>
+                  {brands.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent></Select>
+              </label>
 
-        <label>
-          {t('products.filterCategory')}
-          <Select
-            value={query.categoryId || 'ALL'}
-            onValueChange={(val) => updateQuery({ categoryId: val === 'ALL' ? '' : val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-secondary-foreground">
+                {t('products.filterCategory')}
+                <Select
+                  value={query.categoryId || 'ALL'}
+                  onValueChange={(val) => updateQuery({ categoryId: val === 'ALL' ? '' : val }, { resetPage: true })}
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="ALL">{t('common.all')}</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent></Select>
+              </label>
 
-        <label>
-          {t('products.filterHomepageBlock')}
-          <Select
-            value={query.homepageBlock}
-            onValueChange={(val) => updateQuery({ homepageBlock: val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="NONE">{t('products.homepageNone')}</SelectItem>
-            <SelectItem value="FEATURED_GRID">{t('products.homepageFeatured')}</SelectItem>
-            <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.homepageRecommended')}</SelectItem>
-          </SelectContent></Select>
-        </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-secondary-foreground">
+                {t('products.filterHomepageBlock')}
+                <Select
+                  value={query.homepageBlock}
+                  onValueChange={(val) => updateQuery({ homepageBlock: val }, { resetPage: true })}
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="ALL">{t('common.all')}</SelectItem>
+                  <SelectItem value="NONE">{t('products.homepageNone')}</SelectItem>
+                  <SelectItem value="FEATURED_GRID">{t('products.homepageFeatured')}</SelectItem>
+                  <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.homepageRecommended')}</SelectItem>
+                </SelectContent></Select>
+              </label>
 
-        <label>
-          {t('products.filterSort')}
-          <Select
-            value={query.sort}
-            onValueChange={(val) =>
-              updateQuery({ sort: val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
-            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
-            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
-            <SelectItem value="name:desc">{t('sort.nameZA')}</SelectItem>
-            <SelectItem value="homepageOrder:asc">{t('products.sortHomepageOrder')}</SelectItem>
-          </SelectContent></Select>
-        </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-secondary-foreground">
+                {t('products.filterSort')}
+                <Select
+                  value={query.sort}
+                  onValueChange={(val) =>
+                    updateQuery({ sort: val }, { resetPage: true })}
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
+                  <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
+                  <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
+                  <SelectItem value="name:desc">{t('sort.nameZA')}</SelectItem>
+                  <SelectItem value="homepageOrder:asc">{t('products.sortHomepageOrder')}</SelectItem>
+                </SelectContent></Select>
+              </label>
 
-        <label>
-          {t('common.rowsPerPage')}
-          <Select
-            value={String(query.pageSize)}
-            onValueChange={(val) =>
-              updateQuery(
-                { pageSize: Number(val) },
-                { resetPage: true },
+              <label className="flex flex-col gap-1 text-sm font-medium text-secondary-foreground">
+                {t('common.rowsPerPage')}
+                <Select
+                  value={String(query.pageSize)}
+                  onValueChange={(val) =>
+                    updateQuery({ pageSize: Number(val) }, { resetPage: true })}
+                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent></Select>
+              </label>
+
+              {activeAdvancedCount > 0 && (
+                <Button variant="outline" size="sm" onClick={resetFilters}>
+                  {t('common.resetFilters')}
+                </Button>
               )}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-            <SelectItem value="100">100</SelectItem>
-          </SelectContent></Select>
-        </label>
+            </PopoverContent>
+          </Popover>
+        </div>
       </section>
 
       {state.status === 'success' && HOMEPAGE_BLOCK_LIMITS[query.homepageBlock] ? (

@@ -364,6 +364,7 @@
     "duplicate": "Duplicate",
     "duplicateTitle": "Duplicate this product into a new one",
     "filterHomepageBlock": "Homepage block",
+    "advancedFilters": "More filters",
     "sortHomepageOrder": "Homepage order (low → high)",
     "homepageWarnCount": "In this block: {{count}} products.",
     "homepageWarnDetail": "The homepage shows at most {{limit}} products in the \"{{block}}\" block. The surplus is silently dropped — sort by the \"Homepage order\" column to pick the {{limit}} products to show.",
