@@ -267,6 +267,9 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 entity.getRatingCount(),
                 null,
                 null,
+                null,                       // installationGuide — detail only
+                List.of(),                  // faqs — detail only
+                List.of(),                  // relatedProducts — detail only
                 null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

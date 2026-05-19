@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
@@ -30,6 +31,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -769,6 +771,9 @@ public class AdminCatalogMutationService {
         if (create || request.isPromotionContentPresent()) {
             entity.setPromotionContent(AdminMutationValidators.trimToNull(request.getPromotionContent()));
         }
+        if (create || request.isInstallationGuidePresent()) {
+            entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
+        }
 
         if (create || request.isImagePresent()) {
             if (request.getImage() != null) {
@@ -804,11 +809,40 @@ public class AdminCatalogMutationService {
             entity.setSpecifications(new ArrayList<>());
         }
 
+        if (request.getFaqs() != null) {
+            applyFaqs(entity, request.getFaqs());
+        } else if (create) {
+            entity.setFaqs(new ArrayList<>());
+        }
+
         if (request.getVariants() != null) {
             applyVariants(entity, request.getVariants());
         } else if (create) {
             entity.setVariants(new ArrayList<>());
         }
+
+        if (request.getRelatedProductIds() != null) {
+            entity.setRelatedProducts(resolveRelatedProducts(request.getRelatedProductIds(), entity.getId()));
+        } else if (create) {
+            entity.setRelatedProducts(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Resolves curated related-product IDs to entities — de-duplicated, order-preserving,
+     * self-reference dropped, unknown IDs skipped silently (tolerant, like article products).
+     */
+    private List<ProductEntity> resolveRelatedProducts(List<String> ids, String selfId) {
+        List<ProductEntity> resolved = new ArrayList<>();
+        LinkedHashSet<String> seen = new LinkedHashSet<>();
+        for (String raw : ids) {
+            String id = AdminMutationValidators.trimToNull(raw);
+            if (id == null || id.equals(selfId) || !seen.add(id)) {
+                continue;
+            }
+            productJpaRepository.findById(id).ifPresent(resolved::add);
+        }
+        return resolved;
     }
 
     private static void applyGallery(ProductEntity entity, List<GalleryImageRequest> requests) {
@@ -875,6 +909,27 @@ public class AdminCatalogMutationService {
             spec.setValue(value);
             spec.setGroupName(AdminMutationValidators.trimToNull(req.getGroupName()));
             existing.add(spec);
+        }
+    }
+
+    private static void applyFaqs(ProductEntity entity, List<FaqRequest> requests) {
+        List<ProductFaqEntity> existing = entity.getFaqs();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setFaqs(existing);
+        }
+        existing.clear();
+        for (int i = 0; i < requests.size(); i++) {
+            FaqRequest req = requests.get(i);
+            String question = AdminMutationValidators.trimToNull(req.getQuestion());
+            String answer = AdminMutationValidators.trimToNull(req.getAnswer());
+            if (question == null || answer == null) continue;
+            ProductFaqEntity faq = new ProductFaqEntity();
+            faq.setProduct(entity);
+            faq.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            faq.setQuestion(question);
+            faq.setAnswer(answer);
+            existing.add(faq);
         }
     }
 

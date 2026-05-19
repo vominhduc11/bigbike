@@ -227,6 +227,14 @@ function normalizeSpecification(input) {
   }
 }
 
+function normalizeFaq(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const question = toTrimmedString(input.question)
+  const answer = toTrimmedString(input.answer)
+  if (!question || !answer) return undefined
+  return { question, answer }
+}
+
 export function normalizeProduct(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-product'
@@ -246,6 +254,8 @@ export function normalizeProduct(input) {
     shortDescription: toTrimmedString(source.shortDescription) || undefined,
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
+    promotionContent: toTrimmedString(source.promotionContent) || undefined,
+    installationGuide: toTrimmedString(source.installationGuide) || undefined,
     brand: normalizeBrandSummary(source.brand),
     category,
     categories: Array.isArray(source.categories)
@@ -263,6 +273,23 @@ export function normalizeProduct(input) {
       : [],
     specifications: Array.isArray(source.specifications)
       ? source.specifications.map(normalizeSpecification).filter(Boolean)
+      : [],
+    faqs: Array.isArray(source.faqs)
+      ? source.faqs.map(normalizeFaq).filter(Boolean)
+      : [],
+    // Admin-curated related products — list-view refs used to render product
+    // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
+    relatedProducts: Array.isArray(source.relatedProducts)
+      ? source.relatedProducts
+          .map((p) => (p && typeof p === 'object'
+            ? {
+                id: toTrimmedString(p.id),
+                name: toTrimmedString(p.name),
+                slug: toTrimmedString(p.slug),
+                image: normalizeImageAsset(p.image),
+              }
+            : null))
+          .filter((p) => p && p.id)
       : [],
     price: normalizePrice(source.price),
     stockState: normalizeStockState(source.stockState),

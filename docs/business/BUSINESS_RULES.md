@@ -170,9 +170,8 @@ Evidence:
 ## Redirect And Integration Rules
 
 - Internal redirect endpoints are `permitAll` in Spring Security and are expected to be locked down at infra layer in production. `CONFIRMED_FROM_CONFIG`
-- `PAY_RULE_001`: Checkout accepts payment-method codes `COD`, `BACS`, `ALEPAY`, `ZALOPAY`. `COD`/`BACS` are confirmed manually by admin. `IN_PROGRESS`
-- `PAY_RULE_002`: For `ALEPAY`/`ZALOPAY`, online-gateway integration ships in two phases. Phase 1: the order is created and treated like a manual-confirm order (admin marks `PAID`). Phase 2: checkout returns a `paymentRedirectUrl`, the customer pays at the provider, and a signed provider webhook moves the order payment to `PAID` (success) or leaves it `UNPAID`/cancels (failure). Webhook processing is idempotent, keyed on `providerReference`. `IN_PROGRESS`
-- `PAY_RULE_003`: `ALEPAY` is presented to customers as "Visa / Master Card / JCB" (Alepay is a card-processing gateway). During Phase 1 the checkout page shows a card-detail form (cardholder name, card number, expiry, CVV) for visual parity with the design. This form is **display-only**: card data (card number, CVV) is **never transmitted to or stored by the server** — the checkout payload contains no card fields, and the order is created as a manual-confirm order per `PAY_RULE_002` Phase 1. Real card processing (PCI-DSS compliant gateway) is deferred to Phase 2. `IN_PROGRESS`
+- `PAY_RULE_001`: Online checkout accepts only payment-method codes `COD` and `BACS`. Both are confirmed manually by admin — there is no automatic payment gateway. `CONFIRMED_FROM_CODE`
+- `PAY_RULE_002`: Manual-confirm reconciliation. `COD` — admin marks the order paid after cash is collected on delivery. `BACS` — admin verifies the bank transfer, then patches `paymentStatus`/`paidAmount`. No payment redirect, no provider webhook. The Alepay/ZaloPay online-gateway plan was dropped; those method codes are no longer accepted. `CONFIRMED_FROM_CODE`
 - No external shipping carrier integration was confirmed in active repo code. `NOT_FOUND_IN_REPO`
 
 Evidence:

@@ -194,10 +194,6 @@ export function paymentMethodLabel(method: string | null | undefined): string {
       return "Thanh toán khi nhận hàng (COD)";
     case "BACS":
       return "Chuyển khoản";
-    case "ALEPAY":
-      return "Visa / Master Card / JCB";
-    case "ZALOPAY":
-      return "Ngân hàng nội địa (Cổng thanh toán Zalo Pay)";
     case "":
       return "—";
     default:

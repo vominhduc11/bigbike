@@ -83,10 +83,9 @@ public class AdminOrderService {
     );
 
     // Payment methods whose orders sit ON_HOLD until an admin confirms the money
-    // arrived. ALEPAY/ZALOPAY are listed for gateway phase 1; phase 2 will mark
-    // them PAID automatically via the provider webhook instead.
+    // arrived. BACS (bank transfer) is the only manual-confirm online method.
     private static final Set<String> MANUAL_CONFIRM_PAYMENT_METHODS = Set.of(
-            "BACS", "ALEPAY", "ZALOPAY"
+            "BACS"
     );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS;
@@ -340,8 +339,8 @@ public class AdminOrderService {
             }
         }
 
-        // Manual-confirm methods (BACS, and ALEPAY/ZALOPAY in gateway phase 1) move
-        // ON_HOLD → PROCESSING only after admin confirms payment received.
+        // Manual-confirm methods (BACS) move ON_HOLD → PROCESSING only after
+        // admin confirms payment received.
         // Auto-mark payment PAID so admin does not need a separate step.
         if ("PROCESSING".equals(newStatus)
                 && "ON_HOLD".equals(currentStatus)

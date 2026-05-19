@@ -33,14 +33,14 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     /**
      * Orders eligible for unpaid auto-cancel: still ON_HOLD, never paid, placed
-     * before {@code cutoff}, using a manual-confirm payment method (BACS, plus
-     * ALEPAY/ZALOPAY in gateway phase 1). Used by {@code OrderAutoCancelScheduler}.
+     * before {@code cutoff}, using a manual-confirm payment method (BACS).
+     * Used by {@code OrderAutoCancelScheduler}.
      */
     @Query("""
             SELECT o FROM OrderEntity o
             WHERE o.status = 'ON_HOLD'
               AND o.paymentStatus = 'UNPAID'
-              AND o.paymentMethod IN ('BACS', 'ALEPAY', 'ZALOPAY')
+              AND o.paymentMethod IN ('BACS')
               AND o.placedAt IS NOT NULL
               AND o.placedAt < :cutoff
             """)

@@ -165,7 +165,7 @@ export function ProductGallery({
       <div className="flex min-w-0 flex-row gap-3 max-[769px]:flex-col">
         {/* Left: vertical thumbnail strip */}
         {count > 1 && (
-          <div className="flex w-[82px] shrink-0 flex-col items-center gap-1.5 max-[769px]:h-auto max-[769px]:w-full max-[769px]:flex-row max-[769px]:overflow-x-auto max-[769px]:overflow-y-hidden max-[769px]:[scroll-snap-type:x_mandatory] max-[769px]:[-webkit-overflow-scrolling:touch] max-[769px]:[scrollbar-width:thin]">
+          <div className="flex w-[82px] shrink-0 flex-col items-center gap-1.5 max-[769px]:order-2 max-[769px]:h-auto max-[769px]:w-full max-[769px]:flex-row max-[769px]:overflow-x-auto max-[769px]:overflow-y-hidden max-[769px]:[scroll-snap-type:x_mandatory] max-[769px]:[-webkit-overflow-scrolling:touch] max-[769px]:[scrollbar-width:thin]">
             <button
               type="button"
               className={cn(
@@ -275,6 +275,33 @@ export function ProductGallery({
                 }}
                 aria-hidden="true"
               />
+            )}
+            {/* Mobile-only image position indicators: dot strip + "n / N"
+                counter. Hidden on desktop where the thumbnail strip and the
+                hover-zoom affordance already convey position. */}
+            {count > 1 && (
+              <>
+                <span
+                  className="pointer-events-none absolute bottom-2.5 left-1/2 hidden -translate-x-1/2 items-center gap-1.5 max-[769px]:flex"
+                  aria-hidden="true"
+                >
+                  {allImages.map((image, i) => (
+                    <span
+                      key={image.id ?? image.url ?? i}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all",
+                        i === selectedIndex ? "w-4 bg-brand" : "w-1.5 bg-black/25",
+                      )}
+                    />
+                  ))}
+                </span>
+                <span
+                  className="pointer-events-none absolute bottom-2.5 right-3 hidden items-center bg-black/55 px-2 py-0.5 text-xs font-semibold text-white max-[769px]:flex"
+                  aria-hidden="true"
+                >
+                  {selectedIndex + 1} / {count}
+                </span>
+              </>
             )}
           </button>
           {zoomActive && zoomImageUrl && (

@@ -11,6 +11,7 @@
 | Checkout | web, backend, mobile | Cart checkout and quick buy with shipping/payment validation and idempotency | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, tests, clients |
 | Customer account | web, backend, mobile | Profile, addresses, orders, returns | `CONFIRMED_FROM_CODE` | customer controllers, clients |
 | Wishlist | web, backend | Customer wishlist — add/remove products, list product IDs and paginated products. Stored in `wishlist_items` (V103). No mobile client wrapper yet. | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java`, `WishlistItemEntity.java`, `V103__create_wishlist_items_table.sql` |
+| Product comparison | web | Browser-local comparison list — max 3 products, same-category only, no login. Add/remove via compare buttons on product cards and the product detail page; a floating compare bar; `/so-sanh` renders a side-by-side table of specifications, price, rating, stock and variant options. No backend storage (uses `localStorage`); reuses the existing product detail endpoint. | `CONFIRMED_FROM_CODE` | `bigbike-web/lib/compare-context.tsx`, `bigbike-web/lib/compare-storage.ts`, `bigbike-web/components/catalog/ComparisonTable.tsx`, `bigbike-web/app/so-sanh/page.tsx` |
 | Vietnam address lookup | web, backend, mobile | Province -> district -> ward lookup | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, web/mobile helpers |
 
 ## Admin Platform Modules

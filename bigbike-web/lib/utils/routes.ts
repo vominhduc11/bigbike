@@ -61,6 +61,10 @@ export function toCartPath(): string {
   return "/gio-hang/";
 }
 
+export function toComparePath(): string {
+  return "/so-sanh/";
+}
+
 export function toCheckoutPath(): string {
   return "/thanh-toan/";
 }

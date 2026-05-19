@@ -51,6 +51,21 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
             @Param("productId") String productId,
             @Param("since") Instant since);
 
+    /**
+     * Approved-review count grouped by star rating. Each row is
+     * {@code [rating, count]}; star values with no reviews are simply absent.
+     */
+    @Query("""
+            SELECT r.rating, COUNT(r)
+            FROM ReviewEntity r
+            WHERE r.productId = :productId
+              AND r.status = :status
+            GROUP BY r.rating
+            """)
+    List<Object[]> findRatingBreakdownByProductIdAndStatus(
+            @Param("productId") String productId,
+            @Param("status") String status);
+
     interface ReviewAggregate {
         Double getAvgRating();
         Long getTotalReviews();

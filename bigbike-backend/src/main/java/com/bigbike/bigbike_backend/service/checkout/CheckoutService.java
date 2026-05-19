@@ -71,7 +71,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CheckoutService {
 
-    private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("COD", "BACS", "ALEPAY", "ZALOPAY");
+    private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("COD", "BACS");
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
     private static final String ORDER_STATUS_PROCESSING = "PROCESSING";
     private static final String ORDER_STATUS_ON_HOLD = "ON_HOLD";
@@ -416,12 +416,10 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public CheckoutOptionsResponse getOptions() {
-        // ALEPAY is a card-processing gateway; it is shown to customers under the
-        // "Visa / Master Card / JCB" name. The code stays ALEPAY internally.
+        // Only COD and BACS are supported. There is no automatic payment gateway;
+        // both methods are reconciled manually by admin.
         List<PaymentMethodOptionResponse> paymentMethods = List.of(
                 new PaymentMethodOptionResponse("COD", "Thanh toán khi nhận hàng (COD)"),
-                new PaymentMethodOptionResponse("ALEPAY", "Visa / Master Card / JCB"),
-                new PaymentMethodOptionResponse("ZALOPAY", "Ngân hàng nội địa (Cổng thanh toán Zalo Pay)"),
                 new PaymentMethodOptionResponse("BACS", "Chuyển khoản")
         );
         List<ShippingMethodOptionResponse> shippingMethods = shippingMethodRepo
@@ -482,7 +480,7 @@ public class CheckoutService {
     private void validatePaymentMethod(String method) {
         if (!ALLOWED_PAYMENT_METHODS.contains(method)) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
-                    "Payment method must be COD, BACS, ALEPAY, or ZALOPAY.");
+                    "Payment method must be COD or BACS.");
         }
     }
 

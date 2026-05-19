@@ -120,7 +120,8 @@ class Phase1FCheckoutApiTest {
         mockMvc.perform(get("/api/v1/checkout/options"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paymentMethods").isArray())
-                .andExpect(jsonPath("$.data.paymentMethods.length()").value(4))
+                // Only COD and BACS — no automatic payment gateway
+                .andExpect(jsonPath("$.data.paymentMethods.length()").value(2))
                 .andExpect(jsonPath("$.data.shippingMethods").isArray())
                 // Only 1 enabled shipping method in seed (COD, flat_rate is disabled)
                 .andExpect(jsonPath("$.data.shippingMethods.length()").value(1))

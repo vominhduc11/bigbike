@@ -466,6 +466,18 @@
       "sectionSeo": "Thông tin SEO",
       "sectionContentBottom": "Nội dung SEO dài",
       "contentBottom": "Nội dung SEO dưới",
+      "sectionInstallation": "Hướng dẫn lắp đặt",
+      "installationHint": "Mô tả các bước lắp đặt, sử dụng hoặc bảng tương thích. Hiển thị trong mục \"Hướng dẫn lắp đặt\" trên trang sản phẩm.",
+      "installationPlaceholder": "Nhập các bước lắp đặt, lưu ý sử dụng, bảng tương thích...",
+      "sectionFaqs": "Câu hỏi thường gặp",
+      "sectionRelated": "Sản phẩm liên quan",
+      "relatedHint": "Tìm và thêm sản phẩm để hiển thị ở khối \"Sản phẩm liên quan\" cuối trang chi tiết. Để trống thì khối này được ẩn hoàn toàn.",
+      "relatedSearch": "Tìm sản phẩm theo tên...",
+      "relatedSearching": "Đang tìm...",
+      "relatedEmpty": "Không tìm thấy sản phẩm phù hợp.",
+      "relatedAdded": "Đã thêm",
+      "relatedRemove": "Bỏ sản phẩm {{name}}",
+      "relatedUnit": "sản phẩm",
       "errContentBottomTooLong": "Nội dung SEO dài không được vượt quá 50.000 ký tự.",
       "errSeoTitleTooLong": "SEO title không được vượt quá 255 ký tự.",
       "errSeoDescriptionTooLong": "SEO description không được vượt quá 5.000 ký tự.",
@@ -483,6 +495,15 @@
         "publishNow": "Đăng bán ngay",
         "blockerMessage": "Còn {{count}} mục bắt buộc chưa điền. Vui lòng quay lại bổ sung.",
         "warningMessage": "Còn {{count}} mục chưa hoàn chỉnh (không bắt buộc). Bạn vẫn có thể đăng."
+      },
+      "assign": {
+        "title": "Phân công",
+        "roleContent": "Content",
+        "itemsContent": "Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới",
+        "roleSeo": "SEO",
+        "itemsSeo": "Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng",
+        "roleManager": "Quản lý",
+        "itemsManager": "Giá & trạng thái · Duyệt đăng sản phẩm"
       },
       "gallery": {
         "pickImage": "Chọn ảnh",
@@ -514,6 +535,15 @@
         "valuePlaceholder": "Giá trị *",
         "removeSpec": "Xoá thông số",
         "addSpec": "Thêm thông số"
+      },
+      "faqs": {
+        "empty": "Chưa có câu hỏi. Nhấn \"+ Thêm câu hỏi\" để bắt đầu.",
+        "hint": "Các câu hỏi thường gặp hiển thị dạng đóng/mở trên trang sản phẩm và bổ sung dữ liệu cho công cụ tìm kiếm.",
+        "questionPlaceholder": "Câu hỏi *",
+        "answerPlaceholder": "Câu trả lời *",
+        "removeFaq": "Xoá câu hỏi",
+        "addFaq": "Thêm câu hỏi",
+        "unit": "câu hỏi"
       },
       "moveUp": "Lên",
       "moveDown": "Xuống",

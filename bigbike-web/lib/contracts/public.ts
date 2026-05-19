@@ -147,6 +147,11 @@ export type ProductSpecification = {
   group?: string;
 };
 
+export type ProductFaq = {
+  question: string;
+  answer: string;
+};
+
 export type CategorySummary = {
   id: string;
   slug: string;
@@ -196,6 +201,15 @@ export type Product = {
   contentBottom?: string | null;
   /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
   promotionContent?: string | null;
+  /** Rich-HTML installation guide rendered in PDP section "Hướng dẫn lắp đặt". Detail-only. */
+  installationGuide?: string | null;
+  /** Product FAQ entries rendered in PDP section "Câu hỏi thường gặp". Detail-only. */
+  faqs?: ProductFaq[];
+  /**
+   * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
+   * List-view shape. Detail-only; empty hides the section (no category fallback).
+   */
+  relatedProducts?: Product[];
   seo?: SeoMeta;
   createdAt: string;
   updatedAt: string;

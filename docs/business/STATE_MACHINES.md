@@ -942,7 +942,7 @@ Notes:
 
 | Entity / State Machine | Status | Gap |
 |---|---|---|
-| Payment Provider/Webhook lifecycle | `IN_PROGRESS` | Alepay/ZaloPay online gateway. Phase 1: order created and confirmed manually like BACS. Phase 2: payment record `PENDING` → `SUCCEEDED` (signed webhook success) or `FAILED` (webhook failure / timeout). Webhook is idempotent on `providerReference`. Order payment status: `UNPAID` → `PAID` on webhook success. |
+| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. Online checkout accepts only `COD`/`BACS`, both reconciled manually by admin. No payment redirect, no provider webhook. The Alepay/ZaloPay gateway plan was dropped. |
 | Shipping Provider/Tracking lifecycle | `NOT_FOUND_IN_REPO` | No carrier waybill/tracking/status state machine found. |
 | Fulfillment status lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `fulfillmentStatus` exposed in order detail, no transition map found. |
 | Serial lifecycle | `NEEDS_VERIFICATION` | Stock movement serial entity referenced in prior docs, but serial states/transitions not audited as confirmed. |

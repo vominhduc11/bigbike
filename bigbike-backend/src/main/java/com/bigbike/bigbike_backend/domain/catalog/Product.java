@@ -36,6 +36,16 @@ public record Product(
         String contentBottom,
         /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
         String promotionContent,
+        /** Rich-HTML installation guide rendered in PDP section "03 Hướng dẫn lắp đặt". Detail-only. */
+        String installationGuide,
+        /** Product FAQ entries rendered in PDP section "05 Câu hỏi thường gặp". Detail-only. */
+        List<ProductFaq> faqs,
+        /**
+         * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
+         * List-view shape (no nested gallery/specs/relatedProducts). Detail-only;
+         * empty in list responses. Public reads include only PUBLISHED entries.
+         */
+        List<Product> relatedProducts,
         SeoMeta seo,
         Instant createdAt,
         Instant updatedAt

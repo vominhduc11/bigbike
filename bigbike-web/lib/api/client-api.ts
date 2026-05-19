@@ -104,6 +104,17 @@ export function fetchPublicSettings(): Promise<PublicSetting[]> {
   return clientRequest("GET", "/api/v1/settings/public");
 }
 
+// ── Catalog ───────────────────────────────────────────────────────────────────
+
+/**
+ * Client-side product detail fetch — used by the comparison page, which reads
+ * the product list from localStorage and needs the full payload (incl.
+ * `specifications`, only present on the detail endpoint).
+ */
+export function fetchPublicProduct(slug: string): Promise<Product> {
+  return clientRequest("GET", `/api/v1/products/${encodeURIComponent(slug)}`);
+}
+
 export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {
   const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
   return clientRequest("POST", "/api/v1/orders/quick-buy", payload, extra);

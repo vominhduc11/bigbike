@@ -166,6 +166,33 @@
   font-family: var(--admin-font-mono);
 }
 
+/* TOC assignment reference panel — static, informational only */
+.bb-proto .pf-toc-assign {
+  padding: 10px 12px;
+  border-top: 1px solid var(--admin-color-border-subtle);
+  background: var(--admin-color-surface-muted);
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+}
+.bb-proto .pf-toc-assign-head {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700;
+  color: var(--admin-color-text-primary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.bb-proto .pf-toc-assign-row {
+  border-left: 3px solid var(--admin-color-border-subtle);
+  padding: 6px 8px;
+  font-size: 11.5px; line-height: 1.55;
+  color: var(--admin-color-text-secondary);
+  background: var(--admin-color-surface-base);
+  border-radius: 0 4px 4px 0;
+}
+.bb-proto .pf-toc-assign-row strong { color: var(--admin-color-text-primary); font-weight: 700; }
+.bb-proto .pf-toc-assign-row.content { border-left-color: var(--admin-color-brand-red); }
+.bb-proto .pf-toc-assign-row.seo { border-left-color: var(--admin-color-status-warning-text); }
+.bb-proto .pf-toc-assign-row.manager { border-left-color: var(--admin-color-text-primary); }
+
 /* save-status dot states */
 .bb-proto .pf-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--admin-color-status-success-text); flex-shrink: 0; }
 .bb-proto .pf-dot.dirty { background: var(--admin-color-status-warning-text); animation: bbproto-dotPulse 1.6s infinite; }

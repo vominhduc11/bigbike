@@ -243,6 +243,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 null,
                 null,
+                null,
+                List.of(),
+                List.of(),
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -287,6 +290,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 null,
                 null,
+                null,
+                List.of(),
+                List.of(),
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -331,6 +337,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 null,
                 null,
+                null,
+                List.of(),
+                List.of(),
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",

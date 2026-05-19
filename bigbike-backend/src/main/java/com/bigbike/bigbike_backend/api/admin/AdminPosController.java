@@ -89,7 +89,8 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.forceOutOfStock(), detail.publishStatus(),
                             detail.homepageBlock(), detail.homepageOrder(),
                             detail.rating(), detail.ratingCount(), detail.contentBottom(),
-                            detail.promotionContent(), detail.seo(),
+                            detail.promotionContent(), detail.installationGuide(),
+                            detail.faqs(), detail.relatedProducts(), detail.seo(),
                             detail.createdAt(), detail.updatedAt());
                 })
                 .filter(java.util.Objects::nonNull)

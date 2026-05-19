@@ -33,9 +33,9 @@ public class OrderAutoCancelService {
     private static final long DEFAULT_HOURS = 72L;
 
     // Manual-confirm methods whose ON_HOLD/UNPAID orders are eligible for
-    // auto-cancel. ALEPAY/ZALOPAY are included for gateway phase 1.
+    // auto-cancel. BACS is the only manual-confirm online method.
     private static final java.util.Set<String> MANUAL_CONFIRM_PAYMENT_METHODS =
-            java.util.Set.of("BACS", "ALEPAY", "ZALOPAY");
+            java.util.Set.of("BACS");
 
     private final OrderJpaRepository orderRepo;
     private final OrderNoteJpaRepository noteRepo;

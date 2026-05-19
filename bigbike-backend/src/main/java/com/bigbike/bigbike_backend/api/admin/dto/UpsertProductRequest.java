@@ -69,6 +69,10 @@ public class UpsertProductRequest {
     private String promotionContent;
     private boolean promotionContentPresent = false;
 
+    @Size(max = 50000, message = "Installation guide is too long.")
+    private String installationGuide;
+    private boolean installationGuidePresent = false;
+
     @Valid
     private SeoMetaRequest seo;
     private boolean seoPresent = false;
@@ -86,8 +90,20 @@ public class UpsertProductRequest {
     private List<SpecificationRequest> specifications;
 
     @Valid
+    @Size(max = 50, message = "FAQs may not have more than 50 items.")
+    private List<FaqRequest> faqs;
+
+    @Valid
     @Size(max = 200, message = "Variants may not have more than 200 items.")
     private List<VariantRequest> variants;
+
+    /**
+     * Admin-curated related product IDs for the PDP "Sản phẩm liên quan" section.
+     * Ordered; null = leave unchanged, empty list = clear all. Unknown IDs and the
+     * product's own ID are dropped silently by the mutation service.
+     */
+    @Size(max = 24, message = "Related products may not have more than 24 items.")
+    private List<String> relatedProductIds;
 
     public String getSku() {
         return sku;
@@ -273,6 +289,19 @@ public class UpsertProductRequest {
         return promotionContentPresent;
     }
 
+    public String getInstallationGuide() {
+        return installationGuide;
+    }
+
+    public void setInstallationGuide(String installationGuide) {
+        this.installationGuide = installationGuide;
+        this.installationGuidePresent = true;
+    }
+
+    public boolean isInstallationGuidePresent() {
+        return installationGuidePresent;
+    }
+
     public SeoMetaRequest getSeo() {
         return seo;
     }
@@ -295,7 +324,13 @@ public class UpsertProductRequest {
     public List<SpecificationRequest> getSpecifications() { return specifications; }
     public void setSpecifications(List<SpecificationRequest> specifications) { this.specifications = specifications; }
 
+    public List<FaqRequest> getFaqs() { return faqs; }
+    public void setFaqs(List<FaqRequest> faqs) { this.faqs = faqs; }
+
     public List<VariantRequest> getVariants() { return variants; }
     public void setVariants(List<VariantRequest> variants) { this.variants = variants; }
+
+    public List<String> getRelatedProductIds() { return relatedProductIds; }
+    public void setRelatedProductIds(List<String> relatedProductIds) { this.relatedProductIds = relatedProductIds; }
 }
 

@@ -33,16 +33,16 @@ Evidence:
 - `RateLimitingFilter.java`
 - `CustomerCsrfFilter.java`
 
-## Payment Gateways — Alepay & ZaloPay
+## Payment — no automatic gateway
 
-`CheckoutService.ALLOWED_PAYMENT_METHODS` accepts `COD`, `BACS`, `ALEPAY`, `ZALOPAY`.
+`CheckoutService.ALLOWED_PAYMENT_METHODS` accepts only `COD` and `BACS`.
 
-Online-gateway integration ships in two phases:
+There is **no automatic payment gateway integration**. Both methods are reconciled manually by admin:
 
-- **Phase 1 (`IN_PROGRESS`)** — `ALEPAY`/`ZALOPAY` are accepted method codes. The order is created and confirmed manually by admin, identical to `BACS`. No redirect, no webhook.
-- **Phase 2 (`PLANNED`)** — `CheckoutService` delegates to `AlepayGatewayService` / `ZaloPayGatewayService` to build a signed payment request and returns a `paymentRedirectUrl`. The customer pays at the provider and is redirected to `bigbike-web` (`/thanh-toan/return`). A server-to-server provider webhook hits `PaymentCallbackController`, which verifies the signature and moves the payment to `PAID`/failed. Webhook handling is idempotent on `providerReference`.
+- `COD` — cash collected on delivery; admin marks the order paid after the courier hands over the money.
+- `BACS` — customer bank transfer; admin verifies the transfer and patches `paymentStatus`/`paidAmount` manually.
 
-Phase-2 credentials (merchant ID, API key/secret, sandbox + production endpoint URLs) are read from environment variables — keys: `BIGBIKE_ALEPAY_*`, `BIGBIKE_ZALOPAY_*`. See `.env.example`. Phase 2 cannot be built or tested without real merchant sandbox credentials.
+No redirect, no provider webhook, no `paymentRedirectUrl`. The Alepay/ZaloPay online-gateway plan was dropped — those method codes are no longer accepted at checkout.
 
 ## Social Login (OAuth2) — Google & Facebook
 

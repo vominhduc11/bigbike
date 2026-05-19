@@ -7,6 +7,8 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
 import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
+import { CompareProvider } from "@/lib/compare-context";
+import { CompareBar } from "@/components/catalog/CompareBar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { env } from "@/env";
 
@@ -85,12 +87,15 @@ export default function RootLayout({
         <QueryProvider>
           <CartProvider>
             <WishlistProvider>
-              <SiteHeader />
-              <main className="bb-main">{children}</main>
-              <SiteFooter />
-              <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2 [[data-scroll-locked]_&]:hidden">
-                <FloatingChatLoader />
-              </div>
+              <CompareProvider>
+                <SiteHeader />
+                <main className="bb-main">{children}</main>
+                <SiteFooter />
+                <CompareBar />
+                <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2 [[data-scroll-locked]_&]:hidden">
+                  <FloatingChatLoader />
+                </div>
+              </CompareProvider>
             </WishlistProvider>
           </CartProvider>
         </QueryProvider>

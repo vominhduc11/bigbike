@@ -8,21 +8,30 @@ import { StockStatus } from "./StockStatus";
 import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
+import { ProductVideoCarousel } from "./ProductVideoCarousel";
+import { ProductDeliveryInfo } from "./ProductDeliveryInfo";
 import { useCart } from "@/lib/cart-context";
+import { CompareButton } from "./CompareButton";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
-import { formatVnd } from "@/lib/utils/format";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
   findMatchingVariant,
   normalizeValue,
 } from "@/lib/utils/variant-match";
-import type { ImageAsset, ProductPrice, ProductVariant } from "@/lib/contracts/public";
+import type { ImageAsset, ProductPrice, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 
 // Instagram has no public link-share endpoint — the icon links to the shop
 // profile (parity with the legacy WP product page social row).
 const SHOP_INSTAGRAM_URL = "https://www.instagram.com/bigbike.vn/";
+
+/** Normalize a Zalo setting value (raw phone or full URL) into an openable link. */
+function toZaloHref(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value;
+  const digits = value.replace(/[^\d]/g, "");
+  return digits ? `https://zalo.me/${digits}` : value;
+}
 
 type ProductSnapshot = {
   pricing: PricingData;
@@ -36,11 +45,17 @@ export type PurchaseSectionClientProps = {
   productName: string;
   brandName: string;
   categoryName: string;
+  /** Primary category id — drives the "same category" rule of the comparison feature. */
+  categoryId: string;
   shortDescription: string | null | undefined;
   initialRating: number | null;
   initialRatingCount: number | null;
   mainImage: ImageAsset | null | undefined;
   gallery: ImageAsset[];
+  /** All product videos — shown as a carousel below the gallery. */
+  videos?: VideoAsset[];
+  /** Shop Zalo link (raw phone or URL) from system settings — drives the consult button. */
+  zaloUrl?: string;
   fallbackPrice: ProductPrice | null | undefined;
   fallbackStockState: string;
   fallbackVariants: ProductVariant[];
@@ -56,11 +71,16 @@ export function PurchaseSectionClient({
   productId,
   productSlug,
   productName,
+  brandName,
+  categoryId,
+  categoryName,
   shortDescription,
   initialRating,
   initialRatingCount,
   mainImage,
   gallery,
+  videos,
+  zaloUrl,
   fallbackPrice,
   fallbackStockState,
   fallbackVariants,
@@ -201,19 +221,41 @@ export function PurchaseSectionClient({
 
   return (
     <>
-      {/* Left: Gallery — driven only by Color. Falls back to the product-level
-          gallery when no color is picked. */}
-      <ProductGallery
-        mainImage={mainImage}
-        gallery={gallery}
-        altFallback={productName}
-        variantImage={previewVariant?.image ?? null}
-        variantGallery={previewVariant?.gallery ?? undefined}
-        variantKey={previewVariant?.id ?? null}
-      />
+      {/* Left column: Gallery (driven only by Color) + an optional featured
+          video below it. Falls back to the product-level gallery when no
+          color is picked. */}
+      <div className="flex min-w-0 flex-col gap-3">
+        <ProductGallery
+          mainImage={mainImage}
+          gallery={gallery}
+          altFallback={productName}
+          variantImage={previewVariant?.image ?? null}
+          variantGallery={previewVariant?.gallery ?? undefined}
+          variantKey={previewVariant?.id ?? null}
+        />
+        {videos && videos.length > 0 && (
+          <ProductVideoCarousel videos={videos} productName={productName} />
+        )}
+      </div>
 
       {/* Right: Info + Purchase controls */}
       <div className="bb-pdp-info">
+        {/* Brand + category tag row above the title (mirrors the mockup's
+            brand chip row). */}
+        {(brandName || categoryName) && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {brandName && (
+              <span className="inline-flex items-center bg-muted px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {brandName}
+              </span>
+            )}
+            {categoryName && (
+              <span className="inline-flex items-center border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {categoryName}
+              </span>
+            )}
+          </div>
+        )}
         <h1 className="bb-pdp-info-title">{productName}</h1>
 
         {/* Price + rating (left) and stock badge (right) — one row. */}
@@ -307,6 +349,35 @@ export function PurchaseSectionClient({
           <p className="bb-error-text bb-pdp-error">{addError}</p>
         )}
 
+        {/* Zalo consult — secondary CTA for shoppers who want advice before buying. */}
+        {zaloUrl && (
+          <a
+            href={toZaloHref(zaloUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex items-center justify-center gap-2 border-2 border-border px-4 py-3 font-heading text-sm font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+            </svg>
+            Tư vấn qua Zalo ngay
+          </a>
+        )}
+
+        {/* Add this product to the comparison list (browser-local, max 3, same category). */}
+        <CompareButton
+          variant="full"
+          product={{
+            id: productId,
+            slug: productSlug,
+            name: productName,
+            imageUrl: mainImage?.url ?? null,
+            price: stickyPrice > 0 ? stickyPrice : null,
+            categoryId,
+            categoryName,
+          }}
+        />
+
         {/* Social share — Facebook / Twitter / Instagram / Skype (parity with
             the legacy WP single-product social row). */}
         <div className="bb-pdp-share">
@@ -358,25 +429,22 @@ export function PurchaseSectionClient({
             </svg>
           </a>
         </div>
+
+        {/* Delivery / warranty / return trust band. */}
+        <ProductDeliveryInfo />
       </div>
 
       {/* Mobile sticky purchase bar — keeps the primary CTA reachable while the
           customer scrolls through a long PDP (specs, description, reviews).
           Hidden on desktop where the in-flow CTA stays visible beside the gallery.
           Right padding clears the floating chat button. */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-[var(--bb-z-overlay)] flex items-center gap-3 border-t border-border bg-white px-4 py-2.5 pr-20 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.1)]">
-        <div className="flex min-w-0 flex-col">
-          <span className="text-sm uppercase tracking-[0.12em] text-muted-foreground leading-none">Giá</span>
-          <b className="font-display text-brand text-lg leading-tight">
-            {stickyPrice > 0 ? formatVnd(stickyPrice) : "Liên hệ"}
-          </b>
-        </div>
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-[var(--bb-z-overlay)] flex items-center gap-2 border-t border-border bg-white px-4 py-2.5 pr-20 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.1)]">
         <Button
           type="button"
           variant="primary"
           onClick={handleAddToCart}
           disabled={addLoading || !isAvailable}
-          className="flex-1"
+          className="flex-[2]"
         >
           {addLoading
             ? "Đang thêm..."
@@ -386,6 +454,20 @@ export function PurchaseSectionClient({
                 ? "Thêm vào giỏ"
                 : "Tạm hết hàng"}
         </Button>
+        {zaloUrl && (
+          <a
+            href={toZaloHref(zaloUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-1 items-center justify-center gap-1.5 border-2 border-border px-3 py-3 font-heading text-xs font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
+            aria-label="Tư vấn qua Zalo"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+            </svg>
+            Zalo
+          </a>
+        )}
       </div>
     </>
   );

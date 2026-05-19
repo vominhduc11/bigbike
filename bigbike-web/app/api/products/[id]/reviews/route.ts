@@ -28,9 +28,12 @@ type BackendErrorPayload =
     }
   | null;
 
+const EMPTY_BREAKDOWN: Record<string, number> = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
+
 const EMPTY = {
   avgRating: 0,
   totalReviews: 0,
+  ratingBreakdown: EMPTY_BREAKDOWN,
   reviews: [],
   pagination: {
     page: 1,
@@ -89,6 +92,7 @@ export async function GET(req: Request, { params }: Params) {
       data?: {
         avgRating?: number;
         totalReviews?: number;
+        ratingBreakdown?: Record<string, number>;
         reviews?: unknown[];
         pagination?: Partial<Pagination>;
       };
@@ -99,6 +103,7 @@ export async function GET(req: Request, { params }: Params) {
       {
         avgRating: data?.avgRating ?? 0,
         totalReviews: data?.totalReviews ?? 0,
+        ratingBreakdown: data?.ratingBreakdown ?? EMPTY_BREAKDOWN,
         reviews: data?.reviews ?? [],
         pagination: {
           page: data?.pagination?.page ?? Number(page ?? 1),

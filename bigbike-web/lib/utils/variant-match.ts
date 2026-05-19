@@ -22,6 +22,8 @@ const COLOR_ATTRIBUTE_KEYS = new Set([
   "colour",
   "mau",
   "mau sac",
+  "mausac",
+  "maucolor",
   "pa color",
   "pa mau",
   "pa mau sac",

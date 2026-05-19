@@ -4,14 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   AlertCircle, Check, ChevronDown as PfChevronDown, ChevronUp as PfChevronUp,
-  EyeOff, FileEdit, Globe, Image as PfImage, Images, Info, Layers, ListChecks,
-  Loader2, Lock, LayoutList, Maximize2, Minimize2, Save, Search as PfSearch, Tag, Video, X as PfX,
+  EyeOff, FileEdit, Globe, HelpCircle, Image as PfImage, Images, Info, Layers, Link2, ListChecks,
+  Loader2, Lock, LayoutList, Maximize2, Minimize2, Save, Search as PfSearch, Tag, Users, Video, Wrench, X as PfX,
 } from 'lucide-react'
 import {
   createProduct,
   fetchBrands,
   fetchCategoryTree,
   fetchProductDetail,
+  fetchProducts,
   mapValidationErrors,
   updateProduct,
 } from '../lib/adminApi'
@@ -176,6 +177,7 @@ function buildEmptyForm() {
     description: '',
     contentBottom: '',
     promotionContent: '',
+    installationGuide: '',
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -196,7 +198,10 @@ function buildEmptyForm() {
     gallery: [],
     videos: [],
     specifications: [],
+    faqs: [],
     variants: [],
+    relatedProductIds: [],
+    relatedProductChips: [],
   }
 }
 
@@ -222,6 +227,7 @@ function buildFormFromItem(item) {
     description: item.description || '',
     contentBottom: item.contentBottom || '',
     promotionContent: item.promotionContent || '',
+    installationGuide: item.installationGuide || '',
     brandId: item.brand?.id || '',
     categoryId: item.category?.id || '',
     retailPrice:
@@ -261,7 +267,21 @@ function buildFormFromItem(item) {
       value: s.value || '',
       groupName: s.group || '',
     })),
+    faqs: (item.faqs || []).map((f) => ({
+      _key: crypto.randomUUID(),
+      question: f.question || '',
+      answer: f.answer || '',
+    })),
     variants,
+    relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
+    relatedProductChips: (item.relatedProducts || [])
+      .filter((p) => p && p.id)
+      .map((p) => ({
+        id: p.id,
+        name: p.name || p.id,
+        slug: p.slug || '',
+        imageUrl: p.image?.url || '',
+      })),
   }
 }
 
@@ -292,6 +312,7 @@ function toPayload(form) {
     description: form.description.trim() || undefined,
     contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
     promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
+    installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -343,6 +364,17 @@ function toPayload(form) {
       groupName: s.groupName.trim() || undefined,
       sortOrder: i,
     }))
+
+  payload.faqs = form.faqs
+    .filter((f) => f.question.trim() && f.answer.trim())
+    .map((f, i) => ({
+      question: f.question.trim(),
+      answer: f.answer.trim(),
+      sortOrder: i,
+    }))
+
+  // Always send relatedProductIds — empty array explicitly clears the section.
+  payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
 
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
   const emittedImageColors = new Set()
@@ -751,6 +783,83 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
       })}
       <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
         + {t('products.detail.specs.addSpec')}
+      </Button>
+    </div>
+  )
+}
+
+function FaqEditor({ items, onChange, disabled, validationErrors }) {
+  const { t } = useTranslation()
+  function updateItem(index, field, value) {
+    const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
+    onChange(next)
+  }
+  function addItem() {
+    onChange([...items, { _key: crypto.randomUUID(), question: '', answer: '' }])
+  }
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index))
+  }
+  function moveItem(index, dir) {
+    const next = [...items]
+    const target = index + dir
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+  }
+
+  return (
+    <div className="list-editor">
+      {items.length === 0 && (
+        <p className="list-editor-empty">{t('products.detail.faqs.empty')}</p>
+      )}
+      {items.map((item, index) => {
+        const errQuestion = validationErrors?.[`faqs.${index}.question`]
+        const errAnswer = validationErrors?.[`faqs.${index}.answer`]
+        return (
+          <div key={item._key} className="list-editor-row list-editor-row--stack">
+            <div className="list-editor-reorder">
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
+            </div>
+            <div className="flex flex-1 flex-col gap-2">
+              <div>
+                <Input className={errQuestion ? 'border-danger' : undefined}
+                  placeholder={t('products.detail.faqs.questionPlaceholder')}
+                  value={item.question}
+                  onChange={(e) => updateItem(index, 'question', e.target.value)}
+                  disabled={disabled}
+                  maxLength={500}
+                />
+                {errQuestion && <small className="field-error">{errQuestion}</small>}
+              </div>
+              <div>
+                <Textarea className={errAnswer ? 'border-danger' : undefined}
+                  placeholder={t('products.detail.faqs.answerPlaceholder')}
+                  value={item.answer}
+                  onChange={(e) => updateItem(index, 'answer', e.target.value)}
+                  disabled={disabled}
+                  rows={3}
+                  maxLength={20000}
+                />
+                {errAnswer && <small className="field-error">{errAnswer}</small>}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => removeItem(index)}
+              disabled={disabled}
+              aria-label={t('products.detail.faqs.removeFaq')}
+            >
+              ✕
+            </Button>
+          </div>
+        )
+      })}
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+        + {t('products.detail.faqs.addFaq')}
       </Button>
     </div>
   )
@@ -1394,9 +1503,10 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
 
 // ── Prototype form layout ───────────────────────────────────────────────────────
 
-// The 9 sections that map to real backend fields (the prototype's trust-badge /
-// CTA / FAQ / related-product sections were dropped — BigBike's backend has no
-// fields for them, so rendering them would silently lose user input).
+// The 12 sections that map to real backend fields. The prototype's trust-badge /
+// CTA sections stay dropped — BigBike's backend has no fields for them — but
+// installation guide and FAQ have backing columns (V133) and related products
+// have a curated join table (V135).
 // `required` sections must be complete before the product can be published.
 const SECTION_DEFS = [
   { id: 'section-basic',          key: 'basic',         icon: 'Info',       labelKey: 'products.detail.sectionBasic',         required: true  },
@@ -1407,14 +1517,17 @@ const SECTION_DEFS = [
   { id: 'section-gallery',        key: 'gallery',       icon: 'Images',     labelKey: 'products.detail.gallerySectionTitle',  required: false },
   { id: 'section-videos',         key: 'videos',        icon: 'Video',      labelKey: 'products.detail.videoSectionTitle',    required: false },
   { id: 'section-specs',          key: 'specs',         icon: 'ListChecks', labelKey: 'products.detail.specsSectionTitle',     required: false },
+  { id: 'section-installation',   key: 'installation',  icon: 'Wrench',     labelKey: 'products.detail.sectionInstallation',   required: false },
+  { id: 'section-faqs',           key: 'faqs',          icon: 'HelpCircle', labelKey: 'products.detail.sectionFaqs',           required: false },
   { id: 'section-variants',       key: 'variants',      icon: 'Layers',     labelKey: 'products.detail.variantSectionTitle',   required: false },
+  { id: 'section-related',        key: 'related',       icon: 'Link2',      labelKey: 'products.detail.sectionRelated',        required: false },
 ]
 
 // Lucide icons referenced by SECTION_DEFS — resolved by name in the TOC and
 // section headers (icon components imported at the top of the file).
 const SECTION_ICONS = {
   Info, Tag, Image: PfImage, Search: PfSearch, LayoutList,
-  Images, Video, ListChecks, Layers,
+  Images, Video, ListChecks, Layers, Wrench, HelpCircle, Link2,
 }
 
 // One collapsible form section in the prototype's `pf-section` style.
@@ -1568,6 +1681,33 @@ function ProductFormToc({
           <kbd>⌘</kbd>+<kbd>↵</kbd> {t('products.detail.saveShortcutHint', { defaultValue: 'lưu nhanh' })}
         </div>
       </div>
+
+      {/* Phân công — static reference panel. Informational only: it does not
+          restrict editing, every user can still change any section. */}
+      <div className="pf-toc-assign">
+        <div className="pf-toc-assign-head">
+          <Users size={13} />
+          <span>{t('products.detail.assign.title', { defaultValue: 'Phân công' })}</span>
+        </div>
+        <div className="pf-toc-assign-row content">
+          <strong>{t('products.detail.assign.roleContent', { defaultValue: 'Content' })}: </strong>
+          {t('products.detail.assign.itemsContent', {
+            defaultValue: 'Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới',
+          })}
+        </div>
+        <div className="pf-toc-assign-row seo">
+          <strong>{t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })}: </strong>
+          {t('products.detail.assign.itemsSeo', {
+            defaultValue: 'Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng',
+          })}
+        </div>
+        <div className="pf-toc-assign-row manager">
+          <strong>{t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })}: </strong>
+          {t('products.detail.assign.itemsManager', {
+            defaultValue: 'Giá & trạng thái · Duyệt đăng sản phẩm',
+          })}
+        </div>
+      </div>
     </aside>
   )
 }
@@ -1621,6 +1761,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   })
   const categories = categoriesResult?.items ?? []
   const brands = brandsResult?.items ?? []
+
+  // Product picker for the "Sản phẩm liên quan" section — debounced search,
+  // self excluded so a product can't be added to its own related list.
+  const [relatedSearch, setRelatedSearch] = useState('')
+  const [relatedSearchDebounced, setRelatedSearchDebounced] = useState('')
+  useEffect(() => {
+    const handle = setTimeout(() => setRelatedSearchDebounced(relatedSearch.trim()), 300)
+    return () => clearTimeout(handle)
+  }, [relatedSearch])
+
+  const { data: relatedSearchResult, isFetching: isSearchingRelated } = useQuery({
+    queryKey: ['product-related-search', relatedSearchDebounced],
+    queryFn: () => fetchProducts({ q: relatedSearchDebounced, pageSize: 8 }),
+    enabled: relatedSearchDebounced.length >= 1,
+    staleTime: 60 * 1000,
+  })
+  const relatedSearchItems = (relatedSearchResult?.items ?? []).filter((p) => p.id !== productId)
 
   useEffect(() => {
     if (!fetchResult) return
@@ -1710,6 +1867,38 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       delete next[field]
       return next
     })
+  }
+
+  function addRelatedProduct(product) {
+    if (!product?.id) return
+    setForm((previous) => {
+      if (previous.relatedProductIds.includes(product.id)) return previous
+      return {
+        ...previous,
+        relatedProductIds: [...previous.relatedProductIds, product.id],
+        relatedProductChips: [
+          ...previous.relatedProductChips,
+          {
+            id: product.id,
+            name: product.name || product.id,
+            slug: product.slug || '',
+            imageUrl: product.image?.url || '',
+          },
+        ],
+      }
+    })
+    setIsDirty(true)
+    setRelatedSearch('')
+    setRelatedSearchDebounced('')
+  }
+
+  function removeRelatedProduct(removeId) {
+    setForm((previous) => ({
+      ...previous,
+      relatedProductIds: previous.relatedProductIds.filter((id) => id !== removeId),
+      relatedProductChips: previous.relatedProductChips.filter((chip) => chip.id !== removeId),
+    }))
+    setIsDirty(true)
   }
 
   function handleNameChange(value) {
@@ -1886,7 +2075,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     gallery: form.gallery.length > 0,
     videos: form.videos.length > 0,
     specs: form.specifications.length > 0,
+    installation: (form.installationGuide || '').length > 0,
+    faqs: form.faqs.length > 0,
     variants: form.variants.length > 0,
+    related: form.relatedProductIds.length > 0,
   }), [form])
 
   if (state.status === 'loading') {
@@ -1934,7 +2126,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     gallery:       se(['gallery']),
     videos:        se(['videos']),
     specs:         se(['specifications']),
+    installation:  se(['installationGuide']),
+    faqs:          se(['faqs']),
     variants:      se(['variants']),
+    related:       se(['relatedProductIds']),
   }
 
   // SEO checklist — same heuristics as the prototype, computed from real fields.
@@ -2561,9 +2756,53 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             </div>
           </PfSection>
 
-          {/* ── Section 9: Biến thể ── */}
+          {/* ── Section 9: Hướng dẫn lắp đặt ── */}
           <PfSection
             def={SECTION_DEFS[8]}
+            t={t}
+            open={openMap['section-installation']}
+            done={completion.installation}
+            hasError={sectionErrors.installation}
+            onToggle={() => toggleSection('section-installation')}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <p className="pf-field-msg pf-field-hint">{t('products.detail.installationHint')}</p>
+              <RichTextEditor
+                value={form.installationGuide}
+                onChange={(html) => updateField('installationGuide', html)}
+                placeholder={t('products.detail.installationPlaceholder')}
+                disabled={isReadOnly}
+                hasError={Boolean(validationErrors.installationGuide)}
+                enableImagePicker
+              />
+              {validationErrors.installationGuide && <span className="pf-field-msg pf-field-msg-error">{validationErrors.installationGuide}</span>}
+            </div>
+          </PfSection>
+
+          {/* ── Section 10: Câu hỏi thường gặp ── */}
+          <PfSection
+            def={SECTION_DEFS[9]}
+            t={t}
+            open={openMap['section-faqs']}
+            done={completion.faqs}
+            hasError={sectionErrors.faqs}
+            onToggle={() => toggleSection('section-faqs')}
+            badge={<span className="pf-section-count">{form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <p className="pf-field-msg pf-field-hint">{t('products.detail.faqs.hint')}</p>
+              <FaqEditor
+                items={form.faqs}
+                onChange={(next) => updateField('faqs', next)}
+                disabled={isReadOnly}
+                validationErrors={validationErrors}
+              />
+            </div>
+          </PfSection>
+
+          {/* ── Section 11: Biến thể ── */}
+          <PfSection
+            def={SECTION_DEFS[10]}
             t={t}
             open={openMap['section-variants']}
             done={completion.variants}
@@ -2579,6 +2818,91 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 validationErrors={validationErrors}
                 onOpenMatrixWizard={() => setShowMatrixWizard(true)}
               />
+            </div>
+          </PfSection>
+
+          {/* ── Section 12: Sản phẩm liên quan ── */}
+          <PfSection
+            def={SECTION_DEFS[11]}
+            t={t}
+            open={openMap['section-related']}
+            done={completion.related}
+            hasError={sectionErrors.related}
+            onToggle={() => toggleSection('section-related')}
+            badge={<span className="pf-section-count">{form.relatedProductIds.length} {t('products.detail.relatedUnit', { defaultValue: 'sản phẩm' })}</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <p className="pf-field-msg pf-field-hint">{t('products.detail.relatedHint')}</p>
+
+              {form.relatedProductChips.length > 0 && (
+                <div className="chip-row" style={{ marginTop: 8 }}>
+                  {form.relatedProductChips.map((chip) => (
+                    <span key={chip.id} className="chip">
+                      {chip.imageUrl && (
+                        <img src={chip.imageUrl} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3 }} />
+                      )}
+                      <strong>{chip.name}</strong>
+                      {!isReadOnly && (
+                        <span
+                          className="x"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => removeRelatedProduct(chip.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
+                          aria-label={t('products.detail.relatedRemove', { name: chip.name })}
+                        >×</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {!isReadOnly && (
+                <div style={{ position: 'relative', marginTop: 8 }}>
+                  <Input
+                    value={relatedSearch}
+                    onChange={(e) => setRelatedSearch(e.target.value)}
+                    placeholder={t('products.detail.relatedSearch')}
+                  />
+                  {relatedSearchDebounced.length >= 1 && (
+                    <div
+                      className="row-menu"
+                      style={{ left: 0, right: 0, minWidth: 0, maxHeight: 256, overflowY: 'auto' }}
+                    >
+                      {isSearchingRelated ? (
+                        <p className="text-sm muted" style={{ padding: '8px 10px' }}>
+                          {t('products.detail.relatedSearching')}
+                        </p>
+                      ) : relatedSearchItems.length === 0 ? (
+                        <p className="text-sm muted" style={{ padding: '8px 10px' }}>
+                          {t('products.detail.relatedEmpty')}
+                        </p>
+                      ) : (
+                        relatedSearchItems.map((product) => {
+                          const already = form.relatedProductIds.includes(product.id)
+                          return (
+                            <button
+                              key={product.id}
+                              type="button"
+                              disabled={already}
+                              onClick={() => addRelatedProduct(product)}
+                              style={already ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                            >
+                              {product.image?.url && (
+                                <img src={product.image.url} alt="" style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4 }} />
+                              )}
+                              <span style={{ flex: 1 }}>{product.name}</span>
+                              {already && (
+                                <span className="text-xs muted">{t('products.detail.relatedAdded')}</span>
+                              )}
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </PfSection>
 

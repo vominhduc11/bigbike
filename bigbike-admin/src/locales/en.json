@@ -419,6 +419,18 @@
       "sectionMedia": "Media and SEO",
       "sectionSeo": "SEO metadata",
       "sectionContentBottom": "Long-form SEO content",
+      "sectionInstallation": "Installation guide",
+      "installationHint": "Describe installation steps, usage notes, or a compatibility table. Shown in the \"Installation guide\" section on the product page.",
+      "installationPlaceholder": "Enter installation steps, usage notes, compatibility table...",
+      "sectionFaqs": "Frequently asked questions",
+      "sectionRelated": "Related products",
+      "relatedHint": "Search and add products to display in the \"Related products\" block at the bottom of the detail page. Leave empty to hide the block entirely.",
+      "relatedSearch": "Search products by name...",
+      "relatedSearching": "Searching...",
+      "relatedEmpty": "No matching products found.",
+      "relatedAdded": "Added",
+      "relatedRemove": "Remove product {{name}}",
+      "relatedUnit": "products",
       "slug": "Slug *",
       "name": "Name *",
       "sku": "Model code / Group code",
@@ -484,6 +496,15 @@
         "blockerMessage": "{{count}} required item(s) are still missing. Please complete them first.",
         "warningMessage": "{{count}} optional item(s) are incomplete. You can still publish."
       },
+      "assign": {
+        "title": "Assignment",
+        "roleContent": "Content",
+        "itemsContent": "Basic info · Main image · Image gallery · Video · Specifications · Installation guide · FAQ · Variants · Related products · SEO bottom content",
+        "roleSeo": "SEO",
+        "itemsSeo": "SEO meta (Title, Meta, OG image) · URL slug · Review checklist before publishing",
+        "roleManager": "Manager",
+        "itemsManager": "Price & status · Approve and publish"
+      },
       "gallery": {
         "pickImage": "Pick image",
         "removeImage": "Remove image",
@@ -514,6 +535,15 @@
         "valuePlaceholder": "Spec value *",
         "removeSpec": "Remove specification",
         "addSpec": "Add spec"
+      },
+      "faqs": {
+        "empty": "No questions yet. Click \"+ Add question\" to start.",
+        "hint": "FAQs appear as an accordion on the product page and enrich search-engine data.",
+        "questionPlaceholder": "Question *",
+        "answerPlaceholder": "Answer *",
+        "removeFaq": "Remove question",
+        "addFaq": "Add question",
+        "unit": "questions"
       },
       "moveUp": "Move up",
       "moveDown": "Move down",

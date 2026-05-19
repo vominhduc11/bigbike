@@ -29,7 +29,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 
 | Topic | Current finding | Status | Evidence |
 |---|---|---|---|
-| External payment gateway | In scope. Checkout supports `COD`, `BACS` (manual bank transfer), `ALEPAY`, and `ZALOPAY`. `ALEPAY`/`ZALOPAY` are accepted payment-method codes; full online-gateway integration (redirect + webhook callback) is being delivered in two phases — phase 1 accepts the codes and treats them as manual-confirm orders, phase 2 adds the live gateway redirect + signed webhook reconciliation. | `IN_PROGRESS` | `CheckoutService.java`, `PaymentCallbackController.java` (phase 2), `INTEGRATION_GUIDE.md` |
+| External payment gateway | Out of scope. Online checkout supports only `COD` and `BACS` (manual bank transfer), both reconciled manually by admin. No automatic gateway, no redirect, no webhook. The Alepay/ZaloPay plan was dropped. | `NOT_FOUND_IN_REPO` | `CheckoutService.java`, `INTEGRATION_GUIDE.md` |
 | External shipping carrier | No GHN, GHTK, or Viettel Post integration was confirmed in active source. `OrderEntity.fulfillmentStatus` field exists without carrier-driven lifecycle. | `NOT_FOUND_IN_REPO` | repo search, `INTEGRATION_GUIDE` verification |
 | Stock receipt workflow | Receipt tables were dropped in V120 (business decision, 2026-05-16) — schema-only, never built. Receiving runs through `stock_movements`. | `REMOVED` | `V120__drop_stock_receipt_tables.sql` |
 | Invoice / e-invoice (hóa đơn điện tử) | No invoice entity / service / e-invoice provider integration. | `NOT_FOUND_IN_REPO` | Required by Nghị định 123/2020 for legal entities; NEEDS_BUSINESS_CONFIRMATION on provider |

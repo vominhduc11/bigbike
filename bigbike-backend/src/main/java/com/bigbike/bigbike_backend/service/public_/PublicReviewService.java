@@ -9,8 +9,10 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,6 +54,8 @@ public class PublicReviewService {
         double avgRating = roundAverage(aggregate.getAvgRating());
         long totalReviews = aggregate.getTotalReviews() != null ? aggregate.getTotalReviews() : 0L;
 
+        Map<Integer, Long> ratingBreakdown = buildRatingBreakdown(productId);
+
         List<PublicProductReviewsResponse.ReviewItem> reviews = approvedPage.getContent().stream()
                 .map(this::toPublicReviewItem)
                 .toList();
@@ -64,7 +68,7 @@ public class PublicReviewService {
                 approvedPage.hasNext(),
                 approvedPage.hasPrevious());
 
-        return new PublicProductReviewsResponse(avgRating, totalReviews, reviews, pagination);
+        return new PublicProductReviewsResponse(avgRating, totalReviews, ratingBreakdown, reviews, pagination);
     }
 
     @Transactional
@@ -115,6 +119,28 @@ public class PublicReviewService {
             return "";
         }
         return WHITESPACE.matcher(trimmed.toLowerCase(Locale.ROOT)).replaceAll(" ");
+    }
+
+    /**
+     * Approved-review counts keyed by star value 5→1. Every key is present
+     * (zero when no review at that level), so the storefront can render a
+     * complete histogram without filling gaps client-side.
+     */
+    private Map<Integer, Long> buildRatingBreakdown(String productId) {
+        Map<Integer, Long> breakdown = new LinkedHashMap<>();
+        for (int star = 5; star >= 1; star--) {
+            breakdown.put(star, 0L);
+        }
+        for (Object[] row : reviewRepo.findRatingBreakdownByProductIdAndStatus(productId, APPROVED_STATUS)) {
+            if (row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+            int star = ((Number) row[0]).intValue();
+            if (star >= 1 && star <= 5) {
+                breakdown.put(star, ((Number) row[1]).longValue());
+            }
+        }
+        return breakdown;
     }
 
     private double roundAverage(Double avgRating) {

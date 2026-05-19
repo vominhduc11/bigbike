@@ -21,6 +21,8 @@ type Review = {
 type ReviewsData = {
   avgRating: number;
   totalReviews: number;
+  /** Approved-review count keyed by star value ("5".."1"). */
+  ratingBreakdown: Record<string, number>;
   reviews: Review[];
   pagination: {
     page: number;
@@ -37,6 +39,41 @@ type ReviewsSectionProps = {
 };
 
 const PAGE_SIZE = 10;
+
+/** Per-star count bars shown next to the average score. */
+function RatingHistogram({
+  breakdown,
+  total,
+}: {
+  breakdown: Record<string, number>;
+  total: number;
+}) {
+  return (
+    <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
+      {[5, 4, 3, 2, 1].map((star) => {
+        const count = breakdown[String(star)] ?? 0;
+        const pct = total > 0 ? (count / total) * 100 : 0;
+        return (
+          <div key={star} className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex w-8 shrink-0 items-center gap-0.5">
+              {star}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-brand" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </span>
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <span
+                className="block h-full rounded-full bg-brand"
+                style={{ width: `${pct}%` }}
+              />
+            </span>
+            <span className="w-8 shrink-0 text-right tabular-nums">{count}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   const rounded = Math.round(rating);
@@ -274,6 +311,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   // which can be a seeded/default value with no actual reviews behind it.
   const total = firstPage?.totalReviews ?? 0;
   const rating = total > 0 ? (firstPage?.avgRating ?? 0) : 0;
+  const ratingBreakdown = firstPage?.ratingBreakdown ?? {};
 
   const resetToFirstPage = () => {
     queryClient.setQueryData<InfiniteData<ReviewsData>>(queryKey, (current) => {
@@ -295,19 +333,21 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   };
 
   return (
-    <section className="bb-pdp-reviews">
-      <div className="bb-pdp-reviews-header">
-        <h2>Đánh giá sản phẩm</h2>
-        {rating > 0 && (
-          <div className="bb-pdp-rating-summary">
+    <div>
+      {rating > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-10 gap-y-4">
+          <div className="flex items-center gap-3">
             <span className="bb-pdp-rating-score">{rating.toFixed(1)}</span>
-            <StarRow rating={rating} size={20} />
-            {total > 0 && (
-              <span className="bb-pdp-rating-count">({total} đánh giá)</span>
-            )}
+            <div className="flex flex-col gap-1">
+              <StarRow rating={rating} size={20} />
+              {total > 0 && (
+                <span className="bb-pdp-rating-count">({total} đánh giá)</span>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+          {total > 0 && <RatingHistogram breakdown={ratingBreakdown} total={total} />}
+        </div>
+      )}
 
       <WriteReviewForm
         productId={productId}
@@ -351,6 +391,6 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }

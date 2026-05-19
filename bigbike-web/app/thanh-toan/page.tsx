@@ -72,10 +72,6 @@ export default function CheckoutPage() {
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
   const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [gtmFired, setGtmFired] = useState(false);
-  // Card-detail form for the "Visa / Master Card / JCB" (ALEPAY) option. Display-only
-  // for visual parity with the design — see BUSINESS_RULES PAY_RULE_003. This data is
-  // NEVER added to the checkout payload or transmitted to the server.
-  const [cardForm, setCardForm] = useState({ holder: "", number: "", expiry: "", cvv: "" });
   // Order-summary collapse — toggleable on mobile only; desktop is always expanded.
   const [summaryOpen, setSummaryOpen] = useState(true);
   const idempotencyKey = useRef<string>(crypto.randomUUID());
@@ -504,66 +500,6 @@ export default function CheckoutPage() {
                               <RadioGroupItem value={method.code} id={`pm-${method.code}`} />
                               <b className="flex-1 text-sm text-foreground font-semibold">{method.title}</b>
                             </label>
-
-                            {checked && code === "ALEPAY" && (
-                              <div className="my-2 ml-7 grid grid-cols-1 sm:grid-cols-2 gap-[14px]">
-                                {/* Display-only card form (PAY_RULE_003) — card data is
-                                    held in local state and never sent to the server. */}
-                                <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                  <label className={labelCls}>Tên in trên thẻ {reqMark}</label>
-                                  <Input
-                                    placeholder="Vui lòng nhập tên chủ thẻ..."
-                                    value={cardForm.holder}
-                                    onChange={(e) => setCardForm((f) => ({ ...f, holder: e.target.value }))}
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                  <label className={labelCls}>Số thẻ {reqMark}</label>
-                                  <Input
-                                    inputMode="numeric"
-                                    placeholder="Vui lòng nhập số thẻ..."
-                                    value={cardForm.number}
-                                    onChange={(e) =>
-                                      setCardForm((f) => ({
-                                        ...f,
-                                        number: e.target.value
-                                          .replace(/[^\d]/g, "")
-                                          .slice(0, 19)
-                                          .replace(/(\d{4})(?=\d)/g, "$1 "),
-                                      }))
-                                    }
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                  <label className={labelCls}>Ngày hết hạn {reqMark}</label>
-                                  <Input
-                                    inputMode="numeric"
-                                    placeholder="MM/YY"
-                                    maxLength={5}
-                                    value={cardForm.expiry}
-                                    onChange={(e) => {
-                                      const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 4);
-                                      setCardForm((f) => ({
-                                        ...f,
-                                        expiry: digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits,
-                                      }));
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                  <label className={labelCls}>CVV {reqMark}</label>
-                                  <Input
-                                    inputMode="numeric"
-                                    placeholder="•••"
-                                    maxLength={4}
-                                    value={cardForm.cvv}
-                                    onChange={(e) =>
-                                      setCardForm((f) => ({ ...f, cvv: e.target.value.replace(/[^\d]/g, "").slice(0, 4) }))
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            )}
 
                             {checked && code === "BACS" && (
                               <div className="my-2 ml-7 bg-[var(--bb-color-gray-50)] border border-border p-4">

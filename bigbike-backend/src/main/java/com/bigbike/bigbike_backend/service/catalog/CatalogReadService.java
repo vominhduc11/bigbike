@@ -163,6 +163,9 @@ public class CatalogReadService {
                 p.ratingCount(),
                 null,                       // contentBottom — detail only
                 null,                       // promotionContent — detail only
+                null,                       // installationGuide — detail only
+                List.of(),                  // faqs — detail only
+                List.of(),                  // relatedProducts — detail only
                 null,                       // seo — detail only
                 p.createdAt(),
                 p.updatedAt()

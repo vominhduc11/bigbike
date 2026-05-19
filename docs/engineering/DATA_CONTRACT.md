@@ -200,22 +200,74 @@ Evidence:
 
 ### Product rich-text content fields
 
-Three independent rich-HTML columns on the `products` table feed distinct
-surfaces of the product detail page (PDP). All are admin-editable, optional
+Four independent rich-HTML columns on the `products` table feed distinct
+section bands of the product detail page (PDP). All are admin-editable, optional
 (nullable), stored as `TEXT`, and limited to 50 000 characters by the upsert
 DTO (`@Size(max = 50000)`).
 
 | Field | DB column | PDP surface |
 |---|---|---|
-| `description` | `description` | "Mô tả sản phẩm" tab |
-| `promotionContent` | `promotion_content` (added `V124__add_product_promotion_content.sql`) | "Khuyến mãi" tab — the first PDP tab; tab is hidden when the field is empty |
+| `description` | `description` | "Mô tả sản phẩm" section band |
+| `promotionContent` | `promotion_content` (added `V124__add_product_promotion_content.sql`) | "Ưu đãi & khuyến mãi" section band — hidden when empty |
+| `installationGuide` | `installation_guide` (added `V133__add_product_installation_guide_and_faq.sql`) | "Hướng dẫn lắp đặt" section band — hidden when empty |
 | `contentBottom` | `content_bottom` (added `V43`) | Long-form SEO copy band below the related-products grid |
 
-`promotionContent` is surfaced on both the public product detail response
-and the admin product read response (it is a component of the domain
-`Product` record). Empty/blank values are normalized to `NULL` on write.
+`promotionContent` and `installationGuide` are surfaced on both the public
+product detail response and the admin product read response (they are
+components of the domain `Product` record). Empty/blank values are normalized
+to `NULL` on write.
 
 Status: `CONFIRMED_FROM_CODE`
+
+### Product FAQ entries — `product_faqs` (V133)
+
+Per-product list of question/answer pairs rendered in the PDP "Câu hỏi
+thường gặp" section band and emitted as `FAQPage` JSON-LD. Child table of
+`products`, mirroring the `product_specifications` pattern.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `BIGINT` identity | NO | Primary key. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
+| `question` | `VARCHAR(500)` | NO | FAQ question. |
+| `answer` | `TEXT` | NO | FAQ answer (plain text; max 20 000 chars at the DTO). |
+
+The upsert DTO accepts at most 50 FAQ entries (`@Size(max = 50)`). Rows with a
+blank question or answer are dropped on write. Exposed on the public and admin
+product detail responses as the `faqs` array on the domain `Product` record;
+omitted from product *list* responses (detail-only, like `specifications`).
+
+Status: `CONFIRMED_FROM_CODE` — `ProductFaqEntity`, `ProductFaq` domain record,
+`FaqRequest`, `AdminCatalogMutationService.applyFaqs`, migration `V133`.
+
+### Product related products — `product_related_product_map` (V135)
+
+Admin-curated list of catalog products shown in the PDP "Sản phẩm liên quan"
+section band. Self-referential, ordered many-to-many on `products`. Schema
+mirrors `article_product_map` (V130).
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. The product whose PDP shows the section. |
+| `related_product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. A curated related product. |
+| `sort_order` | `INTEGER` | NO | Display order; managed by JPA `@OrderColumn`. |
+
+Primary key `(product_id, related_product_id)`. The upsert DTO accepts at most
+24 related-product IDs (`@Size(max = 24)`); `AdminCatalogMutationService`
+de-duplicates, preserves order, drops the product's own ID and unknown IDs.
+
+Exposed as the `relatedProducts` array on the domain `Product` record — present
+on the public `GET /api/v1/products/{slug}` and admin product detail responses;
+empty in product *list* responses (detail-only, like `specifications`/`faqs`).
+Each entry uses the **list-view** product shape (no nested gallery/specs/
+relatedProducts). The public read path includes **only `PUBLISHED`** related
+products; admin reads keep every linked product so the editor can show drafts.
+There is **no category fallback** — an empty list hides the PDP section entirely.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.relatedProducts`,
+`UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveRelatedProducts`,
+`JpaCatalogReadRepository.toRelatedProducts`, migration `V135`.
 
 ### Product homepage placement (V111+)
 

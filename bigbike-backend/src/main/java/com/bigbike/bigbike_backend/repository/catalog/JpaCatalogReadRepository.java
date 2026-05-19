@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
@@ -18,6 +19,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -64,6 +66,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
+    private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
@@ -137,6 +140,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getRatingCount(),
                 null,
                 null,
+                null,                       // installationGuide — detail only
+                List.of(),                  // faqs — detail only
+                List.of(),                  // relatedProducts — detail only
                 null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
@@ -353,6 +359,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getRatingCount(),
                 entity.getContentBottom(),
                 entity.getPromotionContent(),
+                entity.getInstallationGuide(),
+                toFaqs(entity),
+                toRelatedProducts(entity, publicView),
                 toSeoMeta(
                         entity.getSeoTitle(),
                         entity.getSeoDescription(),
@@ -494,6 +503,31 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return entity.getSpecifications().stream()
                 .sorted(SPEC_ORDER)
                 .map(item -> new ProductSpecification(item.getName(), item.getValue(), item.getGroupName()))
+                .toList();
+    }
+
+    private List<ProductFaq> toFaqs(ProductEntity entity) {
+        if (entity.getFaqs() == null) {
+            return List.of();
+        }
+        return entity.getFaqs().stream()
+                .sorted(FAQ_ORDER)
+                .map(item -> new ProductFaq(item.getQuestion(), item.getAnswer()))
+                .toList();
+    }
+
+    /**
+     * Admin-curated related products as list-view items (no nested gallery/specs/
+     * relatedProducts). Public reads drop non-PUBLISHED and trashed entries so the
+     * PDP never links to hidden products; admin reads keep everything for the editor.
+     */
+    private List<Product> toRelatedProducts(ProductEntity entity, boolean publicView) {
+        if (entity.getRelatedProducts() == null || entity.getRelatedProducts().isEmpty()) {
+            return List.of();
+        }
+        return entity.getRelatedProducts().stream()
+                .filter(rp -> !publicView || rp.getPublishStatus() == PublishStatus.PUBLISHED)
+                .map(this::toDomainListItem)
                 .toList();
     }
 

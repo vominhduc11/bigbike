@@ -158,7 +158,7 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController`, `AdminContentMutationServ
 `GET /api/v1/checkout/options` — no auth required; accessible to guests and authenticated customers.
 
 Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
-- `paymentMethods`: `[{ code, title }]` — `COD` ("Thanh toán khi nhận hàng (COD)"), `ALEPAY` ("Visa / Master Card / JCB"), `ZALOPAY` ("Ngân hàng nội địa (Cổng thanh toán Zalo Pay)"), `BACS` ("Chuyển khoản"). **Codes are uppercase strings; `title` is the customer-facing label and may differ from the internal code (e.g. `ALEPAY` is shown as "Visa / Master Card / JCB" because Alepay is a card-processing gateway).**
+- `paymentMethods`: `[{ code, title }]` — `COD` ("Thanh toán khi nhận hàng (COD)"), `BACS` ("Chuyển khoản"). **Codes are uppercase strings; `title` is the customer-facing label.** These are the only two accepted payment methods — there is no automatic payment gateway.
 - `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount, zoneRegionCode }]`
   - `cost` — base shipping fee (VND, never null; zero-cost methods have `cost: 0`)
   - `freeShippingThreshold` — if `orderSubtotal >= freeShippingThreshold`, effective shipping is 0; `null` means no threshold
@@ -225,8 +225,8 @@ renders; the heavy detail-only payload is served exclusively by
 | `id`, `sku`, `slug`, `name`, `shortDescription` | ✅ present | ✅ present |
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
-| `description`, `contentBottom`, `promotionContent` | ❌ `null` | ✅ present |
-| `gallery`, `videos`, `specifications` | ❌ `[]` | ✅ present |
+| `description`, `contentBottom`, `promotionContent`, `installationGuide` | ❌ `null` | ✅ present |
+| `gallery`, `videos`, `specifications`, `faqs` | ❌ `[]` | ✅ present |
 | `seo` | ❌ `null` | ✅ present |
 | `variants` | ✅ present as **stubs** | ✅ full |
 | `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable/trackSerials` | ✅ present | ✅ present |
@@ -266,15 +266,35 @@ A product belongs to exactly one category, written via `categoryId`. The legacy 
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
-### Product rich-text content fields — `promotionContent`
+### Product rich-text content fields — `promotionContent`, `installationGuide`
 
-`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `promotionContent` (added `V124`): an optional rich-HTML string, max 50 000 characters, mutated with the presence-flag pattern (sending no key leaves the field untouched on PATCH; sending `null`/blank clears it). It joins the existing `description` and `contentBottom` rich-text fields.
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `promotionContent` (added `V124`) and `installationGuide` (added `V133`): optional rich-HTML strings, max 50 000 characters each, mutated with the presence-flag pattern (sending no key leaves the field untouched on PATCH; sending `null`/blank clears it). They join the existing `description` and `contentBottom` rich-text fields.
 
-`promotionContent` is returned by the public product detail endpoint `GET /api/v1/products/{slug}` and the admin product read response. It is **not** included in product *list* responses (list mappers omit all long-form text). The web PDP renders it as the first "Khuyến mãi" tab; the tab is hidden when the field is empty.
+Both are returned by the public product detail endpoint `GET /api/v1/products/{slug}` and the admin product read response. They are **not** included in product *list* responses (list mappers omit all long-form text). The web PDP renders each as its own numbered section band ("Ưu đãi & khuyến mãi", "Hướng dẫn lắp đặt"); a band is hidden when its field is empty.
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `UpsertProductRequest.java` (`promotionContent` + `promotionContentPresent`), `AdminCatalogMutationService.applyProductPatch`, `Product.java` domain record, `JpaCatalogReadRepository` (detail mapper maps `promotion_content`; list mapper passes `null`), `V124__add_product_promotion_content.sql`.
+Evidence: `UpsertProductRequest.java` (`promotionContent`/`installationGuide` + presence flags), `AdminCatalogMutationService.applyProductPatch`, `Product.java` domain record, `JpaCatalogReadRepository` (detail mapper maps both columns; list mapper passes `null`), `V124__add_product_promotion_content.sql`, `V133__add_product_installation_guide_and_faq.sql`.
+
+### Product FAQ entries — `faqs`
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `faqs` (added `V133`): an optional array of `{ question, answer, sortOrder }` objects, max 50 entries (`@Size(max = 50)`). `question` ≤ 500 chars, `answer` ≤ 20 000 chars. Sending `faqs` replaces the whole list; rows with a blank question or answer are dropped. Mirrors the `specifications` array mutation pattern (full-replace, not presence-flag).
+
+`faqs` is returned on the public product detail endpoint `GET /api/v1/products/{slug}` and the admin product read response as `faqs: [{ question, answer }]`. It is **not** included in product *list* responses. The web PDP renders it as the "Câu hỏi thường gặp" accordion section band and emits matching `FAQPage` JSON-LD.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `FaqRequest.java`, `UpsertProductRequest.java` (`faqs`), `AdminCatalogMutationService.applyFaqs`, `ProductFaq` domain record, `ProductFaqEntity`, `JpaCatalogReadRepository.toFaqs` (detail mapper; list mapper passes `[]`), `V133__add_product_installation_guide_and_faq.sql`.
+
+### Product related products — `relatedProducts` / `relatedProductIds`
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `relatedProductIds` (added `V135`): an optional ordered array of product ID strings, max 24 entries (`@Size(max = 24)`). Sending `relatedProductIds` replaces the whole list; **an empty array clears it**, `null`/omitted leaves it untouched. The mutation service de-duplicates, preserves order, and silently drops unknown IDs plus the product's own ID (a product cannot relate to itself).
+
+`relatedProducts` is returned on the public product detail endpoint `GET /api/v1/products/{slug}` and the admin product read response as an ordered array of **list-view product objects** (`id`, `slug`, `name`, `image`, `price`, `rating`, … — no nested `gallery`/`specifications`/`relatedProducts`). It is **not** included in product *list* responses. The public read includes **only `PUBLISHED`** related products; admin reads return every linked product so the editor renders draft chips too. The web PDP renders them in the "Sản phẩm liên quan" carousel; when the array is empty the section is hidden — there is **no category fallback**.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutationService.resolveRelatedProducts`, `Product.java` domain record (`relatedProducts`), `ProductEntity.relatedProducts`, `JpaCatalogReadRepository.toRelatedProducts` (detail mapper; list mapper passes `[]`), `V135__add_product_related_product_map.sql`.
 
 ## POS Contract
 

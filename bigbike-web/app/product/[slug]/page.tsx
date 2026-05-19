@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
-import { ProductTabs } from "@/components/catalog/ProductTabs";
+import { ProductAnchorNav } from "@/components/catalog/ProductAnchorNav";
+import { ProductSection } from "@/components/catalog/ProductSection";
+import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
+import { ProductFaqSection } from "@/components/catalog/ProductFaqSection";
+import { ProductContactCta } from "@/components/catalog/ProductContactCta";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
-import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
+import { ProductCard } from "@/components/catalog/ProductCard";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getProductBySlug, listProducts } from "@/lib/api/public-api";
+import {
+  getProductBySlug,
+  listProducts,
+  listPublicSettings,
+} from "@/lib/api/public-api";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
@@ -40,6 +49,28 @@ export async function generateStaticParams() {
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+/** True when rich-HTML carries real content (text or media), not just empty tags. */
+function richHasContent(html: string): boolean {
+  if (!html) return false;
+  if (/<(img|iframe|video)[^>]*>/i.test(html)) return true;
+  return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim().length > 0;
+}
+
+/** First non-empty setting value across the given candidate keys. */
+function getSetting(
+  settings: { settingKey: string; settingValue: string }[],
+  keys: string[],
+  fallback = "",
+): string {
+  for (const key of keys) {
+    const found = settings.find(
+      (s) => s.settingKey === key && s.settingValue.trim().length > 0,
+    );
+    if (found) return found.settingValue.trim();
+  }
+  return fallback;
+}
 
 export async function generateMetadata({
   params,
@@ -103,12 +134,21 @@ export default async function ProductDetailPage({
   const gallery = safeArray(product.gallery);
   const videos = safeArray(product.videos);
   const specs = safeArray(product.specifications);
+  const faqs = safeArray(product.faqs);
 
   // "Chưa phân loại" is an admin placeholder for un-classified imports.
   // Treat it as no category in all public-facing surfaces (breadcrumb, info
   // line, related products, JSON-LD, recently-viewed storage).
   const effectiveCategory =
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
+
+  // ── Rich-text content (sanitized once, reused for presence checks + render) ──
+
+  const sanitizedDescription = product.description ? sanitizeRichHtml(product.description) : "";
+  const sanitizedPromotion = product.promotionContent ? sanitizeRichHtml(product.promotionContent) : "";
+  const sanitizedInstallation = product.installationGuide
+    ? sanitizeRichHtml(product.installationGuide)
+    : "";
 
   // ── JSON-LD ────────────────────────────────────────────────────────────────
 
@@ -120,27 +160,101 @@ export default async function ProductDetailPage({
   const productJsonLd = serializeJsonLd(buildProductJsonLd(productForJsonLd));
   const breadcrumbJsonLd = serializeJsonLd(buildBreadcrumbJsonLd(productForJsonLd));
   const faqJsonLd =
-    specs.length > 0
+    faqs.length > 0
       ? serializeJsonLd(
           buildFaqPageJsonLd(
-            specs.map((s) => ({ question: s.name, answer: s.value })),
+            faqs.map((f) => ({ question: f.question, answer: f.answer })),
           ),
         )
       : null;
 
-  // ── Related products (ISR-cached) ─────────────────────────────────────────
+  // ── Related products + shop settings (ISR-cached) ─────────────────────────
 
-  const relatedResult = effectiveCategory?.slug
-    ? await listProducts({
-        page: 1,
-        size: 8,
-        sort: "createdAt:desc",
-        category: effectiveCategory.slug,
-      })
-    : null;
-  const relatedProducts = (relatedResult?.data ?? [])
+  // Related products are curated per-product in the admin and returned on the
+  // detail payload. No category fallback — an empty list hides the section.
+  const settingsResult = await listPublicSettings();
+  const relatedProducts = safeArray(product.relatedProducts)
     .filter((p) => p.id !== product.id)
     .slice(0, 8);
+
+  const settings = settingsResult.data ?? [];
+  const siteName = getSetting(settings, ["site_name", "site_title", "site.name"], "BigBike");
+  const shopAddress = getSetting(settings, ["contact_address", "address", "site_address"]);
+  const shopHotline = getSetting(settings, ["hotline", "contact_phone", "support_phone"]);
+  const shopZalo = getSetting(settings, ["zalo_url"]);
+
+  // ── Scrollable content sections ───────────────────────────────────────────
+  // Each section that has content becomes an anchor-nav entry; reviews are
+  // always shown (the section owns its own empty state).
+
+  const sections: {
+    id: string;
+    navLabel: string;
+    title: string;
+    content: ReactNode;
+  }[] = [];
+
+  if (richHasContent(sanitizedDescription)) {
+    sections.push({
+      id: "mo-ta",
+      navLabel: "Mô tả",
+      title: "Mô tả sản phẩm",
+      content: (
+        <article
+          className="bb-richtext"
+          dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+        />
+      ),
+    });
+  }
+  if (richHasContent(sanitizedPromotion)) {
+    sections.push({
+      id: "uu-dai",
+      navLabel: "Ưu đãi",
+      title: "Ưu đãi & khuyến mãi",
+      content: (
+        <article
+          className="bb-richtext"
+          dangerouslySetInnerHTML={{ __html: sanitizedPromotion }}
+        />
+      ),
+    });
+  }
+  if (specs.length > 0) {
+    sections.push({
+      id: "thong-so",
+      navLabel: "Thông số",
+      title: "Thông số kỹ thuật",
+      content: <ProductSpecTable specifications={specs} />,
+    });
+  }
+  if (richHasContent(sanitizedInstallation)) {
+    sections.push({
+      id: "lap-dat",
+      navLabel: "Lắp đặt",
+      title: "Hướng dẫn lắp đặt",
+      content: (
+        <article
+          className="bb-richtext"
+          dangerouslySetInnerHTML={{ __html: sanitizedInstallation }}
+        />
+      ),
+    });
+  }
+  sections.push({
+    id: "danh-gia",
+    navLabel: "Đánh giá",
+    title: "Đánh giá khách hàng",
+    content: <ReviewsSection productId={product.id} />,
+  });
+  if (faqs.length > 0) {
+    sections.push({
+      id: "faq",
+      navLabel: "FAQ",
+      title: "Câu hỏi thường gặp",
+      content: <ProductFaqSection faqs={faqs} />,
+    });
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -179,14 +293,9 @@ export default async function ProductDetailPage({
       />
 
       {/*
-       * Two-column PDP layout.
-       * PurchaseSectionClient is a single client component that owns:
-       *   - ProductGallery (left) — shows variant image on selection
-       *   - Static info header (brand, name, short description)
-       *   - Dynamic purchase controls (pricing, stock, variants, cart, quick buy)
-       *
-       * Static content is passed as props from the ISR-rendered server component.
-       * Dynamic content is fetched fresh via /api/products/[id]/* routes.
+       * Hero — two-column buy-box.
+       * PurchaseSectionClient owns the gallery (+ optional featured video) on
+       * the left and the dynamic purchase controls on the right.
        */}
       <div className="bb-pdp">
         <PurchaseSectionClient
@@ -195,11 +304,14 @@ export default async function ProductDetailPage({
           productName={productName}
           brandName={safeText(product.brand?.name, "BigBike")}
           categoryName={safeText(effectiveCategory?.name, "")}
+          categoryId={product.category?.id ?? ""}
           shortDescription={product.shortDescription}
           initialRating={product.rating ?? null}
           initialRatingCount={product.ratingCount ?? null}
           mainImage={product.image}
           gallery={gallery}
+          videos={videos}
+          zaloUrl={shopZalo || undefined}
           fallbackPrice={product.price}
           fallbackStockState={product.stockState}
           fallbackVariants={product.variants ?? []}
@@ -207,21 +319,45 @@ export default async function ProductDetailPage({
         />
       </div>
 
-      {/* Below-fold: tabs, reviews, related products */}
-      <div className="bb-pdp-below">
-        {/* Tabbed static content — ISR-cached */}
-        <ProductTabs
-          specifications={specs}
-          description={product.description}
-          promotionContent={product.promotionContent}
-          videos={videos}
-          productName={productName}
+      {/*
+       * Sticky in-page navigation + the numbered bands it links to.
+       * The nav and the bands share THIS wrapper on purpose: `position: sticky`
+       * only holds while the sticky element's parent is in view, so the nav
+       * stays pinned for the full scroll through the sections and releases
+       * once the last band ends.
+       */}
+      <div className="mt-12">
+        <ProductAnchorNav
+          sections={sections.map((s) => ({ id: s.id, label: s.navLabel }))}
         />
 
-        {/* Reviews — always fresh (CSR) */}
-        <ReviewsSection productId={product.id} />
+        <div className="mx-auto mt-10 flex max-w-[1120px] flex-col px-6">
+          {sections.map((section, index) => (
+            <ProductSection
+              key={section.id}
+              id={section.id}
+              index={index + 1}
+              title={section.title}
+            >
+              {section.content}
+            </ProductSection>
+          ))}
+        </div>
+      </div>
 
-        {/* Related products — ISR-cached */}
+      {/* Local-SEO shop contact band */}
+      <div className="mx-auto mt-12 max-w-[1120px] px-6">
+        <ProductContactCta
+          productName={productName}
+          siteName={siteName}
+          address={shopAddress || undefined}
+          hotline={shopHotline || undefined}
+          zaloUrl={shopZalo || undefined}
+        />
+      </div>
+
+      {/* Below-fold: related products + recently viewed + long-form SEO copy */}
+      <div className="bb-pdp-below">
         {relatedProducts.length > 0 && (
           <section className="bb-pdp-related">
             <div className="bb-pdp-related-header">
@@ -232,7 +368,11 @@ export default async function ProductDetailPage({
                 </h2>
               </div>
             </div>
-            <FeaturedProductsCarousel products={relatedProducts} />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {relatedProducts.map((p) => (
+                <ProductCard key={p.id} product={p} variant="compact" />
+              ))}
+            </div>
           </section>
         )}
 

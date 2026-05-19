@@ -16,9 +16,12 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -144,6 +147,9 @@ public class ProductEntity {
     @Column(name = "promotion_content", columnDefinition = "text")
     private String promotionContent;
 
+    @Column(name = "installation_guide", columnDefinition = "text")
+    private String installationGuide;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -179,7 +185,24 @@ public class ProductEntity {
     private List<ProductSpecificationEntity> specifications;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductFaqEntity> faqs;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantEntity> variants;
+
+    /**
+     * Admin-curated related products shown on the PDP "Sản phẩm liên quan" section.
+     * Self-referential, ordered. No category fallback — empty list hides the section.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_related_product_map",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "related_product_id")
+    )
+    @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
+    private List<ProductEntity> relatedProducts = new ArrayList<>();
 
     public void setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock) {
         this.homepageBlock = homepageBlock == null

@@ -2265,9 +2265,6 @@ html[data-header-hidden] .mega-panel {
 /* -- Recently Viewed --------------------------------------"? */
 
 /* -- Reviews section --------------------------------------"? */
-.bb-pdp-reviews { margin-top: 40px; padding-top: 36px; border-top: 1px solid var(--bb-border-subtle); }
-.bb-pdp-reviews-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-.bb-pdp-reviews-header h2 { font-family: var(--bb-font-display); font-size: clamp(1.1rem, 2vw, 1.5rem); text-transform: uppercase; letter-spacing: 0.02em; margin: 0; }
 .bb-pdp-rating-summary { display: flex; align-items: center; gap: 8px; }
 .bb-pdp-rating-score { font-family: var(--bb-font-display); font-size: 28px; font-weight: 700; color: var(--bb-brand-primary); line-height: 1; }
 .bb-pdp-rating-count { font-size: 14px; color: var(--bb-text-muted); }
@@ -2460,12 +2457,6 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-pdp-buy-row { display: flex; align-items: stretch; gap: 14px; margin: 4px 0; flex-wrap: wrap; min-width: 0; }
 .bb-pdp-buy-row > button { flex: 1; min-width: 200px; }
 .bb-pdp-error { margin-top: 12px; margin-bottom: 0; }
-
-/* -- PDP Tabs — skewed black/white tabs (legacy WP parity) -- */
-.bb-pdp-tabs-list { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 0; padding-left: 8px; }
-.bb-pdp-tab { transform: skewX(-14deg); border: 1px solid var(--bb-border-default); background: #fff; padding: 12px 26px; margin: 0 0 4px; border-radius: 0; }
-.bb-pdp-tab .bb-pdp-tab-label { display: inline-block; transform: skewX(14deg); }
-.bb-pdp-tab[data-state="active"] { background: #000; border-color: #000; color: #fff; }
 
 /* ============================================================
  * Cart page - 1:1 with WP page-cart.php + woocommerce/cart/cart.php

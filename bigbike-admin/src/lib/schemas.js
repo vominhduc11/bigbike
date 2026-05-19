@@ -74,12 +74,18 @@ export function createProductSchema(t, isCreate = false) {
         value: z.string().max(2000, 'Giá trị thông số tối đa 2000 ký tự.'),
         groupName: z.string().max(100, 'Tên nhóm tối đa 100 ký tự.'),
       })).optional(),
+      faqs: z.array(z.object({
+        _key: z.string().optional(),
+        question: z.string().max(500, 'Câu hỏi tối đa 500 ký tự.'),
+        answer: z.string().max(20000, 'Câu trả lời tối đa 20000 ký tự.'),
+      })).optional(),
       variants: z.array(z.object({
         name: z.string(),
         imageUrl: z.string().optional(),
         options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
         gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       })).optional(),
+      relatedProductIds: z.array(z.string()).optional(),
     })
     .superRefine((data, ctx) => {
       const retail = toInt(data.retailPrice)
@@ -167,6 +173,15 @@ export function createProductSchema(t, isCreate = false) {
         if (!name && !value && !group) return
         if (!name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập tên thông số.', path: ['specifications', i, 'name'] })
         if (!value) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập giá trị thông số.', path: ['specifications', i, 'value'] })
+      })
+
+      // FAQs: rows that have any content must have both question and answer.
+      data.faqs?.forEach((f, i) => {
+        const question = (f.question || '').trim()
+        const answer = (f.answer || '').trim()
+        if (!question && !answer) return
+        if (!question) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập câu hỏi.', path: ['faqs', i, 'question'] })
+        if (!answer) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vui lòng nhập câu trả lời.', path: ['faqs', i, 'answer'] })
       })
 
       // Validate gallery URLs

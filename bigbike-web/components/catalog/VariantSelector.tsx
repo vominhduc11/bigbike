@@ -181,7 +181,12 @@ export function VariantSelector({
                         key={`${group.name}-${value}`}
                         type="button"
                         className={cn(
-                          "group inline-flex cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-bold uppercase tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground",
+                          // Fixed-width cell: the label below varies in length
+                          // (e.g. "ĐỎ" vs "ĐEN ĐỎ TRẮNG"); without a fixed width
+                          // the button hugs its label and the swatches end up
+                          // unevenly spaced. A uniform cell keeps every swatch
+                          // on the same horizontal rhythm.
+                          "group inline-flex w-20 cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-bold uppercase tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground",
                           isActive && "text-brand",
                           !isAvailable && !isActive && "cursor-not-allowed opacity-50",
                         )}
@@ -207,7 +212,7 @@ export function VariantSelector({
                         />
                         <span
                           className={cn(
-                            "max-w-20 overflow-hidden text-ellipsis whitespace-nowrap text-center",
+                            "w-full overflow-hidden text-ellipsis whitespace-nowrap text-center",
                             !isAvailable && !isActive && "line-through",
                           )}
                         >
