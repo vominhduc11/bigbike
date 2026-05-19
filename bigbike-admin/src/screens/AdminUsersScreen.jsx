@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff } from 'lucide-react'
-import { AdminTable } from '../components/AdminTable'
+import { Eye, EyeOff, MoreHorizontal, Pencil, Search, UserPlus } from 'lucide-react'
 import { Modal } from '../components/layout'
-import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createAdminUser, fetchAdminUsers, fetchRoles, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
@@ -11,14 +9,13 @@ import { formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
 
-// Static metadata for built-in roles (label i18n key + badge color)
+// Static metadata for built-in roles (label i18n key).
 const ROLE_META = {
   SUPER_ADMIN:  { labelKey: 'adminUsers.roleSuperAdmin'  },
   ADMIN:        { labelKey: 'adminUsers.roleAdmin'        },
@@ -35,41 +32,36 @@ const STATUS_META = {
   SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
 }
 
-const ROLE_BADGE_VARIANTS = {
-  SUPER_ADMIN: 'danger',
-  ADMIN: 'info',
-  SHOP_MANAGER: 'info',
-  EDITOR: 'secondary',
-  AUTHOR: 'info',
-  CONTRIBUTOR: 'muted',
-  SEO_EDITOR: 'success',
+// Role → prototype badge palette.
+const ROLE_BADGE = {
+  SUPER_ADMIN: 'badge-danger',
+  ADMIN: 'badge-info',
+  SHOP_MANAGER: 'badge-info',
+  EDITOR: 'badge-neutral',
+  AUTHOR: 'badge-info',
+  CONTRIBUTOR: 'badge-neutral',
+  SEO_EDITOR: 'badge-success',
 }
-
-const STATUS_BADGE_VARIANTS = {
-  ACTIVE: 'success',
-  DISABLED: 'danger',
-  SUSPENDED: 'warning',
+const STATUS_BADGE = {
+  ACTIVE: 'badge-success',
+  DISABLED: 'badge-danger',
+  SUSPENDED: 'badge-warn',
 }
+const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
 function RoleBadge({ role, t }) {
   const meta = ROLE_META[role]
   const label = meta ? t(meta.labelKey) : role
-  const variant = ROLE_BADGE_VARIANTS[role] ?? 'muted'
-  return (
-    <Badge variant={variant}>
-      {label || '—'}
-    </Badge>
-  )
+  return <span className={`badge ${ROLE_BADGE[role] || 'badge-neutral'}`}>{label || '—'}</span>
 }
 
-function StatusBadge({ status, t }) {
+function UserStatusBadge({ status, t }) {
   const meta = STATUS_META[status]
   const label = meta ? t(meta.labelKey) : status
-  const variant = STATUS_BADGE_VARIANTS[status] ?? 'muted'
   return (
-    <Badge variant={variant}>
-      {label || '—'}
-    </Badge>
+    <span className={`badge ${STATUS_BADGE[status] || 'badge-neutral'}`}>
+      <span className="dot" />{label || '—'}
+    </span>
   )
 }
 
@@ -85,7 +77,7 @@ function PasswordField({ value, onChange, placeholder, label, hint }) {
           onChange={onChange}
           placeholder={placeholder}
           autoComplete="new-password"
-         />
+        />
         <Button
           type="button"
           variant="outline"
@@ -102,13 +94,8 @@ function PasswordField({ value, onChange, placeholder, label, hint }) {
   )
 }
 
-
 export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const { t } = useTranslation()
-
-  // Self-edit guard: an admin must not be able to change their own role or
-  // disable/suspend their own account, which would lock themselves out.
-  // Editing own display name / password stays allowed.
 
   // ── List state ──────────────────────────────────────────────────────────
   const [query, setQuery] = useState(INITIAL_QUERY)
@@ -125,7 +112,6 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     fetchRoles().then((r) => setDynamicRoles(r.items || [])).catch(() => {})
   }, [])
 
-  // Merge builtin + dynamic for select options
   const roleOptions = useMemo(() => {
     const builtins = Object.keys(ROLE_META)
     const extras = dynamicRoles.filter((r) => !builtins.includes(r.id)).map((r) => r.id)
@@ -145,7 +131,6 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const [createError, setCreateError] = useState('')
   const [createFieldErrors, setCreateFieldErrors] = useState({})
   const [createSaving, setCreateSaving] = useState(false)
-
 
   // ── Load list ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -200,17 +185,16 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setQuery((p) => ({ ...p, role: next.role, status: next.status, page: 1 }))
   }
 
-  // Submit edit — with confirmation for sensitive changes
+  // Submit edit — with confirmation for sensitive changes.
   async function requestEditSubmit() {
     const statusChanged = editForm.status !== editUser.status
     const roleChanged = editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
-    const sensitiveRole = roleChanged
 
     if (sensitiveStatus) {
       const ok = await showConfirm(t('adminUsers.confirmDisable'), t('adminUsers.confirmSensitiveTitle'))
       if (!ok) return
-    } else if (sensitiveRole) {
+    } else if (roleChanged) {
       const ok = await showConfirm(t('adminUsers.confirmRoleChange'), t('adminUsers.confirmSensitiveTitle'))
       if (!ok) return
     }
@@ -223,8 +207,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setEditError('')
     setEditSuccess(false)
     try {
-      // Never send role/status changes for the current user's own account —
-      // the form locks those fields, this is the defensive backstop.
+      // Never send role/status changes for the current user's own account.
       const editingSelf = currentUserId != null && editUser.id === currentUserId
       const payload = {
         displayName: editForm.displayName.trim() || undefined,
@@ -272,109 +255,65 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     }
   }
 
-  // ── Table columns ────────────────────────────────────────────────────────
-  const columns = useMemo(() => [
-    {
-      key: 'user',
-      label: t('adminUsers.colUser'),
-      render: (u) => (
-        <div>
-          <div className="text-sm font-semibold">{u.displayName || u.email}</div>
-          {u.displayName && <div className="text-xs text-muted-foreground">{u.email}</div>}
-        </div>
-      ),
-    },
-    {
-      key: 'role',
-      label: t('adminUsers.colRole'),
-      render: (u) => <RoleBadge role={u.role} t={t} />,
-    },
-    {
-      key: 'status',
-      label: t('adminUsers.colStatus'),
-      render: (u) => <StatusBadge status={u.status} t={t} />,
-    },
-    {
-      key: 'lastLoginAt',
-      label: t('adminUsers.colLastLogin'),
-      render: (u) => u.lastLoginAt ? formatDateTime(u.lastLoginAt) : <span className="text-muted-foreground">{t('adminUsers.notLastLogin')}</span>,
-    },
-    canUpdate ? {
-      key: 'actions',
-      label: '',
-      align: 'right',
-      render: (u) => (
-        <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
-          {t('common.edit')}
-        </Button>
-      ),
-    } : null,
-  ].filter(Boolean), [canUpdate, t])
-
   // ── Derived ──────────────────────────────────────────────────────────────
   const isSelf = editUser != null && currentUserId != null && editUser.id === currentUserId
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
   const isEmptyResult = listState.status === 'success' && listState.items.length === 0
+  const items = listState.items || []
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('adminUsers.eyebrow')}</p>
           <h1>{t('adminUsers.title')}</h1>
-          <p>{t('adminUsers.description')}</p>
+          <p className="desc">{t('adminUsers.description')}</p>
         </div>
         {canUpdate && (
-          <div className="screen-actions">
-            <Button onClick={openCreate}>
-              {t('adminUsers.createBtn')}
-            </Button>
+          <div className="actions">
+            <button type="button" className="btn btn-primary" onClick={openCreate}>
+              <UserPlus size={14} />{t('adminUsers.createBtn')}
+            </button>
           </div>
         )}
-      </header>
+      </div>
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('adminUsers.searchPlaceholder')}
-           />
-        </label>
-        <label>
-          {t('adminUsers.filterRole')}
-          <Select
-            value={roleFilter || '__all__'}
-            onValueChange={(val) => handleFilterChange('role', val === '__all__' ? '' : val)}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="__all__">{t('common.all')}</SelectItem>
-            {roleOptions.map((r) => {
-              const meta = ROLE_META[r]
-              return (
-                <SelectItem key={r} value={r}>
-                  {meta ? t(meta.labelKey) : r}
-                </SelectItem>
-              )
-            })}
-          </SelectContent></Select>
-        </label>
-        <label>
-          {t('adminUsers.filterStatus')}
-          <Select
-            value={statusFilter || '__all__'}
-            onValueChange={(val) => handleFilterChange('status', val === '__all__' ? '' : val)}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="__all__">{t('common.all')}</SelectItem>
-            {Object.entries(STATUS_META).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
-      </section>
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={roleFilter}
+          onChange={(e) => handleFilterChange('role', e.target.value)}
+          aria-label={t('adminUsers.filterRole')}
+        >
+          <option value="">{t('adminUsers.filterRole')}</option>
+          {roleOptions.map((r) => {
+            const meta = ROLE_META[r]
+            return <option key={r} value={r}>{meta ? t(meta.labelKey) : r}</option>
+          })}
+        </select>
+        <select
+          className="filter-select"
+          value={statusFilter}
+          onChange={(e) => handleFilterChange('status', e.target.value)}
+          aria-label={t('adminUsers.filterStatus')}
+        >
+          <option value="">{t('adminUsers.filterStatus')}</option>
+          {Object.entries(STATUS_META).map(([key, meta]) => (
+            <option key={key} value={key}>{t(meta.labelKey)}</option>
+          ))}
+        </select>
+      </div>
 
       {listState.status === 'error' && (
         <StatePanel
@@ -405,22 +344,78 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         />
       )}
 
-      {(listState.status === 'loading' || (listState.status === 'success' && listState.items.length > 0)) && (
-        <>
-          <AdminTable
-            caption={t('adminUsers.tableCaption')}
-            columns={columns}
-            rows={listState.items}
-            loading={listState.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {listState.status === 'success' && (
-            <PaginationControls
-              pagination={listState.pagination}
-              onPageChange={(p) => setQuery((prev) => ({ ...prev, page: p }))}
-            />
+      {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('adminUsers.colUser')}</th>
+                    <th>{t('adminUsers.colRole')}</th>
+                    <th>{t('adminUsers.colStatus')}</th>
+                    <th>{t('adminUsers.colLastLogin')}</th>
+                    {canUpdate && <th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {listState.status === 'loading' && items.length === 0 && (
+                    [...Array(6)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={canUpdate ? 5 : 4}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((u, i) => {
+                    const name = u.displayName || u.email
+                    return (
+                      <tr key={u.id}>
+                        <td>
+                          <div className="product-cell">
+                            <span className={`avatar-text ${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}>
+                              {(name || '?').charAt(0).toUpperCase()}
+                            </span>
+                            <div className="info">
+                              <div className="name">{name}</div>
+                              {u.displayName && (
+                                <div className="sku" style={{ fontFamily: 'inherit' }}>{u.email}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td><RoleBadge role={u.role} t={t} /></td>
+                        <td><UserStatusBadge status={u.status} t={t} /></td>
+                        <td className="muted text-xs">
+                          {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin')}
+                        </td>
+                        {canUpdate && (
+                          <td className="actions-cell">
+                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                              <Pencil size={14} />
+                            </button>
+                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                              <MoreHorizontal size={15} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {listState.status === 'success' && listState.pagination && listState.pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} tài khoản`, count: items.length, total: listState.pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={listState.pagination.page <= 1} onClick={() => setQuery((p) => ({ ...p, page: p.page - 1 }))}>‹</button>
+                <button type="button" className="active">{listState.pagination.page}</button>
+                <button type="button" disabled={listState.pagination.page >= listState.pagination.totalPages} onClick={() => setQuery((p) => ({ ...p, page: p.page + 1 }))}>›</button>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
 
       {/* ── Edit Drawer ──────────────────────────────────────────────────── */}
@@ -441,75 +436,72 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         }
       >
         {editUser && (
-          <>
-            <div className="audit-drawer-body !gap-0">
-              {editError && (
-                <p className="mb-4 text-sm text-danger">{editError}</p>
-              )}
-              {editSuccess && !editError && (
-                <p className="mb-4 text-sm text-success">{t('adminUsers.saveSuccess')}</p>
-              )}
+          <div className="audit-drawer-body !gap-0">
+            {editError && <p className="mb-4 text-sm text-danger">{editError}</p>}
+            {editSuccess && !editError && (
+              <p className="mb-4 text-sm text-success">{t('adminUsers.saveSuccess')}</p>
+            )}
 
-              <div className="au-drawer-section">
-                <h3 className="au-drawer-section-title">{t('adminUsers.sectionAccount')}</h3>
-                {isSelf && (
-                  <Alert tone="warning" size="sm" className="mb-3">
-                    {t('adminUsers.selfEditLocked')}
-                  </Alert>
-                )}
-                <div className="au-form-grid">
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
-                    <Input
-                      value={editForm.displayName}
-                      onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
-                     />
-                  </label>
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formRole')}</span>
-                    <Select
-                      value={editForm.role}
-                      disabled={isSelf}
-                      onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
-                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <div className="au-drawer-section">
+              <h3 className="au-drawer-section-title">{t('adminUsers.sectionAccount')}</h3>
+              {isSelf && (
+                <Alert tone="warning" size="sm" className="mb-3">
+                  {t('adminUsers.selfEditLocked')}
+                </Alert>
+              )}
+              <div className="au-form-grid">
+                <label className="au-field">
+                  <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
+                  <Input
+                    value={editForm.displayName}
+                    onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
+                  />
+                </label>
+                <label className="au-field">
+                  <span className="au-field-label">{t('adminUsers.formRole')}</span>
+                  <Select
+                    value={editForm.role}
+                    disabled={isSelf}
+                    onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
                       {roleOptions.map((r) => {
                         const meta = ROLE_META[r]
-                        return (
-                          <SelectItem key={r} value={r}>
-                            {meta ? t(meta.labelKey) : r}
-                          </SelectItem>
-                        )
+                        return <SelectItem key={r} value={r}>{meta ? t(meta.labelKey) : r}</SelectItem>
                       })}
-                    </SelectContent></Select>
-                  </label>
-                  <label className="au-field">
-                    <span className="au-field-label">{t('adminUsers.formStatus')}</span>
-                    <Select
-                      value={editForm.status}
-                      disabled={isSelf}
-                      onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
-                    ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="au-field">
+                  <span className="au-field-label">{t('adminUsers.formStatus')}</span>
+                  <Select
+                    value={editForm.status}
+                    disabled={isSelf}
+                    onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
                       {Object.entries(STATUS_META).map(([key, meta]) => (
                         <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
                       ))}
-                    </SelectContent></Select>
-                  </label>
-                </div>
+                    </SelectContent>
+                  </Select>
+                </label>
               </div>
-
-              <div className="au-drawer-section mt-6">
-                <h3 className="au-drawer-section-title">{t('adminUsers.sectionPassword')}</h3>
-                <PasswordField
-                  value={editForm.newPassword}
-                  onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
-                  placeholder={t('adminUsers.formPasswordHint')}
-                  label={t('adminUsers.formPasswordNew')}
-                  hint={t('adminUsers.formPasswordStrengthHint')}
-                />
-              </div>
-
             </div>
-          </>
+
+            <div className="au-drawer-section mt-6">
+              <h3 className="au-drawer-section-title">{t('adminUsers.sectionPassword')}</h3>
+              <PasswordField
+                value={editForm.newPassword}
+                onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
+                placeholder={t('adminUsers.formPasswordHint')}
+                label={t('adminUsers.formPasswordNew')}
+                hint={t('adminUsers.formPasswordStrengthHint')}
+              />
+            </div>
+          </div>
         )}
       </Modal>
 
@@ -561,7 +553,6 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           />
         </form>
       </Modal>
-
-    </section>
+    </div>
   )
 }

@@ -1,20 +1,32 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AdminTable } from '../components/AdminTable'
-import { PaginationControls } from '../components/PaginationControls'
+import { Copy, Pencil, Plus, Search, Send } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
-import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-const STATUS_TONES = { ACTIVE: 'success', INACTIVE: 'warning', EXPIRED: 'muted', ARCHIVED: 'muted' }
+// Coupon status → prototype badge palette.
+const STATUS_BADGE = { ACTIVE: 'badge-success', INACTIVE: 'badge-neutral', EXPIRED: 'badge-danger', ARCHIVED: 'badge-neutral' }
+const CHANNEL_BADGE = { ALL: 'badge-neutral', ONLINE: 'badge-info', POS: 'badge-warn' }
+const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
+
+const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
+const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '', channel: 'ALL' }
+const EMPTY_BULK_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
+
+// Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant.
+function toEndOfDayInstant(dateStr) {
+  if (!dateStr) return undefined
+  return dateStr + 'T23:59:59+07:00'
+}
+
 function CouponStatusBadge({ value }) {
   const { t } = useTranslation()
   const labels = {
@@ -23,24 +35,15 @@ function CouponStatusBadge({ value }) {
     EXPIRED: t('coupons.statusExpired'),
     ARCHIVED: t('coupons.statusArchived'),
   }
-  const variant = STATUS_TONES[value] || 'muted'
-  return <Badge variant={variant}>{labels[value] ?? value}</Badge>
+  return (
+    <span className={`badge ${STATUS_BADGE[value] || 'badge-neutral'}`}>
+      <span className="dot" />{labels[value] ?? value}
+    </span>
+  )
 }
 
-const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
-const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '', channel: 'ALL' }
-
-const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
 function ChannelBadge({ value }) {
-  const tones = { ALL: 'muted', ONLINE: 'info', POS: 'warning' }
-  const variant = tones[value] || 'muted'
-  return <Badge variant={variant}>{CHANNEL_LABELS[value] ?? value}</Badge>
-}
-
-// Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant
-function toEndOfDayInstant(dateStr) {
-  if (!dateStr) return undefined
-  return dateStr + 'T23:59:59+07:00'
+  return <span className={`badge ${CHANNEL_BADGE[value] || 'badge-neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
 }
 
 export function CouponListScreen({ canUpdate }) {
@@ -61,7 +64,6 @@ export function CouponListScreen({ canUpdate }) {
   const [editSaving, setEditSaving] = useState(false)
   const [actionError, setActionError] = useState('')
 
-  const EMPTY_BULK_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkForm, setBulkForm] = useState(EMPTY_BULK_FORM)
   const [bulkSaving, setBulkSaving] = useState(false)
@@ -161,31 +163,6 @@ export function CouponListScreen({ canUpdate }) {
     }
   }
 
-  const columns = useMemo(() => [
-    { key: 'code', label: t('coupons.colCode'), render: (c) => <code className="font-bold">{c.code}</code> },
-    {
-      key: 'discount', label: t('coupons.colDiscount'),
-      render: (c) => c.discountType === 'PERCENT' ? `${c.discountValue}%` : formatCurrencyVnd(c.discountValue),
-    },
-    { key: 'name', label: t('coupons.colName'), render: (c) => c.name || '—' },
-    { key: 'minimumOrderAmount', label: t('coupons.colMinOrder'), render: (c) => c.minimumOrderAmount ? formatCurrencyVnd(c.minimumOrderAmount) : '—' },
-    { key: 'usage', label: t('coupons.colUsed'), render: (c) => `${c.usageCount}${c.maxUsage ? ` / ${c.maxUsage}` : ''}` },
-    { key: 'channel', label: 'Kênh', render: (c) => <ChannelBadge value={c.channel || 'ALL'} /> },
-    { key: 'status', label: t('coupons.colStatus'), render: (c) => <CouponStatusBadge value={c.status} /> },
-    { key: 'expiresAt', label: t('coupons.colExpires'), render: (c) => formatDateTime(c.expiresAt) },
-    canUpdate ? {
-      key: 'actions', label: '', align: 'right',
-      render: (c) => (
-        <div className="flex justify-end gap-1.5">
-          <Button variant="outline" size="sm" onClick={() => openEdit(c)}>{t('common.edit')}</Button>
-          <Button variant="outline" size="sm" onClick={() => handleToggleStatus(c)}>
-            {c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
-          </Button>
-        </div>
-      ),
-    } : null,
-  ].filter(Boolean), [canUpdate, handleToggleStatus, t])
-
   async function handleBulkSend(e) {
     e.preventDefault()
     if (!bulkConfirm) { setBulkConfirm(true); return }
@@ -225,25 +202,35 @@ export function CouponListScreen({ canUpdate }) {
     })
   }
 
+  const items = state.items || []
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('coupons.eyebrow')}</p>
           <h1>{t('coupons.title')}</h1>
-          <p>{t('coupons.description')}</p>
+          <p className="desc">{t('coupons.description')}</p>
         </div>
         {canUpdate && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}>
-              {bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
-            </Button>
-            <Button onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}>
-              {showForm ? t('common.cancel') : t('coupons.createBtn')}
-            </Button>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}
+            >
+              <Send size={14} />{bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}
+            >
+              <Plus size={14} />{showForm ? t('common.cancel') : t('coupons.createBtn')}
+            </button>
           </div>
         )}
-      </header>
+      </div>
 
       {actionError && (
         <Alert tone="danger" dismissible onDismiss={() => setActionError('')}>
@@ -251,180 +238,312 @@ export function CouponListScreen({ canUpdate }) {
         </Alert>
       )}
 
+      {/* Bulk gift form */}
       {bulkOpen && (
-        <form onSubmit={handleBulkSend} className="mb-6 rounded-sm border border-border bg-surface p-6">
-          <h3 className="mb-1">Gửi mã giảm giá đến toàn bộ khách hàng</h3>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <label>Loại giảm giá
-              <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FIXED">Giảm tiền cố định (VND)</SelectItem>
-                  <SelectItem value="PERCENT">Giảm theo % đơn hàng</SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
-            <label>
-              {bulkForm.discountType === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (VND)'}
-              <Input
-                type="number" min="1" required
-                max={bulkForm.discountType === 'PERCENT' ? '100' : undefined}
-                step={bulkForm.discountType === 'PERCENT' ? '1' : '1000'}
-                value={bulkForm.amount}
-                onChange={(e) => setBulkForm((p) => ({ ...p, amount: e.target.value }))}
-                placeholder={bulkForm.discountType === 'PERCENT' ? 'VD: 10' : 'VD: 50000'}
-                disabled={bulkSaving}
-              />
-            </label>
-            <label>Đơn hàng tối thiểu (VND) — để trống nếu không yêu cầu
-              <Input type="number" min="0" step="1000" value={bulkForm.minimumAmount}
-                onChange={(e) => setBulkForm((p) => ({ ...p, minimumAmount: e.target.value }))}
-                placeholder="Không giới hạn" disabled={bulkSaving} />
-            </label>
-            <label>Hiệu lực (số ngày) — để trống nếu không hết hạn
-              <Input type="number" min="1" max="365" value={bulkForm.validDays}
-                onChange={(e) => setBulkForm((p) => ({ ...p, validDays: e.target.value }))}
-                placeholder="VD: 30" disabled={bulkSaving} />
-            </label>
-            <label>Kênh áp dụng
-              <Select value={bulkForm.channel} onValueChange={(val) => setBulkForm((p) => ({ ...p, channel: val }))} disabled={bulkSaving}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả kênh</SelectItem>
-                  <SelectItem value="ONLINE">Chỉ online</SelectItem>
-                  <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
+        <div className="card mb-4">
+          <div className="card-head">
+            <div>
+              <h2>Gửi mã giảm giá đến toàn bộ khách hàng</h2>
+              <p className="sub">Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.</p>
+            </div>
           </div>
-          {bulkConfirm && (
-            <Alert tone="warning" className="mt-4">
-              Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
-            </Alert>
-          )}
-          <div className="mt-4 flex items-center gap-2">
-            <Button type="submit" loading={bulkSaving}>
-              {bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
-              disabled={bulkSaving}
-            >
-              Hủy
-            </Button>
-          </div>
-        </form>
+          <form onSubmit={handleBulkSend} className="card-body">
+            <div className="grid-2">
+              <label className="form-field">
+                <span>Loại giảm giá</span>
+                <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIXED">Giảm tiền cố định (VND)</SelectItem>
+                    <SelectItem value="PERCENT">Giảm theo % đơn hàng</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="form-field">
+                <span>{bulkForm.discountType === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (VND)'}</span>
+                <Input
+                  type="number" min="1" required
+                  max={bulkForm.discountType === 'PERCENT' ? '100' : undefined}
+                  step={bulkForm.discountType === 'PERCENT' ? '1' : '1000'}
+                  value={bulkForm.amount}
+                  onChange={(e) => setBulkForm((p) => ({ ...p, amount: e.target.value }))}
+                  placeholder={bulkForm.discountType === 'PERCENT' ? 'VD: 10' : 'VD: 50000'}
+                  disabled={bulkSaving}
+                />
+              </label>
+              <label className="form-field">
+                <span>Đơn hàng tối thiểu (VND) — để trống nếu không yêu cầu</span>
+                <Input type="number" min="0" step="1000" value={bulkForm.minimumAmount}
+                  onChange={(e) => setBulkForm((p) => ({ ...p, minimumAmount: e.target.value }))}
+                  placeholder="Không giới hạn" disabled={bulkSaving} />
+              </label>
+              <label className="form-field">
+                <span>Hiệu lực (số ngày) — để trống nếu không hết hạn</span>
+                <Input type="number" min="1" max="365" value={bulkForm.validDays}
+                  onChange={(e) => setBulkForm((p) => ({ ...p, validDays: e.target.value }))}
+                  placeholder="VD: 30" disabled={bulkSaving} />
+              </label>
+              <label className="form-field">
+                <span>Kênh áp dụng</span>
+                <Select value={bulkForm.channel} onValueChange={(val) => setBulkForm((p) => ({ ...p, channel: val }))} disabled={bulkSaving}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                    <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                    <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+            {bulkConfirm && (
+              <Alert tone="warning" className="mt-4">
+                Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
+              </Alert>
+            )}
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" loading={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</Button>
+              <Button type="button" variant="outline"
+                onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
+                disabled={bulkSaving}>Hủy</Button>
+            </div>
+          </form>
+        </div>
       )}
 
+      {/* Create form */}
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-6 rounded-sm border border-border bg-surface p-6">
-          <h3 className="mb-4">{t('coupons.createTitle')}</h3>
-          {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
-          <div className="grid grid-cols-2 gap-4">
-            <label>
-              {t('coupons.formCode')}
-              <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}  />
-              {formFieldErrors.code && <p className="field-error">{formFieldErrors.code}</p>}
-            </label>
-            <label>
-              {t('coupons.formName')}
-              <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}  />
-              {formFieldErrors.name && <p className="field-error">{formFieldErrors.name}</p>}
-            </label>
-            <label>{t('coupons.formDiscountType')}
-              <Select value={form.discountType} onValueChange={(val) => setForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
-                <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
-              </SelectContent></Select>
-            </label>
-            <label>{t('coupons.formValue')} <Input type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))}  /></label>
-            <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
-            <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
-            <label>{t('coupons.formExpires')} <Input type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
-            <label>Kênh áp dụng
-              <Select value={form.channel} onValueChange={(val) => setForm((p) => ({ ...p, channel: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="ALL">Tất cả kênh</SelectItem>
-                <SelectItem value="ONLINE">Chỉ online</SelectItem>
-                <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
-              </SelectContent></Select>
-            </label>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Button type="submit" loading={formSaving}>{t('coupons.createBtn')}</Button>
-            <Button type="button" variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</Button>
-          </div>
-        </form>
+        <div className="card mb-4">
+          <div className="card-head"><h2>{t('coupons.createTitle')}</h2></div>
+          <form onSubmit={handleCreate} className="card-body">
+            {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
+            <div className="grid-2">
+              <label className="form-field">
+                <span>{t('coupons.formCode')}</span>
+                <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))} />
+                {formFieldErrors.code && <span className="hint text-danger">{formFieldErrors.code}</span>}
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formName')}</span>
+                <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+                {formFieldErrors.name && <span className="hint text-danger">{formFieldErrors.name}</span>}
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formDiscountType')}</span>
+                <Select value={form.discountType} onValueChange={(val) => setForm((p) => ({ ...p, discountType: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
+                    <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formValue')}</span>
+                <Input type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formMinOrder')}</span>
+                <Input type="number" min="0" value={form.minimumOrderAmount} onChange={(e) => setForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formMaxUses')}</span>
+                <Input type="number" min="0" value={form.maxUsage} onChange={(e) => setForm((p) => ({ ...p, maxUsage: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formExpires')}</span>
+                <Input type="date" value={form.expiresAt} onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>Kênh áp dụng</span>
+                <Select value={form.channel} onValueChange={(val) => setForm((p) => ({ ...p, channel: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                    <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                    <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" loading={formSaving}>{t('coupons.createBtn')}</Button>
+              <Button type="button" variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </div>
       )}
 
+      {/* Edit form */}
       {editCoupon && (
-        <form onSubmit={handleEdit} className="mb-6 rounded-sm border border-primary bg-surface p-6">
-          <h3 className="mb-4">{t('coupons.editTitle', { code: editCoupon.code })}</h3>
-          {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
-          <div className="grid grid-cols-2 gap-4">
-            <label>{t('coupons.formDiscountType')}
-              <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
-                <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
-              </SelectContent></Select>
-            </label>
-            <label>{t('coupons.formValue')} <Input type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))}  /></label>
-            <label>{t('coupons.formMinOrder')} <Input type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))}  /></label>
-            <label>{t('coupons.formMaxUses')} <Input type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))}  /></label>
-            <label>{t('coupons.formExpires')} <Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))}  /></label>
-            <label>Kênh áp dụng
-              <Select value={editForm.channel || 'ALL'} onValueChange={(val) => setEditForm((p) => ({ ...p, channel: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="ALL">Tất cả kênh</SelectItem>
-                <SelectItem value="ONLINE">Chỉ online</SelectItem>
-                <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
-              </SelectContent></Select>
-            </label>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Button type="submit" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</Button>
-            <Button type="button" variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
-          </div>
-        </form>
+        <div className="card mb-4" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
+          <div className="card-head"><h2>{t('coupons.editTitle', { code: editCoupon.code })}</h2></div>
+          <form onSubmit={handleEdit} className="card-body">
+            {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
+            <div className="grid-2">
+              <label className="form-field">
+                <span>{t('coupons.formDiscountType')}</span>
+                <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
+                    <SelectItem value="PERCENT">{t('coupons.formPercent')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formValue')}</span>
+                <Input type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formMinOrder')}</span>
+                <Input type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formMaxUses')}</span>
+                <Input type="number" min="0" value={editForm.maxUsage} onChange={(e) => setEditForm((p) => ({ ...p, maxUsage: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t('coupons.formExpires')}</span>
+                <Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm((p) => ({ ...p, expiresAt: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>Kênh áp dụng</span>
+                <Select value={editForm.channel || 'ALL'} onValueChange={(val) => setEditForm((p) => ({ ...p, channel: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Tất cả kênh</SelectItem>
+                    <SelectItem value="ONLINE">Chỉ online</SelectItem>
+                    <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</Button>
+              <Button type="button" variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </div>
       )}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <section className="filter-bar">
-        <label>{t('common.search')}
-          <Input type="search" value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')}  />
-        </label>
-        <label>{t('coupons.filterStatus')}
-          <Select value={query.status}
-            onValueChange={(val) => updateQuery({ status: val }, { resetPage: true })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="ACTIVE">{t('coupons.statusActive')}</SelectItem>
-            <SelectItem value="INACTIVE">{t('coupons.statusInactive')}</SelectItem>
-            <SelectItem value="EXPIRED">{t('coupons.statusExpired')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-      </section>
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input type="search" value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')} />
+        </div>
+        <select
+          className="filter-select"
+          value={query.status}
+          onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}
+          aria-label={t('coupons.filterStatus')}
+        >
+          <option value="ALL">{t('coupons.filterStatus')}</option>
+          <option value="ACTIVE">{t('coupons.statusActive')}</option>
+          <option value="INACTIVE">{t('coupons.statusInactive')}</option>
+          <option value="EXPIRED">{t('coupons.statusExpired')}</option>
+        </select>
+      </div>
 
-      {state.status === 'error' && <StatePanel tone="danger" title={t('coupons.error')} description={state.error} actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />}
-      {state.status === 'success' && state.items.length === 0 && <StatePanel tone="neutral" title={t('coupons.empty')} description={t('coupons.emptyDesc')} actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />}
-      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
-        <>
-          <AdminTable
-            caption={t('coupons.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {state.status === 'success' && (
-            <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />
+      {state.status === 'error' && (
+        <StatePanel tone="danger" title={t('coupons.error')} description={state.error}
+          actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />
+      )}
+      {state.status === 'success' && items.length === 0 && (
+        <StatePanel tone="neutral" title={t('coupons.empty')} description={t('coupons.emptyDesc')}
+          actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />
+      )}
+
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('coupons.colCode')}</th>
+                    <th>{t('coupons.colName')}</th>
+                    <th>{t('coupons.colDiscount')}</th>
+                    <th className="num">{t('coupons.colUsed')}</th>
+                    <th>Tỉ lệ dùng</th>
+                    <th>Kênh</th>
+                    <th>{t('coupons.colExpires')}</th>
+                    <th>{t('coupons.colStatus')}</th>
+                    {canUpdate && <th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(6)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={canUpdate ? 9 : 8}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((c) => {
+                    const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : 0
+                    return (
+                      <tr key={c.id}>
+                        <td>
+                          <span className="id-cell" style={{ fontSize: 13, color: 'var(--admin-color-brand-red)' }}>{c.code}</span>
+                        </td>
+                        <td>{c.name || '—'}</td>
+                        <td>
+                          <span className="badge badge-info">
+                            {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
+                          </span>
+                        </td>
+                        <td className="num">{c.usageCount}{c.maxUsage ? ` / ${c.maxUsage}` : ''}</td>
+                        <td style={{ minWidth: 140 }}>
+                          {c.maxUsage ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div className="stock-bar"><div style={{ width: pct + '%' }} /></div>
+                              <span className="text-xs muted">{pct.toFixed(0)}%</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs muted">—</span>
+                          )}
+                        </td>
+                        <td><ChannelBadge value={c.channel || 'ALL'} /></td>
+                        <td className="muted text-xs">{formatDateTime(c.expiresAt)}</td>
+                        <td><CouponStatusBadge value={c.status} /></td>
+                        {canUpdate && (
+                          <td className="actions-cell">
+                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="icon-btn"
+                              title={c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
+                              onClick={() => handleToggleStatus(c)}
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} mã`, count: items.length, total: state.pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={state.pagination.page <= 1} onClick={() => updateQuery({ page: state.pagination.page - 1 })}>‹</button>
+                <button type="button" className="active">{state.pagination.page}</button>
+                <button type="button" disabled={state.pagination.page >= state.pagination.totalPages} onClick={() => updateQuery({ page: state.pagination.page + 1 })}>›</button>
+              </div>
+            </div>
           )}
-        </>
-      ) : null}
-    </section>
+        </div>
+      )}
+    </div>
   )
 }

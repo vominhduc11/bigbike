@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
+import { ExternalLink, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   createRedirect,
@@ -9,14 +9,11 @@ import {
   fetchRedirects,
   updateRedirect,
 } from '../lib/adminApi'
-import { AdminTable } from '../components/AdminTable'
-import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { formatDateTime } from '../lib/formatters'
-import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -174,75 +171,6 @@ export function RedirectListScreen({ canUpdate }) {
     deleteMutation.mutate(redirect.id)
   }, [deleteMutation, t])
 
-  const columns = useMemo(() => [
-    {
-      key: 'sourcePattern',
-      label: t('redirects.colSource', { defaultValue: 'Source' }),
-      render: (redirect) => (
-        <code className="text-xs font-bold break-all">
-          {redirect.sourcePattern}
-        </code>
-      ),
-    },
-    {
-      key: 'targetUrl',
-      label: t('redirects.colTarget', { defaultValue: 'Target' }),
-      render: (redirect) => (
-        <span className="break-all">
-          <ExternalLink size={12} className="mr-1 align-text-bottom" />
-          {redirect.targetUrl}
-        </span>
-      ),
-    },
-    {
-      key: 'redirectType',
-      label: t('redirects.colType', { defaultValue: 'Type' }),
-      render: (redirect) => normalizeRedirectTypeLabel(redirect.redirectType, t),
-    },
-    {
-      key: 'statusCode',
-      label: t('redirects.colStatusCode', { defaultValue: 'Status' }),
-      render: (redirect) => STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || ''),
-    },
-    {
-      key: 'enabled',
-      label: t('redirects.colEnabled', { defaultValue: 'Enabled' }),
-      render: (redirect) => (
-        <Badge variant={redirect.enabled !== false ? 'success' : 'muted'}>
-          {redirect.enabled !== false ? t('common.on') : t('common.off')}
-        </Badge>
-      ),
-    },
-    {
-      key: 'hitCount',
-      label: t('redirects.colHits', { defaultValue: 'Hits' }),
-      render: (redirect) => String(redirect.hitCount ?? 0),
-      align: 'right',
-    },
-    {
-      key: 'updatedAt',
-      label: t('redirects.colUpdated', { defaultValue: 'Updated' }),
-      render: (redirect) => formatDateTime(redirect.updatedAt),
-    },
-    canUpdate ? {
-      key: 'actions',
-      label: '',
-      align: 'right',
-      render: (redirect) => (
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => openEditForm(redirect)}>
-            <Pencil size={14} />
-            {t('common.edit')}
-          </Button>
-          <Button variant="danger" onClick={() => handleDelete(redirect)}>
-            <Trash2 size={14} />
-            {t('common.delete')}
-          </Button>
-        </div>
-      ),
-    } : null,
-  ].filter(Boolean), [canUpdate, handleDelete, t])
-
   function updateQuery(partial, { resetPage = false } = {}) {
     setQuery((prev) => {
       const next = { ...prev, ...partial }
@@ -265,152 +193,131 @@ export function RedirectListScreen({ canUpdate }) {
     saveMutation.mutate()
   }
 
+  const pagination = data?.pagination
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
-          <p className="eyebrow">{t('nav.redirects', { defaultValue: 'Redirects' })}</p>
-          <h1>{t('redirects.title', { defaultValue: 'Redirects' })}</h1>
-          <p>{t('redirects.description', { defaultValue: 'Manage SEO migration redirects and legacy URL mappings.' })}</p>
+          <p className="eyebrow">{t('nav.redirects', { defaultValue: 'Chuyển hướng' })}</p>
+          <h1>{t('redirects.title', { defaultValue: 'Chuyển hướng' })}</h1>
+          <p className="desc">{t('redirects.description', { defaultValue: 'Quản lý chuyển hướng SEO và ánh xạ URL cũ.' })}</p>
         </div>
         {canUpdate && (
-          <Button onClick={openCreateForm}>
-            <Plus size={16} />
-            {t('redirects.createBtn', { defaultValue: 'Create redirect' })}
-          </Button>
+          <div className="actions">
+            <button type="button" className="btn btn-primary" onClick={openCreateForm}>
+              <Plus size={14} />{t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' })}
+            </button>
+          </div>
         )}
-      </header>
+      </div>
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
+      {/* Inline create/edit form */}
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-md border border-border bg-surface p-4 mb-4 shadow-xs"
-        >
-          <h3 className="mb-3">
-            {editingRedirect
-              ? t('redirects.editTitle', { defaultValue: 'Edit redirect' })
-              : t('redirects.createTitle', { defaultValue: 'Create redirect' })}
-          </h3>
-          {formError && <Alert tone="danger" size="sm">{formError}</Alert>}
-          <div className="grid grid-cols-2 gap-3">
-            <label>
-              {t('redirects.formSource', { defaultValue: 'Source pattern' })}
-              <Input
-                value={form.sourcePattern}
-                onChange={(e) => setForm((prev) => ({ ...prev, sourcePattern: e.target.value }))}
-                placeholder="/old-url"
-               />
-            </label>
-            <label>
-              {t('redirects.formTarget', { defaultValue: 'Target URL' })}
-              <Input
-                value={form.targetUrl}
-                onChange={(e) => setForm((prev) => ({ ...prev, targetUrl: e.target.value }))}
-                placeholder="/new-url"
-               />
-            </label>
-            <label>
-              {t('redirects.formType', { defaultValue: 'Redirect type' })}
-              <Select
-                value={form.redirectType}
-                onValueChange={(val) => setForm((prev) => ({ ...prev, redirectType: val }))}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="PERMANENT">Permanent</SelectItem>
-                <SelectItem value="TEMPORARY">Temporary</SelectItem>
-                <SelectItem value="CUSTOM">Custom</SelectItem>
-              </SelectContent></Select>
-            </label>
-            <label>
-              {t('redirects.formStatusCode', { defaultValue: 'Status code' })}
-              <Select
-                value={form.statusCode}
-                onValueChange={(val) => setForm((prev) => ({ ...prev, statusCode: val }))}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="301">301 Permanent</SelectItem>
-                <SelectItem value="302">302 Temporary</SelectItem>
-                <SelectItem value="307">307 Temporary</SelectItem>
-                <SelectItem value="308">308 Permanent</SelectItem>
-              </SelectContent></Select>
-            </label>
-            <label>
-              {t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}
-              <Input
-                type="number"
-                min="0"
-                value={form.legacyId}
-                onChange={(e) => setForm((prev) => ({ ...prev, legacyId: e.target.value }))}
-               />
-            </label>
-            <label className="flex items-center gap-2 mt-6">
-              <Checkbox
-                checked={form.enabled}
-                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, enabled: checked === true }))}
-               />
-              {t('redirects.formEnabled', { defaultValue: 'Enabled' })}
-            </label>
-            <label className="col-span-full">
-              {t('redirects.formNotes', { defaultValue: 'Notes' })}
-              <Textarea
-                rows={3}
-                value={form.notes}
-                onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Optional notes for SEO migration or content review.' })}
-               />
-            </label>
+        <div className="card mb-4">
+          <div className="card-head">
+            <h2>
+              {editingRedirect
+                ? t('redirects.editTitle', { defaultValue: 'Sửa chuyển hướng' })
+                : t('redirects.createTitle', { defaultValue: 'Tạo chuyển hướng' })}
+            </h2>
           </div>
-          <div className="mt-4 flex gap-2">
-            <Button type="submit" loading={saveMutation.isPending}>
-              {t('common.save')}
-            </Button>
-            <Button type="button" variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
-              {t('common.cancel')}
-            </Button>
-          </div>
-        </form>
+          <form onSubmit={handleSubmit} className="card-body">
+            {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
+            <div className="grid-2">
+              <label className="form-field">
+                <span>{t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}</span>
+                <Input value={form.sourcePattern} onChange={(e) => setForm((p) => ({ ...p, sourcePattern: e.target.value }))} placeholder="/old-url" />
+              </label>
+              <label className="form-field">
+                <span>{t('redirects.formTarget', { defaultValue: 'URL đích' })}</span>
+                <Input value={form.targetUrl} onChange={(e) => setForm((p) => ({ ...p, targetUrl: e.target.value }))} placeholder="/new-url" />
+              </label>
+              <label className="form-field">
+                <span>{t('redirects.formType', { defaultValue: 'Loại chuyển hướng' })}</span>
+                <Select value={form.redirectType} onValueChange={(val) => setForm((p) => ({ ...p, redirectType: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERMANENT">Permanent</SelectItem>
+                    <SelectItem value="TEMPORARY">Temporary</SelectItem>
+                    <SelectItem value="CUSTOM">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="form-field">
+                <span>{t('redirects.formStatusCode', { defaultValue: 'Mã trạng thái' })}</span>
+                <Select value={form.statusCode} onValueChange={(val) => setForm((p) => ({ ...p, statusCode: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="301">301 Permanent</SelectItem>
+                    <SelectItem value="302">302 Temporary</SelectItem>
+                    <SelectItem value="307">307 Temporary</SelectItem>
+                    <SelectItem value="308">308 Permanent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="form-field">
+                <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
+                <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />
+              </label>
+              <label className="pf-checkbox" style={{ marginTop: 22, width: 'fit-content' }}>
+                <Checkbox checked={form.enabled} onCheckedChange={(checked) => setForm((p) => ({ ...p, enabled: checked === true }))} />
+                <span>{t('redirects.formEnabled', { defaultValue: 'Bật' })}</span>
+              </label>
+              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('redirects.formNotes', { defaultValue: 'Ghi chú' })}</span>
+                <Textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                  placeholder={t('redirects.notesPlaceholder', { defaultValue: 'Ghi chú tuỳ chọn.' })} />
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" loading={saveMutation.isPending}>{t('common.save')}</Button>
+              <Button type="button" variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </div>
       )}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Source, target, notes, legacy ID' })}
-           />
-        </label>
-        <label>
-          {t('redirects.filterEnabled', { defaultValue: 'Enabled' })}
-          <Select
-            value={query.enabled}
-            onValueChange={(val) => updateQuery({ enabled: val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="true">{t('common.on')}</SelectItem>
-            <SelectItem value="false">{t('common.off')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-        <label>
-          {t('redirects.filterStatusCode', { defaultValue: 'Status code' })}
-          <Select
-            value={query.statusCode}
-            onValueChange={(val) => updateQuery({ statusCode: val }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="301">301</SelectItem>
-            <SelectItem value="302">302</SelectItem>
-            <SelectItem value="307">307</SelectItem>
-            <SelectItem value="308">308</SelectItem>
-          </SelectContent></Select>
-        </label>
-      </section>
+            placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.enabled}
+          onChange={(e) => updateQuery({ enabled: e.target.value }, { resetPage: true })}
+          aria-label={t('redirects.filterEnabled', { defaultValue: 'Bật' })}
+        >
+          <option value="ALL">{t('redirects.filterEnabled', { defaultValue: 'Bật' })}</option>
+          <option value="true">{t('common.on')}</option>
+          <option value="false">{t('common.off')}</option>
+        </select>
+        <select
+          className="filter-select"
+          value={query.statusCode}
+          onChange={(e) => updateQuery({ statusCode: e.target.value }, { resetPage: true })}
+          aria-label={t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}
+        >
+          <option value="ALL">{t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}</option>
+          <option value="301">301</option>
+          <option value="302">302</option>
+          <option value="307">307</option>
+          <option value="308">308</option>
+        </select>
+      </div>
 
       {isError && (
         <StatePanel
           tone="danger"
-          title={t('redirects.errorTitle', { defaultValue: 'Could not load redirects' })}
+          title={t('redirects.errorTitle', { defaultValue: 'Không tải được chuyển hướng' })}
           description={error?.message || t('common.error')}
           actionLabel={t('common.retry')}
           onAction={() => queryClient.invalidateQueries({ queryKey: ['redirects'] })}
@@ -420,28 +327,82 @@ export function RedirectListScreen({ canUpdate }) {
       {!isLoading && !isError && items.length === 0 && (
         <StatePanel
           tone="neutral"
-          title={t('redirects.emptyTitle', { defaultValue: 'No redirects found' })}
-          description={t('redirects.emptyDesc', { defaultValue: 'Try changing the filters or create a new redirect.' })}
-          actionLabel={canUpdate ? t('redirects.createBtn', { defaultValue: 'Create redirect' }) : t('common.resetFilters')}
+          title={t('redirects.emptyTitle', { defaultValue: 'Không có chuyển hướng' })}
+          description={t('redirects.emptyDesc', { defaultValue: 'Đổi bộ lọc hoặc tạo chuyển hướng mới.' })}
+          actionLabel={canUpdate ? t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' }) : t('common.resetFilters')}
           onAction={canUpdate ? openCreateForm : () => setQuery(INITIAL_QUERY)}
         />
       )}
 
-      {items.length > 0 && (
-        <>
-          <AdminTable
-            caption={t('redirects.tableCaption', { defaultValue: 'Redirects' })}
-            columns={columns}
-            rows={items}
-            loading={isLoading}
-            pageSize={query.pageSize}
-          />
-          <PaginationControls
-            pagination={data?.pagination}
-            onPageChange={(page) => updateQuery({ page })}
-          />
-        </>
+      {(isLoading || items.length > 0) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('redirects.colSource', { defaultValue: 'Nguồn' })}</th>
+                    <th>{t('redirects.colTarget', { defaultValue: 'Đích' })}</th>
+                    <th>{t('redirects.colType', { defaultValue: 'Loại' })}</th>
+                    <th>{t('redirects.colStatusCode', { defaultValue: 'Trạng thái' })}</th>
+                    <th>{t('redirects.colEnabled', { defaultValue: 'Bật' })}</th>
+                    <th className="num">{t('redirects.colHits', { defaultValue: 'Lượt' })}</th>
+                    <th>{t('redirects.colUpdated', { defaultValue: 'Cập nhật' })}</th>
+                    {canUpdate && <th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading && items.length === 0 && (
+                    [...Array(6)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={canUpdate ? 8 : 7}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((redirect) => (
+                    <tr key={redirect.id}>
+                      <td className="id-cell" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</td>
+                      <td style={{ wordBreak: 'break-all' }}>
+                        <ExternalLink size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-bottom' }} />
+                        {redirect.targetUrl}
+                      </td>
+                      <td>{normalizeRedirectTypeLabel(redirect.redirectType, t)}</td>
+                      <td>{STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '')}</td>
+                      <td>
+                        <span className={`badge ${redirect.enabled !== false ? 'badge-success' : 'badge-neutral'}`}>
+                          {redirect.enabled !== false ? t('common.on') : t('common.off')}
+                        </span>
+                      </td>
+                      <td className="num">{redirect.hitCount ?? 0}</td>
+                      <td className="muted text-xs">{formatDateTime(redirect.updatedAt)}</td>
+                      {canUpdate && (
+                        <td className="actions-cell">
+                          <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
+                            <Pencil size={14} />
+                          </button>
+                          <button type="button" className="icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </section>
+    </div>
   )
 }

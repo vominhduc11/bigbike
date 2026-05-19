@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Calendar, Download } from 'lucide-react'
 import {
   Area, AreaChart, Bar, BarChart,
   CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { ExportButton } from '../components/ExportButton'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAnalytics, exportOrdersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 
 const PRESET_VALUES = [
   { key: 'preset7d',  value: '7d',  days: 7 },
@@ -18,35 +16,13 @@ const PRESET_VALUES = [
   { key: 'preset90d', value: '90d', days: 90 },
 ]
 
-function KpiCard({ label, value }) {
-  return (
-    <div className="bg-surface-raised border border-border rounded-md px-5 py-4 flex flex-col gap-1.5">
-      <p className="text-xs text-muted-foreground m-0">{label}</p>
-      <p className="text-2xl font-bold m-0">{value}</p>
-    </div>
-  )
-}
-
-function ChartCard({ title, children }) {
-  return (
-    <div className="bg-surface-raised border border-border rounded-md overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-border font-semibold text-sm">
-        {title}
-      </div>
-      <div className="px-2 pt-4 pb-2">
-        {children}
-      </div>
-    </div>
-  )
-}
-
 function RevenueTooltip({ active, payload, label, locale }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-surface border border-border rounded-md px-3 py-2 shadow-md text-xs">
-      <div className="font-semibold mb-1">{label}</div>
+    <div className="dash-tooltip">
+      <div className="dash-tooltip-date">{label}</div>
       {payload.map((p) => (
-        <div key={p.dataKey} style={{ color: p.color }}>
+        <div key={p.dataKey} className="dash-tooltip-row" style={{ color: p.color }}>
           {p.name}: {p.dataKey === 'revenue' ? formatCurrencyVnd(p.value, locale) : p.value}
         </div>
       ))}
@@ -54,30 +30,39 @@ function RevenueTooltip({ active, payload, label, locale }) {
   )
 }
 
+// Ranked table card — prototype .tbl with a leading rank cell.
 function RankTable({ title, rows, cols, noDataLabel }) {
   return (
-    <div className="table-wrap flex-1">
-      <p className="px-4 py-3 font-semibold border-b border-border m-0">{title}</p>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            {cols.map((c) => <th key={c.key} className={c.right ? 'align-right' : undefined}>{c.label}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr><td colSpan={cols.length + 1} className="text-center text-muted-foreground text-sm">{noDataLabel}</td></tr>
-          ) : rows.map((row, idx) => (
-            <tr key={idx}>
-              <td className="text-muted-foreground w-9">{idx + 1}</td>
-              {cols.map((c) => (
-                <td key={c.key} className={c.right ? 'align-right' : undefined}>{c.render ? c.render(row) : row[c.key]}</td>
+    <div className="card">
+      <div className="card-head"><h2>{title}</h2></div>
+      <div className="card-body card-body--flush">
+        <div className="table-wrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>#</th>
+                {cols.map((c) => <th key={c.key} className={c.right ? 'num' : undefined}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={cols.length + 1} className="text-center muted text-sm">{noDataLabel}</td>
+                </tr>
+              ) : rows.map((row, idx) => (
+                <tr key={idx}>
+                  <td className="muted">{idx + 1}</td>
+                  {cols.map((c) => (
+                    <td key={c.key} className={c.right ? 'num' : undefined}>
+                      {c.render ? c.render(row) : row[c.key]}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
@@ -135,63 +120,69 @@ export function ReportsScreen() {
   }, [resolvedDates, preset, t])
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
-
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
 
+  const presetTabs = [
+    ...PRESET_VALUES.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
+    { key: 'custom', label: t('reports.presetCustom') },
+  ]
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('reports.eyebrow')}</p>
           <h1>{t('reports.title')}</h1>
-          <p>{t('reports.description')}</p>
+          <p className="desc">{t('reports.description')}</p>
         </div>
-        <ExportButton
-          label={t('reports.exportOrders')}
-          filename={`orders_${exportFrom}_${exportTo}.csv`}
-          onExport={() => exportOrdersCsv({ from: exportFrom, to: exportTo })}
-        />
-      </header>
+        <div className="actions">
+          <div className="seg" role="tablist" aria-label={t('reports.title')}>
+            {presetTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={preset === tab.key}
+                className={`seg-tab${preset === tab.key ? ' active' : ''}`}
+                onClick={() => setPreset(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {preset === 'custom' && (
+            <>
+              <input
+                type="date"
+                className="filter-input"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+              <span className="muted text-sm" style={{ alignSelf: 'center' }}>→</span>
+              <input
+                type="date"
+                className="filter-input"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </>
+          )}
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => exportOrdersCsv({ from: exportFrom, to: exportTo })}
+          >
+            <Download size={14} />{t('reports.exportOrders')}
+          </button>
+          {preset !== 'custom' && (
+            <button type="button" className="btn btn-outline" onClick={() => setPreset('custom')}>
+              <Calendar size={14} />{t('reports.presetCustom')}
+            </button>
+          )}
+        </div>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
-
-      {/* Date range controls */}
-      <div className="flex gap-2 flex-wrap mb-5 items-center">
-        {PRESET_VALUES.map((p) => (
-          <Button
-            key={p.value}
-            variant={preset === p.value ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPreset(p.value)}
-          >
-            {t(`reports.${p.key}`)}
-          </Button>
-        ))}
-        <Button
-          variant={preset === 'custom' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setPreset('custom')}
-        >
-          {t('reports.presetCustom')}
-        </Button>
-        {preset === 'custom' && (
-          <>
-            <Input
-              type="date"
-              className="text-sm"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-             />
-            <span className="text-muted-foreground">→</span>
-            <Input
-              type="date"
-              className="text-sm"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-             />
-          </>
-        )}
-      </div>
 
       {state.status === 'loading' && (
         <StatePanel tone="info" title={t('reports.loading')} description={t('common.pleaseWait')} />
@@ -204,95 +195,108 @@ export function ReportsScreen() {
       {state.status === 'success' && state.data && (
         <>
           {/* KPI row */}
-          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-            <KpiCard label={t('reports.kpiGmv')} value={formatCurrencyVnd(state.data.summary.grossOrderValue, locale)} />
-            <KpiCard label={t('reports.kpiPaidRevenue')} value={formatCurrencyVnd(state.data.summary.paidRevenue, locale)} />
-            <KpiCard label={t('reports.kpiRefund')} value={formatCurrencyVnd(state.data.summary.refundAmount, locale)} />
-            <KpiCard label={t('reports.kpiNetRevenue')} value={formatCurrencyVnd(state.data.summary.netRevenue, locale)} />
-            <KpiCard label={t('reports.kpiOrderCount')} value={state.data.summary.orderCount.toLocaleString(locale)} />
-            <KpiCard label={t('reports.kpiAov')} value={formatCurrencyVnd(state.data.summary.avgOrderValue, locale)} />
+          <div className="kpi-grid">
+            {[
+              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), icon: 'red' },
+              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), icon: 'green' },
+              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), icon: 'amber' },
+              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), icon: 'blue' },
+              { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), icon: 'purple' },
+              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), icon: 'gray' },
+            ].map((k) => (
+              <div className="kpi" key={k.label}>
+                <div className="kpi-head"><span>{k.label}</span></div>
+                <div className="kpi-value">{k.value}</div>
+              </div>
+            ))}
           </div>
 
           {/* Revenue trend chart */}
           {state.data.dailyRevenue?.length > 1 && (
-            <ChartCard title={t('reports.chartDailyRevenue')}>
-              <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    tickFormatter={tickFmt}
-                    tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={48}
-                  />
-                  <Tooltip content={<RevenueTooltip locale={locale} />} />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    name={t('reports.chartRevenueSeries')}
-                    stroke="var(--admin-color-brand-red)"
-                    strokeWidth={2}
-                    fill="url(#revenueGrad)"
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <div className="card mb-4">
+              <div className="card-head"><h2>{t('reports.chartDailyRevenue')}</h2></div>
+              <div className="card-body">
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tickFormatter={tickFmt}
+                      tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={48}
+                    />
+                    <Tooltip content={<RevenueTooltip locale={locale} />} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      name={t('reports.chartRevenueSeries')}
+                      stroke="var(--admin-color-brand-red)"
+                      strokeWidth={2}
+                      fill="url(#revenueGrad)"
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
 
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
-            <ChartCard title={t('reports.chartTopProducts')}>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  data={state.data.topProducts.slice(0, 5)}
-                  layout="vertical"
-                  margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tickFormatter={tickFmt}
-                    tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="productName"
-                    tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={140}
-                    tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}…` : v}
-                  />
-                  <Tooltip
-                    formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
-                    cursor={{ fill: 'var(--admin-color-surface-hover)' }}
-                  />
-                  <Bar dataKey="revenue" fill="var(--admin-color-brand-red)" radius={[0, 3, 3, 0]} maxBarSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <div className="card mb-4">
+              <div className="card-head"><h2>{t('reports.chartTopProducts')}</h2></div>
+              <div className="card-body">
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart
+                    data={state.data.topProducts.slice(0, 5)}
+                    layout="vertical"
+                    margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tickFormatter={tickFmt}
+                      tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="productName"
+                      tick={{ fontSize: 10, fill: 'var(--admin-color-text-muted)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={140}
+                      tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}…` : v}
+                    />
+                    <Tooltip
+                      formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
+                      cursor={{ fill: 'var(--admin-color-surface-hover)' }}
+                    />
+                    <Bar dataKey="revenue" fill="var(--admin-color-brand-red)" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
 
           {/* Tables row */}
-          <div className="flex gap-4 flex-wrap">
+          <div className="grid-2">
             <RankTable
               title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}
@@ -316,6 +320,6 @@ export function ReportsScreen() {
           </div>
         </>
       )}
-    </section>
+    </div>
   )
 }

@@ -215,11 +215,16 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
   const isImage = setting.valueType === 'IMAGE_URL'
 
   return (
-    <div className={`sv2-field${isDirty ? ' sv2-field--dirty' : ''}${isHtml ? ' sv2-field--html' : ''}`}>
-      <div className="sv2-field-label">
+    <div className="form-field">
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {label}
-        {isDirty && <span className="sv2-field-dirty-dot" aria-label={t('settings.unsavedDot')} />}
-      </div>
+        {isDirty && (
+          <span
+            aria-label={t('settings.unsavedDot')}
+            style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--admin-color-status-warning-text)' }}
+          />
+        )}
+      </label>
 
       {canUpdate ? (
         isHtml ? (
@@ -249,19 +254,23 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
         )
       ) : isHtml ? (
         <div
-          className="sv2-field-readonly sv2-field-readonly--html"
+          className="text-sm"
+          style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawValue) || `<em>${t('settings.htmlEmpty')}</em>` }}
         />
       ) : isImage && rawValue ? (
-        <img src={rawValue} alt="" className="img-preview" loading="lazy" />
+        <img src={rawValue} alt="" style={{ maxWidth: 240, borderRadius: 8 }} loading="lazy" />
       ) : (
-        <div className="sv2-field-readonly">
-          {rawValue || <em className="sv2-empty">{t('settings.valueEmpty')}</em>}
+        <div
+          className="text-sm"
+          style={{ padding: '8px 12px', background: 'var(--admin-color-surface-muted)', borderRadius: 7 }}
+        >
+          {rawValue || <em className="muted">{t('settings.valueEmpty')}</em>}
         </div>
       )}
 
       {error && (
-        <p id={`err-${setting.key}`} className="field-error sv2-field-error">{error}</p>
+        <span id={`err-${setting.key}`} className="hint text-danger">{error}</span>
       )}
     </div>
   )
@@ -269,7 +278,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
 
 // ── SettingTabPanel ───────────────────────────────────────────────────────────
 
-function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSave, onDiscard, saving }) {
+function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChange, onSave, onDiscard, saving }) {
   const { t } = useTranslation()
   const dirtyCount = Object.keys(drafts).filter(
     (k) => items.some((s) => s.key === k)
@@ -278,8 +287,9 @@ function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSa
   const hasError = items.some((s) => errors[s.key])
 
   return (
-    <div className="sv2-panel">
-      <div className="sv2-fields">
+    <div className="card">
+      <div className="card-head"><h2>{title}</h2></div>
+      <div className="card-body">
         {items.map((setting) => (
           <SettingField
             key={setting.key}
@@ -293,27 +303,18 @@ function SettingTabPanel({ items, canUpdate, drafts, errors, onDraftChange, onSa
       </div>
 
       {canUpdate && dirtyCount > 0 && (
-        <div className="sv2-footer">
-          <span className="sv2-footer-info">
+        <div className="card-foot">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--admin-color-status-warning-text)' }}>
             <AlertCircle size={14} />
             {t('settings.unsavedCount', { count: dirtyCount })}
           </span>
-          <div className="sv2-footer-actions">
-            <Button variant="secondary"
-              type="button"
-              onClick={onDiscard}
-              disabled={saving}
-            >
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-outline btn-sm" onClick={onDiscard} disabled={saving}>
               {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={onSave}
-              loading={saving}
-              disabled={hasError}
-            >
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={onSave} disabled={saving || hasError}>
               {t('settings.saveCount', { count: dirtyCount })}
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -468,23 +469,23 @@ export function SettingsScreen({ canUpdate }) {
   }
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('settings.eyebrow')}</p>
           <h1>{t('settings.title')}</h1>
-          <p>{t('settings.description')}</p>
+          <p className="desc">{t('settings.description')}</p>
         </div>
-      </header>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <div className="sv2-layout">
-          {/* Tab sidebar */}
-          <nav className="sv2-tabs" aria-label={t('settings.tabsAria')}>
+        <div className="settings-shell">
+          {/* Tab sidebar — prototype .settings-nav */}
+          <nav className="settings-nav" aria-label={t('settings.tabsAria')}>
             {[...groups.entries()].map(([group, items]) => {
               const meta = TAB_META[group] || FALLBACK_META
               const Icon = meta.icon
@@ -496,14 +497,16 @@ export function SettingsScreen({ canUpdate }) {
                 <button
                   key={group}
                   type="button"
-                  className={`sv2-tab-btn${isActive ? ' active' : ''}`}
+                  className={isActive ? 'active' : ''}
                   onClick={() => setActiveTabOverride(group)}
                   aria-current={isActive ? 'true' : undefined}
                 >
-                  <Icon size={16} className="sv2-tab-icon" />
-                  <span className="sv2-tab-label">{label}</span>
+                  <Icon size={15} />
+                  <span style={{ flex: 1 }}>{label}</span>
                   {dirtyInGroup > 0 && (
-                    <span className="sv2-tab-badge" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>{dirtyInGroup}</span>
+                    <span className="badge badge-warn" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>
+                      {dirtyInGroup}
+                    </span>
                   )}
                 </button>
               )
@@ -511,9 +514,20 @@ export function SettingsScreen({ canUpdate }) {
           </nav>
 
           {/* Content panel */}
-          <div className="sv2-content">
+          <div>
             {saveSuccess && (
-              <div className="sv2-toast" role="status">
+              <div
+                role="status"
+                className="mb-3"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 12px', borderRadius: 8,
+                  background: 'var(--admin-color-status-success-bg)',
+                  color: 'var(--admin-color-status-success-text)',
+                  border: '1px solid var(--admin-color-status-success-border)',
+                  fontSize: 13, fontWeight: 600,
+                }}
+              >
                 <CheckCircle2 size={15} />
                 {t('settings.saveSuccess')}
               </div>
@@ -521,6 +535,7 @@ export function SettingsScreen({ canUpdate }) {
 
             {activeTab && (
               <SettingTabPanel
+                title={tabLabel(activeTab, t)}
                 items={activeItems}
                 canUpdate={canUpdate}
                 drafts={drafts}
@@ -534,6 +549,6 @@ export function SettingsScreen({ canUpdate }) {
           </div>
         </div>
       )}
-    </section>
+    </div>
   )
 }

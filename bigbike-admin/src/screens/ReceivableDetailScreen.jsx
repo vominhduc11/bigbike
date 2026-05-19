@@ -1,27 +1,18 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Wallet, Receipt, AlertTriangle, CalendarClock } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Receipt, Wallet } from 'lucide-react'
 import { fetchReceivableDetail } from '../lib/adminApi'
 import { StatePanel } from '../components/StatePanel'
-import { DetailSection } from '../components/DetailSection'
-import {
-  Screen,
-  ScreenHeader,
-  SummaryCard,
-  SummaryCardGrid,
-  StickyActionBar,
-} from '../components/layout'
 import { RecordPaymentModal, WriteOffModal } from './ReceivablesListScreen'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 
-const AR_STATUS_VARIANT = {
-  OPEN: 'info',
-  PARTIALLY_PAID: 'warning',
-  OVERDUE: 'danger',
-  CLOSED: 'success',
-  WRITTEN_OFF: 'muted',
+// AR status → prototype badge class.
+const AR_STATUS_BADGE = {
+  OPEN: 'badge-info',
+  PARTIALLY_PAID: 'badge-warn',
+  OVERDUE: 'badge-danger',
+  CLOSED: 'badge-success',
+  WRITTEN_OFF: 'badge-neutral',
 }
 
 function formatCurrency(amount, locale) {
@@ -31,9 +22,9 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <Badge variant={AR_STATUS_VARIANT[status] ?? 'muted'}>
+    <span className={`badge ${AR_STATUS_BADGE[status] || 'badge-neutral'}`}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
-    </Badge>
+    </span>
   )
 }
 
@@ -78,170 +69,175 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
   const showActions = (canRecordPayment || canWriteOff) && !closed
 
   return (
-    <Screen>
-      <Button variant="ghost" size="sm"
-        type="button"
-        onClick={() => navigate('/admin/receivables')}
-        className="self-start"
-      >
-        <ArrowLeft size={14} aria-hidden="true" />
-        {t('receivables.detail.backToList')}
-      </Button>
-
-      <ScreenHeader
-        eyebrow={t('receivables.eyebrow')}
-        title={`${t('receivables.title')} — ${ar.orderNumber || ar.orderId?.slice(0, 8) || ''}`}
-        badge={<StatusBadge status={ar.status} t={t} />}
-      />
-
-      <SummaryCardGrid>
-        <SummaryCard
-          tone="info"
-          icon={<Receipt size={16} />}
-          label={t('receivables.detail.kpiOriginalAmount')}
-          value={formatCurrency(ar.originalAmount, locale)}
-        />
-        <SummaryCard
-          tone="success"
-          icon={<Wallet size={16} />}
-          label={t('receivables.detail.kpiPaidAmount')}
-          value={formatCurrency(ar.paidAmount, locale)}
-        />
-        <SummaryCard
-          tone={ar.outstandingAmount > 0 ? 'danger' : 'neutral'}
-          icon={<AlertTriangle size={16} />}
-          label={t('receivables.detail.kpiOutstandingAmount')}
-          value={formatCurrency(ar.outstandingAmount, locale)}
-        />
-        <SummaryCard
-          tone={ar.overdueDays != null ? 'danger' : 'warning'}
-          icon={<CalendarClock size={16} />}
-          label={t('receivables.detail.kpiDueDate')}
-          value={ar.dueDate || '—'}
-          hint={dueDateHint(ar, t)}
-        />
-      </SummaryCardGrid>
-
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-        <DetailSection title={t('receivables.detail.sectionFinancial')}>
-          <div className="info-grid">
-            <span className="info-grid-label">{t('receivables.detail.rowOriginalAmount')}</span>
-            <span className="info-grid-value">{formatCurrency(ar.originalAmount, locale)}</span>
-
-            <span className="info-grid-label">{t('receivables.detail.rowPaidAmount')}</span>
-            <span className="info-grid-value">{formatCurrency(ar.paidAmount, locale)}</span>
-
-            <span className="info-grid-label">{t('receivables.detail.rowOutstandingAmount')}</span>
-            <span className={`info-grid-value ${ar.outstandingAmount > 0 ? 'info-grid-value--danger' : 'info-grid-value--strong'}`}>
-              {formatCurrency(ar.outstandingAmount, locale)}
+    <div>
+      <div className="screen-header">
+        <div>
+          <p className="eyebrow">
+            <a onClick={(e) => { e.preventDefault(); navigate('/admin/receivables') }} style={{ cursor: 'pointer' }}>
+              ← {t('receivables.detail.backToList')}
+            </a>
+          </p>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {t('receivables.title')}{' '}
+            <span className="mono" style={{ color: 'var(--admin-color-brand-red)' }}>
+              {ar.orderNumber || ar.orderId?.slice(0, 8) || ''}
             </span>
+            <StatusBadge status={ar.status} t={t} />
+          </h1>
+        </div>
+      </div>
 
-            {ar.writtenOffAmount > 0 && (
-              <>
-                <span className="info-grid-label">{t('receivables.detail.rowWrittenOffAmount')}</span>
-                <span className="info-grid-value">{formatCurrency(ar.writtenOffAmount, locale)}</span>
-              </>
-            )}
-
-            <span className="info-grid-label">{t('receivables.detail.rowDueDate')}</span>
-            <span className="info-grid-value">{ar.dueDate || '—'}</span>
-
-            {ar.overdueDays != null && (
-              <>
-                <span className="info-grid-label">{t('receivables.detail.rowOverdueDays')}</span>
-                <span className="info-grid-value info-grid-value--danger">
-                  {t('receivables.detail.overdueDays', { days: ar.overdueDays })}
-                </span>
-              </>
-            )}
-
-            <span className="info-grid-label">{t('receivables.detail.rowPaymentTermsDays')}</span>
-            <span className="info-grid-value">
-              {ar.paymentTermsDays != null
-                ? t('receivables.detail.paymentTermsDays', { days: ar.paymentTermsDays })
-                : '—'}
-            </span>
-
-            <span className="info-grid-label">{t('receivables.detail.rowCreditLimitSnapshot')}</span>
-            <span className="info-grid-value">
-              {ar.creditLimitSnapshot != null ? formatCurrency(ar.creditLimitSnapshot, locale) : '—'}
-            </span>
-
-            <span className="info-grid-label">{t('receivables.detail.rowCreatedFrom')}</span>
-            <span className="info-grid-value">{ar.createdFrom || '—'}</span>
+      {/* KPI cards */}
+      <div className="kpi-grid">
+        <div className="kpi">
+          <div className="kpi-head"><span className="kpi-icon blue"><Receipt size={15} /></span><span>{t('receivables.detail.kpiOriginalAmount')}</span></div>
+          <div className="kpi-value">{formatCurrency(ar.originalAmount, locale)}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-head"><span className="kpi-icon green"><Wallet size={15} /></span><span>{t('receivables.detail.kpiPaidAmount')}</span></div>
+          <div className="kpi-value">{formatCurrency(ar.paidAmount, locale)}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-head">
+            <span className={`kpi-icon ${ar.outstandingAmount > 0 ? 'red' : 'gray'}`}><AlertTriangle size={15} /></span>
+            <span>{t('receivables.detail.kpiOutstandingAmount')}</span>
           </div>
-        </DetailSection>
-
-        <DetailSection title={t('receivables.detail.sectionCustomer')}>
-          <div className="info-grid">
-            <span className="info-grid-label">{t('receivables.detail.rowCustomerName')}</span>
-            <span className="info-grid-value">{ar.customerName || '—'}</span>
-
-            <span className="info-grid-label">{t('receivables.detail.rowCustomerPhone')}</span>
-            <span className="info-grid-value">{ar.customerPhone || '—'}</span>
-
-            {ar.customerId && (
-              <>
-                <span className="info-grid-label">{t('receivables.detail.rowCustomerId')}</span>
-                <span className="info-grid-value">
-                  <Button variant="ghost" size="sm"
-                    type="button"
-                    onClick={() => navigate(`/admin/customers/${ar.customerId}`)}
-                  >
-                    {t('receivables.detail.viewProfile')}
-                  </Button>
-                </span>
-              </>
-            )}
-
-            <span className="info-grid-label">{t('receivables.detail.rowOrderId')}</span>
-            <span className="info-grid-value">
-              <Button variant="ghost" size="sm"
-                type="button"
-                onClick={() => navigate(`/admin/orders/${ar.orderId}`)}
-              >
-                {ar.orderNumber || ar.orderId}
-              </Button>
-            </span>
+          <div className="kpi-value">{formatCurrency(ar.outstandingAmount, locale)}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-head">
+            <span className={`kpi-icon ${ar.overdueDays != null ? 'red' : 'amber'}`}><CalendarClock size={15} /></span>
+            <span>{t('receivables.detail.kpiDueDate')}</span>
           </div>
-        </DetailSection>
+          <div className="kpi-value">{ar.dueDate || '—'}</div>
+          <div className="kpi-foot"><span className="kpi-foot-label">{dueDateHint(ar, t)}</span></div>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        {/* Financial */}
+        <div className="card">
+          <div className="card-head"><h2>{t('receivables.detail.sectionFinancial')}</h2></div>
+          <div className="card-body">
+            <dl className="info-grid">
+              <dt>{t('receivables.detail.rowOriginalAmount')}</dt>
+              <dd>{formatCurrency(ar.originalAmount, locale)}</dd>
+              <dt>{t('receivables.detail.rowPaidAmount')}</dt>
+              <dd>{formatCurrency(ar.paidAmount, locale)}</dd>
+              <dt>{t('receivables.detail.rowOutstandingAmount')}</dt>
+              <dd className={ar.outstandingAmount > 0 ? 'text-danger strong' : 'strong'}>
+                {formatCurrency(ar.outstandingAmount, locale)}
+              </dd>
+              {ar.writtenOffAmount > 0 && (
+                <>
+                  <dt>{t('receivables.detail.rowWrittenOffAmount')}</dt>
+                  <dd>{formatCurrency(ar.writtenOffAmount, locale)}</dd>
+                </>
+              )}
+              <dt>{t('receivables.detail.rowDueDate')}</dt>
+              <dd>{ar.dueDate || '—'}</dd>
+              {ar.overdueDays != null && (
+                <>
+                  <dt>{t('receivables.detail.rowOverdueDays')}</dt>
+                  <dd className="text-danger strong">{t('receivables.detail.overdueDays', { days: ar.overdueDays })}</dd>
+                </>
+              )}
+              <dt>{t('receivables.detail.rowPaymentTermsDays')}</dt>
+              <dd>{ar.paymentTermsDays != null ? t('receivables.detail.paymentTermsDays', { days: ar.paymentTermsDays }) : '—'}</dd>
+              <dt>{t('receivables.detail.rowCreditLimitSnapshot')}</dt>
+              <dd>{ar.creditLimitSnapshot != null ? formatCurrency(ar.creditLimitSnapshot, locale) : '—'}</dd>
+              <dt>{t('receivables.detail.rowCreatedFrom')}</dt>
+              <dd>{ar.createdFrom || '—'}</dd>
+            </dl>
+          </div>
+        </div>
+
+        {/* Customer */}
+        <div className="card">
+          <div className="card-head"><h2>{t('receivables.detail.sectionCustomer')}</h2></div>
+          <div className="card-body">
+            <dl className="info-grid">
+              <dt>{t('receivables.detail.rowCustomerName')}</dt>
+              <dd>{ar.customerName || '—'}</dd>
+              <dt>{t('receivables.detail.rowCustomerPhone')}</dt>
+              <dd>{ar.customerPhone || '—'}</dd>
+              {ar.customerId && (
+                <>
+                  <dt>{t('receivables.detail.rowCustomerId')}</dt>
+                  <dd>
+                    <button
+                      type="button"
+                      className="btn-ghost text-xs text-primary-red fw-600"
+                      onClick={() => navigate(`/admin/customers/${ar.customerId}`)}
+                    >
+                      {t('receivables.detail.viewProfile')}
+                    </button>
+                  </dd>
+                </>
+              )}
+              <dt>{t('receivables.detail.rowOrderId')}</dt>
+              <dd>
+                <button
+                  type="button"
+                  className="btn-ghost text-xs text-primary-red fw-600"
+                  onClick={() => navigate(`/admin/orders/${ar.orderId}`)}
+                >
+                  {ar.orderNumber || ar.orderId}
+                </button>
+              </dd>
+            </dl>
+          </div>
+        </div>
       </div>
 
       {(ar.note || ar.writeOffReason) && (
-        <DetailSection title={t('receivables.detail.sectionNotes')}>
-          {ar.note && <p className="mb-3">{ar.note}</p>}
-          {ar.writeOffReason && (
-            <div className="modal-note modal-note--warn">
-              <strong>{t('receivables.detail.writeOffReason')}</strong> {ar.writeOffReason}
-            </div>
-          )}
-        </DetailSection>
+        <div className="card mt-4">
+          <div className="card-head"><h2>{t('receivables.detail.sectionNotes')}</h2></div>
+          <div className="card-body">
+            {ar.note && <p className="mb-3">{ar.note}</p>}
+            {ar.writeOffReason && (
+              <div
+                className="text-sm"
+                style={{
+                  padding: '10px 12px', borderRadius: 8,
+                  background: 'var(--admin-color-status-warning-bg)',
+                  border: '1px solid var(--admin-color-status-warning-border)',
+                  color: 'var(--admin-color-status-warning-text)',
+                }}
+              >
+                <strong>{t('receivables.detail.writeOffReason')}</strong> {ar.writeOffReason}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {closed && (
-        <StatePanel tone="neutral" title={t('receivables.detail.closedNotice')} />
+        <div className="mt-4">
+          <StatePanel tone="neutral" title={t('receivables.detail.closedNotice')} />
+        </div>
       )}
 
       {showActions && (
-        <StickyActionBar>
-          {canRecordPayment && (
-            <Button
-              type="button"
-              onClick={() => setPaymentTarget(ar)}
-            >
-              {t('receivables.detail.recordPaymentBtn')}
-            </Button>
-          )}
-          {canWriteOff && (
-            <Button variant="ghost" className="text-danger hover:bg-danger-bg has-tooltip"
-              type="button"
-              onClick={() => setWriteOffTarget(ar)}
-              title={t('receivables.btn.writeOffTooltip')}
-            >
-              {t('receivables.detail.writeOffBtn')}
-            </Button>
-          )}
-        </StickyActionBar>
+        <div className="card mt-4">
+          <div className="card-body" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            {canRecordPayment && (
+              <button type="button" className="btn btn-primary" onClick={() => setPaymentTarget(ar)}>
+                {t('receivables.detail.recordPaymentBtn')}
+              </button>
+            )}
+            {canWriteOff && (
+              <button
+                type="button"
+                className="btn btn-outline text-danger"
+                onClick={() => setWriteOffTarget(ar)}
+                title={t('receivables.btn.writeOffTooltip')}
+              >
+                {t('receivables.detail.writeOffBtn')}
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       <RecordPaymentModal
@@ -252,6 +248,6 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
         receivable={writeOffTarget}
         onClose={() => setWriteOffTarget(null)}
       />
-    </Screen>
+    </div>
   )
 }

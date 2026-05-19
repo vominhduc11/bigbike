@@ -973,6 +973,21 @@ export async function fetchCustomers(query) {
   }
 }
 
+export async function fetchCustomerSummary() {
+  try {
+    const payload = await requestJson('/admin/customers/summary')
+    const d = payload?.data || {}
+    return {
+      total: Number(d.total ?? 0),
+      vip: Number(d.vip ?? 0),
+      newLast30Days: Number(d.newLast30Days ?? 0),
+      active: Number(d.active ?? 0),
+    }
+  } catch {
+    return { total: 0, vip: 0, newLast30Days: 0, active: 0 }
+  }
+}
+
 export async function fetchCustomerDetail(customerId) {
   if (FORCE_MOCK) {
     return withMockFallback('Customer detail served from mock.', { item: null })

@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AdminTable } from '../components/AdminTable'
+import { Search } from 'lucide-react'
 import { Modal } from '../components/layout'
-import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchAllSerials, updateSerialStatus, getWarrantyBySerial } from '../lib/adminApi'
@@ -285,92 +284,42 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
     setSelected(updatedItem)
   }
 
-  const columns = [
-    {
-      key: 'serialNumber',
-      label: t('serial.colSerialNumber'),
-      skeletonWidth: '70%',
-      render: (item) => (
-        <span className="font-mono font-semibold">{item.serialNumber}</span>
-      ),
-    },
-    {
-      key: 'product',
-      label: t('serial.colProduct'),
-      skeletonWidth: '80%',
-      render: (item) => (
-        <span>
-          <p className="font-medium">{item.productName || '—'}</p>
-          {item.variantName && (
-            <p className="text-xs text-muted-foreground">{item.variantName}</p>
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      label: t('serial.colStatus'),
-      skeletonWidth: '50%',
-      render: (item) => <SerialStatusPill status={item.status} />,
-    },
-    {
-      key: 'receivedAt',
-      label: t('serial.colReceivedAt'),
-      align: 'right',
-      skeletonWidth: '45%',
-      render: (item) => (
-        <span className="text-xs text-muted-foreground">
-          {formatDate(item.receivedAt)}
-        </span>
-      ),
-    },
-    {
-      key: 'soldAt',
-      label: t('serial.colSoldAt'),
-      align: 'right',
-      skeletonWidth: '45%',
-      render: (item) => (
-        <span className={`text-xs ${item.soldAt ? 'text-foreground' : 'text-muted-foreground'}`}>
-          {formatDate(item.soldAt)}
-        </span>
-      ),
-    },
-  ]
+  const items = state.items || []
+  const pagination = state.pagination
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('serial.eyebrow')}</p>
           <h1>{t('serial.title')}</h1>
-          <p>{t('serial.description')}</p>
+          <p className="desc">{t('serial.description')}</p>
         </div>
-      </header>
+      </div>
 
-      <section className="filter-bar">
-        <label>
-          {t('serial.searchLabel')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             placeholder={t('serial.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-           />
-        </label>
-        <label>
-          {t('serial.filterStatus')}
-          <Select
-            value={query.status}
-            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {ALL_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s === 'ALL' ? t('common.all') : t(`serial.status.${s}`, { defaultValue: s })}
-              </SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
-      </section>
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.status}
+          onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
+          aria-label={t('serial.filterStatus')}
+        >
+          {ALL_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s === 'ALL' ? t('serial.filterStatus') : t(`serial.status.${s}`, { defaultValue: s })}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {state.status === 'error' && (
         <StatePanel
@@ -381,28 +330,59 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
           onAction={() => state.refetch()}
         />
       )}
-
-      {state.status === 'success' && state.items.length === 0 && (
+      {state.status === 'success' && items.length === 0 && (
         <StatePanel tone="neutral" title={t('serial.empty')} description={t('serial.emptyDesc')} />
       )}
 
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <>
-          <AdminTable
-            caption={t('serial.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-            onRowClick={(item) => setSelected(item)}
-          />
-          {state.status === 'success' && state.pagination && (
-            <PaginationControls
-              pagination={state.pagination}
-              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
-            />
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('serial.colSerialNumber')}</th>
+                    <th>{t('serial.colProduct')}</th>
+                    <th>{t('serial.colStatus')}</th>
+                    <th className="num">{t('serial.colReceivedAt')}</th>
+                    <th className="num">{t('serial.colSoldAt')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(8)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={5}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((item) => (
+                    <tr key={item.id} onClick={() => setSelected(item)}>
+                      <td className="id-cell">{item.serialNumber}</td>
+                      <td>
+                        <div className="fw-600">{item.productName || '—'}</div>
+                        {item.variantName && <div className="text-xs muted">{item.variantName}</div>}
+                      </td>
+                      <td><SerialStatusPill status={item.status} /></td>
+                      <td className="num muted text-xs">{formatDate(item.receivedAt)}</td>
+                      <td className="num text-xs">{formatDate(item.soldAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && pagination && pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => setQuery((q) => ({ ...q, page: q.page - 1 }))}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}>›</button>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
 
       {selected && (
@@ -414,6 +394,6 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
           canReadWarranty={canReadWarranty}
         />
       )}
-    </section>
+    </div>
   )
 }

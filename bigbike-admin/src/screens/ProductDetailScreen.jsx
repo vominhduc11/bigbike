@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import {
+  AlertCircle, Check, ChevronDown as PfChevronDown, ChevronUp as PfChevronUp,
+  EyeOff, FileEdit, Globe, Image as PfImage, Images, Info, Layers, ListChecks,
+  Loader2, Lock, LayoutList, Maximize2, Minimize2, Save, Search as PfSearch, Tag, Video, X as PfX,
+} from 'lucide-react'
 import {
   createProduct,
   fetchBrands,
@@ -36,53 +41,6 @@ function inferVideoType(url, provider) {
   if (provider === 'youtube' || provider === 'upload') return provider
   if (extractYouTubeId(url)) return 'youtube'
   return url ? 'upload' : 'youtube'
-}
-
-// ── Collapsible section ────────────────────────────────────────────────────────
-
-function CollapsibleSection({ id, title, description, children, forceOpen = false }) {
-  const storageKey = `product-section-open:${id}`
-  const [open, setOpen] = useState(() => {
-    try {
-      const stored = localStorage.getItem(storageKey)
-      return stored === null ? true : stored !== 'false'
-    } catch { return true }
-  })
-
-  function toggle() {
-    setOpen((prev) => {
-      const next = !prev
-      try { localStorage.setItem(storageKey, String(next)) } catch { /* ignore quota errors */ }
-      return next
-    })
-  }
-
-  const isOpen = open || forceOpen
-
-  return (
-    <section id={id} className={`detail-section${isOpen ? '' : ' is-collapsed'}`}>
-      <button
-        type="button"
-        className="detail-section-header detail-section-header--toggle"
-        onClick={toggle}
-        aria-expanded={isOpen}
-        aria-controls={`${id}-content`}
-      >
-        <div>
-          <h2>{title}</h2>
-          {description ? <p className="detail-section-desc">{description}</p> : null}
-        </div>
-        <span className="section-collapse-icon" aria-hidden="true">
-          {isOpen ? <IconChevronUp /> : <IconChevronDown />}
-        </span>
-      </button>
-      <div id={`${id}-content`} className="detail-section-collapse-wrap">
-        <div className="detail-section-collapse-inner">
-          {children}
-        </div>
-      </div>
-    </section>
-  )
 }
 
 // ── Slug generation ────────────────────────────────────────────────────────────
@@ -1434,6 +1392,186 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
   )
 }
 
+// ── Prototype form layout ───────────────────────────────────────────────────────
+
+// The 9 sections that map to real backend fields (the prototype's trust-badge /
+// CTA / FAQ / related-product sections were dropped — BigBike's backend has no
+// fields for them, so rendering them would silently lose user input).
+// `required` sections must be complete before the product can be published.
+const SECTION_DEFS = [
+  { id: 'section-basic',          key: 'basic',         icon: 'Info',       labelKey: 'products.detail.sectionBasic',         required: true  },
+  { id: 'section-pricing',        key: 'pricing',       icon: 'Tag',        labelKey: 'products.detail.sectionPricing',       required: true  },
+  { id: 'section-media',          key: 'media',         icon: 'Image',      labelKey: 'products.detail.mainImageTitle',       required: true  },
+  { id: 'section-seo',            key: 'seo',           icon: 'Search',     labelKey: 'products.detail.sectionSeo',           required: false },
+  { id: 'section-content-bottom', key: 'contentBottom', icon: 'LayoutList', labelKey: 'products.detail.sectionContentBottom', required: false },
+  { id: 'section-gallery',        key: 'gallery',       icon: 'Images',     labelKey: 'products.detail.gallerySectionTitle',  required: false },
+  { id: 'section-videos',         key: 'videos',        icon: 'Video',      labelKey: 'products.detail.videoSectionTitle',    required: false },
+  { id: 'section-specs',          key: 'specs',         icon: 'ListChecks', labelKey: 'products.detail.specsSectionTitle',     required: false },
+  { id: 'section-variants',       key: 'variants',      icon: 'Layers',     labelKey: 'products.detail.variantSectionTitle',   required: false },
+]
+
+// Lucide icons referenced by SECTION_DEFS — resolved by name in the TOC and
+// section headers (icon components imported at the top of the file).
+const SECTION_ICONS = {
+  Info, Tag, Image: PfImage, Search: PfSearch, LayoutList,
+  Images, Video, ListChecks, Layers,
+}
+
+// One collapsible form section in the prototype's `pf-section` style.
+function PfSection({ def, t, open, done, hasError, onToggle, badge, children }) {
+  const Icon = SECTION_ICONS[def.icon] || Info
+  return (
+    <div className="pf-section" data-section={def.id} id={def.id}>
+      <button type="button" className="pf-section-head" onClick={onToggle}>
+        <span className={`pf-section-icon${done ? ' done' : ''}`}>
+          {done ? <Check size={14} /> : <Icon size={16} />}
+        </span>
+        <div style={{ flex: 1, textAlign: 'left' }}>
+          <div className="pf-section-title">
+            {t(def.labelKey)}
+            {def.required && !done && (
+              <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--admin-color-brand-red)' }}>
+                {t('products.detail.requiredTag', { defaultValue: 'BẮT BUỘC' })}
+              </span>
+            )}
+            {!def.required && (
+              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 500, color: 'var(--admin-color-text-muted)' }}>
+                {t('products.detail.optionalTag', { defaultValue: '(tuỳ chọn)' })}
+              </span>
+            )}
+          </div>
+        </div>
+        {done && (
+          <span className="badge badge-success" style={{ fontSize: 10 }}>
+            <Check size={10} />{t('products.detail.sectionDone', { defaultValue: 'Hoàn thành' })}
+          </span>
+        )}
+        {hasError && (
+          <span className="badge badge-danger" style={{ fontSize: 10 }}>
+            <AlertCircle size={10} />
+          </span>
+        )}
+        {badge}
+        {open ? <PfChevronUp size={16} /> : <PfChevronDown size={16} />}
+      </button>
+      {open && <div className="pf-section-body">{children}</div>}
+    </div>
+  )
+}
+
+// Sticky table-of-contents with progress + quick-save bar.
+function ProductFormToc({
+  t, completion, sectionErrors, activeSection, openMap, onJump, onToggleAll,
+  saving, savedFlash, isDirty, publishStatus, isCreate,
+  onSave, onSaveDraft, onSaveHidden, onClose,
+}) {
+  const requiredDefs = SECTION_DEFS.filter((s) => s.required)
+  const optionalDefs = SECTION_DEFS.filter((s) => !s.required)
+  const doneRequired = requiredDefs.filter((s) => completion[s.key]).length
+  const doneOptional = optionalDefs.filter((s) => completion[s.key]).length
+  const allOpen = SECTION_DEFS.every((s) => openMap[s.id])
+
+  const saveDotClass = saving ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
+  const saveLabel = saving
+    ? t('products.detail.savingShort', { defaultValue: 'Đang lưu...' })
+    : savedFlash
+      ? t('common.clean')
+      : isDirty
+        ? t('common.dirty')
+        : t('common.clean')
+
+  return (
+    <aside className="pf-toc">
+      <div className="pf-toc-head">
+        <div className="pf-toc-head-row">
+          <div>
+            <div className="pf-toc-head-title">{t('products.detail.tocProgress', { defaultValue: 'Tiến độ' })}</div>
+            <div className="pf-toc-head-meta">
+              <strong>{doneRequired}/{requiredDefs.length}</strong>{' '}
+              {t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}
+              {' · '}{doneOptional}/{optionalDefs.length}{' '}
+              {t('products.detail.tocOptional', { defaultValue: 'tuỳ chọn' })}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="pf-toc-toggle-all"
+            title={allOpen
+              ? t('products.detail.tocCollapseAll', { defaultValue: 'Đóng tất cả' })
+              : t('products.detail.tocExpandAll', { defaultValue: 'Mở tất cả' })}
+            onClick={() => onToggleAll(!allOpen)}
+          >
+            {allOpen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+        </div>
+        <div className="pf-toc-progress">
+          <div style={{ width: `${(doneRequired / requiredDefs.length) * 100}%` }} />
+        </div>
+      </div>
+
+      <nav className="pf-toc-nav">
+        {SECTION_DEFS.map((def) => {
+          const Icon = SECTION_ICONS[def.icon] || Info
+          const done = completion[def.key]
+          const hasError = sectionErrors[def.key]
+          return (
+            <button
+              key={def.id}
+              type="button"
+              className={`pf-toc-item${done ? ' done' : ''}${hasError ? ' error' : ''}${activeSection === def.id ? ' active' : ''}`}
+              onClick={() => onJump(def.id)}
+            >
+              <span className="pf-toc-icon">
+                {hasError ? <AlertCircle size={13} /> : done ? <Check size={13} /> : <Icon size={13} />}
+              </span>
+              <span style={{ flex: 1, textAlign: 'left' }}>{t(def.labelKey)}</span>
+              {def.required && !done && !hasError && (
+                <span className="pf-toc-req" title={t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}>*</span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="pf-toc-save">
+        <div className="pf-toc-save-status">
+          <span className={`pf-dot ${saveDotClass}`} />
+          <span>{saveLabel}</span>
+        </div>
+        {publishStatus === 'PUBLISHED' ? (
+          <button type="button" className="btn btn-primary btn-sm pf-toc-primary" onClick={() => onSave()} disabled={saving || !isDirty}>
+            {saving ? <span className="pf-spin"><Loader2 size={13} /></span> : <Check size={13} />}
+            {isCreate ? t('products.detail.createBtn') : t('products.detail.saveBtn')}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-primary btn-sm pf-toc-primary" onClick={() => onSave('PUBLISHED')} disabled={saving}>
+            {saving ? <span className="pf-spin"><Loader2 size={13} /></span> : <Globe size={13} />}
+            {isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish')}
+          </button>
+        )}
+        <div className="pf-toc-secondary">
+          {publishStatus === 'DRAFT' && (
+            <button type="button" className="pf-toc-icon-btn" onClick={onSaveDraft} disabled={saving || !isDirty}>
+              <FileEdit size={13} /><span>{t('products.detail.saveDraft')}</span>
+            </button>
+          )}
+          {publishStatus === 'HIDDEN' && (
+            <button type="button" className="pf-toc-icon-btn" onClick={onSaveHidden} disabled={saving || !isDirty}>
+              <EyeOff size={13} /><span>{t('products.detail.saveHidden')}</span>
+            </button>
+          )}
+          <button type="button" className="pf-toc-icon-btn" onClick={onClose} disabled={saving}>
+            <PfX size={13} /><span>{t('common.cancel')}</span>
+          </button>
+        </div>
+        <div className="pf-toc-kbd-hint">
+          <kbd>⌘</kbd>+<kbd>↵</kbd> {t('products.detail.saveShortcutHint', { defaultValue: 'lưu nhanh' })}
+        </div>
+      </div>
+    </aside>
+  )
+}
+
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate }) {
@@ -1611,6 +1749,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       if (!isCreate) queryClient.setQueryData(['product', productId], response)
       toast.success(isCreate ? t('products.detail.successCreate') : t('products.detail.successUpdate'))
       setIsSubmitting(false)
+      // Briefly flash the "saved" dot in the TOC save bar.
+      setSavedFlash(true)
+      setTimeout(() => setSavedFlash(false), 1200)
       if (isCreate && savedItem?.id) navigate(`/admin/products/${savedItem.id}`, { replace: true })
     },
     onError: (error) => {
@@ -1680,6 +1821,74 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setPendingPublish(null)
   }
 
+  // ── Prototype layout state — collapsible sections + TOC scroll-spy ────────
+  const [openMap, setOpenMap] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('bb-product-form-sections') || 'null')
+      if (stored) return stored
+    } catch { /* ignore */ }
+    // New product opens the 3 required sections; edit opens basic + pricing.
+    const initial = {}
+    SECTION_DEFS.forEach((s, i) => { initial[s.id] = isCreate ? s.required : i < 2 })
+    return initial
+  })
+  const [activeSection, setActiveSection] = useState(SECTION_DEFS[0].id)
+  const [savedFlash, setSavedFlash] = useState(false)
+
+  useEffect(() => {
+    try { localStorage.setItem('bb-product-form-sections', JSON.stringify(openMap)) } catch { /* ignore */ }
+  }, [openMap])
+
+  // Scroll-spy — highlight the TOC entry of the section currently in view.
+  useEffect(() => {
+    const pc = document.querySelector('.page-content')
+    if (!pc) return undefined
+    const onScroll = () => {
+      const sections = pc.querySelectorAll('[data-section]')
+      let current = SECTION_DEFS[0].id
+      const containerTop = pc.getBoundingClientRect().top
+      for (const sec of sections) {
+        if (sec.getBoundingClientRect().top - containerTop < 180) current = sec.dataset.section
+        else break
+      }
+      setActiveSection(current)
+    }
+    onScroll()
+    pc.addEventListener('scroll', onScroll, { passive: true })
+    return () => pc.removeEventListener('scroll', onScroll)
+  }, [])
+
+  function toggleSection(id) {
+    setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+  function setAllSections(next) {
+    setOpenMap(() => {
+      const m = {}
+      SECTION_DEFS.forEach((s) => { m[s.id] = next })
+      return m
+    })
+  }
+  function jumpToSection(id) {
+    setOpenMap((prev) => (prev[id] ? prev : { ...prev, [id]: true }))
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
+
+  // Per-section completion — drives TOC ticks + section header badges.
+  const completion = useMemo(() => ({
+    basic: Boolean(form.name.trim() && form.slug.trim() && form.brandId && form.categoryId),
+    pricing: Boolean(form.retailPrice && Number(form.retailPrice) > 0
+      && (!form.salePrice || Number(form.salePrice) < Number(form.retailPrice))),
+    media: Boolean(form.imageUrl),
+    seo: Boolean(form.seoTitle && form.seoDescription),
+    contentBottom: (form.contentBottom || '').length > 0,
+    gallery: form.gallery.length > 0,
+    videos: form.videos.length > 0,
+    specs: form.specifications.length > 0,
+    variants: form.variants.length > 0,
+  }), [form])
+
   if (state.status === 'loading') {
     return (
       <StatePanel
@@ -1728,71 +1937,65 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     variants:      se(['variants']),
   }
 
+  // SEO checklist — same heuristics as the prototype, computed from real fields.
+  const seoChecks = [
+    { ok: !!form.seoTitle && form.seoTitle.length >= 30 && form.seoTitle.length <= 60, label: t('products.detail.seoCheckTitle', { defaultValue: 'Title Tag 30–60 ký tự' }) },
+    { ok: !!form.seoDescription && form.seoDescription.length >= 140 && form.seoDescription.length <= 160, label: t('products.detail.seoCheckDesc', { defaultValue: 'Meta Description 140–160 ký tự' }) },
+    { ok: /\d/.test(form.seoDescription || ''), label: t('products.detail.seoCheckPrice', { defaultValue: 'Meta có giá (con số)' }) },
+    { ok: /bảo hành|warranty/i.test(form.seoDescription || ''), label: t('products.detail.seoCheckWarranty', { defaultValue: 'Meta có "bảo hành"' }) },
+    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
+    { ok: !!form.imageUrl && !!form.imageAlt, label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
+    { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
+    { ok: true, label: t('products.detail.seoCheckSchema', { defaultValue: 'Schema Product (tự động)' }) },
+  ]
+  const seoPassed = seoChecks.filter((c) => c.ok).length
+
   return (
-    <section className="screen">
-      <header className="screen-header">
-        <div>
-          <p className="eyebrow">{t('products.detail.eyebrow')}</p>
-          <h1>{isCreate ? t('products.detail.createTitle') : t('products.detail.editTitle')}</h1>
-          <p>{isCreate ? t('products.detail.createDesc') : t('products.detail.editDesc')}</p>
+    <div className="pf-screen">
+      {/* Read-only banner */}
+      {!canUpdate && (
+        <div className="pf-readonly-banner">
+          <Lock size={16} />
+          <span>{t('products.detail.permissionDesc')}</span>
         </div>
-        <div className="screen-actions">
-          <Button
-            variant="outline"
-            onClick={async () => {
-              if (isDirty) {
-                const confirmed = await showConfirm(
-                  t('products.detail.unsavedChangesConfirm'),
-                  t('products.detail.unsavedChangesTitle'),
-                )
-                if (!confirmed) return
-              }
-              navigate('/admin/products')
+      )}
+
+      {/* Mock-data warning */}
+      {state.warning && (
+        <div className="pf-restore-banner" style={{ borderColor: 'var(--admin-color-status-warning-border)', background: 'var(--admin-color-status-warning-bg)' }}>
+          <AlertCircle size={16} style={{ color: 'var(--admin-color-status-warning-text)' }} />
+          <div style={{ flex: 1, fontSize: 13 }}>{state.warning}</div>
+        </div>
+      )}
+
+      {/* Autosave draft recovery */}
+      {draftRecovery && (
+        <div className="pf-restore-banner">
+          <Save size={16} style={{ color: 'var(--admin-color-status-info-text)' }} />
+          <div style={{ flex: 1, fontSize: 13 }}>
+            <strong>{t('products.detail.draftFound', { defaultValue: 'Có bản nháp tạm trong trình duyệt' })}</strong>
+            {' — '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              setForm(draftRecovery.form)
+              setIsDirty(true)
+              setDraftRecovery(null)
+              slugEditedByUser.current = Boolean(draftRecovery.form.slug)
             }}
           >
-            {t('products.detail.backToList')}
-          </Button>
-          {!isCreate && state.item?.publishStatus === 'PUBLISHED' && state.item?.slug ? (
-            <Button asChild variant="outline">
-              <a
-                href={`/product/${state.item.slug}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t('products.detail.viewLiveTitle')}
-              >
-                {t('products.detail.viewLive')}
-              </a>
-            </Button>
-          ) : null}
+            {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+          >
+            {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+          </button>
         </div>
-      </header>
-
-      {state.warning ? (
-        <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
-      ) : null}
-
-      {!canUpdate ? (
-        <StatePanel
-          tone="warning"
-          title={t('products.detail.permissionDenied')}
-          description={t('products.detail.permissionDesc')}
-        />
-      ) : null}
-
-      {draftRecovery && (
-        <DraftRecoveryBanner
-          ts={draftRecovery.ts}
-          onRestore={() => {
-            setForm(draftRecovery.form)
-            setIsDirty(true)
-            setDraftRecovery(null)
-            slugEditedByUser.current = Boolean(draftRecovery.form.slug)
-          }}
-          onDiscard={() => {
-            clearFormFromStorage(autosaveKey)
-            setDraftRecovery(null)
-          }}
-        />
       )}
 
       {showPublishChecklist && pendingPublish && (
@@ -1810,373 +2013,351 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         />
       )}
 
-      <form
-        ref={formRef}
-        className="entity-form"
-        onSubmit={(e) => { e.preventDefault(); handleSave() }}
-        onKeyDown={(e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
-            e.preventDefault()
-            handleSave()
-          }
-        }}
-      >
-        {/* ── Thông tin cơ bản ── */}
-        <CollapsibleSection id="section-basic" title={t('products.detail.sectionBasic')} forceOpen={sectionErrors.basic}>
-          <div className="detail-section-content form-grid">
-            <label className="form-field">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.name')}</span>
-                <span className={`char-counter${form.name.length > 230 ? ' char-counter-warn' : ''}`}>
-                  {form.name.length} / 255
-                </span>
+      {/* Body — TOC sidebar + sections */}
+      <div className="pf-body-wrap">
+        <ProductFormToc
+          t={t}
+          completion={completion}
+          sectionErrors={sectionErrors}
+          activeSection={activeSection}
+          openMap={openMap}
+          onJump={jumpToSection}
+          onToggleAll={setAllSections}
+          saving={isSubmitting}
+          savedFlash={savedFlash}
+          isDirty={isDirty}
+          publishStatus={form.publishStatus}
+          isCreate={isCreate}
+          onSave={(override) => handleSave(override ?? (form.publishStatus === 'PUBLISHED' ? undefined : 'PUBLISHED'))}
+          onSaveDraft={() => handleSave('DRAFT')}
+          onSaveHidden={() => handleSave()}
+          onClose={async () => {
+            if (isDirty) {
+              const confirmed = await showConfirm(
+                t('products.detail.unsavedChangesConfirm'),
+                t('products.detail.unsavedChangesTitle'),
+              )
+              if (!confirmed) return
+            }
+            navigate('/admin/products')
+          }}
+        />
+
+        <form
+          ref={formRef}
+          className="pf-body"
+          onSubmit={(e) => { e.preventDefault(); handleSave() }}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
+              e.preventDefault()
+              handleSave()
+            }
+          }}
+        >
+          {/* ── Section 1: Thông tin cơ bản ── */}
+          <PfSection
+            def={SECTION_DEFS[0]}
+            t={t}
+            open={openMap['section-basic']}
+            done={completion.basic}
+            hasError={sectionErrors.basic}
+            onToggle={() => toggleSection('section-basic')}
+          >
+            <div className="pf-grid">
+              <div className="pf-field full">
+                <div className="pf-field-label">
+                  <span>{t('products.detail.name')}</span>
+                  <span className={`pf-field-count${form.name.length > 230 ? ' warn' : ''}`}>{form.name.length} / 255</span>
+                </div>
+                <Input value={form.name} onChange={(e) => handleNameChange(e.target.value)} disabled={isReadOnly} maxLength={255} />
+                {validationErrors.name && <span className="pf-field-msg pf-field-msg-error">{validationErrors.name}</span>}
               </div>
-              <Input
-                value={form.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                disabled={isReadOnly}
-                maxLength={255}
-               />
-              {validationErrors.name ? (
-                <small className="field-error">{validationErrors.name}</small>
-              ) : null}
-            </label>
 
-            <label className="form-field">
-              <span>{t('products.detail.slug')}</span>
-              <Input
-                value={form.slug}
-                placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
-                onChange={(e) => handleSlugChange(e.target.value)}
-                onBlur={(e) => handleSlugBlur(e.target.value)}
-                disabled={isReadOnly}
-                maxLength={200}
-               />
-              {validationErrors.slug ? (
-                <small className="field-error">{validationErrors.slug}</small>
-              ) : (
-                <small className="detail-section-desc mt-0.5">
-                  {t('products.detail.slugHint')}
-                </small>
-              )}
-            </label>
-
-            <label className="form-field">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.sku')}</span>
-                <span className={`char-counter${form.sku.length > 85 ? ' char-counter-warn' : ''}`}>
-                  {form.sku.length} / 100
-                </span>
-              </div>
-              <Input
-                value={form.sku}
-                onChange={(e) => updateField('sku', e.target.value)}
-                disabled={isReadOnly}
-                maxLength={100}
-               />
-              <small className="detail-section-desc mt-0.5">
-                {t('products.detail.skuHint')}
-              </small>
-            </label>
-
-            <label className="form-field">
-              <span>{t('products.detail.categoryId')}</span>
-              <Select
-                value={form.categoryId}
-                onValueChange={(val) => updateField('categoryId', val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
-                  <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
-                )}
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent></Select>
-              {validationErrors.categoryId ? (
-                <small className="field-error">{validationErrors.categoryId}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('products.detail.brandId')}</span>
-              <Select
-                value={form.brandId}
-                onValueChange={(val) => updateField('brandId', val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {form.brandId && !brands.some((b) => b.id === form.brandId) && (
-                  <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
-                )}
-                {brands.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent></Select>
-            </label>
-
-            <div className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.shortDescription')}</span>
-                <span className={`char-counter${form.shortDescription.length > 450 ? ' char-counter-warn' : ''}`}>
-                  {form.shortDescription.length} / 500
-                </span>
-              </div>
-              <Textarea className={validationErrors.shortDescription ? 'border-danger' : undefined}
-                value={form.shortDescription}
-                onChange={(e) => updateField('shortDescription', e.target.value)}
-                maxLength={500}
-                placeholder={t('products.detail.shortDescriptionPlaceholder')}
-                disabled={isReadOnly}
-               />
-              <small className="detail-section-desc mt-1">
-                {t('products.detail.shortDescriptionHint')}
-              </small>
-              {validationErrors.shortDescription ? (
-                <small className="field-error">{validationErrors.shortDescription}</small>
-              ) : null}
-            </div>
-
-            <div className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.description')}</span>
-                {form.description.length > 15000 && (
-                  <span className={`char-counter${form.description.length > 19000 ? ' char-counter-warn' : ''}`}>
-                    {form.description.length.toLocaleString()} / 20 000
-                  </span>
-                )}
-              </div>
-              <RichTextEditor
-                value={form.description}
-                onChange={(html) => updateField('description', html)}
-                placeholder={t('products.detail.descriptionPlaceholder')}
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.description)}
-                enableImagePicker
-              />
-              {validationErrors.description && (
-                <small className="field-error">{validationErrors.description}</small>
-              )}
-            </div>
-
-            <div className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.promotionContent')}</span>
-                {form.promotionContent.length > 15000 && (
-                  <span className={`char-counter${form.promotionContent.length > 19000 ? ' char-counter-warn' : ''}`}>
-                    {form.promotionContent.length.toLocaleString()} / 20 000
-                  </span>
-                )}
-              </div>
-              <RichTextEditor
-                value={form.promotionContent}
-                onChange={(html) => updateField('promotionContent', html)}
-                placeholder={t('products.detail.promotionContentPlaceholder')}
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.promotionContent)}
-                enableImagePicker
-              />
-              <small className="detail-section-desc mt-1">
-                {t('products.detail.promotionContentHint')}
-              </small>
-              {validationErrors.promotionContent && (
-                <small className="field-error">{validationErrors.promotionContent}</small>
-              )}
-            </div>
-
-            <label className="form-field form-field-wide">
-              <span>{t('products.detail.homepageBlock')}</span>
-              <Select
-                value={form.homepageBlock || 'NONE'}
-                onValueChange={(val) => updateField('homepageBlock', val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
-                <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
-                <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
-              </SelectContent></Select>
-              <small className="detail-section-desc mt-1">
-                {t('products.detail.homepageHint')}
-              </small>
-              {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
-                <small className="detail-section-desc text-warning mt-1">
-                  {t('products.detail.homepagePublishWarning')}
-                </small>
-              )}
-            </label>
-
-            {form.homepageBlock && form.homepageBlock !== 'NONE' && (
-              <label className="form-field max-w-60">
-                <span>{t('products.detail.homepageOrder')}</span>
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('products.detail.slug')}</span></div>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  step={1}
-                  min={0}
-                  value={form.homepageOrder}
-                  onChange={(e) => updateField('homepageOrder', e.target.value)}
-                  placeholder={t('products.detail.homepageOrderPlaceholder')}
+                  value={form.slug}
+                  placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  onBlur={(e) => handleSlugBlur(e.target.value)}
                   disabled={isReadOnly}
-                 />
-                <small className="detail-section-desc">
-                  {t('products.detail.homepageOrderHint')}
-                </small>
-              </label>
-            )}
-          </div>
-        </CollapsibleSection>
+                  maxLength={200}
+                  style={{ fontFamily: 'var(--admin-font-mono)' }}
+                />
+                {validationErrors.slug
+                  ? <span className="pf-field-msg pf-field-msg-error">{validationErrors.slug}</span>
+                  : <span className="pf-field-msg pf-field-hint">{t('products.detail.slugHint')}</span>}
+              </div>
 
-        {/* ── Giá & Trạng thái ── */}
-        <CollapsibleSection id="section-pricing" title={t('products.detail.sectionPricing')} forceOpen={sectionErrors.pricing}>
-          {form.variants.length > 0 && (
-            <div className="section-info-banner">
-              {t('products.detail.variantPricingHint')}
+              <div className="pf-field">
+                <div className="pf-field-label">
+                  <span>{t('products.detail.sku')}</span>
+                  <span className={`pf-field-count${form.sku.length > 85 ? ' warn' : ''}`}>{form.sku.length} / 100</span>
+                </div>
+                <Input value={form.sku} onChange={(e) => updateField('sku', e.target.value)} disabled={isReadOnly} maxLength={100} style={{ fontFamily: 'var(--admin-font-mono)' }} />
+                <span className="pf-field-msg pf-field-hint">{t('products.detail.skuHint')}</span>
+              </div>
+
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('products.detail.categoryId')}</span></div>
+                <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
+                      <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
+                    )}
+                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {validationErrors.categoryId && <span className="pf-field-msg pf-field-msg-error">{validationErrors.categoryId}</span>}
+              </div>
+
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('products.detail.brandId')}</span></div>
+                <Select value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {form.brandId && !brands.some((b) => b.id === form.brandId) && (
+                      <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
+                    )}
+                    {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label">
+                  <span>{t('products.detail.shortDescription')}</span>
+                  <span className={`pf-field-count${form.shortDescription.length > 450 ? ' warn' : ''}`}>{form.shortDescription.length} / 500</span>
+                </div>
+                <Textarea
+                  className={validationErrors.shortDescription ? 'border-danger' : undefined}
+                  value={form.shortDescription}
+                  onChange={(e) => updateField('shortDescription', e.target.value)}
+                  maxLength={500}
+                  placeholder={t('products.detail.shortDescriptionPlaceholder')}
+                  disabled={isReadOnly}
+                />
+                <span className="pf-field-msg pf-field-hint">{t('products.detail.shortDescriptionHint')}</span>
+                {validationErrors.shortDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.shortDescription}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('products.detail.description')}</span></div>
+                <RichTextEditor
+                  value={form.description}
+                  onChange={(html) => updateField('description', html)}
+                  placeholder={t('products.detail.descriptionPlaceholder')}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.description)}
+                  enableImagePicker
+                />
+                {validationErrors.description && <span className="pf-field-msg pf-field-msg-error">{validationErrors.description}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('products.detail.promotionContent')}</span></div>
+                <RichTextEditor
+                  value={form.promotionContent}
+                  onChange={(html) => updateField('promotionContent', html)}
+                  placeholder={t('products.detail.promotionContentPlaceholder')}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.promotionContent)}
+                  enableImagePicker
+                />
+                <span className="pf-field-msg pf-field-hint">{t('products.detail.promotionContentHint')}</span>
+                {validationErrors.promotionContent && <span className="pf-field-msg pf-field-msg-error">{validationErrors.promotionContent}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('products.detail.homepageBlock')}</span></div>
+                <Select value={form.homepageBlock || 'NONE'} onValueChange={(val) => updateField('homepageBlock', val)} disabled={isReadOnly}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
+                    <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
+                    <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="pf-field-msg pf-field-hint">{t('products.detail.homepageHint')}</span>
+                {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
+                  <span className="pf-field-msg" style={{ color: 'var(--admin-color-status-warning-text)' }}>
+                    {t('products.detail.homepagePublishWarning')}
+                  </span>
+                )}
+              </div>
+
+              {form.homepageBlock && form.homepageBlock !== 'NONE' && (
+                <div className="pf-field">
+                  <div className="pf-field-label"><span>{t('products.detail.homepageOrder')}</span></div>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    step={1}
+                    min={0}
+                    value={form.homepageOrder}
+                    onChange={(e) => updateField('homepageOrder', e.target.value)}
+                    placeholder={t('products.detail.homepageOrderPlaceholder')}
+                    disabled={isReadOnly}
+                  />
+                  <span className="pf-field-msg pf-field-hint">{t('products.detail.homepageOrderHint')}</span>
+                </div>
+              )}
             </div>
-          )}
-          <div className="detail-section-content form-grid">
-            <label className="form-field">
-              <span>{t('products.detail.retailPrice')}</span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="vd: 5.900.000"
-                value={formatPrice(form.retailPrice)}
-                onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
-                disabled={isReadOnly}
-               />
-              {validationErrors.retailPrice ? (
-                <small className="field-error">{validationErrors.retailPrice}</small>
-              ) : null}
-            </label>
+          </PfSection>
 
-            <label className="form-field">
-              <span title={t('products.detail.compareAtPriceTitle')}>
-                {t('products.detail.compareAtPriceLabel')}
-              </span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="vd: 6.500.000"
-                value={formatPrice(form.compareAtPrice)}
-                onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
-                disabled={isReadOnly}
-               />
-              {validationErrors.compareAtPrice ? (
-                <small className="field-error">{validationErrors.compareAtPrice}</small>
-              ) : null}
-            </label>
-
-            <div className="form-field">
-              <span>{t('products.detail.salePrice')}</span>
-              <div className="discount-row">
+          {/* ── Section 2: Giá & Trạng thái ── */}
+          <PfSection
+            def={SECTION_DEFS[1]}
+            t={t}
+            open={openMap['section-pricing']}
+            done={completion.pricing}
+            hasError={sectionErrors.pricing}
+            onToggle={() => toggleSection('section-pricing')}
+          >
+            {form.variants.length > 0 && (
+              <div className="pf-note pf-note-info">
+                <Info size={14} />
+                <span>{t('products.detail.variantPricingHint')}</span>
+              </div>
+            )}
+            <div className="pf-grid">
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('products.detail.retailPrice')}</span></div>
                 <Input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  placeholder="vd: 5.500.000"
-                  value={formatPrice(form.salePrice)}
-                  onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
+                  placeholder="vd: 5.900.000"
+                  value={formatPrice(form.retailPrice)}
+                  onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
                   disabled={isReadOnly}
-                 />
-                {!isReadOnly && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="discount-pct-btn"
-                    onClick={() => setShowDiscountHelper((p) => !p)}
-                    title={t('products.detail.discountButtonTitle')}
-                  >
-                    {t('products.detail.discountButton')}
-                  </Button>
-                )}
+                />
+                {validationErrors.retailPrice && <span className="pf-field-msg pf-field-msg-error">{validationErrors.retailPrice}</span>}
               </div>
-              {showDiscountHelper && !isReadOnly && (
-                <div className="discount-helper">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="99"
-                    placeholder={t('products.detail.discountInputPlaceholder')}
-                    value={discountPct}
-                    onChange={(e) => setDiscountPct(e.target.value)}
-                   />
-                  <Button
-                    size="sm"
-                    disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
-                    onClick={() => {
-                      const base = Number(form.retailPrice) || Number(form.compareAtPrice)
-                      const pct = Number(discountPct)
-                      if (base > 0 && pct > 0 && pct < 100) {
-                        updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
-                        setShowDiscountHelper(false)
-                        setDiscountPct('')
-                      }
-                    }}
-                  >
-                    {t('products.detail.apply')}
-                  </Button>
-                  <small className="detail-section-desc mt-0">
-                    {(Number(form.retailPrice) || Number(form.compareAtPrice))
-                      ? t('products.detail.discountFromBaseHint')
-                      : t('products.detail.discountNeedsBaseHint')}
-                  </small>
+
+              <div className="pf-field">
+                <div className="pf-field-label">
+                  <span title={t('products.detail.compareAtPriceTitle')}>{t('products.detail.compareAtPriceLabel')}</span>
                 </div>
-              )}
-              {validationErrors.salePrice ? (
-                <small className="field-error">{validationErrors.salePrice}</small>
-              ) : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice) ? (
-                <small className="field-error">{t('products.detail.saleMustBeLower')}</small>
-              ) : null}
-            </div>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="vd: 6.500.000"
+                  value={formatPrice(form.compareAtPrice)}
+                  onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
+                  disabled={isReadOnly}
+                />
+                {validationErrors.compareAtPrice && <span className="pf-field-msg pf-field-msg-error">{validationErrors.compareAtPrice}</span>}
+              </div>
 
-            <label className="form-field">
-              <span>{t('products.detail.publishStatus')}</span>
-              <Select
-                value={form.publishStatus}
-                onValueChange={(val) => updateField('publishStatus', val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
-                  <SelectItem value={form.publishStatus} disabled>
-                    {t('products.detail.specialPublishNote', { state: form.publishStatus })}
-                  </SelectItem>
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('products.detail.salePrice')}</span></div>
+                <div className="discount-row">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="vd: 5.500.000"
+                    value={formatPrice(form.salePrice)}
+                    onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
+                    disabled={isReadOnly}
+                  />
+                  {!isReadOnly && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="discount-pct-btn"
+                      onClick={() => setShowDiscountHelper((p) => !p)}
+                      title={t('products.detail.discountButtonTitle')}
+                    >
+                      {t('products.detail.discountButton')}
+                    </Button>
+                  )}
+                </div>
+                {showDiscountHelper && !isReadOnly && (
+                  <div className="discount-helper">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      placeholder={t('products.detail.discountInputPlaceholder')}
+                      value={discountPct}
+                      onChange={(e) => setDiscountPct(e.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
+                      onClick={() => {
+                        const base = Number(form.retailPrice) || Number(form.compareAtPrice)
+                        const pct = Number(discountPct)
+                        if (base > 0 && pct > 0 && pct < 100) {
+                          updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
+                          setShowDiscountHelper(false)
+                          setDiscountPct('')
+                        }
+                      }}
+                    >
+                      {t('products.detail.apply')}
+                    </Button>
+                    <small className="pf-field-hint">
+                      {(Number(form.retailPrice) || Number(form.compareAtPrice))
+                        ? t('products.detail.discountFromBaseHint')
+                        : t('products.detail.discountNeedsBaseHint')}
+                    </small>
+                  </div>
                 )}
-                <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
-                <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
-                <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
-                {form.publishStatus === 'TRASH' && (
-                  <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
-                )}
-              </SelectContent></Select>
-              {validationErrors.publishStatus ? (
-                <small className="field-error">{validationErrors.publishStatus}</small>
-              ) : null}
-            </label>
+                {validationErrors.salePrice
+                  ? <span className="pf-field-msg pf-field-msg-error">{validationErrors.salePrice}</span>
+                  : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice)
+                    ? <span className="pf-field-msg pf-field-msg-error">{t('products.detail.saleMustBeLower')}</span>
+                    : null}
+              </div>
 
-            <div className="form-field">
-              <label className="form-checkbox">
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('products.detail.publishStatus')}</span></div>
+                <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
+                      <SelectItem value={form.publishStatus} disabled>
+                        {t('products.detail.specialPublishNote', { state: form.publishStatus })}
+                      </SelectItem>
+                    )}
+                    <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
+                    <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
+                    <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
+                    {form.publishStatus === 'TRASH' && (
+                      <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {validationErrors.publishStatus && <span className="pf-field-msg pf-field-msg-error">{validationErrors.publishStatus}</span>}
+              </div>
+
+              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
                 <Checkbox
                   checked={form.forceOutOfStock}
                   onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
                   disabled={isReadOnly}
-                 />
-                <span>{t('products.detail.forceOutOfStock')}</span>
+                />
+                <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
               </label>
-              {form.forceOutOfStock && (
-                <small className="detail-section-desc mt-1">
-                  {t('products.detail.forceOutOfStockHint')}
-                </small>
-              )}
             </div>
-          </div>
-        </CollapsibleSection>
+          </PfSection>
 
-        {/* ── Ảnh đại diện ── */}
-        <CollapsibleSection id="section-media" title={t('products.detail.mainImageTitle')} forceOpen={sectionErrors.media}>
-          <div className="detail-section-content form-grid">
-            <div className="form-field form-field-wide">
-              <span className="form-field-label">{t('products.detail.imageUrl')}</span>
+          {/* ── Section 3: Ảnh đại diện ── */}
+          <PfSection
+            def={SECTION_DEFS[2]}
+            t={t}
+            open={openMap['section-media']}
+            done={completion.media}
+            hasError={sectionErrors.media}
+            onToggle={() => toggleSection('section-media')}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('products.detail.imageUrl')}</span></div>
               <ImageUrlInput
                 value={form.imageUrl}
                 onChange={(url) => updateField('imageUrl', url)}
@@ -2186,94 +2367,128 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 error={validationErrors.imageUrl}
               />
             </div>
-          </div>
-        </CollapsibleSection>
+          </PfSection>
 
-        {/* ── SEO ── */}
-        <CollapsibleSection id="section-seo" title={t('products.detail.sectionSeo')} forceOpen={sectionErrors.seo}>
-          <div className="detail-section-content form-grid">
-            <label className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.seoTitle')}</span>
-                <span className={`char-counter${(form.seoTitle?.length ?? 0) > 230 ? ' char-counter-warn' : ''}`}>
-                  {form.seoTitle?.length ?? 0} / 255
-                </span>
+          {/* ── Section 4: SEO ── */}
+          <PfSection
+            def={SECTION_DEFS[3]}
+            t={t}
+            open={openMap['section-seo']}
+            done={completion.seo}
+            hasError={sectionErrors.seo}
+            onToggle={() => toggleSection('section-seo')}
+          >
+            {/* Live Google SERP preview */}
+            <div className="pf-serp" style={{ marginTop: 12 }}>
+              <div className="pf-serp-label">
+                <PfSearch size={12} /><span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
               </div>
-              <Input
-                value={form.seoTitle}
-                onChange={(e) => updateField('seoTitle', e.target.value)}
-                disabled={isReadOnly}
-                maxLength={255}
-                placeholder={t('products.detail.seoTitle')}
-              />
-              {validationErrors.seoTitle && <small className="field-error">{validationErrors.seoTitle}</small>}
-            </label>
-
-            <div className="form-field form-field-wide">
-              <div className="form-field-label-row">
-                <span>{t('products.detail.seoDescription')}</span>
-                <span className={`char-counter${(form.seoDescription?.length ?? 0) > 4500 ? ' char-counter-warn' : ''}`}>
-                  {form.seoDescription?.length ?? 0} / 5000
-                </span>
+              <div className="pf-serp-url">
+                https://bigbike.vn
+                <span className="pf-serp-slug-path"> › sp › {form.slug || 'duong-dan-san-pham'}</span>
               </div>
-              <Textarea
-                value={form.seoDescription}
-                onChange={(e) => updateField('seoDescription', e.target.value)}
-                disabled={isReadOnly}
-                maxLength={5000}
-                placeholder={t('products.detail.seoDescription')}
-                className={validationErrors.seoDescription ? 'border-danger' : undefined}
-              />
-              {validationErrors.seoDescription && <small className="field-error">{validationErrors.seoDescription}</small>}
+              <div className="pf-serp-title">
+                {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+              </div>
+              <div className="pf-serp-desc">
+                {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+              </div>
             </div>
 
-            <label className="form-field form-field-wide">
-              <span>{t('products.detail.seoCanonicalUrl')}</span>
-              <Input
-                value={form.seoCanonicalUrl}
-                onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                disabled={isReadOnly}
-                placeholder="https://..."
-                className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
-              />
-              {validationErrors.seoCanonicalUrl && <small className="field-error">{validationErrors.seoCanonicalUrl}</small>}
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span className="form-field-label">{t('products.detail.seoOgImageUrl')}</span>
-              <ImageUrlInput
-                value={form.seoOgImageUrl}
-                onChange={(url) => updateField('seoOgImageUrl', url)}
-                alt={form.seoOgImageAlt}
-                onAltChange={(v) => updateField('seoOgImageAlt', v)}
-                disabled={isReadOnly}
-                error={validationErrors.seoOgImageUrl}
-              />
-              {validationErrors.seoOgImageAlt && <small className="field-error">{validationErrors.seoOgImageAlt}</small>}
-            </div>
-
-            <label className="form-checkbox form-field-wide">
-              <Checkbox
-                checked={form.seoNoIndex}
-                onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                disabled={isReadOnly}
-              />
-              <span>{t('products.detail.seoNoIndex')}</span>
-            </label>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── Nội dung SEO dài (contentBottom) ── */}
-        <CollapsibleSection id="section-content-bottom" title={t('products.detail.sectionContentBottom')} forceOpen={sectionErrors.contentBottom}>
-          <div className="detail-section-content">
-            <div className="form-field">
-              {form.contentBottom.length > 40000 && (
-                <div className="form-field-label-row">
-                  <span className={`char-counter${form.contentBottom.length > 49000 ? ' char-counter-warn' : ''}`}>
-                    {form.contentBottom.length.toLocaleString()} / 50 000
-                  </span>
+            <div className="pf-grid">
+              <div className="pf-field full">
+                <div className="pf-field-label">
+                  <span>{t('products.detail.seoTitle')}</span>
+                  <span className={`pf-field-count${(form.seoTitle?.length ?? 0) > 230 ? ' warn' : ''}`}>{form.seoTitle?.length ?? 0} / 255</span>
                 </div>
-              )}
+                <Input
+                  value={form.seoTitle}
+                  onChange={(e) => updateField('seoTitle', e.target.value)}
+                  disabled={isReadOnly}
+                  maxLength={255}
+                  placeholder={t('products.detail.seoTitle')}
+                />
+                {validationErrors.seoTitle && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoTitle}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label">
+                  <span>{t('products.detail.seoDescription')}</span>
+                  <span className={`pf-field-count${(form.seoDescription?.length ?? 0) > 4500 ? ' warn' : ''}`}>{form.seoDescription?.length ?? 0} / 5000</span>
+                </div>
+                <Textarea
+                  value={form.seoDescription}
+                  onChange={(e) => updateField('seoDescription', e.target.value)}
+                  disabled={isReadOnly}
+                  maxLength={5000}
+                  placeholder={t('products.detail.seoDescription')}
+                  className={validationErrors.seoDescription ? 'border-danger' : undefined}
+                />
+                {validationErrors.seoDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoDescription}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('products.detail.seoCanonicalUrl')}</span></div>
+                <Input
+                  value={form.seoCanonicalUrl}
+                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="https://..."
+                  className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+                />
+                {validationErrors.seoCanonicalUrl && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoCanonicalUrl}</span>}
+              </div>
+
+              <div className="pf-field full">
+                <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('products.detail.seoOgImageUrl')}</span></div>
+                <ImageUrlInput
+                  value={form.seoOgImageUrl}
+                  onChange={(url) => updateField('seoOgImageUrl', url)}
+                  alt={form.seoOgImageAlt}
+                  onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                  disabled={isReadOnly}
+                  error={validationErrors.seoOgImageUrl}
+                />
+                {validationErrors.seoOgImageAlt && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoOgImageAlt}</span>}
+              </div>
+
+              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
+                <Checkbox
+                  checked={form.seoNoIndex}
+                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
+                  disabled={isReadOnly}
+                />
+                <span>{t('products.detail.seoNoIndex')}</span>
+              </label>
+            </div>
+
+            {/* SEO checklist */}
+            <div className="pf-seo-check">
+              <div className="pf-seo-check-head">
+                <span><CheckCircle2Icon /><strong>{t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}</strong></span>
+                <span className="pf-seo-check-progress">{seoPassed} / {seoChecks.length}</span>
+              </div>
+              <div className="pf-seo-check-list">
+                {seoChecks.map((c, i) => (
+                  <div className={`pf-seo-check-item${c.ok ? ' ok' : ''}`} key={i}>
+                    <span className="pf-seo-check-dot">{c.ok ? <Check size={11} /> : null}</span>
+                    <span>{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </PfSection>
+
+          {/* ── Section 5: Nội dung cuối trang ── */}
+          <PfSection
+            def={SECTION_DEFS[4]}
+            t={t}
+            open={openMap['section-content-bottom']}
+            done={completion.contentBottom}
+            hasError={sectionErrors.contentBottom}
+            onToggle={() => toggleSection('section-content-bottom')}
+          >
+            <div style={{ paddingTop: 12 }}>
               <RichTextEditor
                 value={form.contentBottom}
                 onChange={(html) => updateField('contentBottom', html)}
@@ -2282,110 +2497,104 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 hasError={Boolean(validationErrors.contentBottom)}
                 enableImagePicker
               />
-              {validationErrors.contentBottom && <small className="field-error">{validationErrors.contentBottom}</small>}
+              {validationErrors.contentBottom && <span className="pf-field-msg pf-field-msg-error">{validationErrors.contentBottom}</span>}
             </div>
-          </div>
-        </CollapsibleSection>
+          </PfSection>
 
-        {/* ── Gallery ── */}
-        <CollapsibleSection id="section-gallery" title={t('products.detail.gallerySectionTitle')} description={t('products.detail.gallerySectionDescription')} forceOpen={sectionErrors.gallery}>
-          <div className="detail-section-content">
-            <GalleryEditor
-              items={form.gallery}
-              onChange={(next) => updateField('gallery', next)}
-              disabled={isReadOnly}
-              validationErrors={validationErrors}
-            />
-          </div>
-        </CollapsibleSection>
+          {/* ── Section 6: Bộ sưu tập ảnh ── */}
+          <PfSection
+            def={SECTION_DEFS[5]}
+            t={t}
+            open={openMap['section-gallery']}
+            done={completion.gallery}
+            hasError={sectionErrors.gallery}
+            onToggle={() => toggleSection('section-gallery')}
+            badge={<span className="pf-section-count">{form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <GalleryEditor
+                items={form.gallery}
+                onChange={(next) => updateField('gallery', next)}
+                disabled={isReadOnly}
+                validationErrors={validationErrors}
+              />
+            </div>
+          </PfSection>
 
-        {/* ── Videos ── */}
-        <CollapsibleSection id="section-videos" title={t('products.detail.videoSectionTitle')} description={t('products.detail.videoSectionDescription')} forceOpen={sectionErrors.videos}>
-          <div className="detail-section-content">
-            <VideoEditor
-              items={form.videos}
-              onChange={(next) => updateField('videos', next)}
-              disabled={isReadOnly}
-              validationErrors={validationErrors}
-            />
-          </div>
-        </CollapsibleSection>
+          {/* ── Section 7: Video ── */}
+          <PfSection
+            def={SECTION_DEFS[6]}
+            t={t}
+            open={openMap['section-videos']}
+            done={completion.videos}
+            hasError={sectionErrors.videos}
+            onToggle={() => toggleSection('section-videos')}
+            badge={<span className="pf-section-count">{form.videos.length} video</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <VideoEditor
+                items={form.videos}
+                onChange={(next) => updateField('videos', next)}
+                disabled={isReadOnly}
+                validationErrors={validationErrors}
+              />
+            </div>
+          </PfSection>
 
-        {/* ── Thông số kỹ thuật ── */}
-        <CollapsibleSection id="section-specs" title={t('products.detail.specsSectionTitle')} description={t('products.detail.specsSectionDescription')} forceOpen={sectionErrors.specs}>
-          <div className="detail-section-content">
-            <SpecificationsEditor
-              items={form.specifications}
-              onChange={(next) => updateField('specifications', next)}
-              disabled={isReadOnly}
-              validationErrors={validationErrors}
-            />
-          </div>
-        </CollapsibleSection>
+          {/* ── Section 8: Thông số kỹ thuật ── */}
+          <PfSection
+            def={SECTION_DEFS[7]}
+            t={t}
+            open={openMap['section-specs']}
+            done={completion.specs}
+            hasError={sectionErrors.specs}
+            onToggle={() => toggleSection('section-specs')}
+            badge={<span className="pf-section-count">{form.specifications.length} {t('products.detail.specUnit', { defaultValue: 'thông số' })}</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <SpecificationsEditor
+                items={form.specifications}
+                onChange={(next) => updateField('specifications', next)}
+                disabled={isReadOnly}
+                validationErrors={validationErrors}
+              />
+            </div>
+          </PfSection>
 
-        {/* ── Biến thể ── */}
-        <CollapsibleSection id="section-variants" title={t('products.detail.variantSectionTitle')} description={t('products.detail.variantSectionDescription')} forceOpen={sectionErrors.variants}>
-          <div className="detail-section-content">
-            <VariantsEditor
-              items={form.variants}
-              onChange={(next) => updateField('variants', next)}
-              disabled={isReadOnly}
-              validationErrors={validationErrors}
-              onOpenMatrixWizard={() => setShowMatrixWizard(true)}
-            />
-          </div>
-        </CollapsibleSection>
+          {/* ── Section 9: Biến thể ── */}
+          <PfSection
+            def={SECTION_DEFS[8]}
+            t={t}
+            open={openMap['section-variants']}
+            done={completion.variants}
+            hasError={sectionErrors.variants}
+            onToggle={() => toggleSection('section-variants')}
+            badge={<span className="pf-section-count">{form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}</span>}
+          >
+            <div style={{ paddingTop: 12 }}>
+              <VariantsEditor
+                items={form.variants}
+                onChange={(next) => updateField('variants', next)}
+                disabled={isReadOnly}
+                validationErrors={validationErrors}
+                onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+              />
+            </div>
+          </PfSection>
 
-        <div className={`form-footer${isDirty ? ' form-footer--dirty' : ''}`}>
-          <div className="form-status">
-            <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
-              {isDirty ? t('common.dirty') : t('common.clean')}
-            </span>
-            {!isCreate && state.item?.updatedAt ? (
-              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
-            ) : null}
-          </div>
-          <div className="screen-actions">
-            {/* DRAFT: "Lưu nháp" — ép giữ DRAFT */}
-            {form.publishStatus === 'DRAFT' && (
-              <Button
-                variant="outline"
-                loading={isSubmitting}
-                disabled={isReadOnly || !isDirty}
-                title={t('products.detail.saveDraftTitle')}
-                onClick={() => handleSave('DRAFT')}
-              >
-                {t('products.detail.saveDraft')}
-              </Button>
-            )}
-            {/* HIDDEN: "Lưu (ẩn)" — giữ nguyên HIDDEN, không ép về DRAFT */}
-            {form.publishStatus === 'HIDDEN' && (
-              <Button
-                variant="outline"
-                loading={isSubmitting}
-                disabled={isReadOnly || !isDirty}
-                title={t('products.detail.saveHiddenTitle')}
-                onClick={() => handleSave()}
-              >
-                {t('products.detail.saveHidden')}
-              </Button>
-            )}
-            {/* Nút chính: "Lưu thay đổi" khi đã published, "Lưu & Đăng bán" khi chưa published.
-                Cho phép publish kể cả khi !isDirty (publish = thay đổi trạng thái, không cần dirty). */}
-            <Button
-              variant={form.publishStatus === 'PUBLISHED' ? 'default' : 'success'}
-              loading={isSubmitting}
-              disabled={isReadOnly || (form.publishStatus === 'PUBLISHED' ? !isDirty : false)}
-              title={form.publishStatus === 'PUBLISHED' ? t('products.detail.saveShortcutTitle') : t('products.detail.publishTitle')}
-              onClick={() => handleSave(form.publishStatus === 'PUBLISHED' ? undefined : 'PUBLISHED')}
-            >
-              {form.publishStatus === 'PUBLISHED'
-                ? (isCreate ? t('products.detail.createBtn') : t('products.detail.saveBtn'))
-                : (isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish'))}
-            </Button>
-          </div>
-        </div>
-      </form>
-    </section>
+          {!isCreate && state.item?.updatedAt && (
+            <p className="text-xs muted" style={{ textAlign: 'right' }}>
+              {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
+            </p>
+          )}
+        </form>
+      </div>
+    </div>
   )
+}
+
+// Small wrapper so the SEO-checklist header can show a check-circle without
+// pulling another icon import into the top-level list.
+function CheckCircle2Icon() {
+  return <Check size={13} />
 }

@@ -55,7 +55,23 @@
     "newOrder": "Đơn hàng mới",
     "orderUpdate": "Cập nhật đơn hàng",
     "close": "Đóng thông báo",
-    "regionLabel": "Thông báo đơn hàng"
+    "regionLabel": "Thông báo đơn hàng",
+    "bellLabel": "Thông báo",
+    "panelTitle": "Thông báo",
+    "clearAll": "Xoá tất cả",
+    "empty": "Chưa có thông báo nào"
+  },
+  "search": {
+    "open": "Mở tìm kiếm nhanh",
+    "placeholder": "Tìm đơn hàng, sản phẩm, khách hàng...",
+    "title": "Tìm kiếm nhanh",
+    "hint": "Nhập từ khoá để tìm đơn hàng, sản phẩm hoặc khách hàng.",
+    "empty": "Không tìm thấy kết quả nào.",
+    "group": {
+      "orders": "Đơn hàng",
+      "products": "Sản phẩm",
+      "customers": "Khách hàng"
+    }
   },
   "theme": {
     "switchToLight": "Chuyển sang light mode",
@@ -139,7 +155,8 @@
     "redirects": "Chuyển hướng",
     "sidebarLabel": "Thanh điều hướng",
     "mainNav": "Điều hướng chính",
-    "openMenu": "Mở menu"
+    "openMenu": "Mở menu",
+    "pendingBadge": "{{count}} mục cần xử lý"
   },
   "app": {
     "loadingSession": "Đang tải phiên đăng nhập",
@@ -162,6 +179,10 @@
     "eyebrow": "Tổng quan",
     "title": "Bảng điều khiển",
     "subtitle": "Theo dõi hoạt động kinh doanh theo thời gian thực.",
+    "greetingMorning": "Chào buổi sáng, {{name}} 👋",
+    "greetingAfternoon": "Chào buổi chiều, {{name}} 👋",
+    "greetingEvening": "Chào buổi tối, {{name}} 👋",
+    "greetingDesc": "Hôm nay là {{date}}. Đây là tình hình kinh doanh của BigBike.",
     "period7d": "7 ngày",
     "period30d": "30 ngày",
     "period90d": "90 ngày",
@@ -1087,6 +1108,16 @@
     "eyebrow": "Thương mại",
     "title": "Khách hàng",
     "description": "Quản lý tài khoản và thông tin khách hàng.",
+    "kpi": {
+      "total": "Tổng khách hàng",
+      "totalHint": "Tổng số tài khoản khách hàng",
+      "vip": "Khách VIP",
+      "vipHint": "Chi tiêu tích lũy từ 10 triệu ₫",
+      "new30d": "Khách mới (30 ngày)",
+      "new30dHint": "Đăng ký trong 30 ngày qua",
+      "active": "Đang hoạt động",
+      "activeHint": "Tài khoản ở trạng thái hoạt động"
+    },
     "searchPlaceholder": "Tên, email, số điện thoại",
     "filterStatus": "Trạng thái",
     "loading": "Đang tải khách hàng",

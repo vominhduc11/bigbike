@@ -19,6 +19,28 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | CSRF header | Customer/guest cart and checkout mutations | `X-CSRF-Token` must match `bb_csrf` cookie | `CONFIRMED_FROM_CODE` | `CustomerCsrfFilter.java`, tests |
 | Admin WebSocket JWT | STOMP CONNECT to `/ws` | native header `Authorization: Bearer <token>` | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `adminWebSocket.js` |
 
+## HTTP Caching
+
+By default every API response carries `Cache-Control: no-cache, no-store, max-age=0, must-revalidate` (Spring Security default) — correct for authenticated and personalised responses, which must never be stored by a browser or CDN.
+
+**Exception — public catalog/content GETs are briefly cacheable.** `PublicCacheHeaderFilter` overwrites the header to `Cache-Control: public, max-age=60` for `GET` requests on an explicit allowlist of fully public, non-personalised read endpoints:
+
+- `GET /api/v1/products`, `/api/v1/products/**`
+- `GET /api/v1/categories`, `/api/v1/categories/**`
+- `GET /api/v1/brands`, `/api/v1/brands/**`
+- `GET /api/v1/catalog/**` (facets)
+- `GET /api/v1/articles`, `/api/v1/articles/**`
+- `GET /api/v1/pages`, `/api/v1/pages/**`
+- `GET /api/v1/menus/**`
+- `GET /api/v1/sliders`, `/api/v1/home-videos`, `/api/v1/content-categories`
+- `GET /api/v1/settings/public`
+
+Any path containing `/admin/` or `/internal/` is excluded defensively. Cart, checkout, customer, order and all other cookie/auth-bearing endpoints are **not** on the allowlist and keep `no-store`, so no personalised response can leak into a shared cache.
+
+The 60-second `max-age` is deliberately short: an admin edit becomes visible to all visitors within a minute without an explicit purge. Non-GET methods are never affected.
+
+Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfig.java` (filter registration), `RbacUrlGateIntegrationTest` (`publicCatalogGet_isBrowserCacheable`, `adminGet_staysNoStore_notCacheable`, `cartGet_staysNoStore_notCacheable`).
+
 ## Public And Customer Endpoints
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
@@ -70,7 +92,7 @@ This document is the human-readable companion to `bigbike-backend/src/main/resou
 | `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | `ApiDataResponse<CustomerReturnResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}/return-eligibility` | Pre-check whether the customer can open a return on this order and which line items still have returnable quantity. Read-only. Returns stable reason codes (`OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`). | `ApiDataResponse<ReturnEligibilityResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerReturnService.getReturnEligibility` |
 | `GET` | `/api/v1/customer/wishlist` | List own wishlist product IDs, newest first | `ApiDataResponse<List<String>>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
-| `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only) | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
+| `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only). Each `Product` uses the **list-view** shape — see "Product list — list-view payload vs detail payload". | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `POST` | `/api/v1/customer/wishlist` | Add a product to own wishlist (idempotent) | `ApiDataResponse<{productId,added}>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `DELETE` | `/api/v1/customer/wishlist/{productId}` | Remove a product from own wishlist | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 
@@ -191,6 +213,41 @@ Evidence:
 - `bigbike-openapi.json` — `homepage_block` param + `homepageBlock` enum field on Product schema
 - `V111__refactor_product_homepage_block.sql` — schema change + backfill
 
+### Product list — list-view payload vs detail payload
+
+`GET /api/v1/products` returns a **list view** of each `Product`, not the full
+detail object. The list view carries only what the storefront catalog grid/card
+renders; the heavy detail-only payload is served exclusively by
+`GET /api/v1/products/{slug}`.
+
+| Field | List view (`GET /api/v1/products`) | Detail (`GET /api/v1/products/{slug}`) |
+|---|---|---|
+| `id`, `sku`, `slug`, `name`, `shortDescription` | ✅ present | ✅ present |
+| `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
+| `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
+| `description`, `contentBottom`, `promotionContent` | ❌ `null` | ✅ present |
+| `gallery`, `videos`, `specifications` | ❌ `[]` | ✅ present |
+| `seo` | ❌ `null` | ✅ present |
+| `variants` | ✅ present as **stubs** | ✅ full |
+| `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable/trackSerials` | ✅ present | ✅ present |
+| `variants[].options`, `variants[].gallery`, `variants[].image` | ❌ `[]` / `null` | ✅ present |
+
+**Why variant stubs and not full omission:** the storefront product card needs the
+variant *count* (`variants.length`) to decide between the "add to cart" and
+"choose variant" buy-box buttons, but never reads variant internals on a list.
+Keeping a stub array (id/sku/name/price/stock) preserves that signal while
+dropping the per-variant option/gallery graph — historically ~62% of the list
+payload. Filtering still runs on the full domain object server-side (the
+`filter_color` param matches against `variants[].options`); the projection to the
+list view happens only on the returned page.
+
+This same list-view shape is what the article `relatedProducts` array already
+documents (one list-item `Product` per entry — see "Article Content Contract").
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `CatalogReadService.listProducts` (`toListView` / `toVariantStub` projection of the paginated slice), `CatalogController.listProducts`, `PublicReadApiTest.publicProductList_omitsDetailOnlyFields_butKeepsVariantCount`.
+
 ### Product upsert — `stockState` is read-only
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field is derived from `quantityOnHand` via `InventoryPolicyService` and can only be mutated through the Inventory module endpoints (`/api/v1/admin/inventory/...`).
@@ -284,6 +341,12 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 ```
 
 **Bulk gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 120, "skipped": 5 }` where `skipped` = customers without email or with inactive status.
+
+## Customer Admin — Summary
+
+| Method | Path | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
 
 ## Audit Log Contract
 

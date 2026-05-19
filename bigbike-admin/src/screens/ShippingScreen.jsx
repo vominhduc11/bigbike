@@ -10,7 +10,6 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -126,14 +125,14 @@ export function ShippingScreen({ canUpdate }) {
   const selectedZone = zones.find((z) => z.id === selectedZoneId)
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('shipping.eyebrow')}</p>
           <h1>{t('shipping.title')}</h1>
-          <p>{t('shipping.description')}</p>
+          <p className="desc">{t('shipping.description')}</p>
         </div>
-      </header>
+      </div>
 
       {zonesWarning ? <ReadOnlyBanner warning={zonesWarning} /> : null}
 
@@ -145,107 +144,146 @@ export function ShippingScreen({ canUpdate }) {
 
       {zonesStatus === 'loading' && <StatePanel tone="info" title={t('shipping.loading')} description={t('common.pleaseWait')} />}
       {zonesStatus === 'error' && <StatePanel tone="danger" title={t('shipping.error')} description={zonesError} actionLabel={t('common.retry')} onAction={loadZones} />}
+
       {zonesStatus === 'success' && (
-        <div className="grid gap-6 grid-cols-[220px_1fr]">
-          <aside>
-            <p className="mb-2 text-sm font-semibold text-muted-foreground">{t('shipping.zonesTitle').toUpperCase()}</p>
+        <div className="settings-shell">
+          {/* Zone sidebar — prototype settings-nav */}
+          <nav className="settings-nav" aria-label={t('shipping.zonesTitle')}>
             {zones.map((zone) => (
               <button
                 key={zone.id}
                 type="button"
-                className={cn(
-                  'block w-full cursor-pointer border-none text-left mb-1 px-3 py-2.5 border-l-[3px] transition-colors',
-                  selectedZoneId === zone.id
-                    ? 'bg-surface-selected font-semibold border-l-primary'
-                    : 'bg-transparent font-normal border-l-transparent'
-                )}
+                className={selectedZoneId === zone.id ? 'active' : ''}
                 onClick={() => setSelectedZoneId(zone.id)}
               >
-                {zone.name}
-                <span className={`block text-xs ${zone.enabled ? 'text-success' : 'text-muted-foreground'}`}>
-                  {zone.enabled ? t('common.on') : t('common.off')}
+                <span style={{ flex: 1 }}>
+                  {zone.name}
+                  <span className={`block text-xs ${zone.enabled ? 'text-success' : 'muted'}`}>
+                    {zone.enabled ? t('common.on') : t('common.off')}
+                  </span>
                 </span>
               </button>
             ))}
-          </aside>
+          </nav>
 
-          <main>
+          <div>
             {!selectedZoneId && <StatePanel tone="neutral" title={t('shipping.noZone')} description={t('shipping.noZone')} />}
             {selectedZoneId && (
               <>
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h2 className="m-0">{selectedZone?.name}</h2>
-                    <p className="m-0 text-sm text-muted-foreground">{t('shipping.methodsTitle')}</p>
-                  </div>
-                  {canUpdate && (
-                    <Button type="button" onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setShowMethodForm(!showMethodForm) }}>
-                      {showMethodForm ? t('common.cancel') : t('shipping.addMethod')}
-                    </Button>
-                  )}
-                </div>
-
+                {/* Add/edit method form */}
                 {showMethodForm && (
-                  <form onSubmit={handleMethodSubmit} className="rounded-sm border border-border bg-surface p-4 mb-4">
-                    <h4 className="mb-3">{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h4>
-                    {methodFormError && <p className="text-danger mb-2">{methodFormError}</p>}
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="col-span-full">{t('shipping.formTitle')} * <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} /></label>
-                      <label className="col-span-full">{t('shipping.formDescription')} <Input value={methodForm.description} onChange={(e) => setMethodForm((p) => ({ ...p, description: e.target.value }))} /></label>
-                      <label>{t('shipping.formCost')} <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))} /></label>
-                      <label>{t('shipping.formFreeThreshold')} <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))} /></label>
-                    </div>
-                    <label className="form-checkbox mt-2">
-                      <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))} />
-                      <span>{t('shipping.formEnabled')}</span>
-                    </label>
-                    <div className="mt-3 flex gap-2">
-                      <Button type="submit" loading={methodFormSaving}>{editMethodId ? t('common.save') : t('common.add')}</Button>
-                      <Button variant="secondary" type="button" onClick={() => { setShowMethodForm(false); setEditMethodId(null) }}>{t('common.cancel')}</Button>
-                    </div>
-                  </form>
+                  <div className="card mb-4">
+                    <div className="card-head"><h2>{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h2></div>
+                    <form onSubmit={handleMethodSubmit} className="card-body">
+                      {methodFormError && <Alert tone="danger" size="sm" className="mb-3">{methodFormError}</Alert>}
+                      <div className="grid-2">
+                        <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                          <span>{t('shipping.formTitle')} *</span>
+                          <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} />
+                        </label>
+                        <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                          <span>{t('shipping.formDescription')}</span>
+                          <Input value={methodForm.description} onChange={(e) => setMethodForm((p) => ({ ...p, description: e.target.value }))} />
+                        </label>
+                        <label className="form-field">
+                          <span>{t('shipping.formCost')}</span>
+                          <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))} />
+                        </label>
+                        <label className="form-field">
+                          <span>{t('shipping.formFreeThreshold')}</span>
+                          <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))} />
+                        </label>
+                      </div>
+                      <label className="pf-checkbox mt-2" style={{ width: 'fit-content' }}>
+                        <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))} />
+                        <span>{t('shipping.formEnabled')}</span>
+                      </label>
+                      <div className="mt-4 flex gap-2">
+                        <Button type="submit" loading={methodFormSaving}>{editMethodId ? t('common.save') : t('common.add')}</Button>
+                        <Button variant="secondary" type="button" onClick={() => { setShowMethodForm(false); setEditMethodId(null) }}>{t('common.cancel')}</Button>
+                      </div>
+                    </form>
+                  </div>
                 )}
 
-                {methodsStatus === 'loading' && <StatePanel tone="info" title={t('shipping.loading')} description={t('common.pleaseWait')} />}
-                {methodsStatus === 'error' && <StatePanel tone="danger" title={t('shipping.error')} description={t('shipping.methodsLoadError')} actionLabel={t('common.retry')} onAction={() => loadMethods(selectedZoneId)} />}
-                {methodsStatus === 'success' && methods.length === 0 && <StatePanel tone="neutral" title={t('shipping.methodsTitle')} description={t('shipping.noMethods')} />}
-                {methodsStatus === 'success' && methods.length > 0 && (
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b-2 border-border text-left">
-                        <th className="py-2">{t('shipping.colTitle')}</th>
-                        <th className="py-2">{t('shipping.colCost')}</th>
-                        <th className="py-2">{t('shipping.colStatus')}</th>
-                        {canUpdate && <th></th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
-                        <tr key={m.id} className="border-b border-border">
-                          <td className="py-2">{m.title}</td>
-                          <td className="py-2">{formatCurrencyVnd(m.cost)}</td>
-                          <td className="py-2">
-                            <span className={`text-xs ${m.enabled ? 'text-success' : 'text-muted-foreground'}`}>{m.enabled ? t('common.on') : t('common.off')}</span>
-                          </td>
-                          {canUpdate && (
-                            <td className="py-2 text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button variant="secondary" size="sm" type="button"
-                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, description: m.description || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}>{t('common.edit')}</Button>
-                                <Button variant="danger" size="sm" type="button" onClick={() => handleDeleteMethod(m.id)}>{t('common.delete')}</Button>
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                {/* Methods card */}
+                <div className="card">
+                  <div className="card-head">
+                    <div>
+                      <h2>{selectedZone?.name}</h2>
+                      <p className="sub">{t('shipping.methodsTitle')}</p>
+                    </div>
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setShowMethodForm(!showMethodForm) }}
+                      >
+                        {showMethodForm ? t('common.cancel') : t('shipping.addMethod')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="card-body card-body--flush">
+                    {methodsStatus === 'loading' && (
+                      <div className="state-panel"><p>{t('shipping.loading')}</p></div>
+                    )}
+                    {methodsStatus === 'error' && (
+                      <div className="state-panel"><p className="text-danger">{t('shipping.methodsLoadError')}</p></div>
+                    )}
+                    {methodsStatus === 'success' && methods.length === 0 && (
+                      <div className="state-panel">
+                        <h3>{t('shipping.methodsTitle')}</h3>
+                        <p>{t('shipping.noMethods')}</p>
+                      </div>
+                    )}
+                    {methodsStatus === 'success' && methods.length > 0 && (
+                      <div className="table-wrap">
+                        <table className="tbl">
+                          <thead>
+                            <tr>
+                              <th>{t('shipping.colTitle')}</th>
+                              <th className="num">{t('shipping.colCost')}</th>
+                              <th>{t('shipping.colStatus')}</th>
+                              {canUpdate && <th />}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
+                              <tr key={m.id}>
+                                <td className="fw-600">{m.title}</td>
+                                <td className="num">{formatCurrencyVnd(m.cost)}</td>
+                                <td>
+                                  <span className={`badge ${m.enabled ? 'badge-success' : 'badge-neutral'}`}>
+                                    <span className="dot" />{m.enabled ? t('common.on') : t('common.off')}
+                                  </span>
+                                </td>
+                                {canUpdate && (
+                                  <td className="actions-cell">
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm"
+                                      onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, description: m.description || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                    >
+                                      {t('common.edit')}
+                                    </button>
+                                    <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => handleDeleteMethod(m.id)}>
+                                      {t('common.delete')}
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
-          </main>
+          </div>
         </div>
       )}
-    </section>
+    </div>
   )
 }

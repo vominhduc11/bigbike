@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
@@ -18,7 +17,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 
 // Payment transitions mirror backend ALLOWED_PAYMENT_TRANSITIONS map.
-// REFUNDED is excluded — only reachable via the Refund modal (RefundService).
 const PAYMENT_TRANSITIONS = {
   UNPAID:    ['PAID', 'CANCELLED'],
   PAID:      ['UNPAID'],
@@ -78,7 +76,6 @@ function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
 }
 
 // Visual config for order status action buttons.
-// BACS ON_HOLD → PROCESSING tự động mark PAID — label phải rõ ý nghĩa này.
 const ORDER_STATUS_ACTION = {
   PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
   ON_HOLD:    { labelKey: 'orders.detail.actionOnHold',     variant: 'secondary',   confirm: false },
@@ -87,7 +84,6 @@ const ORDER_STATUS_ACTION = {
   FAILED:     { labelKey: 'orders.detail.actionFailed',     variant: 'destructive', confirm: true  },
 }
 
-// Cho đơn BACS đang ON_HOLD, label nút PROCESSING cần rõ hơn.
 function getOrderStatusLabel(targetStatus, order, t) {
   if (targetStatus === 'PROCESSING' && order?.orderStatus === 'ON_HOLD' && order?.paymentMethod === 'BACS') {
     return t('orders.detail.actionBacsConfirm')
@@ -110,8 +106,8 @@ const RETURN_REASONS = [
   { value: 'OTHER', labelKey: 'orders.detail.reasonOther' },
 ]
 
-const RETURN_STATUS_KEY = { PENDING: 'orders.detail.rsPending', APPROVED: 'orders.detail.rsApproved', RECEIVED: 'orders.detail.rsReceived', COMPLETED: 'orders.detail.rsCompleted', REFUNDED: 'orders.detail.rsRefunded', REJECTED: 'orders.detail.rsRejected' }
 const RETURN_REASON_KEY = { DEFECTIVE: 'orders.detail.reasonDefective', WRONG_ITEM: 'orders.detail.reasonWrongItem', NOT_AS_DESCRIBED: 'orders.detail.reasonNotAsDescribed', CHANGED_MIND: 'orders.detail.reasonChangedMind', OTHER: 'orders.detail.reasonOther' }
+const RETURN_STATUS_KEY = { PENDING: 1, APPROVED: 1, RECEIVED: 1, COMPLETED: 1, REFUNDED: 1, REJECTED: 1 }
 
 function AdminCreateReturnModal({ order, onClose, onSuccess }) {
   const { t } = useTranslation()
@@ -153,9 +149,12 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <div className="form-field">
           <label className="field-label">{t('orders.detail.crmReasonLabel')} *</label>
-          <Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
-          </SelectContent></Select>
+          <Select value={reason} onValueChange={setReason}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="form-field">
@@ -194,8 +193,7 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
 
         <div className="form-field">
           <label className="field-label">{t('orders.detail.crmNoteLabel')}</label>
-          <Textarea rows={2} value={customerNote}
-            onChange={(e) => setCustomerNote(e.target.value)}  />
+          <Textarea rows={2} value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} />
         </div>
 
         {error && <p className="field-error">{error}</p>}
@@ -223,7 +221,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'
 
   const [saving, setSaving] = useState(false)
-  const [pendingTarget, setPendingTarget] = useState(null)
   const [allowedTransitions, setAllowedTransitions] = useState([])
   const [transitionsError, setTransitionsError] = useState(false)
   const [transitionsKey, setTransitionsKey] = useState(0)
@@ -238,10 +235,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [shippingCarrier, setShippingCarrier] = useState('')
   const [orderReturns, setOrderReturns] = useState([])
   const [showCreateReturn, setShowCreateReturn] = useState(false)
-  const [reasonModal, setReasonModal] = useState(null) // { targetStatus }
+  const [reasonModal, setReasonModal] = useState(null)
 
-  // Patches the cached order in-place for instant UI feedback after a mutation,
-  // then invalidates the order list so navigating back shows fresh data.
   function applyOrderUpdate(updatedOrder) {
     queryClient.setQueryData(['order', orderId], (old) => ({ ...old, item: updatedOrder }))
     queryClient.invalidateQueries({ queryKey: ['orders'] })
@@ -267,8 +262,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       })
       .catch(() => {
         if (!active) return
-        // Distinguish a failed load from a legitimately empty transition list,
-        // so the UI doesn't tell the admin "no actions" when it's really an error.
         setAllowedTransitions([])
         setTransitionsError(true)
       })
@@ -277,37 +270,26 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   async function doStatusChange(newStatus, reason) {
     setSaving(true)
-    setPendingTarget(newStatus)
     try {
-      const body = { status: newStatus }
-      if (reason) body.reason = reason
       const response = await updateOrderStatus(orderId, newStatus, reason)
       const updatedOrder = response.item
       applyOrderUpdate(updatedOrder)
       const wasOnHold = order.orderStatus === 'ON_HOLD'
       const isBACS = order.paymentMethod === 'BACS'
       const autoMarkedPaid = wasOnHold && isBACS && newStatus === 'PROCESSING' && updatedOrder.paymentStatus === 'PAID'
-      if (autoMarkedPaid) {
-        toast.success(t('orders.detail.autoMarkedPaidToast'))
-      } else {
-        toast.success(t('orders.detail.statusUpdated'))
-      }
+      toast.success(autoMarkedPaid ? t('orders.detail.autoMarkedPaidToast') : t('orders.detail.statusUpdated'))
     } catch (err) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
     } finally {
       setSaving(false)
-      setPendingTarget(null)
     }
   }
 
   async function handleStatusChange(newStatus) {
-    // CANCELLED / FAILED: open reason modal (mandatory reason, destructive confirm inside modal)
     if (REASON_REQUIRED.has(newStatus)) {
       setReasonModal({ targetStatus: newStatus })
       return
     }
-    // BACS ON_HOLD → PROCESSING auto-marks payment as PAID. Require explicit confirmation
-    // so admin doesn't accidentally record a receipt they haven't actually verified.
     const isBACSAutoPayConfirm =
       newStatus === 'PROCESSING' &&
       order?.orderStatus === 'ON_HOLD' &&
@@ -331,8 +313,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }
 
   async function handlePaymentStatusChange(newStatus) {
-    // Payment status changes move real money on the books — confirm the
-    // financially significant ones (BigBike reconciles payments manually).
     const PAYMENT_CONFIRM = {
       PAID: 'orders.detail.confirmPayPaidMessage',
       CANCELLED: 'orders.detail.confirmPayCancelledMessage',
@@ -342,7 +322,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!confirmed) return
     }
     setSaving(true)
-    setPendingTarget(newStatus)
     try {
       const response = await updateOrderPaymentStatus(orderId, newStatus)
       applyOrderUpdate(response.item)
@@ -351,7 +330,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       toast.error(err.message || t('orders.detail.updatePaymentError'))
     } finally {
       setSaving(false)
-      setPendingTarget(null)
     }
   }
 
@@ -382,8 +360,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       const label = t(labelKeys[newFulfillmentStatus])
       if (!await showConfirm(t('orders.detail.confirmFulfillmentMessage', { label }), t('orders.detail.confirmFulfillmentTitle'))) return
     }
-    // Tracking number is mandatory to move into SHIPPED — validate before the
-    // request so the admin gets a clear message instead of a backend reject.
     if (newFulfillmentStatus === 'SHIPPED' && !trackingNumber.trim()) {
       toast.error(t('orders.detail.trackingRequiredError'))
       return
@@ -420,152 +396,455 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       actionLabel={t('common.back')} onAction={() => navigate('/admin/orders')} />
   }
 
+  const ffStatusLabel = order.fulfillmentStatus
+    ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled', RETURNED: 'orders.detail.ffReturned' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
+    : t('orders.detail.ffNone')
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      {/* Screen header */}
+      <div className="screen-header">
         <div>
-          <p className="eyebrow">{t('orders.detail.eyebrow')}</p>
-          <h1 className="flex items-center gap-2 flex-wrap">
-            {formatText(order.orderNumber, `#${orderId}`)}
-            {order.source === 'pos' && <span className="badge-pos">POS</span>}
+          <p className="eyebrow">
+            <a
+              onClick={(e) => { e.preventDefault(); navigate('/admin/orders') }}
+              style={{ cursor: 'pointer' }}
+            >
+              ← {t('orders.detail.backToList')}
+            </a>
+          </p>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {t('orders.detail.eyebrow')}{' '}
+            <span className="mono" style={{ color: 'var(--admin-color-brand-red)' }}>
+              {formatText(order.orderNumber, `#${orderId}`)}
+            </span>
+            <StatusBadge type="order" status={order.orderStatus} />
+            <StatusBadge type="payment" status={order.paymentStatus} />
+            {order.source === 'pos' && <span className="badge badge-neutral">POS</span>}
           </h1>
-          <p>{t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}</p>
+          <p className="desc">
+            {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
+            {' · '}{t('orders.detail.paymentMethod')} <span className="mono">{formatText(order.paymentMethod)}</span>
+          </p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/admin/orders')}>
-          {t('orders.detail.backToList')}
-        </Button>
-      </header>
+        <div className="actions">
+          <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/orders')}>
+            {t('orders.detail.backToList')}
+          </button>
+        </div>
+      </div>
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
-      <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
-        <DetailSection title={t('orders.detail.customerInfo')}>
-          <p><strong>{t('orders.detail.name')}</strong> {formatText(order.customerName)}</p>
-          <p><strong>{t('orders.detail.email')}</strong> {formatText(order.customerEmail)}</p>
-          {order.shippingAddress && (
-            <>
-              <p><strong>{t('orders.detail.phone')}</strong> {formatText(order.shippingAddress.phone)}</p>
-              <p><strong>{t('orders.detail.address')}</strong> {[
-                order.shippingAddress.addressLine1,
-                order.shippingAddress.ward,
-                order.shippingAddress.district,
-                order.shippingAddress.province,
-              ].filter(Boolean).join(', ') || '—'}</p>
-            </>
-          )}
-        </DetailSection>
-
-        <DetailSection title={t('orders.detail.orderStatus')}>
-          {/* Current order status badge */}
-          <div className="mb-3">
-            <p className="mb-1 text-xs text-muted-foreground uppercase tracking-wide">
-              {t('orders.detail.orderStatus')}
-            </p>
-            <StatusBadge type="order" status={order.orderStatus} />
-          </div>
-
-          {/* Order status action buttons — chỉ hiện nút hợp lệ */}
-          {canUpdate && allowedTransitions.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
+      {/* Action panel — allowed status / payment transitions */}
+      {canUpdate && (
+        <div className="card mb-4" style={{ borderLeft: '3px solid var(--admin-color-brand-red)' }}>
+          <div className="card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 auto', minWidth: 240 }}>
+              <div className="fw-700 mb-2">{t('orders.detail.orderStatus')}</div>
+              <div className="text-xs muted">
+                {transitionsError
+                  ? t('orders.detail.transitionsLoadError')
+                  : allowedTransitions.length === 0
+                    ? t('orders.detail.noTransition')
+                    : t('orders.detail.eyebrow')}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {allowedTransitions.map((s) => {
-                const cfg = ORDER_STATUS_ACTION[s] ?? { label: s, variant: 'secondary', confirm: false }
-                const variant = {
-                  primary:     'default',
-                  secondary:   'outline',
-                  success:     'success',
-                  destructive: 'danger',
-                }[cfg.variant] ?? 'outline'
+                const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
+                const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
+                const isDanger = cfg.variant === 'destructive'
                 return (
-                  <Button
+                  <button
                     key={s}
-                    variant={variant}
-                    loading={pendingTarget === s}
+                    type="button"
+                    className={`btn ${isPrimary ? 'btn-primary' : 'btn-outline'}`}
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
+                    style={isDanger ? { color: 'var(--admin-color-status-danger-text)', borderColor: 'var(--admin-color-status-danger-border)' } : {}}
                   >
-                    {getOrderStatusLabel(s, order, t)}
-                  </Button>
+                    → {getOrderStatusLabel(s, order, t)}
+                  </button>
                 )
               })}
-            </div>
-          )}
-          {canUpdate && transitionsError && (
-            <p className="text-sm text-danger mb-3">
-              {t('orders.detail.transitionsLoadError')}{' '}
-              <Button
-                variant="link"
-                size="sm"
-                className="h-auto p-0 align-baseline"
-                onClick={() => setTransitionsKey((k) => k + 1)}
-              >
-                {t('common.retry')}
-              </Button>
-            </p>
-          )}
-          {canUpdate && !transitionsError && allowedTransitions.length === 0 && (
-            <p className="text-sm text-muted-foreground mb-3">
-              {t('orders.detail.noTransition')}
-            </p>
-          )}
-
-          {/* Current payment status + action buttons */}
-          <div className="border-t border-border pt-3">
-            <p className="mb-1 text-xs text-muted-foreground uppercase tracking-wide">
-              {t('orders.detail.paymentStatus')}
-            </p>
-            <StatusBadge type="payment" status={order.paymentStatus} />
-            {canUpdate && !['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus) && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
-                  <Button
-                    key={s}
-                    variant={s === 'CANCELLED' ? 'danger' : 'outline'}
-                    loading={pendingTarget === s}
-                    disabled={saving}
-                    onClick={() => handlePaymentStatusChange(s)}
-                  >
-                    {PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <p className="mt-3 text-sm">
-            <strong>{t('orders.detail.paymentMethod')}</strong> {formatText(order.paymentMethod)}
-          </p>
-        </DetailSection>
-      </div>
-
-      {/* Refund section: visible when payment status is PAID */}
-      {canUpdate && order.paymentStatus === 'PAID' && (
-        <DetailSection title={t('refund.sectionTitle')}>
-          <div className="flex items-center gap-6 flex-wrap">
-            <div>
-              <p className="text-sm">{t('refund.paidAmount')}: <strong>{formatCurrencyVnd(order.paidAmount)}</strong></p>
-              {(order.refundAmount > 0) && (
-                <p className="mt-1 text-sm text-danger">
-                  {t('refund.alreadyRefunded')}: <strong>{formatCurrencyVnd(order.refundAmount)}</strong>
-                </p>
+              {transitionsError && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTransitionsKey((k) => k + 1)}>
+                  {t('common.retry')}
+                </button>
               )}
             </div>
-            <Button variant="danger" onClick={() => setShowRefundModal(true)}>
-              {t('refund.buttonCreate')}
-            </Button>
           </div>
-          {order.refundReason && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t('refund.reason')}: {order.refundReason}
-            </p>
+          {/* Payment transitions */}
+          {!['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus)
+            && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
+            <div
+              style={{
+                padding: '10px 18px',
+                borderTop: '1px solid var(--admin-color-border-subtle)',
+                background: 'var(--admin-color-surface-muted)',
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+              }}
+            >
+              <span className="text-xs muted fw-600">{t('orders.detail.paymentStatus')}</span>
+              {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  disabled={saving}
+                  onClick={() => handlePaymentStatusChange(s)}
+                  style={s === 'CANCELLED' ? { color: 'var(--admin-color-status-danger-text)' } : {}}
+                >
+                  {PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
+                </button>
+              ))}
+            </div>
           )}
-          {order.refundedAt && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}
-            </p>
-          )}
-        </DetailSection>
+        </div>
       )}
 
+      <div className="grid-2-1">
+        {/* Left column — items, payments, returns, notes */}
+        <div>
+          {/* Items */}
+          <div className="card mb-4">
+            <div className="card-head">
+              <h2>{t('orders.detail.items')} ({(order.items ?? []).length})</h2>
+            </div>
+            <div className="card-body card-body--flush">
+              {(order.items ?? []).length === 0 ? (
+                <div className="state-panel"><p>{t('orders.detail.noItems')}</p></div>
+              ) : (
+                <div className="table-wrap">
+                  <table className="tbl">
+                    <thead>
+                      <tr>
+                        <th>{t('orders.detail.colProduct')}</th>
+                        <th className="num">{t('orders.detail.colUnitPrice')}</th>
+                        <th className="num">{t('orders.detail.colQty')}</th>
+                        <th className="num">{t('orders.detail.colLineTotal')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(order.items ?? []).map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <div className="fw-600">{formatText(item.productName)}</div>
+                            {item.variantName && <div className="text-xs muted">{item.variantName}</div>}
+                          </td>
+                          <td className="num">{formatCurrencyVnd(item.unitPrice)}</td>
+                          <td className="num">×{item.quantity}</td>
+                          <td className="num fw-700">{formatCurrencyVnd(item.lineTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div style={{ padding: '14px 18px', borderTop: '1px solid var(--admin-color-border-subtle)', background: 'var(--admin-color-surface-muted)' }}>
+                <dl className="info-grid" style={{ gridTemplateColumns: '1fr auto', gap: '4px 24px', maxWidth: 360, marginLeft: 'auto', fontSize: 13 }}>
+                  <dt>{t('orders.detail.subtotal')}</dt><dd className="num">{formatCurrencyVnd(order.subtotal)}</dd>
+                  {order.shippingFee > 0 && (
+                    <>
+                      <dt>{t('orders.detail.shippingFee')}</dt>
+                      <dd className="num">{formatCurrencyVnd(order.shippingFee)}</dd>
+                    </>
+                  )}
+                  {order.discount > 0 && (
+                    <>
+                      <dt>{t('orders.detail.discount')}</dt>
+                      <dd className="num text-danger">-{formatCurrencyVnd(order.discount)}</dd>
+                    </>
+                  )}
+                  <dt style={{ fontWeight: 700, color: 'var(--admin-color-text-primary)', fontSize: 15, paddingTop: 8 }}>
+                    {t('orders.detail.total')}
+                  </dt>
+                  <dd className="num strong" style={{ fontSize: 18, fontWeight: 800, color: 'var(--admin-color-brand-red)', paddingTop: 8 }}>
+                    {formatCurrencyVnd(order.total)}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+
+          {/* Payments */}
+          {(order.payments ?? []).length > 0 && (
+            <div className="card mb-4">
+              <div className="card-head"><h2>{t('orders.detail.payments')}</h2></div>
+              <div className="card-body card-body--flush">
+                <div className="table-wrap">
+                  <table className="tbl">
+                    <thead>
+                      <tr>
+                        <th>{t('orders.detail.colPaymentMethod')}</th>
+                        <th>{t('orders.detail.colPaymentStatus')}</th>
+                        <th className="num">{t('orders.detail.colAmount')}</th>
+                        <th className="num">{t('orders.detail.colPaidAt')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(order.payments ?? []).map((p, i) => (
+                        <tr key={p.id ?? i}>
+                          <td className="mono">{formatText(p.paymentMethod)}</td>
+                          <td>{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
+                          <td className="num">{formatCurrencyVnd(p.amount)}</td>
+                          <td className="num muted text-xs">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Returns */}
+          <div className="card mb-4">
+            <div className="card-head">
+              <h2>{t('orders.detail.returnsTitle')}</h2>
+              {canUpdate && order.orderStatus === 'COMPLETED' && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreateReturn(true)}>
+                  {t('orders.detail.createReturnBtn')}
+                </button>
+              )}
+            </div>
+            <div className="card-body card-body--flush">
+              {returnsError ? (
+                <div className="state-panel"><p className="text-danger">{t('orders.detail.returnsLoadError')}</p></div>
+              ) : orderReturns.length === 0 ? (
+                <div className="state-panel"><p>{t('orders.detail.returnsEmpty')}</p></div>
+              ) : (
+                <div className="table-wrap">
+                  <table className="tbl">
+                    <thead>
+                      <tr>
+                        <th>{t('orders.detail.colRma')}</th>
+                        <th>{t('orders.detail.colReason')}</th>
+                        <th>{t('orders.detail.colReturnStatus')}</th>
+                        <th className="num">{t('orders.detail.colRefund')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orderReturns.map((r) => (
+                        <tr key={r.id}>
+                          <td className="id-cell">{r.returnNumber}</td>
+                          <td>{RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}</td>
+                          <td><StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} /></td>
+                          <td className="num">{r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="card mb-4">
+            <div className="card-head"><h2>{t('orders.detail.notes')}</h2></div>
+            <div className="card-body">
+              {(order.notes ?? []).length === 0 ? (
+                <p className="muted text-sm">{t('orders.detail.noNotes')}</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 12px' }}>
+                  {(order.notes ?? []).map((note, i) => (
+                    <li key={note.id ?? i} style={{ borderBottom: '1px solid var(--admin-color-border-subtle)', padding: '8px 0', fontSize: 13 }}>
+                      <span className="muted" style={{ marginRight: 8 }}>
+                        {note.createdAt ? formatDateTime(note.createdAt) : ''}
+                      </span>
+                      {note.content}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canUpdate && (
+                <form onSubmit={handleAddNote} className="flex flex-col gap-2">
+                  <Textarea
+                    rows={3}
+                    placeholder={t('orders.detail.notePlaceholder')}
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    disabled={submittingNote}
+                    className="resize-y"
+                  />
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm" style={{ cursor: 'pointer' }}>
+                      <Checkbox
+                        checked={noteCustomerVisible}
+                        onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
+                        disabled={submittingNote}
+                      />
+                      {t('orders.detail.noteCustomerVisible')}
+                    </label>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={submittingNote || !noteContent.trim()}>
+                      {t('orders.detail.submitNote')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right column — customer, refund, fulfillment, timestamps */}
+        <div>
+          {/* Customer */}
+          <div className="card mb-4">
+            <div className="card-head"><h2>{t('orders.detail.customerInfo')}</h2></div>
+            <div className="card-body">
+              <dl className="info-grid">
+                <dt>{t('orders.detail.name')}</dt><dd>{formatText(order.customerName)}</dd>
+                <dt>{t('orders.detail.email')}</dt><dd>{formatText(order.customerEmail)}</dd>
+                {order.shippingAddress && (
+                  <>
+                    <dt>{t('orders.detail.phone')}</dt>
+                    <dd>{formatText(order.shippingAddress.phone)}</dd>
+                    <dt>{t('orders.detail.address')}</dt>
+                    <dd>
+                      {[
+                        order.shippingAddress.addressLine1,
+                        order.shippingAddress.ward,
+                        order.shippingAddress.district,
+                        order.shippingAddress.province,
+                      ].filter(Boolean).join(', ') || '—'}
+                    </dd>
+                  </>
+                )}
+              </dl>
+            </div>
+          </div>
+
+          {/* Refund — visible when paymentStatus is PAID */}
+          {canUpdate && order.paymentStatus === 'PAID' && (
+            <div className="card mb-4">
+              <div className="card-head"><h2>{t('refund.sectionTitle')}</h2></div>
+              <div className="card-body">
+                <dl className="info-grid">
+                  <dt>{t('refund.paidAmount')}</dt>
+                  <dd className="strong">{formatCurrencyVnd(order.paidAmount)}</dd>
+                  {order.refundAmount > 0 && (
+                    <>
+                      <dt>{t('refund.alreadyRefunded')}</dt>
+                      <dd className="text-danger strong">{formatCurrencyVnd(order.refundAmount)}</dd>
+                    </>
+                  )}
+                </dl>
+                <button type="button" className="btn btn-danger mt-3" onClick={() => setShowRefundModal(true)}>
+                  {t('refund.buttonCreate')}
+                </button>
+                {order.refundReason && (
+                  <p className="mt-2 text-xs muted">{t('refund.reason')}: {order.refundReason}</p>
+                )}
+                {order.refundedAt && (
+                  <p className="text-xs muted">{t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Fulfillment — delivery orders only */}
+          {order.fulfillmentType === 'DELIVERY' && (
+            <div className="card mb-4">
+              <div className="card-head"><h2>{t('orders.detail.fulfillment')}</h2></div>
+              <div className="card-body">
+                <dl className="info-grid">
+                  <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
+                  <dd className="fw-600">{ffStatusLabel}</dd>
+                  {order.trackingNumber && (
+                    <>
+                      <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
+                      <dd className="mono">
+                        {order.shippingCarrier ? `${order.shippingCarrier} · ` : ''}{order.trackingNumber}
+                      </dd>
+                    </>
+                  )}
+                  {order.shippedAt && (
+                    <>
+                      <dt>{t('orders.detail.shippedAtLabel')}</dt>
+                      <dd>{formatDateTime(order.shippedAt)}</dd>
+                    </>
+                  )}
+                </dl>
+
+                {canUpdate && (
+                  <div className="mt-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
+                        <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                          onClick={() => handleFulfillmentUpdate('PROCESSING')}>
+                          {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
+                        </button>
+                      )}
+                      {order.fulfillmentStatus === 'PROCESSING' && (
+                        <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                          onClick={() => setShowShipForm((p) => !p)}>
+                          {t('orders.detail.ffMarkShipped')}
+                        </button>
+                      )}
+                      {order.fulfillmentStatus === 'SHIPPED' && (
+                        <button type="button" className="btn btn-primary btn-sm" disabled={fulfillmentSaving}
+                          onClick={() => handleFulfillmentUpdate('DELIVERED')}>
+                          {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
+                        </button>
+                      )}
+                    </div>
+                    {showShipForm && (
+                      <form
+                        className="flex flex-col gap-2 mt-3"
+                        onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
+                      >
+                        <Input
+                          type="text"
+                          placeholder={t('orders.detail.trackingPlaceholder')}
+                          value={trackingNumber}
+                          onChange={(e) => setTrackingNumber(e.target.value)}
+                          disabled={fulfillmentSaving}
+                          required
+                        />
+                        <p className="text-xs muted">{t('orders.detail.trackingHint')}</p>
+                        <Input
+                          type="text"
+                          placeholder={t('orders.detail.carrierPlaceholder')}
+                          value={shippingCarrier}
+                          onChange={(e) => setShippingCarrier(e.target.value)}
+                          disabled={fulfillmentSaving}
+                        />
+                        <div className="flex gap-2">
+                          <button type="submit" className="btn btn-primary btn-sm" disabled={fulfillmentSaving}>
+                            {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
+                          </button>
+                          <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
+                            {t('common.cancel')}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Timestamps */}
+          <div className="card">
+            <div className="card-head"><h2>{t('orders.detail.timestamps')}</h2></div>
+            <div className="card-body">
+              <dl className="info-grid">
+                {order.placedAt && (<><dt>{t('orders.detail.tsPlacedAt')}</dt><dd>{formatDateTime(order.placedAt)}</dd></>)}
+                {order.paidAt && (<><dt>{t('orders.detail.tsPaidAt')}</dt><dd>{formatDateTime(order.paidAt)}</dd></>)}
+                {order.completedAt && (<><dt>{t('orders.detail.tsCompletedAt')}</dt><dd>{formatDateTime(order.completedAt)}</dd></>)}
+                {order.cancelledAt && (<><dt>{t('orders.detail.tsCancelledAt')}</dt><dd>{formatDateTime(order.cancelledAt)}</dd></>)}
+                {order.updatedAt && (<><dt>{t('orders.detail.tsUpdatedAt')}</dt><dd>{formatDateTime(order.updatedAt)}</dd></>)}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
       {showRefundModal && (
         <RefundModal
           orderId={orderId}
@@ -578,205 +857,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           onClose={() => setShowRefundModal(false)}
         />
       )}
-
-      {/* Fulfillment section — chỉ cho đơn giao hàng (không phải POS) */}
-      {order.fulfillmentType === 'DELIVERY' && (
-        <DetailSection title={t('orders.detail.fulfillment')}>
-          <div className="flex items-center gap-4 flex-wrap mb-3">
-            <span>
-              <strong>{t('orders.detail.fulfillmentStatusLabel')}</strong>{' '}
-              {order.fulfillmentStatus
-                ? t({ UNFULFILLED: 'orders.detail.ffUnfulfilled', PROCESSING: 'orders.detail.ffProcessing', SHIPPED: 'orders.detail.ffShipped', DELIVERED: 'orders.detail.ffDelivered', CANCELLED: 'orders.detail.ffCancelled', RETURNED: 'orders.detail.ffReturned' }[order.fulfillmentStatus] ?? order.fulfillmentStatus)
-                : t('orders.detail.ffNone')}
-            </span>
-            {order.trackingNumber && (
-              <span className="text-sm text-muted-foreground">
-                {order.shippingCarrier && <strong>{order.shippingCarrier}: </strong>}
-                <span className="font-mono">{order.trackingNumber}</span>
-              </span>
-            )}
-            {order.shippedAt && (
-              <span className="text-sm text-muted-foreground">
-                {t('orders.detail.shippedAtLabel')} {formatDateTime(order.shippedAt)}
-              </span>
-            )}
-          </div>
-
-          {canUpdate && (
-            <>
-              <div className="flex gap-2 flex-wrap mb-2">
-                {/* UNFULFILLED: chỉ cho chuyển sang PROCESSING trước, không được nhảy thẳng SHIPPED */}
-                {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                  <Button variant="outline" disabled={fulfillmentSaving}
-                    onClick={() => handleFulfillmentUpdate('PROCESSING')}>
-                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
-                  </Button>
-                )}
-                {/* PROCESSING: cho điền mã vận đơn rồi chuyển SHIPPED */}
-                {order.fulfillmentStatus === 'PROCESSING' && (
-                  <Button variant="outline" disabled={fulfillmentSaving}
-                    onClick={() => setShowShipForm((p) => !p)}>
-                    {t('orders.detail.ffMarkShipped')}
-                  </Button>
-                )}
-                {order.fulfillmentStatus === 'SHIPPED' && (
-                  <Button disabled={fulfillmentSaving}
-                    onClick={() => handleFulfillmentUpdate('DELIVERED')}>
-                    {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
-                  </Button>
-                )}
-              </div>
-
-              {showShipForm && (
-                <form
-                  className="flex flex-col gap-2 max-w-[400px] mt-1"
-                  onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
-                >
-                  <Input type="text"
-                    placeholder={t('orders.detail.trackingPlaceholder')}
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    disabled={fulfillmentSaving}
-                    required  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('orders.detail.trackingHint')}
-                  </p>
-                  <Input type="text"
-                    placeholder={t('orders.detail.carrierPlaceholder')}
-                    value={shippingCarrier}
-                    onChange={(e) => setShippingCarrier(e.target.value)}
-                    disabled={fulfillmentSaving}  />
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={fulfillmentSaving}>
-                      {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
-                    </Button>
-                    <Button type="button" variant="outline" disabled={fulfillmentSaving}
-                      onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
-                      {t('common.cancel')}
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </>
-          )}
-        </DetailSection>
-      )}
-
-      <DetailSection title={t('orders.detail.items')}>
-        {(order.items ?? []).length === 0 ? (
-          <p className="text-muted-foreground">{t('orders.detail.noItems')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm" style={{ minWidth: '640px' }}>
-              <thead>
-                <tr className="border-b-2 border-border">
-                  <th className="text-left py-2">{t('orders.detail.colProduct')}</th>
-                  <th className="text-right py-2 whitespace-nowrap px-3" style={{ minWidth: '48px' }}>{t('orders.detail.colQty')}</th>
-                  <th className="text-right py-2 whitespace-nowrap px-3" style={{ minWidth: '110px' }}>{t('orders.detail.colUnitPrice')}</th>
-                  <th className="text-right py-2 whitespace-nowrap pl-3" style={{ minWidth: '110px' }}>{t('orders.detail.colLineTotal')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(order.items ?? []).map((item) => (
-                  <tr key={item.id} className="border-b border-border">
-                    <td className="py-2">{formatText(item.productName)}</td>
-                    <td className="text-right py-2 px-3">{item.quantity}</td>
-                    <td className="text-right py-2 px-3 whitespace-nowrap">{formatCurrencyVnd(item.unitPrice)}</td>
-                    <td className="text-right py-2 pl-3 whitespace-nowrap">{formatCurrencyVnd(item.lineTotal)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="mt-4 text-right">
-          <p>{t('orders.detail.subtotal')} <strong>{formatCurrencyVnd(order.subtotal)}</strong></p>
-          {order.shippingFee > 0 && <p>{t('orders.detail.shippingFee')} <strong>{formatCurrencyVnd(order.shippingFee)}</strong></p>}
-          {order.discount > 0 && <p>{t('orders.detail.discount')} <strong>-{formatCurrencyVnd(order.discount)}</strong></p>}
-          <p className="text-lg">{t('orders.detail.total')} <strong>{formatCurrencyVnd(order.total)}</strong></p>
-        </div>
-      </DetailSection>
-
-      {/* Payments */}
-      {(order.payments ?? []).length > 0 && (
-        <DetailSection title={t('orders.detail.payments')}>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b-2 border-border">
-                <th className="text-left py-2">{t('orders.detail.colPaymentMethod')}</th>
-                <th className="text-left py-2">{t('orders.detail.colPaymentStatus')}</th>
-                <th className="text-right py-2">{t('orders.detail.colAmount')}</th>
-                <th className="text-right py-2">{t('orders.detail.colPaidAt')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.payments ?? []).map((p, i) => (
-                <tr key={p.id ?? i} className="border-b border-border">
-                  <td className="py-2">{formatText(p.paymentMethod)}</td>
-                  <td className="py-2">{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
-                  <td className="text-right py-2">{formatCurrencyVnd(p.amount)}</td>
-                  <td className="text-right py-2">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </DetailSection>
-      )}
-
-      {/* Shipping methods */}
-      {(order.shippingItems ?? []).length > 0 && (
-        <DetailSection title={t('orders.detail.shippingMethods')}>
-          {(order.shippingItems ?? []).map((s, i) => (
-            <p key={s.id ?? i} className="my-1">
-              <strong>{formatText(s.methodTitle)}</strong>
-              {s.amount > 0 && <span> — {formatCurrencyVnd(s.amount)}</span>}
-            </p>
-          ))}
-        </DetailSection>
-      )}
-
-      {/* Returns section */}
-      <DetailSection title={t('orders.detail.returnsTitle')}>
-        {returnsError ? (
-          <p className="text-danger text-sm">
-            {t('orders.detail.returnsLoadError')}
-          </p>
-        ) : orderReturns.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t('orders.detail.returnsEmpty')}
-          </p>
-        ) : (
-          <table className="w-full border-collapse text-sm mb-3">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-1 font-semibold">{t('orders.detail.colRma')}</th>
-                <th className="text-left py-1 px-2 font-semibold">{t('orders.detail.colReason')}</th>
-                <th className="text-left py-1 px-2 font-semibold">{t('orders.detail.colReturnStatus')}</th>
-                <th className="text-right py-1 font-semibold">{t('orders.detail.colRefund')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orderReturns.map((r) => (
-                <tr key={r.id} className="border-b border-border">
-                  <td className="py-1.5 font-mono font-medium">{r.returnNumber}</td>
-                  <td className="py-1.5 px-2">{RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}</td>
-                  <td className="py-1.5 px-2">
-                    <StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} />
-                  </td>
-                  <td className="py-1.5 text-right">
-                    {r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {canUpdate && order.orderStatus === 'COMPLETED' && (
-          <Button variant="outline" className={orderReturns.length > 0 ? '' : 'mt-2'} onClick={() => setShowCreateReturn(true)}>
-            {t('orders.detail.createReturnBtn')}
-          </Button>
-        )}
-      </DetailSection>
 
       {reasonModal && (
         <ReasonConfirmModal
@@ -802,58 +882,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           }}
         />
       )}
-
-      {/* Timestamps */}
-      <DetailSection title={t('orders.detail.timestamps')}>
-        <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-          {order.placedAt && <p><strong>{t('orders.detail.tsPlacedAt')}</strong> {formatDateTime(order.placedAt)}</p>}
-          {order.paidAt && <p><strong>{t('orders.detail.tsPaidAt')}</strong> {formatDateTime(order.paidAt)}</p>}
-          {order.completedAt && <p><strong>{t('orders.detail.tsCompletedAt')}</strong> {formatDateTime(order.completedAt)}</p>}
-          {order.cancelledAt && <p><strong>{t('orders.detail.tsCancelledAt')}</strong> {formatDateTime(order.cancelledAt)}</p>}
-          {order.updatedAt && <p><strong>{t('orders.detail.tsUpdatedAt')}</strong> {formatDateTime(order.updatedAt)}</p>}
-        </div>
-      </DetailSection>
-
-      {/* Notes */}
-      <DetailSection title={t('orders.detail.notes')}>
-        {(order.notes ?? []).length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t('orders.detail.noNotes')}</p>
-        ) : (
-          <ul className="list-none p-0 mb-4">
-            {(order.notes ?? []).map((note, i) => (
-              <li key={note.id ?? i} className="border-b border-border py-2 text-sm">
-                <span className="text-muted-foreground mr-2">{note.createdAt ? formatDateTime(note.createdAt) : ''}</span>
-                {note.content}
-              </li>
-            ))}
-          </ul>
-        )}
-        {canUpdate && (
-          <form onSubmit={handleAddNote} className="flex flex-col gap-2">
-            <Textarea
-              rows={3}
-              placeholder={t('orders.detail.notePlaceholder')}
-              value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-              disabled={submittingNote}
-              className="resize-y"
-             />
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <Checkbox
-                  checked={noteCustomerVisible}
-                  onCheckedChange={(checked) => setNoteCustomerVisible(checked)}
-                  disabled={submittingNote}
-                 />
-                {t('orders.detail.noteCustomerVisible')}
-              </label>
-              <Button type="submit" loading={submittingNote} disabled={!noteContent.trim()}>
-                {t('orders.detail.submitNote')}
-              </Button>
-            </div>
-          </form>
-        )}
-      </DetailSection>
-    </section>
+    </div>
   )
 }

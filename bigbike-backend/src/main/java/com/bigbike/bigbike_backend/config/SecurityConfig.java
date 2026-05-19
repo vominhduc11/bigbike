@@ -23,6 +23,7 @@ public class SecurityConfig {
     private final CustomerCsrfFilter customerCsrfFilter;
     private final RateLimitingFilter rateLimitingFilter;
     private final SecurityHeadersFilter securityHeadersFilter;
+    private final PublicCacheHeaderFilter publicCacheHeaderFilter;
     private final RestAuthenticationEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -127,7 +128,11 @@ public class SecurityConfig {
                 // Customer session runs after JWT — skipped when JWT already set the principal
                 .addFilterAfter(customerSessionFilter, JwtAuthFilter.class)
                 // CSRF validation runs after session is resolved
-                .addFilterAfter(customerCsrfFilter, CustomerSessionFilter.class);
+                .addFilterAfter(customerCsrfFilter, CustomerSessionFilter.class)
+                // Public catalog/content GETs: relax Cache-Control so browsers/CDN
+                // may cache briefly. Runs last — after Spring Security's default
+                // header writer — so the overwrite sticks before the controller runs.
+                .addFilterAfter(publicCacheHeaderFilter, CustomerCsrfFilter.class);
 
         return http.build();
     }

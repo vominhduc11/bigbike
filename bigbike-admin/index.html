@@ -5,14 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>bigbike-admin</title>
-    <script>
-      (function () {
-        var stored = localStorage.getItem('bigbike-admin-theme');
-        if (stored === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        }
-      })();
-    </script>
+    <!-- Applies saved dark theme before paint. External file (not inline) so it
+         passes the strict `script-src 'self'` CSP set in nginx.conf. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

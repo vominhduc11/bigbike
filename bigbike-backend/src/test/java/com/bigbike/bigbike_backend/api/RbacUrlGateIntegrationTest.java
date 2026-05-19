@@ -217,4 +217,36 @@ class RbacUrlGateIntegrationTest {
         int start = json.indexOf(marker) + marker.length();
         return json.substring(start, json.indexOf("\"", start));
     }
+
+    // ── PublicCacheHeaderFilter — public catalog GETs are CDN/browser cacheable ───
+    // Public, non-personalised reads must be cacheable; everything else must keep
+    // Spring Security's no-store so personalised responses never reach a CDN.
+
+    @Test
+    void publicCatalogGet_isBrowserCacheable() throws Exception {
+        mockMvc.perform(get("/api/v1/products"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Cache-Control", "public, max-age=60"));
+    }
+
+    @Test
+    void adminGet_staysNoStore_notCacheable() throws Exception {
+        // Admin endpoint reached with a valid token — response must NOT be cacheable.
+        String token = login(POS_READER_EMAIL);
+        mockMvc.perform(get("/api/v1/admin/pos/products/search").param("q", "x")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Cache-Control",
+                                org.hamcrest.Matchers.containsString("no-store")));
+    }
+
+    @Test
+    void cartGet_staysNoStore_notCacheable() throws Exception {
+        // Cart is guest/customer-specific — must never be served from a shared cache.
+        mockMvc.perform(get("/api/v1/cart"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Cache-Control",
+                                org.hamcrest.Matchers.containsString("no-store")));
+    }
 }

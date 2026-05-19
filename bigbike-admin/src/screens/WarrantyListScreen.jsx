@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AdminTable } from '../components/AdminTable'
+import { Search } from 'lucide-react'
 import { Modal } from '../components/layout'
-import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchWarranties, voidWarranty } from '../lib/adminApi'
@@ -12,8 +11,6 @@ import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { formatDateTime } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const STATUSES = ['ALL', 'ACTIVE', 'EXPIRED', 'VOIDED']
 
@@ -130,101 +127,109 @@ export function WarrantyListScreen({ canUpdate }) {
 
   const state = useAdminList(['warranties', query], () => fetchWarranties(query))
 
-  const columns = useMemo(() => [
-    {
-      key: 'customerEmail', label: t('warranty.colCustomerEmail'), skeletonWidth: '70%',
-      render: (r) => <span className="text-xs">{r.customerEmail ?? '—'}</span>,
-    },
-    {
-      key: 'customerPhone', label: t('warranty.colCustomerPhone'), skeletonWidth: '50%',
-      render: (r) => <span className="text-xs">{r.customerPhone ?? '—'}</span>,
-    },
-    {
-      key: 'startDate', label: t('warranty.colStartDate'), skeletonWidth: '45%',
-      render: (r) => formatDate(r.startDate),
-    },
-    {
-      key: 'endDate', label: t('warranty.colEndDate'), skeletonWidth: '45%',
-      render: (r) => formatDate(r.endDate),
-    },
-    {
-      key: 'status', label: t('warranty.colStatus'), skeletonWidth: '40%',
-      render: (r) => <StatusBadge type="warranty" status={r.status} />,
-    },
-    {
-      key: 'createdAt', label: t('warranty.colCreatedAt'), skeletonWidth: '55%',
-      render: (r) => <span className="text-xs">{formatDateTime(r.createdAt)}</span>,
-    },
-    {
-      key: 'actions', label: '', align: 'right', skeletonWidth: '40%',
-      render: (r) => (
-        <Button variant="outline" size="sm" onClick={() => setDetailItem(r)}>
-          {t('warranty.viewBtn')}
-        </Button>
-      ),
-    },
-  ], [t])
-
   function handleVoided() {
     queryClient.invalidateQueries({ queryKey: ['warranties'] })
   }
 
+  const items = state.items || []
+  const pagination = state.pagination
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('warranty.eyebrow')}</p>
           <h1>{t('warranty.title')}</h1>
-          <p>{t('warranty.description')}</p>
+          <p className="desc">{t('warranty.description')}</p>
         </div>
-      </header>
+      </div>
 
-      <section className="filter-bar">
-        <label>
-          {t('warranty.searchLabel')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             placeholder={t('warranty.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
-        </label>
-        <label>
-          {t('warranty.filterStatus')}
-          <Select value={query.status}
-            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s === 'ALL' ? t('common.all') : t(`warranty.status.${s}`, { defaultValue: s })}
-              </SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
-      </section>
+        </div>
+        <select
+          className="filter-select"
+          value={query.status}
+          onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
+          aria-label={t('warranty.filterStatus')}
+        >
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s === 'ALL' ? t('warranty.filterStatus') : t(`warranty.status.${s}`, { defaultValue: s })}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('warranty.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
-      {state.status === 'success' && state.items.length === 0 && (
+      {state.status === 'success' && items.length === 0 && (
         <StatePanel tone="neutral" title={t('warranty.empty')} description={t('warranty.emptyDesc')} />
       )}
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <>
-          <AdminTable
-            caption={t('warranty.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {state.status === 'success' && state.pagination && (
-            <PaginationControls
-              pagination={state.pagination}
-              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
-            />
+
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('warranty.colCustomerEmail')}</th>
+                    <th>{t('warranty.colCustomerPhone')}</th>
+                    <th>{t('warranty.colStartDate')}</th>
+                    <th>{t('warranty.colEndDate')}</th>
+                    <th>{t('warranty.colStatus')}</th>
+                    <th>{t('warranty.colCreatedAt')}</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(8)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={7}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((r) => (
+                    <tr key={r.id} onClick={() => setDetailItem(r)}>
+                      <td className="text-xs">{r.customerEmail ?? '—'}</td>
+                      <td className="text-xs">{r.customerPhone ?? '—'}</td>
+                      <td className="text-xs">{formatDate(r.startDate)}</td>
+                      <td className="text-xs">{formatDate(r.endDate)}</td>
+                      <td><StatusBadge type="warranty" status={r.status} /></td>
+                      <td className="muted text-xs">{formatDateTime(r.createdAt)}</td>
+                      <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailItem(r)}>
+                          {t('warranty.viewBtn')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && pagination && pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => setQuery((q) => ({ ...q, page: q.page - 1 }))}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}>›</button>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
 
       {detailItem && (
@@ -236,6 +241,6 @@ export function WarrantyListScreen({ canUpdate }) {
           canUpdate={canUpdate}
         />
       )}
-    </section>
+    </div>
   )
 }

@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  AlertCircle, Check, ChevronDown, ChevronUp, Eye, FileText, Image as ImageIcon,
+  Info, Loader2, Maximize2, Minimize2, Search, Trash2, X,
+} from 'lucide-react'
+import {
   createContent,
   deleteContent,
   fetchContentAuthors,
@@ -30,6 +34,54 @@ function normalizeContentType(value) {
 
 function mutationPath(contentType) {
   return normalizeContentType(contentType) === 'PAGE' ? 'pages' : 'articles'
+}
+
+// The 5 form sections (prototype layout). Section 3 ("media") swaps between
+// article gallery fields and page hero fields by content type.
+const CONTENT_SECTION_DEFS = [
+  { id: 'cs-basic',   icon: Info,      labelKey: 'content.detail.sectionCore',    required: true  },
+  { id: 'cs-body',    icon: FileText,  labelKey: 'content.detail.body',           required: true  },
+  { id: 'cs-media',   icon: ImageIcon, labelKey: 'content.detail.sectionMedia',   required: false },
+  { id: 'cs-seo',     icon: Search,    labelKey: 'content.detail.sectionSeo',     required: false },
+  { id: 'cs-publish', icon: Eye,       labelKey: 'content.detail.publishStatus',  required: true  },
+]
+
+// One collapsible content-form section in the prototype `pf-section` style.
+function ContentSection({ def, t, open, done, hasError, onToggle, badge, children }) {
+  const Icon = def.icon
+  return (
+    <div className="pf-section" data-section={def.id} id={def.id}>
+      <button type="button" className="pf-section-head" onClick={onToggle}>
+        <span className={`pf-section-icon${done ? ' done' : ''}`}>
+          {done ? <Check size={14} /> : <Icon size={16} />}
+        </span>
+        <div style={{ flex: 1, textAlign: 'left' }}>
+          <div className="pf-section-title">
+            {t(def.labelKey)}
+            {def.required && !done && (
+              <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--admin-color-brand-red)' }}>
+                {t('products.detail.requiredTag', { defaultValue: 'BẮT BUỘC' })}
+              </span>
+            )}
+            {!def.required && (
+              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 500, color: 'var(--admin-color-text-muted)' }}>
+                {t('products.detail.optionalTag', { defaultValue: '(tuỳ chọn)' })}
+              </span>
+            )}
+          </div>
+        </div>
+        {done && (
+          <span className="badge badge-success" style={{ fontSize: 10 }}>
+            <Check size={10} />{t('products.detail.sectionDone', { defaultValue: 'Hoàn thành' })}
+          </span>
+        )}
+        {hasError && <span className="badge badge-danger" style={{ fontSize: 10 }}><AlertCircle size={10} /></span>}
+        {badge}
+        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {open && <div className="pf-section-body">{children}</div>}
+    </div>
+  )
 }
 
 function buildEmptyForm(contentType) {
@@ -262,6 +314,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         : (normalizedType === 'ARTICLE' ? 'content.detail.successUpdateArticle' : 'content.detail.successUpdatePage')
       toast.success(t(successKey))
       setIsSubmitting(false)
+      setSavedFlash(true)
+      setTimeout(() => setSavedFlash(false), 1200)
       if (isCreate && savedItem?.id) navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, { replace: true })
     },
     onError: (error) => {
@@ -341,6 +395,51 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     saveMutation.mutate(toPayload(form, isCreate))
   }
 
+  // ── Prototype layout state — collapsible sections + TOC scroll-spy ────────
+  const [openMap, setOpenMap] = useState(() => {
+    const m = {}
+    CONTENT_SECTION_DEFS.forEach((s, i) => { m[s.id] = isCreate ? s.required : i < 2 })
+    return m
+  })
+  const [activeSection, setActiveSection] = useState(CONTENT_SECTION_DEFS[0].id)
+  const [savedFlash, setSavedFlash] = useState(false)
+
+  // Scroll-spy — highlight the TOC entry of the section currently in view.
+  useEffect(() => {
+    const pc = document.querySelector('.page-content')
+    if (!pc) return undefined
+    const onScroll = () => {
+      const sections = pc.querySelectorAll('[data-section]')
+      let current = CONTENT_SECTION_DEFS[0].id
+      const containerTop = pc.getBoundingClientRect().top
+      for (const sec of sections) {
+        if (sec.getBoundingClientRect().top - containerTop < 180) current = sec.dataset.section
+        else break
+      }
+      setActiveSection(current)
+    }
+    onScroll()
+    pc.addEventListener('scroll', onScroll, { passive: true })
+    return () => pc.removeEventListener('scroll', onScroll)
+  }, [])
+
+  function toggleSection(id) {
+    setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+  function setAllSections(next) {
+    setOpenMap(() => {
+      const m = {}
+      CONTENT_SECTION_DEFS.forEach((s) => { m[s.id] = next })
+      return m
+    })
+  }
+  function jumpToSection(id) {
+    setOpenMap((prev) => (prev[id] ? prev : { ...prev, [id]: true }))
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
+
   if (state.status === 'loading') {
     return (
       <StatePanel
@@ -377,408 +476,548 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isArticle = normalizedType === 'ARTICLE'
 
+  // Per-section completion — drives TOC ticks + section header badges.
+  const completion = {
+    'cs-basic': Boolean(form.title.trim() && form.slug.trim()
+      && (isArticle ? form.categoryId : form.pageType)),
+    'cs-body': (form.body || '').replace(/<[^>]*>/g, '').trim().length >= 30,
+    'cs-media': isArticle ? Boolean(form.coverImageUrl) : Boolean(form.heroImageUrl),
+    'cs-seo': Boolean(form.seoTitle && form.seoDescription),
+    'cs-publish': Boolean(form.publishStatus),
+  }
+  // Which sections carry a validation error.
+  const errKeys = Object.keys(validationErrors)
+  const inErr = (prefixes) => prefixes.some((p) => errKeys.some((k) => k === p || k.startsWith(p + '.')))
+  const sectionErrors = {
+    'cs-basic': inErr(['title', 'slug', 'pageType', 'categoryId', 'authorId', 'excerpt']),
+    'cs-body': inErr(['body']),
+    'cs-media': inErr(['coverImageUrl', 'productImageUrl', 'heroImage']),
+    'cs-seo': inErr(['seoTitle', 'seoDescription', 'seoCanonicalUrl']),
+    'cs-publish': inErr(['publishStatus']),
+  }
+  const requiredDefs = CONTENT_SECTION_DEFS.filter((s) => s.required)
+  const optionalDefs = CONTENT_SECTION_DEFS.filter((s) => !s.required)
+  const doneRequired = requiredDefs.filter((s) => completion[s.id]).length
+  const doneOptional = optionalDefs.filter((s) => completion[s.id]).length
+  const allOpen = CONTENT_SECTION_DEFS.every((s) => openMap[s.id])
+  const saveDotClass = isSubmitting ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
+  const saveLabel = isSubmitting
+    ? t('common.saving')
+    : savedFlash ? t('common.clean') : isDirty ? t('common.dirty') : t('common.clean')
+
   return (
-    <section className="screen">
-      <header className="screen-header">
-        <div>
-          <p className="eyebrow">{t('content.detail.eyebrow')}</p>
-          <h1>
-            {isCreate
-              ? t(isArticle ? 'content.detail.createArticleTitle' : 'content.detail.createPageTitle')
-              : t(isArticle ? 'content.detail.editArticleTitle' : 'content.detail.editPageTitle')}
-          </h1>
-          <p>
-            {isCreate
-              ? t(isArticle ? 'content.detail.createArticleDesc' : 'content.detail.createPageDesc')
-              : t(isArticle ? 'content.detail.editArticleDesc' : 'content.detail.editPageDesc')}
-          </p>
+    <div className="pf-screen">
+      {/* Read-only banner */}
+      {!canUpdate && (
+        <div className="pf-readonly-banner">
+          <X size={16} />
+          <span>{t('content.detail.permissionDesc')}</span>
         </div>
-        <div className="screen-actions">
-          <Button variant="outline" onClick={() => navigate('/admin/content')}>
-            {t('content.detail.backToList')}
-          </Button>
-          {!isCreate && canUpdate && (
-            <Button
-              variant="danger"
-              loading={isSubmitting}
-              onClick={async () => {
-                const confirmed = await showConfirm(
-                  t('content.detail.archiveConfirm'),
-                  t('content.detail.archiveConfirmTitle'),
-                )
-                if (!confirmed) return
-                setIsSubmitting(true)
-                archiveMutation.mutate()
-              }}
+      )}
+
+      {/* Mock-data warning */}
+      {state.warning && (
+        <div className="pf-restore-banner" style={{ borderColor: 'var(--admin-color-status-warning-border)', background: 'var(--admin-color-status-warning-bg)' }}>
+          <AlertCircle size={16} style={{ color: 'var(--admin-color-status-warning-text)' }} />
+          <div style={{ flex: 1, fontSize: 13 }}>{state.warning}</div>
+        </div>
+      )}
+
+      <div className="pf-body-wrap">
+        {/* TOC sidebar */}
+        <aside className="pf-toc">
+          <div className="pf-toc-head">
+            <div className="pf-toc-head-row">
+              <div>
+                <div className="pf-toc-head-title">{t('products.detail.tocProgress', { defaultValue: 'Tiến độ' })}</div>
+                <div className="pf-toc-head-meta">
+                  <strong>{doneRequired}/{requiredDefs.length}</strong>{' '}
+                  {t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}
+                  {' · '}{doneOptional}/{optionalDefs.length}{' '}
+                  {t('products.detail.tocOptional', { defaultValue: 'tuỳ chọn' })}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="pf-toc-toggle-all"
+                title={allOpen
+                  ? t('products.detail.tocCollapseAll', { defaultValue: 'Đóng tất cả' })
+                  : t('products.detail.tocExpandAll', { defaultValue: 'Mở tất cả' })}
+                onClick={() => setAllSections(!allOpen)}
+              >
+                {allOpen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              </button>
+            </div>
+            <div className="pf-toc-progress">
+              <div style={{ width: `${(doneRequired / requiredDefs.length) * 100}%` }} />
+            </div>
+          </div>
+
+          <nav className="pf-toc-nav">
+            {CONTENT_SECTION_DEFS.map((def) => {
+              const Icon = def.icon
+              const done = completion[def.id]
+              const hasError = sectionErrors[def.id]
+              return (
+                <button
+                  key={def.id}
+                  type="button"
+                  className={`pf-toc-item${done ? ' done' : ''}${hasError ? ' error' : ''}${activeSection === def.id ? ' active' : ''}`}
+                  onClick={() => jumpToSection(def.id)}
+                >
+                  <span className="pf-toc-icon">
+                    {hasError ? <AlertCircle size={13} /> : done ? <Check size={13} /> : <Icon size={13} />}
+                  </span>
+                  <span style={{ flex: 1, textAlign: 'left' }}>{t(def.labelKey)}</span>
+                  {def.required && !done && !hasError && (
+                    <span className="pf-toc-req" title={t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}>*</span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="pf-toc-save">
+            <div className="pf-toc-save-status">
+              <span className={`pf-dot ${saveDotClass}`} />
+              <span>{saveLabel}</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm pf-toc-primary"
+              onClick={handleSubmit}
+              disabled={isReadOnly || !isDirty}
             >
-              {t('content.detail.archiveBtn')}
-            </Button>
-          )}
-        </div>
-      </header>
+              {isSubmitting ? <span className="pf-spin"><Loader2 size={13} /></span> : <Check size={13} />}
+              {isCreate
+                ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
+                : t('content.detail.saveBtn')}
+            </button>
+            <div className="pf-toc-secondary">
+              {!isCreate && canUpdate && (
+                <button
+                  type="button"
+                  className="pf-toc-icon-btn"
+                  disabled={isSubmitting}
+                  onClick={async () => {
+                    const confirmed = await showConfirm(
+                      t('content.detail.archiveConfirm'),
+                      t('content.detail.archiveConfirmTitle'),
+                    )
+                    if (!confirmed) return
+                    setIsSubmitting(true)
+                    archiveMutation.mutate()
+                  }}
+                >
+                  <Trash2 size={13} /><span>{t('content.detail.archiveBtn')}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="pf-toc-icon-btn"
+                disabled={isSubmitting}
+                onClick={() => navigate('/admin/content')}
+              >
+                <X size={13} /><span>{t('content.detail.backToList')}</span>
+              </button>
+            </div>
+            <div className="pf-toc-kbd-hint">
+              <kbd>⌘</kbd>+<kbd>↵</kbd> {t('products.detail.saveShortcutHint', { defaultValue: 'lưu nhanh' })}
+            </div>
+          </div>
+        </aside>
 
-      {state.warning ? (
-        <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
-      ) : null}
+        {/* Form sections */}
+        <form
+          ref={formRef}
+          className="pf-body"
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
+              handleSubmit(e)
+            }
+          }}
+        >
+          {/* ── Section 1: Thông tin cơ bản ── */}
+          <ContentSection
+            def={CONTENT_SECTION_DEFS[0]}
+            t={t}
+            open={openMap['cs-basic']}
+            done={completion['cs-basic']}
+            hasError={sectionErrors['cs-basic']}
+            onToggle={() => toggleSection('cs-basic')}
+          >
+            <div className="pf-grid">
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('content.detail.title')}</span></div>
+                <Input value={form.title} onChange={(e) => updateField('title', e.target.value)} disabled={isReadOnly} />
+                {validationErrors.title && <span className="pf-field-msg pf-field-msg-error">{validationErrors.title}</span>}
+              </div>
 
-      {!canUpdate ? (
-        <StatePanel
-          tone="warning"
-          title={t('content.detail.permissionDenied')}
-          description={t('content.detail.permissionDesc')}
-        />
-      ) : null}
-
-      <form
-        ref={formRef}
-        className="entity-form"
-        onSubmit={handleSubmit}
-        onKeyDown={(e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
-            handleSubmit(e)
-          }
-        }}
-      >
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>{t('content.detail.sectionCore')}</h2>
-          </header>
-          <div className="detail-section-content form-grid">
-            <label className="form-field">
-              <span>{t('content.detail.slug')}</span>
-              <Input
-                value={form.slug}
-                onChange={(event) => updateField('slug', event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.slug ? (
-                <small className="field-error">{validationErrors.slug}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('content.detail.title')}</span>
-              <Input
-                value={form.title}
-                onChange={(event) => updateField('title', event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.title ? (
-                <small className="field-error">{validationErrors.title}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('content.detail.publishStatus')}</span>
-              <Select
-                value={form.publishStatus}
-                onValueChange={(val) => updateField('publishStatus', val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
-                <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
-                <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
-              </SelectContent></Select>
-              {validationErrors.publishStatus ? (
-                <small className="field-error">{validationErrors.publishStatus}</small>
-              ) : null}
-            </label>
-
-            {!isArticle ? (
-              <label className="form-field">
-                <span>{t('content.detail.pageType')}</span>
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('content.detail.slug')}</span></div>
                 <Input
-                  value={form.pageType}
-                  onChange={(event) => updateField('pageType', event.target.value)}
-                  disabled={isReadOnly || !isCreate}
-                 />
-                {validationErrors.pageType ? (
-                  <small className="field-error">{validationErrors.pageType}</small>
-                ) : null}
-              </label>
-            ) : null}
-
-            {/* P1-002: Author selector for articles */}
-            {isArticle ? (
-              <label className="form-field">
-                <span>{t('content.detail.author', { defaultValue: 'Tác giả' })}</span>
-                <Select
-                  value={form.authorId}
-                  onValueChange={(val) => updateField('authorId', val)}
+                  value={form.slug}
+                  onChange={(e) => updateField('slug', e.target.value)}
                   disabled={isReadOnly}
-                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                  {authors.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent></Select>
-              </label>
-            ) : null}
+                  style={{ fontFamily: 'var(--admin-font-mono)' }}
+                />
+                {validationErrors.slug && <span className="pf-field-msg pf-field-msg-error">{validationErrors.slug}</span>}
+              </div>
 
-            {/* P1-002: Category selector for articles */}
-            {isArticle ? (
-              <label className="form-field">
-                <span>{t('content.detail.category', { defaultValue: 'Danh mục' })}</span>
-                <Select
-                  value={form.categoryId}
-                  onValueChange={(val) => updateField('categoryId', val)}
-                  disabled={isReadOnly}
-                ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent></Select>
-              </label>
-            ) : null}
+              {!isArticle && (
+                <div className="pf-field">
+                  <div className="pf-field-label"><span>{t('content.detail.pageType')}</span></div>
+                  <Input
+                    value={form.pageType}
+                    onChange={(e) => updateField('pageType', e.target.value)}
+                    disabled={isReadOnly || !isCreate}
+                  />
+                  {validationErrors.pageType && <span className="pf-field-msg pf-field-msg-error">{validationErrors.pageType}</span>}
+                </div>
+              )}
 
+              {isArticle && (
+                <div className="pf-field">
+                  <div className="pf-field-label"><span>{t('content.detail.author', { defaultValue: 'Tác giả' })}</span></div>
+                  <Select value={form.authorId} onValueChange={(val) => updateField('authorId', val)} disabled={isReadOnly}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {authors.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-            {isArticle ? (
-              <label className="form-field form-field-wide">
-                <span>{t('content.detail.excerpt')}</span>
-                <Textarea
-                  value={form.excerpt}
-                  onChange={(event) => updateField('excerpt', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-              </label>
-            ) : null}
+              {isArticle && (
+                <div className="pf-field">
+                  <div className="pf-field-label"><span>{t('content.detail.category', { defaultValue: 'Danh mục' })}</span></div>
+                  <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-            <div className="form-field form-field-wide">
-              <span className="text-sm font-medium text-muted-foreground">
-                {t('content.detail.body')}
-              </span>
+              {isArticle && (
+                <div className="pf-field full">
+                  <div className="pf-field-label"><span>{t('content.detail.excerpt')}</span></div>
+                  <Textarea value={form.excerpt} onChange={(e) => updateField('excerpt', e.target.value)} disabled={isReadOnly} />
+                </div>
+              )}
+            </div>
+          </ContentSection>
+
+          {/* ── Section 2: Nội dung ── */}
+          <ContentSection
+            def={CONTENT_SECTION_DEFS[1]}
+            t={t}
+            open={openMap['cs-body']}
+            done={completion['cs-body']}
+            hasError={sectionErrors['cs-body']}
+            onToggle={() => toggleSection('cs-body')}
+          >
+            <div style={{ paddingTop: 12 }}>
               <RichTextEditor
                 value={form.body}
                 onChange={(html) => updateField('body', html)}
                 placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
                 disabled={isReadOnly}
                 hasError={Boolean(validationErrors.body)}
+                enableImagePicker
               />
-              {validationErrors.body ? (
-                <small className="field-error">{validationErrors.body}</small>
-              ) : null}
+              {validationErrors.body && <span className="pf-field-msg pf-field-msg-error">{validationErrors.body}</span>}
             </div>
-          </div>
-        </section>
+          </ContentSection>
 
-        {isArticle ? (
-          <section className="detail-section">
-            <header className="detail-section-header">
-              <h2>{t('content.detail.sectionMedia')}</h2>
-            </header>
-            <div className="detail-section-content form-grid">
-              <div className="form-field form-field-wide">
-                <span>{t('content.detail.coverImageUrl')}</span>
-                <ImageUrlInput
-                  value={form.coverImageUrl}
-                  onChange={(url) => updateField('coverImageUrl', url)}
-                  disabled={isReadOnly}
-                  error={validationErrors.coverImageUrl}
-                />
+          {/* ── Section 3: Hình ảnh — article gallery / page hero ── */}
+          <ContentSection
+            def={CONTENT_SECTION_DEFS[2]}
+            t={t}
+            open={openMap['cs-media']}
+            done={completion['cs-media']}
+            hasError={sectionErrors['cs-media']}
+            onToggle={() => toggleSection('cs-media')}
+          >
+            {isArticle ? (
+              <div className="pf-grid">
+                <div className="pf-field full">
+                  <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.coverImageUrl')}</span></div>
+                  <ImageUrlInput
+                    value={form.coverImageUrl}
+                    onChange={(url) => updateField('coverImageUrl', url)}
+                    alt={form.coverImageAlt}
+                    onAltChange={(v) => updateField('coverImageAlt', v)}
+                    disabled={isReadOnly}
+                    error={validationErrors.coverImageUrl}
+                  />
+                </div>
+
+                <div className="pf-field full">
+                  <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.productImageUrl')}</span></div>
+                  <ImageUrlInput
+                    value={form.productImageUrl}
+                    onChange={(url) => updateField('productImageUrl', url)}
+                    alt={form.productImageAlt}
+                    onAltChange={(v) => updateField('productImageAlt', v)}
+                    disabled={isReadOnly}
+                    error={validationErrors.productImageUrl}
+                  />
+                </div>
+
+                <div className="pf-field full">
+                  <div className="pf-field-label"><span>{t('content.detail.tags')}</span></div>
+                  <Input
+                    value={form.tags}
+                    onChange={(e) => updateField('tags', e.target.value)}
+                    disabled={isReadOnly}
+                    placeholder={t('content.detail.tagsPlaceholder')}
+                  />
+                </div>
+
+                <div className="pf-field full">
+                  <div className="pf-field-label"><span>{t('content.detail.relatedProducts')}</span></div>
+                  <span className="pf-field-msg pf-field-hint">{t('content.detail.relatedProductsHint')}</span>
+
+                  {form.relatedProductChips.length > 0 && (
+                    <div className="chip-row" style={{ marginTop: 8 }}>
+                      {form.relatedProductChips.map((chip) => (
+                        <span key={chip.id} className="chip">
+                          {chip.imageUrl && (
+                            <img src={chip.imageUrl} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3 }} />
+                          )}
+                          <strong>{chip.name}</strong>
+                          {!isReadOnly && (
+                            <span
+                              className="x"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => removeRelatedProduct(chip.id)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
+                              aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
+                            >×</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {!isReadOnly && (
+                    <div style={{ position: 'relative', marginTop: 8 }}>
+                      <Input
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder={t('content.detail.relatedProductsSearch')}
+                      />
+                      {productSearchDebounced.length >= 1 && (
+                        <div
+                          className="row-menu"
+                          style={{ left: 0, right: 0, minWidth: 0, maxHeight: 256, overflowY: 'auto' }}
+                        >
+                          {isSearchingProducts ? (
+                            <p className="text-sm muted" style={{ padding: '8px 10px' }}>
+                              {t('content.detail.relatedProductsSearching')}
+                            </p>
+                          ) : productSearchItems.length === 0 ? (
+                            <p className="text-sm muted" style={{ padding: '8px 10px' }}>
+                              {t('content.detail.relatedProductsEmpty')}
+                            </p>
+                          ) : (
+                            productSearchItems.map((product) => {
+                              const already = form.relatedProductIds.includes(product.id)
+                              return (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  disabled={already}
+                                  onClick={() => addRelatedProduct(product)}
+                                  style={already ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                                >
+                                  {product.image?.url && (
+                                    <img src={product.image.url} alt="" style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4 }} />
+                                  )}
+                                  <span style={{ flex: 1 }}>{product.name}</span>
+                                  {already && (
+                                    <span className="text-xs muted">{t('content.detail.relatedProductsAdded')}</span>
+                                  )}
+                                </button>
+                              )
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-
-              <label className="form-field">
-                <span>{t('content.detail.coverImageAlt')}</span>
-                <Input
-                  value={form.coverImageAlt}
-                  onChange={(event) => updateField('coverImageAlt', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-              </label>
-
-              <div className="form-field form-field-wide">
-                <span>{t('content.detail.productImageUrl')}</span>
-                <ImageUrlInput
-                  value={form.productImageUrl}
-                  onChange={(url) => updateField('productImageUrl', url)}
-                  disabled={isReadOnly}
-                  error={validationErrors.productImageUrl}
-                />
-              </div>
-
-              <label className="form-field">
-                <span>{t('content.detail.productImageAlt')}</span>
-                <Input
-                  value={form.productImageAlt}
-                  onChange={(event) => updateField('productImageAlt', event.target.value)}
-                  disabled={isReadOnly}
-                 />
-              </label>
-
-              <label className="form-field form-field-wide">
-                <span>{t('content.detail.tags')}</span>
-                <Input
-                  value={form.tags}
-                  onChange={(event) => updateField('tags', event.target.value)}
-                  disabled={isReadOnly}
-                  placeholder={t('content.detail.tagsPlaceholder')}
-                 />
-              </label>
-
-              <div className="form-field form-field-wide">
-                <span>{t('content.detail.relatedProducts')}</span>
-                <p className="text-xs text-muted-foreground">
-                  {t('content.detail.relatedProductsHint')}
-                </p>
-
-                {form.relatedProductChips.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {form.relatedProductChips.map((chip) => (
-                      <span
-                        key={chip.id}
-                        className="inline-flex items-center gap-2 border border-border bg-muted px-2 py-1 text-sm"
-                      >
-                        {chip.imageUrl ? (
-                          <img src={chip.imageUrl} alt="" className="w-6 h-6 object-cover" />
-                        ) : null}
-                        <span>{chip.name}</span>
-                        {!isReadOnly ? (
-                          <button
-                            type="button"
-                            onClick={() => removeRelatedProduct(chip.id)}
-                            className="text-muted-foreground hover:text-brand"
-                            aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
-                          >
-                            ×
-                          </button>
-                        ) : null}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                {!isReadOnly ? (
-                  <div className="relative mt-2">
-                    <Input
-                      value={productSearch}
-                      onChange={(event) => setProductSearch(event.target.value)}
-                      placeholder={t('content.detail.relatedProductsSearch')}
+            ) : (
+              <>
+                <div className="pf-note pf-note-info">
+                  <Info size={14} />
+                  <span>{t('content.detail.heroHint', { defaultValue: 'Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ rơi về nền mặc định.' })}</span>
+                </div>
+                <div className="pf-grid">
+                  <div className="pf-field full">
+                    <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.heroImage', { defaultValue: 'Ảnh hero' })}</span></div>
+                    <ImageUrlInput
+                      value={form.heroImageUrl}
+                      onChange={(url) => updateField('heroImageUrl', url)}
+                      alt={form.heroImageAlt}
+                      onAltChange={(alt) => updateField('heroImageAlt', alt)}
+                      disabled={isReadOnly}
+                      error={validationErrors['heroImage.url']}
                     />
-                    {productSearchDebounced.length >= 1 ? (
-                      <div className="absolute z-10 left-0 right-0 mt-1 border border-border bg-card max-h-64 overflow-auto shadow-md">
-                        {isSearchingProducts ? (
-                          <p className="px-3 py-2 text-sm text-muted-foreground">
-                            {t('content.detail.relatedProductsSearching')}
-                          </p>
-                        ) : productSearchItems.length === 0 ? (
-                          <p className="px-3 py-2 text-sm text-muted-foreground">
-                            {t('content.detail.relatedProductsEmpty')}
-                          </p>
-                        ) : (
-                          productSearchItems.map((product) => {
-                            const already = form.relatedProductIds.includes(product.id)
-                            return (
-                              <button
-                                key={product.id}
-                                type="button"
-                                disabled={already}
-                                onClick={() => addRelatedProduct(product)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {product.image?.url ? (
-                                  <img
-                                    src={product.image.url}
-                                    alt=""
-                                    className="w-8 h-8 object-cover shrink-0"
-                                  />
-                                ) : null}
-                                <span className="flex-1">{product.name}</span>
-                                {already ? (
-                                  <span className="text-xs text-muted-foreground">
-                                    {t('content.detail.relatedProductsAdded')}
-                                  </span>
-                                ) : null}
-                              </button>
-                            )
-                          })
-                        )}
-                      </div>
-                    ) : null}
                   </div>
-                ) : null}
+                  <div className="pf-field">
+                    <div className="pf-field-label"><span>{t('content.detail.heroKicker', { defaultValue: 'Kicker' })}</span></div>
+                    <Input
+                      value={form.heroKicker}
+                      onChange={(e) => updateField('heroKicker', e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder="vd: GIỚI THIỆU"
+                      maxLength={128}
+                    />
+                  </div>
+                  <div className="pf-field">
+                    <div className="pf-field-label"><span>{t('content.detail.heroTitle', { defaultValue: 'Tiêu đề hero' })}</span></div>
+                    <Input
+                      value={form.heroTitle}
+                      onChange={(e) => updateField('heroTitle', e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder={t('content.detail.heroTitlePlaceholder', { defaultValue: 'Để trống nếu muốn dùng tên trang' })}
+                      maxLength={256}
+                    />
+                  </div>
+                  <div className="pf-field full">
+                    <div className="pf-field-label"><span>{t('content.detail.heroDescription', { defaultValue: 'Mô tả ngắn dưới tiêu đề' })}</span></div>
+                    <Textarea
+                      value={form.heroDescription}
+                      onChange={(e) => updateField('heroDescription', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={1024}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </ContentSection>
+
+          {/* ── Section 4: SEO ── */}
+          <ContentSection
+            def={CONTENT_SECTION_DEFS[3]}
+            t={t}
+            open={openMap['cs-seo']}
+            done={completion['cs-seo']}
+            hasError={sectionErrors['cs-seo']}
+            onToggle={() => toggleSection('cs-seo')}
+          >
+            {/* Live Google SERP preview */}
+            <div className="pf-serp" style={{ marginTop: 12 }}>
+              <div className="pf-serp-label">
+                <Search size={12} /><span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+              </div>
+              <div className="pf-serp-url">
+                https://bigbike.vn
+                <span className="pf-serp-slug-path"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
+              </div>
+              <div className="pf-serp-title">
+                {(form.seoTitle || form.title || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+              </div>
+              <div className="pf-serp-desc">
+                {form.seoDescription || form.excerpt || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
               </div>
             </div>
-          </section>
-        ) : null}
 
-        {!isArticle ? (
-          <section className="detail-section">
-            <header className="detail-section-header">
-              <h2>Hero banner</h2>
-              <p className="detail-section-hint">
-                Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ
-                rơi về nền đen-đỏ mặc định.
-              </p>
-            </header>
-            <div className="detail-section-content form-grid">
-              <div className="form-field form-field-wide">
-                <span>Ảnh hero</span>
-                <ImageUrlInput
-                  value={form.heroImageUrl}
-                  onChange={(url) => updateField('heroImageUrl', url)}
-                  alt={form.heroImageAlt}
-                  onAltChange={(alt) => updateField('heroImageAlt', alt)}
+            <div className="pf-grid">
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}</span></div>
+                <Input
+                  value={form.seoTitle}
+                  onChange={(e) => updateField('seoTitle', e.target.value)}
                   disabled={isReadOnly}
-                  error={validationErrors['heroImage.url']}
+                  placeholder={form.title || t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
                 />
+                {validationErrors.seoTitle && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoTitle}</span>}
               </div>
-
-              <label className="form-field">
-                <span>Kicker (chip nhỏ trên tiêu đề)</span>
-                <Input
-                  value={form.heroKicker}
-                  onChange={(event) => updateField('heroKicker', event.target.value)}
-                  disabled={isReadOnly}
-                  placeholder="vd: GIỚI THIỆU"
-                  maxLength={128}
-                 />
-              </label>
-
-              <label className="form-field">
-                <span>Tiêu đề hero</span>
-                <Input
-                  value={form.heroTitle}
-                  onChange={(event) => updateField('heroTitle', event.target.value)}
-                  disabled={isReadOnly}
-                  placeholder="Để trống nếu muốn dùng tên trang"
-                  maxLength={256}
-                 />
-              </label>
-
-              <label className="form-field form-field-wide">
-                <span>Mô tả ngắn dưới tiêu đề</span>
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}</span></div>
                 <Textarea
-                  value={form.heroDescription}
-                  onChange={(event) => updateField('heroDescription', event.target.value)}
+                  value={form.seoDescription}
+                  onChange={(e) => updateField('seoDescription', e.target.value)}
                   disabled={isReadOnly}
-                  maxLength={1024}
                   rows={2}
-                 />
+                  className={validationErrors.seoDescription ? 'border-danger' : undefined}
+                />
+                {validationErrors.seoDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoDescription}</span>}
+              </div>
+              <div className="pf-field full">
+                <div className="pf-field-label"><span>{t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })}</span></div>
+                <Input
+                  value={form.seoCanonicalUrl}
+                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="https://bigbike.vn/..."
+                  className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+                />
+                {validationErrors.seoCanonicalUrl && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoCanonicalUrl}</span>}
+              </div>
+              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
+                <Checkbox
+                  checked={form.seoNoIndex}
+                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
+                  disabled={isReadOnly}
+                />
+                <span>{t('content.detail.seoNoIndex', { defaultValue: 'Không cho công cụ tìm kiếm lập chỉ mục (noindex)' })}</span>
               </label>
             </div>
-          </section>
-        ) : null}
+          </ContentSection>
 
-        <div className="form-footer">
-          <div className="form-status">
-            <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
-              {isDirty ? t('common.dirty') : t('common.clean')}
-            </span>
-            {!isCreate && state.item?.updatedAt ? (
-              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
-            ) : null}
-          </div>
-          <div className="screen-actions">
-            <Button type="submit" disabled={isReadOnly || !isDirty}>
-              {isSubmitting
-                ? t('common.saving')
-                : isCreate
-                  ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
-                  : t('content.detail.saveBtn')}
-            </Button>
-          </div>
-        </div>
+          {/* ── Section 5: Hiển thị ── */}
+          <ContentSection
+            def={CONTENT_SECTION_DEFS[4]}
+            t={t}
+            open={openMap['cs-publish']}
+            done={completion['cs-publish']}
+            hasError={sectionErrors['cs-publish']}
+            onToggle={() => toggleSection('cs-publish')}
+          >
+            <div className="pf-grid">
+              {!isArticle && form.parentId !== undefined && (
+                <div className="pf-field">
+                  <div className="pf-field-label"><span>{t('content.detail.parentPage', { defaultValue: 'Trang cha (parentId)' })}</span></div>
+                  <Input
+                    value={form.parentId}
+                    onChange={(e) => updateField('parentId', e.target.value)}
+                    disabled={isReadOnly}
+                    placeholder={t('content.detail.parentPagePlaceholder', { defaultValue: 'Để trống nếu là trang gốc' })}
+                  />
+                </div>
+              )}
+              <div className="pf-field">
+                <div className="pf-field-label"><span>{t('content.detail.publishStatus')}</span></div>
+                <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
+                    <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
+                    <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {validationErrors.publishStatus && <span className="pf-field-msg pf-field-msg-error">{validationErrors.publishStatus}</span>}
+              </div>
+            </div>
+          </ContentSection>
 
-      </form>
-    </section>
+          {!isCreate && state.item?.updatedAt && (
+            <p className="text-xs muted" style={{ textAlign: 'right' }}>
+              {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
+            </p>
+          )}
+        </form>
+      </div>
+    </div>
   )
 }

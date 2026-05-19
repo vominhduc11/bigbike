@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AdminTable } from '../components/AdminTable'
-import { PaginationControls } from '../components/PaginationControls'
+import { Download, File, FileText, Pencil, Plus, Search } from 'lucide-react'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -10,10 +9,6 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
@@ -45,65 +40,6 @@ export function ContentListScreen({ navigate, canUpdate }) {
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  const columns = useMemo(
-    () => [
-      {
-        key: 'title',
-        label: t('content.colContent'),
-        render: (item) => (
-          <div className="product-cell">
-            <div className="thumbnail-wrap">
-              {item.coverImage?.url ? (
-                <img
-                  src={item.coverImage.url}
-                  alt={item.coverImage.alt || item.title}
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = ''; }}
-                />
-              ) : null}
-              <span style={{ display: item.coverImage?.url ? 'none' : '' }}>IMG</span>
-            </div>
-            <div>
-              <strong>{formatText(item.title)}</strong>
-              <p>{item.slug}</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        key: 'type',
-        label: t('content.colType'),
-        render: (item) => (
-          <Badge variant={item.type === 'PAGE' ? 'muted' : 'info'}>
-            {item.type === 'PAGE' ? t('content.typePage') : t('content.typeArticle')}
-          </Badge>
-        ),
-      },
-      {
-        key: 'publishStatus',
-        label: t('content.colPublish'),
-        render: (item) => <PublishStatusBadge value={item.publishStatus} />,
-      },
-      {
-        key: 'updatedAt',
-        label: t('content.colUpdated'),
-        render: (item) => formatDateTime(item.updatedAt),
-      },
-      {
-        key: 'actions',
-        label: t('content.colActions'),
-        align: 'right',
-        render: (item) => (
-          <Button variant="outline" onClick={() => navigate(`/admin/content/${item.type.toLowerCase()}/${item.id}`)}>
-            {t('common.edit')}
-          </Button>
-        ),
-      },
-    ],
-    [navigate, t],
-  )
-
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((previous) => {
       const next = { ...previous, ...partial }
@@ -117,63 +53,84 @@ export function ContentListScreen({ navigate, canUpdate }) {
     setQuery(INITIAL_QUERY)
   }
 
+  // Content type as a segmented tab bar — quick switch between articles & pages.
+  const typeTabs = useMemo(() => [
+    { key: 'ALL', label: t('common.all') },
+    { key: 'ARTICLE', label: t('content.typeArticle') },
+    { key: 'PAGE', label: t('content.typePage') },
+  ], [t])
+
+  const items = state.items || []
+  const pagination = state.pagination
+  // The header "create" button matches whichever type tab is active.
+  const createIsPage = query.type === 'PAGE'
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('content.eyebrow')}</p>
           <h1>{t('content.title')}</h1>
-          <p>{t('content.description')}</p>
+          <p className="desc">{t('content.description')}</p>
         </div>
-        <div className="screen-actions">
-          <Button variant="outline" onClick={() => navigate('/admin/content/articles/new')} disabled={!canUpdate}>
-            {t('content.newArticle')}
-          </Button>
-          <Button onClick={() => navigate('/admin/content/pages/new')} disabled={!canUpdate}>
-            {t('content.newPage')}
-          </Button>
+        <div className="actions">
+          <button type="button" className="btn btn-outline" disabled title={t('common.exportCsv', { defaultValue: 'Xuất CSV' })}>
+            <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!canUpdate}
+            onClick={() => navigate(createIsPage ? '/admin/content/pages/new' : '/admin/content/articles/new')}
+          >
+            <Plus size={14} />
+            {createIsPage ? t('content.newPage') : t('content.newArticle')}
+          </button>
         </div>
-      </header>
+      </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input
+      {/* Type tabs — prototype segmented control */}
+      <div className="seg mb-4" role="tablist" aria-label={t('content.filterType')}>
+        {typeTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={query.type === tab.key}
+            className={`seg-tab${query.type === tab.key ? ' active' : ''}`}
+            onClick={() => updateQuery({ type: tab.key }, { resetPage: true })}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('content.searchPlaceholder')}
-           />
-        </label>
-        <label>
-          {t('content.filterType')}
-          <Select
-            value={query.type}
-            onValueChange={(value) =>
-              updateQuery({ type: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="ARTICLE">{t('content.typeArticle')}</SelectItem>
-            <SelectItem value="PAGE">{t('content.typePage')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-        <label>
-          {t('content.filterPublish')}
-          <Select
-            value={query.publishStatus}
-            onValueChange={(value) =>
-              updateQuery({ publishStatus: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
-            <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
-            <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
-            <SelectItem value="TRASH">{t('status.publish.TRASH')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-      </section>
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.publishStatus}
+          onChange={(e) => updateQuery({ publishStatus: e.target.value }, { resetPage: true })}
+          aria-label={t('content.filterPublish')}
+        >
+          <option value="ALL">{t('content.filterPublish')}</option>
+          <option value="DRAFT">{t('status.publish.DRAFT')}</option>
+          <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
+          <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
+          <option value="TRASH">{t('status.publish.TRASH')}</option>
+        </select>
+      </div>
 
       {state.status === 'error' ? (
         <StatePanel
@@ -185,7 +142,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      {state.status === 'success' && state.items.length === 0 ? (
+      {state.status === 'success' && items.length === 0 ? (
         <StatePanel
           tone="neutral"
           title={t('content.empty')}
@@ -195,23 +152,94 @@ export function ContentListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
-        <>
-          <AdminTable
-            caption={t('content.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {state.status === 'success' && (
-            <PaginationControls
-              pagination={state.pagination}
-              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-            />
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('content.colContent')}</th>
+                    <th>{t('content.colType')}</th>
+                    <th>{t('content.colPublish')}</th>
+                    <th>{t('content.colUpdated')}</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(6)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={5}><div className="dash-skeleton-block" style={{ height: 32 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((item) => {
+                    const editPath = `/admin/content/${item.type.toLowerCase()}/${item.id}`
+                    const isPage = item.type === 'PAGE'
+                    return (
+                      <tr key={item.id} onClick={() => navigate(editPath)}>
+                        <td>
+                          <div className="product-cell">
+                            <span className="thumb">
+                              {item.coverImage?.url ? (
+                                <img
+                                  src={item.coverImage.url}
+                                  alt={item.coverImage.alt || item.title}
+                                  referrerPolicy="no-referrer"
+                                  loading="lazy"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : isPage ? <File size={16} /> : <FileText size={16} />}
+                            </span>
+                            <div className="info">
+                              <div className="name">{formatText(item.title)}</div>
+                              <div className="sku">/{item.slug}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${isPage ? 'badge-neutral' : 'badge-info'}`}>
+                            {isPage ? t('content.typePage') : t('content.typeArticle')}
+                          </span>
+                        </td>
+                        <td><PublishStatusBadge value={item.publishStatus} /></td>
+                        <td className="muted text-xs">{formatDateTime(item.updatedAt)}</td>
+                        <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            title={t('common.edit')}
+                            onClick={() => navigate(editPath)}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && pagination && (
+            <div className="card-foot">
+              <span>
+                {t('common.paginationSummary', {
+                  defaultValue: `Hiển thị ${items.length} trong ${pagination.totalItems} nội dung`,
+                  count: items.length,
+                  total: pagination.totalItems,
+                })}
+              </span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
+              </div>
+            </div>
           )}
-        </>
-      ) : null}
-    </section>
+        </div>
+      )}
+    </div>
   )
 }

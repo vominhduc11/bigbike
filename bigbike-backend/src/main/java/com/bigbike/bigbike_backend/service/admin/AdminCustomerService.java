@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerDetailRes
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerOrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerOrderSummaryResponse.LatestOrder;
+import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -26,6 +27,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -49,6 +51,8 @@ public class AdminCustomerService {
 
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    /** Lifetime order total (VND) at which a customer is classified VIP — see {@link #deriveSegment}. */
+    private static final BigDecimal VIP_MIN_SPENT = new BigDecimal("10000000");
     // Derived from CustomerStatus enum — single source of truth for valid DB status values.
     static final Set<String> ALLOWED_STATUSES =
             Arrays.stream(CustomerStatus.values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
@@ -123,6 +127,17 @@ public class AdminCustomerService {
                                 ((BigDecimal) row[2]).longValue()
                         }
                 ));
+    }
+
+    // ── Summary (Customers screen KPIs) ───────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public AdminCustomerSummaryResponse getCustomerSummary() {
+        long total = customerRepo.count();
+        long vip = orderRepo.findVipCustomerIds(VIP_MIN_SPENT).size();
+        long newLast30Days = customerRepo.countByCreatedAtAfter(Instant.now().minus(30, ChronoUnit.DAYS));
+        long active = customerRepo.countByStatus("ACTIVE");
+        return new AdminCustomerSummaryResponse(total, vip, newLast30Days, active);
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -267,7 +282,7 @@ public class AdminCustomerService {
     private static String deriveSegment(int orderCount, BigDecimal totalSpent) {
         if (orderCount == 0) return "INACTIVE";
         // Thresholds in VND (no decimal currency)
-        if (totalSpent.compareTo(new BigDecimal("10000000")) >= 0) return "VIP";
+        if (totalSpent.compareTo(VIP_MIN_SPENT) >= 0) return "VIP";
         if (totalSpent.compareTo(new BigDecimal("3000000")) >= 0)  return "LOYAL";
         if (orderCount >= 2) return "REGULAR";
         return "NEW";

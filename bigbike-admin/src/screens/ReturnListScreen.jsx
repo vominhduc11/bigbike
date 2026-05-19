@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AdminTable } from '../components/AdminTable'
+import { Search } from 'lucide-react'
 import { Modal } from '../components/layout'
-import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -325,110 +324,125 @@ export function ReturnListScreen({ canUpdate, navigate }) {
   }, [debouncedSearch])
 
 
-  const columns = useMemo(() => [
-    {
-      key: 'returnNumber', label: t('returns.colRma'), skeletonWidth: '70%',
-      render: (r) => <span className="font-mono font-medium">{r.returnNumber}</span>,
-    },
-    {
-      key: 'orderNumber', label: t('returns.colOrder'), skeletonWidth: '55%',
-      render: (r) => r.orderNumber
-        ? <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 align-baseline font-mono text-xs"
-            onClick={() => navigate(`/admin/orders/${r.orderId}`)}
-          >#{r.orderNumber}</Button>
-        : <span className="font-mono text-xs text-muted-foreground">{r.orderId?.slice(0, 8)}…</span>,
-    },
-    {
-      key: 'customerEmail', label: t('returns.colCustomer'), skeletonWidth: '65%',
-      render: (r) => <span className="text-xs">{r.customerEmail ?? '—'}</span>,
-    },
-    {
-      key: 'reason', label: t('returns.colReason'), skeletonWidth: '60%',
-      render: (r) => t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }),
-    },
-    {
-      key: 'status', label: t('returns.colStatus'), skeletonWidth: '45%',
-      render: (r) => <StatusBadge type="return" status={r.status} />,
-    },
-    {
-      key: 'refundAmount', label: t('returns.colRefund'), align: 'right', skeletonWidth: '50%',
-      render: (r) => r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—',
-    },
-    {
-      key: 'createdAt', label: t('returns.colDate'), skeletonWidth: '60%',
-      render: (r) => <span className="text-xs">{formatDateTime(r.createdAt)}</span>,
-    },
-    {
-      key: 'actions', label: '', align: 'right', skeletonWidth: '55%',
-      render: (r) => (
-        <Button variant="outline" size="sm" onClick={() => setDetailRet(r)}>
-          {t('returns.viewBtn')}
-        </Button>
-      ),
-    },
-  ].filter(Boolean), [t, navigate])
-
   function handleUpdateSuccess() {
     queryClient.invalidateQueries({ queryKey: ['returns'] })
   }
 
+  const items = state.items || []
+  const pagination = state.pagination
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('returns.eyebrow')}</p>
           <h1>{t('returns.title')}</h1>
-          <p>{t('returns.description')}</p>
+          <p className="desc">{t('returns.description')}</p>
         </div>
-      </header>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <section className="filter-bar">
-        <label>
-          {t('returns.searchLabel')}
-          <Input type="search" placeholder={t('returns.searchPlaceholder')}
-            value={searchInput} onChange={(e) => setSearchInput(e.target.value)}  />
-        </label>
-        <label>
-          {t('returns.filterStatus')}
-          <Select value={query.status}
-            onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s === 'ALL' ? t('common.all') : t(`returns.status.${s}`, { defaultValue: s })}
-              </SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
-      </section>
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
+            type="search"
+            placeholder={t('returns.searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.status}
+          onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
+          aria-label={t('returns.filterStatus')}
+        >
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s === 'ALL' ? t('returns.filterStatus') : t(`returns.status.${s}`, { defaultValue: s })}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('returns.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
-      {state.status === 'success' && state.items.length === 0 && (
+      {state.status === 'success' && items.length === 0 && (
         <StatePanel tone="neutral" title={t('returns.empty')} description={t('returns.emptyDesc')} />
       )}
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <>
-          <AdminTable
-            caption={t('returns.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {state.status === 'success' && state.pagination && (
-            <PaginationControls
-              pagination={state.pagination}
-              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
-            />
+
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('returns.colRma')}</th>
+                    <th>{t('returns.colOrder')}</th>
+                    <th>{t('returns.colCustomer')}</th>
+                    <th>{t('returns.colReason')}</th>
+                    <th>{t('returns.colStatus')}</th>
+                    <th className="num">{t('returns.colRefund')}</th>
+                    <th>{t('returns.colDate')}</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(8)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={8}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((r) => (
+                    <tr key={r.id} onClick={() => setDetailRet(r)}>
+                      <td className="id-cell">{r.returnNumber}</td>
+                      <td className="id-cell" onClick={(e) => e.stopPropagation()}>
+                        {r.orderNumber ? (
+                          <button
+                            type="button"
+                            className="btn-ghost text-xs text-primary-red fw-600"
+                            onClick={() => navigate(`/admin/orders/${r.orderId}`)}
+                          >
+                            #{r.orderNumber}
+                          </button>
+                        ) : (
+                          <span className="muted text-xs">{r.orderId?.slice(0, 8)}…</span>
+                        )}
+                      </td>
+                      <td className="text-xs">{r.customerEmail ?? '—'}</td>
+                      <td>{t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') })}</td>
+                      <td><StatusBadge type="return" status={r.status} /></td>
+                      <td className="num">{r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}</td>
+                      <td className="muted text-xs">{formatDateTime(r.createdAt)}</td>
+                      <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailRet(r)}>
+                          {t('returns.viewBtn')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && pagination && pagination.totalPages > 1 && (
+            <div className="card-foot">
+              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => setQuery((q) => ({ ...q, page: q.page - 1 }))}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}>›</button>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
 
       {detailRet && (
@@ -441,6 +455,6 @@ export function ReturnListScreen({ canUpdate, navigate }) {
           navigate={navigate}
         />
       )}
-    </section>
+    </div>
   )
 }

@@ -707,66 +707,71 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   }
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('categories.eyebrow')}</p>
           <h1>{t('categories.title')}</h1>
-          <p>{t('categories.description')}</p>
+          <p className="desc">{t('categories.description')}</p>
         </div>
-        <Button onClick={() => navigate('/admin/categories/new')} disabled={!canUpdate}>
-          {canUpdate ? t('categories.create') : t('common.noPermission')}
-        </Button>
-      </header>
+        <div className="actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate('/admin/categories/new')}
+            disabled={!canUpdate}
+          >
+            {canUpdate ? t('categories.create') : t('common.noPermission')}
+          </button>
+        </div>
+      </div>
 
       {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('categories.searchPlaceholder')}
-           />
-        </label>
-        <label>
-          {t('categories.filterVisibility')}
-          <Select
-            value={query.visibility}
-            onValueChange={(value) =>
-              updateQuery({ visibility: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('categories.filterVisibilityAll')}</SelectItem>
-            <SelectItem value="VISIBLE">{t('categories.filterVisibilityVisible')}</SelectItem>
-            <SelectItem value="HIDDEN">{t('categories.filterVisibilityHidden')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-        <label>
-          {t('categories.filterSort')}
-          <Select
-            value={query.sort}
-            onValueChange={(value) =>
-              updateQuery({ sort: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="sortOrder:asc">{t('sort.sortOrder')}</SelectItem>
-            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
-            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
-            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
-          </SelectContent></Select>
-        </label>
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.visibility}
+          onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
+          aria-label={t('categories.filterVisibility')}
+        >
+          <option value="ALL">{t('categories.filterVisibilityAll')}</option>
+          <option value="VISIBLE">{t('categories.filterVisibilityVisible')}</option>
+          <option value="HIDDEN">{t('categories.filterVisibilityHidden')}</option>
+        </select>
+        <select
+          className="filter-select"
+          value={query.sort}
+          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
+          aria-label={t('categories.filterSort')}
+        >
+          <option value="sortOrder:asc">{t('sort.sortOrder')}</option>
+          <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
+          <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
+          <option value="name:asc">{t('sort.nameAZ')}</option>
+        </select>
         {useTreeMode && (
-          <div className="filter-bar-actions">
-            <Button variant="ghost" size="sm" onClick={expandAll}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={expandAll}>
               {t('categories.expandAll')}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={collapseAll}>
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={collapseAll}>
               {t('categories.collapseAll')}
-            </Button>
+            </button>
           </div>
         )}
-      </section>
+      </div>
 
       {/* Active filter chips. Visible only when at least one filter
           differs from the default — gives users a quick way to see and
@@ -979,6 +984,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           ) : null}
         </>
       )}
-    </section>
+    </div>
   )
 }

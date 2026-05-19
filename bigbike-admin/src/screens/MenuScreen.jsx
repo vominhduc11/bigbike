@@ -613,15 +613,15 @@ export function MenuScreen({ canUpdate }) {
   const slotMissing = !selectedMenuSummary
 
   return (
-    <section className="screen">
+    <div>
       {/* ── Header (no create-menu CTA — slots are fixed) ── */}
-      <header className="screen-header">
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('menus.eyebrow')}</p>
           <h1>{t('menus.title')}</h1>
-          <p>{t('menus.description')}</p>
+          <p className="desc">{t('menus.description')}</p>
         </div>
-      </header>
+      </div>
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
@@ -850,6 +850,6 @@ export function MenuScreen({ canUpdate }) {
           </form>
         </Modal>
       )}
-    </section>
+    </div>
   )
 }

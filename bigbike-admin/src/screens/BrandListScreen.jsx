@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AdminTable } from '../components/AdminTable'
-import { PaginationControls } from '../components/PaginationControls'
+import { Award, Pencil, Plus, Search } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -10,9 +9,6 @@ import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 
 const INITIAL_QUERY = {
   search: '',
@@ -43,56 +39,6 @@ export function BrandListScreen({ navigate, canUpdate }) {
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  const columns = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: t('brands.colBrand'),
-        render: (brand) => (
-          <div className="product-cell">
-            <div className="thumbnail-wrap">
-              {brand.logo?.url ? (
-                <img src={brand.logo.url} alt={brand.logo.alt || brand.name} referrerPolicy="no-referrer" loading="lazy" />
-              ) : (
-                <span>IMG</span>
-              )}
-            </div>
-            <div>
-              <strong>{formatText(brand.name)}</strong>
-              <p>{brand.slug}</p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        key: 'description',
-        label: t('brands.colDescription'),
-        render: (brand) => stripHtml(brand.description),
-      },
-      {
-        key: 'isVisible',
-        label: t('brands.colVisibility'),
-        render: (brand) => <StatusBadge type="visibility" status={brand.isVisible} />,
-      },
-      {
-        key: 'updatedAt',
-        label: t('brands.colUpdated'),
-        render: (brand) => formatDateTime(brand.updatedAt),
-      },
-      {
-        key: 'actions',
-        label: t('brands.colActions'),
-        align: 'right',
-        render: (brand) => (
-          <Button variant="outline" onClick={() => navigate(`/admin/brands/${brand.id}`)}>
-            {t('common.edit')}
-          </Button>
-        ),
-      },
-    ],
-    [navigate, t],
-  )
-
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((previous) => {
       const next = { ...previous, ...partial }
@@ -106,56 +52,62 @@ export function BrandListScreen({ navigate, canUpdate }) {
     setQuery(INITIAL_QUERY)
   }
 
+  const items = state.items || []
+  const pagination = state.pagination
+
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('brands.eyebrow')}</p>
           <h1>{t('brands.title')}</h1>
-          <p>{t('brands.description')}</p>
+          <p className="desc">{t('brands.description')}</p>
         </div>
-        <Button onClick={() => navigate('/admin/brands/new')} disabled={!canUpdate}>
-          {canUpdate ? t('brands.create') : t('common.noPermission')}
-        </Button>
-      </header>
+        <div className="actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate('/admin/brands/new')}
+            disabled={!canUpdate}
+          >
+            <Plus size={14} />{canUpdate ? t('brands.create') : t('common.noPermission')}
+          </button>
+        </div>
+      </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('brands.searchPlaceholder')}
-           />
-        </label>
-        <label>
-          {t('brands.filterVisibility')}
-          <Select
-            value={query.visibility}
-            onValueChange={(value) =>
-              updateQuery({ visibility: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="ALL">{t('common.all')}</SelectItem>
-            <SelectItem value="VISIBLE">{t('common.visible')}</SelectItem>
-            <SelectItem value="HIDDEN">{t('common.hidden')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-        <label>
-          {t('brands.filterSort')}
-          <Select
-            value={query.sort}
-            onValueChange={(value) =>
-              updateQuery({ sort: value }, { resetPage: true })}
-          ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="updatedAt:desc">{t('sort.newestUpdated')}</SelectItem>
-            <SelectItem value="updatedAt:asc">{t('sort.oldestUpdated')}</SelectItem>
-            <SelectItem value="name:asc">{t('sort.nameAZ')}</SelectItem>
-          </SelectContent></Select>
-        </label>
-      </section>
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.visibility}
+          onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
+          aria-label={t('brands.filterVisibility')}
+        >
+          <option value="ALL">{t('brands.filterVisibility')}</option>
+          <option value="VISIBLE">{t('common.visible')}</option>
+          <option value="HIDDEN">{t('common.hidden')}</option>
+        </select>
+        <select
+          className="filter-select"
+          value={query.sort}
+          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
+          aria-label={t('brands.filterSort')}
+        >
+          <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
+          <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
+          <option value="name:asc">{t('sort.nameAZ')}</option>
+        </select>
+      </div>
 
       {state.status === 'error' ? (
         <StatePanel
@@ -167,7 +119,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      {state.status === 'success' && state.items.length === 0 ? (
+      {state.status === 'success' && items.length === 0 ? (
         <StatePanel
           tone="neutral"
           title={t('brands.empty')}
@@ -177,23 +129,86 @@ export function BrandListScreen({ navigate, canUpdate }) {
         />
       ) : null}
 
-      {state.status === 'loading' || (state.status === 'success' && state.items.length > 0) ? (
-        <>
-          <AdminTable
-            caption={t('brands.tableCaption')}
-            columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-          />
-          {state.status === 'success' && (
-            <PaginationControls
-              pagination={state.pagination}
-              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-            />
+      {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('brands.colBrand')}</th>
+                    <th>{t('brands.colDescription')}</th>
+                    <th>{t('brands.colVisibility')}</th>
+                    <th>{t('brands.colUpdated')}</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.status === 'loading' && items.length === 0 && (
+                    [...Array(8)].map((_, i) => (
+                      <tr key={`sk-${i}`}>
+                        <td colSpan={5}><div className="dash-skeleton-block" style={{ height: 32 }} /></td>
+                      </tr>
+                    ))
+                  )}
+                  {items.map((brand) => (
+                    <tr key={brand.id} onClick={() => navigate(`/admin/brands/${brand.id}`)}>
+                      <td>
+                        <div className="product-cell">
+                          <span className="thumb">
+                            {brand.logo?.url ? (
+                              <img
+                                src={brand.logo.url}
+                                alt={brand.logo.alt || brand.name}
+                                referrerPolicy="no-referrer"
+                                loading="lazy"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                              />
+                            ) : <Award size={18} />}
+                          </span>
+                          <div className="info">
+                            <div className="name">{formatText(brand.name)}</div>
+                            <div className="sku">/{brand.slug}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="muted text-sm">{stripHtml(brand.description)}</td>
+                      <td><StatusBadge type="visibility" status={brand.isVisible} /></td>
+                      <td className="muted text-xs">{formatDateTime(brand.updatedAt)}</td>
+                      <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title={t('common.edit')}
+                          onClick={() => navigate(`/admin/brands/${brand.id}`)}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {state.status === 'success' && pagination && (
+            <div className="card-foot">
+              <span>
+                {t('common.paginationSummary', {
+                  defaultValue: `Hiển thị ${items.length} trong ${pagination.totalItems} thương hiệu`,
+                  count: items.length,
+                  total: pagination.totalItems,
+                })}
+              </span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
+              </div>
+            </div>
           )}
-        </>
-      ) : null}
-    </section>
+        </div>
+      )}
+    </div>
   )
 }

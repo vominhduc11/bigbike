@@ -26,7 +26,6 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { validateSafePublicLink } from '../lib/urlPolicies'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -61,75 +60,77 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, opacity: slider.isActive === false ? 0.55 : undefined }}
-      className="flex gap-3 items-start rounded-md border border-border bg-surface px-4 py-3 shadow-xs"
+      style={{ ...style, opacity: slider.isActive === false ? 0.55 : style.opacity }}
+      className="card"
     >
-      {canUpdate && (
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          className="bg-transparent border-none cursor-grab px-1 py-0.5 text-muted-foreground shrink-0 touch-none"
-          title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
-          aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
-        >
-          <GripVertical size={16} />
-        </button>
-      )}
-
-      <div className="flex flex-col gap-1 shrink-0">
-        {slider.desktopImage?.url && (
-          <img
-            src={slider.desktopImage.url}
-            alt={slider.desktopImage.alt || ''}
-            title="Desktop"
-            className="object-cover rounded w-[100px] h-[52px]"
-          />
+      <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
+        {canUpdate && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="icon-btn"
+            style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0 }}
+            title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+            aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+          >
+            <GripVertical size={16} />
+          </button>
         )}
-        {slider.mobileImage?.url && (
-          <img
-            src={slider.mobileImage.url}
-            alt={slider.mobileImage.alt || ''}
-            title="Mobile"
-            className="object-cover rounded w-[60px] h-[32px]"
-          />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+          {slider.desktopImage?.url && (
+            <img
+              src={slider.desktopImage.url}
+              alt={slider.desktopImage.alt || ''}
+              title="Desktop"
+              style={{ width: 100, height: 52, objectFit: 'cover', borderRadius: 6 }}
+            />
+          )}
+          {slider.mobileImage?.url && (
+            <img
+              src={slider.mobileImage.url}
+              alt={slider.mobileImage.alt || ''}
+              title="Mobile"
+              style={{ width: 60, height: 32, objectFit: 'cover', borderRadius: 6 }}
+            />
+          )}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
+            <span className="fw-700 text-sm">#{slider.sortOrder} · {slider.location}</span>
+            <span className={`badge ${slider.isActive !== false ? 'badge-success' : 'badge-neutral'}`}>
+              <span className="dot" />
+              {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
+            </span>
+          </div>
+          {slider.externalLink && (
+            <p className="text-xs muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+              {t('sliders.linkLabel')} {slider.externalLink}
+            </p>
+          )}
+          {slider.productId && (
+            <p className="text-xs muted" style={{ margin: 0 }}>
+              {t('sliders.productLabel')} {slider.productId}
+            </p>
+          )}
+        </div>
+
+        {canUpdate && (
+          <div className="flex gap-2" style={{ flexShrink: 0, alignItems: 'flex-start' }}>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => onToggleActive(slider)}>
+              {slider.isActive !== false ? t('common.disable') : t('common.enable')}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => onEdit(slider)}>
+              {t('common.edit')}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm text-danger" onClick={() => onDelete(slider.id)}>
+              {t('common.delete')}
+            </button>
+          </div>
         )}
       </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <p className="m-0 text-sm font-semibold">
-            #{slider.sortOrder} · {slider.location}
-          </p>
-          <Badge variant={slider.isActive !== false ? 'success' : 'muted'}>
-            {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
-          </Badge>
-        </div>
-        {slider.externalLink && (
-          <p className="truncate text-xs text-muted-foreground">
-            {t('sliders.linkLabel')} {slider.externalLink}
-          </p>
-        )}
-        {slider.productId && (
-          <p className="text-xs text-muted-foreground">
-            {t('sliders.productLabel')} {slider.productId}
-          </p>
-        )}
-      </div>
-
-      {canUpdate && (
-        <div className="flex gap-1.5 shrink-0 items-start">
-          <Button variant="outline" size="sm" onClick={() => onToggleActive(slider)}>
-            {slider.isActive !== false ? t('common.disable') : t('common.enable')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => onEdit(slider)}>
-            {t('common.edit')}
-          </Button>
-          <Button variant="danger" size="sm" onClick={() => onDelete(slider.id)}>
-            {t('common.delete')}
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
@@ -330,101 +331,94 @@ export function SliderListScreen({ canUpdate }) {
     || reorderMutation.isPending || toggleActiveMutation.isPending
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('sliders.eyebrow')}</p>
           <h1>{t('sliders.title')}</h1>
-          <p>{t('sliders.description')}</p>
+          <p className="desc">{t('sliders.description')}</p>
         </div>
         {canUpdate && (
-          <Button onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}>
-            {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
-          </Button>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
+            >
+              {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
+            </button>
+          </div>
         )}
-      </header>
+      </div>
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
-      <section className="filter-bar">
-        <label>
-          {t('sliders.filterLocation')}
-          <Select value={location} onValueChange={(val) => { setLocation(val); closeForm() }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
-          </SelectContent></Select>
-        </label>
-      </section>
+      <div className="filter-bar">
+        <select
+          className="filter-select"
+          value={location}
+          onChange={(e) => { setLocation(e.target.value); closeForm() }}
+          aria-label={t('sliders.filterLocation')}
+        >
+          {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
+        </select>
+      </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="detail-section">
-          <div className="detail-section-header">
-            <h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2>
-          </div>
-          <div className="detail-section-content">
+        <div className="card mb-4">
+          <div className="card-head"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
+          <form onSubmit={handleSubmit} className="card-body">
             {formError && <p className="mb-3 text-danger">{formError}</p>}
-            <div className="form-grid">
+            <div className="grid-2">
               <label className="form-field">
-                {t('sliders.formLocation')}
-                <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                  {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
-                </SelectContent></Select>
+                <span>{t('sliders.formLocation')}</span>
+                <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LOCATIONS.map((loc) => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </label>
               <label className="form-field">
-                {t('sliders.formSortOrder')}
-                <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))}  />
+                <span>{t('sliders.formSortOrder')}</span>
+                <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
               </label>
-              <label className="form-field flex items-center gap-2">
-                <Checkbox
-                  checked={form.isActive}
-                  onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))}
-                 />
-                {t('sliders.formIsActive')}
+              <label className="pf-checkbox" style={{ width: 'fit-content', marginTop: 22 }}>
+                <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
+                <span>{t('sliders.formIsActive')}</span>
               </label>
-
-              <div className="form-field form-field-wide">
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopUrl')}</span>
-                <ImageUrlInput
-                  value={form.desktopImageUrl}
-                  onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))}
-                />
+                <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} />
               </div>
-              <label className="form-field form-field-wide">
-                {t('sliders.formDesktopAlt')}
-                <Input value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))}  />
+              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('sliders.formDesktopAlt')}</span>
+                <Input value={form.desktopAlt} onChange={(e) => setForm((p) => ({ ...p, desktopAlt: e.target.value }))} />
               </label>
-
-              <div className="form-field form-field-wide">
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileUrl')}</span>
-                <ImageUrlInput
-                  value={form.mobileImageUrl}
-                  onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))}
-                />
+                <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} />
               </div>
-              <label className="form-field form-field-wide">
-                {t('sliders.formMobileAlt')}
-                <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))}  />
+              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('sliders.formMobileAlt')}</span>
+                <Input value={form.mobileAlt} onChange={(e) => setForm((p) => ({ ...p, mobileAlt: e.target.value }))} />
               </label>
-
-              <label className="form-field form-field-wide">
-                {t('sliders.formExternalLink')}
-                <Input placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))}  />
-                <small className="field-help">{t('sliders.formExternalLinkHint')}</small>
+              <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('sliders.formExternalLink')}</span>
+                <Input placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} />
+                <span className="hint">{t('sliders.formExternalLinkHint')}</span>
               </label>
               <label className="form-field">
-                {t('sliders.formProductId')}
-                <Input value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))}  />
+                <span>{t('sliders.formProductId')}</span>
+                <Input value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))} />
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button type="submit" loading={isSaving}>
-                {editingId ? t('common.update') : t('sliders.saveBtn')}
-              </Button>
-              <Button type="button" variant="outline" onClick={closeForm}>
-                {t('common.cancel')}
-              </Button>
+              <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>
+              <Button type="button" variant="outline" onClick={closeForm}>{t('common.cancel')}</Button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       )}
 
       {isLoading && <StatePanel tone="info" title={t('sliders.loading')} description={t('common.pleaseWait')} />}
@@ -441,7 +435,7 @@ export function SliderListScreen({ canUpdate }) {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="grid gap-2">
+            <div className="flex flex-col gap-2">
               {items.map((slider) => (
                 <SliderCard
                   key={slider.id}
@@ -461,6 +455,6 @@ export function SliderListScreen({ canUpdate }) {
           </DragOverlay>
         </DndContext>
       )}
-    </section>
+    </div>
   )
 }

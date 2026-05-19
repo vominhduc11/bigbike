@@ -977,14 +977,14 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
   }
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('roles.eyebrow')}</p>
           <h1>{t('roles.title')}</h1>
-          <p>{t('roles.description')}</p>
+          <p className="desc">{t('roles.description')}</p>
         </div>
-      </header>
+      </div>
 
       <Toast toast={toast} />
 
@@ -1092,6 +1092,6 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
           </div>
         </>
       )}
-    </section>
+    </div>
   )
 }

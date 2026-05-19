@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
+import { AlertTriangle, CheckCircle, Download, Package, Search, XCircle } from 'lucide-react'
 import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -97,23 +98,39 @@ function MovementTypeBadge({ type }) {
 function SummaryBanner({ summary }) {
   const { t } = useTranslation()
   if (!summary || summary.totalItems === 0) return null
+  const inStock = Math.max(
+    0,
+    summary.totalItems - (summary.lowStockCount || 0) - (summary.outOfStockCount || 0),
+  )
   return (
-    <div className="flex gap-4 mb-4 flex-wrap">
-      {summary.outOfStockCount > 0 && (
-        <div className="bg-danger-bg border border-danger-border rounded-sm px-4 py-2">
-          <span className="text-danger font-bold">{summary.outOfStockCount}</span>
-          <span className="text-danger ml-1.5 text-sm">{t('inventory.summary.outOfStock')}</span>
+    <div className="kpi-grid">
+      <div className="kpi">
+        <div className="kpi-head">
+          <span className="kpi-icon blue"><Package size={15} /></span>
+          <span>{t('inventory.summary.totalItems')}</span>
         </div>
-      )}
-      {summary.lowStockCount > 0 && (
-        <div className="bg-warning-bg border border-warning-border rounded-sm px-4 py-2">
-          <span className="text-warning font-bold">{summary.lowStockCount}</span>
-          <span className="text-warning ml-1.5 text-sm">{t('inventory.summary.lowStock')}</span>
+        <div className="kpi-value">{summary.totalItems.toLocaleString('vi-VN')}</div>
+      </div>
+      <div className="kpi">
+        <div className="kpi-head">
+          <span className="kpi-icon green"><CheckCircle size={15} /></span>
+          <span>IN_STOCK</span>
         </div>
-      )}
-      <div className="bg-surface border border-border rounded-sm px-4 py-2">
-        <span className="font-bold">{summary.totalItems}</span>
-        <span className="ml-1.5 text-sm text-muted-foreground">{t('inventory.summary.totalItems')}</span>
+        <div className="kpi-value">{inStock.toLocaleString('vi-VN')}</div>
+      </div>
+      <div className="kpi">
+        <div className="kpi-head">
+          <span className="kpi-icon amber"><AlertTriangle size={15} /></span>
+          <span>{t('inventory.summary.lowStock')}</span>
+        </div>
+        <div className="kpi-value">{(summary.lowStockCount || 0).toLocaleString('vi-VN')}</div>
+      </div>
+      <div className="kpi">
+        <div className="kpi-head">
+          <span className="kpi-icon red"><XCircle size={15} /></span>
+          <span>{t('inventory.summary.outOfStock')}</span>
+        </div>
+        <div className="kpi-value">{(summary.outOfStockCount || 0).toLocaleString('vi-VN')}</div>
       </div>
     </div>
   )
@@ -1680,16 +1697,17 @@ export function InventoryScreen({ canUpdate = false }) {
 
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('inventory.eyebrow')}</p>
           <h1>{t('inventory.title')}</h1>
-          <p>{t('inventory.description')}</p>
+          <p className="desc">{t('inventory.description')}</p>
         </div>
-        <div className="screen-actions">
-          <Button
-            variant="outline"
+        <div className="actions">
+          <button
+            type="button"
+            className="btn btn-outline"
             disabled={csvDownloading}
             onClick={() => {
               setCsvDownloading(true)
@@ -1698,39 +1716,57 @@ export function InventoryScreen({ canUpdate = false }) {
                 .finally(() => setCsvDownloading(false))
             }}
           >
-            {csvDownloading ? 'Đang xuất…' : 'Xuất CSV'}
-          </Button>
+            <Download size={14} />{csvDownloading ? 'Đang xuất…' : 'Xuất CSV'}
+          </button>
         </div>
-      </header>
+      </div>
 
       <SummaryBanner summary={summary} />
 
-      {serialOnlyMode && (
-        <Alert tone="info" role="status" className="mb-3 font-semibold">
-          Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.
-        </Alert>
-      )}
+      {/* Derived-field info banner — stockState is auto-computed. */}
+      <div
+        style={{
+          background: 'var(--admin-color-status-info-bg)',
+          border: '1px solid var(--admin-color-status-info-border)',
+          borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+          display: 'flex', gap: 12, alignItems: 'flex-start',
+          fontSize: 13, color: 'var(--admin-color-status-info-text)',
+        }}
+      >
+        <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+        <div>
+          <strong style={{ display: 'block', marginBottom: 2 }}>stockState luôn được tự động tính</strong>
+          <span style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {serialOnlyMode
+              ? 'Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.'
+              : 'Quy tắc: SL ≤ 0 → OUT_OF_STOCK · SL ≤ threshold → LOW_STOCK · SL > threshold → IN_STOCK.'}
+          </span>
+        </div>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <section className="filter-bar">
-        <label>
-          {t('common.search')}
-          <Input type="search"
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
+            type="search"
             placeholder={t('inventory.searchPlaceholder')}
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}  />
-        </label>
-        <label>
-          {t('inventory.filterStock')}
-          <Select value={query.stockState}
-            onValueChange={(val) => setQuery((q) => ({ ...q, stockState: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {STOCK_STATES.map((s) => (
-              <SelectItem key={s} value={s}>{s === 'ALL' ? t('common.all') : s.replace(/_/g, ' ')}</SelectItem>
-            ))}
-          </SelectContent></Select>
-        </label>
-      </section>
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={query.stockState}
+          onChange={(e) => setQuery((q) => ({ ...q, stockState: e.target.value, page: 1 }))}
+          aria-label={t('inventory.filterStock')}
+        >
+          {STOCK_STATES.map((s) => (
+            <option key={s} value={s}>{s === 'ALL' ? t('inventory.filterStock') : s.replace(/_/g, ' ')}</option>
+          ))}
+        </select>
+      </div>
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('inventory.loadError')} description={state.error}
@@ -1740,22 +1776,24 @@ export function InventoryScreen({ canUpdate = false }) {
         <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
       )}
       {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <>
-          <InventoryGroupedTable
-            groups={state.items}
-            loading={state.status === 'loading'}
-            pageSize={query.pageSize}
-            canUpdate={canUpdate}
-            serialOnlyMode={serialOnlyMode}
-            onStockIn={openStockIn}
-            onSerialManage={openSerialManage}
-            onViewHistory={setHistoryTarget}
-          />
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <InventoryGroupedTable
+              groups={state.items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              canUpdate={canUpdate}
+              serialOnlyMode={serialOnlyMode}
+              onStockIn={openStockIn}
+              onSerialManage={openSerialManage}
+              onViewHistory={setHistoryTarget}
+            />
+          </div>
           {state.status === 'success' && state.pagination && (
             <PaginationControls pagination={state.pagination}
               onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />
           )}
-        </>
+        </div>
       )}
 
       {isStockInOpen && !serialOnlyMode && (
@@ -1779,6 +1817,6 @@ export function InventoryScreen({ canUpdate = false }) {
           onClose={() => setHistoryTarget(null)}
         />
       )}
-    </section>
+    </div>
   )
 }

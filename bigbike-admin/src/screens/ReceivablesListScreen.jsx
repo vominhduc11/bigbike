@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
+import { AlertTriangle, Clock, FileX, Search, Wallet } from 'lucide-react'
 import {
   fetchReceivables,
   fetchReceivableSummary,
@@ -10,28 +10,22 @@ import {
 } from '../lib/adminApi'
 import { useUrlQuery } from '../lib/useUrlQuery'
 import { StatePanel } from '../components/StatePanel'
-import {
-  Screen,
-  ScreenHeader,
-  FilterBar,
-  FilterField,
-  SummaryCard,
-  SummaryCardGrid,
-  Tabs,
-  Modal,
-  FormField,
-  MobileCardList,
-  MobileCard,
-} from '../components/layout'
+import { Modal, FormField } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
 const TAB_KEYS = ['ALL', 'OPEN', 'OVERDUE', 'CLOSED']
-const AR_STATUS_VARIANT = { OPEN: 'info', PARTIALLY_PAID: 'warning', OVERDUE: 'danger', CLOSED: 'success', WRITTEN_OFF: 'muted' }
+// AR status → prototype badge class.
+const AR_STATUS_BADGE = {
+  OPEN: 'badge-info',
+  PARTIALLY_PAID: 'badge-warn',
+  OVERDUE: 'badge-danger',
+  CLOSED: 'badge-success',
+  WRITTEN_OFF: 'badge-neutral',
+}
 
 function formatCurrency(amount, locale) {
   if (amount == null) return '—'
@@ -40,9 +34,9 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <Badge variant={AR_STATUS_VARIANT[status] ?? 'muted'}>
+    <span className={`badge ${AR_STATUS_BADGE[status] || 'badge-neutral'}`}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
-    </Badge>
+    </span>
   )
 }
 
@@ -84,77 +78,81 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 
   const handlePage = useCallback((p) => setUrlQuery({ page: p }), [setUrlQuery])
 
-  const tabs = useMemo(() => TAB_KEYS.map((key) => ({
-    key,
-    label: t(`receivables.tabs.${key}`),
-  })), [t])
-
   const activeTab = tabKeyFromStatus(urlQuery.status)
 
   return (
-    <Screen>
-      <ScreenHeader
-        eyebrow={t('receivables.eyebrow')}
-        title={t('receivables.title')}
-        description={t('receivables.description')}
-      />
+    <div>
+      <div className="screen-header">
+        <div>
+          <p className="eyebrow">{t('receivables.eyebrow')}</p>
+          <h1>{t('receivables.title')}</h1>
+          <p className="desc">{t('receivables.description')}</p>
+        </div>
+      </div>
 
-      <SummaryCardGrid>
-        <SummaryCard
-          tone="brand"
-          icon={<Wallet size={16} />}
-          label={t('receivables.kpi.totalOutstanding')}
-          value={formatCurrency(summary.totalOutstanding, locale)}
-          hint={t('receivables.kpi.totalOutstandingHint')}
-          active={urlQuery.status === 'ALL'}
-          onClick={() => handleTabChange('ALL')}
-        />
-        <SummaryCard
-          tone="danger"
-          icon={<AlertTriangle size={16} />}
-          label={t('receivables.kpi.overdueOutstanding')}
-          value={formatCurrency(summary.overdueOutstanding, locale)}
-          hint={t('receivables.kpi.overdueOutstandingHint')}
-          active={urlQuery.status === 'OVERDUE'}
-          onClick={() => handleTabChange('OVERDUE')}
-        />
-        <SummaryCard
-          tone="warning"
-          icon={<Clock size={16} />}
-          label={t('receivables.kpi.countOpen')}
-          value={summary.countOpen ?? 0}
-          hint={t('receivables.kpi.countOpenHint')}
-          active={urlQuery.status === 'OPEN'}
-          onClick={() => handleTabChange('OPEN')}
-        />
-        <SummaryCard
-          tone="neutral"
-          icon={<FileX size={16} />}
-          label={t('receivables.kpi.writtenOffTotal')}
-          value={formatCurrency(summary.writtenOffTotal, locale)}
-          hint={t('receivables.kpi.writtenOffTotalHint')}
-          active={urlQuery.status === 'WRITTEN_OFF'}
-          onClick={() => setUrlQuery({ status: 'WRITTEN_OFF', page: 1 })}
-        />
-      </SummaryCardGrid>
+      {/* KPI cards — clicking one switches the status filter */}
+      <div className="kpi-grid">
+        <div className="kpi" onClick={() => handleTabChange('ALL')}>
+          <div className="kpi-head">
+            <span className="kpi-icon red"><Wallet size={15} /></span>
+            <span>{t('receivables.kpi.totalOutstanding')}</span>
+          </div>
+          <div className="kpi-value">{formatCurrency(summary.totalOutstanding, locale)}</div>
+          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.totalOutstandingHint')}</span></div>
+        </div>
+        <div className="kpi" onClick={() => handleTabChange('OVERDUE')}>
+          <div className="kpi-head">
+            <span className="kpi-icon amber"><AlertTriangle size={15} /></span>
+            <span>{t('receivables.kpi.overdueOutstanding')}</span>
+          </div>
+          <div className="kpi-value">{formatCurrency(summary.overdueOutstanding, locale)}</div>
+          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.overdueOutstandingHint')}</span></div>
+        </div>
+        <div className="kpi" onClick={() => handleTabChange('OPEN')}>
+          <div className="kpi-head">
+            <span className="kpi-icon blue"><Clock size={15} /></span>
+            <span>{t('receivables.kpi.countOpen')}</span>
+          </div>
+          <div className="kpi-value">{summary.countOpen ?? 0}</div>
+          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.countOpenHint')}</span></div>
+        </div>
+        <div className="kpi" onClick={() => setUrlQuery({ status: 'WRITTEN_OFF', page: 1 })}>
+          <div className="kpi-head">
+            <span className="kpi-icon gray"><FileX size={15} /></span>
+            <span>{t('receivables.kpi.writtenOffTotal')}</span>
+          </div>
+          <div className="kpi-value">{formatCurrency(summary.writtenOffTotal, locale)}</div>
+          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.writtenOffTotalHint')}</span></div>
+        </div>
+      </div>
 
-      <Tabs
-        items={tabs}
-        value={activeTab}
-        onChange={handleTabChange}
-        ariaLabel={t('receivables.title')}
-      />
+      {/* Status tabs */}
+      <div className="seg mb-4" role="tablist" aria-label={t('receivables.title')}>
+        {TAB_KEYS.map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === key}
+            className={`seg-tab${activeTab === key ? ' active' : ''}`}
+            onClick={() => handleTabChange(key)}
+          >
+            {t(`receivables.tabs.${key}`)}
+          </button>
+        ))}
+      </div>
 
-      <FilterBar>
-        <FilterField label={t('receivables.filterSearchLabel')}>
-          <Input
-            type="text"
+      <div className="filter-bar">
+        <div className="filter-search">
+          <Search size={14} />
+          <input
+            type="search"
             placeholder={t('receivables.filterSearchPlaceholder')}
             value={urlQuery.search || ''}
             onChange={handleSearch}
-           />
-        </FilterField>
-      </FilterBar>
+          />
+        </div>
+      </div>
 
       {isLoading && <StatePanel tone="info" title={t('receivables.loading')} />}
       {isError && <StatePanel tone="danger" title={t('receivables.loadError')} description={error?.message} />}
@@ -164,166 +162,84 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
       )}
 
       {!isLoading && !isError && items.length > 0 && (
-        <>
-          {/* Desktop / tablet table */}
-          <div className="table-wrap hide-on-mobile">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th scope="col">{t('receivables.col.orderNumber')}</th>
-                  <th scope="col">{t('receivables.col.customer')}</th>
-                  <th scope="col" className="hide-on-tablet">{t('receivables.col.phone')}</th>
-                  <th scope="col" className="align-right hide-on-tablet">{t('receivables.col.originalAmount')}</th>
-                  <th scope="col" className="align-right hide-on-tablet">{t('receivables.col.paidAmount')}</th>
-                  <th scope="col" className="align-right">{t('receivables.col.outstandingAmount')}</th>
-                  <th scope="col">{t('receivables.col.dueDate')}</th>
-                  <th scope="col">{t('receivables.col.status')}</th>
-                  <th scope="col">{t('receivables.col.actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => {
-                  const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
-                  return (
-                    <tr key={item.id}>
-                      <td>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 font-semibold"
-                          onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                        >
-                          {item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}
-                        </Button>
-                      </td>
-                      <td>{item.customerName || '—'}</td>
-                      <td className="hide-on-tablet">{item.customerPhone || '—'}</td>
-                      <td className="align-right hide-on-tablet">{formatCurrency(item.originalAmount, locale)}</td>
-                      <td className="align-right hide-on-tablet">{formatCurrency(item.paidAmount, locale)}</td>
-                      <td className="align-right">
-                        <strong className={item.outstandingAmount > 0 ? 'text-danger' : ''}>
-                          {formatCurrency(item.outstandingAmount, locale)}
-                        </strong>
-                      </td>
-                      <td>
-                        <div>{item.dueDate || '—'}</div>
-                        {item.overdueDays != null && (
-                          <div className="text-xs text-danger font-semibold">
-                            {t('receivables.overdueDays', { days: item.overdueDays })}
+        <div className="card">
+          <div className="card-body card-body--flush">
+            <div className="table-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>{t('receivables.col.orderNumber')}</th>
+                    <th>{t('receivables.col.customer')}</th>
+                    <th>{t('receivables.col.phone')}</th>
+                    <th className="num">{t('receivables.col.originalAmount')}</th>
+                    <th className="num">{t('receivables.col.paidAmount')}</th>
+                    <th className="num">{t('receivables.col.outstandingAmount')}</th>
+                    <th>{t('receivables.col.dueDate')}</th>
+                    <th>{t('receivables.col.status')}</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => {
+                    const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+                    return (
+                      <tr key={item.id} onClick={() => navigate(`/admin/receivables/${item.id}`)}>
+                        <td className="id-cell">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</td>
+                        <td>{item.customerName || '—'}</td>
+                        <td className="text-xs">{item.customerPhone || '—'}</td>
+                        <td className="num">{formatCurrency(item.originalAmount, locale)}</td>
+                        <td className="num">{formatCurrency(item.paidAmount, locale)}</td>
+                        <td className="num fw-700">
+                          <span className={item.outstandingAmount > 0 ? 'text-danger' : ''}>
+                            {formatCurrency(item.outstandingAmount, locale)}
+                          </span>
+                        </td>
+                        <td className="text-xs">
+                          <div>{item.dueDate || '—'}</div>
+                          {item.overdueDays != null && (
+                            <div className="text-danger fw-600">
+                              {t('receivables.overdueDays', { days: item.overdueDays })}
+                            </div>
+                          )}
+                        </td>
+                        <td><StatusBadge status={item.status} t={t} /></td>
+                        <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1 justify-end" style={{ flexWrap: 'wrap' }}>
+                            {canRecordPayment && !closed && (
+                              <button type="button" className="btn btn-primary btn-sm" onClick={() => setPaymentTarget(item)}>
+                                {t('receivables.btn.recordPayment')}
+                              </button>
+                            )}
+                            {canWriteOff && !closed && (
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm text-danger"
+                                onClick={() => setWriteOffTarget(item)}
+                                title={t('receivables.btn.writeOffTooltip')}
+                              >
+                                {t('receivables.btn.writeOff')}
+                              </button>
+                            )}
                           </div>
-                        )}
-                      </td>
-                      <td><StatusBadge status={item.status} t={t} /></td>
-                      <td>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {canRecordPayment && !closed && (
-                            <Button size="sm" onClick={() => setPaymentTarget(item)}>
-                              {t('receivables.btn.recordPayment')}
-                            </Button>
-                          )}
-                          {canWriteOff && !closed && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => setWriteOffTarget(item)}
-                              title={t('receivables.btn.writeOffTooltip')}
-                            >
-                              {t('receivables.btn.writeOff')}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                          >
-                            {t('receivables.btn.detail')}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-
-          {/* Mobile cards */}
-          <MobileCardList>
-            {items.map((item) => {
-              const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
-              return (
-                <MobileCard
-                  key={item.id}
-                  title={item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}
-                  subtitle={item.customerName || t('receivables.mobileCard.noPhone')}
-                  status={<StatusBadge status={item.status} t={t} />}
-                  meta={[
-                    {
-                      label: t('receivables.mobileCard.outstandingLabel'),
-                      value: formatCurrency(item.outstandingAmount, locale),
-                      tone: item.outstandingAmount > 0 ? 'danger' : 'strong',
-                    },
-                    {
-                      label: t('receivables.mobileCard.dueDateLabel'),
-                      value: item.overdueDays != null
-                        ? `${item.dueDate || '—'} · ${t('receivables.overdueDays', { days: item.overdueDays })}`
-                        : (item.dueDate || '—'),
-                    },
-                    {
-                      label: t('receivables.mobileCard.totalLabel'),
-                      value: formatCurrency(item.originalAmount, locale),
-                    },
-                    {
-                      label: t('receivables.mobileCard.paidLabel'),
-                      value: formatCurrency(item.paidAmount, locale),
-                    },
-                  ]}
-                  actions={
-                    <>
-                      {canRecordPayment && !closed && (
-                        <Button size="sm" onClick={() => setPaymentTarget(item)}>
-                          {t('receivables.btn.recordPayment')}
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                      >
-                        {t('receivables.btn.detail')}
-                      </Button>
-                    </>
-                  }
-                />
-              )
-            })}
-          </MobileCardList>
-
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex gap-2 justify-center items-center mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page <= 1}
-                onClick={() => handlePage(pagination.page - 1)}
-              >
-                {t('receivables.paginationPrev')}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {t('receivables.paginationOf', { page: pagination.page, total: pagination.totalPages })}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => handlePage(pagination.page + 1)}
-              >
-                {t('receivables.paginationNext')}
-              </Button>
+            <div className="card-foot">
+              <span>{t('receivables.paginationOf', { page: pagination.page, total: pagination.totalPages })}</span>
+              <div className="pager">
+                <button type="button" disabled={pagination.page <= 1} onClick={() => handlePage(pagination.page - 1)}>‹</button>
+                <button type="button" className="active">{pagination.page}</button>
+                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => handlePage(pagination.page + 1)}>›</button>
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       <RecordPaymentModal
@@ -334,7 +250,7 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
         receivable={writeOffTarget}
         onClose={() => setWriteOffTarget(null)}
       />
-    </Screen>
+    </div>
   )
 }
 

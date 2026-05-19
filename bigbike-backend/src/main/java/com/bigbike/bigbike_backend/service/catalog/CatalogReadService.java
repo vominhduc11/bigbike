@@ -95,6 +95,8 @@ public class CatalogReadService {
 
         // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
         // explicit predicate below is kept as a defensive guard and is a no-op.
+        // Filtering runs on the full domain object — matchesColor() needs the
+        // variant options, which the list-view projection below strips out.
         List<Product> result = catalogReadRepository.findAllPublishedProducts().stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesCategory(product, category))
@@ -106,7 +108,88 @@ public class CatalogReadService {
                 .sorted(productComparator(sortSpec))
                 .toList();
 
-        return paginationService.paginate(result, page, size);
+        // Project only the paginated slice to the lighter list view — the
+        // storefront list/card never renders description/gallery/specs/SEO or
+        // variant internals (see API_CONTRACT.md "Product list"). This keeps
+        // the response small without touching the filtering above.
+        PageResult<Product> page0 = paginationService.paginate(result, page, size);
+        return new PageResult<>(
+                page0.items().stream().map(CatalogReadService::toListView).toList(),
+                page0.page(),
+                page0.pageSize(),
+                page0.totalItems(),
+                page0.totalPages()
+        );
+    }
+
+    /**
+     * Domain projection: a full {@link Product} → its list-view shape.
+     *
+     * <p>Drops the detail-only payload the storefront catalog list does not
+     * render — {@code description}, {@code gallery}, {@code videos},
+     * {@code specifications}, {@code contentBottom}, {@code promotionContent},
+     * {@code seo}. Variants are reduced to stubs (see {@link #toVariantStub}):
+     * the card needs the variant <em>count</em> to choose the buy-box button,
+     * but never reads variant internals on a list. {@code shortDescription} is
+     * kept — it is the card subtitle. Stock masking already happened upstream
+     * in the repository's public-view mapper, so this transform is pure.
+     */
+    private static Product toListView(Product p) {
+        return new Product(
+                p.id(),
+                p.sku(),
+                p.slug(),
+                p.name(),
+                p.shortDescription(),
+                null,                       // description — detail only
+                p.brand(),
+                p.category(),
+                p.categories(),
+                p.image(),
+                List.of(),                  // gallery — detail only
+                List.of(),                  // videos — detail only
+                p.price(),
+                p.variants() == null
+                        ? List.of()
+                        : p.variants().stream().map(CatalogReadService::toVariantStub).toList(),
+                List.of(),                  // specifications — detail only
+                p.stockState(),
+                p.stockQuantity(),
+                p.forceOutOfStock(),
+                p.publishStatus(),
+                p.homepageBlock(),
+                p.homepageOrder(),
+                p.rating(),
+                p.ratingCount(),
+                null,                       // contentBottom — detail only
+                null,                       // promotionContent — detail only
+                null,                       // seo — detail only
+                p.createdAt(),
+                p.updatedAt()
+        );
+    }
+
+    /**
+     * A variant stripped to its list-view essentials: id/sku/name/price/stock/
+     * availability. {@code options}, {@code gallery} and {@code image} — which
+     * make up the bulk of the old list payload — are cleared; they are only
+     * needed by the product detail endpoint.
+     */
+    private static com.bigbike.bigbike_backend.domain.catalog.ProductVariant toVariantStub(
+            com.bigbike.bigbike_backend.domain.catalog.ProductVariant v) {
+        return new com.bigbike.bigbike_backend.domain.catalog.ProductVariant(
+                v.id(),
+                v.sku(),
+                v.name(),
+                List.of(),
+                v.price(),
+                v.stockState(),
+                v.stockQuantity(),
+                null,
+                List.of(),
+                v.isAvailable(),
+                v.trackSerials()
+        );
     }
 
     public Product getProductBySlug(String slug) {
@@ -138,7 +221,17 @@ public class CatalogReadService {
                 .map(publishedById::get)
                 .filter(Objects::nonNull)
                 .toList();
-        return paginationService.paginate(products, page, size);
+        // The wishlist page renders the same storefront ProductCard as the catalog
+        // list, so it returns the same list-view shape (see toListView / API_CONTRACT.md
+        // "Product list") — keeping both ApiListResponse<Product> endpoints consistent.
+        PageResult<Product> page0 = paginationService.paginate(products, page, size);
+        return new PageResult<>(
+                page0.items().stream().map(CatalogReadService::toListView).toList(),
+                page0.page(),
+                page0.pageSize(),
+                page0.totalItems(),
+                page0.totalPages()
+        );
     }
 
     public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage) {

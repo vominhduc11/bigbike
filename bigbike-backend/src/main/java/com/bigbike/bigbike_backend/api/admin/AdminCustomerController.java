@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerListItemResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerStatusRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -52,6 +53,12 @@ public class AdminCustomerController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "customers.read");
         return apiResponseFactory.list(
                 adminCustomerService.listCustomers(page, size, q, status, synthetic), request);
+    }
+
+    @GetMapping("/summary")
+    public ApiDataResponse<AdminCustomerSummaryResponse> getCustomerSummary(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "customers.read");
+        return apiResponseFactory.data(adminCustomerService.getCustomerSummary(), request);
     }
 
     @GetMapping("/{customerId}")

@@ -224,24 +224,23 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   }
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
-          <p className="eyebrow">{t('brands.detail.eyebrow')}</p>
+          <p className="eyebrow">
+            <a onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }} style={{ cursor: 'pointer' }}>
+              ← {t('brands.detail.backToList')}
+            </a>
+          </p>
           <h1>{isCreate ? t('brands.detail.createTitle') : t('brands.detail.editTitle')}</h1>
-          <p>{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
+          <p className="desc">{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
         </div>
-        <div className="screen-actions">
-          <Button variant="secondary"
-            type="button"
-            onClick={() => navigate('/admin/brands')}
-          >
-            {t('brands.detail.backToList')}
-          </Button>
+        <div className="actions">
           {!isCreate && canUpdate && (
-            <Button variant="danger"
+            <button
               type="button"
-              loading={isSubmitting}
+              className="btn btn-outline text-danger"
+              disabled={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
                   t('brands.detail.hideConfirm').replace('{slug}', form.slug || state.item?.slug || '…'),
@@ -253,10 +252,20 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               }}
             >
               {t('brands.detail.hideBtn')}
-            </Button>
+            </button>
           )}
+          <button
+            type="submit"
+            form="brand-form"
+            className="btn btn-primary"
+            disabled={isReadOnly || !isDirty}
+          >
+            {isSubmitting
+              ? t('common.saving')
+              : isCreate ? t('brands.detail.createBtn') : t('brands.detail.saveBtn')}
+          </button>
         </div>
-      </header>
+      </div>
 
       {state.warning ? (
         <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
@@ -271,7 +280,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       ) : null}
 
       <form
-        className="entity-form"
+        id="brand-form"
         ref={formRef}
         onSubmit={handleSubmit}
         onKeyDown={(e) => {
@@ -281,129 +290,77 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           }
         }}
       >
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>{t('brands.detail.sectionBasic')}</h2>
-          </header>
-          <div className="detail-section-content form-grid">
-            <label className="form-field">
-              <span>{t('brands.detail.slug')}</span>
-              <Input
-                value={form.slug}
-                onChange={(event) => updateField('slug', event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.slug ? (
-                <small className="field-error">{validationErrors.slug}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('brands.detail.name')}</span>
-              <Input
-                value={form.name}
-                onChange={(event) => updateField('name', event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.name ? (
-                <small className="field-error">{validationErrors.name}</small>
-              ) : null}
-            </label>
-
-            <label className="form-checkbox">
-              <Checkbox
-                checked={form.visible}
-                onCheckedChange={(checked) => updateField('visible', checked)}
-                disabled={isReadOnly}
-               />
-              <span>{t('brands.detail.isVisible')}</span>
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span>{t('brands.detail.description')}</span>
-              <RichTextEditor
-                value={form.description}
-                onChange={(html) => updateField('description', html)}
-                placeholder="Nhập mô tả thương hiệu..."
-                disabled={isReadOnly}
-                enableImagePicker
-              />
-              {validationErrors.description ? (
-                <small className="field-error">{validationErrors.description}</small>
-              ) : null}
+        {/* Thông tin cơ bản */}
+        <div className="card mb-4">
+          <div className="card-head"><h2>{t('brands.detail.sectionBasic')}</h2></div>
+          <div className="card-body">
+            <div className="grid-2">
+              <label className="form-field">
+                <span>{t('brands.detail.slug')}</span>
+                <Input value={form.slug} onChange={(e) => updateField('slug', e.target.value)} disabled={isReadOnly}
+                  style={{ fontFamily: 'var(--admin-font-mono)' }} />
+                {validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
+              </label>
+              <label className="form-field">
+                <span>{t('brands.detail.name')}</span>
+                <Input value={form.name} onChange={(e) => updateField('name', e.target.value)} disabled={isReadOnly} />
+                {validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
+              </label>
+              <label className="pf-checkbox" style={{ gridColumn: '1 / -1', width: 'fit-content' }}>
+                <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
+                <span>{t('brands.detail.isVisible')}</span>
+              </label>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.description')}</span>
+                <RichTextEditor
+                  value={form.description}
+                  onChange={(html) => updateField('description', html)}
+                  placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
+                  disabled={isReadOnly}
+                  enableImagePicker
+                />
+                {validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+              </div>
             </div>
-          </div>
-        </section>
-
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>{t('brands.detail.sectionMedia')}</h2>
-          </header>
-          <div className="detail-section-content form-grid">
-            <div className="form-field form-field-wide">
-              <span>{t('brands.detail.logoUrl')}</span>
-              <ImageUrlInput
-                value={form.logoUrl}
-                onChange={(url) => updateField('logoUrl', url)}
-                disabled={isReadOnly}
-                error={validationErrors.logoUrl}
-              />
-            </div>
-
-            <label className="form-field">
-              <span>{t('brands.detail.logoAlt')}</span>
-              <Input
-                value={form.logoAlt}
-                onChange={(event) => updateField('logoAlt', event.target.value)}
-                disabled={isReadOnly}
-               />
-            </label>
-
-            <div className="form-field form-field-wide">
-              <span>{t('brands.detail.bannerUrl', { defaultValue: 'Ảnh banner thương hiệu' })}</span>
-              <ImageUrlInput
-                value={form.bannerUrl}
-                onChange={(url) => updateField('bannerUrl', url)}
-                disabled={isReadOnly}
-                error={validationErrors.bannerUrl}
-              />
-            </div>
-
-            <label className="form-field">
-              <span>{t('brands.detail.bannerAlt', { defaultValue: 'Alt text banner' })}</span>
-              <Input
-                value={form.bannerAlt}
-                onChange={(event) => updateField('bannerAlt', event.target.value)}
-                disabled={isReadOnly}
-               />
-            </label>
-          </div>
-        </section>
-
-        <div className="form-footer">
-          <div className="form-status">
-            <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
-              {isDirty ? t('common.dirty') : t('common.clean')}
-            </span>
-            {!isCreate && state.item?.updatedAt ? (
-              <small>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</small>
-            ) : null}
-          </div>
-          <div className="screen-actions">
-            <Button
-              type="submit"
-              disabled={isReadOnly || !isDirty}
-            >
-              {isSubmitting
-                ? t('common.saving')
-                : isCreate
-                  ? t('brands.detail.createBtn')
-                  : t('brands.detail.saveBtn')}
-            </Button>
           </div>
         </div>
 
+        {/* Hình ảnh */}
+        <div className="card">
+          <div className="card-head"><h2>{t('brands.detail.sectionMedia')}</h2></div>
+          <div className="card-body">
+            <div className="grid-2">
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.logoUrl')}</span>
+                <ImageUrlInput
+                  value={form.logoUrl}
+                  onChange={(url) => updateField('logoUrl', url)}
+                  alt={form.logoAlt}
+                  onAltChange={(v) => updateField('logoAlt', v)}
+                  disabled={isReadOnly}
+                  error={validationErrors.logoUrl}
+                />
+              </div>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.bannerUrl', { defaultValue: 'Ảnh banner thương hiệu' })}</span>
+                <ImageUrlInput
+                  value={form.bannerUrl}
+                  onChange={(url) => updateField('bannerUrl', url)}
+                  alt={form.bannerAlt}
+                  onAltChange={(v) => updateField('bannerAlt', v)}
+                  disabled={isReadOnly}
+                  error={validationErrors.bannerUrl}
+                />
+              </div>
+            </div>
+          </div>
+          {!isCreate && state.item?.updatedAt && (
+            <div className="card-foot">
+              <span>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</span>
+            </div>
+          )}
+        </div>
       </form>
-    </section>
+    </div>
   )
 }

@@ -340,14 +340,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     setMenuNoticeDismissed(true)
   }
 
-  function handleDiscardChanges() {
-    if (!isDirty) return
-    const item = fetchResult?.item || null
-    const nextForm = buildFormFromItem(item)
-    setForm(nextForm)
-    setValidationErrors({})
-  }
-
   function handleCopyId() {
     if (!state.item?.id) return
     const id = state.item.id
@@ -420,68 +412,70 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   }
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
-          <p className="eyebrow">{t('categories.detail.eyebrow')}</p>
-          <h1>{isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}</h1>
+          <p className="eyebrow">
+            <a onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }} style={{ cursor: 'pointer' }}>
+              ← {t('categories.detail.backToList')}
+            </a>
+          </p>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {isCreate ? t('categories.detail.createTitle') : t('categories.detail.editTitle')}
+            {!isCreate && state.item && <StatusBadge type="visibility" status={state.item.isVisible} />}
+          </h1>
           {breadcrumbPath && (
-            <p className="cat-detail-breadcrumb">
-              <span>{breadcrumbPath}</span>
-              <span className="cat-detail-breadcrumb-sep"> / </span>
-              <strong>{state.item?.name}</strong>
+            <p className="desc">
+              {breadcrumbPath} / <strong>{state.item?.name}</strong>
             </p>
           )}
           {!isCreate && state.item && (
-            <div className="cat-detail-meta">
-              <StatusBadge type="visibility" status={state.item.isVisible} />
+            <div className="flex items-center gap-3 mt-2" style={{ flexWrap: 'wrap' }}>
               {productsTotal > 0 && (
-                <span className="cat-detail-meta-item" title={t('categories.detail.productCountTitle')}>
+                <span className="text-xs muted flex items-center gap-1">
                   <Package size={13} aria-hidden="true" />
                   {t('categories.detail.productCount', { count: productsTotal })}
                 </span>
               )}
               {state.item.updatedAt && (
-                <span
-                  className="cat-detail-meta-item"
-                  title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}
-                >
+                <span className="text-xs muted" title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}>
                   {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
                 </span>
               )}
               <button
                 type="button"
-                className="cat-detail-meta-item cat-detail-id"
+                className="text-xs muted flex items-center gap-1"
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                 onClick={handleCopyId}
                 title={t('categories.detail.copyId')}
               >
                 <Hash size={12} aria-hidden="true" />
-                <code>{state.item.id}</code>
+                <code className="mono">{state.item.id}</code>
                 {idCopied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
               </button>
             </div>
           )}
-          <p>{isCreate ? t('categories.detail.createDesc') : t('categories.detail.editDesc')}</p>
         </div>
-        <div className="screen-actions">
+        <div className="actions">
           {!isCreate && state.item?.slug && (
-            <Button asChild variant="ghost">
-              <a
-                href={`${STOREFRONT_BASE}/${state.item.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t('categories.detail.viewOnSiteTitle')}
-              >
-                <ExternalLink size={14} aria-hidden="true" />
-                <span>{t('categories.detail.viewOnSite')}</span>
-              </a>
-            </Button>
+            <a
+              className="btn btn-outline"
+              href={`${STOREFRONT_BASE}/${state.item.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t('categories.detail.viewOnSiteTitle')}
+            >
+              <ExternalLink size={14} aria-hidden="true" />
+              {t('categories.detail.viewOnSite')}
+            </a>
           )}
-          <Button variant="outline" onClick={() => navigate('/admin/categories')}>
-            {t('categories.detail.backToList')}
-          </Button>
+          <button type="submit" form="category-form" className="btn btn-primary" disabled={isReadOnly || !isDirty}>
+            {isSubmitting
+              ? t('common.saving')
+              : isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
+          </button>
         </div>
-      </header>
+      </div>
 
       {state.warning ? (
         <StatePanel tone="warning" title={t('readOnly.prefix')} description={state.warning} />
@@ -496,22 +490,25 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       ) : null}
 
       {!isCreate && canUpdate && !menuNoticeDismissed && (
-        <div className="dismissible-banner dismissible-banner--info">
-          <div className="dismissible-banner-body">
+        <div
+          className="pf-note pf-note-info mb-4"
+          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}
+        >
+          <div>
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
-            <p>{t('categories.detail.menuNoticeDesc')}</p>
-            <div className="dismissible-banner-actions">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/menus')}>
+            <p style={{ margin: '4px 0 6px' }}>{t('categories.detail.menuNoticeDesc')}</p>
+            <div className="flex gap-2">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleDismissMenuNotice}>
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={handleDismissMenuNotice}>
                 {t('categories.detail.menuNoticeDismiss')}
-              </Button>
+              </button>
             </div>
           </div>
           <button
             type="button"
-            className="dismissible-banner-close"
+            className="icon-btn"
             aria-label={t('categories.detail.menuNoticeDismiss')}
             onClick={handleDismissMenuNotice}
           >
@@ -521,8 +518,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       )}
 
       <form
+        id="category-form"
         ref={formRef}
-        className="entity-form"
         onSubmit={handleSubmit}
         onKeyDown={(e) => {
           if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
@@ -530,65 +527,50 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
           }
         }}
       >
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>
-              <FolderOpen size={16} aria-hidden="true" className="detail-section-icon" />
-              {t('categories.sectionBasic')}
-            </h2>
-            <p className="detail-section-desc">{t('categories.sectionBasicDesc')}</p>
-          </header>
-          <div className="detail-section-content form-grid">
-
-            <label className="form-field" data-field="name">
-              <span>{t('categories.detail.name')}</span>
-              <Input
-                name="name"
-                value={form.name}
-                onChange={(event) => handleNameChange(event.target.value)}
-                disabled={isReadOnly}
-               />
-              {validationErrors.name ? (
-                <small className="field-error">{validationErrors.name}</small>
-              ) : null}
-            </label>
-
-            <label className="form-field">
-              <span>{t('categories.detail.parentId')}</span>
-              <Select
-                value={form.parentId || '__none__'}
-                onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
-                disabled={isReadOnly}
-              ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                <SelectItem value="__none__">{t('categories.detail.parentIdNone')}</SelectItem>
-                {parentOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                ))}
-              </SelectContent></Select>
-              <small className="field-hint">{t('categories.detail.parentIdHint')}</small>
-              {validationErrors.parentId ? (
-                <small className="field-error">{validationErrors.parentId}</small>
-              ) : null}
-            </label>
-
-
-            <div className="form-field form-field-wide">
-              <span>{t('categories.detail.description')}</span>
-              <RichTextEditor
-                value={form.description}
-                onChange={(html) => updateField('description', html)}
-                placeholder={t('categories.descriptionPlaceholder')}
-                disabled={isReadOnly}
-                enableImagePicker
-              />
-              <small className="field-hint">{t('categories.descriptionHint')}</small>
-              {validationErrors.description ? (
-                <small className="field-error">{validationErrors.description}</small>
-              ) : null}
+        {/* Thông tin cơ bản */}
+        <div className="card mb-4">
+          <div className="card-head">
+            <div>
+              <h2>{t('categories.sectionBasic')}</h2>
+              <p className="sub">{t('categories.sectionBasicDesc')}</p>
             </div>
-
-            <div className="form-field form-field-wide form-media-pair">
-              <div className="form-field" data-field="imageUrl">
+          </div>
+          <div className="card-body">
+            <div className="grid-2">
+              <label className="form-field" data-field="name">
+                <span>{t('categories.detail.name')}</span>
+                <Input name="name" value={form.name} onChange={(e) => handleNameChange(e.target.value)} disabled={isReadOnly} />
+                {validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
+              </label>
+              <label className="form-field">
+                <span>{t('categories.detail.parentId')}</span>
+                <Select
+                  value={form.parentId || '__none__'}
+                  onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t('categories.detail.parentIdNone')}</SelectItem>
+                    {parentOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <span className="hint">{t('categories.detail.parentIdHint')}</span>
+                {validationErrors.parentId && <span className="hint text-danger">{validationErrors.parentId}</span>}
+              </label>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('categories.detail.description')}</span>
+                <RichTextEditor
+                  value={form.description}
+                  onChange={(html) => updateField('description', html)}
+                  placeholder={t('categories.descriptionPlaceholder')}
+                  disabled={isReadOnly}
+                  enableImagePicker
+                />
+                <span className="hint">{t('categories.descriptionHint')}</span>
+                {validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+              </div>
+              <div className="form-field" data-field="imageUrl" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.imageUrl')}</span>
                 <ImageUrlInput
                   value={form.imageUrl}
@@ -597,11 +579,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   error={validationErrors.imageUrl}
                 />
               </div>
-
-            </div>
-
-            <div className="form-checkbox-group">
-              <label className="form-checkbox">
+              <label className="pf-checkbox" style={{ width: 'fit-content' }}>
                 <Checkbox
                   checked={form.visible}
                   onCheckedChange={(checked) => {
@@ -609,154 +587,122 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                     setForm((prev) => ({
                       ...prev,
                       visible: nextVisible,
-                      // showOnHomepage requires the category to be visible —
-                      // hidden categories are excluded from the public site,
-                      // so a homepage flag would be silently ignored.
                       showOnHomepage: nextVisible ? prev.showOnHomepage : false,
                     }))
                   }}
                   disabled={isReadOnly}
-                 />
+                />
                 <span>{t('categories.detail.isVisible')}</span>
               </label>
-
-              <label className={`form-checkbox${!form.visible ? ' is-disabled' : ''}`}>
+              <label className="pf-checkbox" style={{ width: 'fit-content', opacity: form.visible ? 1 : 0.5 }}>
                 <Checkbox
                   checked={form.showOnHomepage}
                   onCheckedChange={(checked) => updateField('showOnHomepage', checked)}
                   disabled={isReadOnly || !form.visible}
-                 />
+                />
                 <span>
                   {t('categories.detail.showOnHomepage')}
                   {!form.visible && (
-                    <small className="form-checkbox-hint">{t('categories.detail.showOnHomepageRequiresVisible')}</small>
+                    <span className="hint" style={{ display: 'block' }}>
+                      {t('categories.detail.showOnHomepageRequiresVisible')}
+                    </span>
                   )}
                 </span>
               </label>
             </div>
-
           </div>
-        </section>
+        </div>
 
-        <section className="detail-section">
-          <header className="detail-section-header">
-            <h2>{t('categories.detail.slug')}</h2>
-          </header>
-          <div className="detail-section-content form-grid">
+        {/* Slug */}
+        <div className="card mb-4">
+          <div className="card-head"><h2>{t('categories.detail.slug')}</h2></div>
+          <div className="card-body">
             <label className="form-field" data-field="slug">
               <span>{t('categories.detail.slug')}</span>
               <Input
                 name="slug"
                 value={form.slug}
-                onChange={(event) => handleSlugChange(event.target.value)}
+                onChange={(e) => handleSlugChange(e.target.value)}
                 disabled={isReadOnly}
                 placeholder={t('categories.slugPlaceholder')}
-               />
-              <small className="field-hint">{t('categories.detail.slugHint')}</small>
-              {validationErrors.slug ? (
-                <small className="field-error">{validationErrors.slug}</small>
-              ) : null}
+                style={{ fontFamily: 'var(--admin-font-mono)' }}
+              />
+              <span className="hint">{t('categories.detail.slugHint')}</span>
+              {validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
             </label>
           </div>
-        </section>
+        </div>
 
+        {/* Products in category */}
         {!isCreate && state.item && (
-          <section className="detail-section">
-            <header className="detail-section-header">
+          <div className="card mb-4">
+            <div className="card-head">
               <div>
-                <h2>
-                  <Package size={16} aria-hidden="true" className="detail-section-icon" />
-                  {t('categories.detail.productsSectionTitle', { count: productsTotal })}
-                </h2>
-                <p className="detail-section-desc">{t('categories.detail.productsSectionDesc')}</p>
+                <h2>{t('categories.detail.productsSectionTitle', { count: productsTotal })}</h2>
+                <p className="sub">{t('categories.detail.productsSectionDesc')}</p>
               </div>
               {productsTotal > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}
+                >
                   {t('categories.detail.productsViewAll', { count: productsTotal })}
-                </Button>
-              )}
-            </header>
-            <div className="detail-section-content">
-              {productsList.length === 0 ? (
-                <p className="cat-products-empty">{t('categories.detail.productsEmpty')}</p>
-              ) : (
-                <ul className="cat-products-list">
-                  {productsList.map((p) => (
-                    <li key={p.id} className="cat-products-item">
-                      <button
-                        type="button"
-                        className="cat-products-item-link"
-                        onClick={() => navigate(`/admin/products/${p.id}`)}
-                      >
-                        <div className="cat-products-thumb">
-                          {p.image?.url ? (
-                            <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer" />
-                          ) : (
-                            <span aria-hidden="true">—</span>
-                          )}
-                        </div>
-                        <div className="cat-products-meta">
-                          <strong>{p.name}</strong>
-                          <span className="cat-products-sku">{p.sku || p.slug}</span>
-                        </div>
-                        <PublishStatusBadge value={p.publishStatus} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                </button>
               )}
             </div>
-          </section>
+            <div className="card-body card-body--flush">
+              {productsList.length === 0 ? (
+                <div className="state-panel"><p>{t('categories.detail.productsEmpty')}</p></div>
+              ) : (
+                <div className="table-wrap">
+                  <table className="tbl">
+                    <tbody>
+                      {productsList.map((p) => (
+                        <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
+                          <td>
+                            <div className="product-cell">
+                              <span className="thumb">
+                                {p.image?.url ? (
+                                  <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : <Package size={16} />}
+                              </span>
+                              <div className="info">
+                                <div className="name">{p.name}</div>
+                                <div className="sku">{p.sku || p.slug}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="actions-cell"><PublishStatusBadge value={p.publishStatus} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
-
-        {/* The base .form-footer is already sticky-bottom across the admin
-            (see ProductDetailScreen). Keep this as the last element of
-            the form so it doesn't overlap the danger zone above it. */}
-        <div className={`form-footer${isDirty ? ' form-footer--dirty' : ''}`}>
-          <div className="form-status">
-            {isDirty && (
-              <span className="status-pill is-dirty">{t('categories.dirtyHint')}</span>
-            )}
-            {!isCreate && state.item?.updatedAt ? (
-              <small title={formatDateTime(state.item.updatedAt)}>
-                {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
-              </small>
-            ) : null}
+        {/* Danger zone */}
+        {!isCreate && canUpdate && (
+          <div className="card" style={{ borderColor: 'var(--admin-color-status-danger-border)' }}>
+            <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div>
+                <strong className="flex items-center gap-2 text-danger">
+                  <AlertTriangle size={14} aria-hidden="true" />
+                  {t('categories.detail.dangerZoneTitle')}
+                </strong>
+                <p className="text-sm muted" style={{ margin: '4px 0 0' }}>{t('categories.detail.dangerZoneDesc')}</p>
+              </div>
+              <button type="button" className="btn btn-danger" onClick={handleHardDelete} disabled={hardDeleteMutation.isPending}>
+                {t('categories.detail.hardDeleteBtn')}
+              </button>
+            </div>
           </div>
-          <div className="screen-actions">
-            <small className="form-shortcut-hint" aria-hidden="true">
-              <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
-            </small>
-            {isDirty && !isReadOnly && (
-              <Button variant="ghost" onClick={handleDiscardChanges} disabled={isSubmitting}>
-                {t('categories.detail.discardChanges')}
-              </Button>
-            )}
-            <Button type="submit" loading={isSubmitting} disabled={isReadOnly || !isDirty}>
-              {isCreate
-                ? t('categories.detail.createBtn')
-                : t('categories.detail.saveBtn')}
-            </Button>
-          </div>
-        </div>
-
+        )}
       </form>
-
-      {!isCreate && canUpdate && (
-        <div className="danger-zone">
-          <div className="danger-zone-info">
-            <strong>
-              <AlertTriangle size={13} aria-hidden="true" className="align-middle mr-1.5" />
-              {t('categories.detail.dangerZoneTitle')}
-            </strong>
-            <p>{t('categories.detail.dangerZoneDesc')}</p>
-          </div>
-          <Button variant="danger" onClick={handleHardDelete} loading={hardDeleteMutation.isPending}>
-            {t('categories.detail.hardDeleteBtn')}
-          </Button>
-        </div>
-      )}
-    </section>
+    </div>
   )
 }

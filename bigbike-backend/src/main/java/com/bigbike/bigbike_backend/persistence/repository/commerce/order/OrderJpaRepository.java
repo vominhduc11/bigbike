@@ -79,6 +79,13 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
            "FROM OrderEntity o WHERE o.customerId IN :ids GROUP BY o.customerId")
     List<Object[]> countAndSumByCustomerIds(@Param("ids") java.util.Collection<UUID> ids);
 
+    // Customer IDs whose lifetime order total reaches the VIP threshold —
+    // mirrors AdminCustomerService.deriveSegment so the KPI count and the
+    // per-customer segment label stay in agreement.
+    @Query("SELECT o.customerId FROM OrderEntity o WHERE o.customerId IS NOT NULL "
+           + "GROUP BY o.customerId HAVING COALESCE(SUM(o.totalAmount), 0) >= :threshold")
+    List<UUID> findVipCustomerIds(@Param("threshold") BigDecimal threshold);
+
     // ── POS background jobs ───────────────────────────────────────────────────
 
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────

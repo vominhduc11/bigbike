@@ -33,7 +33,6 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -130,11 +129,13 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, opacity: video.isActive === false && !selected ? 0.55 : undefined }}
-      className={cn(
-        'flex gap-3 items-start rounded-md px-4 py-3 shadow-xs',
-        selected ? 'bg-surface-selected border border-primary' : 'bg-surface border border-border'
-      )}
+      style={{
+        ...style,
+        opacity: video.isActive === false && !selected ? 0.55 : style.opacity,
+        ...(selected ? { borderColor: 'var(--admin-color-brand-red)', background: 'var(--admin-color-surface-selected)' } : {}),
+        display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px',
+      }}
+      className="card"
     >
       {canUpdate && (
         <div className="flex items-center gap-1 shrink-0">
@@ -177,34 +178,31 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         </div>
       </button>
 
-      <div className="flex-1 min-w-0">
-        <div className="truncate font-semibold text-sm mb-1">
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="fw-700 text-sm mb-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {video.title}
         </div>
-        <div className="truncate text-xs text-muted-foreground">
+        <div className="text-xs muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {video.videoUrl}
         </div>
-        <div className="mt-1 text-xs">
-          <span className={cn(
-            'inline-block px-2 py-0.5 rounded-full font-semibold',
-            video.isActive ? 'bg-success-bg text-success' : 'bg-surface-raised text-muted-foreground'
-          )}>
+        <div className="mt-1">
+          <span className={`badge ${video.isActive ? 'badge-success' : 'badge-neutral'}`}>
             {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
           </span>
         </div>
       </div>
 
       {canUpdate && (
-        <div className="flex gap-2 shrink-0">
-          <Button type="button" variant="outline" size="sm" onClick={() => onToggleActive(video)}>
+        <div className="flex gap-2" style={{ flexShrink: 0 }}>
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onToggleActive(video)}>
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => onEdit(video)}>
+          </button>
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
-          </Button>
-          <Button type="button" variant="danger" size="sm" onClick={() => onDelete(video.id)}>
+          </button>
+          <button type="button" className="btn btn-outline btn-sm text-danger" onClick={() => onDelete(video.id)}>
             {t('common.delete')}
-          </Button>
+          </button>
         </div>
       )}
     </div>
@@ -550,28 +548,34 @@ export function HomeVideoListScreen({ canUpdate }) {
   )
 
   return (
-    <div className="py-6 max-w-[760px]">
+    <div>
       {!canUpdate && <ReadOnlyBanner />}
 
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="m-0 text-xl font-bold">{t('homeVideos.title')}</h1>
+      <div className="screen-header">
+        <div>
+          <p className="eyebrow">{t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}</p>
+          <h1>{t('homeVideos.title')}</h1>
+          <p className="desc">{t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}</p>
+        </div>
         {canUpdate && !showForm && (
-          <Button type="button"
-            onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}>
-            {t('homeVideos.addButton')}
-          </Button>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
+            >
+              {t('homeVideos.addButton')}
+            </button>
+          </div>
         )}
       </div>
 
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-3.5 rounded-md border border-border bg-surface p-5 mb-6"
-        >
-          <h3 className="m-0 text-base font-bold">
-            {editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}
-          </h3>
-
+        <div className="card mb-4">
+          <div className="card-head">
+            <h2>{editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="card-body flex flex-col gap-3">
           {formError ? (
             <p className="text-danger m-0">{formError}</p>
           ) : null}
@@ -685,7 +689,8 @@ export function HomeVideoListScreen({ canUpdate }) {
               {t('common.cancel')}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
       )}
 
       {canUpdate && items.length > 0 ? (

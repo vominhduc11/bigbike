@@ -337,4 +337,85 @@ class PublicReadApiTest {
                 .andExpect(jsonPath("$.data.slug").value("chinh-sach-bao-hanh"))
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
+
+    // ── Product list-view projection — list omits detail-only payload ─────────────
+    // Guards the "Cắt mạnh" list response: GET /api/v1/products must drop
+    // description/gallery/specifications and variant internals (options/gallery),
+    // while keeping the variant *count* the storefront card relies on.
+
+    @Test
+    void publicProductList_omitsDetailOnlyFields_butKeepsVariantCount() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity cat = seedCategory("pub-lv-cat-" + suffix, "Pub LV Cat " + suffix);
+        String slug = "pub-lv-prod-" + suffix;
+        seedProductWithDetailAndVariant(slug, "Pub LV Product " + suffix, cat);
+
+        // Detail endpoint still returns the full payload.
+        mockMvc.perform(get("/api/v1/products/" + slug))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.description").value("Detail-only long description"))
+                .andExpect(jsonPath("$.data.specifications.length()").value(1))
+                .andExpect(jsonPath("$.data.variants.length()").value(1));
+
+        // List endpoint: detail-only fields stripped, variant count preserved.
+        String node = "$.data[?(@.slug == '" + slug + "')]";
+        mockMvc.perform(get("/api/v1/products")
+                        .param("category", "pub-lv-cat-" + suffix))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(node + ".slug").value(slug))
+                // price is kept on the list view (covered numerically elsewhere)
+                .andExpect(jsonPath(node + ".price.retailPrice").exists())
+                // detail-only payload must be absent / empty on the list
+                .andExpect(jsonPath(node + ".description").value((Object) null))
+                .andExpect(jsonPath(node + ".gallery.length()").value(0))
+                .andExpect(jsonPath(node + ".specifications.length()").value(0))
+                .andExpect(jsonPath(node + ".seo").value((Object) null))
+                // variant kept as a stub: count is correct, internals stripped
+                .andExpect(jsonPath(node + ".variants.length()").value(1))
+                .andExpect(jsonPath(node + ".variants[0].options.length()").value(0))
+                .andExpect(jsonPath(node + ".variants[0].gallery.length()").value(0));
+    }
+
+    /** Seeds a PUBLISHED product carrying a long description, one spec row and one variant. */
+    private void seedProductWithDetailAndVariant(String slug, String name, CategoryEntity cat) {
+        if (productRepo.findBySlug(slug).isPresent()) return;
+        ProductEntity p = new ProductEntity();
+        p.setId(UUID.randomUUID().toString());
+        p.setSlug(slug);
+        p.setName(name);
+        p.setRetailPrice(BigDecimal.valueOf(2_000_000L));
+        p.setCurrency("VND");
+        p.setPublishStatus(PublishStatus.PUBLISHED);
+        p.setStockState(ProductStockState.IN_STOCK);
+        p.setCategory(cat);
+        p.setShortDescription("Short card subtitle");
+        p.setDescription("Detail-only long description");
+
+        com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity spec =
+                new com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity();
+        // id is @GeneratedValue(IDENTITY) — must not be set manually.
+        spec.setProduct(p);
+        spec.setName("Chất liệu");
+        spec.setValue("Sợi carbon");
+        spec.setSortOrder(0);
+        p.setSpecifications(new java.util.ArrayList<>(java.util.List.of(spec)));
+
+        com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity variant =
+                new com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity();
+        variant.setId(UUID.randomUUID().toString());
+        variant.setProduct(p);
+        variant.setSku(slug + "-v1");
+        variant.setName("Size M");
+        variant.setRetailPrice(BigDecimal.valueOf(2_000_000L));
+        variant.setCurrency("VND");
+        variant.setStockState(ProductStockState.IN_STOCK);
+        variant.setQuantityOnHand(5);
+        variant.setSortOrder(0);
+        p.setVariants(new java.util.ArrayList<>(java.util.List.of(variant)));
+
+        Instant now = Instant.now();
+        p.setCreatedAt(now);
+        p.setUpdatedAt(now);
+        productRepo.save(p);
+    }
 }

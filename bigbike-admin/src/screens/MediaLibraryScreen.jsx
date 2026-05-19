@@ -341,8 +341,8 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const panelOpen = !!editingMedia
 
   return (
-    <section
-      className={`screen medialib-dropzone ${isDragging && canUpdate ? 'medialib-dropzone-active' : ''} ${panelOpen ? 'medialib-panel-open' : ''}`}
+    <div
+      className={`medialib-dropzone ${isDragging && canUpdate ? 'medialib-dropzone-active' : ''} ${panelOpen ? 'medialib-panel-open' : ''}`}
       ref={screenRef}
     >
       {isDragging && canUpdate && (
@@ -352,32 +352,34 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         </div>
       )}
 
-      <header className="screen-header">
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('media.eyebrow')}</p>
           <h1>{t('media.title')}</h1>
-          <p>{t('media.description')}</p>
+          <p className="desc">{t('media.description')}</p>
         </div>
-        <div className="medialib-header-actions">
-          <Button
-            variant={isTrash ? 'default' : 'outline'}
+        <div className="actions">
+          <button
+            type="button"
+            className={isTrash ? 'btn btn-primary' : 'btn btn-outline'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
-            title={t('media.trashShortcut')}>
+            title={t('media.trashShortcut')}
+          >
             <Trash2 size={14} />
             {t('media.trashShortcut')}
-          </Button>
+          </button>
           {canUpdate && (
             <>
               <input ref={fileInputRef} type="file" multiple accept={ALLOWED_MIME.join(',')}
                 className="hidden" onChange={handleFileChange} />
-              <Button onClick={() => fileInputRef.current?.click()}>
+              <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={14} />
                 {t('common.upload')}
-              </Button>
+              </button>
             </>
           )}
         </div>
-      </header>
+      </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
@@ -627,7 +629,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           onNavigate={(i) => setPreviewIndex(i)}
           onClose={() => setPreviewIndex(null)} />
       )}
-    </section>
+    </div>
   )
 }
 

@@ -637,20 +637,17 @@ export function AuditLogListScreen() {
   const totalItems = state.pagination?.totalItems
 
   return (
-    <section className="screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header">
         <div>
           <p className="eyebrow">{t('auditLog.eyebrow')}</p>
           <h1>{t('auditLog.title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('auditLog.description')}
-          </p>
+          <p className="desc">{t('auditLog.description')}</p>
         </div>
-        <div className="audit-header-actions">
-          {/* #5: Refresh button removed — WebSocket keeps data live */}
-          {/* #8: Export button with tooltip showing row count */}
-          <Button
-            variant="outline"
+        <div className="actions">
+          <button
+            type="button"
+            className="btn btn-outline"
             onClick={handleExport}
             disabled={state.items.length === 0}
             title={
@@ -660,9 +657,9 @@ export function AuditLogListScreen() {
             }
           >
             ↓ {t('auditLog.exportBtn')}
-          </Button>
+          </button>
         </div>
-      </header>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
@@ -875,6 +872,6 @@ export function AuditLogListScreen() {
           isFiltered={isFiltered}
         />
       )}
-    </section>
+    </div>
   )
 }

@@ -55,7 +55,23 @@
     "newOrder": "New order",
     "orderUpdate": "Order update",
     "close": "Close notification",
-    "regionLabel": "Order notifications"
+    "regionLabel": "Order notifications",
+    "bellLabel": "Notifications",
+    "panelTitle": "Notifications",
+    "clearAll": "Clear all",
+    "empty": "No notifications yet"
+  },
+  "search": {
+    "open": "Open quick search",
+    "placeholder": "Search orders, products, customers...",
+    "title": "Quick search",
+    "hint": "Type a keyword to find orders, products or customers.",
+    "empty": "No results found.",
+    "group": {
+      "orders": "Orders",
+      "products": "Products",
+      "customers": "Customers"
+    }
   },
   "theme": {
     "switchToLight": "Switch to light mode",
@@ -139,7 +155,8 @@
     },
     "sidebarLabel": "Sidebar navigation",
     "mainNav": "Main navigation",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "pendingBadge": "{{count}} items need attention"
   },
   "app": {
     "loadingSession": "Loading session",
@@ -162,6 +179,10 @@
     "eyebrow": "Overview",
     "title": "Dashboard",
     "subtitle": "Monitor your business activity in real time.",
+    "greetingMorning": "Good morning, {{name}} 👋",
+    "greetingAfternoon": "Good afternoon, {{name}} 👋",
+    "greetingEvening": "Good evening, {{name}} 👋",
+    "greetingDesc": "Today is {{date}}. Here's how the business is doing.",
     "period7d": "7 days",
     "period30d": "30 days",
     "period90d": "90 days",
@@ -1087,6 +1108,16 @@
     "eyebrow": "Commerce",
     "title": "Customers",
     "description": "Manage customer accounts and information.",
+    "kpi": {
+      "total": "Total customers",
+      "totalHint": "All customer accounts",
+      "vip": "VIP customers",
+      "vipHint": "Lifetime spend of 10M ₫ or more",
+      "new30d": "New (30 days)",
+      "new30dHint": "Registered in the last 30 days",
+      "active": "Active",
+      "activeHint": "Accounts in active status"
+    },
     "searchPlaceholder": "Name, email, phone number",
     "filterStatus": "Status",
     "loading": "Loading customers",

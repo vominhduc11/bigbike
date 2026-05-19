@@ -835,28 +835,32 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
   const total = cart.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
 
   return (
-    <section className="screen pos-screen">
-      <header className="screen-header">
+    <div>
+      <div className="screen-header" style={{ marginBottom: 16 }}>
         <div>
           <p className="eyebrow">{t('pos.eyebrow')}</p>
           <h1>{t('pos.title')}</h1>
+          <p className="desc">{t('pos.searchHint')}</p>
         </div>
-      </header>
+      </div>
 
-      <div className="pos-layout">
-        <div className="pos-search-col">
-          <div className="pos-search-wrap">
-            <Search size={16} className="pos-search-icon" />
-            <Input
-              placeholder={t('pos.searchPlaceholder')}
-              value={q}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              autoFocus
-             className="pos-search-input" />
+      <div className="pos-shell">
+        {/* Product picker */}
+        <div className="flex flex-col gap-3">
+          <div className="filter-bar" style={{ margin: 0 }}>
+            <div className="filter-search">
+              <Search size={14} />
+              <input
+                placeholder={t('pos.searchPlaceholder')}
+                value={q}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                autoFocus
+              />
+            </div>
           </div>
 
           {searching && (
-            <p className="py-2 text-muted-foreground text-sm">{t('common.loading')}...</p>
+            <p className="py-2 muted text-sm">{t('common.loading')}...</p>
           )}
 
           {!searching && results.length === 0 && dq.trim() && (
@@ -864,141 +868,165 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           )}
 
           {!searching && results.length === 0 && !dq.trim() && (
-            <div className="pos-empty-hint">
-              <Search size={32} opacity={0.2} />
+            <div className="state-panel">
+              <div className="icon"><Search size={22} /></div>
               <p>{t('pos.searchHint')}</p>
             </div>
           )}
 
-          <div className="pos-product-grid">
+          <div className="pos-cards">
             {results.map((product) =>
               (product.variants || []).filter((v) => v.stockQuantity === null || v.stockQuantity > 0).map((variant) => {
                 const displayPrice = priceOf(variant.price ?? product.price)
                 const variantLabel = summarizeOptions(variant.options)
                 const outOfStock = variant.stockQuantity !== null && variant.stockQuantity <= 0
+                const disabled = !canUpdate || outOfStock
                 return (
-                  <button
+                  <div
                     key={variant.id ?? ('p:' + product.id)}
-                    type="button"
-                    className="pos-product-card"
-                    onClick={() => handleVariantClick(variant, product)}
-                    disabled={!canUpdate || outOfStock}
+                    className="pos-card"
+                    role="button"
+                    tabIndex={disabled ? -1 : 0}
+                    aria-disabled={disabled}
+                    style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    onClick={() => { if (!disabled) handleVariantClick(variant, product) }}
+                    onKeyDown={(e) => {
+                      if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        handleVariantClick(variant, product)
+                      }
+                    }}
                   >
-                    {product.image?.url && (
-                      <img src={product.image.url} alt={product.name} className="pos-product-img" />
-                    )}
-                    <div className="pos-product-info">
-                      <span className="pos-product-name">{product.name}</span>
-                      {variantLabel && <span className="pos-product-attrs">{variantLabel}</span>}
-                      <span className="pos-product-price">{formatCurrencyVnd(displayPrice)}</span>
-                      <span className={`pos-product-stock${outOfStock ? ' out' : ''}`}>
-                        {outOfStock ? 'Hết hàng' : variant.stockQuantity != null ? `Kho: ${variant.stockQuantity}` : ''}
-                      </span>
+                    <div className="thumb-img">
+                      {product.image?.url
+                        ? <img src={product.image.url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 7 }} />
+                        : <ShoppingCart size={28} />}
                     </div>
-                  </button>
+                    {variant.sku && <div className="sku">{variant.sku}</div>}
+                    <div className="name">{product.name}</div>
+                    {variantLabel && <div className="text-xs muted">{variantLabel}</div>}
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="price">{formatCurrencyVnd(displayPrice)}</div>
+                      {outOfStock
+                        ? <span className="badge badge-danger">{t('pos.outOfStock', { defaultValue: 'Hết' })}</span>
+                        : variant.stockQuantity != null
+                          ? <span className="text-xs muted">{t('pos.inStock', { count: variant.stockQuantity, defaultValue: `Còn ${variant.stockQuantity}` })}</span>
+                          : null}
+                    </div>
+                  </div>
                 )
               })
             )}
           </div>
         </div>
 
-        <div className="pos-cart-col">
-          <div className="pos-cart-header">
-            <ShoppingCart size={16} />
-            <span>{t('pos.cart')} ({cart.length})</span>
+        {/* Cart */}
+        <div className="pos-cart">
+          <div className="pos-cart-head">
+            <div className="flex justify-between items-center">
+              <div className="fw-700 text-lg">{t('pos.cart')} ({cart.length})</div>
+              {cart.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={async () => {
+                    if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
+                      setCart([])
+                      try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
+                    }
+                  }}
+                >
+                  <Trash2 size={13} />{t('pos.clearCart', { defaultValue: 'Xoá hết' })}
+                </button>
+              )}
+            </div>
           </div>
 
-          {cart.length === 0 ? (
-            <div className="pos-cart-empty">
-              <ShoppingCart size={28} opacity={0.2} />
-              <p>{t('pos.cartEmpty')}</p>
-            </div>
-          ) : (
-            <div className="pos-cart-items">
-              {cart.map((item) => (
-                <div key={item.cartKey} className="pos-cart-item">
-                  <div className="pos-cart-item-info">
-                    <span className="pos-cart-item-name">{item.productName}</span>
-                    {(item.variantName || item.sku) && (
-                      <span className="pos-cart-item-sku">{item.variantName || item.sku}</span>
-                    )}
+          <div className="pos-cart-items">
+            {cart.length === 0 ? (
+              <div className="state-panel">
+                <div className="icon"><ShoppingCart size={22} /></div>
+                <h3>{t('pos.cartEmpty')}</h3>
+                <p>{t('pos.searchHint')}</p>
+              </div>
+            ) : cart.map((item) => (
+              <div key={item.cartKey} className="pos-cart-item">
+                <div>
+                  <div className="name">{item.productName}</div>
+                  <div className="meta">
+                    {(item.variantName || item.sku) && <>{item.variantName || item.sku} · </>}
                     {editingPriceId === item.cartKey ? (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Input
-                          ref={priceInputRef}
-                          type="number"
-                          min={0}
-                          className="w-[110px] py-0.5 px-1.5 text-xs h-auto"
-                          value={priceInput}
-                          onChange={(e) => setPriceInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitEditPrice(item.cartKey)
-                            if (e.key === 'Escape') cancelEditPrice()
-                          }}
-                          onBlur={() => commitEditPrice(item.cartKey)}
-                         />
-                      </div>
+                      <Input
+                        ref={priceInputRef}
+                        type="number"
+                        min={0}
+                        className="w-[110px] py-0.5 px-1.5 text-xs h-auto inline-block"
+                        value={priceInput}
+                        onChange={(e) => setPriceInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitEditPrice(item.cartKey)
+                          if (e.key === 'Escape') cancelEditPrice()
+                        }}
+                        onBlur={() => commitEditPrice(item.cartKey)}
+                      />
                     ) : (
-                      <div className="flex items-center gap-1">
-                        <span className="pos-cart-item-price">
-                          {formatCurrencyVnd(effectivePrice(item))}
-                          {item.overriddenPrice != null && (
-                            <span className="text-xs text-muted-foreground line-through ml-1">
-                              {formatCurrencyVnd(item.price)}
-                            </span>
-                          )}
-                        </span>
+                      <>
+                        {formatCurrencyVnd(effectivePrice(item))}
+                        {item.overriddenPrice != null && (
+                          <span className="muted" style={{ textDecoration: 'line-through', marginLeft: 4 }}>
+                            {formatCurrencyVnd(item.price)}
+                          </span>
+                        )}
                         {canOverridePrice && (
-                          <Button variant="secondary" size="sm"
+                          <button
                             type="button"
+                            className="icon-btn"
                             title="Sửa giá"
-                            className="opacity-60"
+                            style={{ width: 22, height: 22, marginLeft: 4 }}
                             onClick={() => startEditPrice(item)}
                           >
                             <Pencil size={11} />
-                          </Button>
+                          </button>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
-                  <div className="pos-cart-item-qty">
-                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.cartKey, -1)}><Minus size={12} /></Button>
-                    <span>{item.qty}</span>
-                    <Button variant="secondary" size="sm" type="button" onClick={() => updateQty(item.cartKey, 1)}><Plus size={12} /></Button>
-                    <Button variant="ghost" size="sm" className="text-danger hover:bg-danger-bg" type="button" onClick={() => removeFromCart(item.cartKey)}><Trash2 size={12} /></Button>
-                  </div>
-                  <span className="pos-cart-item-subtotal">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="qty-stepper">
+                  <button type="button" onClick={() => updateQty(item.cartKey, -1)}><Minus size={12} /></button>
+                  <span className="v">{item.qty}</span>
+                  <button type="button" onClick={() => updateQty(item.cartKey, 1)}><Plus size={12} /></button>
+                </div>
+                <div className="text-right">
+                  <div className="fw-700 text-sm">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</div>
+                  <button type="button" className="btn-ghost text-xs muted" onClick={() => removeFromCart(item.cartKey)}>
+                    {t('common.delete')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          <div className="pos-cart-footer">
-            {cart.length > 0 && (
-              <Button variant="secondary" size="sm"
-                type="button"
-                className="mb-2 self-start"
-                onClick={async () => {
-                  if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
-                    setCart([])
-                    try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
-                  }
-                }}
-              >
-                <Trash2 size={13} className="mr-1" /> Xoá giỏ hàng
-              </Button>
-            )}
-            <div className="pos-cart-total">
-              <span>{t('pos.total')}</span>
-              <strong>{formatCurrencyVnd(total)}</strong>
+          <div className="pos-cart-totals">
+            <div className="pos-tot-row">
+              <span>{t('pos.itemCount', { count: cart.length, defaultValue: `Tạm tính (${cart.length} mục)` })}</span>
+              <span>{formatCurrencyVnd(total)}</span>
             </div>
-            <Button className="pos-checkout-btn"
+            <div className="pos-tot-row grand">
+              <span>{t('pos.total')}</span>
+              <span style={{ color: 'var(--admin-color-brand-red)' }}>{formatCurrencyVnd(total)}</span>
+            </div>
+          </div>
+
+          <div className="pos-cart-foot">
+            <button
               type="button"
+              className="btn btn-primary btn-lg"
               disabled={cart.length === 0 || !canUpdate}
               onClick={() => setModal('payment')}
             >
               {t('pos.checkout')}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -1031,6 +1059,6 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
         />
       )}
 
-    </section>
+    </div>
   )
 }
