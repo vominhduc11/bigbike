@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
-  Home, Building2, Image as ImageIcon,
+  Home, Building2, Image as ImageIcon, Package,
   CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -96,7 +96,7 @@ function validateValue(key, value) {
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX',
+  'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -105,7 +105,8 @@ const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - SECURITY: thiết lập kỹ thuật (login attempts, session timeout) — devops set, không phải admin shop
-const HIDDEN_GROUPS = new Set(['SECURITY'])
+// - PAYMENT_SEPAY: cổng thanh toán SePay đã gỡ khỏi hệ thống (V59) — chỉ còn dữ liệu rác, ẩn khỏi UI
+const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND
@@ -122,6 +123,7 @@ const TAB_META = {
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
   STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
   TAX:         { icon: CreditCard, labelKey: 'settings.group_tax' },
+  INVENTORY:   { icon: Package,    labelKey: 'settings.group_inventory' },
 }
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
@@ -165,6 +167,10 @@ const KEY_LABELS_VI = {
   tax_rate: 'Thuế suất VAT (vd: 0.10 = 10%)',
   tax_inclusive: 'Giá sản phẩm đã bao gồm thuế (true/false)',
   tax_registration_number: 'Mã số thuế (MST) — in trên hoá đơn',
+  // inventory (operational)
+  reservation_ttl_minutes: 'Số phút giữ hàng trong giỏ trước khi nhả lại kho',
+  default_warranty_months: 'Thời hạn bảo hành mặc định khi tạo phiếu (tháng)',
+  serial_inventory_only: 'Chỉ bán sản phẩm có serial đã nhập kho (true/false)',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm',
   hero_products_image_alt: 'Alt ảnh hero — Tất cả sản phẩm',
