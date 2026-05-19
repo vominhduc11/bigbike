@@ -498,3 +498,33 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 Status: `CONFIRMED_FROM_CODE` — shape confirmed from `AdminAnalyticsResponse.java` audit; fields updated per P0 plan.
 
 Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`
+
+## Site Settings — `setting_group` enum (V132)
+
+`SiteSettingEntity` rows in table `site_settings` are partitioned by `setting_group`. The admin settings screen renders one tab per group. Group names are **lowercase**.
+
+| `setting_group` | Purpose | Admin tab |
+|---|---|---|
+| `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
+| `contact` | Public contact email/address, social links | Liên hệ |
+| `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
+| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 15 keys | Hero trang |
+| `promo` | Homepage promotion banner | Khuyến mãi |
+| `seo` | Homepage SEO title/description/H1, OG image | SEO website |
+| `store` | Operational: minimum checkout amount, low-stock threshold | Cửa hàng |
+| `tax` | VAT rate, tax-inclusive flag, tax registration number | Thuế & Phí |
+| `inventory` | Operational: stock reservation TTL, default warranty months, serial-only selling | Tồn kho |
+| `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |
+
+**Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
+
+Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
+- `DELETE FROM site_settings WHERE setting_group = 'payment_sepay'` — removes dead SePay rows that survived V59 in some environments.
+- `UPDATE site_settings SET setting_group = 'inventory' WHERE setting_group = 'INVENTORY'` — folds the legacy uppercase `INVENTORY` group into the lowercase `inventory` group so casing is uniform.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_hero`/`promo`/`seo`/`store`/`tax`
+- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`)
+- `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
